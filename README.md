@@ -20,9 +20,12 @@ Project aims to capture sports data from external sources, convert them into dom
 
 **Project Diagram**
 ```mermaid
-flowchart LR
+flowchart TD
     PV[Provider]
+    DL[(data lake)]
+    PV --> DL
     PD[Producer]
+    PD <--> DL
     M[SNS/SQS]
     N[Notification]
     E[Event]
@@ -51,6 +54,7 @@ flowchart LR
     API --> V
     API --> PL
     API --> FR
+    API --> N
     WCPOST --> API
     WCWEB --> API
     WCMOB --> API

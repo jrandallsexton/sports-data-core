@@ -33,7 +33,9 @@ flowchart TD
     V[Venue]
     PL[Player]
     FR[Franchise]
+    ID[Identity]
     API[API Gateway]
+    API --> ID
     WCPOST[Postman]
     WCWEB[Web]
     WCMOB[Mobile]

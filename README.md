@@ -20,7 +20,7 @@ Project aims to capture sports data from external sources, convert them into dom
 | [sports-data-season](https://github.com/jrandallsexton/sports-data-season) | [more soon] |
 | [sports-data-api](https://github.com/jrandallsexton/sports-data-api) | API Gateway |
 
-**Project Diagram**
+**Project Diagram - Level 0**
 ```mermaid
 flowchart TD
     PV[Provider]
@@ -62,4 +62,89 @@ flowchart TD
     WCPOST --> API
     WCWEB --> API
     WCMOB --> API
+```
+**Project Diagram - Level 1**
+```mermaid
+flowchart BT
+    subgraph Provider
+        PV[svc]
+        PVDB[(DB)]
+        PV-->PVDB
+        PVAPI[API]
+        PV-->PVDB
+        PVAPI-->PVDB
+    end    
+    DL[(data lake)]
+    PV --> DL
+    subgraph Producer
+        PD[svc]
+        PDDB[(DB)]
+        PDAPI[API]
+        PD-->PDDB
+        PDAPI-->PDDB
+    end    
+    PD <--> DL
+    M[SNS/SQS]
+    subgraph Notification
+        N[svc]
+        NDB[(DB)]
+        NAPI[API]
+    end
+    subgraph Event
+        E[svc]
+        EDB[(DB)]
+        EAPI[API]
+    end
+    subgraph Season
+        S[svc]
+        SDB[(DB)]
+        SAPI[API]
+    end
+    subgraph Venue
+        V[svc]
+        VDB[(DB)]
+        VPI[API]
+    end
+    subgraph Player
+        PL[svc]
+        PLDB[(DB)]
+        PLAPI[API]
+    end
+    subgraph Franchise
+        FR[svc]
+        FRDB[(DB)]
+        FRAPI[API]
+    end
+    subgraph Identity
+        ID[Identity]
+    end
+    API[API Gateway]
+    API --> ID
+    WCPOST[Postman]
+    WCWEB[Web]
+    WCMOB[Mobile]
+    WCAPP[Code]
+    Provider --> ESPN[ESPN]
+    Provider --> CBS[CBS]
+    Provider --> YAHOO[Yahoo!]
+    Provider --> SDIO[sportsData.io]
+    PV-->M
+    PD-->M
+    N-->M
+    E-->M
+    S-->M
+    V-->M
+    PL-->M
+    FR-->M
+    API-->Provider
+    API-->Event
+    API-->Season
+    API-->Venue
+    API-->Player
+    API-->Franchise
+    API-->Notification
+    WCPOST-->API
+    WCWEB-->API
+    WCMOB-->API
+    WCAPP-->API
 ```

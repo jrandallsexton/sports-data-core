@@ -19,4 +19,39 @@ Project aims to capture sports data from external sources, convert them into dom
 |sports-data-api  |API Gateway|
 
 **Project Diagram**
-[mermaid diagram here]
+```mermaid
+flowchart LR
+    PV[Provider]
+    PD[Producer]
+    M[SNS/SQS]
+    N[Notification]
+    E[Event]
+    S[Season]
+    V[Venue]
+    PL[Player]
+    FR[Franchise]
+    API[API Gateway]
+    WCPOST[Postman]
+    WCWEB[Web]
+    WCMOB[Mobile]
+    PV --> ESPN[ESPN]
+    PV --> CBS[CBS]
+    PV --> YAHOO[Yahoo!]
+    PV --> SDIO[sportsData.io]
+    PV --> M
+    PD --> M
+    N --> M
+    E --> M
+    S --> M
+    V --> M
+    PL --> M
+    FR --> M
+    API --> E
+    API --> S
+    API --> V
+    API --> PL
+    API --> FR
+    WCPOST --> API
+    WCWEB --> API
+    WCMOB --> API
+```

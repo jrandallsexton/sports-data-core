@@ -1,7 +1,7 @@
 trigger:
 - main
 
-name: $(Build.DefinitionName)-$(date:yyyyMMdd)$(rev:.r)
+name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
 
 pool:
   vmImage: 'windows-latest'
@@ -50,7 +50,7 @@ steps:
   inputs:
     command: 'pack'
     versioningScheme: byBuildNumber
-    versionEnvVar: '$(%BUILD_BUILDNUMBER%)'
+    versionEnvVar: '$(Build.BuildNumber)'
     packagesToPack: '**/SportsData.Core.csproj'
     packDestination: '$(Build.ArtifactStagingDirectory)'
 

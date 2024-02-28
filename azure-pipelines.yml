@@ -11,7 +11,7 @@ variables:
   Major: '1'
   Minor: '0'
   Patch: '1'
-  PackageVersion: '1.0.1'
+  PackageVersion: $(Build.DefinitionName)-$(date:yyyyMMdd)$(rev:.r)
 
 steps:
 - task: UseDotNet@2

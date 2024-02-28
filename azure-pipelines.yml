@@ -1,6 +1,8 @@
 trigger:
 - main
 
+name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
+
 pool:
   vmImage: 'windows-latest'
 
@@ -47,8 +49,8 @@ steps:
   displayName: 'Nuget Pack'
   inputs:
     command: 'pack'
-    versioningScheme: byEnvVar
-    versionEnvVar: PackageVersion
+    versioningScheme: byBuildNumber
+    versionEnvVar: '$(Build.BuildNumber)'
     packagesToPack: '**/SportsData.Core.csproj'
     packDestination: '$(Build.ArtifactStagingDirectory)'
 

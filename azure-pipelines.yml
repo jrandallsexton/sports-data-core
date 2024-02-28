@@ -50,7 +50,7 @@ steps:
   inputs:
     command: 'pack'
     versioningScheme: byBuildNumber
-    # versionEnvVar: '$(Build.DefinitionName)-$(date:yyyyMMdd)$(rev:.r)'
+    versionEnvVar: '$(%BUILD_BUILDNUMBER%)'
     packagesToPack: '**/SportsData.Core.csproj'
     packDestination: '$(Build.ArtifactStagingDirectory)'
 

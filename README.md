@@ -30,7 +30,7 @@ flowchart TD
     PD <--> DL
     M[SNS/SQS]
     N[Notification]
-    E[Event]
+    C[Contest]
     S[Season]
     V[Venue]
     PL[Player]
@@ -48,12 +48,12 @@ flowchart TD
     PV --> M
     PD --> M
     N --> M
-    E --> M
+    C --> M
     S --> M
     V --> M
     PL --> M
     FR --> M
-    API --> E
+    API --> C
     API --> S
     API --> V
     API --> PL
@@ -90,10 +90,10 @@ flowchart BT
         NDB[(DB)]
         NAPI[API]
     end
-    subgraph Event
-        E[svc]
-        EDB[(DB)]
-        EAPI[API]
+    subgraph Contest
+        C[svc]
+        CDB[(DB)]
+        CAPI[API]
     end
     subgraph Season
         S[svc]
@@ -131,13 +131,13 @@ flowchart BT
     PV-->M
     PD-->M
     N-->M
-    E-->M
+    C-->M
     S-->M
     V-->M
     PL-->M
     FR-->M
     API-->Provider
-    API-->Event
+    API-->Contest
     API-->Season
     API-->Venue
     API-->Player

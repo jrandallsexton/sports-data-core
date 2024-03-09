@@ -28,7 +28,7 @@ flowchart TD
     PV --> DL
     PD[Producer]
     PD <--> DL
-    M[SNS/SQS]
+    MSG[SNS/SQS]
     N[Notification]
     C[Contest]
     S[Season]
@@ -37,22 +37,22 @@ flowchart TD
     FR[Franchise]
     ID[Identity]
     API[API Gateway]
-    API --> ID
+    API <--> ID
     WCPOST[Postman]
     WCWEB[Web]
     WCMOB[Mobile]
-    PV --> ESPN[ESPN]
-    PV --> CBS[CBS]
-    PV --> YAHOO[Yahoo!]
-    PV --> SDIO[sportsData.io]
-    PV --> M
-    PD --> M
-    N --> M
-    C --> M
-    S --> M
-    V --> M
-    PL --> M
-    FR --> M
+    PV <--> ESPN[ESPN]
+    PV <--> CBS[CBS]
+    PV <--> YAHOO[Yahoo!]
+    PV <--> SDIO[sportsData.io]
+    PV <--> MSG
+    PD <--> MSG
+    N <--> MSG
+    C <--> MSG
+    S <--> MSG
+    V <--> MSG
+    PL <--> MSG
+    FR <--> MSG
     API --> C
     API --> S
     API --> V

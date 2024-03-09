@@ -44,6 +44,11 @@ steps:
     command: 'test'
     projects: '**/*.csproj'
     testRunTitle: 'sdCore-tests-unit'
+
+- task: WhiteSource@21
+  inputs:
+    cwd: '$(System.DefaultWorkingDirectory)'
+    projectName: 'sports-data-core'
     
 - task: NuGetCommand@2
   displayName: 'Nuget Pack'

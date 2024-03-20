@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace SportsData.Core.Exceptions
-{
-    public class ResourceNotFoundException : Exception
-    {
-        public ResourceNotFoundException() { }
+namespace SportsData.Core.Exceptions;
 
-        public ResourceNotFoundException(string message) :
-            base(message)
-        { }
-    }
+public class ResourceNotFoundException : Exception
+{
+    public ResourceNotFoundException() { }
+
+    public ResourceNotFoundException(string message) :
+        base(message)
+    { }
 }

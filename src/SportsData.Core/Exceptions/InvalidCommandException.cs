@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace SportsData.Core.Exceptions
-{
-    public class InvalidCommandException : Exception
-    {
-        public InvalidCommandException() { }
+namespace SportsData.Core.Exceptions;
 
-        public InvalidCommandException(string message) :
-            base(message)
-        { }
-    }
+public class InvalidCommandException : Exception
+{
+    public InvalidCommandException() { }
+
+    public InvalidCommandException(string message) :
+        base(message)
+    { }
 }

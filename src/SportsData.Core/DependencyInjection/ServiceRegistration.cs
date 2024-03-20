@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using SportsData.Core.Common;
+
 namespace SportsData.Core.DependencyInjection
 {
     public static class ServiceRegistration
@@ -13,6 +15,13 @@ namespace SportsData.Core.DependencyInjection
                 options.EnableSensitiveDataLogging();
                 options.UseNpgsql(configuration.GetConnectionString("AppDataContext"));
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
             return services;
         }

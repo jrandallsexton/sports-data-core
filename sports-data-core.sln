@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C2B8EB78-4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution items", "{1C824987-7B92-4D4F-89E7-409C1E4DFB78}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		azure-pipelines.yml = azure-pipelines.yml
 		README.md = README.md
 	EndProjectSection

@@ -45,6 +45,7 @@ flowchart TD
     PV <--> CBS[CBS]
     PV <--> YAHOO[Yahoo!]
     PV <--> SDIO[sportsData.io]
+    PV <--> FD[fantasyData.com]
     PV <--> MSG
     PD <--> MSG
     N <--> MSG
@@ -128,6 +129,7 @@ flowchart BT
     Provider --> CBS[CBS]
     Provider --> YAHOO[Yahoo!]
     Provider --> SDIO[sportsData.io]
+    Provider --> FD[fantasyData.com]
     PV-->M
     PD-->M
     N-->M

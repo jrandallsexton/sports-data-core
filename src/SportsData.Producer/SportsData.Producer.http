@@ -1,0 +1,6 @@
+@SportsData.Producer_HostAddress = http://localhost:5231
+
+GET {{SportsData.Producer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

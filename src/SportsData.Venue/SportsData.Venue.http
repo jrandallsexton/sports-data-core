@@ -1,0 +1,6 @@
+@SportsData.Venue_HostAddress = http://localhost:5253
+
+GET {{SportsData.Venue_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

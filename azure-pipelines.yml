@@ -4,7 +4,7 @@ trigger:
 name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'ubuntu-latest'
   name: Azure Pipelines
 
 variables:

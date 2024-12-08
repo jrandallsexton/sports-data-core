@@ -5,6 +5,9 @@ name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
 
 pool:
   vmImage: 'windows-latest'
+  name: Default
+  demands:
+    - Agent.Name -equals Default
 
 variables:
   solution: '**/*.sln'

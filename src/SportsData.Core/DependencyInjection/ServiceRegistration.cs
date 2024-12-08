@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
+using SportsData.Core.Middleware.Health;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -23,6 +24,13 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
+            return services;
+        }
+
+        public static IServiceCollection AddHealthChecks(this IServiceCollection services, string apiName)
+        {
+            services.AddHealthChecks()
+                .AddCheck<HealthCheck>(apiName);
             return services;
         }
     }

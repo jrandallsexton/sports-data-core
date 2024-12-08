@@ -1,4 +1,6 @@
 
+using System.Text;
+
 namespace SportsData.Api
 {
     public class Program
@@ -13,6 +15,7 @@ namespace SportsData.Api
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddHealthChecks();
 
             var app = builder.Build();
 
@@ -20,7 +23,14 @@ namespace SportsData.Api
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(options =>
+                {
+                    var links = new StringBuilder();
+                    links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:8081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
+                    options.HeadContent = links.ToString();
+                });
             }
 
             app.UseHttpsRedirection();

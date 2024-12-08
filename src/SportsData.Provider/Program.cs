@@ -31,8 +31,7 @@ namespace SportsData.Provider
             builder.Services.AddDbContext<ProviderDataContext>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                options.UseSqlServer(config,
-                    b => b.MigrationsAssembly("SportsData.Provider"));
+                options.UseNpgsql(config, b => b.MigrationsAssembly("SportsData.Provider"));
             });
 
             await using var serviceProvider = builder.Services.BuildServiceProvider();

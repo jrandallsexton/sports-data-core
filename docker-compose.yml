@@ -1,8 +1,50 @@
 version: '3.4'
 
 services:
+  rabbitmq:
+     image: rabbitmq:3-management-alpine
+     container_name: rabbitmq
+     ports:
+         - 5672:5672
+         - 15672:15672
+     volumes:
+         - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+         - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq 
+     networks:
+         - rabbitmq_go_net
   sportsdata.api:
     image: ${DOCKER_REGISTRY-}sportsdataapi
     build:
       context: ..
       dockerfile: sports-data/src/SportsData.Api/Dockerfile
+  db.provider:
+    image: postgres:latest
+    container_name: db-provider
+    environment:
+      - POSTGRES_DB=provider
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    depends_on:
+      - rabbitmq
+  db.provider.admin:
+    image: dpage/pgadmin4
+    container_name: dbadmin
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: test@test.com
+      PGADMIN_DEFAULT_PASSWORD: dbadmin
+  sportsdata.provider:
+    image: ${DOCKER_REGISTRY-}sportsdataprovider
+    build:
+      context: ..
+      dockerfile: sports-data/src/SportsData.Provider/Dockerfile
+    depends_on:
+      - db.provider
+      - db.provider.admin
+networks:
+  rabbitmq_go_net:
+    driver: bridge

@@ -1,7 +1,7 @@
 
 ## sports-data-core
 
-Primary repo for Sports Data project. Associated services are in separate repositories.
+Primary repo for Sports Data project.
 
 ## **Overview**
 

@@ -5,9 +5,7 @@ name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
 
 pool:
   vmImage: 'windows-latest'
-  name: Default
-  demands:
-    - Agent.Name -equals BENDER
+  name: Azure Pipelines
 
 variables:
   solution: '**/*.sln'

@@ -7,7 +7,7 @@ pool:
   vmImage: 'windows-latest'
   name: Default
   demands:
-    - Agent.Name -equals Default
+    - Agent.Name -equals BENDER
 
 variables:
   solution: '**/*.sln'

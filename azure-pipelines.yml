@@ -4,10 +4,8 @@ trigger:
 name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
 
 pool:
-  vmImage: 'windows-latest'
-  name: Default
-  demands:
-    - Agent.Name -equals BENDER
+  vmImage: 'ubuntu-latest'
+  name: Azure Pipelines
 
 variables:
   solution: '**/*.sln'

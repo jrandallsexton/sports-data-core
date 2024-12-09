@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿#nullable enable
+using Microsoft.Extensions.Caching.Distributed;
 
 using System;
 using System.Threading.Tasks;

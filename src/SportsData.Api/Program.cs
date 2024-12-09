@@ -1,5 +1,8 @@
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
 using System.Text;
+using SportsData.Core.Middleware.Health;
 
 namespace SportsData.Api
 {
@@ -36,6 +39,11 @@ namespace SportsData.Api
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+
+            app.UseHealthChecks("/health", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckWriter.WriteResponse
+            });
 
 
             app.MapControllers();

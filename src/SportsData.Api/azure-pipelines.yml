@@ -57,6 +57,7 @@ stages:
         clean: true
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
+        restoreNugetPackages: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Run Unit Tests'

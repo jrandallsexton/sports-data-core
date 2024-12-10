@@ -4,7 +4,7 @@ trigger:
       - master
   paths:
     include:
-      - 'SportsData.Franchise/*'
+      - 'src/SportsData.Franchise/*'
 
 pool:
   vmImage: 'windows-latest'

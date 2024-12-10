@@ -43,11 +43,6 @@ stages:
         packageType: 'sdk'
         version: '9.0.x'
         includePreviewVersions: true
-
-    - task: NuGetToolInstaller@1
-      displayName: 'NuGet Restore'
-      inputs:
-        versionSpec: 6.*.*
     
     - task: VSBuild@1
       displayName: 'Build sports-data-api solution'

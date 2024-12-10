@@ -52,7 +52,7 @@ stages:
     
     - task: CmdLine@2
       inputs:
-        script: 'dotnet restore /SportsData.Api/sports-data-api.sln'
+        script: 'dotnet restore **/sports-data-api.sln'
 
     - task: MSBuild@1
       inputs:

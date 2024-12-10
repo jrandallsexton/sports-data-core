@@ -1,5 +1,10 @@
 trigger:
-- main
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - 'SportsData.Api/*'
 
 pool:
   vmImage: 'windows-latest'
@@ -69,29 +74,3 @@ stages:
         command: 'test'
         projects: '**/SportsData.Api.Tests.Integration.csproj'
         testRunTitle: 'api-tests-int'
-
-- stage: BuildImagePushACR
-  displayName: Build Image & Push to ACR
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-  - job: Deploy
-    steps:
-    - task: AzureWebAppContainer@1
-      displayName: 'Azure Web App on Container Deploy'
-      inputs:
-        azureSubscription: $(azureSubscription)
-        appName: $(appName)
-        containers: $(containerRegistry)/$(imageRepository):$(tag)

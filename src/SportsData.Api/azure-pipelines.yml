@@ -61,11 +61,11 @@ stages:
         msbuildArguments: '/t:Restore'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run Unit Tests'
+      displayName: 'Run Integration Tests'
       inputs:
         command: 'test'
-        projects: '**/*.csproj'
-        testRunTitle: 'sdPApi-tests-unit'
+        projects: '**/SportsData.Api.Tests.Integration.csproj'
+        testRunTitle: 'api-tests-int'
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR

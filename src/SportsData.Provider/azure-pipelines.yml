@@ -9,10 +9,10 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'a9a78000-27ee-4628-be7e-d0ff370d71aa'
-  imageRepository: 'sportsdataapi'
-  containerRegistry: 'sportdeets.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Api/Dockerfile'
+  dockerRegistryServiceConnection: '31f2836a-84b3-4ad0-bf15-f4ea41754d06'
+  imageRepository: 'sportsdataprovider'
+  containerRegistry: 'sportdeetscr.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Provider/Dockerfile'
   tag: '$(Build.BuildId)'
 
   # Agent VM image name
@@ -22,14 +22,14 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  Major: '0'
+  Major: '1'
   Minor: '0'
   Patch: '1'
-  PackageVersion: '0.0.1'
+  PackageVersion: '1.0.1'
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-connection'
-  appName: 'dev-sdapi'
+  appName: 'dev-sdprovider'
 
 stages:
 - stage: BuildAndTest
@@ -38,37 +38,34 @@ stages:
     displayName: BuildAndTest
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET 9 SDK'
+      displayName: 'Use .NET 8 SDK'
       inputs:
         packageType: 'sdk'
-        version: '9.0.x'
+        version: '8.0.x'
         includePreviewVersions: true
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore'
       inputs:
         command: 'restore'
-        restoreSolution: '**/sports-data-api.sln'
+        restoreSolution: '**/*.sln'
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
-
-    - task: MSBuild@1
-      displayName: 'Build sports-data-api solution'
+    
+    - task: VSBuild@1
+      displayName: 'Build sports-data-provider solution'
       inputs:
-        solution: '**/sports-data-api.sln'
-        msbuildArchitecture: 'x64'
-        clean: true
+        solution: '**\*.sln'
+        restoreNugetPackages: true
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
-        restoreNugetPackages: true
-        msbuildArguments: '/t:Restore'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run Integration Tests'
+      displayName: 'Run Unit Tests'
       inputs:
         command: 'test'
-        projects: '**/SportsData.Api.Tests.Integration.csproj'
-        testRunTitle: 'api-tests-int'
+        projects: '**/*.csproj'
+        testRunTitle: 'sdProvider-tests-unit'
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR

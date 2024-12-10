@@ -14,7 +14,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '31f2836a-84b3-4ad0-bf15-f4ea41754d06'
+  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
   imageRepository: 'sportsdataprovider'
   containerRegistry: 'sportdeets.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Provider/Dockerfile'
@@ -81,3 +81,21 @@ stages:
         command: 'test'
         projects: '**/SportsData.Provider.Tests.Integration.csproj'
         testRunTitle: 'provider-tests-int'
+
+- stage: BuildImagePushACR
+  displayName: Build Image & Push to ACR
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)

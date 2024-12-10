@@ -9,9 +9,9 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '31f2836a-84b3-4ad0-bf15-f4ea41754d06'
+  dockerRegistryServiceConnection: 'a9a78000-27ee-4628-be7e-d0ff370d71aa'
   imageRepository: 'sportsdataapi'
-  containerRegistry: 'sportdeetscr.azurecr.io'
+  containerRegistry: 'sportdeets.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Api/Dockerfile'
   tag: '$(Build.BuildId)'
 
@@ -22,10 +22,10 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  Major: '1'
+  Major: '0'
   Minor: '0'
   Patch: '1'
-  PackageVersion: '1.0.1'
+  PackageVersion: '0.0.1'
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-connection'
@@ -38,24 +38,24 @@ stages:
     displayName: BuildAndTest
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET 8 SDK'
+      displayName: 'Use .NET 9 SDK'
       inputs:
         packageType: 'sdk'
-        version: '8.0.x'
+        version: '9.0.x'
         includePreviewVersions: true
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore'
       inputs:
         command: 'restore'
-        restoreSolution: '**/*.sln'
+        restoreSolution: '**/sports-data-api.sln'
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
     - task: VSBuild@1
       displayName: 'Build sports-data-api solution'
       inputs:
-        solution: '**\*.sln'
+        solution: '**\sports-data-api.sln'
         restoreNugetPackages: true
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'

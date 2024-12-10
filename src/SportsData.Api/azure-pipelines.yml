@@ -50,9 +50,9 @@ stages:
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     - task: VSBuild@1
-      displayName: 'Build sports-data solution'
+      displayName: 'Build sports-data project'
       inputs:
-        solution: '**\sports-data.sln'
+        solution: '**\SportsData.Core\SportsData.Core.csproj'
         restoreNugetPackages: false
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'

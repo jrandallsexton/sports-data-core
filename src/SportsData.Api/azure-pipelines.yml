@@ -50,6 +50,10 @@ stages:
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
+    - task: CmdLine@2
+      inputs:
+        script: 'dotnet restore /SportsData.Api/sports-data-api.sln'
+
     - task: MSBuild@1
       inputs:
         solution: '**/sports-data-api.sln'

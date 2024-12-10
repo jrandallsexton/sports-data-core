@@ -53,7 +53,7 @@ stages:
       displayName: 'Build sports-data-api solution'
       inputs:
         solution: '**\sports-data-api.sln'
-        restoreNugetPackages: true
+        restoreNugetPackages: false
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
 

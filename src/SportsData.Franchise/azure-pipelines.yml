@@ -57,13 +57,15 @@ stages:
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
-    - task: VSBuild@1
+    - task: MSBuild@1
       displayName: 'Build sports-data-franchise solution'
       inputs:
         solution: '**\sports-data-franchise.sln'
-        restoreNugetPackages: true
+        msbuildArchitecture: 'x64'
+        clean: true
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
+        restoreNugetPackages: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Run Unit Tests'

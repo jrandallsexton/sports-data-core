@@ -27,10 +27,10 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  Major: '1'
+  Major: '0'
   Minor: '0'
   Patch: '1'
-  PackageVersion: '1.0.1'
+  PackageVersion: '0.0.1'
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-connection'

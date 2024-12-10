@@ -55,7 +55,7 @@ stages:
     - task: MSBuild@1
       displayName: 'Build sports-data-contest solution'
       inputs:
-        solution: '**\sports-data-api.sln'
+        solution: '**\sports-data-contest.sln'
         msbuildArchitecture: 'x64'
         clean: true
         platform: '$(buildPlatform)'

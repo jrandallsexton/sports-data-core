@@ -15,7 +15,7 @@ variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '31f2836a-84b3-4ad0-bf15-f4ea41754d06'
   imageRepository: 'sportsdatafranchise'
-  containerRegistry: 'sportdeetscr.azurecr.io'
+  containerRegistry: 'sportdeets.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Franchise/Dockerfile'
   tag: '$(Build.BuildId)'
 
@@ -26,10 +26,10 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  Major: '1'
+  Major: '0'
   Minor: '0'
   Patch: '1'
-  PackageVersion: '1.0.1'
+  PackageVersion: '0.0.1'
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-connection'
@@ -42,24 +42,24 @@ stages:
     displayName: BuildAndTest
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET 8 SDK'
+      displayName: 'Use .NET 9 SDK'
       inputs:
         packageType: 'sdk'
-        version: '8.0.x'
+        version: '9.0.x'
         includePreviewVersions: true
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore'
       inputs:
         command: 'restore'
-        restoreSolution: '**/*.sln'
+        restoreSolution: '**/sports-data-franchise.sln'
         feedsToUse: 'select'
         vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
     - task: VSBuild@1
       displayName: 'Build sports-data-franchise solution'
       inputs:
-        solution: '**\*.sln'
+        solution: '**\sports-data-franchise.sln'
         restoreNugetPackages: true
         platform: '$(buildPlatform)'
         configuration: '$(buildConfiguration)'
@@ -68,31 +68,12 @@ stages:
       displayName: 'Run Unit Tests'
       inputs:
         command: 'test'
-        projects: '**/*.csproj'
-        testRunTitle: 'sdFranchise-tests-unit'
+        projects: '**/SportsData.Franchise.Tests.Unit.csproj'
+        testRunTitle: 'franchise-tests-unit'
 
-- stage: BuildImagePushACR
-  displayName: Build Image & Push to ACR
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Integration Tests'
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-  - job: Deploy
-    steps:
-    - task: AzureWebAppContainer@1
-      displayName: 'Azure Web App on Container Deploy'
-      inputs:
-        azureSubscription: $(azureSubscription)
-        appName: $(appName)
-        containers: $(containerRegistry)/$(imageRepository):$(tag)
+        command: 'test'
+        projects: '**/SportsData.Franchise.Tests.Integration.csproj'
+        testRunTitle: 'franchise-tests-int'

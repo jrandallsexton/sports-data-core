@@ -17,7 +17,7 @@ variables:
   dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
   imageRepository: 'sportsdataapi'
   containerRegistry: 'sportdeets.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Api/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileApi'
   tag: '$(Build.BuildId)'
 
   # Agent VM image name

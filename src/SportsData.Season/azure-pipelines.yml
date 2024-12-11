@@ -41,7 +41,7 @@ stages:
   displayName: "Build & Test: Season"
   jobs:
   - job: BuildAndTest
-    displayName: BuildAndTest
+    displayName: "Build & Test: Season"
     steps:
     - task: UseDotNet@2
       displayName: 'Use .NET 9 SDK'

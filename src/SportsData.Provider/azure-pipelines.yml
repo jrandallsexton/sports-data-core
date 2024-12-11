@@ -69,14 +69,14 @@ stages:
         msbuildArguments: '/t:Restore'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run Unit Tests'
+      displayName: 'Unit Tests'
       inputs:
         command: 'test'
         projects: '**/SportsData.Provider.Tests.Unit.csproj'
         testRunTitle: 'provider-tests-unit'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run Integration Tests'
+      displayName: 'Integration Tests'
       inputs:
         command: 'test'
         projects: '**/SportsData.Provider.Tests.Integration.csproj'

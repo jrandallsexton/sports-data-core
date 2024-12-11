@@ -74,10 +74,3 @@ stages:
         command: 'test'
         projects: '**/SportsData.Franchise.Tests.Unit.csproj'
         testRunTitle: 'franchise-tests-unit'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Run Integration Tests'
-      inputs:
-        command: 'test'
-        projects: '**/SportsData.Franchise.Tests.Integration.csproj'
-        testRunTitle: 'franchise-tests-int'

@@ -12,8 +12,8 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["SportsData.Api/SportsData.Api.csproj", "SportsData.Api/"]
-COPY ["SportsData.Core/SportsData.Core.csproj", "SportsData.Core/"]
+COPY ["../SportsData.Api/SportsData.Api.csproj", "SportsData.Api/"]
+COPY ["../SportsData.Core/SportsData.Core.csproj", "SportsData.Core/"]
 RUN dotnet restore "./SportsData.Api/SportsData.Api.csproj"
 COPY . .
 WORKDIR "/src/SportsData.Api"

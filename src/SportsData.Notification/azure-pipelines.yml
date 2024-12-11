@@ -38,6 +38,7 @@ variables:
 
 stages:
 - stage: BuildAndTest
+  displayName: "Build & Test: Notification"
   jobs:
   - job: BuildAndTest
     displayName: BuildAndTest

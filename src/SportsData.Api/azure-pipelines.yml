@@ -71,6 +71,10 @@ stages:
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR
+  pool: 
+   name: Default
+   demands:
+    - Agent.Name -equals Bender
   jobs:
   - job: Build
     displayName: Build

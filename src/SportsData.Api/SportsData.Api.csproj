@@ -7,7 +7,6 @@
 	  <ContainerFamily>alpine</ContainerFamily>
     <UserSecretsId>0f3b0ac3-1e98-43e0-b1e0-c61589543442</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>..\..</DockerfileContext>
     <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 

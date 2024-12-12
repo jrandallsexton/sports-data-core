@@ -38,7 +38,7 @@ variables:
 
 stages:
 - stage: BuildAndTest
-  displayName: "Build & Test: API"
+  displayName: "Build & Test: API" 
   jobs:
   - job: BuildAndTest
     displayName: BuildAndTest

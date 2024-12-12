@@ -33,7 +33,7 @@ variables:
   PackageVersion: '0.0.1'
 
   # Deploy Vars
-  azureSubscription: 'dev-sports-data-connection'
+  azureSubscription: 'dev-sports-data-api-svc-conn'
   appName: 'sportdeetsapi'
 
 stages:

@@ -91,6 +91,7 @@ stages:
         tags: |
           $(tag)
   - job: Deploy
+    dependsOn: Build
     steps:
     - task: AzureWebAppContainer@1
       displayName: 'Azure Web App on Container Deploy'

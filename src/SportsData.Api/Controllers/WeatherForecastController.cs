@@ -31,7 +31,7 @@ namespace SportsData.Api.Controllers
         }
 
         [HttpPost("{name}")]
-        public IActionResult SayHello(string name)
+        public IActionResult SayHelloV2(string name)
         {
             return Ok($"Hello {name}");
         }

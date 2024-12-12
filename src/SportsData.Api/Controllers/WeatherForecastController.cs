@@ -29,5 +29,11 @@ namespace SportsData.Api.Controllers
             })
             .ToArray();
         }
+
+        [HttpGet(Name = "SayHello")]
+        public IActionResult SayHello()
+        {
+            return Ok("Hello");
+        }
     }
 }

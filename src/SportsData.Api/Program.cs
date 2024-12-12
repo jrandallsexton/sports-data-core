@@ -45,7 +45,6 @@ namespace SportsData.Api
                 ResponseWriter = HealthCheckWriter.WriteResponse
             });
 
-
             app.MapControllers();
 
             app.Run();

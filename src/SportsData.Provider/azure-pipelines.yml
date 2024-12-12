@@ -17,7 +17,7 @@ variables:
   dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
   imageRepository: 'sportsdataprovider'
   containerRegistry: 'sportdeets.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/src/SportsData.Provider/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileProvider'
   tag: '$(Build.BuildId)'
 
   # Agent VM image name
@@ -33,7 +33,7 @@ variables:
   PackageVersion: '0.0.1'
 
   # Deploy Vars
-  azureSubscription: 'dev-sports-data-connection'
+  azureSubscription: 'dev-sports-data-api-svc-conn'
   appName: 'dev-sdprovider'
 
 stages:
@@ -82,3 +82,25 @@ stages:
         command: 'test'
         projects: '**/SportsData.Provider.Tests.Integration.csproj'
         testRunTitle: 'provider-tests-int'
+
+- stage: BuildImagePushACR
+  displayName: Build Image & Push to ACR
+  pool: 
+   name: Default
+   demands:
+    - Agent.Name -equals Bender
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)

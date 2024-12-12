@@ -30,10 +30,10 @@ namespace SportsData.Api.Controllers
             .ToArray();
         }
 
-        [HttpGet(Name = "SayHello")]
-        public IActionResult SayHello()
+        [HttpPost("{name}")]
+        public IActionResult SayHello(string name)
         {
-            return Ok("Hello");
+            return Ok($"Hello {name}");
         }
     }
 }

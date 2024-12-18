@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients
 {
-    internal class PlayerClient
+    internal class SeasonProvider
     {
     }
 }

@@ -1,4 +1,11 @@
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
+using SportsData.Core.DependencyInjection;
+using SportsData.Core.Middleware.Health;
+
+using System.Reflection;
+
 namespace SportsData.Contest
 {
     public class Program
@@ -8,11 +15,14 @@ namespace SportsData.Contest
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var config = builder.Configuration;
+            var services = builder.Services;
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            services.AddCoreServices(config);
+            services.AddControllers();
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 
@@ -26,6 +36,11 @@ namespace SportsData.Contest
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+
+            app.UseHealthChecks("/health", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckWriter.WriteResponse
+            });
 
 
             app.MapControllers();

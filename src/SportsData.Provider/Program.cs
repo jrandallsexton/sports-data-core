@@ -3,8 +3,12 @@ using Hangfire;
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.DependencyInjection;
+using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Middleware;
+
+using System.Reflection;
 
 namespace SportsData.Provider
 {
@@ -18,7 +22,7 @@ namespace SportsData.Provider
 
             builder.Services.AddControllers();
 
-            builder.Services.ConfigureHealthChecks();
+            builder.Services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

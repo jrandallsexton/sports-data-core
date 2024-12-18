@@ -1,8 +1,11 @@
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
-using System.Text;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware.Health;
+
+using System.Reflection;
+using System.Text;
 
 namespace SportsData.Api
 {
@@ -13,16 +16,19 @@ namespace SportsData.Api
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var config = builder.Configuration;
+            var services = builder.Services;
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddHealthChecks();
+            services.AddCoreServices(config);
+            services.AddControllers();
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
+            
             //if (app.Environment.IsDevelopment())
             //{
             app.UseSwagger();

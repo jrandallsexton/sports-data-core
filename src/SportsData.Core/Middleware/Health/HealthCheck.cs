@@ -10,7 +10,7 @@ namespace SportsData.Core.Middleware.Health
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
             CancellationToken cancellationToken = default)
         {
-            const string providerName = "pipeline-integration-api";
+            var providerName = context.Registration.Name;
             const bool isHealthy = true;
 
             return isHealthy ?

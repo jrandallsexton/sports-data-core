@@ -6,6 +6,7 @@ using SportsData.Core.Middleware.Health;
 
 using System.Reflection;
 using System.Text;
+using SportsData.Core.Infrastructure.Clients.Venue;
 
 namespace SportsData.Api
 {
@@ -23,7 +24,9 @@ namespace SportsData.Api
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
+
+            services.AddProviders(config);
 
             var app = builder.Build();
 
@@ -35,6 +38,7 @@ namespace SportsData.Api
             app.UseSwaggerUI(options =>
             {
                 var links = new StringBuilder();
+                links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
                 links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
                 links.AppendLine("<a href=\"http://localhost:8081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
                 links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");

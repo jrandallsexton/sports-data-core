@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SportsData.Core.Infrastructure.Clients
+namespace SportsData.Core.Infrastructure.Clients.Franchise
 {
-    internal class SeasonProvider
+    internal class FranchiseProvider
     {
     }
 }

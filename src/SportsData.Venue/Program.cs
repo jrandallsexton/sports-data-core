@@ -4,6 +4,8 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware;
 using SportsData.Venue.Data;
 
+using System.Reflection;
+
 namespace SportsData.Venue
 {
     public class Program
@@ -13,11 +15,15 @@ namespace SportsData.Venue
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var config = builder.Configuration;
+            var services = builder.Services;
 
-            builder.Services.AddControllers();
-            builder.Services.AddHttpContextAccessor();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            services.AddCoreServices(config);
+            services.AddControllers();
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
+            builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
 
             // Add Serilog
             builder.Host.UseSerilog((context, configuration) =>
@@ -41,6 +47,8 @@ namespace SportsData.Venue
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+
+            app.UseHealthChecks();
 
             app.MapControllers();
 

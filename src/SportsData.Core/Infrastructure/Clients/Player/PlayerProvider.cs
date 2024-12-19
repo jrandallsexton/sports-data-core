@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SportsData.Core.Infrastructure.Clients
+namespace SportsData.Core.Infrastructure.Clients.Player
 {
-    internal class ContestProvider
+    internal class PlayerProvider
     {
     }
 }

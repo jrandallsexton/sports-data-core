@@ -10,6 +10,12 @@ using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using Microsoft.Extensions.Options;
 using System;
+using System.Diagnostics;
+using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.Franchise;
+using SportsData.Core.Infrastructure.Clients.Notification;
+using SportsData.Core.Infrastructure.Clients.Player;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -30,6 +36,9 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
+            //services.AddScoped<IProvideSeasons, SeasonProvider>();
+            //services.AddScoped<ProviderHealthCheck<SeasonProvider>>();
+
             return services;
         }
 
@@ -44,6 +53,11 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
+                .AddCheck<HealthCheckContest>(HttpClients.ContestClient)
+                .AddCheck<HealthCheckFranchise>(HttpClients.FranchiseClient)
+                .AddCheck<HealthCheckNotification>(HttpClients.NotificationClient)
+                .AddCheck<HealthCheckPlayer>(HttpClients.PlayerClient)
+                .AddCheck<HealthCheckSeason>(HttpClients.SeasonClient)
                 .AddCheck<HealthCheckVenue>(HttpClients.VenueClient);
             return services;
         }
@@ -56,11 +70,112 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddProviders(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddContestProvider(configuration);
+            services.AddFranchiseProvider(configuration);
+            services.AddNotificationProvider(configuration);
+            services.AddPlayerProvider(configuration);
+            services.AddSeasonProvider(configuration);
+            services.AddVenueProvider(configuration);
+            return services;
+        }
+
+        private static IServiceCollection AddContestProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new ContestProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("ContestProviderOptions")["ApiUrl"]
+            };
+
+            services.AddScoped<IProvideContests, ContestProvider>();
+
+            services.AddHttpClient(HttpClients.ContestClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddFranchiseProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new FranchiseProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("FranchiseProviderOptions")["ApiUrl"]
+            };
+
+            services.AddScoped<IProvideFranchises, FranchiseProvider>();
+
+            services.AddHttpClient(HttpClients.FranchiseClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddNotificationProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new NotificationProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("NotificationProviderOptions")["ApiUrl"]
+            };
+
+            services.AddScoped<IProvideNotifications, NotificationProvider>();
+
+            services.AddHttpClient(HttpClients.NotificationClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddPlayerProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new PlayerProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("PlayerProviderOptions")["ApiUrl"]
+            };
+
+            services.AddScoped<IProvidePlayers, PlayerProvider>();
+
+            services.AddHttpClient(HttpClients.PlayerClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddSeasonProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new SeasonProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("SeasonProviderOptions")["ApiUrl"]
+            };
+
+            services.AddScoped<IProvideSeasons, SeasonProvider>();
+
+            services.AddHttpClient(HttpClients.SeasonClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddVenueProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new VenueProviderConfig()
+            {
+                ApiUrl = configuration.GetSection("VenueProviderOptions")["ApiUrl"]
+            };
+
             services.AddScoped<IProvideVenues, VenueProvider>();
 
             services.AddHttpClient(HttpClients.VenueClient, client =>
             {
-                client.BaseAddress = new Uri("http://localhost:5253/");
+                client.BaseAddress = new Uri(options.ApiUrl);
             });
 
             return services;

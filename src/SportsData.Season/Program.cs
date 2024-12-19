@@ -37,10 +37,7 @@ namespace SportsData.Season
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions()
-            {
-                ResponseWriter = HealthCheckWriter.WriteResponse
-            });
+            app.UseHealthChecks();
 
             app.MapControllers();
 

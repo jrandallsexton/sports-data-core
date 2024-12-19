@@ -44,8 +44,7 @@ public class VenueProvider : IProvideVenues
 
     public async Task<Dictionary<string, object>> GetHealthStatus()
     {
-        // TODO: Get HttpClient
-        // Call VenueService /health
+        // TODO: Make this better by using the actual result. Determine a pattern.
         var response = await _httpClient.GetAsync("/health");
         var tmp = response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();

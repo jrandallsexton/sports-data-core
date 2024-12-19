@@ -3,19 +3,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
-using SportsData.Core.Middleware.Health;
-
-using System.Reflection;
 using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.Venue;
-using Microsoft.Extensions.Options;
-using System;
-using System.Diagnostics;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Player;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Infrastructure.Clients.Venue;
+using SportsData.Core.Middleware.Health;
+
+using System;
+using System.Reflection;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -35,10 +33,6 @@ namespace SportsData.Core.DependencyInjection
         public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
-
-            //services.AddScoped<IProvideSeasons, SeasonProvider>();
-            //services.AddScoped<ProviderHealthCheck<SeasonProvider>>();
-
             return services;
         }
 
@@ -70,12 +64,13 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddProviders(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddContestProvider(configuration);
-            services.AddFranchiseProvider(configuration);
-            services.AddNotificationProvider(configuration);
-            services.AddPlayerProvider(configuration);
-            services.AddSeasonProvider(configuration);
-            services.AddVenueProvider(configuration);
+            services
+                .AddContestProvider(configuration)
+                .AddFranchiseProvider(configuration)
+                .AddNotificationProvider(configuration)
+                .AddPlayerProvider(configuration)
+                .AddSeasonProvider(configuration)
+                .AddVenueProvider(configuration);
             return services;
         }
 
@@ -83,7 +78,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new ContestProviderConfig()
             {
-                ApiUrl = configuration.GetSection("ContestProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(ContestProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvideContests, ContestProvider>();
@@ -100,7 +95,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new FranchiseProviderConfig()
             {
-                ApiUrl = configuration.GetSection("FranchiseProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(FranchiseProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvideFranchises, FranchiseProvider>();
@@ -117,7 +112,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new NotificationProviderConfig()
             {
-                ApiUrl = configuration.GetSection("NotificationProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(NotificationProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvideNotifications, NotificationProvider>();
@@ -134,7 +129,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new PlayerProviderConfig()
             {
-                ApiUrl = configuration.GetSection("PlayerProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(PlayerProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvidePlayers, PlayerProvider>();
@@ -151,7 +146,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new SeasonProviderConfig()
             {
-                ApiUrl = configuration.GetSection("SeasonProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(SeasonProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvideSeasons, SeasonProvider>();
@@ -168,7 +163,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var options = new VenueProviderConfig()
             {
-                ApiUrl = configuration.GetSection("VenueProviderOptions")["ApiUrl"]
+                ApiUrl = configuration.GetSection(nameof(VenueProviderConfig))["ApiUrl"]
             };
 
             services.AddScoped<IProvideVenues, VenueProvider>();

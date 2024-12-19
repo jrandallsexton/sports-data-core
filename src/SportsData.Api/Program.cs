@@ -6,7 +6,6 @@ using SportsData.Core.Middleware.Health;
 
 using System.Reflection;
 using System.Text;
-using SportsData.Core.Infrastructure.Clients.Venue;
 
 namespace SportsData.Api
 {

@@ -38,10 +38,10 @@ variables:
 
 stages:
 - stage: BuildAndTest
-  displayName: "Build & Test: API" 
+  displayName: 'Build & Test: API'
   jobs:
   - job: BuildAndTest
-    displayName: BuildAndTest
+    displayName: 'Build & Test: API'
     steps:
     - task: UseDotNet@2
       displayName: 'Use .NET 9 SDK'
@@ -70,7 +70,7 @@ stages:
         msbuildArguments: '/t:Restore'
 
 - stage: BuildImagePushACR
-  displayName: Build Image & Push to ACR
+  displayName: 'Build Image & Push to ACR'
   pool: 
    name: Default
    demands:
@@ -82,7 +82,7 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: 'Build & Push'
       inputs:
         command: buildAndPush
         repository: $(imageRepository)

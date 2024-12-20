@@ -90,3 +90,10 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+    - task: KubernetesManifest@1
+      inputs:
+        action: 'deploy'
+        connectionType: 'azureResourceManager'
+        azureSubscriptionConnection: 'dev-sports-data-api-svc-conn'
+        azureResourceGroup: 'rg-sportDeets-dev'
+        kubernetesCluster: 'aks-dev-sportDeets'

@@ -14,6 +14,7 @@ using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Reflection;
+using SportsData.Core.Infrastructure.Clients.Producer;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -51,6 +52,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddCheck<HealthCheckFranchise>(HttpClients.FranchiseClient)
                 .AddCheck<HealthCheckNotification>(HttpClients.NotificationClient)
                 .AddCheck<HealthCheckPlayer>(HttpClients.PlayerClient)
+                .AddCheck<HealthCheckProducer>(HttpClients.ProducerClient)
                 .AddCheck<HealthCheckSeason>(HttpClients.SeasonClient)
                 .AddCheck<HealthCheckVenue>(HttpClients.VenueClient);
             return services;
@@ -69,6 +71,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddFranchiseProvider(configuration)
                 .AddNotificationProvider(configuration)
                 .AddPlayerProvider(configuration)
+                .AddProducerProvider(configuration)
                 .AddSeasonProvider(configuration)
                 .AddVenueProvider(configuration);
             return services;
@@ -135,6 +138,23 @@ namespace SportsData.Core.DependencyInjection
             services.AddScoped<IProvidePlayers, PlayerProvider>();
 
             services.AddHttpClient(HttpClients.PlayerClient, client =>
+            {
+                client.BaseAddress = new Uri(options.ApiUrl);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddProducerProvider(this IServiceCollection services, IConfiguration configuration)
+        {
+            var options = new ProducerProviderConfig()
+            {
+                ApiUrl = configuration.GetSection(nameof(ProducerProviderConfig))["ApiUrl"]
+            };
+
+            services.AddScoped<IProvideProducers, ProducerProvider>();
+
+            services.AddHttpClient(HttpClients.ProducerClient, client =>
             {
                 client.BaseAddress = new Uri(options.ApiUrl);
             });

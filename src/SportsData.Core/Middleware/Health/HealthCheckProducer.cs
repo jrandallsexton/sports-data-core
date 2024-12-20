@@ -1,12 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+using SportsData.Core.Infrastructure.Clients.Producer;
+
+using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Middleware.Health
 {
-    internal class HealthCheckProducer
+    public class HealthCheckProducer : IHealthCheck
     {
+        private readonly IProvideProducers _provider;
+
+        public HealthCheckProducer(IProvideProducers provider)
+        {
+            _provider = provider;
+        }
+
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+        {
+            var providerName = _provider.GetProviderName();
+            var status = await _provider.GetHealthStatus();
+
+            var isHealthy = status["status"].ToString() == "OK";
+
+            return isHealthy ?
+                HealthCheckResult.Healthy($"{providerName} is healthy") :
+                new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, new ReadOnlyDictionary<string, object>(status));
+        }
     }
 }

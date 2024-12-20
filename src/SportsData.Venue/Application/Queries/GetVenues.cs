@@ -22,6 +22,7 @@ public class GetVenues
     {
         public async Task<Result<Dto>> Handle(Query request, CancellationToken cancellationToken)
         {
+            await Task.Delay(500, cancellationToken);
             var dto = new Dto()
             {
                 Venues =

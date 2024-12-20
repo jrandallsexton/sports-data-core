@@ -34,6 +34,7 @@ public class VenueProvider : IProvideVenues
         // provide HttpClient
         // call Venue Service
         // return
+        await Task.Delay(500);
         throw new NotImplementedException();
     }
 

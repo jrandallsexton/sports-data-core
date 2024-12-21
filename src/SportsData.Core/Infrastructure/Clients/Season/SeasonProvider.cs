@@ -2,7 +2,9 @@
 
 using SportsData.Core.Middleware.Health;
 
+using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -33,14 +35,23 @@ namespace SportsData.Core.Infrastructure.Clients.Season
 
         public async Task<Dictionary<string, object>> GetHealthStatus()
         {
-            // TODO: Make this better by using the actual result. Determine a pattern.
-            var response = await _httpClient.GetAsync("/health");
-            var tmp = response.Content.ReadAsStringAsync();
-            response.EnsureSuccessStatusCode();
-            return new Dictionary<string, object>()
+            try
             {
-                { "status", response.StatusCode }
-            };
+                var response = await _httpClient.GetAsync("/health");
+                var tmp = response.Content.ReadAsStringAsync();
+                response.EnsureSuccessStatusCode();
+                return new Dictionary<string, object>()
+                {
+                    { "status", response.StatusCode }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new Dictionary<string, object>()
+                {
+                    { "status", HttpStatusCode.ServiceUnavailable }
+                };
+            }
         }
     }
 }

@@ -24,7 +24,7 @@ namespace SportsData.Api
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 

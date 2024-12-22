@@ -5,6 +5,7 @@ trigger:
     include:
       - master
       - feat/*
+      - test/*
   paths:
     exclude:
       - 'SportsData.Api/*'

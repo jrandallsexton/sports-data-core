@@ -6,8 +6,8 @@ USER $APP_UID
 WORKDIR /app
 
 # Expose the API port
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 8180
+EXPOSE 8181
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build

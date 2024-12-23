@@ -1,18 +1,16 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-using SportsData.Core.Infrastructure.Clients.Producer;
-
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Middleware.Health
 {
-    public class HealthCheckProducer : IHealthCheck
+    public class ProviderHealthCheck<T> : IHealthCheck where T : IProvideHealthChecks
     {
-        private readonly IProvideProducers _provider;
+        private readonly T _provider;
 
-        public HealthCheckProducer(IProvideProducers provider)
+        public ProviderHealthCheck(T provider)
         {
             _provider = provider;
         }

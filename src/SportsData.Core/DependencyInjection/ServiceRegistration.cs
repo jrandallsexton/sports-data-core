@@ -48,13 +48,13 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
-                .AddCheck<HealthCheckContest>(HttpClients.ContestClient)
-                .AddCheck<HealthCheckFranchise>(HttpClients.FranchiseClient)
-                .AddCheck<HealthCheckNotification>(HttpClients.NotificationClient)
-                .AddCheck<HealthCheckPlayer>(HttpClients.PlayerClient)
-                .AddCheck<HealthCheckProducer>(HttpClients.ProducerClient)
-                .AddCheck<HealthCheckSeason>(HttpClients.SeasonClient)
-                .AddCheck<HealthCheckVenue>(HttpClients.VenueClient);
+                .AddCheck<ProviderHealthCheck<IProvideContests>>(HttpClients.ContestClient)
+                .AddCheck<ProviderHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
+                .AddCheck<ProviderHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
+                .AddCheck<ProviderHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
+                .AddCheck<ProviderHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
+                .AddCheck<ProviderHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
+                .AddCheck<ProviderHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
             return services;
         }
 

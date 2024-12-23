@@ -2,11 +2,7 @@
 
 using SportsData.Core.Middleware.Health;
 
-using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
@@ -15,45 +11,16 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
     }
 
-    public class ProducerProvider : IProvideProducers
+    public class ProducerProvider : ProviderBase, IProvideProducers
     {
         private readonly ILogger<ProducerProvider> _logger;
-        private readonly HttpClient _httpClient;
 
         public ProducerProvider(
             ILogger<ProducerProvider> logger,
-            IHttpClientFactory clientFactory)
+            IHttpClientFactory clientFactory) :
+            base(HttpClients.ProducerClient, clientFactory)
         {
             _logger = logger;
-            _httpClient = clientFactory.CreateClient(HttpClients.ContestClient);
-        }
-
-        public string GetProviderName()
-        {
-            return HttpClients.ProducerClient;
-        }
-
-        public async Task<Dictionary<string, object>> GetHealthStatus()
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync("/health");
-                var tmp = response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
-                return new Dictionary<string, object>()
-                {
-                    { "status", response.StatusCode },
-                    { "uri",  $"{_httpClient.BaseAddress}/health" }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new Dictionary<string, object>()
-                {
-                    { "status", HttpStatusCode.ServiceUnavailable },
-                    { "uri",  $"{_httpClient.BaseAddress}/health" }
-                };
-            }
         }
     }
 }

@@ -2,11 +2,7 @@
 
 using SportsData.Core.Middleware.Health;
 
-using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Notification
 {
@@ -15,44 +11,16 @@ namespace SportsData.Core.Infrastructure.Clients.Notification
 
     }
 
-    public class NotificationProvider : IProvideNotifications
+    public class NotificationProvider : ProviderBase, IProvideNotifications
     {
         private readonly ILogger<NotificationProvider> _logger;
-        private readonly HttpClient _httpClient;
 
         public NotificationProvider(
             ILogger<NotificationProvider> logger,
-            IHttpClientFactory clientFactory)
+            IHttpClientFactory clientFactory) :
+            base(HttpClients.NotificationClient, clientFactory)
         {
             _logger = logger;
-            _httpClient = clientFactory.CreateClient(HttpClients.NotificationClient);
-        }
-        public string GetProviderName()
-        {
-            return HttpClients.NotificationClient;
-        }
-
-        public async Task<Dictionary<string, object>> GetHealthStatus()
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync("/health");
-                var tmp = response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
-                return new Dictionary<string, object>()
-                {
-                    { "status", response.StatusCode },
-                    { "uri",  $"{_httpClient.BaseAddress}/health" }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new Dictionary<string, object>()
-                {
-                    { "status", HttpStatusCode.ServiceUnavailable },
-                    { "uri",  $"{_httpClient.BaseAddress}/health" }
-                };
-            }
         }
     }
 }

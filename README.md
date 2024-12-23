@@ -9,7 +9,7 @@ Project aims to capture sports data from external sources, convert them into dom
 
 | Project/Service | Purpose |
 | --------------- | ------- |
-| [sports-data-core](https://github.com/jrandallsexton/sports-data-core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
+| [sports-data-core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
 | [sports-data-api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
 | [sports-data-contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | [more soon] |
 | [sports-data-franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | [more soon] |

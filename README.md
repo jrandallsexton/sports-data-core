@@ -19,6 +19,10 @@ Project aims to capture sports data from external sources, convert them into dom
 | [sports-data-provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
 | [sports-data-season](https://github.com/jrandallsexton/sports-data-season) | [more soon] |
 | [sports-data-venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | [more soon] |
+| Repository | Purpose |
+| --------------- | ------- |
+| [sports-data-config](https://github.com/jrandallsexton/sports-data-config) | Repository for K8s |
+| [sports-data-venue](https://github.com/jrandallsexton/sports-data-provision) | Repository for cloud-based resources |
 
 **Project Diagram - Level 0**
 ```mermaid

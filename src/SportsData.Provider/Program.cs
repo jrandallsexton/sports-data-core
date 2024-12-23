@@ -28,19 +28,19 @@ namespace SportsData.Provider
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.ConfigureHangfire(builder.Configuration);
+            //builder.Services.ConfigureHangfire(builder.Configuration);
 
             var config = builder.Configuration["ConnectionStrings:ProviderDataContext"];
 
-            builder.Services.AddDbContext<ProviderDataContext>(options =>
-            {
-                options.EnableSensitiveDataLogging();
-                options.UseNpgsql(config, b => b.MigrationsAssembly("SportsData.Provider"));
-            });
+            //builder.Services.AddDbContext<ProviderDataContext>(options =>
+            //{
+            //    options.EnableSensitiveDataLogging();
+            //    options.UseNpgsql(config, b => b.MigrationsAssembly("SportsData.Provider"));
+            //});
 
-            await using var serviceProvider = builder.Services.BuildServiceProvider();
-            var context = serviceProvider.GetRequiredService<ProviderDataContext>();
-            await context.Database.MigrateAsync();
+            //await using var serviceProvider = builder.Services.BuildServiceProvider();
+            //var context = serviceProvider.GetRequiredService<ProviderDataContext>();
+            //await context.Database.MigrateAsync();
 
             var app = builder.Build();
 
@@ -49,20 +49,17 @@ namespace SportsData.Provider
             //{
             app.UseSwagger();
             app.UseSwaggerUI();
-            app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            {
-                Authorization = new[] { new DashboardAuthFilter() }
-            });
+            //app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            //{
+            //    Authorization = new[] { new DashboardAuthFilter() }
+            //});
             //}
 
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions()
-            {
-                ResponseWriter = HealthCheckWriter.WriteResponse
-            });
+            app.UseHealthChecks();
 
             app.MapControllers();
 

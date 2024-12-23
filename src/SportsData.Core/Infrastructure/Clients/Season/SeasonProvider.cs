@@ -2,11 +2,7 @@
 
 using SportsData.Core.Middleware.Health;
 
-using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Season
 {
@@ -15,43 +11,16 @@ namespace SportsData.Core.Infrastructure.Clients.Season
 
     }
 
-    public class SeasonProvider : IProvideSeasons
+    public class SeasonProvider : ProviderBase, IProvideSeasons
     {
         private readonly ILogger<SeasonProvider> _logger;
-        private readonly HttpClient _httpClient;
 
         public SeasonProvider(
             ILogger<SeasonProvider> logger,
-            IHttpClientFactory clientFactory)
+            IHttpClientFactory clientFactory) :
+            base(HttpClients.SeasonClient, clientFactory)
         {
             _logger = logger;
-            _httpClient = clientFactory.CreateClient(HttpClients.SeasonClient);
-        }
-
-        public string GetProviderName()
-        {
-            return HttpClients.SeasonClient;
-        }
-
-        public async Task<Dictionary<string, object>> GetHealthStatus()
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync("/health");
-                var tmp = response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
-                return new Dictionary<string, object>()
-                {
-                    { "status", response.StatusCode }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new Dictionary<string, object>()
-                {
-                    { "status", HttpStatusCode.ServiceUnavailable }
-                };
-            }
         }
     }
 }

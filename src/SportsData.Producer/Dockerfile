@@ -12,11 +12,11 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["SportsData.Producer/SportsData.Producer.csproj", "SportsData.Producer/"]
-COPY ["SportsData.Core/SportsData.Core.csproj", "SportsData.Core/"]
-RUN dotnet restore "./SportsData.Producer/SportsData.Producer.csproj"
+COPY ["src/SportsData.Producer/SportsData.Producer.csproj", "src/SportsData.Producer/"]
+COPY ["src/SportsData.Core/SportsData.Core.csproj", "src/SportsData.Core/"]
+RUN dotnet restore "./src/SportsData.Producer/SportsData.Producer.csproj"
 COPY . .
-WORKDIR "/src/SportsData.Producer"
+WORKDIR "/src/src/SportsData.Producer"
 RUN dotnet build "./SportsData.Producer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage

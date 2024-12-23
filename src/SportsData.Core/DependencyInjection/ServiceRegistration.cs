@@ -186,12 +186,17 @@ namespace SportsData.Core.DependencyInjection
                 ApiUrl = configuration.GetSection(nameof(VenueProviderConfig))["ApiUrl"]
             };
 
-            services.AddScoped<IProvideVenues, VenueProvider>();
+            services.Configure<VenueProviderConfig>(options =>
+            {
+                options.ApiUrl = configuration.GetSection(nameof(VenueProviderConfig))["ApiUrl"];
+            });
 
             services.AddHttpClient(HttpClients.VenueClient, client =>
             {
                 client.BaseAddress = new Uri(options.ApiUrl);
             });
+
+            services.AddTransient<IProvideVenues, VenueProvider>();
 
             return services;
         }

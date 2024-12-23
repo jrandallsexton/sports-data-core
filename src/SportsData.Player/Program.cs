@@ -1,9 +1,7 @@
 
-using System.Reflection;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Middleware.Health;
+
+using System.Reflection;
 
 namespace SportsData.Player
 {
@@ -36,10 +34,7 @@ namespace SportsData.Player
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions()
-            {
-                ResponseWriter = HealthCheckWriter.WriteResponse
-            });
+            app.UseHealthChecks();
 
             app.MapControllers();
 

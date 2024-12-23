@@ -1,8 +1,4 @@
-
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Middleware.Health;
 
 using System.Reflection;
 

@@ -9,7 +9,7 @@ namespace SportsData.Core.DependencyInjection
     {
         public static WebApplication UseHealthChecks(this WebApplication app)
         {
-            app.UseHealthChecks("/health", new HealthCheckOptions()
+            app.UseHealthChecks("/api/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckWriter.WriteResponse
             });

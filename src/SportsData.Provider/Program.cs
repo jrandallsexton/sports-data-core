@@ -45,15 +45,15 @@ namespace SportsData.Provider
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-            app.UseSwagger();
-            app.UseSwaggerUI();
-            //app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            //{
-            //    Authorization = new[] { new DashboardAuthFilter() }
-            //});
-            //}
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+                //app.UseHangfireDashboard("/dashboard", new DashboardOptions
+                //{
+                //    Authorization = new[] { new DashboardAuthFilter() }
+                //});
+            }
 
             app.UseHttpsRedirection();
 

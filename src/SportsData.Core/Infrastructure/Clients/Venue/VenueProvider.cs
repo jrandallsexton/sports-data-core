@@ -5,9 +5,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Core.Middleware.Health;
 
-using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 

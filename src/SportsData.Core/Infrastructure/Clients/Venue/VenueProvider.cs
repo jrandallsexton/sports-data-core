@@ -53,14 +53,16 @@ public class VenueProvider : IProvideVenues
             response.EnsureSuccessStatusCode();
             return new Dictionary<string, object>()
             {
-                { "status", response.StatusCode }
+                { "status", response.StatusCode },
+                { "uri",  $"{_httpClient.BaseAddress}/health" }
             };
         }
         catch (Exception ex)
         {
             return new Dictionary<string, object>()
             {
-                { "status", HttpStatusCode.ServiceUnavailable }
+                { "status", HttpStatusCode.ServiceUnavailable },
+                { "uri",  $"{_httpClient.BaseAddress}/health" }
             };
         }
     }

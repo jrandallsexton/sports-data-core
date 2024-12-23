@@ -29,20 +29,22 @@ namespace SportsData.Api
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            
-            //if (app.Environment.IsDevelopment())
-            //{
-            app.UseSwagger();
-            app.UseSwaggerUI(options =>
+            if (app.Environment.IsDevelopment() ||
+                app.Environment.EnvironmentName == "Local" ||
+                app.Environment.EnvironmentName == "Debug")
             {
-                var links = new StringBuilder();
-                links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
-                links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
-                links.AppendLine("<a href=\"http://localhost:8081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
-                links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
-                options.HeadContent = links.ToString();
-            });
-            //}
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    var links = new StringBuilder();
+                    links.AppendLine($"<a href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
+                    links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:8081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
+                    options.HeadContent = links.ToString();
+                });
+            }
 
             app.UseHttpsRedirection();
 

@@ -35,7 +35,8 @@ namespace SportsData.Core.Infrastructure.Clients
                 return new Dictionary<string, object>()
                 {
                     { "status", response.StatusCode },
-                    { "uri",  $"{HttpClient.BaseAddress}health" }
+                    { "uri",  $"{HttpClient.BaseAddress}health" },
+                    { "host", Environment.MachineName }
                 };
             }
             catch (Exception ex)
@@ -43,7 +44,8 @@ namespace SportsData.Core.Infrastructure.Clients
                 return new Dictionary<string, object>()
                 {
                     { "status", HttpStatusCode.ServiceUnavailable },
-                    { "uri",  $"{HttpClient.BaseAddress}health" }
+                    { "uri",  $"{HttpClient.BaseAddress}health" },
+                    { "host", Environment.MachineName }
                 };
             }
         }

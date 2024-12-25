@@ -24,7 +24,7 @@ namespace SportsData.Core.Middleware.Health
             var isHealthy = status["status"].ToString() == "OK";
 
             return isHealthy ?
-                HealthCheckResult.Healthy($"{providerName} is healthy on {Environment.MachineName}") :
+                HealthCheckResult.Healthy($"{providerName} is healthy on {Environment.MachineName}", new ReadOnlyDictionary<string, object>(status)) :
                 new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, new ReadOnlyDictionary<string, object>(status));
         }
     }

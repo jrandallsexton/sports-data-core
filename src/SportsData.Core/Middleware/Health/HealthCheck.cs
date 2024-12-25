@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using System;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace SportsData.Core.Middleware.Health
             const bool isHealthy = true;
 
             return isHealthy ?
-                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy")) :
+                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy on {Environment.MachineName}")) :
                 await Task.FromResult(new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, null));
         }
     }

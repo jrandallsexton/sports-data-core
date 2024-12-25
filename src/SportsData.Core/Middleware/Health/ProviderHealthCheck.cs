@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using System;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using System.Collections.ObjectModel;
 using System.Threading;
@@ -23,7 +24,7 @@ namespace SportsData.Core.Middleware.Health
             var isHealthy = status["status"].ToString() == "OK";
 
             return isHealthy ?
-                HealthCheckResult.Healthy($"{providerName} is healthy") :
+                HealthCheckResult.Healthy($"{providerName} is healthy on {Environment.MachineName}") :
                 new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, new ReadOnlyDictionary<string, object>(status));
         }
     }

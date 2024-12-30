@@ -8,13 +8,13 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Player;
+using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Reflection;
-using SportsData.Core.Infrastructure.Clients.Producer;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -25,7 +25,8 @@ namespace SportsData.Core.DependencyInjection
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                options.UseNpgsql(configuration.GetConnectionString("AppDataContext"));
+                //options.UseNpgsql(configuration.GetConnectionString("AppDataContext"));
+                options.UseSqlServer(configuration.GetConnectionString("AppDataContext"));
             });
 
             return services;

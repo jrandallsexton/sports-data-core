@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using System.IO;
@@ -39,6 +40,15 @@ namespace SportsData.Core.Middleware.Health
                             item.Value?.GetType() ?? typeof(object));
                     }
 
+                    // write host name
+                    foreach (var kvp in healthReport.Entries)
+                    {
+                        var foo = healthReport.Entries[kvp.Key];
+                        var bar = foo.Data["host"]?.ToString();
+                        jsonWriter.WriteString("hcw-host", bar);
+                        break;
+                    }
+
                     jsonWriter.WriteEndObject();
                     jsonWriter.WriteEndObject();
                 }
@@ -46,6 +56,8 @@ namespace SportsData.Core.Middleware.Health
                 jsonWriter.WriteEndObject();
                 jsonWriter.WriteEndObject();
             }
+
+            context.Response.Headers.Add("host", Environment.MachineName);
 
             return context.Response.WriteAsync(
                 Encoding.UTF8.GetString(memoryStream.ToArray()));

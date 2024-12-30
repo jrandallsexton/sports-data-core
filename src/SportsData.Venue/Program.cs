@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 using Serilog;
 
 using SportsData.Core.DependencyInjection;
@@ -22,7 +24,17 @@ namespace SportsData.Venue
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
+
+            // TODO: Make this follow registration as the other services
+            // TODO: Find a way to move this to middleware for all services
+            services.AddDbContext<AppDataContext>(options =>
+            {
+                options.EnableSensitiveDataLogging();
+                options.UseSqlServer(builder.Configuration.GetConnectionString("AppDataContext"));
+            });
+
+            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+
             builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
 
             // Add Serilog
@@ -32,8 +44,8 @@ namespace SportsData.Venue
             });
 
             // Add Data Persistence
-            builder.Services.AddDataPersistence<AppDataContext>(builder.Configuration);
-            builder.Services.AddCoreServices(builder.Configuration);
+            //builder.Services.AddDataPersistence<AppDataContext>(builder.Configuration);
+            //builder.Services.AddCoreServices(builder.Configuration);
 
             var app = builder.Build();
 

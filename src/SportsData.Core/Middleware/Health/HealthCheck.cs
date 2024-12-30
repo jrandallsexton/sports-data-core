@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Reflection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using System.Threading;
@@ -12,10 +15,16 @@ namespace SportsData.Core.Middleware.Health
             CancellationToken cancellationToken = default)
         {
             var providerName = context.Registration.Name;
+            var kvp = new Dictionary<string, object>()
+            {
+                {"host", Environment.MachineName},
+                {"myName", Assembly.GetEntryAssembly().FullName}
+            };
+
             const bool isHealthy = true;
 
             return isHealthy ?
-                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy on {Environment.MachineName}")) :
+                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy", new ReadOnlyDictionary<string, object>(kvp))) :
                 await Task.FromResult(new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, null));
         }
     }

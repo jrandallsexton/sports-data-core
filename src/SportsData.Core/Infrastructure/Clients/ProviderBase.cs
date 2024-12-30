@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -27,16 +28,24 @@ namespace SportsData.Core.Infrastructure.Clients
 
         public async Task<Dictionary<string, object>> GetHealthStatus()
         {
+
+            var hostName = string.Empty;
+
             try
             {
                 var response = await HttpClient.GetAsync("health");
-                var tmp = await response.Content.ReadAsStringAsync();
                 response.EnsureSuccessStatusCode();
+
+                if (response.Headers.TryGetValues("host", out var values))
+                {
+                    hostName = values.First();
+                }
+
                 return new Dictionary<string, object>()
                 {
                     { "status", response.StatusCode },
                     { "uri",  $"{HttpClient.BaseAddress}health" },
-                    { "host", Environment.MachineName }
+                    { "host", hostName }
                 };
             }
             catch (Exception ex)
@@ -45,7 +54,7 @@ namespace SportsData.Core.Infrastructure.Clients
                 {
                     { "status", HttpStatusCode.ServiceUnavailable },
                     { "uri",  $"{HttpClient.BaseAddress}health" },
-                    { "host", Environment.MachineName }
+                    { "host", hostName }
                 };
             }
         }

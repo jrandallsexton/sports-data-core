@@ -1,6 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.DependencyInjection;
 
 using System.Reflection;
+using SportsData.Franchise.Infrastructure.Data;
 
 namespace SportsData.Franchise
 {
@@ -18,7 +21,15 @@ namespace SportsData.Franchise
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
+
+            // TODO: Find a way to move this to middleware for all services
+            services.AddDbContext<AppDataContext>(options =>
+            {
+                options.EnableSensitiveDataLogging();
+                options.UseSqlServer(builder.Configuration.GetConnectionString("AppDataContext"));
+            });
+
+            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 

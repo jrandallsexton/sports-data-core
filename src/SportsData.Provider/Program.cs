@@ -1,11 +1,6 @@
-
-using Hangfire;
-
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Data;
 
 using System.Reflection;
@@ -20,13 +15,21 @@ namespace SportsData.Provider
 
             // Add services to the container.
 
+            // TODO: Make this follow the same pattern as other services
             builder.Services.AddControllers();
-
-            builder.Services.AddHealthChecks(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // TODO: Find a way to move this to middleware for all services
+            builder.Services.AddDbContext<ProviderDataContext>(options =>
+            {
+                options.EnableSensitiveDataLogging();
+                options.UseSqlServer(builder.Configuration.GetConnectionString("AppDataContext"));
+            });
+
+            builder.Services.AddHealthChecks<ProviderDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             //builder.Services.ConfigureHangfire(builder.Configuration);
 

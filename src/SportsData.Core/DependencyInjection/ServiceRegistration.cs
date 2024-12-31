@@ -38,14 +38,6 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddHealthChecks(this IServiceCollection services, string apiName)
-        {
-            services.AddHealthChecks()
-                .AddCheck<HealthCheck>(apiName);
-
-            return services;
-        }
-
         public static IServiceCollection AddHealthChecks<TDbContext>(this IServiceCollection services, string apiName) where TDbContext : DbContext
         {
             services.AddHealthChecks()

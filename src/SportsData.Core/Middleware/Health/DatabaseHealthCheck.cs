@@ -4,10 +4,11 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace SportsData.Core.Middleware.Health
 {
-    public class DatabaseHealthCheck<T>(T dbContext) : IHealthCheck where T : DbContext
+    public class DatabaseHealthCheck<T>(T dbContext, ILogger<DatabaseHealthCheck<T>> logger) : IHealthCheck where T : DbContext
     {
         public async Task<HealthCheckResult> CheckHealthAsync(
             HealthCheckContext context,
@@ -15,6 +16,7 @@ namespace SportsData.Core.Middleware.Health
         {
             try
             {
+                logger.LogInformation("Begin HC: {@type}", typeof(T));
                 var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
 
                 return canConnect ?

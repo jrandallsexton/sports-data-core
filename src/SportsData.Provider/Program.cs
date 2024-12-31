@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
+using Serilog;
+
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
 
@@ -21,6 +23,12 @@ namespace SportsData.Provider
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // Add Serilog
+            builder.Host.UseSerilog((context, configuration) =>
+            {
+                configuration.ReadFrom.Configuration(context.Configuration);
+            });
 
             // TODO: Find a way to move this to middleware for all services
             builder.Services.AddDbContext<ProviderDataContext>(options =>
@@ -58,11 +66,11 @@ namespace SportsData.Provider
                 //});
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
-            app.UseHealthChecks();
+            app.UseCommonFeatures();
 
             app.MapControllers();
 

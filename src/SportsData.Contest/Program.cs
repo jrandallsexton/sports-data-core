@@ -1,3 +1,5 @@
+using Serilog;
+
 using SportsData.Contest.Infrastructure.Data;
 using SportsData.Core.DependencyInjection;
 
@@ -19,6 +21,13 @@ namespace SportsData.Contest
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+
+            // Add Serilog
+            builder.Host.UseSerilog((context, configuration) =>
+            {
+                configuration.ReadFrom.Configuration(context.Configuration);
+            });
+
             services.AddDataPersistence<AppDataContext>(config);
             services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
@@ -32,11 +41,11 @@ namespace SportsData.Contest
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
-            app.UseHealthChecks();
+            app.UseCommonFeatures();
 
             app.MapControllers();
 

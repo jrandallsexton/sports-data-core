@@ -1,6 +1,8 @@
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
+using Serilog;
+
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware.Health;
 
@@ -23,6 +25,13 @@ namespace SportsData.Api
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+
+            // Add Serilog
+            builder.Host.UseSerilog((context, configuration) =>
+            {
+                configuration.ReadFrom.Configuration(context.Configuration);
+            });
+
             services.AddProviders(config);
             services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
 
@@ -40,13 +49,13 @@ namespace SportsData.Api
                     links.AppendLine($"<a href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
                     links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
                     links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
-                    links.AppendLine("<a href=\"http://localhost:8081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
+                    links.AppendLine("<a href=\"http://localhost:30081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
                     links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
                     options.HeadContent = links.ToString();
                 });
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
@@ -56,6 +65,8 @@ namespace SportsData.Api
             });
 
             app.MapControllers();
+
+            app.UseSerilogRequestLogging();
 
             app.Run();
         }

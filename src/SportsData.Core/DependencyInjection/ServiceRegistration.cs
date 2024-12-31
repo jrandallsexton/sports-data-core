@@ -50,6 +50,7 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
+                .AddCheck<LoggingHealthCheck>("logging")
                 .AddCheck<DatabaseHealthCheck<TDbContext>>($"{apiName}-db");
 
             return services;
@@ -59,6 +60,7 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
+                .AddCheck<LoggingHealthCheck>("logging")
                 .AddCheck<ProviderHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 .AddCheck<ProviderHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
                 .AddCheck<ProviderHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)

@@ -2,9 +2,9 @@
 
 namespace SportsData.Provider.Infrastructure.Data
 {
-    public class ProviderDataContext : DbContext
+    public class AppDataContext : DbContext
     {
-        public ProviderDataContext(DbContextOptions<ProviderDataContext> options) :
+        public AppDataContext(DbContextOptions<AppDataContext> options) :
             base(options) { }
     }
 }

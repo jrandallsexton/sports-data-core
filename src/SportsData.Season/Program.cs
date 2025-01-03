@@ -1,5 +1,3 @@
-using Serilog;
-
 using SportsData.Core.DependencyInjection;
 using SportsData.Season.Data;
 
@@ -15,31 +13,23 @@ namespace SportsData.Season
 
             // Add services to the container.
             var config = builder.Configuration;
-            var services = builder.Services;
+            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
+            var services = builder.Services;
             services.AddCoreServices(config);
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
             // Add Serilog
-            builder.Host.UseSerilog((context, configuration) =>
-            {
-                configuration.ReadFrom.Configuration(context.Configuration);
-            });
+            builder.UseCommon();
 
-            services.AddDataPersistence<AppDataContext>(config);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
             //app.UseHttpsRedirection();
 
             app.UseAuthorization();

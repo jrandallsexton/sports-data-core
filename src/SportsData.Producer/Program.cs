@@ -1,44 +1,32 @@
 using SportsData.Core.DependencyInjection;
+using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using SportsData.Producer.Infrastructure.Data;
-using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var config = builder.Configuration;
+config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
-// TODO: Make this follow the same pattern as the other services
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+var services = builder.Services;
+services.AddCoreServices(config);
+services.AddControllers();
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen();
 
 // Add Serilog
-builder.Host.UseSerilog((context, configuration) =>
-{
-    configuration.ReadFrom.Configuration(context.Configuration);
-});
+builder.UseCommon();
 
-// TODO: Find a way to move this to middleware for all services
-builder.Services.AddDbContext<AppDataContext>(options =>
-{
-    options.EnableSensitiveDataLogging();
-    options.UseSqlServer(builder.Configuration.GetConnectionString("AppDataContext"));
-});
+services.AddProviders(config);
+services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+services.AddMessaging(config);
 
-builder.Services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 //app.UseHttpsRedirection();
 
 app.UseAuthorization();

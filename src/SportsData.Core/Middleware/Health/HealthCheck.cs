@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,11 +21,9 @@ namespace SportsData.Core.Middleware.Health
                 {"myName", Assembly.GetEntryAssembly().FullName}
             };
 
-            const bool isHealthy = true;
-
-            return isHealthy ?
-                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy", new ReadOnlyDictionary<string, object>(kvp))) :
-                await Task.FromResult(new HealthCheckResult(context.Registration.FailureStatus, $"{providerName} is unhealthy", null, null));
+            return
+                await Task.FromResult(HealthCheckResult.Healthy($"{providerName} is healthy",
+                    new ReadOnlyDictionary<string, object>(kvp)));
         }
     }
 }

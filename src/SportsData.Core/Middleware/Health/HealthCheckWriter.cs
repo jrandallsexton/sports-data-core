@@ -44,9 +44,11 @@ namespace SportsData.Core.Middleware.Health
                     foreach (var kvp in healthReport.Entries)
                     {
                         var foo = healthReport.Entries[kvp.Key];
-                        var bar = foo.Data["host"]?.ToString();
-                        jsonWriter.WriteString("hcw-host", bar);
-                        break;
+                        if (foo.Data.TryGetValue("host", out var value))
+                        {
+                            jsonWriter.WriteString("hcw-host", value.ToString());
+                            break;
+                        }
                     }
 
                     jsonWriter.WriteEndObject();

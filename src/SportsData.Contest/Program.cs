@@ -1,5 +1,4 @@
-using Serilog;
-
+using SportsData.Contest.Infrastructure;
 using SportsData.Contest.Infrastructure.Data;
 using SportsData.Core.DependencyInjection;
 
@@ -15,32 +14,27 @@ namespace SportsData.Contest
 
             // Add services to the container.
             var config = builder.Configuration;
-            var services = builder.Services;
+            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
+            var services = builder.Services;
             services.AddCoreServices(config);
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
             // Add Serilog
-            builder.Host.UseSerilog((context, configuration) =>
-            {
-                configuration.ReadFrom.Configuration(context.Configuration);
-            });
+            builder.UseCommon();
 
-            services.AddDataPersistence<AppDataContext>(config);
+            services.AddProviders(config);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddMessaging(config);
+            services.AddHostedService<HeartbeatPublisher>();
+
             services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
-
+            
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment() ||
-                app.Environment.EnvironmentName == "Local")
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
             //app.UseHttpsRedirection();
 
             app.UseAuthorization();

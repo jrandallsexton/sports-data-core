@@ -11,6 +11,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		azure-pipelines.yml = azure-pipelines.yml
+		src\BuildDockerImages.Local.bat = src\BuildDockerImages.Local.bat
+		src\DockerfileApi = src\DockerfileApi
+		src\DockerfileContest = src\DockerfileContest
+		src\DockerfileFranchise = src\DockerfileFranchise
+		src\DockerfileNotification = src\DockerfileNotification
+		src\DockerfilePlayer = src\DockerfilePlayer
+		src\DockerfileProducer = src\DockerfileProducer
+		src\DockerfileProvider = src\DockerfileProvider
+		src\DockerfileSeason = src\DockerfileSeason
+		src\DockerfileVenue = src\DockerfileVenue
 		README.md = README.md
 	EndProjectSection
 EndProject

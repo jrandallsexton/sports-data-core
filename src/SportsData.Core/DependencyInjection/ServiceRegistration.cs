@@ -19,6 +19,8 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
+using SportsData.Core.Infrastructure.Clients.Provider;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -39,7 +41,18 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
+        public static async Task<IServiceCollection> ApplyMigrations<T>(this IServiceCollection services) where T : DbContext
+        {
+            await using var serviceProvider = services.BuildServiceProvider();
+            var context = serviceProvider.GetRequiredService<T>();
+            await context.Database.MigrateAsync();
+
+            return services;
+        }
+
+        public static IServiceCollection AddCoreServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
@@ -66,6 +79,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddCheck<ProviderHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
                 .AddCheck<ProviderHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
                 .AddCheck<ProviderHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
+                .AddCheck<ProviderHealthCheck<IProvideProviders>>(HttpClients.ProviderClient)
                 .AddCheck<ProviderHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
                 .AddCheck<ProviderHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
             return services;
@@ -105,6 +119,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddProvider<IProvideNotifications, NotificationProvider>(configuration, HttpClients.NotificationClient, CommonConfigKeys.NotificationProviderUri)
                 .AddProvider<IProvidePlayers, PlayerProvider>(configuration, HttpClients.PlayerClient, CommonConfigKeys.PlayerProviderUri)
                 .AddProvider<IProvideProducers, ProducerProvider>(configuration, HttpClients.ProducerClient, CommonConfigKeys.ProducerProviderUri)
+                .AddProvider<IProvideProviders, ProviderProvider>(configuration, HttpClients.ProviderClient, CommonConfigKeys.ProviderProviderUri)
                 .AddProvider<IProvideSeasons, SeasonProvider>(configuration, HttpClients.SeasonClient, CommonConfigKeys.SeasonProviderUri)
                 .AddProvider<IProvideVenues, VenueProvider>(configuration, HttpClients.VenueClient, CommonConfigKeys.VenueProviderUri);
             return services;

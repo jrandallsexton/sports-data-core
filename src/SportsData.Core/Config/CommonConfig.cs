@@ -3,6 +3,7 @@ using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Player;
 using SportsData.Core.Infrastructure.Clients.Producer;
+using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Infrastructure.Clients.Venue;
 
@@ -45,6 +46,9 @@ namespace SportsData.Core.Config
 
         public static string ProducerProviderUri =>
             $"{nameof(CommonConfig)}:{nameof(ProducerProviderConfig)}:{nameof(ProducerProviderConfig.ApiUrl)}";
+
+        public static string ProviderProviderUri =>
+            $"{nameof(CommonConfig)}:{nameof(ProviderProviderConfig)}:{nameof(ProviderProviderConfig.ApiUrl)}";
 
         public static string SeasonProviderUri =>
             $"{nameof(CommonConfig)}:{nameof(SeasonProviderConfig)}:{nameof(SeasonProviderConfig.ApiUrl)}";

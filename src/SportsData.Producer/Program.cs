@@ -1,4 +1,5 @@
 using SportsData.Core.DependencyInjection;
+using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
@@ -20,9 +21,14 @@ builder.UseCommon();
 
 services.AddProviders(config);
 services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-services.AddMessaging(config);
+services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
 
 services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+
+var hostAssembly = Assembly.GetExecutingAssembly();
+// Add AutoMapper
+builder.Services.AddAutoMapper(hostAssembly);
+services.AddMediatR(hostAssembly);
 
 var app = builder.Build();
 

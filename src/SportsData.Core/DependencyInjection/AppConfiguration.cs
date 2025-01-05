@@ -45,7 +45,7 @@ namespace SportsData.Core.DependencyInjection
                         var links = new StringBuilder();
                         links.AppendLine($"<a href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
                         links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
-                        links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
+                        //links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
 
                         if (app.Environment.EnvironmentName == "Local")
                         {
@@ -56,7 +56,7 @@ namespace SportsData.Core.DependencyInjection
                             links.AppendLine("<a href=\"http://localhost:8090/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
                         }
 
-                        links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
+                        //links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
                         options.HeadContent = links.ToString();
                     });
                 }
@@ -78,7 +78,7 @@ namespace SportsData.Core.DependencyInjection
         public static ConfigurationManager AddCommonConfiguration(this ConfigurationManager cfg, string environmentName, string applicationName)
         {
             // TODO: Still need to get this out of the ENV_VAR b/c it is in src for both apps and k8s config. "ok" for now.
-            //cfg.AddJsonFile("secrets.json");
+            cfg.AddJsonFile("secrets.json", true);
 
             cfg.AddAzureAppConfiguration(cfg =>
             {

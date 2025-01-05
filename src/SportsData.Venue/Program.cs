@@ -1,7 +1,7 @@
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware;
-using SportsData.Venue.Data;
+using SportsData.Venue.Infrastructure.Data;
 
 using System.Reflection;
 

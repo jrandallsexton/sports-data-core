@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace SportsData.Venue.Data
+namespace SportsData.Venue.Infrastructure.Data
 {
     public class AppDataContext : DbContext
     {
         public AppDataContext(DbContextOptions<AppDataContext> options) :
-            base(options) { }
+            base(options)
+        { }
+
+        public DbSet<Entities.Venue> Venues { get; set; }
     }
 }

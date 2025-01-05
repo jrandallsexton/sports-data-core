@@ -3,7 +3,7 @@
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 
-namespace SportsData.Api.Controllers
+namespace SportsData.Api.Application
 {
     [ApiController]
     [Route("[controller]")]

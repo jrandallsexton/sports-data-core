@@ -17,11 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Domain\" />
     <Folder Include="Infrastructure\Clients\Venue\Commands\" />
+    <Folder Include="Infrastructure\DataSources\CBS\" />
+    <Folder Include="Infrastructure\DataSources\Yahoo\" />
+    <Folder Include="Infrastructure\DataSources\SportsDataIO\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.18.2" />
     <PackageReference Include="MassTransit" Version="8.3.4" />
     <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="8.3.4" />

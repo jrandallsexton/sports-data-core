@@ -16,7 +16,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         Task<Infrastructure.Providers.Espn.DTOs.Team.Team> EspnTeam(int fourDigitYear, int teamId);
         Task<TeamInformation> TeamInformation(int teamId);
         Task<ResourceIndex> Teams(int fourDigitYear);
-        Task<ResourceIndex> Venues();
+        Task<ResourceIndex> Venues(bool ignoreCache);
         Task<Venue> Venue(int venueId, bool ignoreCache);
         Task<byte[]> GetMedia(string uri);
     }

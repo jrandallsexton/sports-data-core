@@ -22,7 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <Folder Include="Application\Contests\" />
+    <Folder Include="Application\Franchises\" />
+    <Folder Include="Application\Seasons\" />
+    <Folder Include="Application\Players\" />
   </ItemGroup>
 
 </Project>

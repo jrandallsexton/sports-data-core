@@ -24,4 +24,13 @@ namespace SportsData.Core.Eventing
 
         public DateTime? LockedUtc { get; set; }
     }
+
+    public abstract class EventBase
+    {
+        public Guid CorrelationId { get; set; } = Guid.NewGuid();
+
+        public Guid CausationId { get; set; } = Guid.NewGuid();
+
+        public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+    }
 }

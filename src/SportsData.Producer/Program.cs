@@ -22,13 +22,14 @@ builder.UseCommon();
 services.AddProviders(config);
 services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
 services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
-
 services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
 var hostAssembly = Assembly.GetExecutingAssembly();
-// Add AutoMapper
 builder.Services.AddAutoMapper(hostAssembly);
 services.AddMediatR(hostAssembly);
+
+// Apply Migrations
+await services.ApplyMigrations<AppDataContext>();
 
 var app = builder.Build();
 

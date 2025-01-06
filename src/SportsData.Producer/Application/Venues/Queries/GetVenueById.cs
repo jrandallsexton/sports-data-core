@@ -5,7 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Infrastructure.Data;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -21,7 +21,10 @@ namespace SportsData.Producer.Application.Venues.Queries
 
         public class Dto : VenueCanonicalModel, IMapFrom<Venue>
         {
-
+            public void Mapping(Profile profile)
+            {
+                profile.CreateMap<Venue, Dto>();
+            }
         }
 
         public class Handler : IRequestHandler<Query, Result<Dto>>

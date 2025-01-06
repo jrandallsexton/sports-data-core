@@ -5,9 +5,9 @@ using MongoDB.Driver;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Venue;
 
 namespace SportsData.Provider.Application.Jobs
 {
@@ -17,7 +17,7 @@ namespace SportsData.Provider.Application.Jobs
     {
         private readonly ILogger<VenueProviderJob> _logger;
         private readonly IProvideEspnApiData _espnApi;
-        private readonly IMongoCollection<Venue> _venues;
+        private readonly IMongoCollection<EspnVenueDto> _venues;
         private readonly IBus _bus;
 
         public VenueProviderJob(
@@ -29,7 +29,7 @@ namespace SportsData.Provider.Application.Jobs
             _logger = logger;
             _espnApi = espnApi;
             _bus = bus;
-            _venues = dataService.Database?.GetCollection<Venue>("venues");
+            _venues = dataService.Database?.GetCollection<EspnVenueDto>("venues");
         }
 
         public async Task ExecuteAsync()
@@ -41,22 +41,22 @@ namespace SportsData.Provider.Application.Jobs
 
             var venueIds = new List<long>();
 
-            var idx = 0;
+            //var idx = 0;
             await venues.items.ForEachAsync(async item =>
             {
-                if (idx < 10)
-                {
-                    idx++;
-                }
-                else
-                {
-                    return;
-                }
+                //if (idx < 1)
+                //{
+                //    idx++;
+                //}
+                //else
+                //{
+                //    return;
+                //}
 
                 var venue = await _espnApi.Venue(item.id, true);
                 venueIds.Add(venue.Id);
 
-                var filter = Builders<Venue>.Filter.Eq(x => x.Id, venue.Id);
+                var filter = Builders<EspnVenueDto>.Filter.Eq(x => x.Id, venue.Id);
                 
                 var dbVenueResult = await _venues.FindAsync(filter);
                 var dbVenue = await dbVenueResult.FirstOrDefaultAsync();
@@ -71,7 +71,7 @@ namespace SportsData.Provider.Application.Jobs
                         var evt = new DocumentUpdated()
                         {
                             Id = venue.Id.ToString(),
-                            Name = nameof(Venue),
+                            Name = nameof(EspnVenueDto),
                             SourceDataProvider = SourceDataProvider.Espn,
                             DocumentType = DocumentType.Venue
                         };
@@ -85,7 +85,7 @@ namespace SportsData.Provider.Application.Jobs
                     var evt = new DocumentCreated()
                     {
                         Id = venue.Id.ToString(),
-                        Name = nameof(Venue),
+                        Name = nameof(EspnVenueDto),
                         SourceDataProvider = SourceDataProvider.Espn,
                         DocumentType = DocumentType.Venue
                     };

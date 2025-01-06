@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise;
@@ -8,7 +9,6 @@ using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.ResourceIndex;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
 
 using Team = SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team.Team;
-using Venue = SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Venue.Venue;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
 {
@@ -124,9 +124,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return venues;
         }
 
-        public async Task<Venue> Venue(int venueId, bool ignoreCache)
+        public async Task<EspnVenueDto> Venue(int venueId, bool ignoreCache)
         {
-            return await GetAsync<Venue>(EspnApiEndpoints.Venue(venueId), ignoreCache);
+            return await GetAsync<EspnVenueDto>(EspnApiEndpoints.Venue(venueId), ignoreCache);
         }
     }
 }

@@ -2,7 +2,14 @@
 {
     public class VenueDto
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
+
         public string Name { get; set; }
+
+        public string ShortName { get; set; }
+
+        public bool IsGrass { get; set; }
+
+        public bool IsIndoor { get; set; }
     }
 }

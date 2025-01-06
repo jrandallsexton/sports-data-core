@@ -1,6 +1,7 @@
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware;
+using SportsData.Venue.Application.Handlers;
 using SportsData.Venue.Infrastructure.Data;
 
 using System.Reflection;
@@ -9,7 +10,7 @@ namespace SportsData.Venue
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -27,10 +28,17 @@ namespace SportsData.Venue
             // Add Serilog
             builder.UseCommon();
 
+            services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
             services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
-            builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
+            var hostAssembly = Assembly.GetExecutingAssembly();
+            builder.Services.AddAutoMapper(hostAssembly);
+            services.AddMediatR(hostAssembly);
+
+            // Apply Migrations
+            await services.ApplyMigrations<AppDataContext>();
 
             var app = builder.Build();
 
@@ -45,7 +53,7 @@ namespace SportsData.Venue
 
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

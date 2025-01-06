@@ -2,9 +2,11 @@
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Venue.DTOs;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Core.Middleware.Health;
 
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -32,7 +34,10 @@ public class VenueProvider : ProviderBase, IProvideVenues
         var response = await HttpClient.GetAsync("venue");
         response.EnsureSuccessStatusCode();
         var tmp = await response.Content.ReadAsStringAsync();
-        var venues = tmp.FromJson<GetVenuesResponse>();
-        return new Success<GetVenuesResponse>(venues);
+        var venues = tmp.FromJson<Success<List<VenueDto>>>();
+        return new Success<GetVenuesResponse>(new GetVenuesResponse()
+        {
+            Venues = venues.Value
+        });
     }
 }

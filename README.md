@@ -24,7 +24,7 @@ Project aims to capture sports data from external sources, convert them into dom
 | --------------- | ------- |
 | [sports-data-core](https://github.com/jrandallsexton/sports-data-core) | This repository (source lives here) |
 | [sports-data-config](https://github.com/jrandallsexton/sports-data-config) | Repository for K8s |
-| [sports-data-venue](https://github.com/jrandallsexton/sports-data-provision) | Repository for cloud-based resources |
+| [sports-data-provision](https://github.com/jrandallsexton/sports-data-provision) | Repository for cloud-based resources |
 
 **Project Diagram - Level 0**
 ```mermaid

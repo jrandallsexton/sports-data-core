@@ -1,40 +1,56 @@
-using MediatR;
+using AutoMapper;
 
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
-using SportsData.Core.Infrastructure.Clients.Venue.DTOs;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
+using SportsData.Venue.Infrastructure.Data;
 
 namespace SportsData.Venue.Application.Queries;
 
 public class GetVenues
 {
-    public class Query : GetVenuesRequest, IRequest<Result<Dto>>
+    public class Query : GetVenuesRequest, IRequest<Result<List<Dto>>>
     {
 
     }
 
-    public class Dto : GetVenuesResponse
+    public class Dto : Infrastructure.Data.Entities.Venue, IMapFrom<Infrastructure.Data.Entities.Venue>
     {
-
-    }
-
-    public class Handler : IRequestHandler<Query, Result<Dto>>
-    {
-        public async Task<Result<Dto>> Handle(Query request, CancellationToken cancellationToken)
+        public void Mapping(Profile profile)
         {
-            await Task.Delay(500, cancellationToken);
-            var dto = new Dto()
-            {
-                Venues =
-                [
-                    new VenueDto()
-                    {
-                        Id = "1",
-                        Name = "Tiger Stadium"
-                    }
-                ]
-            };
-            return new Success<Dto>(dto);
+            profile.CreateMap<Infrastructure.Data.Entities.Venue, Dto>();
+        }
+    }
+
+    public class Handler : IRequestHandler<Query, Result<List<Dto>>>
+    {
+        private readonly ILogger<Handler> _logger;
+        private readonly AppDataContext _dataContext;
+        private readonly IMapper _mapper;
+
+        public Handler(
+            ILogger<Handler> logger,
+            AppDataContext dataContext,
+            IMapper mapper)
+        {
+            _logger = logger;
+            _dataContext = dataContext;
+            _mapper = mapper;
+        }
+
+        public async Task<Result<List<Dto>>> Handle(Query query, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Request began with {@query}", query);
+
+            var venues = await _dataContext.Venues
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken: cancellationToken);
+
+            var dtos = _mapper.Map<List<Dto>>(venues);
+
+            return new Success<List<Dto>>(dtos);
         }
     }
 }

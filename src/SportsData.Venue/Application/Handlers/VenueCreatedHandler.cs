@@ -27,11 +27,29 @@ namespace SportsData.Venue.Application.Handlers
             _logger.LogInformation("VenueCreated received: {@evt}", context.Message);
 
             // call the producer to get the canonical model
-            var venue = await _producer.GetVenue(context.Message.Id);
+            var canonicalVenue = await _producer.GetVenue(context.Message.Id);
 
-            // map it to our domain model
+            if (canonicalVenue == null)
+            {
+                _logger.LogError("Could not obtain canonical model for {@evt}", context.Message);
+                throw new Exception("foo");
+            }
+
+            // map it to our entity
+            var entity = new Infrastructure.Data.Entities.Venue()
+            {
+                Name = canonicalVenue.Name,
+                ShortName = canonicalVenue.ShortName,
+                CreatedUtc = DateTime.UtcNow,
+                GlobalId = canonicalVenue.Id,
+                IsGrass = canonicalVenue.IsGrass,
+                IsIndoor = canonicalVenue.IsIndoor,
+                CreatedBy = context.Message.CorrelationId
+            };
 
             // store it
+            await _dataContext.Venues.AddAsync(entity);
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

@@ -10,6 +10,6 @@ namespace SportsData.Core.Infrastructure.Clients.Venue.Queries
 
     public class GetVenuesResponse
     {
-        public List<VenueDto> Venues { get; set; } = new List<VenueDto>();
+        public List<VenueDto> Venues { get; set; } = new();
     }
 }

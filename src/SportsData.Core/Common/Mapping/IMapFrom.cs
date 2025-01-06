@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 
-namespace SportsData.Core.Infrastructure.Data
+namespace SportsData.Core.Common.Mapping
 {
     public interface IMapFrom<T>
     {

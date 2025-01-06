@@ -18,6 +18,7 @@ using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using SportsData.Core.Infrastructure.Clients.Provider;
@@ -34,20 +35,25 @@ namespace SportsData.Core.DependencyInjection
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                //options.UseNpgsql(configuration.GetConnectionString("AppDataContext"));
                 options.UseSqlServer(configuration[$"{applicationName}:ConnectionStrings:AppDataContext"]);
             });
 
             return services;
         }
 
-        public static async Task<IServiceCollection> ApplyMigrations<T>(this IServiceCollection services) where T : DbContext
+        /// <summary>
+        /// MUST be called last after ALL services have been added/configured
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="services"></param>
+        /// <returns></returns>
+        public static async Task ApplyMigrations<T>(this IServiceCollection services) where T : DbContext
         {
             await using var serviceProvider = services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<T>();
-            await context.Database.MigrateAsync();
-
-            return services;
+            var pending = await context.Database.GetPendingMigrationsAsync();
+            if (pending.Any())
+                await context.Database.MigrateAsync();
         }
 
         public static IServiceCollection AddCoreServices(

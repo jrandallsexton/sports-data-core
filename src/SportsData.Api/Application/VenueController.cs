@@ -20,7 +20,8 @@ namespace SportsData.Api.Application
         [Produces<GetVenuesResponse>]
         public async Task<IActionResult> GetVenues()
         {
-            return Ok(await _provider.GetVenues());
+            var venues = await _provider.GetVenues();
+            return Ok(venues.Value);
         }
     }
 }

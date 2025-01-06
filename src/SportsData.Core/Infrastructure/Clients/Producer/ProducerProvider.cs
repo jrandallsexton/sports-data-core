@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 
+using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 using SportsData.Core.Middleware.Health;
+using SportsData.Core.Models.Canonical;
 
 using System.Net.Http;
 using System.Threading.Tasks;
-using SportsData.Core.Models.Canonical;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
@@ -25,9 +27,14 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             _logger = logger;
         }
 
-        public Task<VenueCanonicalModel> GetVenue(string id)
+        public async Task<VenueCanonicalModel> GetVenue(string id)
         {
-            throw new System.NotImplementedException();
+            var response = await HttpClient.GetAsync($"venue/{id}");
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var venue = tmp.FromJson<Success<VenueCanonicalModel>>();
+
+            return venue.Value;
         }
     }
 }

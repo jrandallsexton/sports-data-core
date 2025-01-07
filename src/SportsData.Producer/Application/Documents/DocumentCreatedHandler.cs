@@ -50,12 +50,11 @@ namespace SportsData.Producer.Application.Documents
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
+                default:
                     throw new ArgumentOutOfRangeException();
                 case DocumentType.Venue:
                     await HandleVenueDocumentCreated(context);
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -73,6 +72,7 @@ namespace SportsData.Producer.Application.Documents
             switch (context.Message.SourceDataProvider)
             {
                 case SourceDataProvider.Espn:
+
                     // deserialize the DTO
                     var espnVenue = document.FromJson<EspnVenueDto>(new JsonSerializerSettings
                     {
@@ -81,8 +81,9 @@ namespace SportsData.Producer.Application.Documents
 
                     // TODO: Determine if this entity exists. Do NOT trust that it says it is a new document!
 
-                    // map to the entity and save it
-                    var ety = new Venue()
+                    // 1. map to the entity and save it
+                    // TODO: Move to extension method?
+                    var venueEntity = new Venue()
                     {
                         Id = Guid.NewGuid(),
                         Name = espnVenue.FullName,
@@ -92,18 +93,19 @@ namespace SportsData.Producer.Application.Documents
                         CreatedUtc = DateTime.UtcNow,
                         CreatedBy = context.Message.CorrelationId
                     };
-                    await _dataContext.AddAsync(ety);
+                    await _dataContext.AddAsync(venueEntity);
                     await _dataContext.SaveChangesAsync();
+
+                    // 2. raise an event
+                    // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
                     var evt = new VenueCreated()
                     {
-                        Id = ety.Id.ToString(),
+                        Id = venueEntity.Id.ToString(),
                         Name = context.Message.Name
                     };
-
-                    // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
-                    // broadcast integration event for external consumer(s)
                     await _bus.Publish(evt);
                     _logger.LogInformation("New {@type} event {@evt}", context.Message.DocumentType, evt);
+
                     break;
                 case SourceDataProvider.SportsDataIO:
                 case SourceDataProvider.Cbs:

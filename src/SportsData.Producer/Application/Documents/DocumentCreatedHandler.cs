@@ -69,8 +69,6 @@ namespace SportsData.Producer.Application.Documents
 
             _logger.LogInformation("obtained new document from Provider");
 
-            VenueCanonicalModel model;
-
             // generate domain object from it
             switch (context.Message.SourceDataProvider)
             {
@@ -101,6 +99,8 @@ namespace SportsData.Producer.Application.Documents
                         Id = ety.Id.ToString(),
                         Name = context.Message.Name
                     };
+
+                    // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
                     // broadcast integration event for external consumer(s)
                     await _bus.Publish(evt);
                     _logger.LogInformation("New {@type} event {@evt}", context.Message.DocumentType, evt);

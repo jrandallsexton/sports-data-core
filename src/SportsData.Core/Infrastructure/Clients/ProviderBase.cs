@@ -9,21 +9,16 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients
 {
-    public abstract class ProviderBase : IProvideHealthChecks
+    public abstract class ProviderBase(
+        string providerName,
+        IHttpClientFactory clientFactory)
+        : IProvideHealthChecks
     {
-        private readonly string _providerName;
-        protected readonly HttpClient HttpClient;
-
-        public ProviderBase(string providerName,
-            IHttpClientFactory clientFactory)
-        {
-            _providerName = providerName;
-            HttpClient = clientFactory.CreateClient(providerName);
-        }
+        protected readonly HttpClient HttpClient = clientFactory.CreateClient(providerName);
 
         public string GetProviderName()
         {
-            return _providerName;
+            return providerName;
         }
 
         public async Task<Dictionary<string, object>> GetHealthStatus()
@@ -54,7 +49,8 @@ namespace SportsData.Core.Infrastructure.Clients
                 {
                     { "status", HttpStatusCode.ServiceUnavailable },
                     { "uri",  $"{HttpClient.BaseAddress}health" },
-                    { "host", hostName }
+                    { "host", hostName },
+                    { "ex", ex.Message }
                 };
             }
         }

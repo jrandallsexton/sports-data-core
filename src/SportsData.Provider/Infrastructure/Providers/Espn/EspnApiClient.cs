@@ -2,13 +2,9 @@
 
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.ResourceIndex;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
-
-using Team = SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team.Team;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
 {
@@ -52,14 +48,14 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return award;
         }
 
-        private async Task<Athlete> GetAthlete(string uri)
+        private async Task<EspnAthleteDto> GetAthlete(string uri)
         {
-            return await GetAsync<Athlete>(uri);
+            return await GetAsync<EspnAthleteDto>(uri);
         }
 
-        public async Task<Franchise> Franchise(int franchiseId)
+        public async Task<EspnFranchiseDto> Franchise(int franchiseId)
         {
-            var franchise = await GetAsync<Franchise>(EspnApiEndpoints.Franchise(franchiseId));
+            var franchise = await GetAsync<EspnFranchiseDto>(EspnApiEndpoints.Franchise(franchiseId));
             return franchise;
         }
 
@@ -67,7 +63,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         {
             var franchises = await GetAsync<ResourceIndex>(EspnApiEndpoints.Franchises);
 
-            var mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
+            const string mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
             const string mask1 = "?lang=en";
             franchises.items.ForEach(i =>
             {
@@ -75,19 +71,20 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 url = url.Replace(mask0, string.Empty);
                 url = url.Replace(mask1, string.Empty);
 
-                int.TryParse(url, out var franchiseId);
-
-                i.id = franchiseId;
+                if (int.TryParse(url, out var franchiseId))
+                {
+                    i.id = franchiseId;
+                }
             });
 
             return franchises;
         }
 
-        public async Task<Team> EspnTeam(int fourDigitYear, int teamId)
+        public async Task<EspnTeamDto> EspnTeam(int fourDigitYear, int teamId)
         {
             using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<Team>(venuesJson, JsonSerializerSettings);
+            return JsonConvert.DeserializeObject<EspnTeamDto>(venuesJson, JsonSerializerSettings);
         }
 
         public async Task<TeamInformation> TeamInformation(int teamId)
@@ -108,7 +105,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         {
             var venues = await GetAsync<ResourceIndex>(EspnApiEndpoints.Venues, ignoreCache);
 
-            var mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/";
+            const string mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/";
             const string mask1 = "?lang=en";
             venues.items.ForEach(i =>
             {
@@ -116,9 +113,11 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 url = url.Replace(mask0, string.Empty);
                 url = url.Replace(mask1, string.Empty);
 
-                int.TryParse(url, out var venueId);
-
-                i.id = venueId;
+                if (int.TryParse(url, out var venueId))
+                {
+                    i.id = venueId;
+                }
+                
             });
 
             return venues;

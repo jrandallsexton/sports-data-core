@@ -1,9 +1,13 @@
 ﻿using Newtonsoft.Json;
+
 using SportsData.Core.Converters;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
+using System;
+using System.Collections.Generic;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
-    public class Team
+    public class EspnTeamDto
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -16,7 +20,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public string Uid { get; set; }
 
         [JsonProperty("alternateIds")]
-        public AlternateIds AlternateIds { get; set; }
+        public EspnTeamAlternateIds AlternateIds { get; set; }
 
         [JsonProperty("slug")]
         public string Slug { get; set; }
@@ -52,71 +56,71 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public bool IsAllStar { get; set; }
 
         [JsonProperty("logos")]
-        public List<Logo> Logos { get; set; }
+        public List<EspnTeamLogo> Logos { get; set; }
 
         [JsonProperty("record")]
-        public AgainstTheSpreadRecords Record { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Record { get; set; }
 
         [JsonProperty("oddsRecords")]
-        public AgainstTheSpreadRecords OddsRecords { get; set; }
+        public EspnTeamAgainstTheSpreadRecords OddsRecords { get; set; }
 
         [JsonProperty("athletes")]
-        public AgainstTheSpreadRecords Athletes { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Athletes { get; set; }
 
         [JsonProperty("venue")]
-        public Venue Venue { get; set; }
+        public EspnTeamVenue Venue { get; set; }
 
         [JsonProperty("groups")]
-        public AgainstTheSpreadRecords Groups { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Groups { get; set; }
 
         [JsonProperty("ranks")]
-        public AgainstTheSpreadRecords Ranks { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Ranks { get; set; }
 
         [JsonProperty("links")]
-        public List<Link> Links { get; set; }
+        public List<EspnTeamLink> Links { get; set; }
 
         [JsonProperty("injuries")]
-        public AgainstTheSpreadRecords Injuries { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Injuries { get; set; }
 
         [JsonProperty("notes")]
-        public AgainstTheSpreadRecords Notes { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Notes { get; set; }
 
         [JsonProperty("againstTheSpreadRecords")]
-        public AgainstTheSpreadRecords AgainstTheSpreadRecords { get; set; }
+        public EspnTeamAgainstTheSpreadRecords AgainstTheSpreadRecords { get; set; }
 
         [JsonProperty("awards")]
-        public AgainstTheSpreadRecords Awards { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Awards { get; set; }
 
         [JsonProperty("franchise")]
-        public AgainstTheSpreadRecords Franchise { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Franchise { get; set; }
 
         [JsonProperty("projection")]
-        public AgainstTheSpreadRecords Projection { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Projection { get; set; }
 
         [JsonProperty("events")]
-        public AgainstTheSpreadRecords Events { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Events { get; set; }
 
         [JsonProperty("recruiting")]
-        public AgainstTheSpreadRecords Recruiting { get; set; }
+        public EspnTeamAgainstTheSpreadRecords Recruiting { get; set; }
 
         [JsonProperty("college")]
-        public AgainstTheSpreadRecords College { get; set; }
+        public EspnTeamAgainstTheSpreadRecords College { get; set; }
     }
 
-    public class AgainstTheSpreadRecords
+    public class EspnTeamAgainstTheSpreadRecords
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
     }
 
-    public class AlternateIds
+    public class EspnTeamAlternateIds
     {
         [JsonProperty("sdr")]
         [JsonConverter(typeof(ParseStringConverter))]
         public long Sdr { get; set; }
     }
 
-    public class Link
+    public class EspnTeamLink
     {
         [JsonProperty("language")]
         public string Language { get; set; }
@@ -140,7 +144,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public bool IsPremium { get; set; }
     }
 
-    public class Logo
+    public class EspnTeamLogo
     {
         [JsonProperty("href")]
         public Uri Href { get; set; }
@@ -158,7 +162,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public List<string> Rel { get; set; }
     }
 
-    public class Venue
+    public class EspnTeamVenue
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -174,7 +178,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public string ShortName { get; set; }
 
         [JsonProperty("address")]
-        public Address Address { get; set; }
+        public EspnTeamAddress Address { get; set; }
 
         [JsonProperty("capacity")]
         public long Capacity { get; set; }
@@ -186,10 +190,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Team
         public bool Indoor { get; set; }
 
         [JsonProperty("images")]
-        public List<Logo> Images { get; set; }
+        public List<EspnTeamLogo> Images { get; set; }
     }
 
-    public class Address
+    public class EspnTeamAddress
     {
         [JsonProperty("city")]
         public string City { get; set; }

@@ -1,9 +1,13 @@
 ﻿using Newtonsoft.Json;
+
 using SportsData.Core.Converters;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
+using System;
+using System.Collections.Generic;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
-    public class Athlete
+    public class EspnAthleteDto
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -22,7 +26,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public string Type { get; set; }
 
         [JsonProperty("alternateIds")]
-        public AlternateIds AlternateIds { get; set; }
+        public EspnAthleteAlternateIds AlternateIds { get; set; }
 
         [JsonProperty("firstName")]
         public string FirstName { get; set; }
@@ -58,26 +62,26 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public string DateOfBirth { get; set; }
 
         [JsonProperty("links")]
-        public List<Link> Links { get; set; }
+        public List<EspnAthleteLink> Links { get; set; }
 
         [JsonProperty("birthPlace")]
-        public BirthPlace BirthPlace { get; set; }
+        public EspnAthleteBirthPlace BirthPlace { get; set; }
 
         [JsonProperty("college")]
-        public College College { get; set; }
+        public EspnAthleteCollege College { get; set; }
 
         [JsonProperty("slug")]
         public string Slug { get; set; }
 
         [JsonProperty("headshot")]
-        public Headshot Headshot { get; set; }
+        public EspnAthleteHeadshot Headshot { get; set; }
 
         [JsonProperty("jersey")]
         [JsonConverter(typeof(ParseStringConverter))]
         public long Jersey { get; set; }
 
         [JsonProperty("position")]
-        public Position Position { get; set; }
+        public EspnAthletePosition Position { get; set; }
 
         [JsonProperty("injuries")]
         public List<object> Injuries { get; set; }
@@ -86,41 +90,41 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public bool Linked { get; set; }
 
         [JsonProperty("team")]
-        public College Team { get; set; }
+        public EspnAthleteCollege Team { get; set; }
 
         [JsonProperty("teams")]
-        public List<College> Teams { get; set; }
+        public List<EspnAthleteCollege> Teams { get; set; }
 
         [JsonProperty("statistics")]
-        public College Statistics { get; set; }
+        public EspnAthleteCollege Statistics { get; set; }
 
         [JsonProperty("notes")]
-        public College Notes { get; set; }
+        public EspnAthleteCollege Notes { get; set; }
 
         [JsonProperty("experience")]
-        public Experience Experience { get; set; }
+        public EspnAthleteExperience Experience { get; set; }
 
         [JsonProperty("proAthlete")]
-        public College ProAthlete { get; set; }
+        public EspnAthleteCollege ProAthlete { get; set; }
 
         [JsonProperty("active")]
         public bool Active { get; set; }
 
         [JsonProperty("eventLog")]
-        public College EventLog { get; set; }
+        public EspnAthleteCollege EventLog { get; set; }
 
         [JsonProperty("status")]
-        public Status Status { get; set; }
+        public EspnAthleteStatus Status { get; set; }
     }
 
-    public class AlternateIds
+    public class EspnAthleteAlternateIds
     {
         [JsonProperty("sdr")]
         [JsonConverter(typeof(ParseStringConverter))]
         public long Sdr { get; set; }
     }
 
-    public class BirthPlace
+    public class EspnAthleteBirthPlace
     {
         [JsonProperty("city")]
         public string City { get; set; }
@@ -132,13 +136,13 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public string Country { get; set; }
     }
 
-    public class College
+    public class EspnAthleteCollege
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
     }
 
-    public class Experience
+    public class EspnAthleteExperience
     {
         [JsonProperty("years")]
         public long Years { get; set; }
@@ -150,7 +154,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public string Abbreviation { get; set; }
     }
 
-    public class Headshot
+    public class EspnAthleteHeadshot
     {
         [JsonProperty("href")]
         public Uri Href { get; set; }
@@ -159,7 +163,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public string Alt { get; set; }
     }
 
-    public class Link
+    public class EspnAthleteLink
     {
         [JsonProperty("language")]
         public string Language { get; set; }
@@ -183,7 +187,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public bool IsPremium { get; set; }
     }
 
-    public class Position
+    public class EspnAthletePosition
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -205,10 +209,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Athlete
         public bool Leaf { get; set; }
 
         [JsonProperty("parent")]
-        public College Parent { get; set; }
+        public EspnAthleteCollege Parent { get; set; }
     }
 
-    public class Status
+    public class EspnAthleteStatus
     {
         [JsonProperty("id")]
         [JsonConverter(typeof(ParseStringConverter))]

@@ -84,8 +84,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SportsData.Api", "src\Sport
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SportsData.Api.Tests.Integration", "test\integration\SportsData.Api.Tests.Integration\SportsData.Api.Tests.Integration.csproj", "{A46B7696-8825-4AC3-8EF5-0776E2CFD567}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{8E84BC12-DEB7-4F6D-B7F7-72DC14D5CFD3}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -204,10 +202,6 @@ Global
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8E84BC12-DEB7-4F6D-B7F7-72DC14D5CFD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8E84BC12-DEB7-4F6D-B7F7-72DC14D5CFD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8E84BC12-DEB7-4F6D-B7F7-72DC14D5CFD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8E84BC12-DEB7-4F6D-B7F7-72DC14D5CFD3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

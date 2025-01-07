@@ -41,18 +41,8 @@ namespace SportsData.Provider.Application.Jobs
 
             var venueIds = new List<long>();
 
-            //var idx = 0;
             await venues.items.ForEachAsync(async item =>
             {
-                //if (idx < 1)
-                //{
-                //    idx++;
-                //}
-                //else
-                //{
-                //    return;
-                //}
-
                 var venue = await _espnApi.Venue(item.id, true);
                 venueIds.Add(venue.Id);
 

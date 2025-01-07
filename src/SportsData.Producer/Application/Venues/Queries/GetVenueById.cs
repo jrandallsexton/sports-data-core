@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 
+using FluentValidation;
+
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +29,14 @@ namespace SportsData.Producer.Application.Venues.Queries
             }
         }
 
+        public class Validator : AbstractValidator<Query>
+        {
+            public Validator()
+            {
+                RuleFor(x => x.Id).NotNull().NotEmpty().WithMessage("VenueId must be present and valid");
+            }
+        }
+
         public class Handler : IRequestHandler<Query, Result<Dto>>
         {
             private readonly ILogger<Handler> _logger;
@@ -47,15 +57,11 @@ namespace SportsData.Producer.Application.Venues.Queries
             {
                 _logger.LogInformation("Request began with {@query}", query);
 
-                var entity = await _dataContext.Venues.FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken: cancellationToken);
-
-                if (entity == null)
-                {
-                    return new Failure<Dto>(null, new List<string>()
-                    {
-                        "Venue not found"
-                    });
-                }
+                var entity = await _dataContext.Venues
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(x => x.Id == query.Id, cancellationToken: cancellationToken);
+                
+                // TODO: Handle null result here to eventually produce Http404
 
                 var dto = _mapper.Map<Dto>(entity);
 

@@ -1,3 +1,8 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
+
+using MediatR;
+
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware;
@@ -5,6 +10,7 @@ using SportsData.Venue.Application.Handlers;
 using SportsData.Venue.Infrastructure.Data;
 
 using System.Reflection;
+using SportsData.Venue.Application.Queries;
 
 namespace SportsData.Venue
 {
@@ -21,6 +27,7 @@ namespace SportsData.Venue
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.AddCoreServices(config);
+            //services.AddControllers();
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
@@ -34,8 +41,19 @@ namespace SportsData.Venue
             services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var hostAssembly = Assembly.GetExecutingAssembly();
-            builder.Services.AddAutoMapper(hostAssembly);
-            services.AddMediatR(hostAssembly);
+            services.AddAutoMapper(hostAssembly);
+
+            builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(hostAssembly));
+
+            //builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(hostAssembly))
+            //    .AddTransient(typeof(IPipelineBehavior<,>), typeof(QueryCachingBehavior<,>))
+                //.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+            services.AddValidatorsFromAssemblyContaining<GetVenueById.Validator>();
+            services.AddFluentValidationAutoValidation(cfg =>
+            {
+                cfg.DisableDataAnnotationsValidation = true;
+            });
 
             // Apply Migrations
             await services.ApplyMigrations<AppDataContext>();
@@ -50,8 +68,6 @@ namespace SportsData.Venue
             app.UseCommonFeatures();
 
             app.MapControllers();
-
-            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             await app.RunAsync();
         }

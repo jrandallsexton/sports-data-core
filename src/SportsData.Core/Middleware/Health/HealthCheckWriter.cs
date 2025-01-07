@@ -59,7 +59,7 @@ namespace SportsData.Core.Middleware.Health
                 jsonWriter.WriteEndObject();
             }
 
-            context.Response.Headers.Add("host", Environment.MachineName);
+            context.Response.Headers.Append("host", Environment.MachineName);
 
             return context.Response.WriteAsync(
                 Encoding.UTF8.GetString(memoryStream.ToArray()));

@@ -1,19 +1,22 @@
 using AutoMapper;
 
+using FluentValidation;
+
 using MediatR;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
-using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Venue.Infrastructure.Data;
 
 namespace SportsData.Venue.Application.Queries;
 
-public class GetVenues
+public class GetVenueById
 {
-    public class Query : GetVenuesRequest, IRequest<Result<List<Dto>>>
+    public class Query : IRequest<Result<Dto>>
     {
-
+        public int Id { get; set; }
     }
 
     public class Dto : Infrastructure.Data.Entities.Venue, IMapFrom<Infrastructure.Data.Entities.Venue>
@@ -24,7 +27,19 @@ public class GetVenues
         }
     }
 
-    public class Handler : IRequestHandler<Query, Result<List<Dto>>>
+    public class Validator : AbstractValidator<Query>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Id)
+                .NotNull()
+                .NotEmpty()
+                .GreaterThan(0)
+                .WithMessage("VenueId must be present and valid");
+        }
+    }
+
+    public class Handler : IRequestHandler<Query, Result<Dto>>
     {
         private readonly ILogger<Handler> _logger;
         private readonly AppDataContext _dataContext;
@@ -40,18 +55,23 @@ public class GetVenues
             _mapper = mapper;
         }
 
-        public async Task<Result<List<Dto>>> Handle(Query query, CancellationToken cancellationToken)
+        public async Task<Result<Dto>> Handle(Query query, CancellationToken cancellationToken)
         {
+            var validation = await new Validator().ValidateAsync(query, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return new Failure<Dto>(null, validation.Errors);
+            }
+
             _logger.LogInformation("Request began with {@query}", query);
 
             var venues = await _dataContext.Venues
                 .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .ToListAsync(cancellationToken: cancellationToken);
+                .SingleOrDefaultAsync(x => x.Id == query.Id, cancellationToken: cancellationToken);
 
-            var dtos = _mapper.Map<List<Dto>>(venues);
+            var dto = _mapper.Map<Dto>(venues);
 
-            return new Success<List<Dto>>(dtos);
+            return new Success<Dto>(dto);
         }
     }
 }

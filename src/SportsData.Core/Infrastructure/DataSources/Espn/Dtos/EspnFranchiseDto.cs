@@ -1,9 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Azure.Amqp.Framing;
+
+using Newtonsoft.Json;
+
 using SportsData.Core.Converters;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise
+using System;
+using System.Collections.Generic;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
-    public class Franchise
+    public class EspnFranchiseDto
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -43,25 +49,25 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise
         public bool IsActive { get; set; }
 
         [JsonProperty("logos")]
-        public List<Logo> Logos { get; set; }
+        public List<EspnFranchiseLogo> Logos { get; set; }
 
         [JsonProperty("venue")]
-        public Venue Venue { get; set; }
+        public EspnFranchiseVenue Venue { get; set; }
 
         [JsonProperty("team")]
-        public Awards Team { get; set; }
+        public EspnFranchiseAwards Team { get; set; }
 
         [JsonProperty("awards")]
-        public Awards Awards { get; set; }
+        public EspnFranchiseAwards Awards { get; set; }
     }
 
-    public class Awards
+    public class EspnFranchiseAwards
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
     }
 
-    public class Logo
+    public class EspnFranchiseLogo
     {
         [JsonProperty("href")]
         public Uri Href { get; set; }
@@ -79,7 +85,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise
         public List<string> Rel { get; set; }
     }
 
-    public class Venue
+    public class EspnFranchiseVenue
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
@@ -107,10 +113,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise
         public bool Indoor { get; set; }
 
         [JsonProperty("images")]
-        public List<Image> Images { get; set; }
+        public List<EspnFranchiseImage> Images { get; set; }
     }
 
-    public class Address
+    public class EspnFranchiseAddress
     {
         [JsonProperty("city")]
         public string City { get; set; }
@@ -123,7 +129,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Franchise
         public long ZipCode { get; set; }
     }
 
-    public class Image
+    public class EspnFranchiseImage
     {
         [JsonProperty("href")]
         public Uri Href { get; set; }

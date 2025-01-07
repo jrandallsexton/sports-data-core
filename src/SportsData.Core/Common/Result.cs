@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using FluentValidation.Results;
 
 namespace SportsData.Core.Common
 {
@@ -7,10 +8,16 @@ namespace SportsData.Core.Common
         public T Value { get; } = value;
     }
 
-    public class Failure<T>(T value, IEnumerable<string> errors) :
+    //public class Failure<T>(T value, IEnumerable<string> errors) :
+    //    Result<T>(value)
+    //{
+    //    public IEnumerable<string> Errors { get; } = errors;
+    //}
+
+    public class Failure<T>(T value, List<ValidationFailure> errors) :
         Result<T>(value)
     {
-        public IEnumerable<string> Errors { get; } = errors;
+        public List<ValidationFailure> Errors { get; } = errors;
     }
 
     public class Success<T>(T value) : Result<T>(value);

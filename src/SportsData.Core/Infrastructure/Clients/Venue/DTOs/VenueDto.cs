@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Venue.DTOs
 {
-    public class VenueDto
+    public record VenueDto
     {
         public int Id { get; set; }
 

@@ -31,6 +31,13 @@ namespace SportsData.Api
             services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
 
+            // Add Caching
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = "localhost:6379";
+                options.InstanceName = "sdv_"; // (only one app using; good practice)
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

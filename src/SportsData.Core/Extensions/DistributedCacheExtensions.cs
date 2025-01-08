@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Extensions
 {
+    /// <summary>
+    /// Source: IAmTimCorey @ https://www.youtube.com/watch?v=UrQWii_kfIE&t=921s
+    /// </summary>
     public static class DistributedCacheExtensions
     {
         public static async Task SetRecordAsync<T>(this IDistributedCache cache,

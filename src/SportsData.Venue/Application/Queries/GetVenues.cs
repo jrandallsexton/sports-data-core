@@ -1,20 +1,20 @@
 using AutoMapper;
 
 using MediatR;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
-using SportsData.Core.Infrastructure.Clients.Venue.Queries;
+using SportsData.Core.Common.Queries;
 using SportsData.Venue.Infrastructure.Data;
 
 namespace SportsData.Venue.Application.Queries;
 
 public class GetVenues
 {
-    public class Query : GetVenuesRequest, IRequest<Result<List<Dto>>>
-    {
-
-    }
+    public class Query :
+        CacheableQuery<Result<List<Dto>>> { }
 
     public class Dto : Infrastructure.Data.Entities.Venue, IMapFrom<Infrastructure.Data.Entities.Venue>
     {

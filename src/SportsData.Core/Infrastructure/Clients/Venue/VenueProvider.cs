@@ -45,12 +45,19 @@ public class VenueProvider : ProviderBase, IProvideVenues
     public async Task<Result<GetVenueByIdResponse>> GetVenueById(int id)
     {
         var response = await HttpClient.GetAsync($"venue/{id}");
-        response.EnsureSuccessStatusCode();
-        var tmp = await response.Content.ReadAsStringAsync();
-        var venue = tmp.FromJson<Success<VenueDto>>();
-        return new Success<GetVenueByIdResponse>(new GetVenueByIdResponse()
+
+        if (response.IsSuccessStatusCode)
         {
-            Venue = venue.Value
-        });
+            var tmp = await response.Content.ReadAsStringAsync();
+            var venue = tmp.FromJson<Success<VenueDto>>();
+            return new Success<GetVenueByIdResponse>(new GetVenueByIdResponse()
+            {
+                Venue = venue.Value
+            });
+        }
+
+        var t = await response.Content.ReadAsStringAsync();
+        var v = t.FromJson<Failure<VenueDto>>();
+        return new Failure<GetVenueByIdResponse>(new GetVenueByIdResponse(), v.Status, v.Errors);
     }
 }

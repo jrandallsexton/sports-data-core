@@ -60,16 +60,19 @@ public class GetVenueById
             var validation = await new Validator().ValidateAsync(query, cancellationToken);
             if (!validation.IsValid)
             {
-                return new Failure<Dto>(null, validation.Errors);
+                return new Failure<Dto>(null, ResultStatus.Validation, validation.Errors);
             }
 
             _logger.LogInformation("Request began with {@query}", query);
 
-            var venues = await _dataContext.Venues
+            var venue = await _dataContext.Venues
                 .AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == query.Id, cancellationToken: cancellationToken);
 
-            var dto = _mapper.Map<Dto>(venues);
+            if (venue == null)
+                return new Failure<Dto>(null, ResultStatus.NotFound, null);
+
+            var dto = _mapper.Map<Dto>(venue);
 
             return new Success<Dto>(dto);
         }

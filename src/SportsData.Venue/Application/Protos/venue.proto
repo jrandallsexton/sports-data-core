@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "SportsData.Venue";
+
+package venue;
+
+service Venue {
+   rpc GetVenue (GetVenueRequest) returns (GetVenueResponse);
+}
+
+message GetVenueRequest {
+    int32 id = 1;
+}
+
+message GetVenueResponse {
+    int32 id = 1;
+    string name = 2;
+    string short_name = 3;
+    bool is_grass = 4;
+    bool is_indoor = 5;
+}

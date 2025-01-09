@@ -13,6 +13,7 @@ namespace SportsData.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.UseCommon();
 
             // Add services to the container.
             var config = builder.Configuration;
@@ -23,20 +24,10 @@ namespace SportsData.Api
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-
-            // Add Serilog
-            builder.UseCommon();
-
             services.AddProviders(config);
             services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
+            services.AddCaching(config);
             services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
-
-            // Add Caching
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = "localhost:6379";
-                options.InstanceName = "sdv_"; // (only one app using; good practice)
-            });
 
             var app = builder.Build();
 

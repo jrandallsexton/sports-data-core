@@ -17,6 +17,8 @@ namespace SportsData.Core.Config
 
         public string SeqUri { get; set; }
 
+        public string RedisUri { get; set; }
+
         public List<ProviderConfig> ProviderConfigs { get; set; }
 
         public class ProviderConfig
@@ -31,6 +33,9 @@ namespace SportsData.Core.Config
     {
         public static string AzureServiceBus =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureServiceBusConnectionString)}";
+
+        public static string CacheServiceUri =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.RedisUri)}";
 
         public static string ContestProviderUri =>
             $"{nameof(CommonConfig)}:{nameof(ContestProviderConfig)}:{nameof(ContestProviderConfig.ApiUrl)}";

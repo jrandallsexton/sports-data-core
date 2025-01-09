@@ -14,20 +14,25 @@ namespace SportsData.Api.Application
     {
         private readonly IProvideVenues _provider;
         private readonly IDistributedCache _cache;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        private const string CacheKeyDateTimeFormat = "yyyyMMdd_hhmm";
 
         public VenueController(
             IProvideVenues provider,
-            IDistributedCache cache)
+            IDistributedCache cache,
+            IDateTimeProvider dateTimeProvider)
         {
             _provider = provider;
             _cache = cache;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         [HttpGet(Name = "GetVenues")]
         [Produces<GetVenuesResponse>]
         public async Task<ActionResult<GetVenuesResponse>> GetVenues()
         {
-            var cacheKey = $"GetVenuesResponse_{DateTime.UtcNow.ToString("yyyyMMdd_hhmm")}";
+            var cacheKey = $"{nameof(GetVenuesResponse)}_{_dateTimeProvider.UtcNow().ToString(CacheKeyDateTimeFormat)}";
             var cached = await _cache.GetRecordAsync<GetVenuesResponse>(cacheKey);
 
             if (cached?.Venues != null)

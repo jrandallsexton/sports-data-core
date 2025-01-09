@@ -1,13 +1,10 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
-using MediatR;
-
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Middleware;
 using SportsData.Venue.Application;
 using SportsData.Venue.Application.Handlers;
 using SportsData.Venue.Application.Queries;

@@ -12,6 +12,7 @@ using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Player;
 using SportsData.Core.Infrastructure.Clients.Producer;
+using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Middleware.Health;
@@ -21,12 +22,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using SportsData.Core.Infrastructure.Clients.Provider;
 
 namespace SportsData.Core.DependencyInjection
 {
     public static class ServiceRegistration
     {
+        public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = config[CommonConfigKeys.CacheServiceUri];
+
+                // TODO: Determine how to pass in an instance name from each consumer
+                // i.e. sdApi, sdContest, sdVenue, etc.
+                // (or have it generated here based on EnvironmentName and ApplicationName
+                options.InstanceName = "sdapi_"; // (only one app using; good practice)
+            });
+
+            return services;
+        }
+
         public static IServiceCollection AddDataPersistence<T>(
             this IServiceCollection services,
             IConfiguration configuration,
@@ -79,6 +94,7 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
+                .AddCheck<CachingHealthCheck>("caching")
                 .AddCheck<LoggingHealthCheck>("logging")
                 .AddCheck<ProviderHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 .AddCheck<ProviderHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)

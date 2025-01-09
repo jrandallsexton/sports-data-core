@@ -10,8 +10,10 @@ namespace SportsData.Provider.DependencyInjection
             var serviceScope = services.CreateScope();
             var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
 
-            recurringJobManager.AddOrUpdate<IProvideVenues>(nameof(VenueProviderJob),
-                job => job.ExecuteAsync(), "15 * * * *");
+            recurringJobManager.RemoveIfExists(nameof(VenueProviderJob));
+
+            //recurringJobManager.AddOrUpdate<IProvideVenues>(nameof(VenueProviderJob),
+            //    job => job.ExecuteAsync(), "15 * * * *");
 
             return services;
         }

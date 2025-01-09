@@ -26,7 +26,7 @@ namespace SportsData.Core.DependencyInjection
             return builder;
         }
 
-        public static WebApplication UseCommonFeatures(this WebApplication app)
+        public static WebApplication UseCommonFeatures(this WebApplication app, string buildConfiguration = "Debug")
         {
             app.UseHealthChecks("/api/health", new HealthCheckOptions()
             {
@@ -43,7 +43,9 @@ namespace SportsData.Core.DependencyInjection
                     {
                         var links = new StringBuilder();
                         links.AppendLine($"<a href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
+                        links.AppendLine($"<a href=\"\" target=\"_blank\">BuildConfig: {buildConfiguration}</a></br>");
                         links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
+                        links.AppendLine("<a href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
                         //links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
 
                         if (app.Environment.EnvironmentName == "Local")

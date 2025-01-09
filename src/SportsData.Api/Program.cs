@@ -1,5 +1,8 @@
+using Hangfire;
+
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
+using SportsData.Api.Application;
 using SportsData.Api.Infrastructure;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware.Health;
@@ -26,6 +29,9 @@ namespace SportsData.Api
             services.AddSwaggerGen();
             services.AddProviders(config);
             services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
+
+            services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+
             services.AddCaching(config);
             services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
 
@@ -33,6 +39,11 @@ namespace SportsData.Api
 
             // Configure the HTTP request pipeline.
             //app.UseHttpsRedirection();
+
+            app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            {
+                Authorization = new[] { new DashboardAuthFilter() }
+            });
 
             app.UseAuthorization();
 
@@ -43,7 +54,10 @@ namespace SportsData.Api
 
             app.MapControllers();
 
-            app.UseCommonFeatures();
+            var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration;
+
+            app.UseCommonFeatures(buildConfigurationName);
 
             app.Run();
         }

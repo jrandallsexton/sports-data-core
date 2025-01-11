@@ -48,7 +48,16 @@ namespace SportsData.Core.DependencyInjection
                         links.AppendLine("<a href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
                         //links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
 
-                        if (app.Environment.EnvironmentName == "Local")
+                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            links.AppendLine("<a href=\"http://localhost:30082/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
+                        }
+                        else
+                        {
+                            links.AppendLine("<a href=\"http://localhost:8001/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
+                        }
+
+                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
                         {
                             links.AppendLine("<a href=\"http://localhost:30081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
                         }

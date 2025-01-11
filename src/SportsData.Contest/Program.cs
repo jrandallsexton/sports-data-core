@@ -1,4 +1,3 @@
-using SportsData.Contest.Infrastructure;
 using SportsData.Contest.Infrastructure.Data;
 using SportsData.Core.DependencyInjection;
 
@@ -28,9 +27,8 @@ namespace SportsData.Contest
             services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config);
-            services.AddHostedService<HeartbeatPublisher>();
 
-            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
             

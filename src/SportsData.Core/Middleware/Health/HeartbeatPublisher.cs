@@ -1,16 +1,23 @@
 ﻿using MassTransit;
 
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
 using SportsData.Core.Eventing.Events;
 
-namespace SportsData.Contest.Infrastructure
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SportsData.Core.Middleware.Health
 {
-    public class HeartbeatPublisher : BackgroundService
+    public class HeartbeatPublisher<T> : BackgroundService where T : class
     {
-        private readonly ILogger<HeartbeatPublisher> _logger;
+        private readonly ILogger<HeartbeatPublisher<T>> _logger;
         private readonly IBus _bus;
 
         public HeartbeatPublisher(IBus bus,
-            ILogger<HeartbeatPublisher> logger)
+            ILogger<HeartbeatPublisher<T>> logger)
         {
             _bus = bus;
             _logger = logger;
@@ -23,10 +30,10 @@ namespace SportsData.Contest.Infrastructure
                 await _bus.Publish(new Heartbeat()
                 {
                     CreatedAt = DateTime.UtcNow,
-                    Producer = nameof(HeartbeatPublisher)
+                    Producer = nameof(HeartbeatPublisher<T>)
                 }, stoppingToken);
-                _logger.LogInformation("heartbeat sent");
-                await Task.Delay(30_000, stoppingToken);
+                _logger.LogInformation("heartbeat sent from {@t}", typeof(T));
+                await Task.Delay(60_000, stoppingToken);
             }
         }
     }

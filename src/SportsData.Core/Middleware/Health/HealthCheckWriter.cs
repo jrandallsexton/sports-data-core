@@ -1,7 +1,7 @@
-﻿using System;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -26,10 +26,8 @@ namespace SportsData.Core.Middleware.Health
                 foreach (var healthReportEntry in healthReport.Entries)
                 {
                     jsonWriter.WriteStartObject(healthReportEntry.Key);
-                    jsonWriter.WriteString("status",
-                        healthReportEntry.Value.Status.ToString());
-                    jsonWriter.WriteString("description",
-                        healthReportEntry.Value.Description);
+                    jsonWriter.WriteString("status", healthReportEntry.Value.Status.ToString());
+                    jsonWriter.WriteString("description", healthReportEntry.Value.Description);
                     jsonWriter.WriteStartObject("data");
 
                     foreach (var item in healthReportEntry.Value.Data)

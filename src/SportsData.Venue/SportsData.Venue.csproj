@@ -31,4 +31,12 @@
     <Protobuf Include="Application\Protos\venue.proto" GrpcServices="Server" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Projects\sports-data\src\SportsData.Venue\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Projects\sports-data\src\SportsData.Venue\.editorconfig" />
+  </ItemGroup>
+
 </Project>

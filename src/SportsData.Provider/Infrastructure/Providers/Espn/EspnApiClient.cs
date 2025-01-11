@@ -53,15 +53,15 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return await GetAsync<EspnAthleteDto>(uri);
         }
 
-        public async Task<EspnFranchiseDto> Franchise(int franchiseId)
+        public async Task<EspnFranchiseDto> Franchise(int franchiseId, bool ignoreCache)
         {
-            var franchise = await GetAsync<EspnFranchiseDto>(EspnApiEndpoints.Franchise(franchiseId));
+            var franchise = await GetAsync<EspnFranchiseDto>(EspnApiEndpoints.Franchise(franchiseId), ignoreCache);
             return franchise;
         }
 
-        public async Task<ResourceIndex> Franchises()
+        public async Task<ResourceIndex> Franchises(bool ignoreCache)
         {
-            var franchises = await GetAsync<ResourceIndex>(EspnApiEndpoints.Franchises);
+            var franchises = await GetAsync<ResourceIndex>(EspnApiEndpoints.Franchises, ignoreCache);
 
             const string mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
             const string mask1 = "?lang=en";
@@ -80,11 +80,11 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return franchises;
         }
 
-        public async Task<EspnTeamDto> EspnTeam(int fourDigitYear, int teamId)
+        public async Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId)
         {
             using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<EspnTeamDto>(venuesJson, JsonSerializerSettings);
+            return JsonConvert.DeserializeObject<EspnTeamSeasonDto>(venuesJson, JsonSerializerSettings);
         }
 
         public async Task<TeamInformation> TeamInformation(int teamId)

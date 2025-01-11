@@ -23,13 +23,13 @@ namespace SportsData.Provider.Application.Jobs
         public VenueProviderJob(
             ILogger<VenueProviderJob> logger,
             IProvideEspnApiData espnApi,
-            DataService dataService,
+            DocumentService dataService,
             IBus bus)
         {
             _logger = logger;
             _espnApi = espnApi;
             _bus = bus;
-            _venues = dataService.Database?.GetCollection<EspnVenueDto>("venues");
+            _venues = dataService.Database?.GetCollection<EspnVenueDto>(nameof(EspnVenueDto));
         }
 
         public async Task ExecuteAsync()
@@ -39,12 +39,9 @@ namespace SportsData.Provider.Application.Jobs
             // Get a list of all venues
             var venues = await _espnApi.Venues(true);
 
-            var venueIds = new List<long>();
-
             await venues.items.ForEachAsync(async item =>
             {
                 var venue = await _espnApi.Venue(item.id, true);
-                venueIds.Add(venue.Id);
 
                 var filter = Builders<EspnVenueDto>.Filter.Eq(x => x.Id, venue.Id);
                 
@@ -83,11 +80,7 @@ namespace SportsData.Provider.Application.Jobs
                     _logger.LogInformation("New document event {@evt}", evt);
                 }
 
-                //await venue.Images.ForEachAsync(async i =>
-                //{
-                //    await espnApiClient.GetMedia(i.Href.AbsoluteUri);
-                //    await Task.Delay(1500);
-                //});
+                // TODO: Images?
             });
         }
     }

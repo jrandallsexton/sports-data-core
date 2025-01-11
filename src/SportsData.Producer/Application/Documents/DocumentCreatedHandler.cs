@@ -63,8 +63,11 @@ namespace SportsData.Producer.Application.Documents
             // call Provider to obtain new document
             var document = await _provider.GetDocumentByIdAsync(context.Message.DocumentType, int.Parse(context.Message.Id));
 
-            if (document == null)
-                _logger.LogWarning("Failed to obtain document: {@doc}", context.Message);
+            if (document == null || document == "null")
+            {
+                _logger.LogError("Failed to obtain document: {@doc}", context.Message);
+                return;
+            }
 
             _logger.LogInformation("obtained new document from Provider");
 

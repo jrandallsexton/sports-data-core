@@ -15,9 +15,9 @@ namespace SportsData.Provider.Application.Documents
 
         private readonly IMongoCollection<EspnVenueDto> _venues;
 
-        public DocumentController(DataService dataService)
+        public DocumentController(DocumentService dataService)
         {
-            _venues = dataService.Database?.GetCollection<EspnVenueDto>("venues");
+            _venues = dataService.Database?.GetCollection<EspnVenueDto>(nameof(EspnVenueDto));
         }
 
         [HttpGet("{type}/{documentId}")]

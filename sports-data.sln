@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 		.gitignore = .gitignore
 		azure-pipelines.yml = azure-pipelines.yml
 		src\BuildDockerImages.Local.bat = src\BuildDockerImages.Local.bat
+		Directory.Build.props = Directory.Build.props
 		src\DockerfileApi = src\DockerfileApi
 		src\DockerfileContest = src\DockerfileContest
 		src\DockerfileFranchise = src\DockerfileFranchise

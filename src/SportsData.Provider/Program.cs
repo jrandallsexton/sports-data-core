@@ -2,9 +2,11 @@ using Hangfire;
 
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Application.Jobs;
+using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
+using SportsData.Provider.Middleware.Health;
 
 using System.Reflection;
 
@@ -30,17 +32,22 @@ namespace SportsData.Provider
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             await services.ApplyMigrations<AppDataContext>();
-            services.AddSingleton<DataService>();
+            services.AddSingleton<DocumentService>();
             services.AddMessaging(config);
 
             services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+
+            builder.Services.Configure<ProviderDocDatabase>(
+                builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabase"));
+
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
                 serverOptions.WorkerCount = 10;
             });
 
-            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
             /* Hangfire Jobs */
             services.AddScoped<IProvideVenues, VenueProviderJob>();

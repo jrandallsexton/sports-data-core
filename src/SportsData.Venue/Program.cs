@@ -20,32 +20,39 @@ namespace SportsData.Venue
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            // https://www.reddit.com/r/dotnet/comments/jk6rgg/using_same_microservice_to_deploy_grpc_service/
-            builder.WebHost.ConfigureKestrel(serverOptions =>
-            {
-                // TODO: Get these ports into AzAppConfig (commonConfig?)
-                serverOptions.Listen(IPAddress.Any, 5254, listenOptions =>
-                {
-                    listenOptions.Protocols = HttpProtocols.Http2;
-                });
-                serverOptions.Listen(IPAddress.Any, 5253, listenOptions =>
-                {
-                    listenOptions.Protocols = HttpProtocols.Http1;
-                });
-            });
-
             builder.UseCommon();
+
+            if (builder.Environment.EnvironmentName == "Development")
+            {
+                // https://www.reddit.com/r/dotnet/comments/jk6rgg/using_same_microservice_to_deploy_grpc_service/
+                builder.WebHost.ConfigureKestrel(serverOptions =>
+                {
+                    // TODO: Get these ports into AzAppConfig (commonConfig?)
+                    serverOptions.Listen(IPAddress.Any, 5254, listenOptions =>
+                    {
+                        listenOptions.Protocols = HttpProtocols.Http2;
+                    });
+                    serverOptions.Listen(IPAddress.Any, 5253, listenOptions =>
+                    {
+                        listenOptions.Protocols = HttpProtocols.Http1;
+                    });
+                });
+            }
 
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
             var services = builder.Services;
-            services.AddGrpc(cfg =>
+
+            if (builder.Environment.EnvironmentName == "Development")
             {
-                cfg.EnableDetailedErrors = true;
-            });
+                services.AddGrpc(cfg =>
+                {
+                    cfg.EnableDetailedErrors = true;
+                });
+            }
+
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.AddCoreServices(config);
             services.AddControllers();
@@ -54,14 +61,8 @@ namespace SportsData.Venue
             services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
-            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
-            
-            // Add Caching
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = "localhost:6379";
-                options.InstanceName = "sdv_"; // (only one app using; good practice)
-            });
+            services.AddCaching(config);
+            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var hostAssembly = Assembly.GetExecutingAssembly();
             services.AddAutoMapper(hostAssembly);
@@ -97,7 +98,10 @@ namespace SportsData.Venue
             //});
 
             app.MapControllers();
-            app.MapGrpcService<VenueService>();
+
+
+            if (builder.Environment.EnvironmentName == "Development")
+                app.MapGrpcService<VenueService>();
 
             //app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 

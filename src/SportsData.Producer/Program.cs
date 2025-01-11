@@ -4,42 +4,50 @@ using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace SportsData.Producer;
 
-// Add services to the container.
-var config = builder.Configuration;
-config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
 
-var services = builder.Services;
-services.AddCoreServices(config);
-services.AddControllers();
-services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
+        // Add services to the container.
+        var config = builder.Configuration;
+        config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
-// Add Serilog
-builder.UseCommon();
+        var services = builder.Services;
+        services.AddCoreServices(config);
+        services.AddControllers();
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
 
-services.AddProviders(config);
-services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
-services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+        // Add Serilog
+        builder.UseCommon();
 
-var hostAssembly = Assembly.GetExecutingAssembly();
-builder.Services.AddAutoMapper(hostAssembly);
-services.AddMediatR(hostAssembly);
+        services.AddProviders(config);
+        services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+        services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
+        services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
-// Apply Migrations
-await services.ApplyMigrations<AppDataContext>();
+        var hostAssembly = Assembly.GetExecutingAssembly();
+        builder.Services.AddAutoMapper(hostAssembly);
+        services.AddMediatR(hostAssembly);
 
-var app = builder.Build();
+        // Apply Migrations
+        await services.ApplyMigrations<AppDataContext>();
 
-// Configure the HTTP request pipeline.
-//app.UseHttpsRedirection();
+        var app = builder.Build();
 
-app.UseAuthorization();
+        // Configure the HTTP request pipeline.
+        //app.UseHttpsRedirection();
 
-app.UseCommonFeatures();
+        app.UseAuthorization();
 
-app.MapControllers();
+        app.UseCommonFeatures();
 
-app.Run();
+        app.MapControllers();
+
+        await app.RunAsync();
+    }
+}

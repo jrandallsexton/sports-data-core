@@ -25,7 +25,8 @@ namespace SportsData.Season
             builder.UseCommon();
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-            services.AddHealthChecks<AppDataContext>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddMessaging(config);
+            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();
 

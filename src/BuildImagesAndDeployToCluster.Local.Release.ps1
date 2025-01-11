@@ -1,5 +1,5 @@
 Write-Host "Building Api"
-docker build -f "C:\Projects\sports-data\src\SportsData.Api\Dockerfile" --force-rm -t sportsdataapi  --build-arg "BUILD_CONFIGURATION=Release" --label "com.microsoft.created-by=visual-studio" --label "com.microsoft.visual-studio.project-name=SportsData.Api" "C:\Projects\sports-data\src"
+docker build -f "C:\Projects\sports-data\src\SportsData.Api\Dockerfile" --force-rm -t sportsdataapi  --build-arg "BUILD_CONFIGURATION=Release" --label "com.microsoft.created-by=visual-studio" --label "com.microsoft.visual-studio.project-name=SportsData.Api" "C:\Projects\sports-data"
 
 Write-Host ""
 Write-Host "Building Contest"

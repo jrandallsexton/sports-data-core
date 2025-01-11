@@ -9,9 +9,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
     {
         Task<ResourceIndex> Awards(int franchiseId);
         Task<List<Award>> AwardsByFranchise(int franchiseId);
-        Task<EspnFranchiseDto> Franchise(int franchiseId);
-        Task<ResourceIndex> Franchises();
-        Task<EspnTeamDto> EspnTeam(int fourDigitYear, int teamId);
+        Task<EspnFranchiseDto> Franchise(int franchiseId, bool ignoreCache);
+        Task<ResourceIndex> Franchises(bool ignoreCache);
+        Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId);
         Task<TeamInformation> TeamInformation(int teamId);
         Task<ResourceIndex> Teams(int fourDigitYear);
         Task<ResourceIndex> Venues(bool ignoreCache);

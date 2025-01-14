@@ -9,6 +9,11 @@ namespace SportsData.Core.Extensions
         public static T FromJson<T>(this string json, JsonSerializerSettings jsonSerializerSettings = null)
             where T : class
         {
+            jsonSerializerSettings ??= new JsonSerializerSettings
+            {
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore
+            };
+
             return string.IsNullOrEmpty(json) ? default : JsonConvert.DeserializeObject<T>(json, jsonSerializerSettings);
         }
 

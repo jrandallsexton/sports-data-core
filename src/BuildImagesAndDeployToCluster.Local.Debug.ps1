@@ -62,5 +62,10 @@ Write-Host ""
 Write-Host "Applying Services"
 kubectl apply -f Services
 
+# Apply Prometheus Configuration
+Write-Host ""
+Write-Host "Applying Prometheus Configuration"
+kubectl apply -f ./deployments/prometheus/prometheus-config.yml -n local
+
 Write-Host ""
 Read-Host -Prompt "Build & Deploy Complete. Press <Enter> to exit"

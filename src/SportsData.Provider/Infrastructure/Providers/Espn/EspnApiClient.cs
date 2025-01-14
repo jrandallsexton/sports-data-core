@@ -3,7 +3,6 @@
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.ResourceIndex;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
@@ -14,14 +13,14 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             base(logger, config)
         { }
 
-        public async Task<ResourceIndex> Awards(int franchiseId)
+        public async Task<EspnResourceIndexDto> Awards(int franchiseId)
         {
-            return await GetAsync<ResourceIndex>(EspnApiEndpoints.Awards(franchiseId));
+            return await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
         }
 
         public async Task<List<Award>> AwardsByFranchise(int franchiseId)
         {
-            var franchiseAwards = await GetAsync<ResourceIndex>(EspnApiEndpoints.Awards(franchiseId));
+            var franchiseAwards = await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
             if (franchiseAwards == null || franchiseAwards.count == 0)
                 return new List<Award>();
 
@@ -53,33 +52,6 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return await GetAsync<EspnAthleteDto>(uri);
         }
 
-        public async Task<EspnFranchiseDto> Franchise(int franchiseId, bool ignoreCache)
-        {
-            var franchise = await GetAsync<EspnFranchiseDto>(EspnApiEndpoints.Franchise(franchiseId), ignoreCache);
-            return franchise;
-        }
-
-        public async Task<ResourceIndex> Franchises(bool ignoreCache)
-        {
-            var franchises = await GetAsync<ResourceIndex>(EspnApiEndpoints.Franchises, ignoreCache);
-
-            const string mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
-            const string mask1 = "?lang=en";
-            franchises.items.ForEach(i =>
-            {
-                var url = i.href;
-                url = url.Replace(mask0, string.Empty);
-                url = url.Replace(mask1, string.Empty);
-
-                if (int.TryParse(url, out var franchiseId))
-                {
-                    i.id = franchiseId;
-                }
-            });
-
-            return franchises;
-        }
-
         public async Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId)
         {
             using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
@@ -94,18 +66,18 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return JsonConvert.DeserializeObject<TeamInformation>(venuesJson, JsonSerializerSettings);
         }
 
-        public async Task<ResourceIndex> Teams(int fourDigitYear)
+        public async Task<EspnResourceIndexDto> Teams(int fourDigitYear)
         {
             using var response = await GetAsync(EspnApiEndpoints.Teams(fourDigitYear));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<ResourceIndex>(venuesJson, JsonSerializerSettings);
+            return JsonConvert.DeserializeObject<EspnResourceIndexDto>(venuesJson, JsonSerializerSettings);
         }
 
-        public async Task<ResourceIndex> Venues(bool ignoreCache)
+        public async Task<EspnResourceIndexDto> GetResourceIndex(string uri, string uriMask)
         {
-            var venues = await GetAsync<ResourceIndex>(EspnApiEndpoints.Venues, ignoreCache);
+            var venues = await GetAsync<EspnResourceIndexDto>(uri, true);
 
-            const string mask0 = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/";
+            var mask0 = uriMask;
             const string mask1 = "?lang=en";
             venues.items.ForEach(i =>
             {
@@ -117,15 +89,17 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 {
                     i.id = venueId;
                 }
-                
+
             });
 
             return venues;
         }
 
-        public async Task<EspnVenueDto> Venue(int venueId, bool ignoreCache)
+        public async Task<string> GetResource(string uri, bool ignoreCache)
         {
-            return await GetAsync<EspnVenueDto>(EspnApiEndpoints.Venue(venueId), ignoreCache);
+            var response = await base.GetAsync(uri);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync();
         }
     }
 }

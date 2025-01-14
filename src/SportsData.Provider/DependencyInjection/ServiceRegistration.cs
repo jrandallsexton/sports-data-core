@@ -1,5 +1,7 @@
 ﻿using Hangfire;
+
 using SportsData.Provider.Application.Jobs;
+using SportsData.Provider.Application.Jobs.Definitions;
 
 namespace SportsData.Provider.DependencyInjection
 {
@@ -10,10 +12,13 @@ namespace SportsData.Provider.DependencyInjection
             var serviceScope = services.CreateScope();
             var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
 
-            recurringJobManager.RemoveIfExists(nameof(VenueProviderJob));
+            recurringJobManager.AddOrUpdate<IProvideDocuments>(
+                nameof(DocumentProviderJob<EspnDocumentJobFranchiseDefinition>),
+                job => job.ExecuteAsync(), "15 * * * *");
 
-            //recurringJobManager.AddOrUpdate<IProvideVenues>(nameof(VenueProviderJob),
-            //    job => job.ExecuteAsync(), "15 * * * *");
+            recurringJobManager.AddOrUpdate<IProvideDocuments>(
+                nameof(DocumentProviderJob<EspnDocumentJobVenueDefinition>),
+                job => job.ExecuteAsync(), "15 * * * *");
 
             return services;
         }

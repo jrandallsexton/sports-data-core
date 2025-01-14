@@ -30,7 +30,7 @@ namespace SportsData.Core.Middleware.Health
                 await _bus.Publish(new Heartbeat()
                 {
                     CreatedAt = DateTime.UtcNow,
-                    Producer = nameof(HeartbeatPublisher<T>)
+                    Producer = typeof(T).FullName
                 }, stoppingToken);
                 _logger.LogInformation("heartbeat sent from {@t}", typeof(T));
                 await Task.Delay(60_000, stoppingToken);

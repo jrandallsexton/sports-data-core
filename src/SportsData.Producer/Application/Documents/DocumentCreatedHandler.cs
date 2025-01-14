@@ -8,7 +8,6 @@ using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -94,7 +93,9 @@ namespace SportsData.Producer.Application.Documents
                         IsIndoor = espnVenue.Indoor,
                         IsGrass = espnVenue.Grass,
                         CreatedUtc = DateTime.UtcNow,
-                        CreatedBy = context.Message.CorrelationId
+                        CreatedBy = context.Message.CorrelationId,
+                        ExternalIds = [new ExternalId() { Id = espnVenue.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                        GlobalId = Guid.NewGuid()
                     };
                     await _dataContext.AddAsync(venueEntity);
                     await _dataContext.SaveChangesAsync();

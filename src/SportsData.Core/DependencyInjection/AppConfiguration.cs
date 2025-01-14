@@ -5,13 +5,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 using Serilog;
+using Serilog.Sinks.OpenTelemetry;
 
 using SportsData.Core.Config;
 using SportsData.Core.Middleware.Health;
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -21,8 +24,26 @@ namespace SportsData.Core.DependencyInjection
         {
             builder.Host.UseSerilog((context, configuration) =>
             {
-                configuration.ReadFrom.Configuration(context.Configuration);
+                configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .WriteTo.OpenTelemetry(options =>
+                    {
+                        // TODO: Move this to az app config
+                        options.Endpoint = "http://localhost:4317/v1/logs";
+                        options.Protocol = OtlpProtocol.Grpc;
+                        options.ResourceAttributes = new Dictionary<string, object>
+                        {
+                            ["service.name"] = builder.Environment.ApplicationName
+                        };
+                    });
             });
+
+            builder.Logging.AddOpenTelemetry(x =>
+            {
+                x.IncludeScopes = true;
+                x.IncludeFormattedMessage = true;
+            });
+
             return builder;
         }
 
@@ -46,7 +67,26 @@ namespace SportsData.Core.DependencyInjection
                         links.AppendLine($"<a href=\"\" target=\"_blank\">BuildConfig: {buildConfiguration}</a></br>");
                         links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
                         links.AppendLine("<a href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
+                        links.AppendLine("<a href=\"/metrics\" target=\"_blank\">Metrics</a></br>");
                         //links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
+
+                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            links.AppendLine("<a href=\"http://localhost:30084/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                        }
+                        else
+                        {
+                            links.AppendLine("<a href=\"http://localhost:3000/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                        }
+
+                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            links.AppendLine("<a href=\"http://localhost:30083/graph\" target=\"_blank\">Prometheus</a></br>");
+                        }
+                        else
+                        {
+                            links.AppendLine("<a href=\"http://localhost:9090/graph\" target=\"_blank\">Prometheus</a></br>");
+                        }
 
                         if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
                         {
@@ -82,6 +122,8 @@ namespace SportsData.Core.DependencyInjection
             }
 
             app.UseSerilogRequestLogging();
+            app.MapPrometheusScrapingEndpoint();
+
             return app;
         }
 

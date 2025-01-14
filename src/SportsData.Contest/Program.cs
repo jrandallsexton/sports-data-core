@@ -27,7 +27,7 @@ namespace SportsData.Contest
             services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config);
-
+            services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();

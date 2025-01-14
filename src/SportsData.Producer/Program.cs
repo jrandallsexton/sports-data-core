@@ -11,6 +11,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.UseCommon();
 
         // Add services to the container.
         var config = builder.Configuration;
@@ -21,13 +22,10 @@ public class Program
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-
-        // Add Serilog
-        builder.UseCommon();
-
         services.AddProviders(config);
         services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
         services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
+        services.AddInstrumentation(builder.Environment.ApplicationName);
         services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
         var hostAssembly = Assembly.GetExecutingAssembly();

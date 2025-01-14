@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.ResourceIndex;
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
-public class Item
+public class EspnResourceIndexItem
 {
     [JsonProperty("$ref")]
     public string href { get; set; }

@@ -2,6 +2,7 @@ using Hangfire;
 
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Application.Jobs;
+using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -34,6 +35,7 @@ namespace SportsData.Provider
             await services.ApplyMigrations<AppDataContext>();
             services.AddSingleton<DocumentService>();
             services.AddMessaging(config);
+            services.AddInstrumentation(builder.Environment.ApplicationName);
 
             services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
 
@@ -50,7 +52,9 @@ namespace SportsData.Provider
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
             /* Hangfire Jobs */
-            services.AddScoped<IProvideVenues, VenueProviderJob>();
+            services.AddSingleton<EspnDocumentJobFranchiseDefinition>();
+            services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobFranchiseDefinition>>();
+            services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobVenueDefinition>>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddSingleton(new EspnApiClientConfig());
 

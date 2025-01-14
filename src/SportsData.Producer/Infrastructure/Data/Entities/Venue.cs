@@ -15,6 +15,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsIndoor { get; set; }
 
+        public List<ExternalId> ExternalIds { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<Venue>
         {
             public void Configure(EntityTypeBuilder<Venue> builder)

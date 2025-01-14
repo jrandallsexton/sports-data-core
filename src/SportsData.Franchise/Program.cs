@@ -1,5 +1,3 @@
-using Serilog;
-
 using SportsData.Core.DependencyInjection;
 using SportsData.Franchise.Infrastructure.Data;
 
@@ -28,6 +26,7 @@ namespace SportsData.Franchise
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config);
+            services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
             var app = builder.Build();

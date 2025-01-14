@@ -26,9 +26,11 @@ namespace SportsData.Provider.Middleware.Health
                 var canConnect = !string.IsNullOrEmpty(dataService.Database.DatabaseNamespace.DatabaseName);
 
                 _logger.LogInformation($"{nameof(DocumentDatabaseHealthCheck)} canConnect? {canConnect}");
-                return canConnect ?
+                var result = canConnect ?
                     HealthCheckResult.Healthy() :
                     HealthCheckResult.Unhealthy("Unable to connect to document database");
+
+                return await Task.FromResult(result);
             }
             catch (Exception ex)
             {

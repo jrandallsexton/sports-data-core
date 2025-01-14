@@ -22,6 +22,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -107,6 +111,40 @@ namespace SportsData.Core.DependencyInjection
                 .AddCheck<ProviderHealthCheck<IProvideProviders>>(HttpClients.ProviderClient)
                 .AddCheck<ProviderHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
                 .AddCheck<ProviderHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+            return services;
+        }
+
+        public static IServiceCollection AddInstrumentation(this IServiceCollection services, string applicationName)
+        {
+            Action<ResourceBuilder> appResourceBuilder =
+                resource => resource
+                    .AddTelemetrySdk()
+                    .AddService(applicationName);
+
+            services.AddOpenTelemetry()
+                .ConfigureResource(appResourceBuilder)
+                .WithTracing(builder => builder
+                    .SetSampler<AlwaysOnSampler>()
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddSource("APITracing")
+                    //.AddConsoleExporter()
+                    .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317/v1/logs"))
+                )
+                .WithMetrics(builder => builder
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(
+                        "Microsoft.AspNetCore.Hosting",
+                        "Microsoft.AspNetCore.Server.Kestrel",
+                        "System.Net.Http")
+                    .AddPrometheusExporter()
+                    .AddAspNetCoreInstrumentation()
+                    .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317/v1/logs")));
+
+            services.Configure<OpenTelemetryLoggerOptions>(logging => logging.AddOtlpExporter());
+            services.ConfigureOpenTelemetryMeterProvider(metrics => metrics.AddOtlpExporter());
+            services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddOtlpExporter());
+
             return services;
         }
 

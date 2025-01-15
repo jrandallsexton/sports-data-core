@@ -10,8 +10,9 @@
         Scoreboard = 5,
         Season = 6,
         Team = 7,
-        TeamInformation = 8,
-        Venue = 9,
-        Weeks = 10
+        TeamBySeason = 8,
+        TeamInformation = 9,
+        Venue = 10,
+        Weeks = 11
     }
 }

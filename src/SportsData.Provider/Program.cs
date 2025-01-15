@@ -3,6 +3,7 @@ using Hangfire;
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
+using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -53,9 +54,17 @@ namespace SportsData.Provider
 
             /* Hangfire Jobs */
             services.AddSingleton<EspnDocumentJobFranchiseDefinition>();
+            services.AddSingleton<EspnDocumentJobVenueDefinition>();
+
+            var def = new EspnDocumentJobTeamSeasonDefinition()
+            {
+                SeasonYear = 2024
+            };
+            services.AddSingleton(def);
             services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobFranchiseDefinition>>();
             services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobVenueDefinition>>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+            services.AddScoped<IProcessResourceIndexes, ResourceIndexItemProcessor>();
             services.AddSingleton(new EspnApiClientConfig());
 
             var app = builder.Build();

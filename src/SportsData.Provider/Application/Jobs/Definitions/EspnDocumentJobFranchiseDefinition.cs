@@ -15,5 +15,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
 
         public override string EndpointMask { get; init; } =
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
+
+        public override int? SeasonYear { get; init; } = null;
     }
 }

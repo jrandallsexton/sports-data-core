@@ -11,5 +11,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public abstract string Endpoint { get; init; }
 
         public abstract string EndpointMask { get; init; }
+
+        public abstract int? SeasonYear { get; init; }
     }
 }

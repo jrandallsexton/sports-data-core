@@ -5,7 +5,7 @@ using MongoDB.Driver;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
@@ -22,24 +22,27 @@ namespace SportsData.Provider.Application.Processors
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
         private readonly IBus _bus;
+        private readonly IDecodeDocumentProvidersAndTypes _decoder;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
-            IBus bus)
+            IBus bus,
+            IDecodeDocumentProvidersAndTypes decoder)
         {
             _logger = logger;
             _espnApi = espnApi;
             _documentService = documentService;
             _bus = bus;
+            _decoder = decoder;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
             _logger.LogInformation("Started with {@command}", command);
 
-            var type = GetType(command.SourceDataProvider, command.DocumentType);
+            var type = _decoder.GetType(command.SourceDataProvider, command.DocumentType);
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
 
@@ -55,6 +58,7 @@ namespace SportsData.Provider.Application.Processors
             var dbResult = await dbObjects.FindAsync(filter);
             var dbItem = await dbResult.FirstOrDefaultAsync();
 
+            // TODO: break these off into different handlers
             if (dbItem is null)
             {
                 // no ?  save it and broadcast event
@@ -99,29 +103,6 @@ namespace SportsData.Provider.Application.Processors
                 await _bus.Publish(evt);
 
                 _logger.LogInformation("Document updated event {@evt}", evt);
-            }
-        }
-
-        private static Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType)
-        {
-            switch (docType)
-            {
-                case DocumentType.Franchise:
-                    return typeof(EspnFranchiseDto);
-                case DocumentType.TeamBySeason:
-                    return typeof(EspnTeamSeasonDto);
-                case DocumentType.Athlete:
-                case DocumentType.Award:
-                case DocumentType.Event:
-                case DocumentType.GameSummary:
-                case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.Team:
-                case DocumentType.TeamInformation:
-                case DocumentType.Venue:
-                case DocumentType.Weeks:
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }
         }
     }

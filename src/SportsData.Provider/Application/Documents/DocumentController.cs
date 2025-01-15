@@ -3,8 +3,6 @@
 using MongoDB.Driver;
 
 using SportsData.Core.Common;
-using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Documents
@@ -12,21 +10,32 @@ namespace SportsData.Provider.Application.Documents
     [Route("api/document")]
     public class DocumentController : ApiControllerBase
     {
+        private readonly DocumentService _documentService;
+        private readonly IDecodeDocumentProvidersAndTypes _decoder;
 
-        private readonly IMongoCollection<EspnVenueDto> _venues;
-
-        public DocumentController(DocumentService dataService)
+        public DocumentController(
+            DocumentService documentService,
+            IDecodeDocumentProvidersAndTypes decoder)
         {
-            _venues = dataService.Database?.GetCollection<EspnVenueDto>(nameof(EspnVenueDto));
+            _documentService = documentService;
+            _decoder = decoder;
         }
 
-        [HttpGet("{type}/{documentId}")]
-        public async Task<IActionResult> GetDocument(DocumentType type, int documentId)
+        [HttpGet("{providerId}/{typeId}/{documentId}")]
+        public async Task<IActionResult> GetDocument(
+            SourceDataProvider providerId,
+            DocumentType typeId,
+            int documentId)
         {
-            var filter = Builders<EspnVenueDto>.Filter.Eq(x => x.Id, documentId);
-            var dbVenueResult = await _venues.FindAsync(filter);
-            var dbVenue = await dbVenueResult.FirstOrDefaultAsync();
-            return await Task.FromResult(Ok(dbVenue.ToJson()));
+            var type = _decoder.GetType(providerId, typeId);
+
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+
+            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
+
+            var dbResult = await dbObjects.FindAsync(filter);
+            var dbItem = await dbResult.FirstOrDefaultAsync();
+            return await Task.FromResult(Ok(dbItem.Data));
         }
     }
 }

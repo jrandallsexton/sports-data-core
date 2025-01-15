@@ -7,11 +7,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class FranchiseLogo : EntityBase<Guid>
     {
+        public Guid FranchiseId { get; set; }
+
         public string Url { get; set; }
 
-        public int Height { get; set; }
+        public long Height { get; set; }
 
-        public int Width { get; set; }
+        public long Width { get; set; }
 
         public List<string> Rel { get; set; } = [];
 
@@ -21,6 +23,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable("FranchiseLogo");
                 builder.HasKey(t => t.Id);
+                builder.HasOne<Franchise>()
+                    .WithMany(x => x.Logos)
+                    .HasForeignKey(x => x.FranchiseId);
             }
         }
     }

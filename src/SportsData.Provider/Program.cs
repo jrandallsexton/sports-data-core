@@ -1,6 +1,7 @@
 using Hangfire;
 
 using SportsData.Core.DependencyInjection;
+using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
@@ -65,6 +66,7 @@ namespace SportsData.Provider
             services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobVenueDefinition>>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexItemProcessor>();
+            services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.AddSingleton(new EspnApiClientConfig());
 
             var app = builder.Build();

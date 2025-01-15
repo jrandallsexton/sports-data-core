@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider;
@@ -38,7 +39,10 @@ namespace SportsData.Producer.Application.Documents
             _logger.LogInformation("new document event received: {@message}", context.Message);
 
             // call Provider to obtain new document
-            var document = await _provider.GetDocumentByIdAsync(context.Message.DocumentType, int.Parse(context.Message.Id));
+            var document = await _provider.GetDocumentByIdAsync(
+                context.Message.SourceDataProvider,
+                context.Message.DocumentType,
+                int.Parse(context.Message.Id));
 
             if (document is null or "null")
             {
@@ -58,16 +62,86 @@ namespace SportsData.Producer.Application.Documents
                 case DocumentType.Venue:
                     await HandleVenueDocumentCreated(context, document);
                     break;
+                case DocumentType.Franchise:
+                    await HandleFranchiseCreated(context, document);
+                    break;
                 case DocumentType.Athlete:
                 case DocumentType.Award:
                 case DocumentType.Event:
-                case DocumentType.Franchise:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private async Task HandleFranchiseCreated(ConsumeContext<DocumentCreated> context, string document)
+        {
+            switch (context.Message.SourceDataProvider)
+            {
+                case SourceDataProvider.Espn:
+
+                    // deserialize the DTO
+                    //var espnFranchise = document.FromJson<EspnFranchiseDto>(new JsonSerializerSettings
+                    //{
+                    //    MetadataPropertyHandling = MetadataPropertyHandling.Ignore
+                    //});
+
+                    var espnFranchise = document.FromJson<EspnFranchiseDto>();
+
+                    // TODO: Determine if this entity exists. Do NOT trust that it says it is a new document!
+
+                    // 1. map to the entity and save it
+                    // TODO: Move to extension method?
+                    var franchiseId = Guid.NewGuid();
+                    var franchiseEntity = new Franchise()
+                    {
+                        Id = franchiseId,
+                        Abbreviation = espnFranchise.Abbreviation,
+                        ColorCodeHex = espnFranchise.Color,
+                        DisplayName = espnFranchise.DisplayName,
+                        CreatedUtc = DateTime.UtcNow,
+                        CreatedBy = context.Message.CorrelationId,
+                        ExternalIds = [new ExternalId() { Id = espnFranchise.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                        GlobalId = Guid.NewGuid(),
+                        DisplayNameShort = espnFranchise.ShortDisplayName,
+                        IsActive = espnFranchise.IsActive,
+                        Name = espnFranchise.Name,
+                        Nickname = espnFranchise.Nickname,
+                        Slug = espnFranchise.Slug,
+                        Logos = espnFranchise.Logos.Select(x => new FranchiseLogo()
+                        {
+                            Id = Guid.NewGuid(),
+                            CreatedBy = context.Message.CorrelationId,
+                            CreatedUtc = DateTime.UtcNow,
+                            FranchiseId = franchiseId,
+                            Height = x.Height,
+                            Width = x.Width,
+                            Url = x.Href.ToString()
+                        }).ToList()
+                    };
+                    await _dataContext.AddAsync(franchiseEntity);
+                    await _dataContext.SaveChangesAsync();
+
+                    // 2. raise an event
+                    // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
+                    var evt = new FranchiseCreated()
+                    {
+                        Id = espnFranchise.Id.ToString(),
+                        Name = context.Message.Name
+                    };
+                    await _bus.Publish(evt);
+                    _logger.LogInformation("New {@type} event {@evt}", context.Message.DocumentType, evt);
+
+                    break;
+                case SourceDataProvider.SportsDataIO:
+                case SourceDataProvider.Cbs:
+                case SourceDataProvider.Yahoo:
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -162,7 +236,6 @@ namespace SportsData.Producer.Application.Documents
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
         }
     }
 }

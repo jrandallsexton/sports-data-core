@@ -1,6 +1,4 @@
-﻿using Microsoft.Azure.Amqp.Framing;
-
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 using SportsData.Core.Converters;
 
@@ -101,7 +99,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public string ShortName { get; set; }
 
         [JsonProperty("address")]
-        public Address Address { get; set; }
+        public EspnFranchiseAddress Address { get; set; }
 
         [JsonProperty("capacity")]
         public long Capacity { get; set; }

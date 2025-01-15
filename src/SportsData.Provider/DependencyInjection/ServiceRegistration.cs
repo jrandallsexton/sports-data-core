@@ -20,7 +20,7 @@ namespace SportsData.Provider.DependencyInjection
             //    nameof(DocumentProviderJob<EspnDocumentJobVenueDefinition>),
             //    job => job.ExecuteAsync(), "15 * * * *");
 
-            BackgroundJob.Enqueue<DocumentProviderJob<EspnDocumentJobTeamSeasonDefinition>>(job => job.ExecuteAsync());
+            //BackgroundJob.Enqueue<DocumentProviderJob<EspnDocumentJobTeamSeasonDefinition>>(job => job.ExecuteAsync());
 
             return services;
         }

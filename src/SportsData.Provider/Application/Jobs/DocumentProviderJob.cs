@@ -47,6 +47,7 @@ namespace SportsData.Provider.Application.Jobs
             }
 
             _logger.LogInformation($"Completed {nameof(DocumentProviderJob<TDocumentJobDefinition>)} with {resourceIndex.items.Count} jobs spawned.");
-            }
+
+        }
     }
 }

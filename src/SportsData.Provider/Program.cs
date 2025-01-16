@@ -3,7 +3,7 @@ using Hangfire;
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs;
-using SportsData.Provider.Application.Jobs.Definitions;
+using SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
@@ -12,6 +12,7 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 using SportsData.Provider.Middleware.Health;
 
 using System.Reflection;
+using SportsData.Core.Common;
 
 namespace SportsData.Provider
 {
@@ -19,6 +20,10 @@ namespace SportsData.Provider
     {
         public static async Task Main(string[] args)
         {
+            //var MODE = (args.Length > 0 && args[0] == "-mode") ?
+            //    Enum.Parse<Sport>(args[1]) :
+            //    Sport.All;
+
             var builder = WebApplication.CreateBuilder(args);
             builder.UseCommon();
 

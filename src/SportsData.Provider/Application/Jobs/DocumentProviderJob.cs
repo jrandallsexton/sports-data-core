@@ -32,7 +32,7 @@ namespace SportsData.Provider.Application.Jobs
             // Get the resource index
             var resourceIndex = await _espnApi.GetResourceIndex(_jobDefinition.Endpoint, _jobDefinition.EndpointMask);
 
-            foreach (var cmd in resourceIndex.items.Skip(415).Select(item => new ProcessResourceIndexItemCommand()
+            foreach (var cmd in resourceIndex.items.Select(item => new ProcessResourceIndexItemCommand()
                      {
                          DocumentType = _jobDefinition.DocumentType,
                          Href = item.href,
@@ -43,7 +43,7 @@ namespace SportsData.Provider.Application.Jobs
             {
                 // TODO: Put this in a wrapper with an interface for testing
                 BackgroundJob.Enqueue<IProcessResourceIndexes>(p => p.Process(cmd));
-                await Task.Delay(3_000); // do NOT beat on their API
+                await Task.Delay(1_000); // do NOT beat on their API
             }
 
             _logger.LogInformation($"Completed {nameof(DocumentProviderJob<TDocumentJobDefinition>)} with {resourceIndex.items.Count} jobs spawned.");

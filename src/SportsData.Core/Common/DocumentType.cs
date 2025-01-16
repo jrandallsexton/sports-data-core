@@ -4,7 +4,7 @@
     {
         Athlete = 0,
         Award = 1,
-        Event = 2,
+        Contest = 2,
         Franchise = 3,
         GameSummary = 4,
         Scoreboard = 5,

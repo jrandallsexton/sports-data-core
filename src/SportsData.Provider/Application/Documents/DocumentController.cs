@@ -1,24 +1,34 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit;
+
+using Microsoft.AspNetCore.Mvc;
 
 using MongoDB.Driver;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Documents
 {
+    // TODO: Move everything here into cqrs. this should be clean.
+
     [Route("api/document")]
     public class DocumentController : ApiControllerBase
     {
+        private readonly ILogger<DocumentController> _logger;
         private readonly DocumentService _documentService;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
+        private readonly IBus _bus;
 
         public DocumentController(
             DocumentService documentService,
-            IDecodeDocumentProvidersAndTypes decoder)
+            IDecodeDocumentProvidersAndTypes decoder, IBus bus, ILogger<DocumentController> logger)
         {
             _documentService = documentService;
             _decoder = decoder;
+            _bus = bus;
+            _logger = logger;
         }
 
         [HttpGet("{providerId}/{typeId}/{documentId}")]
@@ -35,7 +45,42 @@ namespace SportsData.Provider.Application.Documents
 
             var dbResult = await dbObjects.FindAsync(filter);
             var dbItem = await dbResult.FirstOrDefaultAsync();
-            return await Task.FromResult(Ok(dbItem.Data));
+
+            // TODO: Clean this up
+            return dbItem != null ? Ok(dbItem.Data) : NotFound();
         }
+
+        [HttpPost(Name = "PublishDocumentEvents")]
+        public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
+        {
+            var type = _decoder.GetType(command.SourceDataProvider, command.DocumentType);
+
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+
+            var filter = Builders<DocumentBase>.Filter.Empty;
+            var all = await dbObjects.FindAsync(filter);
+            var foo = await all.ToListAsync();
+
+            var events = new List<DocumentCreated>();
+
+            foreach (var tmp in foo)
+            {
+                var evt = new DocumentCreated()
+                {
+                    Id = tmp.Id.ToString(),
+                    Name = type.Name,
+                    SourceDataProvider = command.SourceDataProvider,
+                    DocumentType = command.DocumentType
+                };
+                events.Add(evt);
+            }
+
+            await _bus.PublishBatch(events);
+
+            _logger.LogInformation($"Published {events.Count} events.");
+
+            return Ok();
+        }
+        
     }
 }

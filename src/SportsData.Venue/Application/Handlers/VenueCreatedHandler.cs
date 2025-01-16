@@ -1,5 +1,7 @@
 ﻿using MassTransit;
 
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Venue.Infrastructure.Data;
@@ -33,6 +35,14 @@ namespace SportsData.Venue.Application.Handlers
             {
                 _logger.LogError("Could not obtain canonical model for {@evt}", context.Message);
                 throw new Exception("foo");
+            }
+
+            // the event says it is new - check anyway
+            var exists = await _dataContext.Venues.AnyAsync(x => x.GlobalId == canonicalVenue.Id);
+            if (exists)
+            {
+                _logger.LogWarning($"Venue already exists for GlobalId: {canonicalVenue.Id}");
+                return;
             }
 
             // map it to our entity

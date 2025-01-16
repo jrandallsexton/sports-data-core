@@ -10,6 +10,8 @@ namespace SportsData.Producer.Infrastructure.Data
         public AppDataContext(DbContextOptions<AppDataContext> options)
             : base(options) { }
 
+        public DbSet<Franchise> Franchises { get; set; }
+
         public DbSet<Venue> Venues { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

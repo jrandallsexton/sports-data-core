@@ -1,9 +1,12 @@
 ﻿using SportsData.Core.Common;
 
-namespace SportsData.Provider.Application.Jobs.Definitions
+namespace SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa
 {
     public class EspnDocumentJobFranchiseDefinition : DocumentJobDefinition
     {
+        public override Sport Sport { get; init; } =
+            Sport.FootballNcaa;
+
         public override SourceDataProvider SourceDataProvider { get; init; } =
             SourceDataProvider.Espn;
 

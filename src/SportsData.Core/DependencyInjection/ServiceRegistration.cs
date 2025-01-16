@@ -84,11 +84,13 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddHealthChecks<TDbContext, TPublisher>(this IServiceCollection services, string apiName)
+        public static IServiceCollection AddHealthChecks<TDbContext, TPublisher>(
+            this IServiceCollection services,
+            string apiName)
             where TDbContext : DbContext where TPublisher : class
         {
             services.AddHealthChecks()
-                .AddCheck<HealthCheck>(apiName)
+                .AddCheck<HealthCheck>("apiName")
                 .AddCheck<LoggingHealthCheck>("logging")
                 .AddCheck<DatabaseHealthCheck<TDbContext>>($"{apiName}-db");
 

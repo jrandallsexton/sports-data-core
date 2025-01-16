@@ -1,5 +1,6 @@
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
+using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
@@ -27,6 +28,16 @@ public class Program
         services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
         services.AddInstrumentation(builder.Environment.ApplicationName);
         services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
+
+        /* Local Services */
+        services.AddScoped<AthleteDocumentProcessor>();
+        services.AddScoped<AwardDocumentProcessor>();
+        services.AddScoped<ContestDocumentProcessor>();
+        services.AddScoped<FranchiseDocumentProcessor>();
+        services.AddScoped<TeamDocumentProcessor>();
+        services.AddScoped<TeamBySeasonDocumentProcessor>();
+        services.AddScoped<TeamInformationDocumentProcessor>();
+        services.AddScoped<VenueDocumentProcessor>();
 
         var hostAssembly = Assembly.GetExecutingAssembly();
         builder.Services.AddAutoMapper(hostAssembly);

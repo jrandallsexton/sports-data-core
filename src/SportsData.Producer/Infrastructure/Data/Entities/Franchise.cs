@@ -25,7 +25,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string Slug { get; set; }
 
-        public List<ExternalId> ExternalIds { get; set; }
+        public List<FranchiseExternalId> ExternalIds { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<Franchise>
         {

@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Middleware.Health;
 
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Provider
@@ -11,6 +14,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
     public interface IProvideProviders : IProvideHealthChecks
     {
         Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, DocumentType type, int documentId);
+        Task PublishDocumentEvents(PublishDocumentEventsCommand command);
     }
 
     public class ProviderProvider : ProviderBase, IProvideProviders
@@ -31,6 +35,13 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             return tmp;
+        }
+
+        public async Task PublishDocumentEvents(PublishDocumentEventsCommand command)
+        {
+            var content = new StringContent(command.ToJson(), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync($"document/", content);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

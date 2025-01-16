@@ -18,15 +18,17 @@ namespace SportsData.Provider.Application.Documents
                     return typeof(EspnFranchiseDto);
                 case DocumentType.TeamBySeason:
                     return typeof(EspnTeamSeasonDto);
+                case DocumentType.Venue:
+                    return typeof(EspnVenueDto);
                 case DocumentType.Athlete:
                 case DocumentType.Award:
-                case DocumentType.Event:
+                case DocumentType.Contest:
+                    // TODO: Create these => return typeof(EspnContestDto);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
-                case DocumentType.Venue:
                 case DocumentType.Weeks:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);

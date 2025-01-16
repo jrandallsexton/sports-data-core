@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 using Serilog;
 using Serilog.Sinks.OpenTelemetry;
@@ -14,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Microsoft.Extensions.Logging;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -134,10 +134,12 @@ namespace SportsData.Core.DependencyInjection
 
             cfg.AddAzureAppConfiguration(cfg =>
             {
-                var cs = Environment.GetEnvironmentVariable("APPCONFIG_CONNSTR");
-                cfg.Connect(cs)
+                var appConfigConnectionString = Environment.GetEnvironmentVariable("APPCONFIG_CONNSTR");
+                //var serviceMode = Environment.GetEnvironmentVariable("SERVICE_MODE");
+                cfg.Connect(appConfigConnectionString)
                     .Select("CommonConfig", environmentName)
                     .Select(applicationName, environmentName);
+                    //.Select($"{applicationName}{environmentName}", serviceMode);
             });
 
             // TODO: Determine a better way of doing this

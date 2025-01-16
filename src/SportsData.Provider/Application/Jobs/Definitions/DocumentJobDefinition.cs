@@ -4,6 +4,8 @@ namespace SportsData.Provider.Application.Jobs.Definitions
 {
     public abstract class DocumentJobDefinition
     {
+        public abstract Sport Sport { get; init; }
+
         public abstract SourceDataProvider SourceDataProvider { get; init; }
 
         public abstract DocumentType DocumentType { get; init; }

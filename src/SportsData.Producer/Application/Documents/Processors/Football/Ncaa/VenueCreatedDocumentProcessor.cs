@@ -8,19 +8,20 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
-    public class VenueDocumentProcessor : IProcessDocuments
+    public class VenueCreatedDocumentProcessor : IProcessDocuments
     {
-        private readonly ILogger<VenueDocumentProcessor> _logger;
+        private readonly ILogger<VenueCreatedDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IBus _bus;
 
-        public VenueDocumentProcessor(
-            ILogger<VenueDocumentProcessor> logger,
+        public VenueCreatedDocumentProcessor(
+            ILogger<VenueCreatedDocumentProcessor> logger,
             AppDataContext dataContext,
             IBus bus)
         {
@@ -69,7 +70,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             var evt = new VenueCreated()
             {
                 Id = venueEntity.Id.ToString(),
-                Name = nameof(VenueCreated)
+                CorrelationId = command.CorrelationId,
+                Canonical = new VenueCanonicalModel()
+                {
+                    CreatedUtc = venueEntity.CreatedUtc,
+                    Id = venueEntity.Id,
+                    IsGrass = venueEntity.IsGrass,
+                    IsIndoor = venueEntity.IsIndoor,
+                    Name = venueEntity.Name,
+                    ShortName = venueEntity.ShortName,
+                    ExternalIds = new Dictionary<SourceDataProvider, string>()
+                    {
+                        { command.SourceDataProvider, espnDto.Id.ToString() }
+                    }
+                }
             };
             await _bus.Publish(evt);
             _logger.LogInformation("New {@type} event {@evt}", DocumentType.Venue, evt);

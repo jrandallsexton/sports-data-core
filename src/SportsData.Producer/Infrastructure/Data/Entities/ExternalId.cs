@@ -10,8 +10,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
     public class GroupExternalId : ExternalId
     {
-        public Guid GroupId { get; set; }
-
         public Group Group { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<GroupExternalId>
@@ -20,9 +18,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable("GroupExternalId");
                 builder.HasKey(t => t.Id);
-                builder.HasOne<Group>()
-                    .WithMany(x => x.ExternalIds)
-                    .HasForeignKey(x => x.GroupId);
             }
         }
     }

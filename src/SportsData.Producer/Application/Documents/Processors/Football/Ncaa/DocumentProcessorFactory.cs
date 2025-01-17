@@ -2,9 +2,15 @@
 
 namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
 
+public enum DocumentAction
+{
+    Created,
+    Updated
+}
+
 public interface IDocumentProcessorFactory
 {
-    IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType);
+    IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction);
 }
 
 public class DocumentProcessorFactory : IDocumentProcessorFactory
@@ -16,12 +22,12 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         _serviceProvider = serviceProvider;
     }
 
-    public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType)
+    public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sourceDataProvider)
         {
             case SourceDataProvider.Espn:
-                return GetEspnDocumentProcessor(sport, documentType);
+                return GetEspnDocumentProcessor(sport, documentType, documentAction);
             case SourceDataProvider.SportsDataIO:
             case SourceDataProvider.Cbs:
             case SourceDataProvider.Yahoo:
@@ -30,12 +36,12 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
-    private IProcessDocuments GetEspnDocumentProcessor(Sport sport, DocumentType documentType)
+    private IProcessDocuments GetEspnDocumentProcessor(Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sport)
         {
             case Sport.FootballNcaa:
-                return GetEspnFootballDocumentProcessor(documentType);
+                return GetEspnFootballDocumentProcessor(documentType, documentAction);
             case Sport.All:
             case Sport.Football:
             case Sport.FootballNfl:
@@ -44,7 +50,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
-    private IProcessDocuments GetEspnFootballDocumentProcessor(DocumentType documentType)
+    private IProcessDocuments GetEspnFootballDocumentProcessor(DocumentType documentType, DocumentAction documentAction)
     {
         switch (documentType)
         {
@@ -65,7 +71,9 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.TeamInformation:
                 return _serviceProvider.GetRequiredService<TeamInformationDocumentProcessor>();
             case DocumentType.Venue:
-                return _serviceProvider.GetRequiredService<VenueDocumentProcessor>();
+                return documentAction == DocumentAction.Created
+                    ? _serviceProvider.GetRequiredService<VenueCreatedDocumentProcessor>()
+                    : _serviceProvider.GetRequiredService<VenueUpdatedDocumentProcessor>();
             case DocumentType.GameSummary:
             case DocumentType.Scoreboard:
             case DocumentType.Season:

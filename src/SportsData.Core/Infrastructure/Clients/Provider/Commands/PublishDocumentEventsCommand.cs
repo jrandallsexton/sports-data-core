@@ -9,5 +9,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
         public SourceDataProvider SourceDataProvider { get; set; }
 
         public DocumentType DocumentType { get; set; }
+
+        public int? Season { get; set; }
     }
 }

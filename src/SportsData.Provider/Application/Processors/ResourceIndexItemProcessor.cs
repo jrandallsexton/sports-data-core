@@ -73,6 +73,7 @@ namespace SportsData.Provider.Application.Processors
                     documentId.ToString(),
                     type.Name,
                     command.Sport,
+                    command.SeasonYear,
                     command.DocumentType,
                     command.SourceDataProvider);
 

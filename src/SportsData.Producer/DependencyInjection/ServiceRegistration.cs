@@ -15,7 +15,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamBySeasonDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
-            services.AddScoped<VenueDocumentProcessor>();
+            services.AddScoped<VenueCreatedDocumentProcessor>();
             services.AddSingleton<IDocumentProcessorFactory, DocumentProcessorFactory>();
             return services;
         }

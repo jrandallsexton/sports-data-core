@@ -5,6 +5,7 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public class ProcessDocumentCommand(
     SourceDataProvider sourceDataProvider,
     Sport sport,
+    int? season,
     DocumentType documentType,
     string document,
     Guid correlationId)
@@ -18,4 +19,6 @@ public class ProcessDocumentCommand(
     public string Document { get; } = document;
 
     public Guid CorrelationId { get; } = correlationId;
+
+    public int? Season { get; } = season;
 }

@@ -67,6 +67,7 @@ namespace SportsData.Provider.Application.Documents
                     tmp.Id.ToString(),
                     type.Name,
                     command.Sport,
+                    command.Season,
                     command.DocumentType,
                     command.SourceDataProvider)).ToList();
 

@@ -6,6 +6,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         string id,
         string name,
         Sport sport,
+        int? seasonYear,
         DocumentType documentType,
         SourceDataProvider sourceDataProvider)
         : EventBase
@@ -15,6 +16,8 @@ namespace SportsData.Core.Eventing.Events.Documents
         public string Name { get; init; } = name;
 
         public Sport Sport { get; init; } = sport;
+
+        public int? SeasonYear { get; init; } = seasonYear;
 
         public DocumentType DocumentType { get; init; } = documentType;
 

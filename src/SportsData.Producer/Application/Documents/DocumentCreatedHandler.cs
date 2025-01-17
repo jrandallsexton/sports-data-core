@@ -50,12 +50,14 @@ namespace SportsData.Producer.Application.Documents
             var processor = _documentProcessorFactory.GetProcessor(
                 context.Message.SourceDataProvider,
                 context.Message.Sport,
-                context.Message.DocumentType);
+                context.Message.DocumentType,
+                DocumentAction.Created);
 
             // TODO: pass this to an on-demand Hangfire job?
             await processor.ProcessAsync(new ProcessDocumentCommand(
                 context.Message.SourceDataProvider,
                 context.Message.Sport,
+                context.Message.SeasonYear,
                 context.Message.DocumentType,
                 document,
                 context.CorrelationId ?? Guid.NewGuid()));

@@ -46,6 +46,7 @@ namespace SportsData.Provider.Application.Processors
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
 
+            // TODO: Log this access
             // get the item's json
             var itemJson = await _espnApi.GetResource(command.Href, true);
 

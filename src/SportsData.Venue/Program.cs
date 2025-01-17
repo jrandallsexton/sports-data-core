@@ -63,7 +63,7 @@ namespace SportsData.Venue
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddCaching(config);
-            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
 
             var hostAssembly = Assembly.GetExecutingAssembly();
             services.AddAutoMapper(hostAssembly);

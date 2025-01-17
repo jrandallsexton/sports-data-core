@@ -15,14 +15,34 @@ namespace SportsData.Provider.DependencyInjection
         public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
         {
             /* Hangfire Jobs */
-            services.AddSingleton<FootballNcaaFranchiseDocumentJobDefinition>();
-            services.AddSingleton<FootballNcaaVenueDocumentJobDefinition>();
+            services.AddSingleton<FootballNcaaFranchisesDocumentJobDefinition>();
+            services.AddSingleton<FootballNcaaVenuesDocumentJobDefinition>();
 
-            var def = new FootballNcaaTeamSeasonDocumentJobDefinition()
+            var seasonsToProcess = new List<int>
             {
-                SeasonYear = 2024
+                2024
             };
-            services.AddSingleton(def);
+
+            foreach (var season in seasonsToProcess)
+            {
+                //var def = new FootballNcaaTeamsBySeasonDocumentJobDefinition()
+                //{
+                //    SeasonYear = season
+                //};
+                //services.AddSingleton(def);
+
+                var def2 = new FootballNcaaGroupsBySeasonDocumentJobDefinition()
+                {
+                    SeasonYear = season
+                };
+                services.AddSingleton(def2);
+
+                //var def3 = new FootballNcaaAthletesBySeasonDocumentJobDefinition()
+                //{
+                //    SeasonYear = season
+                //};
+                //services.AddSingleton(def3);
+            }
 
             //var jobDefinitions = new List<DocumentProviderJob<T>()
             //{
@@ -33,6 +53,11 @@ namespace SportsData.Provider.DependencyInjection
             {
                 case Sport.All:
                     // need all job definitions
+                    //services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaAthletesBySeasonDocumentJobDefinition>>();
+                    //services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaFranchisesDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaGroupsBySeasonDocumentJobDefinition>>();
+                    //services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaTeamsBySeasonDocumentJobDefinition>>();
+                    //services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaVenuesDocumentJobDefinition>>();
                     break;
                 case Sport.Football:
                     // need all job definitions where Sport = Football
@@ -42,8 +67,11 @@ namespace SportsData.Provider.DependencyInjection
                 case Sport.FootballNcaa:
                     // need all job definitions where Sport = FootballNcaa
                     // how to do that?
-                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaFranchiseDocumentJobDefinition>>();
-                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaVenueDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaAthletesBySeasonDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaFranchisesDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaGroupsBySeasonDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaTeamsBySeasonDocumentJobDefinition>>();
+                    services.AddScoped<IProvideDocuments, DocumentProviderJob<FootballNcaaVenuesDocumentJobDefinition>>();
                     break;
                 case Sport.FootballNfl:
                     // need all job definitions where Sport = FootballNfl
@@ -74,7 +102,10 @@ namespace SportsData.Provider.DependencyInjection
             //    nameof(DocumentProviderJob<EspnDocumentJobVenueDefinition>),
             //    job => job.ExecuteAsync(), "15 * * * *");
 
-            //BackgroundJob.Enqueue<DocumentProviderJob<EspnDocumentJobVenueDefinition>>(job => job.ExecuteAsync());
+            //BackgroundJob.Enqueue<DocumentProviderJob<FootballNcaaVenuesDocumentJobDefinition>>(job => job.ExecuteAsync());
+            //BackgroundJob.Enqueue<DocumentProviderJob<FootballNcaaFranchisesDocumentJobDefinition>>(job => job.ExecuteAsync());
+            BackgroundJob.Enqueue<DocumentProviderJob<FootballNcaaGroupsBySeasonDocumentJobDefinition>>(job => job.ExecuteAsync());
+            //BackgroundJob.Enqueue<DocumentProviderJob<FootballNcaaTeamsBySeasonDocumentJobDefinition>>(job => job.ExecuteAsync());
 
             //BackgroundJob.Enqueue<DocumentProviderJob<EspnDocumentJobTeamSeasonDefinition>>(job => job.ExecuteAsync());
 

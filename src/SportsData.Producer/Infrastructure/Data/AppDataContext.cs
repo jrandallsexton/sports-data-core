@@ -12,6 +12,8 @@ namespace SportsData.Producer.Infrastructure.Data
 
         public DbSet<Franchise> Franchises { get; set; }
 
+        public DbSet<Group> Groups { get; set; }
+
         public DbSet<Venue> Venues { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

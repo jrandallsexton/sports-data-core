@@ -2,7 +2,7 @@
 
 namespace SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa
 {
-    public class FootballNcaaTeamSeasonDocumentJobDefinition : DocumentJobDefinition
+    public class FootballNcaaAthletesBySeasonDocumentJobDefinition : DocumentJobDefinition
     {
         public override Sport Sport { get; init; } =
             Sport.FootballNcaa;
@@ -11,15 +11,14 @@ namespace SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa
             SourceDataProvider.Espn;
 
         public override DocumentType DocumentType { get; init; } =
-            DocumentType.TeamBySeason;
+            DocumentType.CoachBySeason;
 
-        // TODO: Get the year in there
         public override string Endpoint { get; init; } =
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams?lang=en&limit=999";
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes?lang=en&limit=100000";
 
         public override string EndpointMask { get; init; } =
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/";
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/";
 
-        public override int? SeasonYear { get; init; }
+        public override int? SeasonYear { get; init; } = null;
     }
 }

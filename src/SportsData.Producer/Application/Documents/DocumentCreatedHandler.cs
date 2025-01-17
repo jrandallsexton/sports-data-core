@@ -5,7 +5,6 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
-using SportsData.Producer.Infrastructure.Data;
 
 namespace SportsData.Producer.Application.Documents
 {
@@ -14,21 +13,15 @@ namespace SportsData.Producer.Application.Documents
     {
         private readonly ILogger<DocumentCreatedHandler> _logger;
         private readonly IProvideProviders _provider;
-        private readonly IBus _bus;
-        private readonly AppDataContext _dataContext;
         private readonly IDocumentProcessorFactory _documentProcessorFactory;
 
         public DocumentCreatedHandler(
             ILogger<DocumentCreatedHandler> logger,
             IProvideProviders provider,
-            IBus bus,
-            AppDataContext dataContext,
             IDocumentProcessorFactory documentProcessorFactory)
         {
             _logger = logger;
             _provider = provider;
-            _bus = bus;
-            _dataContext = dataContext;
             _documentProcessorFactory = documentProcessorFactory;
         }
 
@@ -56,10 +49,16 @@ namespace SportsData.Producer.Application.Documents
 
             var processor = _documentProcessorFactory.GetProcessor(
                 context.Message.SourceDataProvider,
+                context.Message.Sport,
                 context.Message.DocumentType);
 
             // TODO: pass this to an on-demand Hangfire job?
-            await processor.ProcessAsync(new ProcessDocumentCommand(context.Message.SourceDataProvider, document, context.CorrelationId ?? Guid.NewGuid()));
+            await processor.ProcessAsync(new ProcessDocumentCommand(
+                context.Message.SourceDataProvider,
+                context.Message.Sport,
+                context.Message.DocumentType,
+                document,
+                context.CorrelationId ?? Guid.NewGuid()));
 
        }
     }

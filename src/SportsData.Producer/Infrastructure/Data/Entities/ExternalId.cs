@@ -1,16 +1,33 @@
-﻿using SportsData.Core.Common;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class FranchiseExternalId : ExternalId
-    {
+    public class FranchiseExternalId : ExternalId { }
 
-    }
-    public class VenueExternalId : ExternalId
+    public class GroupExternalId : ExternalId
     {
+        public Guid GroupId { get; set; }
 
+        public Group Group { get; set; }
+
+        public class EntityConfiguration : IEntityTypeConfiguration<GroupExternalId>
+        {
+            public void Configure(EntityTypeBuilder<GroupExternalId> builder)
+            {
+                builder.ToTable("GroupExternalId");
+                builder.HasKey(t => t.Id);
+                builder.HasOne<Group>()
+                    .WithMany(x => x.ExternalIds)
+                    .HasForeignKey(x => x.GroupId);
+            }
+        }
     }
+
+    public class VenueExternalId : ExternalId { }
 
     public class ExternalId : EntityBase<Guid>
     {

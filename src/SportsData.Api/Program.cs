@@ -32,7 +32,7 @@ namespace SportsData.Api
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
             services.AddCaching(config);
-            services.AddHealthChecksMaster(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             var app = builder.Build();
 

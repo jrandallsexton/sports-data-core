@@ -32,14 +32,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnVenue = command.Document.FromJson<EspnVenueDto>(new JsonSerializerSettings
+            var espnDto = command.Document.FromJson<EspnVenueDto>(new JsonSerializerSettings
             {
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             });
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var exists = await _dataContext.Venues.AnyAsync(x =>
-                x.ExternalIds.Any(z => z.Value == espnVenue.Id.ToString() && z.Provider == SourceDataProvider.Espn));
+                x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == SourceDataProvider.Espn));
 
             if (exists)
             {
@@ -52,13 +52,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             var venueEntity = new Venue()
             {
                 Id = Guid.NewGuid(),
-                Name = espnVenue.FullName,
-                ShortName = espnVenue.ShortName,
-                IsIndoor = espnVenue.Indoor,
-                IsGrass = espnVenue.Grass,
+                Name = espnDto.FullName,
+                ShortName = espnDto.ShortName,
+                IsIndoor = espnDto.Indoor,
+                IsGrass = espnDto.Grass,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId,
-                ExternalIds = [new VenueExternalId() { Value = espnVenue.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                ExternalIds = [new VenueExternalId() { Value = espnDto.Id.ToString(), Provider = SourceDataProvider.Espn }],
                 GlobalId = Guid.NewGuid()
             };
             await _dataContext.AddAsync(venueEntity);

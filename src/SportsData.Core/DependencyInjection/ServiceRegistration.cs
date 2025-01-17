@@ -70,8 +70,8 @@ namespace SportsData.Core.DependencyInjection
         {
             await using var serviceProvider = services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<T>();
-            var pending = await context.Database.GetPendingMigrationsAsync();
-            if (pending.Any())
+            //var pending = await context.Database.GetPendingMigrationsAsync();
+            //if (pending.Any())
                 await context.Database.MigrateAsync();
         }
 

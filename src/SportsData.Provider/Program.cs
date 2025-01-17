@@ -34,7 +34,7 @@ namespace SportsData.Provider
             services.AddProviders(config);
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-            await services.ApplyMigrations<AppDataContext>();
+            //await services.ApplyMigrations<AppDataContext>();
             services.AddSingleton<DocumentService>();
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
@@ -50,7 +50,7 @@ namespace SportsData.Provider
                 serverOptions.WorkerCount = 10;
             });
 
-            services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
+            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
             services.AddLocalServices(mode);

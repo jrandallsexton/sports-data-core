@@ -2,7 +2,7 @@
 
 namespace SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa
 {
-    public class FootballNcaaFranchiseDocumentJobDefinition : DocumentJobDefinition
+    public class FootballNcaaVenuesDocumentJobDefinition : DocumentJobDefinition
     {
         public override Sport Sport { get; init; } =
             Sport.FootballNcaa;
@@ -11,13 +11,13 @@ namespace SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa
             SourceDataProvider.Espn;
 
         public override DocumentType DocumentType { get; init; } =
-            DocumentType.Franchise;
+            DocumentType.Venue;
 
         public override string Endpoint { get; init; } =
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises?lang=en&limit=999";
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues?lang=en&limit=999";
 
         public override string EndpointMask { get; init; } =
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/";
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/";
 
         public override int? SeasonYear { get; init; } = null;
     }

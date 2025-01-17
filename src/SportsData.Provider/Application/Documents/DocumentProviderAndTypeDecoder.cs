@@ -20,7 +20,12 @@ namespace SportsData.Provider.Application.Documents
                     return typeof(EspnTeamSeasonDto);
                 case DocumentType.Venue:
                     return typeof(EspnVenueDto);
+                case DocumentType.CoachBySeason:
+                    return typeof(EspnCoachBySeasonDto);
                 case DocumentType.Athlete:
+                    return typeof(EspnAthleteDto);
+                case DocumentType.GroupBySeason:
+                    return typeof(EspnGroupBySeasonDto);
                 case DocumentType.Award:
                 case DocumentType.Contest:
                     // TODO: Create these => return typeof(EspnContestDto);

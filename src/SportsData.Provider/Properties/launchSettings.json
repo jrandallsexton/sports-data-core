@@ -6,7 +6,7 @@
       "launchBrowser": true,
       "launchUrl": "dashboard",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "0Development",
+        "ASPNETCORE_ENVIRONMENT": "Development",
         "APPCONFIG_CONNSTR": "Endpoint=https://sportsdataappconfig.azconfig.io;Id=SNrN;Secret=GEZfgvYgDUQgvlL4r6UZT4pcempHRcPZ2qTQT6UJS6GqQ7ooHAvdJQQJ99BAACHYHv6VhdrZAAACAZAC21CD",
         "SERVICE_MODE": "All"
       },

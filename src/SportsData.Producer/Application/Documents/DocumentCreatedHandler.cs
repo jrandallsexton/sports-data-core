@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors;
+using SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
 using SportsData.Producer.Infrastructure.Data;
 
 namespace SportsData.Producer.Application.Documents

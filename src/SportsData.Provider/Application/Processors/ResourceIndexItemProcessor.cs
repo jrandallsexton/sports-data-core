@@ -68,14 +68,16 @@ namespace SportsData.Provider.Application.Processors
                     Data = itemJson
                 });
 
-                var evt = new DocumentCreated()
-                {
-                    Id = documentId.ToString(),
-                    Name = type.Name,
-                    SourceDataProvider = command.SourceDataProvider,
-                    DocumentType = command.DocumentType
-                };
+                var evt = new DocumentCreated(
+                    documentId.ToString(),
+                    type.Name,
+                    command.Sport,
+                    command.DocumentType,
+                    command.SourceDataProvider);
+
+                // TODO: Use transactional outbox pattern here
                 await _bus.Publish(evt);
+
                 _logger.LogInformation("New document event {@evt}", evt);
             }
             else
@@ -93,13 +95,14 @@ namespace SportsData.Provider.Application.Processors
                     Data = itemJson
                 });
 
-                var evt = new DocumentUpdated()
-                {
-                    Id = documentId.ToString(),
-                    Name = type.Name,
-                    SourceDataProvider = command.SourceDataProvider,
-                    DocumentType = command.DocumentType
-                };
+                var evt = new DocumentUpdated(
+                    documentId.ToString(),
+                    type.Name,
+                    command.Sport,
+                    command.DocumentType,
+                    command.SourceDataProvider);
+
+                // TODO: Use transactional outbox pattern here
                 await _bus.Publish(evt);
 
                 _logger.LogInformation("Document updated event {@evt}", evt);
@@ -107,12 +110,11 @@ namespace SportsData.Provider.Application.Processors
         }
     }
 
-    public record ProcessResourceIndexItemCommand
-    {
-        public int Id { get; init; }
-        public string Href { get; init; }
-        public SourceDataProvider SourceDataProvider { get; init; }
-        public DocumentType DocumentType { get; init; }
-        public int? SeasonYear { get; init; }
-    }
+    public record ProcessResourceIndexItemCommand(
+        int Id,
+        string Href,
+        Sport Sport,
+        SourceDataProvider SourceDataProvider,
+        DocumentType DocumentType,
+        int? SeasonYear = null);
 }

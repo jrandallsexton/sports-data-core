@@ -57,23 +57,18 @@ namespace SportsData.Provider.Application.Documents
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
 
+            // https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/crud/read-operations/retrieve/
             var filter = Builders<DocumentBase>.Filter.Empty;
-            var all = await dbObjects.FindAsync(filter);
-            var foo = await all.ToListAsync();
+            var dbCursor = await dbObjects.FindAsync(filter);
+            var dbDocuments = await dbCursor.ToListAsync();
 
-            var events = new List<DocumentCreated>();
-
-            foreach (var tmp in foo)
-            {
-                var evt = new DocumentCreated()
-                {
-                    Id = tmp.Id.ToString(),
-                    Name = type.Name,
-                    SourceDataProvider = command.SourceDataProvider,
-                    DocumentType = command.DocumentType
-                };
-                events.Add(evt);
-            }
+            var events = dbDocuments.Select(tmp =>
+                new DocumentCreated(
+                    tmp.Id.ToString(),
+                    type.Name,
+                    command.Sport,
+                    command.DocumentType,
+                    command.SourceDataProvider)).ToList();
 
             await _bus.PublishBatch(events);
 

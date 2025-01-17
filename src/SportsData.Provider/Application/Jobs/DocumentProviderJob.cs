@@ -32,14 +32,14 @@ namespace SportsData.Provider.Application.Jobs
             // Get the resource index
             var resourceIndex = await _espnApi.GetResourceIndex(_jobDefinition.Endpoint, _jobDefinition.EndpointMask);
 
-            foreach (var cmd in resourceIndex.items.Select(item => new ProcessResourceIndexItemCommand()
-                     {
-                         DocumentType = _jobDefinition.DocumentType,
-                         Href = item.href,
-                         Id = item.id,
-                         SeasonYear = _jobDefinition.SeasonYear,
-                         SourceDataProvider = _jobDefinition.SourceDataProvider
-                     }))
+            foreach (var cmd in resourceIndex.items.Select(item =>
+                         new ProcessResourceIndexItemCommand(
+                             item.id,
+                             item.href,
+                             _jobDefinition.Sport,
+                             _jobDefinition.SourceDataProvider,
+                             _jobDefinition.DocumentType,
+                             _jobDefinition.SeasonYear)))
             {
                 // TODO: Put this in a wrapper with an interface for testing
                 BackgroundJob.Enqueue<IProcessResourceIndexes>(p => p.Process(cmd));

@@ -27,10 +27,10 @@ namespace SportsData.Core.Eventing
 
     public abstract class EventBase
     {
-        public Guid CorrelationId { get; set; } = Guid.NewGuid();
+        public Guid CorrelationId { get; init; } = Guid.NewGuid();
 
-        public Guid CausationId { get; set; } = Guid.NewGuid();
+        public Guid CausationId { get; init; } = Guid.NewGuid();
 
-        public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedUtc { get; init; } = DateTime.UtcNow;
     }
 }

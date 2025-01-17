@@ -2,14 +2,22 @@
 
 namespace SportsData.Core.Eventing.Events.Documents
 {
-    public class DocumentCreated : EventBase
+    public class DocumentCreated(
+        string id,
+        string name,
+        Sport sport,
+        DocumentType documentType,
+        SourceDataProvider sourceDataProvider)
+        : EventBase
     {
-        public string Id { get; set; }
+        public string Id { get; init; } = id;
 
-        public string Name { get; set; }
+        public string Name { get; init; } = name;
 
-        public DocumentType DocumentType { get; set; }
+        public Sport Sport { get; init; } = sport;
 
-        public SourceDataProvider SourceDataProvider { get; set; }
+        public DocumentType DocumentType { get; init; } = documentType;
+
+        public SourceDataProvider SourceDataProvider { get; set; } = sourceDataProvider;
     }
 }

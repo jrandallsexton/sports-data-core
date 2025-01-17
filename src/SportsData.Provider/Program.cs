@@ -1,18 +1,13 @@
 using Hangfire;
 
+using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
-using SportsData.Provider.Application.Documents;
-using SportsData.Provider.Application.Jobs;
-using SportsData.Provider.Application.Jobs.Definitions.Espn.Football.Ncaa;
-using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 using SportsData.Provider.Middleware.Health;
 
 using System.Reflection;
-using SportsData.Core.Common;
 
 namespace SportsData.Provider
 {
@@ -20,9 +15,9 @@ namespace SportsData.Provider
     {
         public static async Task Main(string[] args)
         {
-            //var MODE = (args.Length > 0 && args[0] == "-mode") ?
-            //    Enum.Parse<Sport>(args[1]) :
-            //    Sport.All;
+            var mode = (args.Length > 0 && args[0] == "-mode") ?
+                Enum.Parse<Sport>(args[1]) :
+                Sport.All;
 
             var builder = WebApplication.CreateBuilder(args);
             builder.UseCommon();
@@ -58,21 +53,7 @@ namespace SportsData.Provider
             services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
-            /* Hangfire Jobs */
-            services.AddSingleton<EspnDocumentJobFranchiseDefinition>();
-            services.AddSingleton<EspnDocumentJobVenueDefinition>();
-
-            var def = new EspnDocumentJobTeamSeasonDefinition()
-            {
-                SeasonYear = 2024
-            };
-            services.AddSingleton(def);
-            services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobFranchiseDefinition>>();
-            services.AddScoped<IProvideDocuments, DocumentProviderJob<EspnDocumentJobVenueDefinition>>();
-            services.AddScoped<IProvideEspnApiData, EspnApiClient>();
-            services.AddScoped<IProcessResourceIndexes, ResourceIndexItemProcessor>();
-            services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
-            services.AddSingleton(new EspnApiClientConfig());
+            services.AddLocalServices(mode);
 
             var app = builder.Build();
 

@@ -1,12 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class Franchise : EntityBase<Guid>
     {
+        public Sport Sport { get; set; }
+
         public string Name { get; set; }
 
         public string Nickname { get; set; }

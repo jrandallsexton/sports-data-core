@@ -1,6 +1,7 @@
+using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
-using SportsData.Producer.Application.Documents.Processors;
+using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
@@ -11,6 +12,10 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        var mode = (args.Length > 0 && args[0] == "-mode") ?
+            Enum.Parse<Sport>(args[1]) :
+            Sport.All;
+
         var builder = WebApplication.CreateBuilder(args);
         builder.UseCommon();
 
@@ -29,15 +34,7 @@ public class Program
         services.AddInstrumentation(builder.Environment.ApplicationName);
         services.AddHealthChecks<AppDataContext, Program>(Assembly.GetExecutingAssembly().GetName(false).Name);
 
-        /* Local Services */
-        services.AddScoped<AthleteDocumentProcessor>();
-        services.AddScoped<AwardDocumentProcessor>();
-        services.AddScoped<ContestDocumentProcessor>();
-        services.AddScoped<FranchiseDocumentProcessor>();
-        services.AddScoped<TeamDocumentProcessor>();
-        services.AddScoped<TeamBySeasonDocumentProcessor>();
-        services.AddScoped<TeamInformationDocumentProcessor>();
-        services.AddScoped<VenueDocumentProcessor>();
+        services.AddLocalServices(mode);
 
         var hostAssembly = Assembly.GetExecutingAssembly();
         builder.Services.AddAutoMapper(hostAssembly);

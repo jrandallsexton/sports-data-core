@@ -1,6 +1,6 @@
-﻿namespace SportsData.Producer.Application.Documents.Processors
+﻿namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
-    public class AthleteDocumentProcessor : IProcessDocuments
+    public class TeamInformationDocumentProcessor : IProcessDocuments
     {
         public Task ProcessAsync(ProcessDocumentCommand command)
         {

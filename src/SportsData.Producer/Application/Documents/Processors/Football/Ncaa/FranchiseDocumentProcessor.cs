@@ -9,7 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Application.Documents.Processors
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
     public class FranchiseDocumentProcessor : IProcessDocuments
     {

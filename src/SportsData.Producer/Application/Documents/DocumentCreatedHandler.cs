@@ -33,7 +33,7 @@ namespace SportsData.Producer.Application.Documents
             if (context.Message.DocumentType == DocumentType.TeamInformation)
                 return;
 
-            // call Provider to obtain new document
+            // call Provider to obtain the new document
             var document = await _provider.GetDocumentByIdAsync(
                 context.Message.SourceDataProvider,
                 context.Message.DocumentType,

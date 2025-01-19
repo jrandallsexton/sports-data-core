@@ -33,19 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Application\Jobs\Definitions\Espn\Golf\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Mma\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Baseball\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Basketball\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Cricket\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Hockey\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Lacrosse\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\WaterPolo\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Volleyball\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Rugby\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Tennis\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Racing\" />
-    <Folder Include="Application\Jobs\Definitions\Espn\Soccer\" />
     <Folder Include="Infrastructure\Providers\CBS\" />
     <Folder Include="Infrastructure\Providers\Yahoo\" />
     <Folder Include="Infrastructure\Providers\SportsDataIO\" />

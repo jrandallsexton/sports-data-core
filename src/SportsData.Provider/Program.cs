@@ -1,13 +1,12 @@
 using Hangfire;
-
+using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Middleware.Health;
-
-using System.Reflection;
 
 namespace SportsData.Provider
 {
@@ -34,7 +33,6 @@ namespace SportsData.Provider
             services.AddProviders(config);
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-            //await services.ApplyMigrations<AppDataContext>();
             services.AddSingleton<DocumentService>();
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
@@ -55,6 +53,8 @@ namespace SportsData.Provider
 
             services.AddLocalServices(mode);
 
+            await services.ApplyMigrations<AppDataContext>(LoadSeedData);
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -71,9 +71,104 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            app.Services.ConfigureHangfireJobs();
+            await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
+        }
+
+        private static async Task LoadSeedData(AppDataContext dbContext)
+        {
+            if (await dbContext.Resources.AnyAsync())
+                return;
+
+            /* Venues */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.Venue,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/",
+                CreatedBy = Guid.Empty
+            });
+
+            /* Franchises */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.Franchise,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/",
+                CreatedBy = Guid.Empty
+            });
+
+            /* Groups By Season (Conferences) */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.GroupBySeason,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/80/children?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/",
+                CreatedBy = Guid.Empty,
+                SeasonYear = 2024
+            });
+
+            /* Teams By Season */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.TeamBySeason,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/",
+                CreatedBy = Guid.Empty,
+                SeasonYear = 2024
+            });
+
+            /* Athletes By Season */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.AthleteBySeason,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes?lang=en&limit=100000",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/",
+                CreatedBy = Guid.Empty,
+                SeasonYear = 2024
+            });
+
+            /* Coaches By Season */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNcaa,
+                DocumentTypeId = DocumentType.CoachBySeason,
+                Endpoint = @"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/coaches?lang=en&limit=999",
+                EndpointMask = @"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/coaches/",
+                CreatedBy = Guid.Empty,
+                SeasonYear = 2024
+            });
+
+            /* NFL */
+            /* Venues */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                ProviderId = SourceDataProvider.Espn,
+                SportId = Sport.FootballNfl,
+                DocumentTypeId = DocumentType.Venue,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/",
+                CreatedBy = Guid.Empty
+            });
         }
     }
 }

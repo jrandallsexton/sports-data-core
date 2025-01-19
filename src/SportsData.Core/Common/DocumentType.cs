@@ -3,6 +3,7 @@
     public enum DocumentType
     {
         Athlete,
+        AthleteBySeason,
         Award,
         CoachBySeason,
         Contest,

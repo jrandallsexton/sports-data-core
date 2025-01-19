@@ -65,14 +65,18 @@ namespace SportsData.Core.DependencyInjection
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="services"></param>
+        /// <param name="seedFunction"></param>
         /// <returns></returns>
-        public static async Task ApplyMigrations<T>(this IServiceCollection services) where T : DbContext
+        public static async Task ApplyMigrations<T>(this IServiceCollection services, Func<T, Task> seedFunction = null) where T : DbContext
         {
             await using var serviceProvider = services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<T>();
-            //var pending = await context.Database.GetPendingMigrationsAsync();
-            //if (pending.Any())
+            var pending = await context.Database.GetPendingMigrationsAsync();
+            if (pending.Any())
                 await context.Database.MigrateAsync();
+
+            if (seedFunction != null)
+                await seedFunction(context);
         }
 
         public static IServiceCollection AddCoreServices(

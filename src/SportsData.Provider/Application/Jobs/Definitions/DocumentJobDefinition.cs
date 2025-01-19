@@ -1,19 +1,20 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Application.Jobs.Definitions
 {
-    public abstract class DocumentJobDefinition
+    public class DocumentJobDefinition(ResourceIndex resourceIndex)
     {
-        public abstract Sport Sport { get; init; }
+        public Sport Sport { get; init; } = resourceIndex.SportId;
 
-        public abstract SourceDataProvider SourceDataProvider { get; init; }
+        public SourceDataProvider SourceDataProvider { get; init; } = resourceIndex.ProviderId;
 
-        public abstract DocumentType DocumentType { get; init; }
+        public DocumentType DocumentType { get; init; } = resourceIndex.DocumentTypeId;
 
-        public abstract string Endpoint { get; init; }
+        public string Endpoint { get; init; } = resourceIndex.Endpoint;
 
-        public abstract string EndpointMask { get; init; }
+        public string EndpointMask { get; init; } = resourceIndex.EndpointMask;
 
-        public abstract int? SeasonYear { get; init; }
+        public int? SeasonYear { get; init; } = resourceIndex.SeasonYear;
     }
 }

@@ -11,12 +11,12 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Processors
 {
-    public interface IProcessResourceIndexes
+    public interface IProcessResourceIndexItems
     {
         Task Process(ProcessResourceIndexItemCommand command);
     }
 
-    public class ResourceIndexItemProcessor : IProcessResourceIndexes
+    public class ResourceIndexItemProcessor : IProcessResourceIndexItems
     {
         private readonly ILogger<ResourceIndexItemProcessor> _logger;
         private readonly IProvideEspnApiData _espnApi;

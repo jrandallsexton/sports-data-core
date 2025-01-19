@@ -50,7 +50,7 @@ namespace SportsData.Provider.Application.Documents
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
         }
 
-        [HttpPost(Name = "PublishDocumentEvents")]
+        [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
             var type = _decoder.GetType(command.SourceDataProvider, command.DocumentType);

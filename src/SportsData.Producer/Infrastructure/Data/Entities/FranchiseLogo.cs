@@ -5,7 +5,20 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class FranchiseLogo : EntityBase<Guid>
+    public interface ILogo
+    {
+        public Guid Id { get; set; }
+
+        public string Url { get; set; }
+
+        public long Height { get; set; }
+
+        public long Width { get; set; }
+
+        public List<string> Rel { get; set; }
+    }
+
+    public class FranchiseLogo : EntityBase<Guid>, ILogo
     {
         public Guid FranchiseId { get; set; }
 

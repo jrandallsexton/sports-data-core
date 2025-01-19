@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Newtonsoft.Json;
 
-using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
@@ -37,33 +37,47 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             });
 
-            // Determine if this entity exists. Do NOT trust that it says it is a new document!
-            var exists = await _dataContext.Venues.AnyAsync(x =>
-                x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == SourceDataProvider.Espn));
-
-            if (exists)
-            {
-                _logger.LogWarning($"Venue already exists for {SourceDataProvider.Espn}.");
-                return;
-            }
-
             // 1. Does this group (conference) exist? If not, we must create it prior to creating a season for it
-            var groupTmp = await _dataContext.GroupExternalIds
-                .Include(x => x.Group)
-                .ThenInclude(x => x.Seasons)
-                .FirstOrDefaultAsync(x => x.Value == espnDto.Id.ToString() && x.Provider == SourceDataProvider.Espn);
+            var groupEntity = await _dataContext.Groups
+                .Include(g => g.Seasons)
+                .Where(x => 
+                    x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == command.SourceDataProvider))
+                .FirstOrDefaultAsync();
 
-            if (groupTmp is { Group: not null })
+            // Determine if this EspnGroupBySeasonDto exists. Do NOT trust that it says it is a new document!
+
+            if (groupEntity != null)
             {
-                // if the incoming season does not exist, add a new season to the existing group
-                if (!groupTmp.Group.Seasons.Any(s => s.Season == command.Season.Value))
-                {
+                _logger.LogWarning($"Group already exists for {command.SourceDataProvider}.");
 
+                var groupTmp = await _dataContext.GroupExternalIds
+                    .Include(x => x.Group)
+                    .ThenInclude(x => x.Seasons)
+                    .FirstOrDefaultAsync(x => x.Value == espnDto.Id.ToString() && x.Provider == command.SourceDataProvider);
+
+                if (groupTmp is { Group: not null })
+                {
+                    // if the incoming season does not exist, add a new season to the existing group
+                    if (!groupTmp.Group.Seasons.Any(s => s.Season == command.Season.Value))
+                    {
+                        groupTmp.Group.Seasons.Add(new GroupSeason()
+                        {
+                            Id = Guid.NewGuid(),
+                            CreatedUtc = DateTime.UtcNow,
+                            CreatedBy = command.CorrelationId,
+                            GlobalId = Guid.NewGuid(),
+                            Season = command.Season.Value
+                        });
+                    }
+                    else
+                    {
+                        // we already have this season for this group
+                        // TODO: Update this later
+                    }
                 }
                 else
                 {
-                    // we already have this season for this group
-                    // TODO: Update this later
+                    // raise an event ?
                 }
             }
             else
@@ -75,8 +89,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                     Abbreviation = espnDto.Abbreviation,
                     CreatedBy = command.CorrelationId,
                     CreatedUtc = DateTime.UtcNow,
-                    ExternalIds =
-                        [new GroupExternalId() { Value = espnDto.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                    ExternalIds = [new GroupExternalId() { Value = espnDto.Id.ToString(), Provider = command.SourceDataProvider }],
                     GlobalId = Guid.NewGuid(),
                     IsConference = espnDto.IsConference,
                     MidsizeName = espnDto.MidsizeName,
@@ -96,10 +109,25 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                         }
                     ]
                 };
+
                 await _dataContext.Groups.AddAsync(group);
                 await _dataContext.SaveChangesAsync();
 
-                // raise an event
+                // any logos on the dto?
+                var events = new List<ProcessImageRequest>();
+                espnDto.Logos.ForEach(logo =>
+                {
+                    events.Add(new ProcessImageRequest(
+                        logo.Href,
+                        group.Id.ToString(),
+                        "someName",
+                        command.Sport,
+                        command.Season,
+                        command.DocumentType,
+                        command.SourceDataProvider));
+                });
+                if (events.Any())
+                    await _bus.Publish(events);
             }
         }
     }

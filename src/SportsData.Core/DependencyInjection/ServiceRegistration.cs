@@ -4,8 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
 using SportsData.Core.Common;
 using SportsData.Core.Config;
+using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
@@ -22,10 +28,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -57,6 +59,12 @@ namespace SportsData.Core.DependencyInjection
                 options.UseSqlServer(configuration[$"{applicationName}:ConnectionStrings:AppDataContext"]);
             });
 
+            return services;
+        }
+
+        public static IServiceCollection AddDataPersistenceExternal(this IServiceCollection services)
+        {
+            services.AddScoped<IProvideBlobStorage, BlobStorageProvider>();
             return services;
         }
 

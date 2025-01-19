@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 
 using SportsData.Provider.Application.Documents;
@@ -17,17 +18,20 @@ namespace SportsData.Provider.Application.Jobs
     public class ResourceIndexJob : IProcessResourceIndexes
     {
         private readonly ILogger<ResourceIndexJob> _logger;
+        private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
 
         public ResourceIndexJob(
             ILogger<ResourceIndexJob> logger,
+            AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
             IDecodeDocumentProvidersAndTypes decoder)
         {
             _logger = logger;
+            _dataContext = dataContext;
             _espnApi = espnApi;
             _documentService = documentService;
             _decoder = decoder;
@@ -40,12 +44,25 @@ namespace SportsData.Provider.Application.Jobs
             // Get the resource index
             var resourceIndex = await _espnApi.GetResourceIndex(jobDefinition.Endpoint, jobDefinition.EndpointMask);
 
-            // TODO: Log this access to AppDataContext
+            // Log this access to AppDataContext
+            var resourceIndexEntity = await _dataContext.Resources
+                .Where(x => x.Id == jobDefinition.ResourceIndexId)
+                .FirstOrDefaultAsync();
+            if (resourceIndexEntity == null)
+            {
+                // log an error, but do not stop processing
+                _logger.LogError($"ResourceIndex could not be loaded from the database for item: {jobDefinition.ResourceIndexId}");
+            }
+            else
+            {
+                resourceIndexEntity.LastAccessed = DateTime.UtcNow;
+                await _dataContext.SaveChangesAsync();
+            }
 
             // TODO: Remove this code after testing.
             // For now, I do not want to load each resource if I already have them in Mongo
             // Otherwise ESPN might blacklist my IP.  Not sure.
-            var type = _decoder.GetType(jobDefinition.SourceDataProvider, jobDefinition.DocumentType);
+            var type = _decoder.GetTypeAndName(jobDefinition.SourceDataProvider, jobDefinition.Sport, jobDefinition.DocumentType, jobDefinition.SeasonYear);
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
             var filter = Builders<DocumentBase>.Filter.Empty;
             var dbCursor = await dbObjects.FindAsync(filter);

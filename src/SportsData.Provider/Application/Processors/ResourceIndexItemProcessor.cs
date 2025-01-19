@@ -42,7 +42,7 @@ namespace SportsData.Provider.Application.Processors
         {
             _logger.LogInformation("Started with {@command}", command);
 
-            var type = _decoder.GetType(command.SourceDataProvider, command.DocumentType);
+            var type = _decoder.GetTypeAndName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
 

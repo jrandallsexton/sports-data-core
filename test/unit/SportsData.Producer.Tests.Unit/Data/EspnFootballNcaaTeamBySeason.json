@@ -1,0 +1,209 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en",
+  "id": "99",
+  "guid": "b9a22bd6-7449-92bc-0e95-a6d8da673b3e",
+  "uid": "s:20~l:23~t:99",
+  "alternateIds": { "sdr": "6470" },
+  "slug": "lsu-tigers",
+  "location": "LSU",
+  "name": "Tigers",
+  "nickname": "LSU",
+  "abbreviation": "LSU",
+  "displayName": "LSU Tigers",
+  "shortDisplayName": "LSU",
+  "color": "461d7c",
+  "alternateColor": "fdd023",
+  "isActive": true,
+  "isAllStar": false,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [ "full", "default" ],
+      "lastUpdated": "2023-02-17T21:15Z"
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/99.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [ "full", "dark" ],
+      "lastUpdated": "2023-02-17T21:14Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/primary_logo_on_white_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "primary_logo_on_white_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/primary_logo_on_black_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "primary_logo_on_black_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/primary_logo_on_primary_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "primary_logo_on_primary_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/primary_logo_on_secondary_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "primary_logo_on_secondary_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/secondary_logo_on_white_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "secondary_logo_on_white_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/secondary_logo_on_black_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "secondary_logo_on_black_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/secondary_logo_on_primary_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "secondary_logo_on_primary_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/b9a22bd6-7449-92bc-0e95-a6d8da673b3e/logos/secondary_logo_on_secondary_color.png",
+      "width": 4096,
+      "height": 4096,
+      "alt": "",
+      "rel": [ "full", "secondary_logo_on_secondary_color" ],
+      "lastUpdated": "2024-11-11T01:52Z"
+    }
+  ],
+  "record": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/record?lang=en" },
+  "oddsRecords": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/0/teams/99/odds-records?lang=en" },
+  "athletes": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/athletes?lang=en" },
+  "venue": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en",
+    "id": "3958",
+    "fullName": "Tiger Stadium (LA)",
+    "address": {
+      "city": "Baton Rouge",
+      "state": "LA",
+      "zipCode": "70803"
+    },
+    "grass": true,
+    "indoor": false,
+    "images": [
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/3958.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [ "full", "day" ]
+      },
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3958.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [ "full", "day", "interior" ]
+      }
+    ]
+  },
+  "groups": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/8?lang=en" },
+  "ranks": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/ranks?lang=en" },
+  "statistics": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/statistics?lang=en" },
+  "leaders": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/leaders?lang=en" },
+  "links": [
+    {
+      "language": "en",
+      "rel": [ "clubhouse", "desktop", "team" ],
+      "href": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "clubhouse", "mobile", "team" ],
+      "href": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "roster", "desktop", "team" ],
+      "href": "https://www.espn.com/college-football/team/roster/_/id/99",
+      "text": "Roster",
+      "shortText": "Roster",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "stats", "desktop", "team" ],
+      "href": "https://www.espn.com/college-football/team/stats/_/id/99",
+      "text": "Statistics",
+      "shortText": "Statistics",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "schedule", "desktop", "team" ],
+      "href": "https://www.espn.com/college-football/team/schedule/_/id/99",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "tickets", "desktop", "team" ],
+      "href": "https://www.vividseats.com/lsu-tigers-football-tickets--sports-ncaa-football/performer/1003?wsUser=717",
+      "text": "Tickets",
+      "shortText": "Tickets",
+      "isExternal": true,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "awards", "desktop", "team" ],
+      "href": "https://www.espn.com/college-football/awards/_/team/99",
+      "text": "Awards",
+      "shortText": "Awards",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "injuries": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/injuries?lang=en" },
+  "notes": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/notes?lang=en" },
+  "againstTheSpreadRecords": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/ats?lang=en" },
+  "awards": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/awards?lang=en" },
+  "franchise": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en" },
+  "projection": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/projection?lang=en" },
+  "events": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/events?lang=en" },
+  "coaches": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/coaches?lang=en" },
+  "college": { "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en" }
+}

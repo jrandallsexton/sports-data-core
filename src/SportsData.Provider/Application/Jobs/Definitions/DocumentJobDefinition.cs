@@ -3,18 +3,36 @@ using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Application.Jobs.Definitions
 {
-    public class DocumentJobDefinition(ResourceIndex resourceIndex)
+    public class DocumentJobDefinition
     {
-        public Sport Sport { get; init; } = resourceIndex.SportId;
+        public DocumentJobDefinition()
+        {
+            
+        }
 
-        public SourceDataProvider SourceDataProvider { get; init; } = resourceIndex.ProviderId;
+        public DocumentJobDefinition(ResourceIndex resourceIndex)
+        {
+            Sport = resourceIndex.SportId;
+            SourceDataProvider = resourceIndex.Provider;
+            DocumentType = resourceIndex.DocumentType;
+            Endpoint = resourceIndex.Endpoint;
+            EndpointMask = resourceIndex.EndpointMask;
+            SeasonYear = resourceIndex.SeasonYear;
+            ResourceIndexId = resourceIndex.Id;
+        }
 
-        public DocumentType DocumentType { get; init; } = resourceIndex.DocumentTypeId;
+        public Guid ResourceIndexId { get; set; }
 
-        public string Endpoint { get; init; } = resourceIndex.Endpoint;
+        public Sport Sport { get; init; }
 
-        public string EndpointMask { get; init; } = resourceIndex.EndpointMask;
+        public SourceDataProvider SourceDataProvider { get; init; }
 
-        public int? SeasonYear { get; init; } = resourceIndex.SeasonYear;
+        public DocumentType DocumentType { get; init; }
+
+        public string Endpoint { get; init; }
+
+        public string EndpointMask { get; init; }
+
+        public int? SeasonYear { get; init; }
     }
 }

@@ -1,0 +1,63 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/151?lang=en",
+  "uid": "s:20~l:23~g:151",
+  "id": "151",
+  "name": "American Athletic Conference",
+  "abbreviation": "aac",
+  "shortName": "American",
+  "midsizeName": "American",
+  "season": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024?lang=en" },
+  "parent": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/80?lang=en" },
+  "standings": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/151/standings?lang=en" },
+  "isConference": true,
+  "logos": [ { "href": "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/american.png" } ],
+  "slug": "american",
+  "teams": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/151/teams?lang=en" },
+  "links": [
+    {
+      "language": "en",
+      "rel": [ "standings", "desktop", "group" ],
+      "href": "https://www.espn.com/college-football/standings/_/group/151",
+      "text": "Standings",
+      "shortText": "Standings",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "standings", "sportscenter", "app", "group" ],
+      "href": "sportscenter://x-callback-url/showClubhouse?uid=null&section=standings",
+      "text": "Standings",
+      "shortText": "Standings",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "scores", "desktop", "group" ],
+      "href": "https://www.espn.com/college-football/scoreboard/_/group/151",
+      "text": "Scores",
+      "shortText": "Scores",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "scores", "sportscenter", "app", "group" ],
+      "href": "sportscenter://x-callback-url/showClubhouse?uid=null&section=scores",
+      "text": "Scores",
+      "shortText": "Scores",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [ "stats", "desktop", "group" ],
+      "href": "https://www.espn.com/college-football/conferences/statistics/_/id/151/american-athletic-conference",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ]
+}

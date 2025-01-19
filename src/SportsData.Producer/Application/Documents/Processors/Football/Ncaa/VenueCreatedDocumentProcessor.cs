@@ -40,7 +40,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var exists = await _dataContext.Venues.AnyAsync(x =>
-                x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == SourceDataProvider.Espn));
+                x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == command.SourceDataProvider));
 
             if (exists)
             {

@@ -1,6 +1,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
+using SportsData.Producer.Application.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data;
 
@@ -30,7 +31,10 @@ public class Program
         services.AddSwaggerGen();
         services.AddProviders(config);
         services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-        services.AddMessaging(config, [typeof(DocumentCreatedHandler)]);
+        services.AddDataPersistenceExternal();
+        services.AddMessaging(config, [
+            typeof(DocumentCreatedHandler),
+            typeof(ProcessImageRequestedHandler)]);
         services.AddInstrumentation(builder.Environment.ApplicationName);
         services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
 

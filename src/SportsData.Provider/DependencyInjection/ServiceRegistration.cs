@@ -67,17 +67,20 @@ namespace SportsData.Provider.DependencyInjection
             switch (mode)
             {
                 case Sport.All:
-                    break;
                 case Sport.Football:
-                    resources = await appDataContext.Resources.Where(x => x.SportId == Sport.Football ||
-                                                                          x.SportId == Sport.FootballNcaa ||
-                                                                          x.SportId == Sport.FootballNfl &&
-                                                                          !x.IsRecurring)
+                    resources = await appDataContext.Resources
+                        .Where(x => (x.SportId == Sport.Football ||
+                                    x.SportId == Sport.FootballNcaa ||
+                                    x.SportId == Sport.FootballNfl) &&
+                                    !x.IsRecurring && x.IsEnabled)
                         .ToListAsync();
                     break;
                 case Sport.FootballNfl:
                 case Sport.FootballNcaa:
-                    resources = await appDataContext.Resources.Where(x => x.SportId == mode && !x.IsRecurring)
+                    resources = await appDataContext.Resources
+                        .Where(x => x.SportId == mode &&
+                                    !x.IsRecurring &&
+                                    x.IsEnabled)
                         .ToListAsync();
                     break;
                 default:
@@ -91,7 +94,8 @@ namespace SportsData.Provider.DependencyInjection
 
             foreach (var resource in resources)
             {
-                BackgroundJob.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(new DocumentJobDefinition(resource)));
+                var def = new DocumentJobDefinition(resource);
+                BackgroundJob.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
             }
 
             //recurringJobManager.AddOrUpdate<IProvideDocuments>(

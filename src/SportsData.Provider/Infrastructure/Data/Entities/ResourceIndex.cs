@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
@@ -10,9 +10,11 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
     {
         public bool IsRecurring { get; set; }
 
-        public SourceDataProvider ProviderId { get; set; }
+        public bool IsEnabled { get; set; }
 
-        public DocumentType DocumentTypeId { get; set; }
+        public SourceDataProvider Provider { get; set; }
+
+        public DocumentType DocumentType { get; set; }
 
         public Sport SportId { get; set; }
 

@@ -17,5 +17,7 @@
         TeamInformation,
         Venue,
         Weeks,
+        GroupLogo,
+        FranchiseLogo
     }
 }

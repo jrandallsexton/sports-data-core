@@ -26,6 +26,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<FranchiseLogo> Logos { get; set; } = [];
 
+        public List<FranchiseSeason> Seasons { get; set; }
+
         public string Slug { get; set; }
 
         public List<FranchiseExternalId> ExternalIds { get; set; }

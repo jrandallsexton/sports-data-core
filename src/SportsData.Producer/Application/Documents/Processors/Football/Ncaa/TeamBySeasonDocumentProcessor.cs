@@ -1,4 +1,9 @@
-﻿namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+﻿using Newtonsoft.Json;
+
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
     public class TeamBySeasonDocumentProcessor : IProcessDocuments
     {
@@ -6,8 +11,8 @@
         {
             throw new NotImplementedException();
 
-            //// deserialize the DTO
-            //var espnTeamSeason = document.FromJson<EspnTeamSeasonDto>(new JsonSerializerSettings
+            // deserialize the DTO
+            //var espnTeamSeason = command.Document.FromJson<EspnTeamSeasonDto>(new JsonSerializerSettings
             //{
             //    MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             //});

@@ -10,15 +10,15 @@ public class ProcessDocumentCommand(
     string document,
     Guid correlationId)
 {
-    public SourceDataProvider SourceDataProvider { get; } = sourceDataProvider;
+    public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
-    public Sport Sport { get; } = sport;
+    public Sport Sport { get; init; } = sport;
 
-    public DocumentType DocumentType { get; } = documentType;
+    public DocumentType DocumentType { get; init; } = documentType;
 
-    public string Document { get; } = document;
+    public string Document { get; init; } = document;
 
-    public Guid CorrelationId { get; } = correlationId;
+    public Guid CorrelationId { get; init; } = correlationId;
 
-    public int? Season { get; } = season;
+    public int? Season { get; init; } = season;
 }

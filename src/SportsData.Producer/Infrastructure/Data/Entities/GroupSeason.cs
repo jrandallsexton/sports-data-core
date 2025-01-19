@@ -7,9 +7,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class GroupSeason : EntityBase<Guid>
     {
-        public int Season { get; set; }
-
         public Guid GroupId { get; set; }
+
+        public int Season { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<GroupSeason>
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -40,8 +41,13 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         public async Task PublishDocumentEvents(PublishDocumentEventsCommand command)
         {
             var content = new StringContent(command.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"document/", content);
+            var response = await HttpClient.PostAsync($"document/publish/", content);
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task PublishDocument(PublishDocumentCommand command)
+        {
+            throw new NotImplementedException();
         }
     }
 }

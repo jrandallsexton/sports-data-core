@@ -38,7 +38,7 @@ namespace SportsData.Producer.Application.Images
         {
             _logger.LogInformation("Began with {@request}", request);
 
-            var logoEntity = await GetLogoEntity(request.DocumentType);
+            var logoEntity = await GetLogoEntity(request.DocumentType, request.ParentEntityId);
             ProcessImageResponse outgoingEvt;
 
             if (logoEntity != null)
@@ -48,7 +48,7 @@ namespace SportsData.Producer.Application.Images
                     logoEntity.Url,
                     logoEntity.Id.ToString(),
                     request.ParentEntityId,
-                    "someName",
+                    request.Name,
                     request.Sport,
                     request.SeasonYear,
                     request.DocumentType,
@@ -64,13 +64,15 @@ namespace SportsData.Producer.Application.Images
                 using var response = await client.GetAsync(request.Url);
                 await using var stream = await response.Content.ReadAsStreamAsync();
 
-                // upload it to external storage (Azure Blob Storage for now)
-                
-                var externalUrl = await _blobStorage.UploadImageAsync(stream, request.DocumentType.ToString(), $"{request.ImageId}.png");
+                // upload it to external storage
+                var containerName = request.SeasonYear.HasValue
+                    ? $"{request.Sport}{request.DocumentType.ToString()}{request.SeasonYear.Value}"
+                    : $"{request.Sport}{request.DocumentType.ToString()}";
+                var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{request.ImageId}.png");
 
                 // raise an event for whoever requested this
                 outgoingEvt = new ProcessImageResponse(
-                    $"https://sportsdatastoragedev.blob.core.windows.net/franchiselogo/{request.ImageId}.png",
+                    externalUrl,
                     request.ImageId.ToString(),
                     request.ParentEntityId,
                     request.Name,
@@ -86,15 +88,18 @@ namespace SportsData.Producer.Application.Images
             await _bus.Publish(outgoingEvt);
         }
 
-        private async Task<ILogo?> GetLogoEntity(DocumentType documentType)
+        private async Task<ILogo?> GetLogoEntity(DocumentType documentType, Guid parentEntityId)
         {
             switch (documentType)
             {
                 case DocumentType.FranchiseLogo:
-                    // TODO: Determine the franchiseId
-                    return await _dataContext.FranchiseLogos.FirstOrDefaultAsync();
+                    return await _dataContext.FranchiseLogos
+                        .Where(l => l.FranchiseId == parentEntityId)
+                        .FirstOrDefaultAsync();
                 case DocumentType.GroupBySeason:
-                    return await _dataContext.GroupLogos.FirstOrDefaultAsync();
+                    return await _dataContext.GroupSeasonLogos
+                        .Where(l => l.GroupSeasonId == parentEntityId)
+                        .FirstOrDefaultAsync();
                 case DocumentType.GroupLogo:
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:

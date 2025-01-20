@@ -32,7 +32,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnDto = command.Document.FromJson<EspnGroupBySeasonDto>(new JsonSerializerSettings
+            var externalProviderDto = command.Document.FromJson<EspnGroupBySeasonDto>(new JsonSerializerSettings
             {
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             });
@@ -41,7 +41,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             var groupEntity = await _dataContext.Groups
                 .Include(g => g.Seasons)
                 .Where(x => 
-                    x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == command.SourceDataProvider))
+                    x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
+                                           z.Provider == command.SourceDataProvider))
                 .FirstOrDefaultAsync();
 
             // Determine if this EspnGroupBySeasonDto exists. Do NOT trust that it says it is a new document!
@@ -53,7 +54,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 var groupTmp = await _dataContext.GroupExternalIds
                     .Include(x => x.Group)
                     .ThenInclude(x => x.Seasons)
-                    .FirstOrDefaultAsync(x => x.Value == espnDto.Id.ToString() && x.Provider == command.SourceDataProvider);
+                    .FirstOrDefaultAsync(x => x.Value == externalProviderDto.Id.ToString() &&
+                                              x.Provider == command.SourceDataProvider);
 
                 if (groupTmp is { Group: not null })
                 {
@@ -84,26 +86,28 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             }
             else
             {
+                var newSeasonId = Guid.NewGuid();
+
                 // create the new group ...
                 var group = new Group()
                 {
                     Id = Guid.NewGuid(),
-                    Abbreviation = espnDto.Abbreviation,
+                    Abbreviation = externalProviderDto.Abbreviation,
                     CreatedBy = command.CorrelationId,
                     CreatedUtc = DateTime.UtcNow,
-                    ExternalIds = [new GroupExternalId() { Value = espnDto.Id.ToString(), Provider = command.SourceDataProvider }],
+                    ExternalIds = [new GroupExternalId() { Value = externalProviderDto.Id.ToString(), Provider = command.SourceDataProvider }],
                     GlobalId = Guid.NewGuid(),
-                    IsConference = espnDto.IsConference,
-                    MidsizeName = espnDto.MidsizeName,
-                    Name = espnDto.Name,
+                    IsConference = externalProviderDto.IsConference,
+                    MidsizeName = externalProviderDto.MidsizeName,
+                    Name = externalProviderDto.Name,
                     //ParentGroupId = espnDto.Parent. // TODO: Determine how to set/get this
-                    ShortName = espnDto.ShortName,
+                    ShortName = externalProviderDto.ShortName,
                     Seasons =
                     [
                         // ... and add the season to it
                         new GroupSeason()
                         {
-                            Id = Guid.NewGuid(),
+                            Id = newSeasonId,
                             CreatedUtc = DateTime.UtcNow,
                             CreatedBy = command.CorrelationId,
                             GlobalId = Guid.NewGuid(),
@@ -117,13 +121,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 
                 // any logos on the dto?
                 var events = new List<ProcessImageRequest>();
-                espnDto.Logos.ForEach(logo =>
+                externalProviderDto.Logos.ForEach(logo =>
                 {
+                    var imgId = Guid.NewGuid();
                     events.Add(new ProcessImageRequest(
                         logo.Href,
-                        Guid.NewGuid(),
-                        group.Id,
-                        "someName",
+                        imgId,
+                        newSeasonId,
+                        $"{newSeasonId}.png",
                         command.Sport,
                         command.Season,
                         command.DocumentType,
@@ -134,7 +139,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 });
 
                 if (events.Any())
-                    await _bus.Publish(events);
+                    await _bus.PublishBatch(events);
             }
         }
     }

@@ -2,6 +2,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs.Models;
 
 namespace SportsData.Core.Infrastructure.Blobs
 {
@@ -19,7 +20,7 @@ namespace SportsData.Core.Infrastructure.Blobs
 
             var tmp = new BlobContainerClient(connectionString, containerName.ToLower());
 
-            await tmp.CreateIfNotExistsAsync();
+            await tmp.CreateIfNotExistsAsync(PublicAccessType.BlobContainer);
 
             var blobClient = new BlobClient(connectionString,
                 containerName.ToLower(), filename);

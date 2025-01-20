@@ -3,7 +3,6 @@
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Migrations;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -34,17 +33,23 @@ namespace SportsData.Producer.Application.Images
 
         private async Task ProcessGroupBySeasonLogo(ProcessImageResponse response)
         {
-            var group = await _dataContext.Groups
-                .Include(g => g.Seasons)
-                .ThenInclude(s => s.Logos)
-                .Where(g => g.Id == response.ParentEntityId)
-            .FirstOrDefaultAsync();
+            var groupSeasonLogo = await _dataContext.GroupSeasonLogos
+                .Where(l => l.Url == response.Url)
+                .FirstOrDefaultAsync();
 
-            if (group == null)
+            if (groupSeasonLogo is null)
             {
-                // log and return
-                _logger.LogError("GroupSeason could not be found. Cannot process.");
-                return;
+                await _dataContext.GroupSeasonLogos.AddAsync(new GroupSeasonLogo()
+                {
+                    Id = Guid.Parse(response.ImageId),
+                    GroupSeasonId = response.ParentEntityId,
+                    CreatedBy = response.CorrelationId,
+                    CreatedUtc = DateTime.UtcNow,
+                    Url = response.Url,
+                    Height = response.Height,
+                    Width = response.Width
+                });
+                await _dataContext.SaveChangesAsync();
             }
         }
 
@@ -70,8 +75,7 @@ namespace SportsData.Producer.Application.Images
                 CreatedUtc = DateTime.UtcNow,
                 Url = response.Url,
                 Height = response.Height,
-                Width = response.Width,
-
+                Width = response.Width
             });
             await _dataContext.SaveChangesAsync();
         }

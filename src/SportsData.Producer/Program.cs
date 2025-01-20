@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
@@ -31,26 +33,30 @@ public class Program
         services.AddSwaggerGen();
         services.AddProviders(config);
         services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-        services.AddDataPersistenceExternal();
         services.AddMessaging(config, [
             typeof(DocumentCreatedHandler),
-            typeof(ProcessImageRequestedHandler)]);
+            typeof(ProcessImageRequestedHandler),
+            typeof(ProcessImageResponseHandler)]);
         services.AddInstrumentation(builder.Environment.ApplicationName);
         services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
 
         services.AddLocalServices(mode);
 
         var hostAssembly = Assembly.GetExecutingAssembly();
-        builder.Services.AddAutoMapper(hostAssembly);
+        services.AddAutoMapper(hostAssembly);
         services.AddMediatR(hostAssembly);
-
-        // Apply Migrations
-        await services.ApplyMigrations<AppDataContext>();
 
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
         //app.UseHttpsRedirection();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var appServices = scope.ServiceProvider;
+            var context = appServices.GetRequiredService<AppDataContext>();
+            await context.Database.MigrateAsync();
+        }
 
         app.UseAuthorization();
 

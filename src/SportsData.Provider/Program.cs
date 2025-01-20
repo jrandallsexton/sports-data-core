@@ -1,5 +1,7 @@
 using Hangfire;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
@@ -31,7 +33,6 @@ namespace SportsData.Provider
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddSingleton<DocumentService>();
             services.AddMessaging(config);
@@ -53,16 +54,22 @@ namespace SportsData.Provider
 
             services.AddLocalServices(mode);
 
-            await services.ApplyMigrations<AppDataContext>(LoadSeedData);
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             //app.UseHttpsRedirection();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var appServices = scope.ServiceProvider;
+                var context = appServices.GetRequiredService<AppDataContext>();
+                await context.Database.MigrateAsync();
+                await LoadSeedData(context);
+            }
+
             app.UseHangfireDashboard("/dashboard", new DashboardOptions
             {
-                Authorization = new[] { new DashboardAuthFilter() }
+                Authorization = [new DashboardAuthFilter()]
             });
 
             app.UseAuthorization();

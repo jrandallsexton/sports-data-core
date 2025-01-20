@@ -36,8 +36,10 @@ namespace SportsData.Producer.Application.Documents
             // call Provider to obtain the new document
             var document = await _provider.GetDocumentByIdAsync(
                 context.Message.SourceDataProvider,
+                context.Message.Sport,
                 context.Message.DocumentType,
-                int.Parse(context.Message.Id));
+                int.Parse(context.Message.Id),
+                context.Message.SeasonYear);
 
             if (document is null or "null")
             {

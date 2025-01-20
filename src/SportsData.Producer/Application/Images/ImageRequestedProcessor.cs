@@ -15,7 +15,7 @@ namespace SportsData.Producer.Application.Images
         Task Process(ProcessImageRequest request);
     }
 
-    public class ImageRequestedProcessor
+    public class ImageRequestedProcessor : IProcessImageRequests
     {
         private readonly ILogger<ImageRequestedProcessor> _logger;
         private readonly AppDataContext _dataContext;
@@ -38,20 +38,24 @@ namespace SportsData.Producer.Application.Images
         {
             _logger.LogInformation("Began with {@request}", request);
 
-            var logo = await GetLogo(request.DocumentType);
+            var logoEntity = await GetLogoEntity(request.DocumentType);
             ProcessImageResponse outgoingEvt;
 
-            if (logo != null)
+            if (logoEntity != null)
             {
                 // if so, just create the event
                 outgoingEvt = new ProcessImageResponse(
-                    logo.Url,
-                    logo.Id.ToString(),
+                    logoEntity.Url,
+                    logoEntity.Id.ToString(),
+                    request.ParentEntityId,
                     "someName",
                     request.Sport,
                     request.SeasonYear,
                     request.DocumentType,
-                    request.SourceDataProvider);
+                    request.SourceDataProvider,
+                    request.Height,
+                    request.Width,
+                    request.Rel);
             }
             else
             {
@@ -62,23 +66,27 @@ namespace SportsData.Producer.Application.Images
 
                 // upload it to external storage (Azure Blob Storage for now)
                 
-                var externalUrl = await _blobStorage.UploadImageAsync(stream, request.DocumentType.ToString(), $"{request.Id}.png");
+                var externalUrl = await _blobStorage.UploadImageAsync(stream, request.DocumentType.ToString(), $"{request.ImageId}.png");
 
                 // raise an event for whoever requested this
                 outgoingEvt = new ProcessImageResponse(
-                    $"https://sportsdatastoragedev.blob.core.windows.net/franchiselogo/{request.Id}.png",
-                    request.Id,
+                    $"https://sportsdatastoragedev.blob.core.windows.net/franchiselogo/{request.ImageId}.png",
+                    request.ImageId.ToString(),
+                    request.ParentEntityId,
                     request.Name,
                     request.Sport,
                     request.SeasonYear,
                     request.DocumentType,
-                    request.SourceDataProvider);
+                    request.SourceDataProvider,
+                    request.Height,
+                    request.Width,
+                    request.Rel);
             }
 
             await _bus.Publish(outgoingEvt);
         }
 
-        private async Task<ILogo> GetLogo(DocumentType documentType)
+        private async Task<ILogo> GetLogoEntity(DocumentType documentType)
         {
             switch (documentType)
             {

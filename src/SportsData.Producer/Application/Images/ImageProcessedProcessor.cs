@@ -1,4 +1,8 @@
-﻿using SportsData.Core.Eventing.Events.Images;
+﻿using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Eventing.Events.Images;
+using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -9,9 +13,45 @@ namespace SportsData.Producer.Application.Images
 
     public class ImageProcessedProcessor : IProcessProcessedImages
     {
-        public Task Process(ProcessImageResponse response)
+        private readonly ILogger<ImageProcessedProcessor> _logger;
+        private readonly AppDataContext _dataContext;
+
+        public ImageProcessedProcessor(
+            ILogger<ImageProcessedProcessor> logger,
+            AppDataContext dataContext)
         {
-            throw new NotImplementedException();
+            _logger = logger;
+            _dataContext = dataContext;
+        }
+
+        public async Task Process(ProcessImageResponse response)
+        {
+            _logger.LogInformation("Began with {@evt}", response);
+            
+            var franchise = await _dataContext.Franchises
+                .Include(x => x.Logos)
+                .Where(x => x.Id == response.ParentEntityId)
+                .FirstOrDefaultAsync();
+
+            if (franchise == null)
+            {
+                // log and return
+                _logger.LogError("Franchise could not be found. Cannot process.");
+                return;
+            }
+
+            franchise.Logos.Add(new FranchiseLogo()
+            {
+                Id = Guid.NewGuid(),
+                FranchiseId = response.ParentEntityId,
+                CreatedBy = response.CorrelationId,
+                CreatedUtc = DateTime.UtcNow,
+                Url = response.Url,
+                Height = response.Height,
+                Width = response.Width,
+                
+            });
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

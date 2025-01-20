@@ -1,7 +1,9 @@
-﻿using Hangfire;
+﻿
 using Microsoft.EntityFrameworkCore;
+
 using MongoDB.Driver;
 
+using SportsData.Core.Processing;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
@@ -22,19 +24,22 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ResourceIndexJob(
             ILogger<ResourceIndexJob> logger,
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
-            IDecodeDocumentProvidersAndTypes decoder)
+            IDecodeDocumentProvidersAndTypes decoder,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _espnApi = espnApi;
             _documentService = documentService;
             _decoder = decoder;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
@@ -84,8 +89,7 @@ namespace SportsData.Provider.Application.Jobs
                              jobDefinition.DocumentType,
                              jobDefinition.SeasonYear)))
             {
-                // TODO: Put this in a wrapper with an interface for testing
-                BackgroundJob.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 await Task.Delay(1_000); // do NOT beat on their API
             }
 

@@ -10,7 +10,7 @@ namespace SportsData.Producer.Application.Handlers
     {
         private readonly ILogger<ProcessImageRequestedHandler> _logger;
         private readonly IProcessImageRequests _imageRequestProcessor;
-
+        
         public ProcessImageRequestedHandler(
             ILogger<ProcessImageRequestedHandler> logger,
             IProcessImageRequests imageRequestProcessor)
@@ -25,6 +25,7 @@ namespace SportsData.Producer.Application.Handlers
 
             var message = context.Message;
 
+            // TODO: Send to background job
             await _imageRequestProcessor.Process(message);
         }
     }

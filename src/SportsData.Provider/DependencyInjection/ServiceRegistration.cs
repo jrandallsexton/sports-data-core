@@ -1,6 +1,9 @@
 ﻿using Hangfire;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
+using SportsData.Core.Processing;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
@@ -47,6 +50,7 @@ namespace SportsData.Provider.DependencyInjection
                     throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
             }
 
+            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
@@ -60,6 +64,7 @@ namespace SportsData.Provider.DependencyInjection
         {
             var serviceScope = services.CreateScope();
             var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
+            var backgroundJobProvider = serviceScope.ServiceProvider.GetRequiredService<IProvideBackgroundJobs>();
             var appDataContext = serviceScope.ServiceProvider.GetService<AppDataContext>();
 
             List<ResourceIndex> resources = null;
@@ -95,7 +100,7 @@ namespace SportsData.Provider.DependencyInjection
             foreach (var resource in resources)
             {
                 var def = new DocumentJobDefinition(resource);
-                BackgroundJob.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
+                backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
             }
 
             //recurringJobManager.AddOrUpdate<IProvideDocuments>(

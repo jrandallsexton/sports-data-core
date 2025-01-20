@@ -23,6 +23,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<GroupExternalId> ExternalIds { get; set; }
 
+        public List<GroupLogo> Logos { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<Group>
         {
             public void Configure(EntityTypeBuilder<Group> builder)

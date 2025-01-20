@@ -5,9 +5,9 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class FranchiseLogo : EntityBase<Guid>, ILogo
+    public class GroupSeasonLogo : EntityBase<Guid>, ILogo
     {
-        public Guid FranchiseId { get; set; }
+        public Guid GroupSeasonId { get; set; }
 
         public string Url { get; set; }
 
@@ -15,17 +15,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public long? Width { get; set; }
 
-        public List<string>? Rel { get; set; } = [];
+        public List<string>? Rel { get; set; }
 
-        public class EntityConfiguration : IEntityTypeConfiguration<FranchiseLogo>
+        public class EntityConfiguration : IEntityTypeConfiguration<GroupSeasonLogo>
         {
-            public void Configure(EntityTypeBuilder<FranchiseLogo> builder)
+            public void Configure(EntityTypeBuilder<GroupSeasonLogo> builder)
             {
-                builder.ToTable("FranchiseLogo");
+                builder.ToTable("GroupSeasonLogo");
                 builder.HasKey(t => t.Id);
-                builder.HasOne<Franchise>()
+                builder.HasOne<GroupSeason>()
                     .WithMany(x => x.Logos)
-                    .HasForeignKey(x => x.FranchiseId);
+                    .HasForeignKey(x => x.GroupSeasonId);
             }
         }
     }

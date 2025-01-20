@@ -11,6 +11,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int Season { get; set; }
 
+        public List<GroupSeasonLogo> Logos { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<GroupSeason>
         {
             public void Configure(EntityTypeBuilder<GroupSeason> builder)

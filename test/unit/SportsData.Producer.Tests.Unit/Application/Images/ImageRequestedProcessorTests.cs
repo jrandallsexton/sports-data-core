@@ -24,12 +24,16 @@ namespace SportsData.Producer.Tests.Unit.Application.Images
 
             var message = new ProcessImageRequest(
                 "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
-                "99",
+                Guid.NewGuid(),
+                Guid.NewGuid(),
                 "99.png",
                 Sport.FootballNcaa,
                 2024,
                 DocumentType.FranchiseLogo,
-                SourceDataProvider.Espn);
+                SourceDataProvider.Espn,
+                500,
+                500,
+                null);
 
             // act
             await sut.Process(message);

@@ -8,6 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
 
 namespace SportsData.Provider.Application.Documents
 {
@@ -31,15 +32,17 @@ namespace SportsData.Provider.Application.Documents
             _logger = logger;
         }
 
-        [HttpGet("{providerId}/{typeId}/{documentId}")]
+        [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}")]
         public async Task<IActionResult> GetDocument(
             SourceDataProvider providerId,
+            Sport sportId,
             DocumentType typeId,
-            int documentId)
+            int documentId,
+            int? seasonId)
         {
-            var type = _decoder.GetType(providerId, typeId);
+            var typeAndName = _decoder.GetTypeAndName(providerId, sportId, typeId, seasonId);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
 
             var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
 
@@ -53,9 +56,13 @@ namespace SportsData.Provider.Application.Documents
         [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
-            var type = _decoder.GetType(command.SourceDataProvider, command.DocumentType);
+            var typeAndName = _decoder.GetTypeAndName(
+                command.SourceDataProvider,
+                command.Sport,
+                command.DocumentType,
+                command.Season);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
 
             // https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/crud/read-operations/retrieve/
             var filter = Builders<DocumentBase>.Filter.Empty;
@@ -65,7 +72,7 @@ namespace SportsData.Provider.Application.Documents
             var events = dbDocuments.Select(tmp =>
                 new DocumentCreated(
                     tmp.Id.ToString(),
-                    type.Name,
+                    typeAndName.Type.Name,
                     command.Sport,
                     command.Season,
                     command.DocumentType,

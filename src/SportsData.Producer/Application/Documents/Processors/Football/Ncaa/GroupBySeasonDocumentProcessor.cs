@@ -66,8 +66,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                             CreatedUtc = DateTime.UtcNow,
                             CreatedBy = command.CorrelationId,
                             GlobalId = Guid.NewGuid(),
-                            Season = command.Season.Value
+                            Season = command.Season.Value,
+                            GroupId = groupEntity.Id
                         });
+                        await _dataContext.SaveChangesAsync();
                     }
                     else
                     {
@@ -119,13 +121,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 {
                     events.Add(new ProcessImageRequest(
                         logo.Href,
-                        group.Id.ToString(),
+                        Guid.NewGuid(),
+                        group.Id,
                         "someName",
                         command.Sport,
                         command.Season,
                         command.DocumentType,
-                        command.SourceDataProvider));
+                        command.SourceDataProvider,
+                        0,
+                        0,
+                        null));
                 });
+
                 if (events.Any())
                     await _bus.Publish(events);
             }

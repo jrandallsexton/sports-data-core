@@ -23,6 +23,7 @@ namespace SportsData.Producer.Application.Handlers
 
             var message = context.Message;
 
+            // TODO: Background job
             await _imageProcessor.Process(message);
         }
     }

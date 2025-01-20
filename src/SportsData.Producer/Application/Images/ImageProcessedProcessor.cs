@@ -3,6 +3,7 @@
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Migrations;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -27,7 +28,28 @@ namespace SportsData.Producer.Application.Images
         public async Task Process(ProcessImageResponse response)
         {
             _logger.LogInformation("Began with {@evt}", response);
-            
+
+            await ProcessGroupBySeasonLogo(response);
+        }
+
+        private async Task ProcessGroupBySeasonLogo(ProcessImageResponse response)
+        {
+            var group = await _dataContext.Groups
+                .Include(g => g.Seasons)
+                .ThenInclude(s => s.Logos)
+                .Where(g => g.Id == response.ParentEntityId)
+            .FirstOrDefaultAsync();
+
+            if (group == null)
+            {
+                // log and return
+                _logger.LogError("GroupSeason could not be found. Cannot process.");
+                return;
+            }
+        }
+
+        private async Task ProcessFranchiseLogo(ProcessImageResponse response)
+        {
             var franchise = await _dataContext.Franchises
                 .Include(x => x.Logos)
                 .Where(x => x.Id == response.ParentEntityId)
@@ -49,7 +71,7 @@ namespace SportsData.Producer.Application.Images
                 Url = response.Url,
                 Height = response.Height,
                 Width = response.Width,
-                
+
             });
             await _dataContext.SaveChangesAsync();
         }

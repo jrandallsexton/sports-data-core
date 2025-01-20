@@ -1,6 +1,5 @@
-﻿using MassTransit;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 

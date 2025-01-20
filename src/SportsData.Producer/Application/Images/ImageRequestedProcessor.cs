@@ -86,13 +86,15 @@ namespace SportsData.Producer.Application.Images
             await _bus.Publish(outgoingEvt);
         }
 
-        private async Task<ILogo> GetLogoEntity(DocumentType documentType)
+        private async Task<ILogo?> GetLogoEntity(DocumentType documentType)
         {
             switch (documentType)
             {
                 case DocumentType.FranchiseLogo:
                     // TODO: Determine the franchiseId
                     return await _dataContext.FranchiseLogos.FirstOrDefaultAsync();
+                case DocumentType.GroupBySeason:
+                    return await _dataContext.GroupLogos.FirstOrDefaultAsync();
                 case DocumentType.GroupLogo:
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
@@ -101,7 +103,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Contest:
                 case DocumentType.Franchise:
                 case DocumentType.GameSummary:
-                case DocumentType.GroupBySeason:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
                 case DocumentType.Team:

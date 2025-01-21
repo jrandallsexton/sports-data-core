@@ -18,7 +18,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Images
         {
             // arrange
             var bus = Mocker.GetMock<IBus>();
-            Mocker.Use<IProvideBlobStorage>(new BlobStorageProvider());
+
+            Mocker.GetMock<IProvideBlobStorage>()
+                .Setup(s => s.UploadImageAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(() => "http://somedomain.com");
 
             var sut = Mocker.CreateInstance<ImageRequestedProcessor>();
 

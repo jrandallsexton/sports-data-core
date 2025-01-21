@@ -32,8 +32,28 @@ namespace SportsData.Provider.Application.Documents
             _logger = logger;
         }
 
-        [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}")]
+        [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}")]
         public async Task<IActionResult> GetDocument(
+            SourceDataProvider providerId,
+            Sport sportId,
+            DocumentType typeId,
+            int documentId)
+        {
+            var typeAndName = _decoder.GetTypeAndName(providerId, sportId, typeId, null);
+
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
+
+            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
+
+            var dbResult = await dbObjects.FindAsync(filter);
+            var dbItem = await dbResult.FirstOrDefaultAsync();
+
+            // TODO: Clean this up
+            return dbItem != null ? Ok(dbItem.Data) : NotFound();
+        }
+
+        [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}")]
+        public async Task<IActionResult> GetDocumentBySeason(
             SourceDataProvider providerId,
             Sport sportId,
             DocumentType typeId,

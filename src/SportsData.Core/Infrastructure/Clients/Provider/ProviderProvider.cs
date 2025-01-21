@@ -37,7 +37,10 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             int documentId,
             int? seasonId)
         {
-            var response = await HttpClient.GetAsync($"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}");
+            var url = seasonId.HasValue ?
+                $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}" :
+                $"document/{providerId}/{sportId}/{typeId}/{documentId}";
+            var response = await HttpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             return tmp;

@@ -53,12 +53,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 return;
             }
 
+            // does this season already exist?
+            
+
             var franchiseBySeasonId = Guid.NewGuid();
-            franchiseExternalId.Franchise.Seasons.Add(new FranchiseSeason()
+            await _dataContext.FranchiseSeasons.AddAsync(new FranchiseSeason()
             {
                 Abbreviation = espnDto.Abbreviation,
                 ColorCodeAltHex = espnDto.AlternateColor,
-                ColorCodeHex = espnDto.Color,
+                ColorCodeHex = espnDto.Color ?? string.Empty,
                 CreatedBy = command.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
                 DisplayName = espnDto.DisplayName,
@@ -73,7 +76,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 Losses = 0,
                 Name = espnDto.Name,
                 Season = command.Season.Value,
-                Slug =espnDto.Slug,
+                Slug = espnDto.Slug,
                 Ties = 0,
                 Wins = 0
             });
@@ -82,13 +85,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 
             // any logos on the dto?
             var events = new List<ProcessImageRequest>();
-            espnDto.Logos.ForEach(logo =>
+            espnDto.Logos?.ForEach(logo =>
             {
                 var imgId = Guid.NewGuid();
                 events.Add(new ProcessImageRequest(
                     logo.Href.ToString(),
                     imgId,
-                    franchiseExternalId.Franchise.Id,
+                    franchiseBySeasonId,
                     $"{franchiseBySeasonId}.png",
                     command.Sport,
                     command.Season,

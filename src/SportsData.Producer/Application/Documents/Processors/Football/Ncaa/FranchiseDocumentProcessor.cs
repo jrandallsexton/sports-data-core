@@ -48,7 +48,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             {
                 Id = franchiseId,
                 Abbreviation = espnFranchise.Abbreviation,
-                ColorCodeHex = espnFranchise.Color,
+                ColorCodeHex = string.IsNullOrEmpty(espnFranchise.Color) ? "ffffff" : espnFranchise.Color,
                 DisplayName = espnFranchise.DisplayName,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId,

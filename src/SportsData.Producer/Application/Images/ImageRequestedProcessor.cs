@@ -100,6 +100,10 @@ namespace SportsData.Producer.Application.Images
                     return await _dataContext.GroupSeasonLogos
                         .Where(l => l.GroupSeasonId == parentEntityId)
                         .FirstOrDefaultAsync();
+                case DocumentType.TeamBySeason:
+                    return await _dataContext.FranchiseSeasonLogos
+                        .Where(l => l.FranchiseSeasonId == parentEntityId)
+                        .FirstOrDefaultAsync();
                 case DocumentType.GroupLogo:
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
@@ -111,7 +115,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
                 case DocumentType.Team:
-                case DocumentType.TeamBySeason:
                 case DocumentType.TeamInformation:
                 case DocumentType.Venue:
                 case DocumentType.Weeks:

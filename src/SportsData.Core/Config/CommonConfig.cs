@@ -17,6 +17,8 @@ namespace SportsData.Core.Config
 
         public string AzureBlobStorageUrl { get; set; }
 
+        public string AzureBlobStorageContainerPrefix { get; set; }
+
         public string AzureServiceBusConnectionString { get; set; }
 
         public string SeqUri { get; set; }
@@ -37,8 +39,12 @@ namespace SportsData.Core.Config
     {
         public static string AzureBlobStorage =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageConnectionString)}";
+
         public static string AzureBlobStorageUrl =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageUrl)}";
+
+        public static string AzureBlobStorageContainerPrefix =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageContainerPrefix)}";
 
         public static string AzureServiceBus =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureServiceBusConnectionString)}";

@@ -19,21 +19,29 @@ namespace SportsData.Core.Infrastructure.Blobs
     {
         private readonly IOptions<CommonConfig> _config;
 
+        public BlobStorageProvider(IOptions<CommonConfig> config)
+        {
+            _config = config;
+        }
+
         public async Task<string> UploadImageAsync(Stream stream, string containerName, string filename)
         {
-            var tmp = new BlobContainerClient(_config.Value.AzureBlobStorageConnectionString, containerName.ToLower());
+            containerName = $"{_config.Value.AzureBlobStorageContainerPrefix}-{containerName.ToLower()}";
+
+            var tmp = new BlobContainerClient(_config.Value.AzureBlobStorageConnectionString, containerName);
 
             await tmp.CreateIfNotExistsAsync(PublicAccessType.BlobContainer);
             
             // TODO: Use BlobContainerClient only?
-            var blobClient = new BlobClient(_config.Value.AzureBlobStorageConnectionString,
-                containerName.ToLower(), filename);
+            var blobClient = new BlobClient(
+                _config.Value.AzureBlobStorageConnectionString,
+                containerName, filename);
             
             // TODO: Perhaps bring that overwrite parameter into the method params?
             await blobClient.UploadAsync(stream, true);
 
             // TODO: Return the url where it is located
-            return $"{_config.Value.AzureBlobStorageUrl}/{containerName.ToLower()}/{filename}";
+            return $"{_config.Value.AzureBlobStorageUrl}/{containerName}/{filename}";
         }
     }
 }

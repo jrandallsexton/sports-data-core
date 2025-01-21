@@ -53,6 +53,19 @@ namespace SportsData.Provider.Application.Documents
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
         }
 
+        [HttpGet("{providerId}/{externalUrl}")]
+        public async Task<IActionResult> GetExternalDocument(SourceDataProvider providerId, string externalUrl)
+        {
+            throw new NotImplementedException();
+            // Check to see if the document is in the database
+
+            // if so?  return it
+
+            // if not
+            // TODO: Get the correct providerClient (for now only ESPN)
+
+        }
+
         [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {

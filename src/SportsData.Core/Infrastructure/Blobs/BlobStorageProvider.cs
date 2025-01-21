@@ -1,8 +1,12 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+
+using Microsoft.Extensions.Options;
+
+using SportsData.Core.Config;
 
 using System.IO;
 using System.Threading.Tasks;
-using Azure.Storage.Blobs.Models;
 
 namespace SportsData.Core.Infrastructure.Blobs
 {
@@ -13,23 +17,23 @@ namespace SportsData.Core.Infrastructure.Blobs
 
     public class BlobStorageProvider : IProvideBlobStorage
     {
+        private readonly IOptions<CommonConfig> _config;
+
         public async Task<string> UploadImageAsync(Stream stream, string containerName, string filename)
         {
-            // TODO: Bring this into Azure AppConfig (CommonConfig?)
-            const string connectionString = "FROM_AZ_APP_CONFIG";
-
-            var tmp = new BlobContainerClient(connectionString, containerName.ToLower());
+            var tmp = new BlobContainerClient(_config.Value.AzureBlobStorageConnectionString, containerName.ToLower());
 
             await tmp.CreateIfNotExistsAsync(PublicAccessType.BlobContainer);
-
-            var blobClient = new BlobClient(connectionString,
+            
+            // TODO: Use BlobContainerClient only?
+            var blobClient = new BlobClient(_config.Value.AzureBlobStorageConnectionString,
                 containerName.ToLower(), filename);
             
             // TODO: Perhaps bring that overwrite parameter into the method params?
             await blobClient.UploadAsync(stream, true);
 
             // TODO: Return the url where it is located
-            return $"https://sportsdatastoragedev.blob.core.windows.net/{containerName.ToLower()}/{filename}";
+            return $"{_config.Value.AzureBlobStorageUrl}/{containerName.ToLower()}/{filename}";
         }
     }
 }

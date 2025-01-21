@@ -11,7 +11,7 @@ namespace SportsData.Core.Middleware.Health
 {
     public class LoggingHealthCheck : IHealthCheck
     {
-        private IOptions<CommonConfig> _config;
+        private readonly IOptions<CommonConfig> _config;
 
         public LoggingHealthCheck(IOptions<CommonConfig> config)
         {

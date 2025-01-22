@@ -5,7 +5,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Venue : EntityBase<Guid>
+    public class Venue : CanonicalEntityBase<Guid>
     {
         public string Name { get; set; }
 

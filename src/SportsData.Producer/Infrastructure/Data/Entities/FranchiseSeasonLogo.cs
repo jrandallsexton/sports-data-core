@@ -5,7 +5,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class FranchiseSeasonLogo : EntityBase<Guid>, ILogo
+    public class FranchiseSeasonLogo : CanonicalEntityBase<Guid>, ILogo
     {
         public Guid FranchiseSeasonId { get; set; }
 

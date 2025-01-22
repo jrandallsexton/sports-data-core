@@ -67,7 +67,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                             Id = Guid.NewGuid(),
                             CreatedUtc = DateTime.UtcNow,
                             CreatedBy = command.CorrelationId,
-                            GlobalId = Guid.NewGuid(),
                             Season = command.Season.Value,
                             GroupId = groupEntity.Id
                         });
@@ -95,8 +94,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                     Abbreviation = externalProviderDto.Abbreviation,
                     CreatedBy = command.CorrelationId,
                     CreatedUtc = DateTime.UtcNow,
-                    ExternalIds = [new GroupExternalId() { Value = externalProviderDto.Id.ToString(), Provider = command.SourceDataProvider }],
-                    GlobalId = Guid.NewGuid(),
+                    ExternalIds = [new GroupExternalId() { Id = Guid.NewGuid(), Value = externalProviderDto.Id.ToString(), Provider = command.SourceDataProvider }],
                     IsConference = externalProviderDto.IsConference,
                     MidsizeName = externalProviderDto.MidsizeName,
                     Name = externalProviderDto.Name,
@@ -110,7 +108,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                             Id = newSeasonId,
                             CreatedUtc = DateTime.UtcNow,
                             CreatedBy = command.CorrelationId,
-                            GlobalId = Guid.NewGuid(),
                             Season = command.Season.Value
                         }
                     ]

@@ -3,7 +3,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class ExternalId : EntityBase<Guid>
+    public class ExternalId : CanonicalEntityBase<Guid>
     {
         public string Value { get; set; }
 

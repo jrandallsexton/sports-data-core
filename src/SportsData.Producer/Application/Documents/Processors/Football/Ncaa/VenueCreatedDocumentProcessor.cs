@@ -59,8 +59,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 IsGrass = espnDto.Grass,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId,
-                ExternalIds = [new VenueExternalId() { Value = espnDto.Id.ToString(), Provider = SourceDataProvider.Espn }],
-                GlobalId = Guid.NewGuid()
+                ExternalIds = [new VenueExternalId() { Id = Guid.NewGuid(), Value = espnDto.Id.ToString(), Provider = SourceDataProvider.Espn }]
             };
             await _dataContext.AddAsync(venueEntity);
             await _dataContext.SaveChangesAsync();
@@ -78,11 +77,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                     IsGrass = venueEntity.IsGrass,
                     IsIndoor = venueEntity.IsIndoor,
                     Name = venueEntity.Name,
-                    ShortName = venueEntity.ShortName,
-                    ExternalIds = new Dictionary<SourceDataProvider, string>()
-                    {
-                        { command.SourceDataProvider, espnDto.Id.ToString() }
-                    }
+                    ShortName = venueEntity.ShortName
                 }
             };
             await _bus.Publish(evt);

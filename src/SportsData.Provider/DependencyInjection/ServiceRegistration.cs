@@ -50,11 +50,11 @@ namespace SportsData.Provider.DependencyInjection
                     throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
             }
 
-            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+            services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
-            services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
+            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+            services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddSingleton(new EspnApiClientConfig());
 
             return services;

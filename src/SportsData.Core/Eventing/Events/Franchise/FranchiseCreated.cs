@@ -1,8 +1,9 @@
-﻿namespace SportsData.Core.Eventing.Events.Franchise
+﻿using SportsData.Core.Models.Canonical;
+
+namespace SportsData.Core.Eventing.Events.Franchise
 {
-    public class FranchiseCreated : EventBase
+    public class FranchiseCreated(FranchiseCanonicalModel franchise) : EventBase
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public FranchiseCanonicalModel Franchise { get; init; } = franchise;
     }
 }

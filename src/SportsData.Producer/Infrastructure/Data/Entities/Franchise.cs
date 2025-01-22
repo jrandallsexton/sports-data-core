@@ -6,7 +6,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Franchise : EntityBase<Guid>
+    public class Franchise : CanonicalEntityBase<Guid>
     {
         public Sport Sport { get; set; }
 
@@ -21,6 +21,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string DisplayNameShort { get; set; }
 
         public string ColorCodeHex { get; set; }
+
+        public string? ColorCodeAltHex { get; set; }
 
         public bool IsActive { get; set; }
 

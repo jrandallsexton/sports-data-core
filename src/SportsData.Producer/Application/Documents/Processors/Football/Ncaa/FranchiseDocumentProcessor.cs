@@ -29,11 +29,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
-            var espnFranchise = command.Document.FromJson<EspnFranchiseDto>();
+            var espnFranchiseDto = command.Document.FromJson<EspnFranchiseDto>();
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var exists = await _dataContext.Franchises.AnyAsync(x =>
-                x.ExternalIds.Any(z => z.Value == espnFranchise.Id.ToString() && z.Provider == SourceDataProvider.Espn));
+                x.ExternalIds.Any(z => z.Value == espnFranchiseDto.Id.ToString() && z.Provider == SourceDataProvider.Espn));
 
             if (exists)
             {
@@ -42,45 +42,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             }
 
             // 1. map to the entity and save it
-            // TODO: Move to extension method?
-            var franchiseId = Guid.NewGuid();
-            var franchiseEntity = new Franchise()
-            {
-                Id = franchiseId,
-                Abbreviation = espnFranchise.Abbreviation,
-                ColorCodeHex = string.IsNullOrEmpty(espnFranchise.Color) ? "ffffff" : espnFranchise.Color,
-                DisplayName = espnFranchise.DisplayName,
-                CreatedUtc = DateTime.UtcNow,
-                CreatedBy = command.CorrelationId,
-                ExternalIds = [new FranchiseExternalId() { Value = espnFranchise.Id.ToString(), Provider = SourceDataProvider.Espn }],
-                GlobalId = Guid.NewGuid(),
-                DisplayNameShort = espnFranchise.ShortDisplayName,
-                IsActive = espnFranchise.IsActive,
-                Name = espnFranchise.Name,
-                Nickname = espnFranchise.Nickname,
-                Slug = espnFranchise.Slug,
-                Logos = espnFranchise.Logos.Select(x => new FranchiseLogo()
-                {
-                    Id = Guid.NewGuid(),
-                    CreatedBy = command.CorrelationId,
-                    CreatedUtc = DateTime.UtcNow,
-                    FranchiseId = franchiseId,
-                    Height = x.Height,
-                    Width = x.Width,
-                    Url = x.Href.ToString()
-                }).ToList()
-            };
+            var franchiseEntity = espnFranchiseDto.AsFranchiseEntity(Guid.NewGuid(), command.CorrelationId);
             await _dataContext.AddAsync(franchiseEntity);
             await _dataContext.SaveChangesAsync();
 
             // 2. raise an event
-            // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
-            var evt = new FranchiseCreated()
-            {
-                Id = espnFranchise.Id.ToString(),
-                Name = nameof(FranchiseCreated)
-            };
+            var evt = new FranchiseCreated(franchiseEntity.ToCanonicalModel());
             await _bus.Publish(evt);
+
             _logger.LogInformation("New {@type} event {@evt}", DocumentType.Franchise, evt);
         }
     }

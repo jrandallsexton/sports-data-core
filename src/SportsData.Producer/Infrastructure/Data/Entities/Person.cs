@@ -1,6 +1,8 @@
-﻿namespace SportsData.Producer.Infrastructure.Data.Entities
+﻿using SportsData.Core.Infrastructure.Data.Entities;
+
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Person
+    public class Person : CanonicalEntityBase<Guid>
     {
         public string LastName { get; set; }
 

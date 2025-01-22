@@ -67,7 +67,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 DisplayName = espnDto.DisplayName,
                 DisplayNameShort = espnDto.ShortDisplayName,
                 FranchiseId = franchiseExternalId.Franchise.Id,
-                GlobalId = Guid.NewGuid(),
                 Id = franchiseBySeasonId,
                 IsActive = espnDto.IsActive,
                 IsAllStar = espnDto.IsAllStar,

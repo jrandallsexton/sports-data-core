@@ -38,10 +38,10 @@ namespace SportsData.Venue.Application.Handlers
             }
 
             // the event says it is new - check anyway
-            var exists = await _dataContext.Venues.AnyAsync(x => x.GlobalId == canonicalVenue.Id);
+            var exists = await _dataContext.Venues.AnyAsync(x => x.CanonicalId == canonicalVenue.Id);
             if (exists)
             {
-                _logger.LogWarning($"Venue already exists for GlobalId: {canonicalVenue.Id}");
+                _logger.LogWarning($"Venue already exists for CanonicalId: {canonicalVenue.Id}");
                 return;
             }
 
@@ -51,7 +51,7 @@ namespace SportsData.Venue.Application.Handlers
                 Name = canonicalVenue.Name,
                 ShortName = canonicalVenue.ShortName,
                 CreatedUtc = DateTime.UtcNow,
-                GlobalId = canonicalVenue.Id,
+                CanonicalId = canonicalVenue.Id,
                 IsGrass = canonicalVenue.IsGrass,
                 IsIndoor = canonicalVenue.IsIndoor,
                 CreatedBy = context.Message.CorrelationId

@@ -1,3 +1,5 @@
+using Hangfire;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -38,6 +40,14 @@ public class Program
             typeof(ProcessImageRequestedHandler),
             typeof(ProcessImageResponseHandler)]);
         services.AddInstrumentation(builder.Environment.ApplicationName);
+
+        services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+        services.AddHangfireServer(serverOptions =>
+        {
+            // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
+            serverOptions.WorkerCount = 50;
+        });
+
         services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
 
         services.AddLocalServices(mode);
@@ -58,11 +68,18 @@ public class Program
             await context.Database.MigrateAsync();
         }
 
+        app.UseHangfireDashboard("/dashboard", new DashboardOptions
+        {
+            Authorization = [new DashboardAuthFilter()]
+        });
+
         app.UseAuthorization();
 
         app.UseCommonFeatures();
 
         app.MapControllers();
+
+        await app.Services.ConfigureHangfireJobs(mode);
 
         await app.RunAsync();
     }

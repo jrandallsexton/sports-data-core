@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SportsData.Provider.Infrastructure.Data;
+using SportsData.Venue.Infrastructure.Data;
 
 #nullable disable
 
-namespace SportsData.Provider.Migrations
+namespace SportsData.Venue.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    partial class AppDataContextModelSnapshot : ModelSnapshot
+    [Migration("20250122163043_EntityChanges")]
+    partial class EntityChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,11 +25,13 @@ namespace SportsData.Provider.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", b =>
+            modelBuilder.Entity("SportsData.Venue.Infrastructure.Data.Entities.Venue", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<Guid?>("CanonicalId")
                         .HasColumnType("uniqueidentifier");
@@ -37,25 +42,11 @@ namespace SportsData.Provider.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DocumentType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EndpointMask")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsEnabled")
+                    b.Property<bool>("IsGrass")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsRecurring")
+                    b.Property<bool>("IsIndoor")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastAccessed")
-                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uniqueidentifier");
@@ -63,18 +54,15 @@ namespace SportsData.Provider.Migrations
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Provider")
-                        .HasColumnType("int");
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("SeasonYear")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SportId")
-                        .HasColumnType("int");
+                    b.Property<string>("ShortName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ResourceIndex", (string)null);
+                    b.ToTable("Venue", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -1,6 +1,5 @@
 ﻿using MassTransit;
 
-using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;

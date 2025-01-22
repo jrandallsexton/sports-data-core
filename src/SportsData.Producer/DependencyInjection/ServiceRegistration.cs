@@ -33,7 +33,7 @@ namespace SportsData.Producer.DependencyInjection
             return services;
         }
 
-        public static async Task<IServiceProvider> ConfigureHangfireJobs(this IServiceProvider services, Sport mode)
+        public static IServiceProvider ConfigureHangfireJobs(this IServiceProvider services, Sport mode)
         {
             var serviceScope = services.CreateScope();
 

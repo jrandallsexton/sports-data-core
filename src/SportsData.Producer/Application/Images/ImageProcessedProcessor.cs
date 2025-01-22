@@ -3,6 +3,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Migrations;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -30,9 +31,11 @@ namespace SportsData.Producer.Application.Images
 
             switch (response.DocumentType)
             {
+                case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
                     await ProcessFranchiseLogo(response);
                     break;
+                case DocumentType.GroupLogo:
                 case DocumentType.GroupBySeason:
                     await ProcessGroupBySeasonLogo(response);
                     break;
@@ -44,7 +47,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:
-                case DocumentType.Franchise:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
@@ -52,7 +54,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.TeamInformation:
                 case DocumentType.Venue:
                 case DocumentType.Weeks:
-                case DocumentType.GroupLogo:
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -60,46 +61,73 @@ namespace SportsData.Producer.Application.Images
 
         private async Task ProcessTeamBySeasonLogo(ProcessImageResponse response)
         {
-            var franchiseSeasonLogo = await _dataContext.FranchiseSeasonLogos
-                .Where(l => l.Url == response.Url)
+            var teamBySeason = await _dataContext.FranchiseSeasons
+                .Include(x => x.Logos)
+                .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();
 
-            if (franchiseSeasonLogo is null)
+            if (teamBySeason is null)
             {
-                await _dataContext.FranchiseSeasonLogos.AddAsync(new FranchiseSeasonLogo()
-                {
-                    Id = Guid.Parse(response.ImageId),
-                    FranchiseSeasonId = response.ParentEntityId,
-                    CreatedBy = response.CorrelationId,
-                    CreatedUtc = DateTime.UtcNow,
-                    Url = response.Url,
-                    Height = response.Height,
-                    Width = response.Width
-                });
+                // log and return
+                _logger.LogError("teamBySeason could not be found. Cannot process.");
+                return;
+            }
+
+            teamBySeason.Logos.Add(new FranchiseSeasonLogo()
+            {
+                Id = Guid.Parse(response.ImageId),
+                FranchiseSeasonId = response.ParentEntityId,
+                CreatedBy = response.CorrelationId,
+                CreatedUtc = DateTime.UtcNow,
+                Url = response.Url,
+                Height = response.Height,
+                Width = response.Width
+            });
+
+            try
+            {
                 await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to process teamBySeason logo for {@response}. EntityId: {@franchiseId}", response, teamBySeason.Id);
             }
         }
 
         private async Task ProcessGroupBySeasonLogo(ProcessImageResponse response)
         {
-            var groupSeasonLogo = await _dataContext.GroupSeasonLogos
-                .Where(l => l.Url == response.Url)
+            var groupSeason = await _dataContext.GroupSeasons
+                .Include(x => x.Logos)
+                .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();
 
-            if (groupSeasonLogo is null)
+            if (groupSeason is null)
             {
-                await _dataContext.GroupSeasonLogos.AddAsync(new GroupSeasonLogo()
-                {
-                    Id = Guid.Parse(response.ImageId),
-                    GroupSeasonId = response.ParentEntityId,
-                    CreatedBy = response.CorrelationId,
-                    CreatedUtc = DateTime.UtcNow,
-                    Url = response.Url,
-                    Height = response.Height,
-                    Width = response.Width
-                });
+                // log and return
+                _logger.LogError("groupSeason could not be found. Cannot process.");
+                return;
+            }
+
+            groupSeason.Logos.Add(new GroupSeasonLogo()
+            {
+                Id = Guid.Parse(response.ImageId),
+                GroupSeasonId = response.ParentEntityId,
+                CreatedBy = response.CorrelationId,
+                CreatedUtc = DateTime.UtcNow,
+                Url = response.Url,
+                Height = response.Height,
+                Width = response.Width
+            });
+
+            try
+            {
                 await _dataContext.SaveChangesAsync();
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to process groupBySeason logo for {@response}. EntityId: {@franchiseId}", response, groupSeason.Id);
+            }
+
         }
 
         private async Task ProcessFranchiseLogo(ProcessImageResponse response)
@@ -111,22 +139,29 @@ namespace SportsData.Producer.Application.Images
 
             if (franchise == null)
             {
-                // log and return
-                _logger.LogError("Franchise could not be found. Cannot process.");
-                return;
+
             }
 
             franchise.Logos.Add(new FranchiseLogo()
             {
                 Id = Guid.NewGuid(),
-                FranchiseId = response.ParentEntityId,
+                FranchiseId = franchise.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
                 Url = response.Url,
                 Height = response.Height,
-                Width = response.Width
+                Width = response.Width,
+                Rel = response.Rel
             });
-            await _dataContext.SaveChangesAsync();
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to process franchise logo for {@response}. EntityId: {@franchiseId}", response, franchise.Id);
+            }
         }
     }
 }

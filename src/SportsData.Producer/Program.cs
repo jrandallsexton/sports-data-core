@@ -79,7 +79,7 @@ public class Program
 
         app.MapControllers();
 
-        await app.Services.ConfigureHangfireJobs(mode);
+        app.Services.ConfigureHangfireJobs(mode);
 
         await app.RunAsync();
     }

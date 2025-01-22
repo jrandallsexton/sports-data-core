@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -15,7 +14,10 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
     public interface IProvideProviders : IProvideHealthChecks
     {
         Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, int documentId, int? seasonId);
+
         Task PublishDocumentEvents(PublishDocumentEventsCommand command);
+
+        Task<GetExternalDocumentQueryResponse> GetExternalDocument(GetExternalDocumentQuery command);
     }
 
     public class ProviderProvider : ProviderBase, IProvideProviders
@@ -53,9 +55,13 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task PublishDocument(PublishDocumentCommand command)
+        public async Task<GetExternalDocumentQueryResponse> GetExternalDocument(GetExternalDocumentQuery query)
         {
-            throw new NotImplementedException();
+            var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync($"document/external/", content);
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            return tmp.FromJson<GetExternalDocumentQueryResponse>();
         }
     }
 }

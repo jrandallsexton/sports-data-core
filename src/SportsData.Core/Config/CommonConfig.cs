@@ -13,17 +13,17 @@ namespace SportsData.Core.Config
 {
     public class CommonConfig
     {
-        public string AzureBlobStorageConnectionString { get; set; }
+        public required string AzureBlobStorageConnectionString { get; set; }
 
-        public string AzureBlobStorageUrl { get; set; }
+        public required string AzureBlobStorageUrl { get; set; }
 
-        public string AzureBlobStorageContainerPrefix { get; set; }
+        public required string AzureBlobStorageContainerPrefix { get; set; }
 
-        public string AzureServiceBusConnectionString { get; set; }
+        public required string AzureServiceBusConnectionString { get; set; }
 
-        public string SeqUri { get; set; }
+        public required string SeqUri { get; set; }
 
-        public string RedisUri { get; set; }
+        public required string RedisUri { get; set; }
 
         public List<ProviderConfig> ProviderConfigs { get; set; }
 

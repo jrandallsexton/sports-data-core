@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Blobs;
+using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -21,17 +23,20 @@ namespace SportsData.Producer.Application.Images
         private readonly AppDataContext _dataContext;
         private readonly IProvideBlobStorage _blobStorage;
         private readonly IBus _bus;
+        private readonly IProvideProviders _providerClient;
 
         public ImageRequestedProcessor(
             ILogger<ImageRequestedProcessor> logger,
             AppDataContext dataContext,
             IBus bus,
-            IProvideBlobStorage blobStorage)
+            IProvideBlobStorage blobStorage,
+            IProvideProviders providerClient)
         {
             _logger = logger;
             _dataContext = dataContext;
             _bus = bus;
             _blobStorage = blobStorage;
+            _providerClient = providerClient;
         }
 
         public async Task Process(ProcessImageRequest request)
@@ -59,20 +64,24 @@ namespace SportsData.Producer.Application.Images
             }
             else
             {
-                // if not, obtain the image
-                using var client = new HttpClient();
-                using var response = await client.GetAsync(request.Url);
-                await using var stream = await response.Content.ReadAsStreamAsync();
+                // if not, obtain the image from Provider
+                // who will return a link to blob storage or
+                // fetch the image, upload it, then return that blob storage url
+                // either way, the link we pass to the response will be that of blob storage
+                var query = new GetExternalDocumentQuery()
+                {
+                    DocumentType = request.DocumentType,
+                    SeasonYear = request.SeasonYear,
+                    SourceDataProvider = request.SourceDataProvider,
+                    Sport = request.Sport,
+                    Url = request.Url
+                };
 
-                // upload it to external storage
-                var containerName = request.SeasonYear.HasValue
-                    ? $"{request.Sport}{request.DocumentType.ToString()}{request.SeasonYear.Value}"
-                    : $"{request.Sport}{request.DocumentType.ToString()}";
-                var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{request.ImageId}.png");
+                var response = await _providerClient.GetExternalDocument(query);
 
                 // raise an event for whoever requested this
                 outgoingEvt = new ProcessImageResponse(
-                    externalUrl,
+                    response.Href,
                     request.ImageId.ToString(),
                     request.ParentEntityId,
                     request.Name,
@@ -92,6 +101,7 @@ namespace SportsData.Producer.Application.Images
         {
             switch (documentType)
             {
+                case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
                     return await _dataContext.FranchiseLogos
                         .Where(l => l.FranchiseId == parentEntityId)
@@ -110,7 +120,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:
-                case DocumentType.Franchise:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:

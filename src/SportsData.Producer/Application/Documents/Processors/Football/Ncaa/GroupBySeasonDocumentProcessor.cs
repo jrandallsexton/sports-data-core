@@ -87,33 +87,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             {
                 var newSeasonId = Guid.NewGuid();
 
-                // create the new group ...
-                var group = new Group()
-                {
-                    Id = Guid.NewGuid(),
-                    Abbreviation = externalProviderDto.Abbreviation,
-                    CreatedBy = command.CorrelationId,
-                    CreatedUtc = DateTime.UtcNow,
-                    ExternalIds = [new GroupExternalId() { Id = Guid.NewGuid(), Value = externalProviderDto.Id.ToString(), Provider = command.SourceDataProvider }],
-                    IsConference = externalProviderDto.IsConference,
-                    MidsizeName = externalProviderDto.MidsizeName,
-                    Name = externalProviderDto.Name,
-                    //ParentGroupId = espnDto.Parent. // TODO: Determine how to set/get this
-                    ShortName = externalProviderDto.ShortName,
-                    Seasons =
-                    [
-                        // ... and add the season to it
-                        new GroupSeason()
-                        {
-                            Id = newSeasonId,
-                            CreatedUtc = DateTime.UtcNow,
-                            CreatedBy = command.CorrelationId,
-                            Season = command.Season.Value
-                        }
-                    ]
-                };
+                var newGroupId = Guid.NewGuid();
+                var newGroup = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
+                newGroup.Seasons.Add(externalProviderDto
+                    .AsGroupSeasonEntity(
+                        newGroupId,
+                        Guid.NewGuid(),
+                        command.Season.Value,
+                        command.CorrelationId));
 
-                await _dataContext.Groups.AddAsync(group);
+                await _dataContext.Groups.AddAsync(newGroup);
                 await _dataContext.SaveChangesAsync();
 
                 // any logos on the dto?

@@ -30,14 +30,14 @@ namespace SportsData.Venue.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<Guid?>("CanonicalId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("GlobalId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsGrass")
                         .HasColumnType("bit");

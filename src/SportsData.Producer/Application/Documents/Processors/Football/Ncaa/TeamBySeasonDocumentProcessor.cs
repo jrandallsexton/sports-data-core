@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 using SportsData.Core.Eventing.Events.Images;
-using SportsData.Core.Exceptions;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Infrastructure.Data;

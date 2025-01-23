@@ -17,12 +17,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
     {
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _bus;
 
         public GroupBySeasonDocumentProcessor(
             ILogger<GroupBySeasonDocumentProcessor> logger,
             AppDataContext dataContext,
-            IBus bus)
+            IPublishEndpoint bus)
         {
             _logger = logger;
             _dataContext = dataContext;

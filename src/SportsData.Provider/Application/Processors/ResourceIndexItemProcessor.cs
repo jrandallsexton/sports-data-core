@@ -21,14 +21,14 @@ namespace SportsData.Provider.Application.Processors
         private readonly ILogger<ResourceIndexItemProcessor> _logger;
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _bus;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
-            IBus bus,
+            IPublishEndpoint bus,
             IDecodeDocumentProvidersAndTypes decoder)
         {
             _logger = logger;

@@ -20,13 +20,13 @@ namespace SportsData.Provider.Application.Documents
         private readonly ILogger<DocumentController> _logger;
         private readonly DocumentService _documentService;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _bus;
         private readonly IProvideBlobStorage _blobStorage;
 
         public DocumentController(
             DocumentService documentService,
             IDecodeDocumentProvidersAndTypes decoder,
-            IBus bus,
+            IPublishEndpoint bus,
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage)
         {

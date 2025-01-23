@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
-using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Producer.Infrastructure.Data;
@@ -21,21 +20,18 @@ namespace SportsData.Producer.Application.Images
     {
         private readonly ILogger<ImageRequestedProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IProvideBlobStorage _blobStorage;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
 
         public ImageRequestedProcessor(
             ILogger<ImageRequestedProcessor> logger,
             AppDataContext dataContext,
-            IBus bus,
-            IProvideBlobStorage blobStorage,
+            IPublishEndpoint bus,
             IProvideProviders providerClient)
         {
             _logger = logger;
             _dataContext = dataContext;
             _bus = bus;
-            _blobStorage = blobStorage;
             _providerClient = providerClient;
         }
 
@@ -43,7 +39,8 @@ namespace SportsData.Producer.Application.Images
         {
             _logger.LogInformation("Began with {@request}", request);
 
-            var logoEntity = await GetLogoEntity(request.DocumentType, request.ParentEntityId);
+            var logoEntity = await GetLogoParentEntity(request.DocumentType, request.ParentEntityId);
+
             ProcessImageResponse outgoingEvt;
 
             if (logoEntity != null)
@@ -97,7 +94,7 @@ namespace SportsData.Producer.Application.Images
             await _bus.Publish(outgoingEvt);
         }
 
-        private async Task<ILogo?> GetLogoEntity(DocumentType documentType, Guid parentEntityId)
+        private async Task<ILogo?> GetLogoParentEntity(DocumentType documentType, Guid parentEntityId)
         {
             switch (documentType)
             {

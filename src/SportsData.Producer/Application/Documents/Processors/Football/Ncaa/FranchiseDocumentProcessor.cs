@@ -16,16 +16,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
     {
         private readonly ILogger<FranchiseDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public FranchiseDocumentProcessor(
             ILogger<FranchiseDocumentProcessor> logger,
             AppDataContext dataContext,
-            IBus bus)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _bus = bus;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -42,13 +42,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 return;
             }
 
-            // 1. map to the entity and save it
+            // 1. map to the entity add it
             var newFranchiseId = Guid.NewGuid();
             var franchiseEntity = externalProviderDto.AsFranchiseEntity(newFranchiseId, command.CorrelationId);
             await _dataContext.AddAsync(franchiseEntity);
-            await _dataContext.SaveChangesAsync();
 
-            // any logos on the dto?
+            // 2. any logos on the dto?
             var events = new List<ProcessImageRequest>();
             externalProviderDto.Logos.ForEach(logo =>
             {
@@ -67,12 +66,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                     null));
             });
 
-            if (events.Any())
-                await _bus.PublishBatch(events);
+            if (events.Count > 0)
+                await _publishEndpoint.PublishBatch(events);
 
-            // 2. raise an event
+            // 3. raise an event
             var evt = new FranchiseCreated(franchiseEntity.ToCanonicalModel());
-            await _bus.Publish(evt);
+            await _publishEndpoint.Publish(evt);
+
+            await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("New {@type} event {@evt}", DocumentType.Franchise, evt);
         }

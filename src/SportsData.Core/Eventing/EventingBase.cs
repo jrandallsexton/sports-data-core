@@ -25,6 +25,7 @@ namespace SportsData.Core.Eventing
         public DateTime? LockedUtc { get; set; }
     }
 
+    // TODO: Change to record?
     public abstract class EventBase
     {
         public Guid CorrelationId { get; init; } = Guid.NewGuid();

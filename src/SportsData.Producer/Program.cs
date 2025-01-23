@@ -1,5 +1,7 @@
 using Hangfire;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -10,6 +12,7 @@ using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
+using SportsData.Core.Config;
 
 namespace SportsData.Producer;
 
@@ -35,10 +38,34 @@ public class Program
         services.AddSwaggerGen();
         services.AddProviders(config);
         services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
-        services.AddMessaging(config, [
-            typeof(DocumentCreatedHandler),
-            typeof(ProcessImageRequestedHandler),
-            typeof(ProcessImageResponseHandler)]);
+
+        //services.AddMessaging(config, [
+        //    typeof(DocumentCreatedHandler),
+        //    typeof(ProcessImageRequestedHandler),
+        //    typeof(ProcessImageResponseHandler)]);
+
+        services.AddMassTransit(x =>
+        {
+            x.SetKebabCaseEndpointNameFormatter();
+
+            x.AddEntityFrameworkOutbox<AppDataContext>(o =>
+            {
+                o.QueryDelay = TimeSpan.FromSeconds(1);
+                o.UseSqlServer().UseBusOutbox();
+            });
+
+            x.AddConsumer<DocumentCreatedHandler>();
+            x.AddConsumer<ProcessImageRequestedHandler>();
+            x.AddConsumer<ProcessImageResponseHandler>();
+
+            x.UsingAzureServiceBus((context, cfg) =>
+            {
+                cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                cfg.ConfigureEndpoints(context);
+            });
+        });
+        
+
         services.AddInstrumentation(builder.Environment.ApplicationName);
 
         services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));

@@ -17,7 +17,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Images
         public async Task WhenFoo_DoesBar()
         {
             // arrange
-            var bus = Mocker.GetMock<IBus>();
+            var bus = Mocker.GetMock<IPublishEndpoint>();
 
             Mocker.GetMock<IProvideBlobStorage>()
                 .Setup(s => s.UploadImageAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()))

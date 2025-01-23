@@ -4,7 +4,7 @@ using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
+using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
 using SportsData.Producer.Application.Images;
 
 namespace SportsData.Producer.DependencyInjection
@@ -26,7 +26,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IProcessImageRequests, ImageRequestedProcessor>();
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddScoped<TeamBySeasonDocumentProcessor>();
+            services.AddScoped<FranchiseBySeasonDocumentProcessor>();
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
             services.AddScoped<VenueCreatedDocumentProcessor>();

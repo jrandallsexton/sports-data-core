@@ -8,11 +8,11 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
+using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
     public class VenueCreatedDocumentProcessor : IProcessDocuments
     {

@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
+namespace SportsData.Producer.Application.Documents.Processors;
 
 public enum DocumentAction
 {
@@ -67,7 +68,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.Team:
                 return _serviceProvider.GetRequiredService<TeamDocumentProcessor>();
             case DocumentType.TeamBySeason:
-                return _serviceProvider.GetRequiredService<TeamBySeasonDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<FranchiseBySeasonDocumentProcessor>();
             case DocumentType.TeamInformation:
                 return _serviceProvider.GetRequiredService<TeamInformationDocumentProcessor>();
             case DocumentType.Venue:

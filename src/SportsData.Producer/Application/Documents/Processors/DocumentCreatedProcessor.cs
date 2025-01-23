@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
+using SportsData.Producer.Application.Documents.Processors.Commands;
 
 namespace SportsData.Producer.Application.Documents.Processors
 {

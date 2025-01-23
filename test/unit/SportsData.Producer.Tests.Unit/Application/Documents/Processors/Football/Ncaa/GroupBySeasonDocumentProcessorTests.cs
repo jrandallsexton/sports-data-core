@@ -5,8 +5,8 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Producer.Application.Documents.Processors;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa;
+using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
 
 using Xunit;
 

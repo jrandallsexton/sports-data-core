@@ -7,19 +7,20 @@ using Newtonsoft.Json;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
-    public class TeamBySeasonDocumentProcessor : IProcessDocuments
+    public class FranchiseBySeasonDocumentProcessor : IProcessDocuments
     {
-        private readonly ILogger<TeamBySeasonDocumentProcessor> _logger;
+        private readonly ILogger<FranchiseBySeasonDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IPublishEndpoint _bus;
 
-        public TeamBySeasonDocumentProcessor(
-            ILogger<TeamBySeasonDocumentProcessor> logger,
+        public FranchiseBySeasonDocumentProcessor(
+            ILogger<FranchiseBySeasonDocumentProcessor> logger,
             AppDataContext dataContext,
             IPublishEndpoint bus)
         {
@@ -59,7 +60,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             }
 
             // does this season already exist?
-            
+
 
             var franchiseBySeasonId = Guid.NewGuid();
 

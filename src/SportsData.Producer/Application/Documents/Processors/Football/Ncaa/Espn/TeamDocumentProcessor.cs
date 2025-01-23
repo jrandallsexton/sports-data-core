@@ -1,4 +1,6 @@
-﻿namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+﻿using SportsData.Producer.Application.Documents.Processors.Commands;
+
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
     public class TeamDocumentProcessor : IProcessDocuments
     {

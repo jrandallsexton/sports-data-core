@@ -7,10 +7,11 @@ using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
     public class FranchiseDocumentProcessor : IProcessDocuments
     {

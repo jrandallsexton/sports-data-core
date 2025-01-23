@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
 
-namespace SportsData.Producer.Application.Documents.Processors;
+namespace SportsData.Producer.Application.Documents.Processors.Commands;
 
 public class ProcessDocumentCommand(
     SourceDataProvider sourceDataProvider,

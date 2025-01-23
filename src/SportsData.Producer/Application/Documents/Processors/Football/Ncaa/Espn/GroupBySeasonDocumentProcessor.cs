@@ -8,10 +8,12 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
+namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
     public class GroupBySeasonDocumentProcessor : IProcessDocuments
     {
@@ -40,7 +42,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
             // 1. Does this group (conference) exist? If not, we must create it prior to creating a season for it
             var groupEntity = await _dataContext.Groups
                 .Include(g => g.Seasons)
-                .Where(x => 
+                .Where(x =>
                     x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
                                            z.Provider == command.SourceDataProvider))
                 .FirstOrDefaultAsync();

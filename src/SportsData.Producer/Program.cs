@@ -39,11 +39,6 @@ public class Program
         services.AddProviders(config);
         services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
 
-        //services.AddMessaging(config, [
-        //    typeof(DocumentCreatedHandler),
-        //    typeof(ProcessImageRequestedHandler),
-        //    typeof(ProcessImageResponseHandler)]);
-
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
@@ -64,7 +59,6 @@ public class Program
                 cfg.ConfigureEndpoints(context);
             });
         });
-        
 
         services.AddInstrumentation(builder.Environment.ApplicationName);
 

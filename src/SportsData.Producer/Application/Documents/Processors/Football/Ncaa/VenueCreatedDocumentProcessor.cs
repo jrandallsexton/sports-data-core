@@ -10,7 +10,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
@@ -18,16 +18,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
     {
         private readonly ILogger<VenueCreatedDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IPublishEndpoint _bus;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public VenueCreatedDocumentProcessor(
             ILogger<VenueCreatedDocumentProcessor> logger,
             AppDataContext dataContext,
-            IPublishEndpoint bus)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _bus = bus;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -44,43 +44,26 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 
             if (exists)
             {
-                _logger.LogWarning($"Venue already exists for {SourceDataProvider.Espn}.");
+                _logger.LogWarning("Venue already exists.");
                 return;
             }
 
             // 1. map to the entity and save it
-            // TODO: Move to extension method?
-            var venueEntity = new Venue()
-            {
-                Id = Guid.NewGuid(),
-                Name = espnDto.FullName,
-                ShortName = espnDto.ShortName,
-                IsIndoor = espnDto.Indoor,
-                IsGrass = espnDto.Grass,
-                CreatedUtc = DateTime.UtcNow,
-                CreatedBy = command.CorrelationId,
-                ExternalIds = [new VenueExternalId() { Id = Guid.NewGuid(), Value = espnDto.Id.ToString(), Provider = SourceDataProvider.Espn }]
-            };
-            await _dataContext.AddAsync(venueEntity);
-            await _dataContext.SaveChangesAsync();
+            var newVenueEntity = espnDto.AsVenueEntity(Guid.NewGuid(), command.CorrelationId);
+            await _dataContext.AddAsync(newVenueEntity);
 
             // 2. raise an event
-            // TODO: Determine if I want to publish all data in the event instead of this chatty stuff
             var evt = new VenueCreated()
             {
-                Id = venueEntity.Id.ToString(),
+                Id = newVenueEntity.Id.ToString(),
                 CorrelationId = command.CorrelationId,
-                Canonical = new VenueCanonicalModel()
-                {
-                    CreatedUtc = venueEntity.CreatedUtc,
-                    Id = venueEntity.Id,
-                    IsGrass = venueEntity.IsGrass,
-                    IsIndoor = venueEntity.IsIndoor,
-                    Name = venueEntity.Name,
-                    ShortName = venueEntity.ShortName
-                }
+                Canonical = newVenueEntity.ToCanonicalModel()
             };
-            await _bus.Publish(evt);
+
+            await _publishEndpoint.Publish(evt);
+
+            await _dataContext.SaveChangesAsync();
+
             _logger.LogInformation("New {@type} event {@evt}", DocumentType.Venue, evt);
         }
     }

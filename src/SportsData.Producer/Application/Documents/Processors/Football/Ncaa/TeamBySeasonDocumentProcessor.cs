@@ -8,7 +8,7 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
 {
@@ -16,12 +16,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
     {
         private readonly ILogger<TeamBySeasonDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _bus;
 
         public TeamBySeasonDocumentProcessor(
             ILogger<TeamBySeasonDocumentProcessor> logger,
             AppDataContext dataContext,
-            IBus bus)
+            IPublishEndpoint bus)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -52,34 +52,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                 return;
             }
 
+            if (command.Season is null)
+            {
+                _logger.LogError("SeasonId is required");
+                return;
+            }
+
             // does this season already exist?
             
 
             var franchiseBySeasonId = Guid.NewGuid();
-            await _dataContext.FranchiseSeasons.AddAsync(new FranchiseSeason()
-            {
-                Abbreviation = espnDto.Abbreviation,
-                ColorCodeAltHex = espnDto.AlternateColor,
-                ColorCodeHex = espnDto.Color ?? string.Empty,
-                CreatedBy = command.CorrelationId,
-                CreatedUtc = DateTime.UtcNow,
-                DisplayName = espnDto.DisplayName,
-                DisplayNameShort = espnDto.ShortDisplayName,
-                FranchiseId = franchiseExternalId.Franchise.Id,
-                Id = franchiseBySeasonId,
-                IsActive = espnDto.IsActive,
-                IsAllStar = espnDto.IsAllStar,
-                Location = espnDto.Location,
-                Logos = [],
-                Losses = 0,
-                Name = espnDto.Name,
-                Season = command.Season.Value,
-                Slug = espnDto.Slug,
-                Ties = 0,
-                Wins = 0
-            });
 
-            await _dataContext.SaveChangesAsync();
+            await _dataContext.FranchiseSeasons
+                .AddAsync(espnDto.AsFranchiseSeasonEntity(
+                    franchiseExternalId.Franchise.Id,
+                    franchiseBySeasonId,
+                    command.Season.Value,
+                    command.CorrelationId));
 
             // any logos on the dto?
             var events = new List<ProcessImageRequest>();
@@ -100,8 +89,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa
                     null));
             });
 
-            if (events.Any())
+            if (events.Count > 0)
                 await _bus.PublishBatch(events);
+
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

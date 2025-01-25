@@ -9,7 +9,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid VenueId {  get; set; }
 
-        public string Url { get; set; }
+        public int OriginalUrlHash { get; set; }
+
+        public required string Url { get; set; }
 
         public long? Height { get; set; }
 
@@ -26,6 +28,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasOne<Venue>()
                     .WithMany(x => x.Images)
                     .HasForeignKey(x => x.VenueId);
+                builder.HasIndex(x => x.OriginalUrlHash);
             }
         }
     }

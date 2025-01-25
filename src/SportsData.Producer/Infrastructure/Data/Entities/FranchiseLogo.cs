@@ -9,6 +9,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid FranchiseId { get; set; }
 
+        public int OriginalUrlHash { get; set; }
+
         public string Url { get; set; }
 
         public long? Height { get; set; }

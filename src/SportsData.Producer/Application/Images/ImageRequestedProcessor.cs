@@ -22,17 +22,20 @@ namespace SportsData.Producer.Application.Images
         private readonly AppDataContext _dataContext;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
+        private readonly IProvideHashes _hashProvider;
 
         public ImageRequestedProcessor(
             ILogger<ImageRequestedProcessor> logger,
             AppDataContext dataContext,
             IPublishEndpoint bus,
-            IProvideProviders providerClient)
+            IProvideProviders providerClient,
+            IProvideHashes hashProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _bus = bus;
             _providerClient = providerClient;
+            _hashProvider = hashProvider;
         }
 
         public async Task Process(ProcessImageRequest request)
@@ -48,30 +51,45 @@ namespace SportsData.Producer.Application.Images
 
         private async Task ProcessImageRequest(ProcessImageRequest request)
         {
-            var logoEntity = await GetLogoParentEntityAndLogoType(request.DocumentType, request.ParentEntityId);
+            var venue = await _dataContext.Venues
+                .Include(v => v.Images)
+                .Where(x => x.Id == request.ParentEntityId)
+                .FirstOrDefaultAsync();
 
-            //ProcessImageResponse outgoingEvt;
+            if (venue == null)
+            {
+                _logger.LogError("Could not retrieve venue");
+                return;
+            }
 
-            //if (logoEntity.logo != null)
-            //{
-            //    // if so, just create the event
-            //    outgoingEvt = new ProcessImageResponse(
-            //        logoEntity.logo.Url,
-            //        logoEntity.logo.Id.ToString(),
-            //        request.ParentEntityId,
-            //        request.Name,
-            //        request.Sport,
-            //        request.SeasonYear,
-            //        logoEntity.logoDocumentType,
-            //        request.SourceDataProvider,
-            //        request.Height,
-            //        request.Width,
-            //        request.Rel,
-            //        request.CorrelationId,
-            //        request.CausationId);
-            //}
-            //else
-            //{
+            var urlHash = _hashProvider.GenerateHashFromUrl(request.Url);
+
+            var img = venue.Images.FirstOrDefault(x => x.OriginalUrlHash == urlHash);
+
+            var logoDocType = GetLogoDocumentTypeFromDocumentType(request.DocumentType);
+
+            if (img is not null)
+            {
+                _logger.LogWarning("Venue image already exists. Will publish event and exit.");
+
+                var outgoingEvt = new ProcessImageResponse(
+                    img.Url,
+                    img.Id.ToString(),
+                    request.ParentEntityId,
+                    request.Name,
+                    request.Sport,
+                    request.SeasonYear,
+                    logoDocType,
+                    request.SourceDataProvider,
+                    request.Height,
+                    request.Width,
+                    request.Rel,
+                    request.CorrelationId,
+                    request.CausationId);
+                await _bus.Publish(outgoingEvt);
+                return;
+            }
+
             // if not, obtain the image from Provider
             // who will return a link to blob storage or
             // fetch the image, upload it, then return that blob storage url
@@ -81,7 +99,7 @@ namespace SportsData.Producer.Application.Images
                 request.Url,
                 request.SourceDataProvider,
                 request.Sport,
-                logoEntity.logoDocumentType,
+                logoDocType,
                 request.SeasonYear
             );
 
@@ -92,48 +110,41 @@ namespace SportsData.Producer.Application.Images
             _logger.LogInformation("Obtained new image");
 
             // raise an event for whoever requested this
-            var outgoingEvt = new ProcessImageResponse(
+            var outgoingEvt2 = new ProcessImageResponse(
                 response.Href,
                 response.CanonicalId,
                 request.ParentEntityId,
                 request.Name,
                 request.Sport,
                 request.SeasonYear,
-                logoEntity.logoDocumentType,
+                logoDocType,
                 request.SourceDataProvider,
                 request.Height,
                 request.Width,
                 request.Rel,
                 request.CorrelationId,
                 request.CausationId);
-            //}
 
-            await _bus.Publish(outgoingEvt);
+            await _bus.Publish(outgoingEvt2);
         }
 
-        private async Task<(ILogo? logo, DocumentType logoDocumentType)> GetLogoParentEntityAndLogoType(DocumentType documentType, Guid parentEntityId)
+        private DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)
         {
             switch (documentType)
             {
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
-                    return (await _dataContext.FranchiseLogos
-                        .Where(l => l.FranchiseId == parentEntityId)
-                        .FirstOrDefaultAsync(), DocumentType.FranchiseLogo);
-                case DocumentType.GroupBySeason:
+                    return DocumentType.FranchiseLogo;
                 case DocumentType.GroupLogo:
-                    return (await _dataContext.GroupSeasonLogos
-                        .Where(l => l.GroupSeasonId == parentEntityId)
-                        .FirstOrDefaultAsync(), DocumentType.GroupBySeasonLogo);
+                case DocumentType.GroupBySeason:
+                case DocumentType.GroupBySeasonLogo:
+                    return DocumentType.GroupBySeasonLogo;
                 case DocumentType.TeamBySeason:
-                    return (await _dataContext.FranchiseSeasonLogos
-                        .Where(l => l.FranchiseSeasonId == parentEntityId)
-                        .FirstOrDefaultAsync(), DocumentType.TeamBySeasonLogo);
+                case DocumentType.TeamBySeasonLogo:
+                    return DocumentType.TeamBySeasonLogo;
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
-                    return (await _dataContext.VenueImages
-                        .Where(l => l.VenueId == parentEntityId)
-                        .FirstOrDefaultAsync(), DocumentType.VenueImage);
+                    return DocumentType.VenueImage;
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
                 case DocumentType.Award:
@@ -149,5 +160,49 @@ namespace SportsData.Producer.Application.Images
                     throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             }
         }
+
+        //private async Task<(List<ILogo> Logos, DocumentType LogoDocumentType)> GetParentEntityLogosAndLogoType(
+        //    DocumentType documentType,
+        //    Guid parentEntityId)
+        //{
+        //    switch (documentType)
+        //    {
+        //        case DocumentType.Franchise:
+        //        case DocumentType.FranchiseLogo:
+        //            var logos = await _dataContext.FranchiseLogos
+        //                .Where(l => l.FranchiseId == parentEntityId)
+        //                .ToListAsync();
+        //            return (logos, DocumentType.FranchiseLogo);
+        //        case DocumentType.GroupLogo:
+        //        case DocumentType.GroupBySeason:
+        //        case DocumentType.GroupBySeasonLogo:
+        //            return (await _dataContext.GroupSeasonLogos
+        //                .Where(l => l.GroupSeasonId == parentEntityId)
+        //                .FirstOrDefaultAsync(), DocumentType.GroupBySeasonLogo);
+        //        case DocumentType.TeamBySeason:
+        //        case DocumentType.TeamBySeasonLogo:
+        //            return (await _dataContext.FranchiseSeasonLogos
+        //                .Where(l => l.FranchiseSeasonId == parentEntityId)
+        //                .FirstOrDefaultAsync(), DocumentType.TeamBySeasonLogo);
+        //        case DocumentType.Venue:
+        //        case DocumentType.VenueImage:
+        //            return (await _dataContext.VenueImages
+        //                .Where(l => l.VenueId == parentEntityId)
+        //                .FirstOrDefaultAsync(), DocumentType.VenueImage);
+        //        case DocumentType.Athlete:
+        //        case DocumentType.AthleteBySeason:
+        //        case DocumentType.Award:
+        //        case DocumentType.CoachBySeason:
+        //        case DocumentType.Contest:
+        //        case DocumentType.GameSummary:
+        //        case DocumentType.Scoreboard:
+        //        case DocumentType.Season:
+        //        case DocumentType.Team:
+        //        case DocumentType.TeamInformation:
+        //        case DocumentType.Weeks:
+        //        default:
+        //            throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
+        //    }
+        //}
     }
 }

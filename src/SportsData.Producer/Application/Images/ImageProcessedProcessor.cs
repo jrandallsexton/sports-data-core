@@ -76,52 +76,43 @@ namespace SportsData.Producer.Application.Images
         private async Task ProcessVenueImage(ProcessImageResponse response)
         {
             _logger.LogInformation("ImageProcessedProcessor Began handler with {@response}", response);
+            
+            var venue = await _dataContext.Venues
+                .Include(x => x.Images)
+                .Where(x => x.Id == response.ParentEntityId)
+                .FirstOrDefaultAsync();
 
+            if (venue is null)
+            {
+                // log and return
+                _logger.LogError("venue could not be found. Cannot process.");
+                return;
+            }
+
+            var venueImage = venue.Images.FirstOrDefault(x => x.OriginalUrlHash == response.OriginalUrlHash);
+
+            if (venueImage is not null)
+            {
+                // TODO: do nothing?
+                return;
+            }
+
+            // TODO: Prefer to add this to venue, but kept getting the following error:
+            // The database operation was expected to affect 1 row(s), but actually affected 0 row(s)
             await _dataContext.VenueImages.AddAsync(new VenueImage()
             {
-                Id = Guid.Parse(response.ImageId),
-                VenueId = response.ParentEntityId,
+                Id = Guid.NewGuid(),
+                VenueId = venue.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
                 Url = response.Url,
                 Height = response.Height,
                 Width = response.Width,
-                Rel = response.Rel
+                Rel = response.Rel,
+                OriginalUrlHash = response.OriginalUrlHash
             });
 
-            //var venue = await _dataContext.Venues
-            //    .Include(x => x.Images)
-            //    .Where(x => x.Id == response.ParentEntityId)
-            //    .FirstOrDefaultAsync();
-
-            //if (venue == null)
-            //{
-            //    // log and return
-            //    _logger.LogError("venue could not be found. Cannot process.");
-            //    return;
-            //}
-
-            //venue.Images.Add(new VenueImage()
-            //{
-            //    Id = Guid.NewGuid(),
-            //    VenueId = venue.Id,
-            //    CreatedBy = response.CorrelationId,
-            //    CreatedUtc = DateTime.UtcNow,
-            //    Url = response.Url,
-            //    Height = response.Height,
-            //    Width = response.Width,
-            //    Rel = response.Rel
-            //});
-
-            try
-            {
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unable to process venue image for {@response}. EntityId: {@franchiseId}", response, response.ParentEntityId);
-            }
-
+            await _dataContext.SaveChangesAsync();
         }
 
         private async Task ProcessTeamBySeasonLogo(ProcessImageResponse response)

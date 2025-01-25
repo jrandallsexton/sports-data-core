@@ -21,9 +21,9 @@ namespace SportsData.Core.Eventing.Events.Images
         Guid causationId)
         : EventBase(correlationId, causationId)
     {
-        public string Url { get; set; } = url;
+        public string Url { get; init; } = url;
 
-        public Guid ImageId { get; set; } = imageId;
+        public Guid ImageId { get; init; } = imageId;
 
         public Guid ParentEntityId { get; init; } = parentEntityId;
 

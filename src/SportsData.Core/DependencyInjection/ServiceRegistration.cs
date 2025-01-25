@@ -176,7 +176,8 @@ namespace SportsData.Core.DependencyInjection
             services.AddMassTransit(x =>
             {
                 x.SetKebabCaseEndpointNameFormatter();
-
+                
+                // TODO: Pass in the assembly and use: x.AddConsumers(assembly)
                 consumers?.ForEach(z =>
                 {
                     x.AddConsumer(z);
@@ -185,6 +186,12 @@ namespace SportsData.Core.DependencyInjection
                 x.UsingAzureServiceBus((context, cfg) =>
                 {
                     cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                    //cfg.ClearSerialization();
+                    cfg.ConfigureJsonSerializerOptions(o =>
+                    {
+                        o.IncludeFields = true;
+                        return o;
+                    });
                     cfg.ConfigureEndpoints(context);
                 });
             });

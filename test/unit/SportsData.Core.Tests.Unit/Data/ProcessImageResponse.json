@@ -1,0 +1,17 @@
+{
+  "url": "https://sportsdatastoragedev.blob.core.windows.net/development-footballncaavenueimage/1166464215.png",
+  "imageId": "cab879e4-8382-4cd9-9396-e01696e060d8",
+  "originalUrlHash": 1166464215,
+  "parentEntityId": "e41d5c85-33c4-45e6-906e-0a1756098311",
+  "name": "e41d5c85-33c4-45e6-906e-0a1756098311.png",
+  "sport": 2,
+  "seasonYear": null,
+  "documentType": 19,
+  "sourceDataProvider": 0,
+  "height": 0,
+  "width": 0,
+  "rel": null,
+  "correlationId": "a20d2c02-6de5-4c1c-acb9-39dca7bb562e",
+  "causationId": "0cf09e42-b9b1-42ab-9027-51cecf2d19d6",
+  "createdUtc": "2025-01-25T16:30:48.3291092Z"
+}

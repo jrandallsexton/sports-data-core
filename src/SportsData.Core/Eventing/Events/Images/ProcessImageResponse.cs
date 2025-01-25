@@ -2,12 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Eventing.Events.Images
 {
     public class ProcessImageResponse(
         string url,
         string imageId,
+        int originalUrlHash,
         Guid parentEntityId,
         string name,
         Sport sport,
@@ -18,13 +20,16 @@ namespace SportsData.Core.Eventing.Events.Images
         long width,
         List<string>? rel,
         Guid correlationId,
-        Guid causationId) : EventBase(correlationId, causationId)
+        Guid causationId)
+        : EventBase(correlationId, causationId)
     {
-        public string Url { get; set; } = url;
+        public string Url { get; init; } = url;
 
         public string ImageId { get; init; } = imageId;
 
-        public Guid ParentEntityId { get; set; } = parentEntityId;
+        public int OriginalUrlHash { get; init; } = originalUrlHash;
+
+        public Guid ParentEntityId { get; init; } = parentEntityId;
 
         public string Name { get; init; } = name;
 

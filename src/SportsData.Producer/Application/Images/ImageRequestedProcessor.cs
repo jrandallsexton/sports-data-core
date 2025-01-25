@@ -7,7 +7,6 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -72,9 +71,12 @@ namespace SportsData.Producer.Application.Images
             {
                 _logger.LogWarning("Venue image already exists. Will publish event and exit.");
 
+                // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
+
                 var outgoingEvt = new ProcessImageResponse(
                     img.Url,
                     img.Id.ToString(),
+                    urlHash,
                     request.ParentEntityId,
                     request.Name,
                     request.Sport,
@@ -86,7 +88,9 @@ namespace SportsData.Producer.Application.Images
                     request.Rel,
                     request.CorrelationId,
                     request.CausationId);
+
                 await _bus.Publish(outgoingEvt);
+
                 return;
             }
 
@@ -113,6 +117,7 @@ namespace SportsData.Producer.Application.Images
             var outgoingEvt2 = new ProcessImageResponse(
                 response.Href,
                 response.CanonicalId,
+                urlHash,
                 request.ParentEntityId,
                 request.Name,
                 request.Sport,
@@ -160,49 +165,5 @@ namespace SportsData.Producer.Application.Images
                     throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             }
         }
-
-        //private async Task<(List<ILogo> Logos, DocumentType LogoDocumentType)> GetParentEntityLogosAndLogoType(
-        //    DocumentType documentType,
-        //    Guid parentEntityId)
-        //{
-        //    switch (documentType)
-        //    {
-        //        case DocumentType.Franchise:
-        //        case DocumentType.FranchiseLogo:
-        //            var logos = await _dataContext.FranchiseLogos
-        //                .Where(l => l.FranchiseId == parentEntityId)
-        //                .ToListAsync();
-        //            return (logos, DocumentType.FranchiseLogo);
-        //        case DocumentType.GroupLogo:
-        //        case DocumentType.GroupBySeason:
-        //        case DocumentType.GroupBySeasonLogo:
-        //            return (await _dataContext.GroupSeasonLogos
-        //                .Where(l => l.GroupSeasonId == parentEntityId)
-        //                .FirstOrDefaultAsync(), DocumentType.GroupBySeasonLogo);
-        //        case DocumentType.TeamBySeason:
-        //        case DocumentType.TeamBySeasonLogo:
-        //            return (await _dataContext.FranchiseSeasonLogos
-        //                .Where(l => l.FranchiseSeasonId == parentEntityId)
-        //                .FirstOrDefaultAsync(), DocumentType.TeamBySeasonLogo);
-        //        case DocumentType.Venue:
-        //        case DocumentType.VenueImage:
-        //            return (await _dataContext.VenueImages
-        //                .Where(l => l.VenueId == parentEntityId)
-        //                .FirstOrDefaultAsync(), DocumentType.VenueImage);
-        //        case DocumentType.Athlete:
-        //        case DocumentType.AthleteBySeason:
-        //        case DocumentType.Award:
-        //        case DocumentType.CoachBySeason:
-        //        case DocumentType.Contest:
-        //        case DocumentType.GameSummary:
-        //        case DocumentType.Scoreboard:
-        //        case DocumentType.Season:
-        //        case DocumentType.Team:
-        //        case DocumentType.TeamInformation:
-        //        case DocumentType.Weeks:
-        //        default:
-        //            throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
-        //    }
-        //}
     }
 }

@@ -13,21 +13,34 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
         public int? Season { get; set; }
     }
 
-    public class GetExternalDocumentQuery
+    public class GetExternalDocumentQuery(
+        string canonicalId,
+        string url,
+        SourceDataProvider sourceDataProvider,
+        Sport sport,
+        DocumentType documentType,
+        int? seasonYear)
     {
-        public string Url { get; set; }
 
-        public SourceDataProvider SourceDataProvider { get; set; }
+        public string CanonicalId { get; init; } = canonicalId;
 
-        public Sport Sport { get; set; }
+        public string Url { get; init; } = url;
 
-        public DocumentType DocumentType { get; set; }
+        public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
-        public int? SeasonYear { get; set; }
+        public Sport Sport { get; init; } = sport;
+
+        public DocumentType DocumentType { get; init; } = documentType;
+
+        public int? SeasonYear { get; init; } = seasonYear;
     }
 
     public class GetExternalDocumentQueryResponse
     {
+        public int Id { get; set; }
+
+        public string CanonicalId { get; set; }
+
         public string Href { get; set; }
     }
 }

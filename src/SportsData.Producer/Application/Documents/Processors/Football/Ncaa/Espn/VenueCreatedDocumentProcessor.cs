@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
@@ -32,6 +33,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
+            _logger.LogInformation("Began with {@command}", command);
+
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+                   {
+                       { "CorrelationId", command.CorrelationId }
+                   }))
+
+                await ProcessInternal(command);
+        }
+
+        private async Task ProcessInternal(ProcessDocumentCommand command)
+        {
             // deserialize the DTO
             var espnDto = command.Document.FromJson<EspnVenueDto>(new JsonSerializerSettings
             {
@@ -44,21 +57,41 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
             if (exists)
             {
+                // TODO: Determine what to do here.  Publish the correct event? Pass it directly to the correct handler?
                 _logger.LogWarning("Venue already exists.");
                 return;
             }
 
             // 1. map to the entity and save it
             var newVenueEntity = espnDto.AsVenueEntity(Guid.NewGuid(), command.CorrelationId);
-            await _dataContext.AddAsync(newVenueEntity);
+            _dataContext.Add(newVenueEntity);
 
-            // 2. raise an event
-            var evt = new VenueCreated()
+            // 2. Any images?
+            var events = new List<ProcessImageRequest>();
+            espnDto.Images?.ForEach(img =>
             {
-                Id = newVenueEntity.Id.ToString(),
-                CorrelationId = command.CorrelationId,
-                Canonical = newVenueEntity.ToCanonicalModel()
-            };
+                var imgId = Guid.NewGuid();
+                events.Add(new ProcessImageRequest(
+                    img.Href.AbsoluteUri,
+                    imgId,
+                    newVenueEntity.Id,
+                    $"{newVenueEntity.Id}.png",
+                    command.Sport,
+                    command.Season,
+                    command.DocumentType,
+                    command.SourceDataProvider,
+                    0,
+                    0,
+                    null,
+                    command.CorrelationId,
+                    CausationId.Producer.FranchiseDocumentProcessor));
+            });
+
+            if (events.Count > 0)
+                await _publishEndpoint.PublishBatch(events);
+
+            // 2. raise an integration event with the canonical model
+            var evt = new VenueCreated(newVenueEntity.ToCanonicalModel(), command.CorrelationId, CausationId.Producer.VenueCreatedDocumentProcessor);
 
             await _publishEndpoint.Publish(evt);
 

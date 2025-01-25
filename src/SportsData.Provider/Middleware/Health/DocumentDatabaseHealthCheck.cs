@@ -19,13 +19,10 @@ namespace SportsData.Provider.Middleware.Health
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
         {
-            _logger.LogInformation("Begin HC {@hc}", nameof(DocumentDatabaseHealthCheck));
-
             try
             {
                 var canConnect = !string.IsNullOrEmpty(dataService.Database.DatabaseNamespace.DatabaseName);
 
-                _logger.LogInformation($"{nameof(DocumentDatabaseHealthCheck)} canConnect? {canConnect}");
                 var result = canConnect ?
                     HealthCheckResult.Healthy() :
                     HealthCheckResult.Unhealthy("Unable to connect to document database");

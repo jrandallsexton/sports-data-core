@@ -34,9 +34,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static GroupCanonicalModel ToCanonicalModel(this Group entity)
+        public static ConferenceCanonicalModel ToCanonicalModel(this Group entity)
         {
-            return new GroupCanonicalModel()
+            return new ConferenceCanonicalModel()
             {
                 // TODO: Imeplement
             };

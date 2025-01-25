@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Newtonsoft.Json;
 
+using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
@@ -13,20 +15,20 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
 {
-    public class FranchiseBySeasonDocumentProcessor : IProcessDocuments
+    public class TeamSeasonDocumentProcessor : IProcessDocuments
     {
-        private readonly ILogger<FranchiseBySeasonDocumentProcessor> _logger;
+        private readonly ILogger<TeamSeasonDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IPublishEndpoint _bus;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public FranchiseBySeasonDocumentProcessor(
-            ILogger<FranchiseBySeasonDocumentProcessor> logger,
+        public TeamSeasonDocumentProcessor(
+            ILogger<TeamSeasonDocumentProcessor> logger,
             AppDataContext dataContext,
-            IPublishEndpoint bus)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _bus = bus;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -60,16 +62,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
             }
 
             // does this season already exist?
-
-
             var franchiseBySeasonId = Guid.NewGuid();
+            var newFranchiseSeasonEntity = espnDto.AsFranchiseSeasonEntity(
+                franchiseExternalId.Franchise.Id,
+                franchiseBySeasonId,
+                command.Season.Value,
+                command.CorrelationId);
 
             await _dataContext.FranchiseSeasons
-                .AddAsync(espnDto.AsFranchiseSeasonEntity(
-                    franchiseExternalId.Franchise.Id,
-                    franchiseBySeasonId,
-                    command.Season.Value,
-                    command.CorrelationId));
+                .AddAsync(newFranchiseSeasonEntity);
 
             // any logos on the dto?
             var events = new List<ProcessImageRequest>();
@@ -87,11 +88,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                     command.SourceDataProvider,
                     0,
                     0,
-                    null));
+                    null,
+                    command.CorrelationId,
+                    CausationId.Producer.TeamSeasonDocumentProcessor));
             });
 
             if (events.Count > 0)
-                await _bus.PublishBatch(events);
+            {
+                _logger.LogInformation($"Requesting {events.Count} images for {command.DocumentType} {command.Season}");
+                await _publishEndpoint.PublishBatch(events);
+            }
+
+            await _publishEndpoint.Publish(
+                new FranchiseSeasonCreated(
+                    newFranchiseSeasonEntity.ToCanonicalModel(),
+                    command.CorrelationId,
+                    CausationId.Producer.TeamSeasonDocumentProcessor));
 
             await _dataContext.SaveChangesAsync();
         }

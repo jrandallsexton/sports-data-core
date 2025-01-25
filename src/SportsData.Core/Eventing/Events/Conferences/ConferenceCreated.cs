@@ -1,8 +1,14 @@
-﻿namespace SportsData.Core.Eventing.Events.Conferences
+﻿using SportsData.Core.Models.Canonical;
+
+using System;
+
+namespace SportsData.Core.Eventing.Events.Conferences
 {
-    public class ConferenceCreated
+    public class ConferenceCreated(
+        ConferenceCanonicalModel conference,
+        Guid correlationId,
+        Guid causationId) : EventBase(correlationId, causationId)
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public ConferenceCanonicalModel Canonical { get; init; } = conference;
     }
 }

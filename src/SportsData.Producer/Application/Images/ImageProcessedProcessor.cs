@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Migrations;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -28,7 +28,16 @@ namespace SportsData.Producer.Application.Images
         public async Task Process(ProcessImageResponse response)
         {
             _logger.LogInformation("Began with {@evt}", response);
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+                   {
+                       { "CorrelationId", response.CorrelationId }
+                   }))
 
+            await ProcessResponse(response);
+        }
+
+        private async Task ProcessResponse(ProcessImageResponse response)
+        {
             switch (response.DocumentType)
             {
                 case DocumentType.Franchise:
@@ -37,10 +46,16 @@ namespace SportsData.Producer.Application.Images
                     break;
                 case DocumentType.GroupLogo:
                 case DocumentType.GroupBySeason:
+                case DocumentType.GroupBySeasonLogo:
                     await ProcessGroupBySeasonLogo(response);
                     break;
                 case DocumentType.TeamBySeason:
+                case DocumentType.TeamBySeasonLogo:
                     await ProcessTeamBySeasonLogo(response);
+                    break;
+                case DocumentType.Venue:
+                case DocumentType.VenueImage:
+                    await ProcessVenueImage(response);
                     break;
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
@@ -52,11 +67,61 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Season:
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
-                case DocumentType.Venue:
                 case DocumentType.Weeks:
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        private async Task ProcessVenueImage(ProcessImageResponse response)
+        {
+            _logger.LogInformation("ImageProcessedProcessor Began handler with {@response}", response);
+
+            await _dataContext.VenueImages.AddAsync(new VenueImage()
+            {
+                Id = Guid.Parse(response.ImageId),
+                VenueId = response.ParentEntityId,
+                CreatedBy = response.CorrelationId,
+                CreatedUtc = DateTime.UtcNow,
+                Url = response.Url,
+                Height = response.Height,
+                Width = response.Width,
+                Rel = response.Rel
+            });
+
+            //var venue = await _dataContext.Venues
+            //    .Include(x => x.Images)
+            //    .Where(x => x.Id == response.ParentEntityId)
+            //    .FirstOrDefaultAsync();
+
+            //if (venue == null)
+            //{
+            //    // log and return
+            //    _logger.LogError("venue could not be found. Cannot process.");
+            //    return;
+            //}
+
+            //venue.Images.Add(new VenueImage()
+            //{
+            //    Id = Guid.NewGuid(),
+            //    VenueId = venue.Id,
+            //    CreatedBy = response.CorrelationId,
+            //    CreatedUtc = DateTime.UtcNow,
+            //    Url = response.Url,
+            //    Height = response.Height,
+            //    Width = response.Width,
+            //    Rel = response.Rel
+            //});
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to process venue image for {@response}. EntityId: {@franchiseId}", response, response.ParentEntityId);
+            }
+
         }
 
         private async Task ProcessTeamBySeasonLogo(ProcessImageResponse response)
@@ -139,7 +204,9 @@ namespace SportsData.Producer.Application.Images
 
             if (franchise == null)
             {
-
+                // log and return
+                _logger.LogError("Franchise could not be found. Cannot process.");
+                return;
             }
 
             franchise.Logos.Add(new FranchiseLogo()

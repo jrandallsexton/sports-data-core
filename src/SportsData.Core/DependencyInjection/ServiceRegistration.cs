@@ -92,6 +92,7 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddSingleton<IProvideHashes, HashProvider>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
             return services;

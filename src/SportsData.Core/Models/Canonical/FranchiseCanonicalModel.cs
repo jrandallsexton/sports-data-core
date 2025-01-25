@@ -19,5 +19,7 @@ namespace SportsData.Core.Models.Canonical
         public string ColorCodeHex { get; set; }
 
         public string? ColorCodeAltHex { get; set; }
+
+        public string Slug { get; set; }
     }
 }

@@ -1,8 +1,14 @@
-﻿namespace SportsData.Core.Eventing.Events.Venues
+﻿using SportsData.Core.Models.Canonical;
+
+using System;
+
+namespace SportsData.Core.Eventing.Events.Venues
 {
-    public class VenueUpdated : EventBase
+    public class VenueUpdated(
+        VenueCanonicalModel venue,
+        Guid correlationId,
+        Guid causationId) : EventBase(correlationId, causationId)
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public VenueCanonicalModel Canonical { get; init; } = venue;
     }
 }

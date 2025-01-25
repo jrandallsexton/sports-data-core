@@ -9,5 +9,7 @@
         public bool IsGrass { get; set; }
 
         public bool IsIndoor { get; set; }
+
+        // TODO: Get a physical address on this thing
     }
 }

@@ -33,6 +33,8 @@ namespace SportsData.Producer.Infrastructure.Data
 
         public DbSet<Venue> Venues { get; set; }
 
+        public DbSet<VenueImage> VenueImages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -40,12 +42,14 @@ namespace SportsData.Producer.Infrastructure.Data
             modelBuilder.AddInboxStateEntity();
             modelBuilder.AddOutboxStateEntity();
             modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.Entity<Venue>().Property(x => x.Id).ValueGeneratedNever();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.ConfigureWarnings(c => c.Log((RelationalEventId.CommandExecuting, LogLevel.Error)));
-            optionsBuilder.EnableSensitiveDataLogging(false);
+            optionsBuilder.EnableSensitiveDataLogging();
+            optionsBuilder.EnableDetailedErrors();
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace SportsData.Core.Models.Canonical
 {
-    public class CanonicalModelBase
+    public abstract class CanonicalModelBase
     {
         public Guid Id { get; set; }
 

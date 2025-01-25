@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SportsData.Provider.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitialV2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,6 +16,7 @@ namespace SportsData.Provider.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Ordinal = table.Column<int>(type: "int", nullable: false),
                     IsRecurring = table.Column<bool>(type: "bit", nullable: false),
                     IsEnabled = table.Column<bool>(type: "bit", nullable: false),
                     Provider = table.Column<int>(type: "int", nullable: false),
@@ -25,7 +26,7 @@ namespace SportsData.Provider.Migrations
                     EndpointMask = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SeasonYear = table.Column<int>(type: "int", nullable: true),
                     LastAccessed = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    GlobalId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CanonicalId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false),

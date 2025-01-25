@@ -36,7 +36,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Images
                 SourceDataProvider.Espn,
                 500,
                 500,
-                null);
+                null,
+                Guid.NewGuid(),
+                Guid.NewGuid());
 
             // act
             await sut.Process(message);

@@ -44,10 +44,16 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
         {
-            _logger.LogInformation($"Started {nameof(ResourceIndexJob)}");
+            using (_logger.BeginScope(nameof(ResourceIndexJob)))
+                await ExecuteInternal(jobDefinition);
+        }
 
+        private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
+        {
             // Get the resource index
             var resourceIndex = await _espnApi.GetResourceIndex(jobDefinition.Endpoint, jobDefinition.EndpointMask);
+
+            _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndex);
 
             // Log this access to AppDataContext
             var resourceIndexEntity = await _dataContext.Resources
@@ -67,8 +73,8 @@ namespace SportsData.Provider.Application.Jobs
             // TODO: Remove this code after testing.
             // For now, I do not want to load each resource if I already have them in Mongo
             // Otherwise ESPN might blacklist my IP.  Not sure.
-            var type = _decoder.GetTypeAndName(jobDefinition.SourceDataProvider, jobDefinition.Sport, jobDefinition.DocumentType, jobDefinition.SeasonYear);
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+            var collectionName = _decoder.GetCollectionName(jobDefinition.SourceDataProvider, jobDefinition.Sport, jobDefinition.DocumentType, jobDefinition.SeasonYear);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
             var filter = Builders<DocumentBase>.Filter.Empty;
             var dbCursor = await dbObjects.FindAsync(filter);
             var dbDocuments = await dbCursor.ToListAsync();
@@ -89,8 +95,9 @@ namespace SportsData.Provider.Application.Jobs
                              jobDefinition.DocumentType,
                              jobDefinition.SeasonYear)))
             {
+                _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                await Task.Delay(1_000); // do NOT beat on their API
+                await Task.Delay(500); // do NOT beat on their API
             }
 
             _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndex.items.Count} jobs spawned.");

@@ -22,9 +22,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static GroupSeasonCanonicalModel ToCanonicalModel(this GroupSeason entity)
+        public static ConferenceSeasonCanonicalModel ToCanonicalModel(this GroupSeason entity)
         {
-            return new GroupSeasonCanonicalModel()
+            return new ConferenceSeasonCanonicalModel()
             {
                 // TODO: Implement
             };

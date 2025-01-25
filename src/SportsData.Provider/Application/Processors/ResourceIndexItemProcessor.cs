@@ -21,14 +21,14 @@ namespace SportsData.Provider.Application.Processors
         private readonly ILogger<ResourceIndexItemProcessor> _logger;
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
-        private readonly IPublishEndpoint _bus;
+        private readonly IBus _bus;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
-            IPublishEndpoint bus,
+            IBus bus,
             IDecodeDocumentProvidersAndTypes decoder)
         {
             _logger = logger;
@@ -41,10 +41,19 @@ namespace SportsData.Provider.Application.Processors
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
             _logger.LogInformation("Started with {@command}", command);
+            var correlationId = Guid.NewGuid();
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+                   {
+                       { "CorrelationId", correlationId }
+                   }))
+                await ProcessInternal(command, correlationId);
+        }
 
-            var type = _decoder.GetTypeAndName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
+        private async Task ProcessInternal(ProcessResourceIndexItemCommand command, Guid correlationId)
+        {
+            var type = _decoder.GetTypeAndCollectionName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.CollectionName);
 
             // TODO: Log this access
             // get the item's json
@@ -71,16 +80,18 @@ namespace SportsData.Provider.Application.Processors
 
                 var evt = new DocumentCreated(
                     documentId.ToString(),
-                    type.Name,
+                    type.CollectionName,
                     command.Sport,
                     command.SeasonYear,
                     command.DocumentType,
-                    command.SourceDataProvider);
+                    command.SourceDataProvider,
+                    correlationId,
+                    CausationId.Provider.ResourceIndexItemProcessor);
 
                 // TODO: Use transactional outbox pattern here
                 await _bus.Publish(evt);
 
-                _logger.LogInformation("New document event {@evt}", evt);
+                _logger.LogInformation("New document event published {@evt}", evt);
             }
             else
             {
@@ -99,10 +110,12 @@ namespace SportsData.Provider.Application.Processors
 
                 var evt = new DocumentUpdated(
                     documentId.ToString(),
-                    type.Name,
+                    type.CollectionName,
                     command.Sport,
                     command.DocumentType,
-                    command.SourceDataProvider);
+                    command.SourceDataProvider,
+                    correlationId,
+                    CausationId.Provider.ResourceIndexItemProcessor);
 
                 // TODO: Use transactional outbox pattern here
                 await _bus.Publish(evt);

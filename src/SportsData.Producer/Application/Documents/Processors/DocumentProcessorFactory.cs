@@ -68,7 +68,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.Team:
                 return _serviceProvider.GetRequiredService<TeamDocumentProcessor>();
             case DocumentType.TeamBySeason:
-                return _serviceProvider.GetRequiredService<FranchiseBySeasonDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<TeamSeasonDocumentProcessor>();
             case DocumentType.TeamInformation:
                 return _serviceProvider.GetRequiredService<TeamInformationDocumentProcessor>();
             case DocumentType.Venue:

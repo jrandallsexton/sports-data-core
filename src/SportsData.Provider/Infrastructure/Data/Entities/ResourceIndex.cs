@@ -8,6 +8,8 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 {
     public class ResourceIndex : EntityBase<Guid>
     {
+        public int Ordinal { get; set; }
+
         public bool IsRecurring { get; set; }
 
         public bool IsEnabled { get; set; }

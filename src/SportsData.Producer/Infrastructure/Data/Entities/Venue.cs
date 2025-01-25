@@ -17,6 +17,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<VenueExternalId> ExternalIds { get; set; }
 
+        public List<VenueImage> Images { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<Venue>
         {
             public void Configure(EntityTypeBuilder<Venue> builder)

@@ -18,6 +18,9 @@
         Venue,
         Weeks,
         GroupLogo,
-        FranchiseLogo
+        FranchiseLogo,
+        GroupBySeasonLogo,
+        TeamBySeasonLogo,
+        VenueImage
     }
 }

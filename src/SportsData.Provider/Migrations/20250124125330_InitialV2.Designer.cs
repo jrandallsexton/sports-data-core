@@ -12,8 +12,8 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250119114827_Initial")]
-    partial class Initial
+    [Migration("20250124125330_InitialV2")]
+    partial class InitialV2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -29,6 +29,9 @@ namespace SportsData.Provider.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CanonicalId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CreatedBy")
@@ -48,9 +51,6 @@ namespace SportsData.Provider.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("GlobalId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("bit");
 
@@ -65,6 +65,9 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("int");
 
                     b.Property<int>("Provider")
                         .HasColumnType("int");

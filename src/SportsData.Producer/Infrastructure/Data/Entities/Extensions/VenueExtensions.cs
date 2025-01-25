@@ -15,7 +15,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             {
                 Id = Guid.NewGuid(),
                 Name = dto.FullName,
-                ShortName = dto.ShortName,
+                ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName,
                 IsIndoor = dto.Indoor,
                 IsGrass = dto.Grass,
                 CreatedUtc = DateTime.UtcNow,

@@ -27,6 +27,16 @@ namespace SportsData.Producer.Application.Documents.Processors
 
         public async Task Process(DocumentCreated evt)
         {
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+                   {
+                       { "CorrelationId", evt.CorrelationId }
+                   }))
+
+                await ProcessInternal(evt);
+        }
+
+        private async Task ProcessInternal(DocumentCreated evt)
+        {
             // call Provider to obtain the new document
             var document = await _provider.GetDocumentByIdAsync(
                 evt.SourceDataProvider,

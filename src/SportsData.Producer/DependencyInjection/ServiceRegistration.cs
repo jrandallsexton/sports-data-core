@@ -26,7 +26,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IProcessImageRequests, ImageRequestedProcessor>();
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddScoped<FranchiseBySeasonDocumentProcessor>();
+            services.AddScoped<TeamSeasonDocumentProcessor>();
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
             services.AddScoped<VenueCreatedDocumentProcessor>();
@@ -48,34 +48,34 @@ namespace SportsData.Producer.DependencyInjection
                     DocumentType = DocumentType.Venue
                 }));
 
-            // ask for franchises
-            backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-                new PublishDocumentEventsCommand()
-                {
-                    SourceDataProvider = SourceDataProvider.Espn,
-                    Sport = Sport.FootballNcaa,
-                    DocumentType = DocumentType.Franchise
-                }));
+            //// ask for franchises
+            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+            //    new PublishDocumentEventsCommand()
+            //    {
+            //        SourceDataProvider = SourceDataProvider.Espn,
+            //        Sport = Sport.FootballNcaa,
+            //        DocumentType = DocumentType.Franchise
+            //    }));
 
-            // ask for GroupsBySeason (conferences)
-            backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-                new PublishDocumentEventsCommand()
-                {
-                    SourceDataProvider = SourceDataProvider.Espn,
-                    Sport = Sport.FootballNcaa,
-                    DocumentType = DocumentType.GroupBySeason,
-                    Season = 2024
-                }));
+            //// ask for GroupsBySeason (conferences)
+            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+            //    new PublishDocumentEventsCommand()
+            //    {
+            //        SourceDataProvider = SourceDataProvider.Espn,
+            //        Sport = Sport.FootballNcaa,
+            //        DocumentType = DocumentType.GroupBySeason,
+            //        Season = 2024
+            //    }));
 
-            // ask for TeamsBySeason (FranchiseSeasons)
-            backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-                new PublishDocumentEventsCommand()
-                {
-                    SourceDataProvider = SourceDataProvider.Espn,
-                    Sport = Sport.FootballNcaa,
-                    DocumentType = DocumentType.TeamBySeason,
-                    Season = 2024
-                }));
+            //// ask for TeamsBySeason (FranchiseSeasons)
+            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+            //    new PublishDocumentEventsCommand()
+            //    {
+            //        SourceDataProvider = SourceDataProvider.Espn,
+            //        Sport = Sport.FootballNcaa,
+            //        DocumentType = DocumentType.TeamBySeason,
+            //        Season = 2024
+            //    }));
 
             // ask for AthletesBySeason (FranchiseSeasonAhteletes)
 

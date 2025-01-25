@@ -711,6 +711,47 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("VenueExternalId", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.VenueImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("Height")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.PrimitiveCollection<string>("Rel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long?>("Width")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VenueId");
+
+                    b.ToTable("VenueImage", (string)null);
+                });
+
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
                 {
                     b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)
@@ -810,6 +851,15 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Venue");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.VenueImage", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Venue", null)
+                        .WithMany("Images")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Franchise", b =>
                 {
                     b.Navigation("ExternalIds");
@@ -841,6 +891,8 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Venue", b =>
                 {
                     b.Navigation("ExternalIds");
+
+                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

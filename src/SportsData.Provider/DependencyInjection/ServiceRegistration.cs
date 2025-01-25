@@ -67,7 +67,7 @@ namespace SportsData.Provider.DependencyInjection
             var serviceScope = services.CreateScope();
             var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
             var backgroundJobProvider = serviceScope.ServiceProvider.GetRequiredService<IProvideBackgroundJobs>();
-            var appDataContext = serviceScope.ServiceProvider.GetService<AppDataContext>();
+            var appDataContext = serviceScope.ServiceProvider.GetRequiredService<AppDataContext>();
 
             List<ResourceIndex> resources = null;
 
@@ -80,6 +80,7 @@ namespace SportsData.Provider.DependencyInjection
                                     x.SportId == Sport.FootballNcaa ||
                                     x.SportId == Sport.FootballNfl) &&
                                     !x.IsRecurring && x.IsEnabled)
+                        .OrderBy(x => x.Ordinal)
                         .ToListAsync();
                     break;
                 case Sport.FootballNfl:
@@ -88,6 +89,7 @@ namespace SportsData.Provider.DependencyInjection
                         .Where(x => x.SportId == mode &&
                                     !x.IsRecurring &&
                                     x.IsEnabled)
+                        .OrderBy(x => x.Ordinal)
                         .ToListAsync();
                     break;
                 default:

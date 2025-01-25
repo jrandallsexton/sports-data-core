@@ -16,9 +16,9 @@ namespace SportsData.Core.Middleware.Health
         {
             try
             {
-                logger.LogInformation("Begin HC: {@type}", typeof(T));
                 var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
 
+                // TODO: Remove connection string from log
                 return canConnect ?
                     HealthCheckResult.Healthy() :
                     HealthCheckResult.Unhealthy($"Unable to connect to: {dbContext.Database?.GetConnectionString()}");

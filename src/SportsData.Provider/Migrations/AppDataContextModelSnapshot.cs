@@ -63,6 +63,9 @@ namespace SportsData.Provider.Migrations
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("int");
+
                     b.Property<int>("Provider")
                         .HasColumnType("int");
 

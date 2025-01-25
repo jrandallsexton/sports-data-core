@@ -16,8 +16,10 @@ namespace SportsData.Core.Eventing.Events.Images
         SourceDataProvider sourceDataProvider,
         long height,
         long width,
-        List<string>? rel)
-        : EventBase
+        List<string>? rel,
+        Guid correlationId,
+        Guid causationId)
+        : EventBase(correlationId, causationId)
     {
         public string Url { get; set; } = url;
 

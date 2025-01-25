@@ -50,7 +50,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
             // 2. any logos on the dto?
             var events = new List<ProcessImageRequest>();
-            externalProviderDto.Logos.ForEach(logo =>
+            externalProviderDto.Logos?.ForEach(logo =>
             {
                 var imgId = Guid.NewGuid();
                 events.Add(new ProcessImageRequest(
@@ -64,19 +64,25 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                     command.SourceDataProvider,
                     0,
                     0,
-                    null));
+                    null,
+                    command.CorrelationId,
+                    CausationId.Producer.FranchiseDocumentProcessor));
             });
 
             if (events.Count > 0)
+            {
+                _logger.LogInformation($"Requesting {events.Count} images for {command.DocumentType} {command.Season}");
                 await _publishEndpoint.PublishBatch(events);
+            }
 
             // 3. raise an event
-            var evt = new FranchiseCreated(franchiseEntity.ToCanonicalModel());
-            await _publishEndpoint.Publish(evt);
+            await _publishEndpoint.Publish(
+                new FranchiseCreated(
+                    franchiseEntity.ToCanonicalModel(),
+                    command.CorrelationId,
+                    CausationId.Producer.FranchiseDocumentProcessor));
 
             await _dataContext.SaveChangesAsync();
-
-            _logger.LogInformation("New {@type} event {@evt}", DocumentType.Franchise, evt);
         }
     }
 }

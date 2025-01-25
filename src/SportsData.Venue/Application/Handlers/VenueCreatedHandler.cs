@@ -3,7 +3,6 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Eventing.Events.Venues;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Venue.Infrastructure.Data;
 
 namespace SportsData.Venue.Application.Handlers
@@ -11,16 +10,13 @@ namespace SportsData.Venue.Application.Handlers
     public class VenueCreatedHandler : IConsumer<VenueCreated>
     {
         private readonly ILogger<VenueCreatedHandler> _logger;
-        private readonly IProvideProducers _producer;
         private readonly AppDataContext _dataContext;
 
         public VenueCreatedHandler(
             ILogger<VenueCreatedHandler> logger,
-            IProvideProducers producer,
             AppDataContext dataContext)
         {
             _logger = logger;
-            _producer = producer;
             _dataContext = dataContext;
         }
 
@@ -28,12 +24,12 @@ namespace SportsData.Venue.Application.Handlers
         {
             _logger.LogInformation("VenueCreated received: {@evt}", context.Message);
 
-            // call the producer to get the canonical model
-            var canonicalVenue = await _producer.GetVenue(context.Message.Id);
+            // get the canonical model
+            var canonicalVenue = context.Message.Canonical;
 
-            if (canonicalVenue == null)
+            if (canonicalVenue is null)
             {
-                _logger.LogError("Could not obtain canonical model for {@evt}", context.Message);
+                _logger.LogError("Canonical data was null");
                 throw new Exception("foo");
             }
 
@@ -59,6 +55,9 @@ namespace SportsData.Venue.Application.Handlers
 
             // store it
             await _dataContext.Venues.AddAsync(entity);
+
+            // TODO: Raise another event?  Perhaps to tell API to invalidate cache?
+
             await _dataContext.SaveChangesAsync();
         }
     }

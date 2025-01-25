@@ -1,5 +1,7 @@
 ﻿using SportsData.Core.Common;
 
+using System;
+
 namespace SportsData.Core.Eventing.Events.Documents
 {
     public class DocumentUpdated(
@@ -7,8 +9,10 @@ namespace SportsData.Core.Eventing.Events.Documents
         string name,
         Sport sport,
         DocumentType documentType,
-        SourceDataProvider sourceDataProvider)
-        : EventBase
+        SourceDataProvider sourceDataProvider,
+        Guid correlationId,
+        Guid causationId)
+        : EventBase(correlationId, causationId)
     {
         public string Id { get; init; } = id;
 

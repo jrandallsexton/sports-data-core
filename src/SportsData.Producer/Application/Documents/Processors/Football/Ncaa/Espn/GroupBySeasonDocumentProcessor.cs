@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Newtonsoft.Json;
 
+using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Conferences;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 
@@ -19,16 +21,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
     {
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IPublishEndpoint _bus;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public GroupBySeasonDocumentProcessor(
             ILogger<GroupBySeasonDocumentProcessor> logger,
             AppDataContext dataContext,
-            IPublishEndpoint bus)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _bus = bus;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -87,19 +89,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
             }
             else
             {
-                var newSeasonId = Guid.NewGuid();
+                var newGroupSeasonId = Guid.NewGuid();
 
                 var newGroupId = Guid.NewGuid();
-                var newGroup = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
-                newGroup.Seasons.Add(externalProviderDto
+                var newGroupEntity = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
+                var newGroupSeason = (externalProviderDto
                     .AsGroupSeasonEntity(
                         newGroupId,
                         Guid.NewGuid(),
                         command.Season.Value,
                         command.CorrelationId));
 
-                await _dataContext.Groups.AddAsync(newGroup);
-                await _dataContext.SaveChangesAsync();
+                newGroupEntity.Seasons.Add(newGroupSeason);
+
+                await _dataContext.Groups.AddAsync(newGroupEntity);
 
                 // any logos on the dto?
                 var events = new List<ProcessImageRequest>();
@@ -109,19 +112,31 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                     events.Add(new ProcessImageRequest(
                         logo.Href,
                         imgId,
-                        newSeasonId,
-                        $"{newSeasonId}.png",
+                        newGroupSeasonId,
+                        $"{newGroupSeasonId}.png",
                         command.Sport,
                         command.Season,
                         command.DocumentType,
                         command.SourceDataProvider,
                         0,
                         0,
-                        null));
+                        null,
+                        command.CorrelationId,
+                        CausationId.Producer.GroupBySeasonDocumentProcessor));
                 });
 
                 if (events.Any())
-                    await _bus.PublishBatch(events);
+                    await _publishEndpoint.PublishBatch(events);
+
+                // raise an integration event for the group
+                await _publishEndpoint.Publish(new ConferenceCreated(newGroupEntity.ToCanonicalModel(), command.CorrelationId,
+                    CausationId.Producer.GroupBySeasonDocumentProcessor));
+
+                // and the season
+                await _publishEndpoint.Publish(new ConferenceSeasonCreated(newGroupSeason.ToCanonicalModel(), command.CorrelationId,
+                    CausationId.Producer.GroupBySeasonDocumentProcessor));
+
+                await _dataContext.SaveChangesAsync();
             }
         }
     }

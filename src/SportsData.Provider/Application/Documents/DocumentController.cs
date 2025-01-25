@@ -22,19 +22,22 @@ namespace SportsData.Provider.Application.Documents
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideBlobStorage _blobStorage;
+        private readonly IProvideHashes _hashProvider;
 
         public DocumentController(
             DocumentService documentService,
             IDecodeDocumentProvidersAndTypes decoder,
             IPublishEndpoint bus,
             ILogger<DocumentController> logger,
-            IProvideBlobStorage blobStorage)
+            IProvideBlobStorage blobStorage,
+            IProvideHashes hashProvider)
         {
             _documentService = documentService;
             _decoder = decoder;
             _bus = bus;
             _logger = logger;
             _blobStorage = blobStorage;
+            _hashProvider = hashProvider;
         }
 
         [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}")]
@@ -44,9 +47,9 @@ namespace SportsData.Provider.Application.Documents
             DocumentType typeId,
             int documentId)
         {
-            var typeAndName = _decoder.GetTypeAndName(providerId, sportId, typeId, null);
+            var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
 
             var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
 
@@ -65,9 +68,9 @@ namespace SportsData.Provider.Application.Documents
             int documentId,
             int? seasonId)
         {
-            var typeAndName = _decoder.GetTypeAndName(providerId, sportId, typeId, seasonId);
+            var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, seasonId);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
 
             var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
 
@@ -94,19 +97,20 @@ namespace SportsData.Provider.Application.Documents
         [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
-            var typeAndName = _decoder.GetTypeAndName(
+            var typeAndName = _decoder.GetTypeAndCollectionName(
                 command.SourceDataProvider,
                 command.Sport,
                 command.DocumentType,
                 command.Season);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.CollectionName);
 
             // https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/crud/read-operations/retrieve/
             var filter = Builders<DocumentBase>.Filter.Empty;
             var dbCursor = await dbObjects.FindAsync(filter);
             var dbDocuments = await dbCursor.ToListAsync();
 
+            // TODO: Tackle correlation and causation ids
             var events = dbDocuments.Select(tmp =>
                 new DocumentCreated(
                     tmp.Id.ToString(),
@@ -114,7 +118,9 @@ namespace SportsData.Provider.Application.Documents
                     command.Sport,
                     command.Season,
                     command.DocumentType,
-                    command.SourceDataProvider)).ToList();
+                    command.SourceDataProvider,
+                    Guid.NewGuid(),
+                    Guid.NewGuid())).ToList();
 
             await _bus.PublishBatch(events);
 
@@ -126,16 +132,16 @@ namespace SportsData.Provider.Application.Documents
         [HttpPost("external", Name = "GetExternalDocument")]
         public async Task<ActionResult<GetExternalDocumentQueryResponse>> GetExternalDocument([FromBody] GetExternalDocumentQuery query)
         {
-            var typeAndName = _decoder.GetTypeAndName(
+            var collectionName = _decoder.GetCollectionName(
                 query.SourceDataProvider,
                 query.Sport,
                 query.DocumentType,
                 query.SeasonYear);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.Name);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
 
             // generate a hash for the collection retrieval
-            var hash = query.Url.GetHashCode();
+            var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
             var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, hash);
 
@@ -159,22 +165,25 @@ namespace SportsData.Provider.Application.Documents
                 await dbObjects.InsertOneAsync(new DocumentBase()
                 {
                     Id = hash,
+                    CanonicalId = query.CanonicalId,
                     Data = externalUrl
                 });
 
                 // return the url generated by our blob storage provider
                 return Ok(new GetExternalDocumentQueryResponse()
                 {
+                    Id = hash,
+                    CanonicalId = query.CanonicalId,
                     Href = externalUrl
                 });
             }
-            else
+
+            return Ok(new GetExternalDocumentQueryResponse()
             {
-                return Ok(new GetExternalDocumentQueryResponse()
-                {
-                    Href = dbItem.Data
-                });
-            }
+                Id = hash,
+                CanonicalId = query.CanonicalId,
+                Href = dbItem.Data
+            });
         }
     }
 }

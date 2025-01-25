@@ -26,6 +26,8 @@ namespace SportsData.Core.DependencyInjection
             {
                 configuration
                     .ReadFrom.Configuration(context.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
                     .WriteTo.OpenTelemetry(options =>
                     {
                         // TODO: Move this to az app config

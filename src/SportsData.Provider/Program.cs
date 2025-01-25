@@ -46,7 +46,7 @@ namespace SportsData.Provider
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = 10;
+                serverOptions.WorkerCount = 50;
             });
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
@@ -98,7 +98,8 @@ namespace SportsData.Provider
                 Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues?lang=en&limit=999",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/",
                 CreatedBy = Guid.Empty,
-                IsEnabled = true
+                IsEnabled = true,
+                Ordinal = 0
             });
 
             /* Franchises */
@@ -111,7 +112,8 @@ namespace SportsData.Provider
                 Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises?lang=en&limit=999",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/",
                 CreatedBy = Guid.Empty,
-                IsEnabled = false
+                IsEnabled = true,
+                Ordinal = 1
             });
 
             /* Groups By Season (Conferences) */
@@ -125,7 +127,8 @@ namespace SportsData.Provider
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/",
                 CreatedBy = Guid.Empty,
                 SeasonYear = 2024,
-                IsEnabled = false
+                IsEnabled = true,
+                Ordinal = 2
             });
 
             /* Teams By Season */
@@ -135,11 +138,12 @@ namespace SportsData.Provider
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.TeamBySeason,
-                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams?lang=en&limit=999",
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/90/teams?lang=en&limit=999",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/",
                 CreatedBy = Guid.Empty,
                 SeasonYear = 2024,
-                IsEnabled = false
+                IsEnabled = true,
+                Ordinal = 3
             });
 
             /* Athletes By Season */
@@ -153,7 +157,8 @@ namespace SportsData.Provider
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/",
                 CreatedBy = Guid.Empty,
                 SeasonYear = 2024,
-                IsEnabled = false
+                IsEnabled = false,
+                Ordinal = 4
             });
 
             /* Coaches By Season */
@@ -167,7 +172,8 @@ namespace SportsData.Provider
                 EndpointMask = @"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/coaches/",
                 CreatedBy = Guid.Empty,
                 SeasonYear = 2024,
-                IsEnabled = false
+                IsEnabled = false,
+                Ordinal = 5
             });
 
             /* NFL */
@@ -181,7 +187,8 @@ namespace SportsData.Provider
                 Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues?lang=en&limit=999",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/",
                 CreatedBy = Guid.Empty,
-                IsEnabled = false
+                IsEnabled = false,
+                Ordinal = 6
             });
 
             await dbContext.SaveChangesAsync();

@@ -34,6 +34,7 @@
     <Folder Include="Infrastructure\Providers\CBS\" />
     <Folder Include="Infrastructure\Providers\Yahoo\" />
     <Folder Include="Infrastructure\Providers\SportsDataIO\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,10 @@ namespace SportsData.Provider.Application.Documents
     public interface IDecodeDocumentProvidersAndTypes
     {
         Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType);
-        (Type Type, string Name) GetTypeAndName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
+
+        (Type Type, string CollectionName) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
+
+        string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
     }
 
     public class DocumentProviderAndTypeDecoder : IDecodeDocumentProvidersAndTypes
@@ -41,11 +44,9 @@ namespace SportsData.Provider.Application.Documents
             }
         }
 
-        public (Type, string) GetTypeAndName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
+        public (Type, string) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
         {
-            var name = season.HasValue ?
-                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
-                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
+            var name = GetCollectionName(sourceDataProvider, sport, docType, season);
 
             switch (docType)
             {
@@ -70,9 +71,22 @@ namespace SportsData.Provider.Application.Documents
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
+                case DocumentType.AthleteBySeason:
+                case DocumentType.GroupLogo:
+                case DocumentType.FranchiseLogo:
+                case DocumentType.GroupBySeasonLogo:
+                case DocumentType.TeamBySeasonLogo:
+                case DocumentType.VenueImage:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }
+        }
+
+        public string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
+        {
+            return season.HasValue ?
+                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
+                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
         }
     }
 }

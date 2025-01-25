@@ -8,10 +8,12 @@ namespace SportsData.Producer.Application.Handlers
     public class ProcessImageResponseHandler :
         IConsumer<ProcessImageResponse>
     {
-        private ILogger<ProcessImageResponseHandler> _logger;
+        private readonly ILogger<ProcessImageResponseHandler> _logger;
         private readonly IProcessProcessedImages _imageProcessor;
 
-        public ProcessImageResponseHandler(ILogger<ProcessImageResponseHandler> logger, IProcessProcessedImages imageProcessor)
+        public ProcessImageResponseHandler(
+            ILogger<ProcessImageResponseHandler> logger,
+            IProcessProcessedImages imageProcessor)
         {
             _logger = logger;
             _imageProcessor = imageProcessor;
@@ -20,11 +22,13 @@ namespace SportsData.Producer.Application.Handlers
         public async Task Consume(ConsumeContext<ProcessImageResponse> context)
         {
             _logger.LogInformation("new ProcessImageResponse event received: {@message}", context.Message);
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            {
+                       { "CorrelationId", context.Message.CorrelationId }
+                   }))
 
-            var message = context.Message;
-
-            // TODO: Background job
-            await _imageProcessor.Process(message);
+            // TODO: Background job?
+            await _imageProcessor.Process(context.Message);
         }
     }
 }

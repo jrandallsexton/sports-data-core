@@ -49,8 +49,8 @@ namespace SportsData.Provider.Application.Jobs
             // TODO: Remove this code after testing.
             // For now, I do not want to load each resource if I already have them in Mongo
             // Otherwise ESPN might blacklist my IP.  Not sure.
-            var type = _decoder.GetTypeAndName(_jobDefinition.SourceDataProvider, _jobDefinition.Sport,  _jobDefinition.DocumentType, _jobDefinition.SeasonYear);
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.Name);
+            var collectionName = _decoder.GetCollectionName(_jobDefinition.SourceDataProvider, _jobDefinition.Sport,  _jobDefinition.DocumentType, _jobDefinition.SeasonYear);
+            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
             var filter = Builders<DocumentBase>.Filter.Empty;
             var dbCursor = await dbObjects.FindAsync(filter);
             var dbDocuments = await dbCursor.ToListAsync();
@@ -75,7 +75,7 @@ namespace SportsData.Provider.Application.Jobs
                 await Task.Delay(1_000); // do NOT beat on their API
             }
 
-            _logger.LogInformation($"Completed {nameof(DocumentProviderJob<TDocumentJobDefinition>)} with {resourceIndex.items.Count} jobs spawned.");
+            _logger.LogInformation($"Completed DocumentProviderJob<{nameof(TDocumentJobDefinition)}> with {resourceIndex.items.Count} jobs spawned.");
 
         }
     }

@@ -26,11 +26,11 @@ namespace SportsData.Core.Eventing
     }
 
     // TODO: Change to record?
-    public abstract class EventBase
+    public abstract class EventBase(Guid correlationId, Guid causationId)
     {
-        public Guid CorrelationId { get; init; } = Guid.NewGuid();
+        public Guid CorrelationId { get; init; } = correlationId;
 
-        public Guid CausationId { get; init; } = Guid.NewGuid();
+        public Guid CausationId { get; init; } = causationId;
 
         public DateTime CreatedUtc { get; init; } = DateTime.UtcNow;
     }

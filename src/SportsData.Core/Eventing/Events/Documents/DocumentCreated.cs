@@ -1,5 +1,7 @@
 ﻿using SportsData.Core.Common;
 
+using System;
+
 namespace SportsData.Core.Eventing.Events.Documents
 {
     public class DocumentCreated(
@@ -8,8 +10,9 @@ namespace SportsData.Core.Eventing.Events.Documents
         Sport sport,
         int? seasonYear,
         DocumentType documentType,
-        SourceDataProvider sourceDataProvider)
-        : EventBase
+        SourceDataProvider sourceDataProvider,
+        Guid correlationId,
+        Guid causationId)
     {
         public string Id { get; init; } = id;
 
@@ -22,5 +25,9 @@ namespace SportsData.Core.Eventing.Events.Documents
         public DocumentType DocumentType { get; init; } = documentType;
 
         public SourceDataProvider SourceDataProvider { get; set; } = sourceDataProvider;
+
+        public Guid CorrelationId { get; init; } = correlationId;
+
+        public Guid CausationId { get; init; } = causationId;
     }
 }

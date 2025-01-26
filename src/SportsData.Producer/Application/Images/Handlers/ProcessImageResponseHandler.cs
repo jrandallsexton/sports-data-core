@@ -1,22 +1,22 @@
 ﻿using MassTransit;
 
 using SportsData.Core.Eventing.Events.Images;
-using SportsData.Producer.Application.Images;
+using SportsData.Core.Processing;
 
-namespace SportsData.Producer.Application.Handlers
+namespace SportsData.Producer.Application.Images.Handlers
 {
     public class ProcessImageResponseHandler :
         IConsumer<ProcessImageResponse>
     {
         private readonly ILogger<ProcessImageResponseHandler> _logger;
-        private readonly IProcessProcessedImages _imageProcessor;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ProcessImageResponseHandler(
             ILogger<ProcessImageResponseHandler> logger,
-            IProcessProcessedImages imageProcessor)
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
-            _imageProcessor = imageProcessor;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task Consume(ConsumeContext<ProcessImageResponse> context)
@@ -27,8 +27,7 @@ namespace SportsData.Producer.Application.Handlers
                        { "CorrelationId", context.Message.CorrelationId }
                    }))
 
-            // TODO: Background job?
-            await _imageProcessor.Process(context.Message);
+                _backgroundJobProvider.Enqueue<ImageProcessedProcessor>(x => x.Process(context.Message));
         }
     }
 }

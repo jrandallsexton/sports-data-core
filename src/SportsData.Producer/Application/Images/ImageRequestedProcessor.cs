@@ -1,12 +1,4 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
-
-using SportsData.Core.Common;
-using SportsData.Core.Eventing.Events.Images;
-using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Provider.Commands;
-using SportsData.Producer.Infrastructure.Data;
+﻿using SportsData.Core.Eventing.Events.Images;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -18,23 +10,14 @@ namespace SportsData.Producer.Application.Images
     public class ImageRequestedProcessor : IProcessImageRequests
     {
         private readonly ILogger<ImageRequestedProcessor> _logger;
-        private readonly AppDataContext _dataContext;
-        private readonly IPublishEndpoint _bus;
-        private readonly IProvideProviders _providerClient;
-        private readonly IProvideHashes _hashProvider;
+        private readonly IImageProcessorFactory _imageProcessorFactory;
 
         public ImageRequestedProcessor(
             ILogger<ImageRequestedProcessor> logger,
-            AppDataContext dataContext,
-            IPublishEndpoint bus,
-            IProvideProviders providerClient,
-            IProvideHashes hashProvider)
+            IImageProcessorFactory imageProcessorFactory)
         {
             _logger = logger;
-            _dataContext = dataContext;
-            _bus = bus;
-            _providerClient = providerClient;
-            _hashProvider = hashProvider;
+            _imageProcessorFactory = imageProcessorFactory;
         }
 
         public async Task Process(ProcessImageRequest request)
@@ -45,125 +28,14 @@ namespace SportsData.Producer.Application.Images
                        { "CorrelationId", request.CorrelationId }
                    }))
 
-            await ProcessImageRequest(request);
+            await ProcessInternal(request);
         }
 
-        private async Task ProcessImageRequest(ProcessImageRequest request)
+        private async Task ProcessInternal(ProcessImageRequest request)
         {
-            var venue = await _dataContext.Venues
-                .Include(v => v.Images)
-                .Where(x => x.Id == request.ParentEntityId)
-                .FirstOrDefaultAsync();
+            var processor = _imageProcessorFactory.GetRequestProcessor(request.DocumentType);
 
-            if (venue == null)
-            {
-                _logger.LogError("Could not retrieve venue");
-                return;
-            }
-
-            var urlHash = _hashProvider.GenerateHashFromUrl(request.Url);
-
-            var img = venue.Images.FirstOrDefault(x => x.OriginalUrlHash == urlHash);
-
-            var logoDocType = GetLogoDocumentTypeFromDocumentType(request.DocumentType);
-
-            if (img is not null)
-            {
-                _logger.LogWarning("Venue image already exists. Will publish event and exit.");
-
-                // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
-
-                var outgoingEvt = new ProcessImageResponse(
-                    img.Url,
-                    img.Id.ToString(),
-                    urlHash,
-                    request.ParentEntityId,
-                    request.Name,
-                    request.Sport,
-                    request.SeasonYear,
-                    logoDocType,
-                    request.SourceDataProvider,
-                    request.Height,
-                    request.Width,
-                    request.Rel,
-                    request.CorrelationId,
-                    request.CausationId);
-
-                await _bus.Publish(outgoingEvt);
-
-                return;
-            }
-
-            // if not, obtain the image from Provider
-            // who will return a link to blob storage or
-            // fetch the image, upload it, then return that blob storage url
-            // either way, the link we pass to the response will be that of blob storage
-            var query = new GetExternalDocumentQuery(
-                Guid.NewGuid().ToString(),
-                request.Url,
-                request.SourceDataProvider,
-                request.Sport,
-                logoDocType,
-                request.SeasonYear
-            );
-
-            _logger.LogInformation("Requesting new image");
-
-            var response = await _providerClient.GetExternalDocument(query);
-
-            _logger.LogInformation("Obtained new image");
-
-            // raise an event for whoever requested this
-            var outgoingEvt2 = new ProcessImageResponse(
-                response.Href,
-                response.CanonicalId,
-                urlHash,
-                request.ParentEntityId,
-                request.Name,
-                request.Sport,
-                request.SeasonYear,
-                logoDocType,
-                request.SourceDataProvider,
-                request.Height,
-                request.Width,
-                request.Rel,
-                request.CorrelationId,
-                request.CausationId);
-
-            await _bus.Publish(outgoingEvt2);
-        }
-
-        private DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)
-        {
-            switch (documentType)
-            {
-                case DocumentType.Franchise:
-                case DocumentType.FranchiseLogo:
-                    return DocumentType.FranchiseLogo;
-                case DocumentType.GroupLogo:
-                case DocumentType.GroupBySeason:
-                case DocumentType.GroupBySeasonLogo:
-                    return DocumentType.GroupBySeasonLogo;
-                case DocumentType.TeamBySeason:
-                case DocumentType.TeamBySeasonLogo:
-                    return DocumentType.TeamBySeasonLogo;
-                case DocumentType.Venue:
-                case DocumentType.VenueImage:
-                    return DocumentType.VenueImage;
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
-                case DocumentType.Award:
-                case DocumentType.CoachBySeason:
-                case DocumentType.Contest:
-                case DocumentType.GameSummary:
-                case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.Team:
-                case DocumentType.TeamInformation:
-                case DocumentType.Weeks:
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
-            }
+            await processor.ProcessRequest(request);
         }
     }
 }

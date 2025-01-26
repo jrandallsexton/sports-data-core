@@ -9,8 +9,8 @@ namespace SportsData.Producer.Application.Documents
     public class DocumentCreatedHandler :
         IConsumer<DocumentCreated>
     {
-        private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly ILogger<DocumentCreatedHandler> _logger;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public DocumentCreatedHandler(
             ILogger<DocumentCreatedHandler> logger, IProvideBackgroundJobs backgroundJobProvider)

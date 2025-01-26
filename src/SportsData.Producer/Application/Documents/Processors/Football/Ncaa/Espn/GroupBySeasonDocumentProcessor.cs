@@ -90,7 +90,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
             else
             {
                 var newGroupSeasonId = Guid.NewGuid();
-
                 var newGroupId = Guid.NewGuid();
                 var newGroupEntity = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
                 var newGroupSeason = (externalProviderDto
@@ -99,6 +98,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                         Guid.NewGuid(),
                         command.Season.Value,
                         command.CorrelationId));
+
+                _logger.LogInformation($"New GroupSeason with id: {newGroupSeason.Id} created for GroupId: {newGroupId}");
 
                 newGroupEntity.Seasons.Add(newGroupSeason);
 

@@ -1,32 +1,33 @@
 ﻿using MassTransit;
 
 using SportsData.Core.Eventing.Events.Images;
-using SportsData.Producer.Application.Images;
+using SportsData.Core.Processing;
 
-namespace SportsData.Producer.Application.Handlers
+namespace SportsData.Producer.Application.Images.Handlers
 {
     public class ProcessImageRequestedHandler :
         IConsumer<ProcessImageRequest>
     {
         private readonly ILogger<ProcessImageRequestedHandler> _logger;
-        private readonly IProcessImageRequests _imageRequestProcessor;
-        
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
+
         public ProcessImageRequestedHandler(
             ILogger<ProcessImageRequestedHandler> logger,
-            IProcessImageRequests imageRequestProcessor)
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
-            _imageRequestProcessor = imageRequestProcessor;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task Consume(ConsumeContext<ProcessImageRequest> context)
         {
             _logger.LogInformation("new ProcessImageRequest event received: {@message}", context.Message);
+            using (_logger.BeginScope(new Dictionary<string, Guid>()
+                   {
+                       { "CorrelationId", context.Message.CorrelationId }
+                   }))
 
-            var message = context.Message;
-
-            // TODO: Send to background job
-            await _imageRequestProcessor.Process(message);
+                _backgroundJobProvider.Enqueue<ImageRequestedProcessor>(x => x.Process(context.Message));
         }
     }
 }

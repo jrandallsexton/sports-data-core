@@ -1,7 +1,7 @@
 ﻿using MongoDB.Driver;
 
+using SportsData.Core.Common;
 using SportsData.Core.Processing;
-using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;

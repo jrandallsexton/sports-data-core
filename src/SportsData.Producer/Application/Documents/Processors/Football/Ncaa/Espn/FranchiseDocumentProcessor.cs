@@ -48,6 +48,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
             var franchiseEntity = externalProviderDto.AsFranchiseEntity(newFranchiseId, command.CorrelationId);
             await _dataContext.AddAsync(franchiseEntity);
 
+            // TODO: find the venue associated with this franchise
+
             // 2. any logos on the dto?
             var events = new List<ProcessImageRequest>();
             externalProviderDto.Logos?.ForEach(logo =>

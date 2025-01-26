@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
-using SportsData.Producer.Application.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data;
 
 using System.Reflection;
 using SportsData.Core.Config;
+using SportsData.Producer.Application.Images.Handlers;
 
 namespace SportsData.Producer;
 
@@ -45,6 +45,7 @@ public class Program
 
             x.AddEntityFrameworkOutbox<AppDataContext>(o =>
             {
+                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(1);
                 o.QueryDelay = TimeSpan.FromSeconds(1);
                 o.UseSqlServer().UseBusOutbox();
             });

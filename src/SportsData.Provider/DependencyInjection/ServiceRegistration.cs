@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
-using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
@@ -52,7 +51,6 @@ namespace SportsData.Provider.DependencyInjection
             }
 
             services.AddDataPersistenceExternal();
-            services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();

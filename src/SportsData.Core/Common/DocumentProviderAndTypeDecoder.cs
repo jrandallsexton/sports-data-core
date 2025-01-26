@@ -1,7 +1,8 @@
-﻿using SportsData.Core.Common;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
-namespace SportsData.Provider.Application.Documents
+using System;
+
+namespace SportsData.Core.Common
 {
     public interface IDecodeDocumentProvidersAndTypes
     {
@@ -10,6 +11,8 @@ namespace SportsData.Provider.Application.Documents
         (Type Type, string CollectionName) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
 
         string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
+
+        DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType);
     }
 
     public class DocumentProviderAndTypeDecoder : IDecodeDocumentProvidersAndTypes
@@ -32,7 +35,7 @@ namespace SportsData.Provider.Application.Documents
                     return typeof(EspnGroupBySeasonDto);
                 case DocumentType.Award:
                 case DocumentType.Contest:
-                    // TODO: Create these => return typeof(EspnContestDto);
+                // TODO: Create these => return typeof(EspnContestDto);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
@@ -87,6 +90,39 @@ namespace SportsData.Provider.Application.Documents
             return season.HasValue ?
                 $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
                 $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
+        }
+
+        public DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)
+        {
+            switch (documentType)
+            {
+                case DocumentType.Franchise:
+                case DocumentType.FranchiseLogo:
+                    return DocumentType.FranchiseLogo;
+                case DocumentType.GroupLogo:
+                case DocumentType.GroupBySeason:
+                case DocumentType.GroupBySeasonLogo:
+                    return DocumentType.GroupBySeasonLogo;
+                case DocumentType.TeamBySeason:
+                case DocumentType.TeamBySeasonLogo:
+                    return DocumentType.TeamBySeasonLogo;
+                case DocumentType.Venue:
+                case DocumentType.VenueImage:
+                    return DocumentType.VenueImage;
+                case DocumentType.Athlete:
+                case DocumentType.AthleteBySeason:
+                case DocumentType.Award:
+                case DocumentType.CoachBySeason:
+                case DocumentType.Contest:
+                case DocumentType.GameSummary:
+                case DocumentType.Scoreboard:
+                case DocumentType.Season:
+                case DocumentType.Team:
+                case DocumentType.TeamInformation:
+                case DocumentType.Weeks:
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
+            }
         }
     }
 }

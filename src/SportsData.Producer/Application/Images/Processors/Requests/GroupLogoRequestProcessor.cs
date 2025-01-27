@@ -100,7 +100,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             var response = await _providerClient.GetExternalDocument(query);
 
-            _logger.LogInformation("Obtained new image");
+            _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 
             // raise an event for whoever requested this
             var outgoingEvt2 = new ProcessImageResponse(

@@ -37,12 +37,13 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         public async Task ProcessRequest(ProcessImageRequest request)
         {
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", request.CorrelationId }
+                       ["CorrelationId"] = request.CorrelationId
                    }))
-
+            {
                 await ProcessRequestInternal(request);
+            }
         }
 
         private async Task ProcessRequestInternal(ProcessImageRequest request)
@@ -110,7 +111,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             var response = await _providerClient.GetExternalDocument(query);
 
-            _logger.LogInformation("Obtained new image");
+            _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 
             // raise an event for whoever requested this
             var outgoingEvt2 = new ProcessImageResponse(

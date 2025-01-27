@@ -21,13 +21,14 @@ namespace SportsData.Producer.Application.Images.Handlers
 
         public async Task Consume(ConsumeContext<ProcessImageResponse> context)
         {
-            _logger.LogInformation("new ProcessImageResponse event received: {@message}", context.Message);
             using (_logger.BeginScope(new Dictionary<string, Guid>()
-            {
+                   {
                        { "CorrelationId", context.Message.CorrelationId }
                    }))
-
+            {
+                _logger.LogInformation("new ProcessImageResponse event received: {@message}", context.Message);
                 _backgroundJobProvider.Enqueue<ImageProcessedProcessor>(x => x.Process(context.Message));
+            }
         }
     }
 }

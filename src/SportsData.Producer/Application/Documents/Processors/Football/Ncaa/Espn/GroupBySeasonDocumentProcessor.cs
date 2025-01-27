@@ -35,6 +35,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = command.CorrelationId
+                   }))
+            {
+                await ProcessInternal(command);
+            }
+        }
+
+        private async Task ProcessInternal(ProcessDocumentCommand command)
+        {
             // deserialize the DTO
             var externalProviderDto = command.Document.FromJson<EspnGroupBySeasonDto>(new JsonSerializerSettings
             {
@@ -95,7 +106,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                 var newGroupSeason = (externalProviderDto
                     .AsGroupSeasonEntity(
                         newGroupId,
-                        Guid.NewGuid(),
+                        newGroupSeasonId,
                         command.Season.Value,
                         command.CorrelationId));
 

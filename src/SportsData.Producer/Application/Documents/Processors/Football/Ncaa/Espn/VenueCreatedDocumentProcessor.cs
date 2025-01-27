@@ -33,14 +33,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
-            _logger.LogInformation("Began with {@command}", command);
-
             using (_logger.BeginScope(new Dictionary<string, Guid>()
                    {
                        { "CorrelationId", command.CorrelationId }
                    }))
+            {
+                _logger.LogInformation("Began with {@command}", command);
 
                 await ProcessInternal(command);
+            }
         }
 
         private async Task ProcessInternal(ProcessDocumentCommand command)

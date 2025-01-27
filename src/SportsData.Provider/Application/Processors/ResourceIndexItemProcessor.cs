@@ -5,7 +5,6 @@ using MongoDB.Driver;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
@@ -40,13 +39,15 @@ namespace SportsData.Provider.Application.Processors
 
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
-            _logger.LogInformation("Started with {@command}", command);
             var correlationId = Guid.NewGuid();
             using (_logger.BeginScope(new Dictionary<string, Guid>()
                    {
                        { "CorrelationId", correlationId }
                    }))
+            {
+                _logger.LogInformation("Started with {@command}", command);
                 await ProcessInternal(command, correlationId);
+            }
         }
 
         private async Task ProcessInternal(ProcessResourceIndexItemCommand command, Guid correlationId)

@@ -2,6 +2,8 @@
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+
 namespace SportsData.Producer.Application.Documents.Processors
 {
     public interface IProcessDocumentCreatedEvents
@@ -27,12 +29,15 @@ namespace SportsData.Producer.Application.Documents.Processors
 
         public async Task Process(DocumentCreated evt)
         {
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", evt.CorrelationId }
+                       ["CorrelationId"] = evt.CorrelationId
                    }))
+            {
+                _logger.LogInformation("Began with {@command}", evt);
 
                 await ProcessInternal(evt);
+            }
         }
 
         private async Task ProcessInternal(DocumentCreated evt)
@@ -47,11 +52,11 @@ namespace SportsData.Producer.Application.Documents.Processors
 
             if (document is null or "null")
             {
-                _logger.LogError("Failed to obtain document: {@doc}", evt);
+                _logger.LogError("Failed to obtain document");
                 return;
             }
 
-            _logger.LogInformation("obtained new document from Provider");
+            _logger.LogInformation("Obtained new document from Provider {@DocumentType}", evt.DocumentType);
 
             var processor = _documentProcessorFactory.GetProcessor(
                 evt.SourceDataProvider,

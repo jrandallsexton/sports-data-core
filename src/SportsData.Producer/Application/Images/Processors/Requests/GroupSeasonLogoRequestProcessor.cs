@@ -37,6 +37,19 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         public async Task ProcessRequest(ProcessImageRequest request)
         {
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = request.CorrelationId
+                   }))
+            {
+                _logger.LogInformation("Began with {@request}", request);
+
+                await ProcessRequestInternal(request);
+            }
+        }
+
+        private async Task ProcessRequestInternal(ProcessImageRequest request)
+        {
             var groupSeason = await _dataContext.GroupSeasons
                 .Include(v => v.Logos)
                 .Where(x => x.Id == request.ParentEntityId)
@@ -44,7 +57,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (groupSeason == null)
             {
-                _logger.LogError("Could not retrieve groupSeason");
+                _logger.LogError("Could not retrieve GroupSeasonId {@GroupSeasonId}", request.ParentEntityId);
                 return;
             }
 
@@ -100,7 +113,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             var response = await _providerClient.GetExternalDocument(query);
 
-            _logger.LogInformation("Obtained new image");
+            _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 
             // raise an event for whoever requested this
             var outgoingEvt2 = new ProcessImageResponse(

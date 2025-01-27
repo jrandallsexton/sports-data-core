@@ -22,13 +22,15 @@ namespace SportsData.Producer.Application.Images
 
         public async Task Process(ProcessImageRequest request)
         {
-            _logger.LogInformation("Began with {@request}", request);
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", request.CorrelationId }
+                       ["CorrelationId"] = request.CorrelationId
                    }))
-
-            await ProcessInternal(request);
+            {
+                _logger.LogInformation("Began with {@request}", request);
+                await ProcessInternal(request);
+            }
         }
 
         private async Task ProcessInternal(ProcessImageRequest request)

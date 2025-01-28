@@ -21,6 +21,19 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
         public async Task ProcessResponse(ProcessImageResponse response)
         {
+            var correlationId = Guid.NewGuid();
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = correlationId
+                   }))
+            {
+                _logger.LogInformation("Started with {@response}", response);
+                await ProcessResponseInternal(response);
+            }
+        }
+
+        private async Task ProcessResponseInternal(ProcessImageResponse response)
+        {
             var group = await _dataContext.Groups
                 .Include(x => x.Logos)
                 .Where(x => x.Id == response.ParentEntityId)
@@ -29,7 +42,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
             if (group == null)
             {
                 // log and return
-                _logger.LogError("group could not be found. Cannot process.");
+                _logger.LogError("Group could not be found. Cannot process.");
                 return;
             }
 
@@ -54,6 +67,8 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
             });
 
             await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("GroupLogo created.");
         }
     }
 }

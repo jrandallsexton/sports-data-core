@@ -40,9 +40,9 @@ namespace SportsData.Provider.Application.Processors
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
             var correlationId = Guid.NewGuid();
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", correlationId }
+                       ["CorrelationId"] = correlationId
                    }))
             {
                 _logger.LogInformation("Started with {@command}", command);
@@ -89,7 +89,7 @@ namespace SportsData.Provider.Application.Processors
                     correlationId,
                     CausationId.Provider.ResourceIndexItemProcessor);
 
-                // TODO: Use transactional outbox pattern here
+                // TODO: Use transactional outbox pattern here?
                 await _bus.Publish(evt);
 
                 _logger.LogInformation("New document event published {@evt}", evt);

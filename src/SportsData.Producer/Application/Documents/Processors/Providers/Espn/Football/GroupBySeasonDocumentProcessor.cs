@@ -15,7 +15,7 @@ using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     public class GroupBySeasonDocumentProcessor : IProcessDocuments
     {
@@ -36,9 +36,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = command.CorrelationId
-                   }))
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
             {
                 await ProcessInternal(command);
             }
@@ -64,7 +64,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
             if (groupEntity != null)
             {
-                _logger.LogWarning($"Group already exists for {command.SourceDataProvider}.");
+                _logger.LogWarning("Group already exists.");
 
                 var groupTmp = await _dataContext.GroupExternalIds
                     .Include(x => x.Group)
@@ -103,12 +103,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
                 var newGroupSeasonId = Guid.NewGuid();
                 var newGroupId = Guid.NewGuid();
                 var newGroupEntity = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
-                var newGroupSeason = (externalProviderDto
+                var newGroupSeason = externalProviderDto
                     .AsGroupSeasonEntity(
                         newGroupId,
                         newGroupSeasonId,
                         command.Season.Value,
-                        command.CorrelationId));
+                        command.CorrelationId);
 
                 _logger.LogInformation($"New GroupSeason with id: {newGroupSeason.Id} created for GroupId: {newGroupId}");
 

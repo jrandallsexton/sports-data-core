@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 using Xunit;
 

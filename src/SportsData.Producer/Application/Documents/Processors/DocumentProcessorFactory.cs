@@ -1,5 +1,6 @@
 ﻿using SportsData.Core.Common;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Shared;
 
 namespace SportsData.Producer.Application.Documents.Processors;
 
@@ -41,11 +42,10 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
     {
         switch (sport)
         {
+            case Sport.FootballNfl:
             case Sport.FootballNcaa:
                 return GetEspnFootballDocumentProcessor(documentType, documentAction);
             case Sport.All:
-            case Sport.Football:
-            case Sport.FootballNfl:
             default:
                 throw new ArgumentOutOfRangeException(nameof(sport), sport, null);
         }

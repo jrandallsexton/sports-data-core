@@ -1,6 +1,6 @@
 ﻿using SportsData.Producer.Application.Documents.Processors.Commands;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Shared
 {
     public class VenueUpdatedDocumentProcessor : IProcessDocuments
     {

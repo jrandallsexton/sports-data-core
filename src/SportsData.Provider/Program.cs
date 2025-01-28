@@ -1,9 +1,13 @@
 using Hangfire;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -35,7 +39,33 @@ namespace SportsData.Provider
             services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddSingleton<DocumentService>();
-            services.AddMessaging(config);
+
+            //services.AddMessaging(config);
+
+            services.AddMassTransit(x =>
+            {
+                x.SetKebabCaseEndpointNameFormatter();
+
+                x.UsingAzureServiceBus((context, cfg) =>
+                {
+                    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+
+                    //cfg.Message<DocumentCreated>(x =>
+                    //{
+                    //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
+                    //    x.SetEntityName(entityName.ToLower());
+                    //});
+
+                    cfg.ConfigureJsonSerializerOptions(o =>
+                    {
+                        o.IncludeFields = true;
+                        return o;
+                    });
+                    cfg.ConfigureEndpoints(context);
+                });
+            });
+
+
             services.AddInstrumentation(builder.Environment.ApplicationName);
 
             services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
@@ -83,15 +113,35 @@ namespace SportsData.Provider
             await app.RunAsync();
         }
 
-        private static async Task LoadSeedData(AppDataContext dbContext)
+        private static class ResourceIndexId
         {
-            if (await dbContext.Resources.AnyAsync())
-                return;
+            public static class FootballNcaa
+            {
+                public static readonly Guid Venue = new Guid("3CF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid Franchise = new Guid("3DF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid GroupBySeason = new Guid("3EF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid TeamBySeason = new Guid("3FF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid AthleteBySeason = new Guid("40F7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid CoachBySeason = new Guid("41F7C759-8C15-4083-AC4F-3A661A7FE5D3");
+            }
 
+            public static class FootballNfl
+            {
+                public static readonly Guid Venue = new Guid("4AF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid Franchise = new Guid("4BF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid GroupBySeason = new Guid("4CF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid TeamBySeason = new Guid("4DF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid AthleteBySeason = new Guid("4EF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+                public static readonly Guid CoachBySeason = new Guid("4FF7C759-8C15-4083-AC4F-3A661A7FE5D3");
+            }
+        }
+
+        private static async Task SeedFootballNcaa(AppDataContext dbContext)
+        {
             /* Venues */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.Venue,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.Venue,
@@ -105,7 +155,7 @@ namespace SportsData.Provider
             /* Franchises */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.Franchise,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.Franchise,
@@ -119,7 +169,7 @@ namespace SportsData.Provider
             /* Groups By Season (Conferences) */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.GroupBySeason,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.GroupBySeason,
@@ -134,11 +184,11 @@ namespace SportsData.Provider
             /* Teams By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.TeamBySeason,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.TeamBySeason,
-                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/90/teams?lang=en&limit=999",
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams?lang=en&limit=900",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/",
                 CreatedBy = Guid.Empty,
                 SeasonYear = 2024,
@@ -149,7 +199,7 @@ namespace SportsData.Provider
             /* Athletes By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.AthleteBySeason,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.AthleteBySeason,
@@ -164,7 +214,7 @@ namespace SportsData.Provider
             /* Coaches By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNcaa.CoachBySeason,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNcaa,
                 DocumentType = DocumentType.CoachBySeason,
@@ -175,21 +225,47 @@ namespace SportsData.Provider
                 IsEnabled = false,
                 Ordinal = 5
             });
+        }
 
-            /* NFL */
+        private static async Task SeedFootballNfl(AppDataContext dbContext)
+        {
             /* Venues */
             await dbContext.Resources.AddAsync(new ResourceIndex()
             {
-                Id = Guid.NewGuid(),
+                Id = ResourceIndexId.FootballNfl.Venue,
                 Provider = SourceDataProvider.Espn,
                 SportId = Sport.FootballNfl,
                 DocumentType = DocumentType.Venue,
                 Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues?lang=en&limit=999",
                 EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/",
                 CreatedBy = Guid.Empty,
-                IsEnabled = false,
-                Ordinal = 6
+                IsEnabled = true,
+                Ordinal = 0
             });
+
+            /* Franchises */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = ResourceIndexId.FootballNfl.Franchise,
+                Provider = SourceDataProvider.Espn,
+                SportId = Sport.FootballNfl,
+                DocumentType = DocumentType.Franchise,
+                Endpoint = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/franchises?lang=en&limit=999",
+                EndpointMask = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/franchises/",
+                CreatedBy = Guid.Empty,
+                IsEnabled = true,
+                Ordinal = 1
+            });
+        }
+
+        private static async Task LoadSeedData(AppDataContext dbContext)
+        {
+            if (await dbContext.Resources.AnyAsync())
+                return;
+
+            await SeedFootballNcaa(dbContext);
+
+            await SeedFootballNfl(dbContext);
 
             await dbContext.SaveChangesAsync();
         }

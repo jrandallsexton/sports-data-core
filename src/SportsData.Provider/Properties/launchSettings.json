@@ -1,18 +1,5 @@
 {
   "profiles": {
-    "http": {
-      "commandName": "Project",
-      "commandLineArgs": "-mode All",
-      "launchBrowser": true,
-      "launchUrl": "dashboard",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "APPCONFIG_CONNSTR": "Endpoint=https://sportsdataappconfig.azconfig.io;Id=SNrN;Secret=GEZfgvYgDUQgvlL4r6UZT4pcempHRcPZ2qTQT6UJS6GqQ7ooHAvdJQQJ99BAACHYHv6VhdrZAAACAZAC21CD",
-        "SERVICE_MODE": "All"
-      },
-      "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5205"
-    },
     "https": {
       "commandName": "Project",
       "launchBrowser": true,
@@ -41,6 +28,32 @@
       },
       "publishAllPorts": true,
       "useSSL": true
+    },
+    "http.FootballNfl": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode FootballNfl",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_CONNSTR": "Endpoint=https://sportsdataappconfig.azconfig.io;Id=SNrN;Secret=GEZfgvYgDUQgvlL4r6UZT4pcempHRcPZ2qTQT6UJS6GqQ7ooHAvdJQQJ99BAACHYHv6VhdrZAAACAZAC21CD",
+        "SERVICE_MODE": "All"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5205"
+    },
+    "http.FootballNcaa": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode FootballNcaa",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_CONNSTR": "Endpoint=https://sportsdataappconfig.azconfig.io;Id=SNrN;Secret=GEZfgvYgDUQgvlL4r6UZT4pcempHRcPZ2qTQT6UJS6GqQ7ooHAvdJQQJ99BAACHYHv6VhdrZAAACAZAC21CD",
+        "SERVICE_MODE": "All"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5205"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

@@ -2,8 +2,6 @@
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-
 namespace SportsData.Producer.Application.Documents.Processors
 {
     public interface IProcessDocumentCreatedEvents

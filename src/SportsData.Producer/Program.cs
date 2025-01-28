@@ -29,7 +29,7 @@ public class Program
 
         // Add services to the container.
         var config = builder.Configuration;
-        config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+        config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
 
         var services = builder.Services;
         services.AddCoreServices(config);

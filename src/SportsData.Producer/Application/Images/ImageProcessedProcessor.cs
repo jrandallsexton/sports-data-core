@@ -22,9 +22,9 @@ namespace SportsData.Producer.Application.Images
 
         public async Task Process(ProcessImageResponse response)
         {
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", response.CorrelationId }
+                       ["CorrelationId"] = response.CorrelationId
                    }))
             {
                 _logger.LogInformation("Began with {@evt}", response);

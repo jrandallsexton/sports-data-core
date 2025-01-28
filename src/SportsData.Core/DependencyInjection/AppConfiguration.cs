@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using SportsData.Core.Common;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -129,7 +130,11 @@ namespace SportsData.Core.DependencyInjection
             return app;
         }
 
-        public static ConfigurationManager AddCommonConfiguration(this ConfigurationManager cfg, string environmentName, string applicationName)
+        public static ConfigurationManager AddCommonConfiguration(
+            this ConfigurationManager cfg,
+            string environmentName,
+            string applicationName,
+            Sport mode = Sport.All)
         {
             // TODO: Still need to get this out of the ENV_VAR b/c it is in src for both apps and k8s config. "ok" for now.
             cfg.AddJsonFile("secrets.json", true);
@@ -140,8 +145,9 @@ namespace SportsData.Core.DependencyInjection
                 //var serviceMode = Environment.GetEnvironmentVariable("SERVICE_MODE");
                 cfg.Connect(appConfigConnectionString)
                     .Select("CommonConfig", environmentName)
-                    .Select(applicationName, environmentName);
-                    //.Select($"{applicationName}{environmentName}", serviceMode);
+                    .Select(applicationName, environmentName)
+                    .Select(applicationName, $"{environmentName}.{mode}");
+                //.Select($"{applicationName}{environmentName}", serviceMode);
             });
 
             // TODO: Determine a better way of doing this

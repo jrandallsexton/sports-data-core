@@ -8,7 +8,7 @@
 	<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	<DockerfileContext>..\..</DockerfileContext>
 	<InvariantGlobalization>false</InvariantGlobalization>
-	<Configurations>Debug;Release;Local</Configurations>
+	<Configurations>Debug;Release;Local;Provider - FootballNcaa</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

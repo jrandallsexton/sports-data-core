@@ -11,7 +11,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     public class FranchiseDocumentProcessor : IProcessDocuments
     {
@@ -30,6 +30,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
+        {
+            using (_logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
+            {
+                _logger.LogInformation("Began with {@command}", command);
+
+                await ProcessInternal(command);
+            }
+        }
+
+        private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             var externalProviderDto = command.Document.FromJson<EspnFranchiseDto>();
 

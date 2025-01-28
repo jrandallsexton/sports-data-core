@@ -13,7 +13,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Shared
 {
     public class VenueCreatedDocumentProcessor : IProcessDocuments
     {
@@ -33,10 +33,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
-                   {
-                       { "CorrelationId", command.CorrelationId }
-                   }))
+            using (_logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
             {
                 _logger.LogInformation("Began with {@command}", command);
 

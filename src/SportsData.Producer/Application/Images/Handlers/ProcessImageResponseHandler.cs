@@ -21,9 +21,9 @@ namespace SportsData.Producer.Application.Images.Handlers
 
         public async Task Consume(ConsumeContext<ProcessImageResponse> context)
         {
-            using (_logger.BeginScope(new Dictionary<string, Guid>()
+            using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       { "CorrelationId", context.Message.CorrelationId }
+                       ["CorrelationId"] = context.Message.CorrelationId
                    }))
             {
                 _logger.LogInformation("new ProcessImageResponse event received: {@message}", context.Message);

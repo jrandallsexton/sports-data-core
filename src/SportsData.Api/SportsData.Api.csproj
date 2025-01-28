@@ -9,6 +9,7 @@
 	<DockerfileContext>..\..</DockerfileContext>
 	<DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
 	<InvariantGlobalization>false</InvariantGlobalization>
+	<Configurations>Debug;Release;Provider - FootballNcaa</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

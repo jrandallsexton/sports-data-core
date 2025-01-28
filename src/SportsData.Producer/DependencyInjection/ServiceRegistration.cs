@@ -4,7 +4,8 @@ using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
-using SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Shared;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Images.Processors.Requests;
 using SportsData.Producer.Application.Images.Processors.Responses;
@@ -54,45 +55,49 @@ namespace SportsData.Producer.DependencyInjection
 
             var backgroundJobProvider = serviceScope.ServiceProvider.GetRequiredService<IProvideBackgroundJobs>();
 
-            //// ask for venues
-            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-            //    new PublishDocumentEventsCommand()
+            var documentTypesToLoad = new List<DocumentType>()
+            {
+                DocumentType.Venue,
+                DocumentType.Franchise
+            };
+
+            foreach (var docType in documentTypesToLoad)
+            {
+                backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+                    new PublishDocumentEventsCommand()
+                    {
+                        SourceDataProvider = SourceDataProvider.Espn,
+                        Sport = mode,
+                        DocumentType = docType
+                    }));
+            }
+
+            //var documentTypesBySeasonToLoad = new List<DocumentType>()
+            //{
+            //    DocumentType.GroupBySeason,
+            //    DocumentType.TeamBySeason
+            //};
+
+            //var seasonsToLoad = new List<int>()
+            //{
+            //    2023,
+            //    2024
+            //};
+
+            //foreach (var docType in documentTypesBySeasonToLoad)
+            //{
+            //    foreach (var season in seasonsToLoad)
             //    {
-            //        SourceDataProvider = SourceDataProvider.Espn,
-            //        Sport = Sport.FootballNcaa,
-            //        DocumentType = DocumentType.Venue
-            //    }));
-
-            //// ask for franchises
-            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-            //    new PublishDocumentEventsCommand()
-            //    {
-            //        SourceDataProvider = SourceDataProvider.Espn,
-            //        Sport = Sport.FootballNcaa,
-            //        DocumentType = DocumentType.Franchise
-            //    }));
-
-            // ask for GroupsBySeason (conferences)
-            backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-                new PublishDocumentEventsCommand()
-                {
-                    SourceDataProvider = SourceDataProvider.Espn,
-                    Sport = Sport.FootballNcaa,
-                    DocumentType = DocumentType.GroupBySeason,
-                    Season = 2024
-                }));
-
-            //// ask for TeamsBySeason (FranchiseSeasons)
-            //backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-            //    new PublishDocumentEventsCommand()
-            //    {
-            //        SourceDataProvider = SourceDataProvider.Espn,
-            //        Sport = Sport.FootballNcaa,
-            //        DocumentType = DocumentType.TeamBySeason,
-            //        Season = 2024
-            //    }));
-
-            // ask for AthletesBySeason (FranchiseSeasonAthletes)
+            //        backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+            //            new PublishDocumentEventsCommand()
+            //            {
+            //                SourceDataProvider = SourceDataProvider.Espn,
+            //                Sport = mode,
+            //                DocumentType = docType,
+            //                Season = season
+            //            }));
+            //    }
+            //}
 
             return services;
         }

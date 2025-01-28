@@ -13,7 +13,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Espn
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     public class TeamSeasonDocumentProcessor : IProcessDocuments
     {
@@ -33,6 +33,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
+            using (_logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
+            {
+                _logger.LogInformation("Began with {@command}", command);
+
+                await ProcessInternal(command);
+            }
+        }
+
+        public async Task ProcessInternal(ProcessDocumentCommand command)
+        {
             // deserialize the DTO
             var espnDto = command.Document.FromJson<EspnTeamSeasonDto>(new JsonSerializerSettings
             {
@@ -48,9 +61,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Football.Ncaa.Esp
             if (franchiseExternalId == null)
             {
                 // TODO: Revisit this pattern
-                _logger.LogError("Could not find franchise with this external id");
+                _logger.LogError("Could not find franchise {@Franchise} with this externalId: {@FranchiseExternalId}", espnDto.Name, espnDto.Id);
 
-                // TODO: Uncomment this throw after debugging
+                // TODO: Uncomment this throw after debugging?
                 //throw new ResourceNotFoundException("Could not find franchise with this external id");
                 return;
             }

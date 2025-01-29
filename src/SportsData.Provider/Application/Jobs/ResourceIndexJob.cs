@@ -59,13 +59,17 @@ namespace SportsData.Provider.Application.Jobs
             var resourceIndexEntity = await _dataContext.Resources
                 .Where(x => x.Id == jobDefinition.ResourceIndexId)
                 .FirstOrDefaultAsync();
+
             if (resourceIndexEntity == null)
             {
                 // log an error, but do not stop processing
                 _logger.LogError($"ResourceIndex could not be loaded from the database for item: {jobDefinition.ResourceIndexId}");
+                // TODO: Throw and retry?
+                return;
             }
             else
             {
+                _logger.LogInformation("Updated access to ResourceIndex in the database");
                 resourceIndexEntity.LastAccessed = DateTime.UtcNow;
                 await _dataContext.SaveChangesAsync();
             }
@@ -74,33 +78,47 @@ namespace SportsData.Provider.Application.Jobs
             // For now, I do not want to load each resource if I already have them in Mongo
             // Otherwise ESPN might blacklist my IP.  Not sure.
             var collectionName = _decoder.GetCollectionName(jobDefinition.SourceDataProvider, jobDefinition.Sport, jobDefinition.DocumentType, jobDefinition.SeasonYear);
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
-            var filter = Builders<DocumentBase>.Filter.Empty;
-            var dbCursor = await dbObjects.FindAsync(filter);
-            var dbDocuments = await dbCursor.ToListAsync();
 
-            if (dbDocuments.Count == resourceIndex.count)
+            _logger.LogInformation("Getting collection {@CollectionName}", collectionName);
+
+            try
             {
-                _logger.LogInformation(
-                    $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
-                return;
+                var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
+                var filter = Builders<DocumentBase>.Filter.Empty;
+                var dbCursor = await dbObjects.FindAsync(filter);
+                var dbDocuments = await dbCursor.ToListAsync();
+
+                _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
+
+                if (dbDocuments.Count == resourceIndex.count)
+                {
+                    _logger.LogInformation(
+                        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
+                    return;
+                }
+
+                foreach (var cmd in resourceIndex.items.Select(item =>
+                             new ProcessResourceIndexItemCommand(
+                                 item.id,
+                                 item.href,
+                                 jobDefinition.Sport,
+                                 jobDefinition.SourceDataProvider,
+                                 jobDefinition.DocumentType,
+                                 jobDefinition.SeasonYear)))
+                {
+                    _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
+                    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                    await Task.Delay(500); // do NOT beat on their API
+                }
+
+                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndex.items.Count} jobs spawned.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "o shit");
+
             }
 
-            foreach (var cmd in resourceIndex.items.Select(item =>
-                         new ProcessResourceIndexItemCommand(
-                             item.id,
-                             item.href,
-                             jobDefinition.Sport,
-                             jobDefinition.SourceDataProvider,
-                             jobDefinition.DocumentType,
-                             jobDefinition.SeasonYear)))
-            {
-                _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
-                _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                await Task.Delay(500); // do NOT beat on their API
-            }
-
-            _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndex.items.Count} jobs spawned.");
         }
     }
 }

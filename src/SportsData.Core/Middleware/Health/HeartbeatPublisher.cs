@@ -32,7 +32,7 @@ namespace SportsData.Core.Middleware.Health
                     CreatedAt = DateTime.UtcNow,
                     Producer = typeof(T).FullName
                 }, stoppingToken);
-                _logger.LogInformation("heartbeat sent from {@t}", typeof(T));
+                //_logger.LogInformation("heartbeat sent from {@t}", typeof(T));
                 await Task.Delay(60_000, stoppingToken);
             }
         }

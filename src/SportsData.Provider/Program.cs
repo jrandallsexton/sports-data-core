@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -29,7 +28,7 @@ namespace SportsData.Provider
 
             // Add services to the container.
             var config = builder.Configuration;
-            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
 
             var services = builder.Services;
             services.AddCoreServices(config);

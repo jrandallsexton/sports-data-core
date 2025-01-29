@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Sinks.OpenTelemetry;
 
+using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.Middleware.Health;
 
@@ -15,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using SportsData.Core.Common;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -145,6 +145,7 @@ namespace SportsData.Core.DependencyInjection
                 //var serviceMode = Environment.GetEnvironmentVariable("SERVICE_MODE");
                 cfg.Connect(appConfigConnectionString)
                     .Select("CommonConfig", environmentName)
+                    .Select("CommonConfig", $"{environmentName}.{mode}")
                     .Select(applicationName, environmentName)
                     .Select(applicationName, $"{environmentName}.{mode}");
                 //.Select($"{applicationName}{environmentName}", serviceMode);

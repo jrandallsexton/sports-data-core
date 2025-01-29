@@ -42,6 +42,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             var url = seasonId.HasValue ?
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}" :
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}";
+            _logger.LogInformation("Using {@BaseAddress} with {@Url}", HttpClient.BaseAddress, url);
             var response = await HttpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();

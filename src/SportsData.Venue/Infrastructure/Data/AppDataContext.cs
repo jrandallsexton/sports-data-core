@@ -18,7 +18,6 @@ namespace SportsData.Venue.Infrastructure.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.ConfigureWarnings(c => c.Log((RelationalEventId.CommandExecuting, LogLevel.Error)));
             optionsBuilder.EnableSensitiveDataLogging(false);
         }
     }

@@ -1,6 +1,6 @@
 ﻿using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -47,7 +47,8 @@ namespace SportsData.Producer.Infrastructure.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.ConfigureWarnings(c => c.Log((RelationalEventId.CommandExecuting, LogLevel.Error)));
+            // TODO: Disable in higher environs
+            // Additional info:  https://www.danielmallott.com/posts/entity-framework-core-configuration-options
             optionsBuilder.EnableSensitiveDataLogging();
             optionsBuilder.EnableDetailedErrors();
         }

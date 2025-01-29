@@ -45,7 +45,7 @@ public class Program
 
             x.AddEntityFrameworkOutbox<AppDataContext>(o =>
             {
-                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(1);
+                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                 o.QueryDelay = TimeSpan.FromSeconds(1);
                 o.UseSqlServer().UseBusOutbox();
             });

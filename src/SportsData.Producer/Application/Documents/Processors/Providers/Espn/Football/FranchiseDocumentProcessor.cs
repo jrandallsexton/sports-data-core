@@ -58,7 +58,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             // 1. map to the entity add it
             var newFranchiseId = Guid.NewGuid();
-            var franchiseEntity = externalProviderDto.AsFranchiseEntity(newFranchiseId, command.CorrelationId);
+            var franchiseEntity = externalProviderDto.AsEntity(newFranchiseId, command.CorrelationId);
             await _dataContext.AddAsync(franchiseEntity);
 
             // TODO: find the venue associated with this franchise

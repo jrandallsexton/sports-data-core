@@ -6,7 +6,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class FranchiseExtensions
     {
-        public static Franchise AsFranchiseEntity(this EspnFranchiseDto dto, Guid franchiseId, Guid correlationId)
+        public static Franchise AsEntity(this EspnFranchiseDto dto, Guid franchiseId, Guid correlationId)
         {
             return new Franchise()
             {

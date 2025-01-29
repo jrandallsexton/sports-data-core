@@ -11,6 +11,7 @@ namespace SportsData.Core.Common
             public static Guid GroupBySeasonDocumentProcessor = new Guid("0EF09E42-B9B1-42AB-9027-51CECF2D19D6");
             public static Guid TeamSeasonDocumentProcessor = new Guid("0FF09E42-B9B1-42AB-9027-51CECF2D19D6");
             public static Guid ImageRequestedProcessor = new Guid("10F09E42-B9B1-42AB-9027-51CECF2D19D6");
+            public static Guid PositionDocumentProcessor = new Guid("10F09E42-B9B1-42AB-9027-51CECF2D19D5");
         }
 
         public static class Provider

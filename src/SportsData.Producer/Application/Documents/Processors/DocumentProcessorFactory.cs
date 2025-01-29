@@ -55,6 +55,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
     {
         switch (documentType)
         {
+            case DocumentType.AthleteBySeason:
             case DocumentType.Athlete:
                 return _serviceProvider.GetRequiredService<AthleteDocumentProcessor>();
             case DocumentType.Award:
@@ -65,6 +66,8 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
                 return _serviceProvider.GetRequiredService<FranchiseDocumentProcessor>();
             case DocumentType.GroupBySeason:
                 return _serviceProvider.GetRequiredService<GroupBySeasonDocumentProcessor>();
+            case DocumentType.Position:
+                return _serviceProvider.GetRequiredService<PositionDocumentProcessor>();
             case DocumentType.Team:
                 return _serviceProvider.GetRequiredService<TeamDocumentProcessor>();
             case DocumentType.TeamBySeason:
@@ -80,6 +83,11 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.Season:
             case DocumentType.Weeks:
             case DocumentType.CoachBySeason:
+            case DocumentType.GroupLogo:
+            case DocumentType.FranchiseLogo:
+            case DocumentType.GroupBySeasonLogo:
+            case DocumentType.TeamBySeasonLogo:
+            case DocumentType.VenueImage:
             default:
                 throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
         }

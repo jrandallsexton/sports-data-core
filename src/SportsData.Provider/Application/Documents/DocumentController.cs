@@ -45,7 +45,7 @@ namespace SportsData.Provider.Application.Documents
             SourceDataProvider providerId,
             Sport sportId,
             DocumentType typeId,
-            int documentId)
+            long documentId)
         {
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
@@ -65,7 +65,7 @@ namespace SportsData.Provider.Application.Documents
             SourceDataProvider providerId,
             Sport sportId,
             DocumentType typeId,
-            int documentId,
+            long documentId,
             int? seasonId)
         {
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, seasonId);
@@ -82,7 +82,7 @@ namespace SportsData.Provider.Application.Documents
         }
 
         [HttpGet("{providerId}/{externalUrl}")]
-        public async Task<IActionResult> GetExternalDocument(SourceDataProvider providerId, string externalUrl)
+        public async Task<IActionResult> ProcessResourceIndex([FromBody] ProcessResourceIndexCommand command)
         {
             throw new NotImplementedException();
             // Check to see if the document is in the database
@@ -94,6 +94,11 @@ namespace SportsData.Provider.Application.Documents
 
         }
 
+        /// <summary>
+        /// Publishes events for each object in the database that currently exists; do not re-fetch from external
+        /// </summary>
+        /// <param name="command"></param>
+        /// <returns></returns>
         [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
@@ -129,6 +134,11 @@ namespace SportsData.Provider.Application.Documents
             return Ok();
         }
 
+        /// <summary>
+        /// Gets the blob storage url for an image, or fetches it, uploads to blob, and returns the canonical url
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
         [HttpPost("external", Name = "GetExternalDocument")]
         public async Task<ActionResult<GetExternalDocumentQueryResponse>> GetExternalDocument([FromBody] GetExternalDocumentQuery query)
         {

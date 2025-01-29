@@ -15,5 +15,4 @@ public class VenueExternalId : ExternalId
             builder.HasKey(t => t.Id);
         }
     }
-
 }

@@ -102,9 +102,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 var newGroupSeasonId = Guid.NewGuid();
                 var newGroupId = Guid.NewGuid();
-                var newGroupEntity = externalProviderDto.AsGroupEntity(newGroupId, command.CorrelationId);
+                var newGroupEntity = externalProviderDto.AsEntity(newGroupId, command.CorrelationId);
                 var newGroupSeason = externalProviderDto
-                    .AsGroupSeasonEntity(
+                    .AsEntity(
                         newGroupId,
                         newGroupSeasonId,
                         command.Season.Value,

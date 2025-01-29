@@ -79,6 +79,8 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             var mask0 = uriMask;
             const string mask1 = "?lang=en";
+
+            // TODO: Just remove everything after the '?' (the querystring)
             venues.items.ForEach(i =>
             {
                 var url = i.href;

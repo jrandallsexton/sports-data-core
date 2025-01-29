@@ -71,7 +71,6 @@ namespace SportsData.Core.DependencyInjection
                         links.AppendLine("<a href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
                         links.AppendLine("<a href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
                         links.AppendLine("<a href=\"/metrics\" target=\"_blank\">Metrics</a></br>");
-                        //links.AppendLine("<a href=\"http://localhost:15672/#/\" target=\"_blank\">RabbitMQ</a></br>");
 
                         if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
                         {
@@ -109,7 +108,6 @@ namespace SportsData.Core.DependencyInjection
                             links.AppendLine("<a href=\"http://localhost:8090/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
                         }
 
-                        //links.AppendLine("<a href=\"http://localhost:8888\" target=\"_blank\">pgAdmin</a></br>");
                         options.HeadContent = links.ToString();
                     });
                 }
@@ -136,19 +134,19 @@ namespace SportsData.Core.DependencyInjection
             string applicationName,
             Sport mode = Sport.All)
         {
-            // TODO: Still need to get this out of the ENV_VAR b/c it is in src for both apps and k8s config. "ok" for now.
             cfg.AddJsonFile("secrets.json", true);
 
-            cfg.AddAzureAppConfiguration(cfg =>
+            var appConfigConnectionString = Environment.GetEnvironmentVariable("APPCONFIG_CONNSTR");
+            if (string.IsNullOrEmpty(appConfigConnectionString))
+                appConfigConnectionString = cfg.GetSection("AzAppConfigConnString").Value;
+
+            cfg.AddAzureAppConfiguration(azAppConfig =>
             {
-                var appConfigConnectionString = Environment.GetEnvironmentVariable("APPCONFIG_CONNSTR");
-                //var serviceMode = Environment.GetEnvironmentVariable("SERVICE_MODE");
-                cfg.Connect(appConfigConnectionString)
+                azAppConfig.Connect(appConfigConnectionString)
                     .Select("CommonConfig", environmentName)
                     .Select("CommonConfig", $"{environmentName}.{mode}")
                     .Select(applicationName, environmentName)
                     .Select(applicationName, $"{environmentName}.{mode}");
-                //.Select($"{applicationName}{environmentName}", serviceMode);
             });
 
             // TODO: Determine a better way of doing this

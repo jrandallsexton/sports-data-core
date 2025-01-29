@@ -31,6 +31,8 @@ namespace SportsData.Producer.Infrastructure.Data
 
         public DbSet<GroupSeasonLogo> GroupSeasonLogos { get; set; }
 
+        public DbSet<Position> Positions { get; set; }
+
         public DbSet<Venue> Venues { get; set; }
 
         public DbSet<VenueImage> VenueImages { get; set; }

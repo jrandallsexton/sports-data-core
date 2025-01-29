@@ -40,6 +40,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IProcessImageRequests, ImageRequestedProcessor>();
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+            services.AddScoped<PositionDocumentProcessor>();
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
             services.AddScoped<TeamSeasonDocumentProcessor>();

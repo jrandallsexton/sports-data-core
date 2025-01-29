@@ -21,6 +21,7 @@
         FranchiseLogo,
         GroupBySeasonLogo,
         TeamBySeasonLogo,
-        VenueImage
+        VenueImage,
+        Position
     }
 }

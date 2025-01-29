@@ -39,7 +39,8 @@ namespace SportsData.Provider.DependencyInjection
             var resources = await appDataContext.Resources
                 .Where(x => x.SportId == mode &&
                             !x.IsRecurring &&
-                            x.IsEnabled)
+                            x.IsEnabled &&
+                            (x.LastAccessed == null || x.LastAccessed < DateTime.UtcNow.AddHours(-1))) // TODO: via config. for now, not in the last hour
                 .OrderBy(x => x.Ordinal)
                 .ToListAsync();
 

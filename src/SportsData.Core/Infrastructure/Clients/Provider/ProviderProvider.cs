@@ -13,7 +13,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 {
     public interface IProvideProviders : IProvideHealthChecks
     {
-        Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, int documentId, int? seasonId);
+        Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, long documentId, int? seasonId);
 
         Task PublishDocumentEvents(PublishDocumentEventsCommand command);
 
@@ -36,7 +36,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             SourceDataProvider providerId,
             Sport sportId,
             DocumentType typeId,
-            int documentId,
+            long documentId,
             int? seasonId)
         {
             var url = seasonId.HasValue ?

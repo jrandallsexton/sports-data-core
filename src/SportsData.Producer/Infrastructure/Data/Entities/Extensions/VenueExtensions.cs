@@ -6,21 +6,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class VenueExtensions
     {
-        public static Venue AsVenueEntity(
+        public static Venue AsEntity(
             this EspnVenueDto dto,
             Guid venueId,
             Guid correlationId)
         {
             return new Venue()
             {
-                Id = Guid.NewGuid(),
-                Name = dto.FullName,
-                ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName,
-                IsIndoor = dto.Indoor,
-                IsGrass = dto.Grass,
-                CreatedUtc = DateTime.UtcNow,
+                Id = venueId,
                 CreatedBy = correlationId,
-                ExternalIds = [new VenueExternalId() { Id = Guid.NewGuid(), Value = dto.Id.ToString(), Provider = SourceDataProvider.Espn }]
+                CreatedUtc = DateTime.UtcNow,
+                ExternalIds = [new VenueExternalId() { Id = Guid.NewGuid(), Value = dto.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                IsGrass = dto.Grass,
+                IsIndoor = dto.Indoor,
+                Name = dto.FullName,
+                ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName
             };
         }
 
@@ -29,10 +29,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             return new VenueCanonicalModel()
             {
                 Id = entity.Id,
-                Name = entity.Name,
                 CreatedUtc = entity.CreatedUtc,
-                IsIndoor = entity.IsIndoor,
                 IsGrass = entity.IsGrass,
+                IsIndoor = entity.IsIndoor,
+                Name = entity.Name,
                 ShortName = entity.ShortName
             };
         }

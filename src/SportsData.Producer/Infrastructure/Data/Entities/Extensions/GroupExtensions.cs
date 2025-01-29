@@ -6,7 +6,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class GroupExtensions
     {
-        public static Group AsGroupEntity(
+        public static Group AsEntity(
             this EspnGroupBySeasonDto dto,
             Guid groupId,
             Guid correlationId)

@@ -45,7 +45,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.SourceDataProvider,
                 evt.Sport,
                 evt.DocumentType,
-                int.Parse(evt.Id),
+                long.Parse(evt.Id),
                 evt.SeasonYear);
 
             if (document is null or "null")

@@ -6,7 +6,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Entities
 {
-    public class ResourceIndex : EntityBase<Guid>
+    public class ResourceIndex : CanonicalEntityBase<Guid>
     {
         public int Ordinal { get; set; }
 
@@ -23,6 +23,8 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         public string Endpoint { get; set; }
 
         public string EndpointMask { get; set; }
+
+        public bool IsSeasonSpecific { get; set; }
 
         public int? SeasonYear { get; set; }
 

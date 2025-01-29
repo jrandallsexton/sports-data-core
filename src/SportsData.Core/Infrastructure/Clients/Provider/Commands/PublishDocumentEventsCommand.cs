@@ -43,4 +43,17 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
         public string Href { get; set; }
     }
+
+    public class ProcessResourceIndexCommand
+    {
+        public SourceDataProvider SourceDataProvider { get; set; }
+
+        public Sport Sport { get; set; }
+
+        public DocumentType DocumentType { get; set; }
+
+        public int? Season { get; set; }
+
+        public string ResourceIndexUrl { get; set; }
+    }
 }

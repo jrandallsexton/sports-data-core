@@ -2,7 +2,7 @@
 {
     public class DocumentBase
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         public string? CanonicalId { get; set; }
 

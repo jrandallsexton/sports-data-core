@@ -56,13 +56,13 @@ namespace SportsData.Provider.Application.Processors
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.CollectionName);
 
-            // TODO: Log this access
+            // TODO: Log this access?
             // get the item's json
             var itemJson = await _espnApi.GetResource(command.Href, true);
 
             // determine if we have this in the database
             var documentId = command.SeasonYear.HasValue
-                ? int.Parse($"{command.Id}{command.SeasonYear.Value}")
+                ? long.Parse($"{command.Id}{command.SeasonYear.Value}")
                 : command.Id;
 
             var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);

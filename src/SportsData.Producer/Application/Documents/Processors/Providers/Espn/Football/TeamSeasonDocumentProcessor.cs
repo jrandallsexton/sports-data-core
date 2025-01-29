@@ -76,7 +76,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             // does this season already exist?
             var franchiseBySeasonId = Guid.NewGuid();
-            var newFranchiseSeasonEntity = espnDto.AsFranchiseSeasonEntity(
+            var newFranchiseSeasonEntity = espnDto.AsEntity(
                 franchiseExternalId.Franchise.Id,
                 franchiseBySeasonId,
                 command.Season.Value,

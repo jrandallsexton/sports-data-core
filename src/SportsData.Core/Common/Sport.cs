@@ -1,6 +1,5 @@
 ﻿namespace SportsData.Core.Common
 {
-    // TODO: Find a cleaner way to do this.  I want: Sports.Football.Ncaa
     public enum Sport
     {
         All,

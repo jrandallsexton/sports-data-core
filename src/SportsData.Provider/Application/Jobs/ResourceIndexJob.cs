@@ -51,7 +51,9 @@ namespace SportsData.Provider.Application.Jobs
         private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
         {
             // Get the resource index
-            var resourceIndex = await _espnApi.GetResourceIndex(jobDefinition.Endpoint, jobDefinition.EndpointMask);
+            var url = $"{jobDefinition.Endpoint}?limit=100";
+
+            var resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
 
             _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndex);
 
@@ -90,26 +92,51 @@ namespace SportsData.Provider.Application.Jobs
 
                 _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
 
-                if (dbDocuments.Count == resourceIndex.count)
+                //if (dbDocuments.Count == resourceIndex.count)
+                //{
+                //    _logger.LogInformation(
+                //        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
+                //    return;
+                //}
+
+                while (resourceIndex.pageIndex <= resourceIndex.pageCount)
                 {
-                    _logger.LogInformation(
-                        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
-                    return;
+                    foreach (var cmd in resourceIndex.items.Select(item =>
+                                 new ProcessResourceIndexItemCommand(
+                                     item.id,
+                                     item.href,
+                                     jobDefinition.Sport,
+                                     jobDefinition.SourceDataProvider,
+                                     jobDefinition.DocumentType,
+                                     jobDefinition.SeasonYear)))
+                    {
+                        _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
+                        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                        //await Task.Delay(500); // do NOT beat on their API
+                    }
+
+                    if (resourceIndex.pageIndex == resourceIndex.pageCount)
+                    {
+                        break;
+                    }
+
+                    url = $"{jobDefinition.Endpoint}?limit=100&page={resourceIndex.pageIndex + 1}";
+                    resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
                 }
 
-                foreach (var cmd in resourceIndex.items.Select(item =>
-                             new ProcessResourceIndexItemCommand(
-                                 item.id,
-                                 item.href,
-                                 jobDefinition.Sport,
-                                 jobDefinition.SourceDataProvider,
-                                 jobDefinition.DocumentType,
-                                 jobDefinition.SeasonYear)))
-                {
-                    _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
-                    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                    await Task.Delay(500); // do NOT beat on their API
-                }
+                //foreach (var cmd in resourceIndex.items.Select(item =>
+                //             new ProcessResourceIndexItemCommand(
+                //                 item.id,
+                //                 item.href,
+                //                 jobDefinition.Sport,
+                //                 jobDefinition.SourceDataProvider,
+                //                 jobDefinition.DocumentType,
+                //                 jobDefinition.SeasonYear)))
+                //{
+                //    _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
+                //    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                //    await Task.Delay(500); // do NOT beat on their API
+                //}
 
                 _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndex.items.Count} jobs spawned.");
             }

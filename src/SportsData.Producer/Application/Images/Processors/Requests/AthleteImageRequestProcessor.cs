@@ -11,17 +11,17 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
-    public class VenueImageRequestProcessor : IProcessLogoAndImageRequests
+    public class AthleteImageRequestProcessor : IProcessLogoAndImageRequests
     {
-        private readonly ILogger<VenueImageRequestProcessor> _logger;
+        private readonly ILogger<AthleteImageRequestProcessor> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
 
-        public VenueImageRequestProcessor(
-            ILogger<VenueImageRequestProcessor> logger,
+        public AthleteImageRequestProcessor(
+            ILogger<AthleteImageRequestProcessor> logger,
             AppDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
@@ -49,14 +49,14 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         private async Task ProcessRequestInternal(ProcessImageRequest request)
         {
-            var entity = await _dataContext.Venues
+            var entity = await _dataContext.Athletes
                 .Include(v => v.Images)
                 .Where(x => x.Id == request.ParentEntityId)
                 .FirstOrDefaultAsync();
 
             if (entity == null)
             {
-                _logger.LogError("Could not retrieve venue");
+                _logger.LogError("Could not retrieve athlete");
                 return;
             }
 
@@ -113,37 +113,16 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Published ProcessImageResponse");
+
         }
 
         private async Task HandleExisting(
-            VenueImage img,
+            AthleteImage img,
             int urlHash,
             ProcessImageRequest request,
             DocumentType logoDocType)
         {
-            _logger.LogWarning("Venue image already exists. Will publish event and exit.");
-
-            // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
-
-            var outgoingEvt = new ProcessImageResponse(
-                img.Url,
-                img.Id.ToString(),
-                urlHash,
-                request.ParentEntityId,
-                request.Name,
-                request.Sport,
-                request.SeasonYear,
-                logoDocType,
-                request.SourceDataProvider,
-                request.Height,
-                request.Width,
-                request.Rel,
-                request.CorrelationId,
-                request.CausationId);
-
-            await _bus.Publish(outgoingEvt);
-
-            await _dataContext.SaveChangesAsync();
+            throw new NotImplementedException();
         }
     }
 }

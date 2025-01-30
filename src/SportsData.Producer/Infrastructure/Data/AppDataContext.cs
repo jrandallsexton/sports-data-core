@@ -11,6 +11,12 @@ namespace SportsData.Producer.Infrastructure.Data
         public AppDataContext(DbContextOptions<AppDataContext> options)
             : base(options) { }
 
+        public DbSet<Athlete> Athletes { get; set; }
+
+        public DbSet<AthleteExternalId> AthleteExternalIds { get; set; }
+
+        public DbSet<AthleteImage> AthleteImages { get; set; }
+
         public DbSet<Franchise> Franchises { get; set; }
 
         public DbSet<FranchiseExternalId> FranchiseExternalIds { get; set; }

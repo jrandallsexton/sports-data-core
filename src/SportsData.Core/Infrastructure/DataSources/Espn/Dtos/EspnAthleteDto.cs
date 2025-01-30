@@ -44,19 +44,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public string ShortName { get; set; }
 
         [JsonProperty("weight")]
-        public long Weight { get; set; }
+        public decimal Weight { get; set; }
 
         [JsonProperty("displayWeight")]
         public string DisplayWeight { get; set; }
 
         [JsonProperty("height")]
-        public long Height { get; set; }
+        public int Height { get; set; }
 
         [JsonProperty("displayHeight")]
         public string DisplayHeight { get; set; }
 
         [JsonProperty("age")]
-        public long Age { get; set; }
+        public int Age { get; set; }
 
         [JsonProperty("dateOfBirth")]
         public string DateOfBirth { get; set; }
@@ -74,11 +74,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public string Slug { get; set; }
 
         [JsonProperty("headshot")]
-        public EspnAthleteHeadshot Headshot { get; set; }
+        public EspnAthleteHeadshot? Headshot { get; set; }
 
         [JsonProperty("jersey")]
         [JsonConverter(typeof(ParseStringConverter))]
-        public long Jersey { get; set; }
+        public int Jersey { get; set; }
 
         [JsonProperty("position")]
         public EspnAthletePosition Position { get; set; }
@@ -145,7 +145,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
     public class EspnAthleteExperience
     {
         [JsonProperty("years")]
-        public long Years { get; set; }
+        public int Years { get; set; }
 
         [JsonProperty("displayValue")]
         public string DisplayValue { get; set; }

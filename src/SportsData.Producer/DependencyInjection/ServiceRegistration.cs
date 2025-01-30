@@ -20,6 +20,8 @@ namespace SportsData.Producer.DependencyInjection
             //services.AddScoped<IProcessDocuments, GroupBySeasonDocumentProcessor>();
             services.AddDataPersistenceExternal();
             services.AddScoped<AthleteDocumentProcessor>();
+            services.AddScoped<AthleteImageRequestProcessor>();
+            services.AddScoped<AthleteImageResponseProcessor>();
             services.AddScoped<AwardDocumentProcessor>();
             services.AddScoped<ContestDocumentProcessor>();
             services.AddScoped<DocumentCreatedProcessor>();

@@ -31,6 +31,9 @@ namespace SportsData.Producer.Application.Images
 
             switch (imageLogoDocumentType)
             {
+                case DocumentType.Athlete:
+                case DocumentType.AthleteBySeason:
+                    return _serviceProvider.GetRequiredService<AthleteImageRequestProcessor>();
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
                     return _serviceProvider.GetRequiredService<VenueImageRequestProcessor>();
@@ -47,8 +50,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:
                     return _serviceProvider.GetRequiredService<FranchiseSeasonLogoRequestProcessor>();
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:
@@ -67,6 +68,9 @@ namespace SportsData.Producer.Application.Images
 
             switch (imageLogoDocumentType)
             {
+                case DocumentType.Athlete:
+                case DocumentType.AthleteBySeason:
+                    return _serviceProvider.GetRequiredService<AthleteImageResponseProcessor>();
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
                     return _serviceProvider.GetRequiredService<VenueImageResponseProcessor>();
@@ -83,8 +87,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:
                     return _serviceProvider.GetRequiredService<FranchiseSeasonLogoResponseProcessor>();
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:

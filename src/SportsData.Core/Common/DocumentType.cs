@@ -22,6 +22,7 @@
         GroupBySeasonLogo,
         TeamBySeasonLogo,
         VenueImage,
-        Position
+        Position,
+        AthleteImage
     }
 }

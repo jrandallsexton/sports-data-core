@@ -135,23 +135,45 @@ namespace SportsData.Provider
             }
         }
 
-        private static async Task SeedSeasonalResourceIndexes(AppDataContext dbContext, Sport sport, string league, int seasonYear)
+        private static async Task SeedSeasonalResourceIndexes(AppDataContext dbContext, Sport sport, string league, int seasonYear, int index)
         {
             /* Groups By Season (Conferences) */
-            await dbContext.Resources.AddAsync(new ResourceIndex()
+            if (sport == Sport.FootballNcaa)
             {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.GroupBySeason,
-                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/types/3/groups/80/children?lang=en&limit=999",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/types/3/groups/",
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                SeasonYear = seasonYear,
-                Ordinal = dbContext.Resources.Count()
-            });
+                await dbContext.Resources.AddAsync(new ResourceIndex()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SportId = sport,
+                    DocumentType = DocumentType.GroupBySeason,
+                    Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/types/3/groups/80/children",
+                    EndpointMask = null,
+                    CreatedBy = Guid.Empty,
+                    IsSeasonSpecific = true,
+                    IsEnabled = true,
+                    SeasonYear = seasonYear,
+                    Ordinal = index
+                });
+            }
+            else
+            {
+                await dbContext.Resources.AddAsync(new ResourceIndex()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SportId = sport,
+                    DocumentType = DocumentType.GroupBySeason,
+                    Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/2024/types/",
+                    EndpointMask = null,
+                    CreatedBy = Guid.Empty,
+                    IsSeasonSpecific = true,
+                    IsEnabled = true,
+                    SeasonYear = seasonYear,
+                    Ordinal = index
+                });
+            }
+
+            index++;
 
             /* Teams By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -160,14 +182,16 @@ namespace SportsData.Provider
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.TeamBySeason,
-                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/teams?lang=en&limit=900",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/teams/",
+                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/teams",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,
                 IsEnabled = true,
                 SeasonYear = seasonYear,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            index++;
 
             /* Athletes By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -176,14 +200,16 @@ namespace SportsData.Provider
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.AthleteBySeason,
-                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/athletes?lang=en&limit=100000",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/athletes/",
+                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/athletes",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,
                 IsEnabled = true,
                 SeasonYear = seasonYear,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            index++;
 
             /* Coaches By Season */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -192,17 +218,19 @@ namespace SportsData.Provider
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.CoachBySeason,
-                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/coaches?lang=en&limit=999",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/coaches/",
+                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/seasons/{seasonYear}/coaches",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,
                 IsEnabled = false,
                 SeasonYear = seasonYear,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            index++;
         }
 
-        private static async Task SeedNonSeasonalResourceIndexes(AppDataContext dbContext, Sport sport, string league)
+        private static async Task SeedNonSeasonalResourceIndexes(AppDataContext dbContext, Sport sport, string league, int index)
         {
             /* Venues */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -212,11 +240,13 @@ namespace SportsData.Provider
                 SportId = sport,
                 DocumentType = DocumentType.Venue,
                 Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/venues",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/venues/",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsEnabled = true,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            index++;
 
             /* Franchises */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -226,11 +256,13 @@ namespace SportsData.Provider
                 SportId = sport,
                 DocumentType = DocumentType.Franchise,
                 Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/franchises",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/franchises/",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsEnabled = true,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            index++;
 
             /* Positions */
             await dbContext.Resources.AddAsync(new ResourceIndex()
@@ -240,11 +272,28 @@ namespace SportsData.Provider
                 SportId = sport,
                 DocumentType = DocumentType.Position,
                 Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/positions",
-                EndpointMask = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/positions/",
+                EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsEnabled = true,
-                Ordinal = dbContext.Resources.Count()
+                Ordinal = index
             });
+
+            /* Athletes */
+            await dbContext.Resources.AddAsync(new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                Provider = SourceDataProvider.Espn,
+                SportId = sport,
+                DocumentType = DocumentType.Athlete,
+                Endpoint = $"http://sports.core.api.espn.com/v2/sports/football/leagues/{league}/athletes",
+                EndpointMask = null,
+                CreatedBy = Guid.Empty,
+                IsSeasonSpecific = true,
+                IsEnabled = true,
+                Ordinal = index
+            });
+
+            index++;
         }
 
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)
@@ -252,17 +301,19 @@ namespace SportsData.Provider
             if (await dbContext.Resources.AnyAsync())
                 return;
 
+            var index = 0;
+
             switch (mode)
             {
                 case Sport.FootballNcaa:
-                    await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football");
-                    //await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2023);
-                    //await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2024);
+                    await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", index);
+                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2023, index);
+                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2024, index);
                     break;
                 case Sport.FootballNfl:
-                    await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl");
-                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", 2023);
-                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", 2024);
+                    await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", index);
+                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", 2023, index);
+                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", 2024, index);
                     break;
                 case Sport.All:
                 default:

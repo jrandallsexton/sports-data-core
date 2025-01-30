@@ -18,7 +18,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
         Task<byte[]> GetMedia(string uri);
 
-        Task<EspnResourceIndexDto> GetResourceIndex(string uri, string uriMask);
+        Task<EspnResourceIndexDto> GetResourceIndex(string uri, string? uriMask);
 
         Task<string> GetResource(string uri, bool ignoreCache);
     }

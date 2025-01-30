@@ -73,28 +73,51 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return JsonConvert.DeserializeObject<EspnResourceIndexDto>(venuesJson, JsonSerializerSettings);
         }
 
-        public async Task<EspnResourceIndexDto> GetResourceIndex(string uri, string uriMask)
+        public async Task<EspnResourceIndexDto> GetResourceIndex(string uri, string? uriMask)
         {
-            var venues = await GetAsync<EspnResourceIndexDto>(uri, true);
+            var dto = await GetAsync<EspnResourceIndexDto>(uri, true);
 
-            var mask0 = uriMask;
-            const string mask1 = "?lang=en";
+            return ExtractIds(dto, uriMask);
+        }
 
-            // TODO: Just remove everything after the '?' (the querystring)
-            venues.items.ForEach(i =>
+        public EspnResourceIndexDto ExtractIds(EspnResourceIndexDto dto, string? uriMask)
+        {
+            if (string.IsNullOrEmpty(uriMask))
             {
-                var url = i.href;
-                url = url.Replace(mask0, string.Empty);
-                url = url.Replace(mask1, string.Empty);
-
-                if (int.TryParse(url, out var venueId))
+                // TODO: Work this as a span in-memory (no string allocs)
+                dto.items.ForEach(i =>
                 {
-                    i.id = venueId;
-                }
+                    var qsIndex = i.href.IndexOf("?");
 
-            });
+                    var tmpUrl = i.href.Remove(qsIndex, i.href.Length - qsIndex);
+                    var lastSlashIndex = tmpUrl.LastIndexOf("/");
 
-            return venues;
+                    tmpUrl = tmpUrl.Remove(0, lastSlashIndex + 1);
+
+                    if (int.TryParse(tmpUrl, out var indexItemId))
+                    {
+                        i.id = indexItemId;
+                    }
+                });
+            }
+            else
+            {
+                const string mask1 = "?lang=en";
+
+                dto.items.ForEach(i =>
+                {
+                    var url = i.href;
+                    url = url.Replace(uriMask, string.Empty);
+                    url = url.Replace(mask1, string.Empty);
+
+                    if (int.TryParse(url, out var indexItemId))
+                    {
+                        i.id = indexItemId;
+                    }
+                });
+            }
+
+            return dto;
         }
 
         public async Task<string> GetResource(string uri, bool ignoreCache)

@@ -22,7 +22,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public string Endpoint { get; set; }
 
-        public string EndpointMask { get; set; }
+        public string? EndpointMask { get; set; }
 
         public bool IsSeasonSpecific { get; set; }
 

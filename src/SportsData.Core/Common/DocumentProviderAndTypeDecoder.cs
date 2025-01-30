@@ -108,6 +108,9 @@ namespace SportsData.Core.Common
         {
             switch (documentType)
             {
+                case DocumentType.Athlete:
+                case DocumentType.AthleteBySeason:
+                    return DocumentType.AthleteImage;
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
                     return DocumentType.FranchiseLogo;
@@ -121,8 +124,6 @@ namespace SportsData.Core.Common
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
                     return DocumentType.VenueImage;
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:

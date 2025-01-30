@@ -8,19 +8,33 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
     {
         [JsonProperty("$ref")]
         public string Ref { get; set; }
+
         public string Uid { get; set; }
+
         public long Id { get; set; }
+
         public string Name { get; set; }
+
         public string Abbreviation { get; set; }
+
         public string ShortName { get; set; }
+
         public string MidsizeName { get; set; }
+
         public EspnGroupBySeasonSeason Season { get; set; }
+
         public EspnGroupBySeasonParent Parent { get; set; }
+
         public EspnGroupBySeasonStandings Standings { get; set; }
+
         public bool IsConference { get; set; }
+
         public List<Logo> Logos { get; set; }
+
         public string Slug { get; set; }
+
         public EspnGroupBySeasonTeams Teams { get; set; }
+
         public List<EspnGroupBySeasonLink> Links { get; set; }
 
         public class EspnGroupBySeasonSeason

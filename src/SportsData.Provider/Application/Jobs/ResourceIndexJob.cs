@@ -26,6 +26,8 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
+        private const int PageSize = 500;
+
         public ResourceIndexJob(
             ILogger<ResourceIndexJob> logger,
             AppDataContext dataContext,
@@ -50,8 +52,10 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
         {
+            _logger.LogInformation("Begin processing {@JobDefinition}", jobDefinition);
+
             // Get the resource index
-            var url = $"{jobDefinition.Endpoint}?limit=100";
+            var url = $"{jobDefinition.Endpoint}?limit={PageSize}";
 
             var resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
 
@@ -92,15 +96,18 @@ namespace SportsData.Provider.Application.Jobs
 
                 _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
 
-                //if (dbDocuments.Count == resourceIndex.count)
-                //{
-                //    _logger.LogInformation(
-                //        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
-                //    return;
-                //}
+                if (dbDocuments.Count == resourceIndex.count)
+                {
+                    _logger.LogInformation(
+                        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
+                    return;
+                }
 
                 while (resourceIndex.pageIndex <= resourceIndex.pageCount)
                 {
+                    _logger.LogInformation("Processing {@CurrentPage} of {@TotalPages} for {@DocumentType}",
+                        resourceIndex.pageIndex, resourceIndex.pageCount, jobDefinition.DocumentType);
+
                     foreach (var cmd in resourceIndex.items.Select(item =>
                                  new ProcessResourceIndexItemCommand(
                                      item.id,
@@ -120,7 +127,7 @@ namespace SportsData.Provider.Application.Jobs
                         break;
                     }
 
-                    url = $"{jobDefinition.Endpoint}?limit=100&page={resourceIndex.pageIndex + 1}";
+                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={resourceIndex.pageIndex + 1}";
                     resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
                 }
 

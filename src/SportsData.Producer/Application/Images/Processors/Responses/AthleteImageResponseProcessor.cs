@@ -6,13 +6,13 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
-    public class GroupLogoResponseProcessor : IProcessLogoAndImageResponses
+    public class AthleteImageResponseProcessor : IProcessLogoAndImageResponses
     {
-        private readonly ILogger<GroupLogoResponseProcessor> _logger;
+        private readonly ILogger<AthleteImageResponseProcessor> _logger;
         private readonly AppDataContext _dataContext;
 
-        public GroupLogoResponseProcessor(
-            ILogger<GroupLogoResponseProcessor> logger,
+        public AthleteImageResponseProcessor(
+            ILogger<AthleteImageResponseProcessor> logger,
             AppDataContext dataContext)
         {
             _logger = logger;
@@ -34,30 +34,30 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
         private async Task ProcessResponseInternal(ProcessImageResponse response)
         {
-            var parentEntity = await _dataContext.Groups
-                .Include(x => x.Logos)
+            var parentEntity = await _dataContext.Athletes
+                .Include(x => x.Images)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();
 
             if (parentEntity == null)
             {
                 // log and return
-                _logger.LogError("Group could not be found. Cannot process.");
+                _logger.LogError("Athlete could not be found. Cannot process.");
                 return;
             }
 
-            var logo = parentEntity.Logos.FirstOrDefault(x => x.OriginalUrlHash == response.OriginalUrlHash);
+            var img = parentEntity.Images.FirstOrDefault(x => x.OriginalUrlHash == response.OriginalUrlHash);
 
-            if (logo is not null)
+            if (img is not null)
             {
                 // TODO: do nothing?
                 return;
             }
 
-            await _dataContext.GroupLogos.AddAsync(new GroupLogo()
+            await _dataContext.AthleteImages.AddAsync(new AthleteImage()
             {
                 Id = Guid.NewGuid(),
-                GroupId = parentEntity.Id,
+                AthleteId = parentEntity.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
                 Url = response.Url,
@@ -68,7 +68,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation("GroupLogo created.");
+            _logger.LogInformation("AthleteImage created.");
         }
     }
 }

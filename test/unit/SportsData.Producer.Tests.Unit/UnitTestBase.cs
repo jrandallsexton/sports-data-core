@@ -12,6 +12,7 @@ using SportsData.Producer.Infrastructure.Data;
 
 namespace SportsData.Producer.Tests.Unit
 {
+    // TODO: Move this to Core and share it
     public abstract class UnitTestBase<T>
     {
         public AutoMocker Mocker { get; }

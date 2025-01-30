@@ -66,7 +66,7 @@ namespace SportsData.Provider.Application.Documents
             Sport sportId,
             DocumentType typeId,
             long documentId,
-            int? seasonId)
+            int seasonId)
         {
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, seasonId);
 

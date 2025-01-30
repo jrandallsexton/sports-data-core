@@ -307,8 +307,8 @@ namespace SportsData.Provider
             {
                 case Sport.FootballNcaa:
                     await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", index);
-                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2023, index);
-                    await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2024, index);
+                    //await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2023, index);
+                    //await SeedSeasonalResourceIndexes(dbContext, Sport.FootballNcaa, "college-football", 2024, index);
                     break;
                 case Sport.FootballNfl:
                     await SeedNonSeasonalResourceIndexes(dbContext, Sport.FootballNfl, "nfl", index);

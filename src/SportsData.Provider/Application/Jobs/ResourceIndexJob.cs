@@ -127,6 +127,7 @@ namespace SportsData.Provider.Application.Jobs
                         await Task.Delay(500); // do NOT beat on their API
                     }
 
+                    // TODO: I think I can remove this
                     if (resourceIndexDto.pageIndex == resourceIndexDto.pageCount)
                     {
                         break;

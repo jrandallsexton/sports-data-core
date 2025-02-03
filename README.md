@@ -7,8 +7,8 @@ Mono repo for Sports Data project. All projects except for sports-data-core are 
 
 Project aims to capture sports data from external sources, convert them into domain objects that all applications will use, and persist said data for future analysis and ML processing.  Initial effort only includes NCAAF, but others will follow (NFL, MLB, PGA, etc).
 
-| Project/Service | Purpose |
-| --------------- | ------- |
+| Project/Service              | Purpose |
+| ---------------------------- | ------- |
 | [sports-data-core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
 | [sports-data-api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
 | [sports-data-contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | [more soon] |

@@ -9,16 +9,16 @@ Project aims to capture sports data from external sources, convert them into dom
 
 | Project/Service              | Purpose |
 | ---------------------------- | ------- |
-| [sports-data-core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
-| [sports-data-api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
-| [sports-data-contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | [more soon] |
-| [sports-data-franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | [more soon] |
-| [sports-data-notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | [more soon] |
-| [sports-data-player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | [more soon] |
-| [sports-data-producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Responsible for converting external JSON files to domain objects and broadcasting eventing information about those domain/integration events. |
-| [sports-data-provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
-| [sports-data-season](https://github.com/jrandallsexton/sports-data-season) | [more soon] |
-| [sports-data-venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | [more soon]
+| [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
+| [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
+| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | [more soon] |
+| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | [more soon] |
+| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | [more soon] |
+| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | [more soon] |
+| [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Responsible for converting external JSON files to domain objects and broadcasting eventing information about those domain/integration events. |
+| [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
+| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | [more soon] |
+| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | [more soon]
 
 | Repository      | Purpose |
 | --------------- | ------- |

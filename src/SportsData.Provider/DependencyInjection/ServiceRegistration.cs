@@ -40,7 +40,7 @@ namespace SportsData.Provider.DependencyInjection
                 .Where(x => x.SportId == mode &&
                             !x.IsRecurring &&
                             x.IsEnabled &&
-                            (x.LastAccessed == null || x.LastAccessed < DateTime.UtcNow.AddHours(-1))) // TODO: via config. for now, not in the last hour
+                            (x.LastAccessed == null || x.LastAccessed < DateTime.UtcNow.AddHours(0))) // TODO: via config. for now, not in the last hour
                 .OrderBy(x => x.Ordinal)
                 .ToListAsync();
 

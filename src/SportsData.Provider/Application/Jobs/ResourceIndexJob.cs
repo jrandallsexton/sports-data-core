@@ -8,6 +8,7 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Jobs
@@ -57,12 +58,13 @@ namespace SportsData.Provider.Application.Jobs
             // Get the resource index
             var url = $"{jobDefinition.Endpoint}?limit={PageSize}";
 
-            var resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
+            var resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
 
-            _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndex);
+            _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndexDto);
 
             // Log this access to AppDataContext
             var resourceIndexEntity = await _dataContext.Resources
+                .Include(x => x.Items)
                 .Where(x => x.Id == jobDefinition.ResourceIndexId)
                 .FirstOrDefaultAsync();
 
@@ -73,12 +75,11 @@ namespace SportsData.Provider.Application.Jobs
                 // TODO: Throw and retry?
                 return;
             }
-            else
-            {
-                _logger.LogInformation("Updated access to ResourceIndex in the database");
-                resourceIndexEntity.LastAccessed = DateTime.UtcNow;
-                await _dataContext.SaveChangesAsync();
-            }
+
+            _logger.LogInformation("Updating access to ResourceIndex in the database");
+            resourceIndexEntity.LastAccessed = DateTime.UtcNow;
+
+            await _dataContext.SaveChangesAsync();
 
             // TODO: Remove this code after testing.
             // For now, I do not want to load each resource if I already have them in Mongo
@@ -96,20 +97,21 @@ namespace SportsData.Provider.Application.Jobs
 
                 _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
 
-                if (dbDocuments.Count == resourceIndex.count)
+                if (dbDocuments.Count == resourceIndexDto.count)
                 {
                     _logger.LogInformation(
                         $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
                     return;
                 }
 
-                while (resourceIndex.pageIndex <= resourceIndex.pageCount)
+                while (resourceIndexDto.pageIndex <= resourceIndexDto.pageCount)
                 {
                     _logger.LogInformation("Processing {@CurrentPage} of {@TotalPages} for {@DocumentType}",
-                        resourceIndex.pageIndex, resourceIndex.pageCount, jobDefinition.DocumentType);
+                        resourceIndexDto.pageIndex, resourceIndexDto.pageCount, jobDefinition.DocumentType);
 
-                    foreach (var cmd in resourceIndex.items.Select(item =>
+                    foreach (var cmd in resourceIndexDto.items.Select(item =>
                                  new ProcessResourceIndexItemCommand(
+                                     resourceIndexEntity.Id,
                                      item.id,
                                      item.href,
                                      jobDefinition.Sport,
@@ -118,41 +120,27 @@ namespace SportsData.Provider.Application.Jobs
                                      jobDefinition.SeasonYear)))
                     {
                         _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
+
                         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                        //await Task.Delay(500); // do NOT beat on their API
+
+                        await Task.Delay(500); // do NOT beat on their API
                     }
 
-                    if (resourceIndex.pageIndex == resourceIndex.pageCount)
+                    if (resourceIndexDto.pageIndex == resourceIndexDto.pageCount)
                     {
                         break;
                     }
 
-                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={resourceIndex.pageIndex + 1}";
-                    resourceIndex = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
+                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={resourceIndexDto.pageIndex + 1}";
+                    resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
                 }
 
-                //foreach (var cmd in resourceIndex.items.Select(item =>
-                //             new ProcessResourceIndexItemCommand(
-                //                 item.id,
-                //                 item.href,
-                //                 jobDefinition.Sport,
-                //                 jobDefinition.SourceDataProvider,
-                //                 jobDefinition.DocumentType,
-                //                 jobDefinition.SeasonYear)))
-                //{
-                //    _logger.LogInformation($"Generating background job for resourceIndexId: {cmd.Id}");
-                //    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                //    await Task.Delay(500); // do NOT beat on their API
-                //}
-
-                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndex.items.Count} jobs spawned.");
+                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndexDto.items.Count} jobs spawned.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "o shit");
-
             }
-
         }
     }
 }

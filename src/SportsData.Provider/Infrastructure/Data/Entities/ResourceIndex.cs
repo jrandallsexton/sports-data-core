@@ -30,6 +30,8 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public DateTime? LastAccessed { get; set; }
 
+        public List<ResourceIndexItem> Items { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndex>
         {
             public void Configure(EntityTypeBuilder<ResourceIndex> builder)

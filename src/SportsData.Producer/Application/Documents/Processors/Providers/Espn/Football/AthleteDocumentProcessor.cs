@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Athletes;
-using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;

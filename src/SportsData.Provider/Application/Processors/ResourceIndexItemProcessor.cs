@@ -1,11 +1,14 @@
 ﻿using MassTransit;
 
+using Microsoft.EntityFrameworkCore;
+
 using MongoDB.Driver;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Processors
@@ -18,23 +21,29 @@ namespace SportsData.Provider.Application.Processors
     public class ResourceIndexItemProcessor : IProcessResourceIndexItems
     {
         private readonly ILogger<ResourceIndexItemProcessor> _logger;
+        private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
         private readonly DocumentService _documentService;
         private readonly IBus _bus;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
+        private readonly IProvideHashes _hashProvider;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
+            AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             DocumentService documentService,
             IBus bus,
-            IDecodeDocumentProvidersAndTypes decoder)
+            IDecodeDocumentProvidersAndTypes decoder,
+            IProvideHashes hashProvider)
         {
             _logger = logger;
+            _dataContext = dataContext;
             _espnApi = espnApi;
             _documentService = documentService;
             _bus = bus;
             _decoder = decoder;
+            _hashProvider = hashProvider;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -52,11 +61,50 @@ namespace SportsData.Provider.Application.Processors
 
         private async Task ProcessInternal(ProcessResourceIndexItemCommand command, Guid correlationId)
         {
+            var urlHash = _hashProvider.GenerateHashFromUrl(command.Href);
+
+            var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
+                .Where(x => x.ResourceIndexId == command.resourceIndexId &&
+                            x.OriginalUrlHash == urlHash)
+                .FirstOrDefaultAsync();
+
+            if (resourceIndexItemEntity is not null)
+            {
+                // has it been retrieved with X units?
+                // TODO: Move to config for check duration
+                if (resourceIndexItemEntity.LastAccessed > DateTime.UtcNow.AddDays(-7))
+                {
+                    // log something
+                    return;
+                }
+                resourceIndexItemEntity.LastAccessed = DateTime.UtcNow;
+            }
+            else
+            {
+                // create a record for this access
+                await _dataContext.ResourceIndexItems.AddAsync(new ResourceIndexItem()
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.Empty,
+                    Url = command.Href,
+                    OriginalUrlHash = urlHash,
+                    ResourceIndexId = command.resourceIndexId,
+                    LastAccessed = DateTime.UtcNow
+                });
+            }
+
+            await _dataContext.SaveChangesAsync();
+
+            await HandleValid(command, correlationId);
+        }
+
+        private async Task HandleValid(ProcessResourceIndexItemCommand command, Guid correlationId)
+        {
             var type = _decoder.GetTypeAndCollectionName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
 
             var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.CollectionName);
 
-            // TODO: Log this access?
             // get the item's json
             var itemJson = await _espnApi.GetResource(command.Href, true);
 
@@ -93,40 +141,53 @@ namespace SportsData.Provider.Application.Processors
                 await _bus.Publish(evt);
 
                 _logger.LogInformation("New document event published {@evt}", evt);
+
+                return;
             }
-            else
+
+            await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
+        }
+
+        private async Task HandleExisting(DocumentBase dbItem,
+            string itemJson,
+            IMongoCollection<DocumentBase> dbObjects,
+            FilterDefinition<DocumentBase> filter,
+            long documentId,
+            string collectionName,
+            ProcessResourceIndexItemCommand command,
+            Guid correlationId)
+        {
+            var dbJson = dbItem.ToJson();
+
+            // has it changed ?
+            if (string.Compare(itemJson, dbJson, StringComparison.InvariantCultureIgnoreCase) == 0)
+                return;
+
+            // yes: update and broadcast
+            await dbObjects.ReplaceOneAsync(filter, new DocumentBase()
             {
-                var dbJson = dbItem.ToJson();
+                Id = documentId,
+                Data = itemJson
+            });
 
-                // has it changed ?
-                if (string.Compare(itemJson, dbJson, StringComparison.InvariantCultureIgnoreCase) == 0)
-                    return;
+            var evt = new DocumentUpdated(
+            documentId.ToString(),
+                collectionName,
+                command.Sport,
+                command.DocumentType,
+                command.SourceDataProvider,
+                correlationId,
+                CausationId.Provider.ResourceIndexItemProcessor);
 
-                // yes: update and broadcast
-                await dbObjects.ReplaceOneAsync(filter, new DocumentBase()
-                {
-                    Id = documentId,
-                    Data = itemJson
-                });
+            // TODO: Use transactional outbox pattern here
+            await _bus.Publish(evt);
 
-                var evt = new DocumentUpdated(
-                    documentId.ToString(),
-                    type.CollectionName,
-                    command.Sport,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    correlationId,
-                    CausationId.Provider.ResourceIndexItemProcessor);
-
-                // TODO: Use transactional outbox pattern here
-                await _bus.Publish(evt);
-
-                _logger.LogInformation("Document updated event {@evt}", evt);
-            }
+            _logger.LogInformation("Document updated event {@evt}", evt);
         }
     }
 
     public record ProcessResourceIndexItemCommand(
+        Guid resourceIndexId,
         int Id,
         string Href,
         Sport Sport,

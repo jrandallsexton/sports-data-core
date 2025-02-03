@@ -10,6 +10,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public DbSet<ResourceIndex> Resources { get; set; }
 
+        public DbSet<ResourceIndexItem> ResourceIndexItems { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -1,4 +1,4 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Models.Canonical;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions

@@ -30,6 +30,10 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public DateTime? LastAccessed { get; set; }
 
+        public int? LastPageIndex { get; set; }
+
+        public int? TotalPageCount { get; set; }
+
         public List<ResourceIndexItem> Items { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndex>

@@ -1,0 +1,147 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/athletes/9478?lang=en&region=us",
+  "id": "9478",
+  "uid": "s:1100~a:9478",
+  "guid": "38cbeebe-aac8-fb36-dce0-cf45436086e4",
+  "alternateIds": { "sdr": "3104575" },
+  "firstName": "Scottie",
+  "middleName": "Alexander",
+  "lastName": "Scheffler",
+  "fullName": "Scottie Scheffler",
+  "displayName": "Scottie Scheffler",
+  "shortName": "S. Scheffler",
+  "weight": 200.0,
+  "displayWeight": "200 lbs",
+  "height": 75.0,
+  "displayHeight": "6' 3\"",
+  "age": 28,
+  "dateOfBirth": "1996-06-21T07:00Z",
+  "debutYear": 2014,
+  "turnedPro": 2018,
+  "amateur": false,
+  "gender": "MALE",
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [ "playercard", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/_/id/9478/scottie-scheffler",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "stats", "desktop", "athlete" ],
+      "href": "https://www.espn.com/pga/player/stats/_/id/9478/scottie-scheffler",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "splits", "desktop", "athlete" ],
+      "href": "https://www.espn.com/pga/player/splits/_/id/9478/scottie-scheffler",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "gamelog", "desktop", "athlete" ],
+      "href": "https://www.espn.com/pga/player/gamelog/_/id/9478/scottie-scheffler",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "news", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/news/_/id/9478/scottie-scheffler",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "bio", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/bio/_/id/9478/scottie-scheffler",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "overview", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/_/id/9478/scottie-scheffler",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "results", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/results/_/id/9478/scottie-scheffler",
+      "text": "Results",
+      "shortText": "Results",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "scorecards", "desktop", "athlete" ],
+      "href": "https://www.espn.com/golf/player/scorecards/_/id/9478/scottie-scheffler",
+      "text": "Scorecards",
+      "shortText": "Scorecards",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Dallas",
+    "state": "Texas                    ",
+    "stateAbbreviation": "TX",
+    "country": "United States",
+    "countryAbbreviation": "usa"
+  },
+  "citizenship": "United States",
+  "citizenshipCountry": {
+    "alternateId": "1",
+    "abbreviation": "usa"
+  },
+  "birthCountry": {
+    "alternateId": "1",
+    "abbreviation": "usa"
+  },
+  "college": { "$ref": "http://sports.core.api.espn.com/v2/colleges/251?lang=en&region=us" },
+  "slug": "scottie-scheffler",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/golf/players/full/9478.png",
+    "alt": "Scottie Scheffler"
+  },
+  "hand": {
+    "type": "RIGHT",
+    "abbreviation": "R",
+    "displayValue": "Right"
+  },
+  "flag": {
+    "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+    "alt": "United States",
+    "rel": [ "country-flag" ]
+  },
+  "linked": true,
+  "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+  },
+  "statisticslog": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/athletes/9478/statisticslog?lang=en&region=us" },
+  "seasons": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/athletes/9478/seasons?lang=en&region=us" }
+}

@@ -1,0 +1,137 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4362628?lang=en&region=us",
+  "id": "4362628",
+  "uid": "s:20~l:23~a:4362628",
+  "guid": "f9be91fa-7d8d-811b-6452-b14d1a1feb2c",
+  "type": "football",
+  "alternateIds": { "sdr": "4362628" },
+  "firstName": "Ja'Marr",
+  "lastName": "Chase",
+  "fullName": "Ja'Marr Chase",
+  "displayName": "Ja'Marr Chase",
+  "shortName": "J. Chase",
+  "weight": 201.0,
+  "displayWeight": "201 lbs",
+  "height": 72.0,
+  "displayHeight": "6' 0\"",
+  "age": 24,
+  "dateOfBirth": "2000-03-01T08:00Z",
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [ "playercard", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/_/id/4362628/jamarr-chase",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "stats", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/stats/_/id/4362628/jamarr-chase",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "splits", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/splits/_/id/4362628/jamarr-chase",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "gamelog", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/gamelog/_/id/4362628/jamarr-chase",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "news", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/news/_/id/4362628/jamarr-chase",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "bio", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/bio/_/id/4362628/jamarr-chase",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [ "overview", "desktop", "athlete" ],
+      "href": "https://www.espn.com/college-football/player/_/id/4362628/jamarr-chase",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Harvey",
+    "state": "LA",
+    "country": "USA"
+  },
+  "birthCountry": {
+    "alternateId": "1",
+    "abbreviation": "USA"
+  },
+  "college": { "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en&region=us" },
+  "slug": "jamarr-chase",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4362628.png",
+    "alt": "Ja'Marr Chase"
+  },
+  "jersey": "7",
+  "flag": {
+    "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+    "alt": "USA",
+    "rel": [ "country-flag" ]
+  },
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us",
+    "id": "1",
+    "name": "Wide Receiver",
+    "displayName": "Wide Receiver",
+    "abbreviation": "WR",
+    "leaf": true,
+    "parent": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us" }
+  },
+  "linked": true,
+  "team": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/99?lang=en&region=us" },
+  "experience": {
+    "years": 3,
+    "displayValue": "Junior",
+    "abbreviation": "JR"
+  },
+  "proAthlete": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/4362628?lang=en&region=us" },
+  "active": false,
+  "draft": {
+    "displayText": "Year: 2021 Round: 1 Pick: 5",
+    "round": 1,
+    "year": 2021,
+    "selection": 5,
+    "team": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2021/teams/8807?lang=en&region=us" }
+  },
+  "status": {
+    "id": "2",
+    "name": "Inactive",
+    "type": "inactive",
+    "abbreviation": "Inactive"
+  },
+  "statisticslog": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4362628/statisticslog?lang=en&region=us" }
+}

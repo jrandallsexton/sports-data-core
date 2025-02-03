@@ -8,7 +8,6 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Jobs
@@ -56,7 +55,9 @@ namespace SportsData.Provider.Application.Jobs
             _logger.LogInformation("Begin processing {@JobDefinition}", jobDefinition);
 
             // Get the resource index
-            var url = $"{jobDefinition.Endpoint}?limit={PageSize}";
+            var url = jobDefinition.StartPage.HasValue
+                ? $"{jobDefinition.Endpoint}?limit={PageSize}&page={jobDefinition.StartPage.Value}"
+                : $"{jobDefinition.Endpoint}?limit={PageSize}";
 
             var resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
 

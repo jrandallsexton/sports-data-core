@@ -8,6 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Positions;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -46,7 +47,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnDto = command.Document.FromJson<EspnPositionDto>(new JsonSerializerSettings
+            var espnDto = command.Document.FromJson<EspnAthletePositionDto>(new JsonSerializerSettings
             {
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             });

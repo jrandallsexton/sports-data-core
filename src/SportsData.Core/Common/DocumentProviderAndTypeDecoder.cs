@@ -1,4 +1,5 @@
 ﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System;
 
@@ -34,7 +35,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupBySeason:
                     return typeof(EspnGroupBySeasonDto);
                 case DocumentType.Position:
-                    return typeof(EspnPositionDto);
+                    return typeof(EspnAthletePositionDto);
                 case DocumentType.AthleteBySeason:
                     return typeof(EspnAthleteDto);
                 case DocumentType.Award:
@@ -51,6 +52,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupBySeasonLogo:
                 case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
+                case DocumentType.AthleteImage:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }
@@ -75,7 +77,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupBySeason:
                     return (typeof(EspnGroupBySeasonDto), name);
                 case DocumentType.Position:
-                    return (typeof(EspnPositionDto), name);
+                    return (typeof(EspnAthletePositionDto), name);
                 case DocumentType.AthleteBySeason:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.Award:
@@ -92,6 +94,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupBySeasonLogo:
                 case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
+                case DocumentType.AthleteImage:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }
@@ -133,6 +136,8 @@ namespace SportsData.Core.Common
                 case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
+                case DocumentType.Position:
+                case DocumentType.AthleteImage:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             }

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 
 using SportsData.Core.Converters;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public string ShortName { get; set; }
 
         [JsonProperty("address")]
-        public EspnVenueAddressDto Address { get; set; }
+        public EspnAddressDto Address { get; set; }
 
         [JsonProperty("capacity")]
         public long Capacity { get; set; }
@@ -35,37 +36,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public bool Indoor { get; set; }
 
         [JsonProperty("images")]
-        public List<EspnVenueImageDto> Images { get; set; }
-
-        public class EspnVenueAddressDto
-        {
-            [JsonProperty("city")]
-            public string City { get; set; }
-
-            [JsonProperty("state")]
-            public string State { get; set; }
-
-            [JsonProperty("zipCode")]
-            [System.Text.Json.Serialization.JsonConverter(typeof(ParseStringConverter))]
-            public long ZipCode { get; set; }
-        }
-
-        public class EspnVenueImageDto
-        {
-            [JsonProperty("href")]
-            public Uri Href { get; set; }
-
-            [JsonProperty("width")]
-            public long Width { get; set; }
-
-            [JsonProperty("height")]
-            public long Height { get; set; }
-
-            [JsonProperty("alt")]
-            public string Alt { get; set; }
-
-            [JsonProperty("rel")]
-            public List<string> Rel { get; set; }
-        }
+        public List<EspnImageDto> Images { get; set; }
     }
 }

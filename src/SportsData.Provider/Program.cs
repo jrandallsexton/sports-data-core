@@ -64,7 +64,6 @@ namespace SportsData.Provider
                 });
             });
 
-
             services.AddInstrumentation(builder.Environment.ApplicationName);
 
             services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));

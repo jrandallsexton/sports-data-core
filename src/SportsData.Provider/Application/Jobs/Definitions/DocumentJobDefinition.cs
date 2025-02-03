@@ -34,5 +34,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public string? EndpointMask { get; init; }
 
         public int? SeasonYear { get; init; }
+
+        public int? StartPage { get; set; }
     }
 }

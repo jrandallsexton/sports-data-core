@@ -1,18 +1,15 @@
 ﻿using Newtonsoft.Json;
 
-using SportsData.Core.Converters;
-
 using System;
 
-namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnPositionDto
+    public class EspnAthletePositionDto
     {
         [JsonProperty("$ref")]
         public Uri Ref { get; set; }
 
         [JsonProperty("id")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(ParseStringConverter))]
         public long Id { get; set; }
 
         [JsonProperty("name")]
@@ -26,5 +23,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 
         [JsonProperty("leaf")]
         public bool Leaf { get; set; }
+
+        [JsonProperty("parent")]
+        public EspnLinkDto Parent { get; set; }
     }
 }

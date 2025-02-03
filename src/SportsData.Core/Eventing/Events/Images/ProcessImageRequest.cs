@@ -9,7 +9,7 @@ namespace SportsData.Core.Eventing.Events.Images
         string url,
         Guid imageId,
         Guid parentEntityId,
-        string name,
+        string imageName,
         Sport sport,
         int? seasonYear,
         DocumentType documentType,
@@ -27,7 +27,7 @@ namespace SportsData.Core.Eventing.Events.Images
 
         public Guid ParentEntityId { get; init; } = parentEntityId;
 
-        public string Name { get; init; } = name;
+        public string Name { get; init; } = imageName;
 
         public Sport Sport { get; init; } = sport;
 

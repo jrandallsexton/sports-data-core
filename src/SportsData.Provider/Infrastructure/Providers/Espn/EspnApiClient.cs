@@ -2,6 +2,7 @@
 
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
 

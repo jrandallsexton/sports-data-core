@@ -6,7 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -67,11 +67,12 @@ public class AthleteDocumentProcessor : IProcessDocuments
         // 2. any headshot (image) for the athlete?
         if (externalProviderDto.Headshot is not null)
         {
+            var newImgId = Guid.NewGuid();
             var imgEvt = new ProcessImageRequest(
                 externalProviderDto.Headshot.Href.AbsoluteUri,
-                Guid.NewGuid(),
+                newImgId,
                 newEntityId,
-                $"{newEntityId}.png",
+                $"{newEntityId}-{newImgId}.png",
                 command.Sport,
                 command.Season,
                 command.DocumentType,

@@ -1,0 +1,397 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/calendar/ondays?lang=en&region=us",
+  "type": "list",
+  "startDate": "2025-01-02T05:00Z",
+  "endDate": "2025-12-07T05:00Z",
+  "eventDate": {
+    "type": "ondays",
+    "dates": [ "2025-01-02T08:00Z", "2025-01-03T08:00Z", "2025-01-04T08:00Z", "2025-01-05T08:00Z", "2025-01-09T08:00Z", "2025-01-10T08:00Z", "2025-01-11T08:00Z", "2025-01-12T08:00Z", "2025-01-16T08:00Z", "2025-01-17T08:00Z", "2025-01-18T08:00Z", "2025-01-19T08:00Z", "2025-01-22T08:00Z", "2025-01-23T08:00Z", "2025-01-24T08:00Z", "2025-01-25T08:00Z", "2025-01-30T08:00Z", "2025-01-31T08:00Z", "2025-02-01T08:00Z", "2025-02-02T08:00Z", "2025-02-06T08:00Z", "2025-02-07T08:00Z", "2025-02-08T08:00Z", "2025-02-09T08:00Z", "2025-02-13T08:00Z", "2025-02-14T08:00Z", "2025-02-15T08:00Z", "2025-02-16T08:00Z", "2025-02-20T08:00Z", "2025-02-21T08:00Z", "2025-02-22T08:00Z", "2025-02-23T08:00Z", "2025-02-27T08:00Z", "2025-02-28T08:00Z", "2025-03-01T08:00Z", "2025-03-02T08:00Z", "2025-03-06T08:00Z", "2025-03-07T08:00Z", "2025-03-08T08:00Z", "2025-03-09T08:00Z", "2025-03-13T07:00Z", "2025-03-14T07:00Z", "2025-03-15T07:00Z", "2025-03-16T07:00Z", "2025-03-20T07:00Z", "2025-03-21T07:00Z", "2025-03-22T07:00Z", "2025-03-23T07:00Z", "2025-03-27T07:00Z", "2025-03-28T07:00Z", "2025-03-29T07:00Z", "2025-03-30T07:00Z", "2025-04-03T07:00Z", "2025-04-04T07:00Z", "2025-04-05T07:00Z", "2025-04-06T07:00Z", "2025-04-10T07:00Z", "2025-04-11T07:00Z", "2025-04-12T07:00Z", "2025-04-13T07:00Z", "2025-04-17T07:00Z", "2025-04-18T07:00Z", "2025-04-19T07:00Z", "2025-04-20T07:00Z", "2025-04-24T07:00Z", "2025-04-25T07:00Z", "2025-04-26T07:00Z", "2025-04-27T07:00Z", "2025-05-01T07:00Z", "2025-05-02T07:00Z", "2025-05-03T07:00Z", "2025-05-04T07:00Z", "2025-05-08T07:00Z", "2025-05-09T07:00Z", "2025-05-10T07:00Z", "2025-05-11T07:00Z", "2025-05-15T07:00Z", "2025-05-16T07:00Z", "2025-05-17T07:00Z", "2025-05-18T07:00Z", "2025-05-22T07:00Z", "2025-05-23T07:00Z", "2025-05-24T07:00Z", "2025-05-25T07:00Z", "2025-05-29T07:00Z", "2025-05-30T07:00Z", "2025-05-31T07:00Z", "2025-06-01T07:00Z", "2025-06-05T07:00Z", "2025-06-06T07:00Z", "2025-06-07T07:00Z", "2025-06-08T07:00Z", "2025-06-12T07:00Z", "2025-06-13T07:00Z", "2025-06-14T07:00Z", "2025-06-15T07:00Z", "2025-06-19T07:00Z", "2025-06-20T07:00Z", "2025-06-21T07:00Z", "2025-06-22T07:00Z", "2025-06-26T07:00Z", "2025-06-27T07:00Z", "2025-06-28T07:00Z", "2025-06-29T07:00Z", "2025-07-03T07:00Z", "2025-07-04T07:00Z", "2025-07-05T07:00Z", "2025-07-06T07:00Z", "2025-07-10T07:00Z", "2025-07-11T07:00Z", "2025-07-12T07:00Z", "2025-07-13T07:00Z", "2025-07-17T07:00Z", "2025-07-18T07:00Z", "2025-07-19T07:00Z", "2025-07-20T07:00Z", "2025-07-24T07:00Z", "2025-07-25T07:00Z", "2025-07-26T07:00Z", "2025-07-27T07:00Z", "2025-07-31T07:00Z", "2025-08-01T07:00Z", "2025-08-02T07:00Z", "2025-08-03T07:00Z", "2025-08-07T07:00Z", "2025-08-08T07:00Z", "2025-08-09T07:00Z", "2025-08-10T07:00Z", "2025-08-14T07:00Z", "2025-08-15T07:00Z", "2025-08-16T07:00Z", "2025-08-17T07:00Z", "2025-08-21T07:00Z", "2025-08-22T07:00Z", "2025-08-23T07:00Z", "2025-08-24T07:00Z", "2025-09-11T07:00Z", "2025-09-12T07:00Z", "2025-09-13T07:00Z", "2025-09-14T07:00Z", "2025-09-26T07:00Z", "2025-09-27T07:00Z", "2025-09-28T07:00Z", "2025-10-02T07:00Z", "2025-10-03T07:00Z", "2025-10-04T07:00Z", "2025-10-05T07:00Z", "2025-10-09T07:00Z", "2025-10-10T07:00Z", "2025-10-11T07:00Z", "2025-10-12T07:00Z", "2025-10-23T07:00Z", "2025-10-24T07:00Z", "2025-10-25T07:00Z", "2025-10-26T07:00Z", "2025-11-06T08:00Z", "2025-11-07T08:00Z", "2025-11-08T08:00Z", "2025-11-09T08:00Z", "2025-11-13T08:00Z", "2025-11-14T08:00Z", "2025-11-15T08:00Z", "2025-11-16T08:00Z", "2025-11-20T08:00Z", "2025-11-21T08:00Z", "2025-11-22T08:00Z", "2025-11-23T08:00Z", "2025-12-04T08:00Z", "2025-12-05T08:00Z", "2025-12-06T08:00Z", "2025-12-07T08:00Z" ]
+  },
+  "sections": [
+    {
+      "id": "401703489",
+      "label": "The Sentry",
+      "detail": "Jan 2-5",
+      "startDate": "2025-01-02T08:00Z",
+      "endDate": "2025-01-05T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703489?lang=en&region=us" }
+    },
+    {
+      "id": "401703490",
+      "label": "Sony Open in Hawaii",
+      "detail": "Jan 9-12",
+      "startDate": "2025-01-09T08:00Z",
+      "endDate": "2025-01-12T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703490?lang=en&region=us" }
+    },
+    {
+      "id": "401703491",
+      "label": "The American Express",
+      "detail": "Jan 16-19",
+      "startDate": "2025-01-16T08:00Z",
+      "endDate": "2025-01-19T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703491?lang=en&region=us" }
+    },
+    {
+      "id": "401703492",
+      "label": "Farmers Insurance Open",
+      "detail": "Jan 22-25",
+      "startDate": "2025-01-22T08:00Z",
+      "endDate": "2025-01-25T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703492?lang=en&region=us" }
+    },
+    {
+      "id": "401703493",
+      "label": "AT&T Pebble Beach Pro-Am",
+      "detail": "Jan 30-Feb 2",
+      "startDate": "2025-01-30T08:00Z",
+      "endDate": "2025-02-02T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703493?lang=en&region=us" }
+    },
+    {
+      "id": "401703494",
+      "label": "WM Phoenix Open",
+      "detail": "Feb 6-9",
+      "startDate": "2025-02-06T08:00Z",
+      "endDate": "2025-02-09T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703494?lang=en&region=us" }
+    },
+    {
+      "id": "401703495",
+      "label": "The Genesis Invitational",
+      "detail": "Feb 13-16",
+      "startDate": "2025-02-13T08:00Z",
+      "endDate": "2025-02-16T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703495?lang=en&region=us" }
+    },
+    {
+      "id": "401703496",
+      "label": "Mexico Open at VidantaWorld",
+      "detail": "Feb 20-23",
+      "startDate": "2025-02-20T08:00Z",
+      "endDate": "2025-02-23T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703496?lang=en&region=us" }
+    },
+    {
+      "id": "401703497",
+      "label": "Cognizant Classic in The Palm Beaches",
+      "detail": "Feb 27-Mar 2",
+      "startDate": "2025-02-27T08:00Z",
+      "endDate": "2025-03-02T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703497?lang=en&region=us" }
+    },
+    {
+      "id": "401703498",
+      "label": "Arnold Palmer Invitational pres. by Mastercard",
+      "detail": "Mar 6-9",
+      "startDate": "2025-03-06T08:00Z",
+      "endDate": "2025-03-09T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703498?lang=en&region=us" }
+    },
+    {
+      "id": "401703499",
+      "label": "Puerto Rico Open",
+      "detail": "Mar 6-9",
+      "startDate": "2025-03-06T08:00Z",
+      "endDate": "2025-03-09T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703499?lang=en&region=us" }
+    },
+    {
+      "id": "401703500",
+      "label": "THE PLAYERS Championship",
+      "detail": "Mar 13-16",
+      "startDate": "2025-03-13T07:00Z",
+      "endDate": "2025-03-16T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703500?lang=en&region=us" }
+    },
+    {
+      "id": "401703501",
+      "label": "Valspar Championship",
+      "detail": "Mar 20-23",
+      "startDate": "2025-03-20T07:00Z",
+      "endDate": "2025-03-23T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703501?lang=en&region=us" }
+    },
+    {
+      "id": "401703502",
+      "label": "Texas Children's Houston Open",
+      "detail": "Mar 27-30",
+      "startDate": "2025-03-27T07:00Z",
+      "endDate": "2025-03-30T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703502?lang=en&region=us" }
+    },
+    {
+      "id": "401703503",
+      "label": "Valero Texas Open",
+      "detail": "Apr 3-6",
+      "startDate": "2025-04-03T07:00Z",
+      "endDate": "2025-04-06T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703503?lang=en&region=us" }
+    },
+    {
+      "id": "401703504",
+      "label": "Masters Tournament",
+      "detail": "Apr 10-13",
+      "startDate": "2025-04-10T07:00Z",
+      "endDate": "2025-04-13T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703504?lang=en&region=us" }
+    },
+    {
+      "id": "401703505",
+      "label": "RBC Heritage",
+      "detail": "Apr 17-20",
+      "startDate": "2025-04-17T07:00Z",
+      "endDate": "2025-04-20T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703505?lang=en&region=us" }
+    },
+    {
+      "id": "401703506",
+      "label": "Corales Puntacana Championship",
+      "detail": "Apr 17-20",
+      "startDate": "2025-04-17T07:00Z",
+      "endDate": "2025-04-20T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703506?lang=en&region=us" }
+    },
+    {
+      "id": "401703507",
+      "label": "Zurich Classic of New Orleans",
+      "detail": "Apr 24-27",
+      "startDate": "2025-04-24T07:00Z",
+      "endDate": "2025-04-27T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703507?lang=en&region=us" }
+    },
+    {
+      "id": "401703508",
+      "label": "THE CJ CUP Byron Nelson",
+      "detail": "May 1-4",
+      "startDate": "2025-05-01T07:00Z",
+      "endDate": "2025-05-04T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703508?lang=en&region=us" }
+    },
+    {
+      "id": "401703509",
+      "label": "Truist Championship",
+      "detail": "May 8-11",
+      "startDate": "2025-05-08T07:00Z",
+      "endDate": "2025-05-11T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703509?lang=en&region=us" }
+    },
+    {
+      "id": "401703510",
+      "label": "Myrtle Beach Classic",
+      "detail": "May 8-11",
+      "startDate": "2025-05-08T07:00Z",
+      "endDate": "2025-05-11T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703510?lang=en&region=us" }
+    },
+    {
+      "id": "401703511",
+      "label": "PGA Championship",
+      "detail": "May 15-18",
+      "startDate": "2025-05-15T07:00Z",
+      "endDate": "2025-05-18T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703511?lang=en&region=us" }
+    },
+    {
+      "id": "401703512",
+      "label": "Charles Schwab Challenge",
+      "detail": "May 22-25",
+      "startDate": "2025-05-22T07:00Z",
+      "endDate": "2025-05-25T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703512?lang=en&region=us" }
+    },
+    {
+      "id": "401703513",
+      "label": "the Memorial Tournament pres. by Workday",
+      "detail": "May 29-Jun 1",
+      "startDate": "2025-05-29T07:00Z",
+      "endDate": "2025-06-01T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703513?lang=en&region=us" }
+    },
+    {
+      "id": "401703514",
+      "label": "RBC Canadian Open",
+      "detail": "Jun 5-8",
+      "startDate": "2025-06-05T07:00Z",
+      "endDate": "2025-06-08T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703514?lang=en&region=us" }
+    },
+    {
+      "id": "401703515",
+      "label": "U.S. Open",
+      "detail": "Jun 12-15",
+      "startDate": "2025-06-12T07:00Z",
+      "endDate": "2025-06-15T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703515?lang=en&region=us" }
+    },
+    {
+      "id": "401703516",
+      "label": "Travelers Championship",
+      "detail": "Jun 19-22",
+      "startDate": "2025-06-19T07:00Z",
+      "endDate": "2025-06-22T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703516?lang=en&region=us" }
+    },
+    {
+      "id": "401703517",
+      "label": "Rocket Mortgage Classic",
+      "detail": "Jun 26-29",
+      "startDate": "2025-06-26T07:00Z",
+      "endDate": "2025-06-29T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703517?lang=en&region=us" }
+    },
+    {
+      "id": "401703518",
+      "label": "John Deere Classic",
+      "detail": "Jul 3-6",
+      "startDate": "2025-07-03T07:00Z",
+      "endDate": "2025-07-06T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703518?lang=en&region=us" }
+    },
+    {
+      "id": "401703519",
+      "label": "Genesis Scottish Open",
+      "detail": "Jul 10-13",
+      "startDate": "2025-07-10T07:00Z",
+      "endDate": "2025-07-13T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703519?lang=en&region=us" }
+    },
+    {
+      "id": "401703520",
+      "label": "ISCO Championship",
+      "detail": "Jul 10-13",
+      "startDate": "2025-07-10T07:00Z",
+      "endDate": "2025-07-13T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703520?lang=en&region=us" }
+    },
+    {
+      "id": "401703521",
+      "label": "The Open",
+      "detail": "Jul 17-20",
+      "startDate": "2025-07-17T07:00Z",
+      "endDate": "2025-07-20T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703521?lang=en&region=us" }
+    },
+    {
+      "id": "401703522",
+      "label": "Barracuda Championship",
+      "detail": "Jul 17-20",
+      "startDate": "2025-07-17T07:00Z",
+      "endDate": "2025-07-20T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703522?lang=en&region=us" }
+    },
+    {
+      "id": "401703523",
+      "label": "3M Open",
+      "detail": "Jul 24-27",
+      "startDate": "2025-07-24T07:00Z",
+      "endDate": "2025-07-27T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703523?lang=en&region=us" }
+    },
+    {
+      "id": "401703524",
+      "label": "Wyndham Championship",
+      "detail": "Jul 31-Aug 3",
+      "startDate": "2025-07-31T07:00Z",
+      "endDate": "2025-08-03T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703524?lang=en&region=us" }
+    },
+    {
+      "id": "401703525",
+      "label": "FedEx St. Jude Championship",
+      "detail": "Aug 7-10",
+      "startDate": "2025-08-07T07:00Z",
+      "endDate": "2025-08-10T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703525?lang=en&region=us" }
+    },
+    {
+      "id": "401703530",
+      "label": "BMW Championship",
+      "detail": "Aug 14-17",
+      "startDate": "2025-08-14T07:00Z",
+      "endDate": "2025-08-17T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703530?lang=en&region=us" }
+    },
+    {
+      "id": "401703531",
+      "label": "TOUR Championship",
+      "detail": "Aug 21-24",
+      "startDate": "2025-08-21T07:00Z",
+      "endDate": "2025-08-24T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401703531?lang=en&region=us" }
+    },
+    {
+      "id": "401738553",
+      "label": "Procore Championship",
+      "detail": "Sep 11-14",
+      "startDate": "2025-09-11T07:00Z",
+      "endDate": "2025-09-14T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738553?lang=en&region=us" }
+    },
+    {
+      "id": "401734110",
+      "label": "Ryder Cup",
+      "detail": "Sep 26-28",
+      "startDate": "2025-09-26T07:00Z",
+      "endDate": "2025-09-28T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401734110?lang=en&region=us" }
+    },
+    {
+      "id": "401738554",
+      "label": "Sanderson Farms Championship",
+      "detail": "Oct 2-5",
+      "startDate": "2025-10-02T07:00Z",
+      "endDate": "2025-10-05T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738554?lang=en&region=us" }
+    },
+    {
+      "id": "401738555",
+      "label": "Baycurrent Classic",
+      "detail": "Oct 9-12",
+      "startDate": "2025-10-09T07:00Z",
+      "endDate": "2025-10-12T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738555?lang=en&region=us" }
+    },
+    {
+      "id": "401738556",
+      "label": "Black Desert Championship",
+      "detail": "Oct 23-26",
+      "startDate": "2025-10-23T07:00Z",
+      "endDate": "2025-10-26T07:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738556?lang=en&region=us" }
+    },
+    {
+      "id": "401738557",
+      "label": "World Wide Technology Championship",
+      "detail": "Nov 6-9",
+      "startDate": "2025-11-06T08:00Z",
+      "endDate": "2025-11-09T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738557?lang=en&region=us" }
+    },
+    {
+      "id": "401738558",
+      "label": "Butterfield Bermuda Championship",
+      "detail": "Nov 13-16",
+      "startDate": "2025-11-13T08:00Z",
+      "endDate": "2025-11-16T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738558?lang=en&region=us" }
+    },
+    {
+      "id": "401738559",
+      "label": "The RSM Classic",
+      "detail": "Nov 20-23",
+      "startDate": "2025-11-20T08:00Z",
+      "endDate": "2025-11-23T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738559?lang=en&region=us" }
+    },
+    {
+      "id": "401738560",
+      "label": "Hero World Challenge",
+      "detail": "Dec 4-7",
+      "startDate": "2025-12-04T08:00Z",
+      "endDate": "2025-12-07T08:00Z",
+      "event": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/401738560?lang=en&region=us" }
+    }
+  ],
+  "season": { "$ref": "http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/seasons/2025?lang=en&region=us" }
+}

@@ -1,4 +1,6 @@
-﻿namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+
+namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation
 {
     public class Logo
     {
@@ -78,17 +80,10 @@
         public string abbreviation { get; set; }
     }
 
-    public class Address
-    {
-        public string city { get; set; }
-        public string state { get; set; }
-        public string zipCode { get; set; }
-    }
-
     public class Venue
     {
         public string fullName { get; set; }
-        public Address address { get; set; }
+        public EspnAddressDto address { get; set; }
     }
 
     public class Logo2

@@ -48,7 +48,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             //    MetadataPropertyHandling = MetadataPropertyHandling.Ignore
             //});
 
-            //// 1. Does this athlete exist? If not, we must create it prior to creating a season for it
+            //// 1. Does this AthleteDto exist? If not, we must create it prior to creating a season for it
             //var groupEntity = await _dataContext.Athletes
             //    .Include(g => g.Seasons)
             //    .Where(x =>

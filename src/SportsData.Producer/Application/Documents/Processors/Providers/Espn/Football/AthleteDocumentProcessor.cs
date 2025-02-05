@@ -32,9 +32,9 @@ public class AthleteDocumentProcessor : IProcessDocuments
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
+        {
+            ["CorrelationId"] = command.CorrelationId
+        }))
         {
             _logger.LogInformation("Began with {@command}", command);
 
@@ -64,7 +64,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         var newEntity = externalProviderDto.AsEntity(newEntityId, null, command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
-        // 2. any headshot (image) for the athlete?
+        // 2. any headshot (image) for the AthleteDto?
         if (externalProviderDto.Headshot is not null)
         {
             var newImgId = Guid.NewGuid();

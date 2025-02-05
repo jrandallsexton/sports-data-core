@@ -1,7 +1,5 @@
 ﻿using Newtonsoft.Json;
 
-using SportsData.Core.Converters;
-
 using System;
 using System.Collections.Generic;
 
@@ -25,7 +23,7 @@ public class EspnAthleteDto
     public string Type { get; set; }
 
     [JsonProperty("alternateIds")]
-    public EspnAthleteAlternateIdsDto AlternateIds { get; set; }
+    public EspnAlternateIdDto AlternateIds { get; set; }
 
     [JsonProperty("firstName")]
     public string FirstName { get; set; }

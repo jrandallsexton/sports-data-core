@@ -63,7 +63,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award
 
     public class Winner
     {
-        [JsonProperty("athlete")]
+        [JsonProperty("AthleteDto")]
         public Item Athlete { get; set; }
 
         [JsonProperty("team")]

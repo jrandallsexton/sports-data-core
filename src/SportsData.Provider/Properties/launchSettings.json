@@ -52,6 +52,42 @@
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"
+    },
+    "http.GolfPga": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode GolfPga",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SERVICE_MODE": "All"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5205"
+    },
+    "http.BasketballNba": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode BasketballNba",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SERVICE_MODE": "All"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5205"
+    },
+    "http.BaseballMlb": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode BaseballMlb",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SERVICE_MODE": "All"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5205"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

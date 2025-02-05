@@ -1,15 +1,10 @@
 ﻿using Newtonsoft.Json;
-using SportsData.Core.Converters;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SportsData.Core.Converters;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnAthleteAlternateIdsDto
+    public class EspnAlternateIdDto
     {
         [JsonProperty("sdr")]
         [JsonConverter(typeof(ParseStringConverter))]

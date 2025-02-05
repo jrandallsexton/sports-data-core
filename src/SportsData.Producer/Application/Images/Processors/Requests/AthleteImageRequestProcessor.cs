@@ -56,7 +56,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (entity == null)
             {
-                _logger.LogError("Could not retrieve athlete");
+                _logger.LogError("Could not retrieve AthleteDto");
                 return;
             }
 

@@ -23,6 +23,8 @@
         TeamBySeasonLogo,
         VenueImage,
         Position,
-        AthleteImage
+        AthleteImage,
+        SeasonType,
+        GolfCalendar
     }
 }

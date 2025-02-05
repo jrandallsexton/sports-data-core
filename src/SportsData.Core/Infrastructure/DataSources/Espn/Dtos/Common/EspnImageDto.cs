@@ -11,10 +11,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public Uri Href { get; set; }
 
         [JsonProperty("width")]
-        public long Width { get; set; }
+        public long? Width { get; set; }
 
         [JsonProperty("height")]
-        public long Height { get; set; }
+        public long? Height { get; set; }
 
         [JsonProperty("alt")]
         public string Alt { get; set; }

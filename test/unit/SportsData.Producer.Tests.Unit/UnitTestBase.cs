@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using Moq.AutoMock;
 
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Tests.Unit
 {
@@ -21,7 +21,7 @@ namespace SportsData.Producer.Tests.Unit
 
         public ListLogger Logger { get; }
 
-        public AppDataContext DataContext { get; }
+        public BaseDataContext DataContext { get; }
 
         internal UnitTestBase()
         {
@@ -29,8 +29,8 @@ namespace SportsData.Producer.Tests.Unit
 
             Fixture = new Fixture();
 
-            DataContext = new AppDataContext(GetDataContextOptions());
-            Mocker.Use(typeof(AppDataContext), DataContext);
+            //DataContext = new AppDataContext(GetDataContextOptions());
+            //Mocker.Use(typeof(BaseDataContext), DataContext);
 
             Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
@@ -39,11 +39,11 @@ namespace SportsData.Producer.Tests.Unit
             Mocker.Use(typeof(IMapper), mapper);
         }
 
-        private static DbContextOptions<AppDataContext> GetDataContextOptions()
+        private static DbContextOptions<TeamSportDataContext> GetDataContextOptions()
         {
             // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
             var dbName = Guid.NewGuid().ToString().Substring(0, 5);
-            return new DbContextOptionsBuilder<AppDataContext>()
+            return new DbContextOptionsBuilder<TeamSportDataContext>()
                 .UseInMemoryDatabase(dbName)
                 .Options;
         }

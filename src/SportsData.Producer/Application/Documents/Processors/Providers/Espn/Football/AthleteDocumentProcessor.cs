@@ -6,22 +6,22 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 public class AthleteDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<AthleteDocumentProcessor> _logger;
-    private readonly AppDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
 
     public AthleteDocumentProcessor(
         ILogger<AthleteDocumentProcessor> logger,
-        AppDataContext dataContext,
+        FootballDataContext dataContext,
         IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
@@ -44,7 +44,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalProviderDto = command.Document.FromJson<EspnAthleteDto>();
+        var externalProviderDto = command.Document.FromJson<EspnFootballAthleteDto>();
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var exists = await _dataContext.Athletes.AnyAsync(x =>

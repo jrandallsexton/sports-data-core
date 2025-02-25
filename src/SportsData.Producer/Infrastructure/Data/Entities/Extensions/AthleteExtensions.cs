@@ -1,8 +1,10 @@
 ﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Models.Canonical;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
+    // TODO: Clean this up since I moved things from Athlete model
     public static class AthleteExtensions
     {
         public static Athlete AsEntity(
@@ -21,7 +23,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 DisplayName = dto.DisplayName,
                 DoB = DateTime.Parse(dto.DateOfBirth),
                 FirstName = dto.FirstName,
-                FranchiseId = franchiseId,
+                //FranchiseId = franchiseId,
                 HeightDisplay = dto.DisplayHeight,
                 HeightIn = dto.Height,
                 IsActive = dto.Active,
@@ -51,8 +53,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 HeightIn = entity.HeightIn,
                 LastName = entity.LastName,
                 UpdatedUtc = entity.ModifiedUtc,
-                PositionId = entity.CurrentPosition,
-                PositionName = entity.Position.Name
+                //PositionId = entity.CurrentPosition,
+                //PositionName = entity.Position.Name
             };
         }
     }

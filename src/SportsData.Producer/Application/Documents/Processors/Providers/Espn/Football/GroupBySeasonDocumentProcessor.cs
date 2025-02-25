@@ -11,21 +11,21 @@ using SportsData.Core.Extensions;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     public class GroupBySeasonDocumentProcessor : IProcessDocuments
     {
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly FootballDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
 
         public GroupBySeasonDocumentProcessor(
             ILogger<GroupBySeasonDocumentProcessor> logger,
-            AppDataContext dataContext,
+            FootballDataContext dataContext,
             IPublishEndpoint publishEndpoint)
         {
             _logger = logger;

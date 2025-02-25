@@ -23,6 +23,11 @@ Write-Host ""
 Write-Host "Changing working directory"
 Set-Location C:\Projects\sports-data-config\00_local
 
+# Apply ConfigMap
+Write-Host ""
+Write-Host "Applying ConfigMaps"
+kubectl apply -f configmap.yaml -n local
+
 # Apply Deployments
 Write-Host ""
 Write-Host "Applying Deployments"

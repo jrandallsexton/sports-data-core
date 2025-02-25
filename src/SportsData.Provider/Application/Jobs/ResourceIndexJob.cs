@@ -113,6 +113,7 @@ namespace SportsData.Provider.Application.Jobs
                     foreach (var cmd in resourceIndexDto.items.Select(item =>
                                  new ProcessResourceIndexItemCommand(
                                      resourceIndexEntity.Id,
+                                     0,
                                      item.id,
                                      item.href,
                                      jobDefinition.Sport,

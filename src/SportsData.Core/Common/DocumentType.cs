@@ -12,6 +12,7 @@
         GroupBySeason,
         Scoreboard,
         Season,
+        Seasons,
         Team,
         TeamBySeason,
         TeamInformation,

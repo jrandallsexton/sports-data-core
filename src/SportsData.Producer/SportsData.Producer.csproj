@@ -35,11 +35,11 @@
     <Folder Include="Application\Contests\" />
     <Folder Include="Application\Documents\Processors\Providers\Cbs\" />
     <Folder Include="Application\Documents\Processors\Providers\Espn\Basketball\" />
-    <Folder Include="Application\Documents\Processors\Providers\Espn\Common\" />
     <Folder Include="Application\Documents\Processors\Providers\Yahoo\" />
     <Folder Include="Application\Franchises\" />
     <Folder Include="Application\Seasons\" />
     <Folder Include="Application\Players\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

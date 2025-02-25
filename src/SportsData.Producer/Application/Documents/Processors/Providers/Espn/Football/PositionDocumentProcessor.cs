@@ -7,10 +7,9 @@ using Newtonsoft.Json;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Positions;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
@@ -18,12 +17,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     public class PositionDocumentProcessor : IProcessDocuments
     {
         private readonly ILogger<PositionDocumentProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly TeamSportDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
 
         public PositionDocumentProcessor(
             ILogger<PositionDocumentProcessor> logger,
-            AppDataContext dataContext,
+            TeamSportDataContext dataContext,
             IPublishEndpoint publishEndpoint)
         {
             _logger = logger;

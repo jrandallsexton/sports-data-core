@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;

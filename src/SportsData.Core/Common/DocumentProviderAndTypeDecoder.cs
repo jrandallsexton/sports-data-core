@@ -1,5 +1,6 @@
 ﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 using System;
 
@@ -80,6 +81,10 @@ namespace SportsData.Core.Common
                     return (typeof(EspnAthletePositionDto), name);
                 case DocumentType.AthleteBySeason:
                     return (typeof(EspnAthleteDto), name);
+                case DocumentType.Seasons:
+                    return (typeof(EspnFootballSeasonsDto), name);
+                case DocumentType.SeasonType:
+                    return (typeof(EspnResourceIndexDto), name);
                 case DocumentType.Award:
                 case DocumentType.Contest:
                 // TODO: Create these => return typeof(EspnContestDto);

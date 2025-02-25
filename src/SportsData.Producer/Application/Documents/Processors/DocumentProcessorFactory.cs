@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Shared;
 
 namespace SportsData.Producer.Application.Documents.Processors;
 
@@ -78,6 +78,8 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
                 return documentAction == DocumentAction.Created
                     ? _serviceProvider.GetRequiredService<VenueCreatedDocumentProcessor>()
                     : _serviceProvider.GetRequiredService<VenueUpdatedDocumentProcessor>();
+            case DocumentType.Seasons:
+                return _serviceProvider.GetRequiredService<SeasonsDocumentProcessor>();
             case DocumentType.GameSummary:
             case DocumentType.Scoreboard:
             case DocumentType.Season:

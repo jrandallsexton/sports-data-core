@@ -51,7 +51,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public List<EspnImageDto> Logos { get; set; }
 
         [JsonProperty("venue")]
-        public EspnVenueDto Venue { get; set; }
+        public EspnVenueDto? Venue { get; set; }
 
         [JsonProperty("team")]
         public EspnFranchiseAwards Team { get; set; }

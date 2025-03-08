@@ -86,6 +86,8 @@ namespace SportsData.Provider.Application.Processors
                     return;
                 }
                 resourceIndexItemEntity.LastAccessed = DateTime.UtcNow;
+                resourceIndexItemEntity.ModifiedUtc = DateTime.UtcNow;
+                resourceIndexItemEntity.ModifiedBy = Guid.Empty;
             }
             else
             {
@@ -102,9 +104,9 @@ namespace SportsData.Provider.Application.Processors
                 });
             }
 
-            await _dataContext.SaveChangesAsync();
-
             await HandleValid(command, correlationId);
+
+            await _dataContext.SaveChangesAsync();
         }
 
         private async Task HandleValid(ProcessResourceIndexItemCommand command, Guid correlationId)
@@ -152,13 +154,25 @@ namespace SportsData.Provider.Application.Processors
             }
             else
             {
-                await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
+                var evt = new DocumentCreated(
+                    documentId.ToString(),
+                    type.CollectionName,
+                    command.Sport,
+                    command.SeasonYear,
+                    command.DocumentType,
+                    command.SourceDataProvider,
+                    correlationId,
+                    CausationId.Provider.ResourceIndexItemProcessor);
+
+                // TODO: Use transactional outbox pattern here?
+                await _bus.Publish(evt);
+                //await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
             }
 
             // Dive N-Level deep into any contained links and generate an event for it to be processed?
             // if so, we should specify the depth level on the event. processor can then be configured to not go too deep
-            if (command.Level == 0)
-                await ProcessEmbeddedLinks(command, itemJson);
+            //if (command.Level == 0)
+            //    await ProcessEmbeddedLinks(command, itemJson);
             
         }
 

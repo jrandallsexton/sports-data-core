@@ -45,7 +45,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
                     return _serviceProvider.GetRequiredService<FranchiseLogoRequestProcessor>();
-                case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:
@@ -82,7 +81,6 @@ namespace SportsData.Producer.Application.Images
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
                     return _serviceProvider.GetRequiredService<FranchiseLogoResponseProcessor>();
-                case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:

@@ -45,7 +45,6 @@ namespace SportsData.Core.Common
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
-                case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.GroupLogo:
@@ -85,13 +84,12 @@ namespace SportsData.Core.Common
                     return (typeof(EspnFootballSeasonsDto), name);
                 case DocumentType.SeasonType:
                     return (typeof(EspnResourceIndexDto), name);
+                case DocumentType.Season:
                 case DocumentType.Award:
                 case DocumentType.Contest:
                 // TODO: Create these => return typeof(EspnContestDto);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.GroupLogo:
@@ -138,7 +136,6 @@ namespace SportsData.Core.Common
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
-                case DocumentType.Team:
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.Position:

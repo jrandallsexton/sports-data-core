@@ -4,13 +4,14 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Football.Ncaa
+namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
     public class GroupBySeasonDocumentProcessorTests : UnitTestBase<GroupBySeasonDocumentProcessor>
     {
@@ -20,7 +21,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Footba
             // arrange
             var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
-            var documentJson = await base.LoadJsonTestData("GroupBySeason.json");
+            var documentJson = await LoadJsonTestData("GroupBySeason.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -28,29 +29,30 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Footba
                 .With(x => x.DocumentType, DocumentType.TeamBySeason)
                 .With(x => x.Season, 2024)
                 .With(x => x.Document, documentJson)
+                .OmitAutoProperties()
                 .Create();
 
             // act
             await sut.ProcessAsync(command);
 
             // assert
-            //var group = await base.DataContext.Groups
-            //    .Include(g => g.Seasons)
-            //    .AsNoTracking()
-            //    .ToListAsync();
+            var group = await base.FootballDataContext.Groups
+                .Include(g => g.Seasons)
+                .AsNoTracking()
+                .ToListAsync();
 
-            //group.Count.Should().Be(1);
-            //group.First().Seasons.Count.Should().Be(1);
+            group.Count.Should().Be(1);
+            group.First().Seasons.Count.Should().Be(1);
         }
 
         [Fact]
         public async Task WhenGroupExistsButSeasonDoesNot_GroupSeasonIsCreated()
         {
             // arrange
-            base.Logger.Log(LogLevel.Information, "Beginning test");
+            Logger.Log(LogLevel.Information, "Beginning test");
             var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
-            var documentJson = await base.LoadJsonTestData("GroupBySeason.json");
+            var documentJson = await LoadJsonTestData("GroupBySeason.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -58,19 +60,20 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Footba
                 .With(x => x.DocumentType, DocumentType.TeamBySeason)
                 .With(x => x.Season, 2024)
                 .With(x => x.Document, documentJson)
+                .OmitAutoProperties()
                 .Create();
 
             // act
             await sut.ProcessAsync(command);
 
             // assert
-            //var group = await base.DataContext.Groups
-            //    .Include(g => g.Seasons)
-            //    .AsNoTracking()
-            //    .ToListAsync();
+            var group = await base.FootballDataContext.Groups
+                .Include(g => g.Seasons)
+                .AsNoTracking()
+                .ToListAsync();
 
-            //group.Count.Should().Be(1);
-            //group.First().Seasons.Count.Should().Be(1);
+            group.Count.Should().Be(1);
+            group.First().Seasons.Count.Should().Be(1);
         }
     }
 }

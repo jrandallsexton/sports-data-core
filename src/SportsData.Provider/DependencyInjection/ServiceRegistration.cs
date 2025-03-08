@@ -24,6 +24,7 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+            services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
             services.AddSingleton(new EspnApiClientConfig());
 
             return services;

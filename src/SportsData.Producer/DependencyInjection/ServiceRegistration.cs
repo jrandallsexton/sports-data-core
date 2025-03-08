@@ -6,6 +6,7 @@ using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Images.Processors.Requests;
 using SportsData.Producer.Application.Images.Processors.Responses;
@@ -17,7 +18,6 @@ namespace SportsData.Producer.DependencyInjection
         public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
         {
             /* Local Services */
-            //services.AddScoped<IProcessDocuments, GroupBySeasonDocumentProcessor>();
             services.AddDataPersistenceExternal();
             services.AddScoped<AthleteDocumentProcessor>();
             services.AddScoped<AthleteImageRequestProcessor>();
@@ -46,7 +46,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
             services.AddScoped<TeamSeasonDocumentProcessor>();
-            services.AddScoped<VenueCreatedDocumentProcessor>();
+            services.AddScoped<VenueDocumentProcessor>();
             services.AddScoped<VenueImageRequestProcessor>();
             services.AddScoped<VenueImageResponseProcessor>();
             return services;
@@ -61,7 +61,9 @@ namespace SportsData.Producer.DependencyInjection
             var documentTypesToLoad = new List<DocumentType>()
             {
                 DocumentType.Venue,
-                DocumentType.Franchise
+                DocumentType.Franchise,
+                DocumentType.Position,
+                DocumentType.Athlete
             };
 
             foreach (var docType in documentTypesToLoad)
@@ -75,32 +77,37 @@ namespace SportsData.Producer.DependencyInjection
                     }));
             }
 
-            //var documentTypesBySeasonToLoad = new List<DocumentType>()
-            //{
-            //    DocumentType.GroupBySeason,
-            //    DocumentType.TeamBySeason
-            //};
+            var documentTypesBySeasonToLoad = new List<DocumentType>()
+            {
+                DocumentType.AthleteBySeason,
+                DocumentType.GroupBySeason,
+                DocumentType.TeamBySeason,
+                DocumentType.CoachBySeason
+            };
 
-            //var seasonsToLoad = new List<int>()
-            //{
-            //    2023,
-            //    2024
-            //};
+            var seasonsToLoad = new List<int>()
+            {
+                //2020,
+                //2021,
+                //2022,
+                //2023,
+                2024
+            };
 
-            //foreach (var docType in documentTypesBySeasonToLoad)
-            //{
-            //    foreach (var season in seasonsToLoad)
-            //    {
-            //        backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
-            //            new PublishDocumentEventsCommand()
-            //            {
-            //                SourceDataProvider = SourceDataProvider.Espn,
-            //                Sport = mode,
-            //                DocumentType = docType,
-            //                Season = season
-            //            }));
-            //    }
-            //}
+            foreach (var docType in documentTypesBySeasonToLoad)
+            {
+                foreach (var season in seasonsToLoad)
+                {
+                    backgroundJobProvider.Enqueue<IProvideProviders>(x => x.PublishDocumentEvents(
+                        new PublishDocumentEventsCommand()
+                        {
+                            SourceDataProvider = SourceDataProvider.Espn,
+                            Sport = mode,
+                            DocumentType = docType,
+                            Season = season
+                        }));
+                }
+            }
 
             return services;
         }

@@ -1,0 +1,29 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en",
+  "id": "3810",
+  "fullName": "Nissan Stadium",
+  "address": {
+    "city": "Nashville",
+    "state": "TN",
+    "zipCode": "37213",
+    "country": "USA"
+  },
+  "grass": false,
+  "indoor": false,
+  "images": [
+    {
+      "href": "https://a.espncdn.com/i/venues/nfl/day/3810.jpg",
+      "width": 2000,
+      "height": 1125,
+      "alt": "",
+      "rel": [ "full", "day" ]
+    },
+    {
+      "href": "https://a.espncdn.com/i/venues/nfl/day/interior/3810.jpg",
+      "width": 2000,
+      "height": 1125,
+      "alt": "",
+      "rel": [ "full", "day", "interior" ]
+    }
+  ]
+}

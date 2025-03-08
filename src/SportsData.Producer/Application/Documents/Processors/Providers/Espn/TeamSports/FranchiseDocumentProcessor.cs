@@ -8,20 +8,21 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 public class FranchiseDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<FranchiseDocumentProcessor> _logger;
-    private readonly FootballDataContext _dataContext;
+    private readonly TeamSportDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
 
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor> logger,
-        FootballDataContext dataContext,
+        TeamSportDataContext dataContext,
         IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
@@ -32,9 +33,9 @@ public class FranchiseDocumentProcessor : IProcessDocuments
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
+        {
+            ["CorrelationId"] = command.CorrelationId
+        }))
         {
             _logger.LogInformation("Began with {@command}", command);
 
@@ -47,26 +48,51 @@ public class FranchiseDocumentProcessor : IProcessDocuments
         var externalProviderDto = command.Document.FromJson<EspnFranchiseDto>();
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        var exists = await _dataContext.Franchises.AnyAsync(x =>
+        var entity = await _dataContext.Franchises.FirstOrDefaultAsync(x =>
             x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
-                                   z.Provider == SourceDataProvider.Espn));
+                                   z.Provider == command.SourceDataProvider));
 
-        if (exists)
+        if (entity is null)
         {
-            _logger.LogWarning($"Franchise already exists for {SourceDataProvider.Espn}.");
-            return;
+            await ProcessNewEntity(command, externalProviderDto);
+        }
+        else
+        {
+            await ProcessUpdate(command, externalProviderDto, entity);
         }
 
+    }
+
+    private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnFranchiseDto dto)
+    {
         // 1. map to the entity add it
         var newFranchiseId = Guid.NewGuid();
-        var newEntity = externalProviderDto.AsEntity(newFranchiseId, command.CorrelationId);
+        var newEntity = dto.AsEntity(newFranchiseId, command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
-        // TODO: find the venue associated with this franchise
+        if (dto.Venue is not null && dto.Venue.Id > 0)
+        {
+            var venueEntity = await _dataContext.Venues
+                .Include(x => x.ExternalIds)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
+                    z.Provider == command.SourceDataProvider &&
+                    z.Value == dto.Venue.Id.ToString()));
+
+            if (venueEntity != null)
+            {
+                newEntity.VenueId = venueEntity.Id;
+            }
+            else
+            {
+                // TODO: What to do if the venue does not exist?
+                // We have it on the Espn dto, but not in our db.
+            }
+        }
 
         // 2. any logos on the dto?
         var events = new List<ProcessImageRequest>();
-        externalProviderDto.Logos?.ForEach(logo =>
+        dto.Logos?.ForEach(logo =>
         {
             var imgId = Guid.NewGuid();
             events.Add(new ProcessImageRequest(
@@ -97,6 +123,31 @@ public class FranchiseDocumentProcessor : IProcessDocuments
                 newEntity.ToCanonicalModel(),
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor));
+
+        await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessUpdate(ProcessDocumentCommand command, EspnFranchiseDto dto, Franchise entity)
+    {
+        if (dto.Venue is not null && dto.Venue.Id > 0)
+        {
+            var venueEntity = await _dataContext.Venues
+                .Include(x => x.ExternalIds)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
+                    z.Provider == command.SourceDataProvider &&
+                    z.Value == dto.Venue.Id.ToString()));
+
+            if (venueEntity != null)
+            {
+                entity.VenueId = venueEntity.Id;
+            }
+            else
+            {
+                // TODO: What to do if the venue does not exist?
+                // We have it on the Espn dto, but not in our db.
+            }
+        }
 
         await _dataContext.SaveChangesAsync();
     }

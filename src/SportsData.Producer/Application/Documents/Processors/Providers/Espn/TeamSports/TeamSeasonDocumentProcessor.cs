@@ -13,7 +13,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports
 {
     public class TeamSeasonDocumentProcessor : IProcessDocuments
     {

@@ -123,6 +123,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             string league,
             int seasonYear)
         {
+            // TODO: This is NOT a ResourceIndex
             ///* Season */
             //resources.Add(new ResourceIndex()
             //{
@@ -157,6 +158,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 
             if (_teamSports.Contains(sport))
                 resources.AddRange(GenerateSeasonalResourcesForTeamSports(resources, sport, espnSportName, league, seasonYear));
+
             return resources;
         }
 
@@ -190,7 +192,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.TeamBySeason,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/",
+                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/teams",
                 EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,
@@ -206,7 +208,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.CoachBySeason,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/",
+                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/coaches",
                 EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,

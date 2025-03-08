@@ -5,16 +5,15 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 
 using System.Reflection;
-using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer;
 
@@ -39,8 +38,6 @@ public class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddProviders(config);
-
-        //services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName);
         
         switch (mode)
         {
@@ -76,7 +73,7 @@ public class Program
                     break;
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    x.AddEntityFrameworkOutbox<FootballDataContext>(o =>
+                    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);
@@ -94,9 +91,26 @@ public class Program
             x.AddConsumer<ProcessImageRequestedHandler>();
             x.AddConsumer<ProcessImageResponseHandler>();
 
-            x.UsingAzureServiceBus((context, cfg) =>
+            //x.UsingAzureServiceBus((context, cfg) =>
+            //{
+            //    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+            //    cfg.ConfigureEndpoints(context);
+            //});
+
+            x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                cfg.Host("localhost", "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
+                cfg.ConfigureJsonSerializerOptions(o =>
+                {
+                    o.IncludeFields = true;
+                    return o;
+                });
+
                 cfg.ConfigureEndpoints(context);
             });
         });
@@ -171,7 +185,7 @@ public class Program
 
         app.MapControllers();
 
-        app.Services.ConfigureHangfireJobs(mode);
+        //app.Services.ConfigureHangfireJobs(mode);
 
         await app.RunAsync();
     }

@@ -5,9 +5,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -46,23 +44,40 @@ namespace SportsData.Provider
             {
                 x.SetKebabCaseEndpointNameFormatter();
 
-                x.UsingAzureServiceBus((context, cfg) =>
+                x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-
-                    //cfg.Message<DocumentCreated>(x =>
-                    //{
-                    //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
-                    //    x.SetEntityName(entityName.ToLower());
-                    //});
+                    cfg.Host("localhost", "/", h =>
+                    {
+                        h.Username("guest");
+                        h.Password("guest");
+                    });
 
                     cfg.ConfigureJsonSerializerOptions(o =>
                     {
                         o.IncludeFields = true;
                         return o;
                     });
+
                     cfg.ConfigureEndpoints(context);
                 });
+
+                //x.UsingAzureServiceBus((context, cfg) =>
+                //{
+                //    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+
+                //    //cfg.Message<DocumentCreated>(x =>
+                //    //{
+                //    //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
+                //    //    x.SetEntityName(entityName.ToLower());
+                //    //});
+
+                //    cfg.ConfigureJsonSerializerOptions(o =>
+                //    {
+                //        o.IncludeFields = true;
+                //        return o;
+                //    });
+                //    cfg.ConfigureEndpoints(context);
+                //});
             });
 
             services.AddInstrumentation(builder.Environment.ApplicationName);
@@ -107,7 +122,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            //await app.Services.ConfigureHangfireJobs(mode);
+            await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

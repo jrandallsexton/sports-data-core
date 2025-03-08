@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Eventing.Events.Images
 {

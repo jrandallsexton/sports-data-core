@@ -47,13 +47,16 @@ public class AthleteDocumentProcessor : IProcessDocuments
         var externalProviderDto = command.Document.FromJson<EspnFootballAthleteDto>();
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        var exists = await _dataContext.Athletes.AnyAsync(x =>
-            x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
-                                   z.Provider == SourceDataProvider.Espn));
+        var exists = await _dataContext.Athletes
+            .Include(x => x.ExternalIds)
+            .AsNoTracking()
+            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
+                                                  z.Provider == command.SourceDataProvider));
 
         if (exists)
         {
-            _logger.LogWarning($"Athlete already exists for {SourceDataProvider.Espn}.");
+            // TODO: Eventually we need to handle updates to existing entities.
+            _logger.LogWarning($"Athlete already exists for {command.SourceDataProvider}.");
             return;
         }
 

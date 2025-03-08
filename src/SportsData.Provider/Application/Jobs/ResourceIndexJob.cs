@@ -79,6 +79,7 @@ namespace SportsData.Provider.Application.Jobs
 
             _logger.LogInformation("Updating access to ResourceIndex in the database");
             resourceIndexEntity.LastAccessed = DateTime.UtcNow;
+            resourceIndexEntity.TotalPageCount = resourceIndexDto.pageCount;
 
             await _dataContext.SaveChangesAsync();
 
@@ -126,6 +127,9 @@ namespace SportsData.Provider.Application.Jobs
                         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
 
                         await Task.Delay(500); // do NOT beat on their API
+
+                        resourceIndexEntity.LastPageIndex = resourceIndexDto.pageIndex;
+                        await _dataContext.SaveChangesAsync();
                     }
 
                     // TODO: I think I can remove this

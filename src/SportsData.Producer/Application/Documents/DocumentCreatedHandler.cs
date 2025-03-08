@@ -12,6 +12,8 @@ namespace SportsData.Producer.Application.Documents
         private readonly ILogger<DocumentCreatedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
+        // TODO: Look into middleware for filtering these based on Sport (mode) for the producer instance
+
         public DocumentCreatedHandler(
             ILogger<DocumentCreatedHandler> logger, IProvideBackgroundJobs backgroundJobProvider)
         {

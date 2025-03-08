@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Parsing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Processing;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
@@ -27,6 +29,8 @@ namespace SportsData.Provider.Application.Processors
         private readonly IBus _bus;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideHashes _hashProvider;
+        private readonly IResourceIndexItemParser _resourceIndexItemParser;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
@@ -35,7 +39,9 @@ namespace SportsData.Provider.Application.Processors
             DocumentService documentService,
             IBus bus,
             IDecodeDocumentProvidersAndTypes decoder,
-            IProvideHashes hashProvider)
+            IProvideHashes hashProvider,
+            IResourceIndexItemParser resourceIndexItemParser,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -44,6 +50,8 @@ namespace SportsData.Provider.Application.Processors
             _bus = bus;
             _decoder = decoder;
             _hashProvider = hashProvider;
+            _resourceIndexItemParser = resourceIndexItemParser;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -78,6 +86,8 @@ namespace SportsData.Provider.Application.Processors
                     return;
                 }
                 resourceIndexItemEntity.LastAccessed = DateTime.UtcNow;
+                resourceIndexItemEntity.ModifiedUtc = DateTime.UtcNow;
+                resourceIndexItemEntity.ModifiedBy = Guid.Empty;
             }
             else
             {
@@ -94,9 +104,9 @@ namespace SportsData.Provider.Application.Processors
                 });
             }
 
-            await _dataContext.SaveChangesAsync();
-
             await HandleValid(command, correlationId);
+
+            await _dataContext.SaveChangesAsync();
         }
 
         private async Task HandleValid(ProcessResourceIndexItemCommand command, Guid correlationId)
@@ -141,11 +151,29 @@ namespace SportsData.Provider.Application.Processors
                 await _bus.Publish(evt);
 
                 _logger.LogInformation("New document event published {@evt}", evt);
+            }
+            else
+            {
+                var evt = new DocumentCreated(
+                    documentId.ToString(),
+                    type.CollectionName,
+                    command.Sport,
+                    command.SeasonYear,
+                    command.DocumentType,
+                    command.SourceDataProvider,
+                    correlationId,
+                    CausationId.Provider.ResourceIndexItemProcessor);
 
-                return;
+                // TODO: Use transactional outbox pattern here?
+                await _bus.Publish(evt);
+                //await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
             }
 
-            await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
+            // Dive N-Level deep into any contained links and generate an event for it to be processed?
+            // if so, we should specify the depth level on the event. processor can then be configured to not go too deep
+            //if (command.Level == 0)
+            //    await ProcessEmbeddedLinks(command, itemJson);
+            
         }
 
         private async Task HandleExisting(DocumentBase dbItem,
@@ -184,10 +212,25 @@ namespace SportsData.Provider.Application.Processors
 
             _logger.LogInformation("Document updated event {@evt}", evt);
         }
+
+        private async Task ProcessEmbeddedLinks(ProcessResourceIndexItemCommand parentCommand, string itemJson)
+        {
+            var links = _resourceIndexItemParser.ExtractEmbeddedLinks(itemJson);
+
+            //foreach (var link in links.Select(x =>
+            //        new ProcessResourceIndexItemCommand(Guid.Empty, parentCommand.Level + 1,
+            //            0, x.AbsoluteUri, parentCommand.Sport, parentCommand.SourceDataProvider,
+            //            parentCommand.DocumentType, parentCommand.SeasonYear))
+                        
+                        
+
+            await Task.CompletedTask;
+        }
     }
 
     public record ProcessResourceIndexItemCommand(
         Guid resourceIndexId,
+        int Level,
         int Id,
         string Href,
         Sport Sport,

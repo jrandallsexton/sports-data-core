@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Parsing;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
@@ -20,8 +21,10 @@ namespace SportsData.Provider.DependencyInjection
             services.AddDataPersistenceExternal();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
+            services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+            services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
             services.AddSingleton(new EspnApiClientConfig());
 
             return services;

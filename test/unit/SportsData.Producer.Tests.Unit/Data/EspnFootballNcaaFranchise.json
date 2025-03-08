@@ -1,0 +1,63 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us",
+  "id": "99",
+  "uid": "s:20~l:23~f:99",
+  "slug": "lsu-tigers",
+  "location": "LSU",
+  "name": "Tigers",
+  "nickname": "LSU",
+  "abbreviation": "LSU",
+  "displayName": "LSU Tigers",
+  "shortDisplayName": "LSU",
+  "color": "461d7c",
+  "isActive": true,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [ "full", "default" ],
+      "lastUpdated": "2023-02-17T21:15Z"
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/99.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [ "full", "dark" ],
+      "lastUpdated": "2023-02-17T21:14Z"
+    }
+  ],
+  "venue": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us",
+    "id": "3958",
+    "fullName": "Tiger Stadium (LA)",
+    "address": {
+      "city": "Baton Rouge",
+      "state": "LA",
+      "zipCode": "70803",
+      "country": "USA"
+    },
+    "grass": true,
+    "indoor": false,
+    "images": [
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/3958.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [ "full", "day" ]
+      },
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3958.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [ "full", "day", "interior" ]
+      }
+    ]
+  },
+  "team": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en&region=us" },
+  "awards": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99/awards?lang=en&region=us" }
+}

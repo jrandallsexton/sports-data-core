@@ -6,15 +6,14 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
-using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
     public class AthleteImageRequestProcessor : IProcessLogoAndImageRequests
     {
         private readonly ILogger<AthleteImageRequestProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly BaseDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
@@ -22,7 +21,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         public AthleteImageRequestProcessor(
             ILogger<AthleteImageRequestProcessor> logger,
-            AppDataContext dataContext,
+            BaseDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

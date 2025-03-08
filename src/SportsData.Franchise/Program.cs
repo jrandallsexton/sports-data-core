@@ -1,8 +1,6 @@
 using SportsData.Core.DependencyInjection;
 using SportsData.Franchise.Infrastructure.Data;
 
-using System.Reflection;
-
 namespace SportsData.Franchise
 {
     public class Program

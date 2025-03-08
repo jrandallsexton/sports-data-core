@@ -7,12 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
+using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Golf;
 
 using System.Reflection;
-using SportsData.Core.Config;
-using SportsData.Producer.Application.Images.Handlers;
 
 namespace SportsData.Producer;
 
@@ -22,7 +23,7 @@ public class Program
     {
         var mode = (args.Length > 0 && args[0] == "-mode") ?
             Enum.Parse<Sport>(args[1]) :
-            Sport.All;
+            Sport.GolfPga;
 
         var builder = WebApplication.CreateBuilder(args);
         builder.UseCommon();
@@ -37,26 +38,79 @@ public class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddProviders(config);
-        services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+        
+        switch (mode)
+        {
+            case Sport.GolfPga:
+                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName);
+                break;
+            case Sport.FootballNcaa:
+            case Sport.FootballNfl:
+                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName);
+                services.AddScoped<TeamSportDataContext, FootballDataContext>();
+                services.AddScoped<BaseDataContext, FootballDataContext>();
+                break;
+            case Sport.All:
+            case Sport.BaseballMlb:
+            case Sport.BasketballNba:
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
 
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
 
-            x.AddEntityFrameworkOutbox<AppDataContext>(o =>
+            switch (mode)
             {
-                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
-                o.QueryDelay = TimeSpan.FromSeconds(1);
-                o.UseSqlServer().UseBusOutbox();
-            });
+                case Sport.GolfPga:
+                    x.AddEntityFrameworkOutbox<GolfDataContext>(o =>
+                    {
+                        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
+                        o.QueryDelay = TimeSpan.FromSeconds(1);
+                        o.UseSqlServer().UseBusOutbox();
+                    });
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
+                    {
+                        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
+                        o.QueryDelay = TimeSpan.FromSeconds(1);
+                        o.UseSqlServer().UseBusOutbox();
+                    });
+                    break;
+                case Sport.All:
+                case Sport.BaseballMlb:
+                case Sport.BasketballNba:
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
             x.AddConsumer<DocumentCreatedHandler>();
             x.AddConsumer<ProcessImageRequestedHandler>();
             x.AddConsumer<ProcessImageResponseHandler>();
 
-            x.UsingAzureServiceBus((context, cfg) =>
+            //x.UsingAzureServiceBus((context, cfg) =>
+            //{
+            //    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+            //    cfg.ConfigureEndpoints(context);
+            //});
+
+            x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                cfg.Host("localhost", "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
+                cfg.ConfigureJsonSerializerOptions(o =>
+                {
+                    o.IncludeFields = true;
+                    return o;
+                });
+
                 cfg.ConfigureEndpoints(context);
             });
         });
@@ -70,7 +124,21 @@ public class Program
             serverOptions.WorkerCount = 50;
         });
 
-        services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
+        switch (mode)
+        {
+            case Sport.GolfPga:
+                services.AddHealthChecks<GolfDataContext, Program>(builder.Environment.ApplicationName);
+                break;
+            case Sport.FootballNcaa:
+            case Sport.FootballNfl:
+                services.AddHealthChecks<FootballDataContext, Program>(builder.Environment.ApplicationName);
+                break;
+            case Sport.All:
+            case Sport.BaseballMlb:
+            case Sport.BasketballNba:
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
 
         services.AddLocalServices(mode);
 
@@ -86,8 +154,24 @@ public class Program
         using (var scope = app.Services.CreateScope())
         {
             var appServices = scope.ServiceProvider;
-            var context = appServices.GetRequiredService<AppDataContext>();
-            await context.Database.MigrateAsync();
+
+            switch (mode)
+            {
+                case Sport.GolfPga:
+                    var golfContext = appServices.GetRequiredService<GolfDataContext>();
+                    await golfContext.Database.MigrateAsync();
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    var context = appServices.GetRequiredService<FootballDataContext>();
+                    await context.Database.MigrateAsync();
+                    break;
+                case Sport.All:
+                case Sport.BaseballMlb:
+                case Sport.BasketballNba:
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         app.UseHangfireDashboard("/dashboard", new DashboardOptions
@@ -101,7 +185,7 @@ public class Program
 
         app.MapControllers();
 
-        app.Services.ConfigureHangfireJobs(mode);
+        //app.Services.ConfigureHangfireJobs(mode);
 
         await app.RunAsync();
     }

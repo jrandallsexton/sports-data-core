@@ -1,24 +1,19 @@
 ﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
 
-using Newtonsoft.Json;
-using SportsData.Core.Extensions;
-
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     public class AthleteSeasonDocumentProcessor : IProcessDocuments
     {
         private readonly ILogger<AthleteSeasonDocumentProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly FootballDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
 
         public AthleteSeasonDocumentProcessor(
             ILogger<AthleteSeasonDocumentProcessor> logger,
-            AppDataContext dataContext,
+            FootballDataContext dataContext,
             IPublishEndpoint publishEndpoint)
         {
             _logger = logger;

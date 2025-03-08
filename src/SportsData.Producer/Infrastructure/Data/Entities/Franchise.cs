@@ -26,6 +26,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsActive { get; set; }
 
+        public Guid VenueId { get; set; }
+
         public List<FranchiseLogo> Logos { get; set; } = [];
 
         public List<FranchiseSeason> Seasons { get; set; }

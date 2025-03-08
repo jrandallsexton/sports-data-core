@@ -8,6 +8,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
+using SportsData.Core.Processing;
+using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Documents
@@ -20,24 +22,24 @@ namespace SportsData.Provider.Application.Documents
         private readonly ILogger<DocumentController> _logger;
         private readonly DocumentService _documentService;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
-        private readonly IPublishEndpoint _bus;
         private readonly IProvideBlobStorage _blobStorage;
         private readonly IProvideHashes _hashProvider;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public DocumentController(
             DocumentService documentService,
             IDecodeDocumentProvidersAndTypes decoder,
-            IPublishEndpoint bus,
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage,
-            IProvideHashes hashProvider)
+            IProvideHashes hashProvider,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _documentService = documentService;
             _decoder = decoder;
-            _bus = bus;
             _logger = logger;
             _blobStorage = blobStorage;
             _hashProvider = hashProvider;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}")]
@@ -102,36 +104,8 @@ namespace SportsData.Provider.Application.Documents
         [HttpPost("publish", Name = "PublishDocumentEvents")]
         public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
-            var typeAndName = _decoder.GetTypeAndCollectionName(
-                command.SourceDataProvider,
-                command.Sport,
-                command.DocumentType,
-                command.Season);
-
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.CollectionName);
-
-            // https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/crud/read-operations/retrieve/
-            var filter = Builders<DocumentBase>.Filter.Empty;
-            var dbCursor = await dbObjects.FindAsync(filter);
-            var dbDocuments = await dbCursor.ToListAsync();
-
-            // TODO: Tackle correlation and causation ids
-            var events = dbDocuments.Select(tmp =>
-                new DocumentCreated(
-                    tmp.Id.ToString(),
-                    typeAndName.Type.Name,
-                    command.Sport,
-                    command.Season,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    Guid.NewGuid(),
-                    Guid.NewGuid())).ToList();
-
-            await _bus.PublishBatch(events);
-
-            _logger.LogInformation($"Published {events.Count} events.");
-
-            return Ok();
+            _backgroundJobProvider.Enqueue<PublishDocumentEventsProcessor>(x => x.Process(command));
+            return Accepted();
         }
 
         /// <summary>

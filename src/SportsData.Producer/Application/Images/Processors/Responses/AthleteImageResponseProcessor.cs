@@ -1,19 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Eventing.Events.Images;
-using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
     public class AthleteImageResponseProcessor : IProcessLogoAndImageResponses
     {
         private readonly ILogger<AthleteImageResponseProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly BaseDataContext _dataContext;
 
         public AthleteImageResponseProcessor(
             ILogger<AthleteImageResponseProcessor> logger,
-            AppDataContext dataContext)
+            BaseDataContext dataContext)
         {
             _logger = logger;
             _dataContext = dataContext;

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
@@ -13,7 +13,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
     public class GroupSeasonLogoResponseProcessor : IProcessLogoAndImageResponses
     {
         private readonly ILogger<GroupSeasonLogoResponseProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly TeamSportDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
@@ -21,7 +21,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
         public GroupSeasonLogoResponseProcessor(
             ILogger<GroupSeasonLogoResponseProcessor> logger,
-            AppDataContext dataContext,
+            TeamSportDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

@@ -24,7 +24,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<Venue> builder)
             {
                 builder.ToTable("Venue");
+                //builder.UseTpcMappingStrategy();
                 builder.HasKey(t => t.Id);
+                builder.Property(p => p.Id).ValueGeneratedNever();
             }
         }
     }

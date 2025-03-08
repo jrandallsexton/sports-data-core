@@ -6,14 +6,14 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
     public class GroupSeasonLogoRequestProcessor : IProcessLogoAndImageRequests
     {
         private readonly ILogger<GroupSeasonLogoRequestProcessor> _logger;
-        private readonly AppDataContext _dataContext;
+        private readonly TeamSportDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
@@ -21,7 +21,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         public GroupSeasonLogoRequestProcessor(
             ILogger<GroupSeasonLogoRequestProcessor> logger,
-            AppDataContext dataContext,
+            TeamSportDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

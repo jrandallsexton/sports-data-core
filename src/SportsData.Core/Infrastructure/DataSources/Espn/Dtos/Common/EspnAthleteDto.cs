@@ -17,94 +17,94 @@ public class EspnAthleteDto
     public string Uid { get; set; }
 
     [JsonProperty("guid")]
-    public string Guid { get; set; }
+    public string? Guid { get; set; }
 
     [JsonProperty("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     [JsonProperty("alternateIds")]
     public EspnAlternateIdDto AlternateIds { get; set; }
 
     [JsonProperty("firstName")]
-    public string FirstName { get; set; }
+    public string? FirstName { get; set; }
 
     [JsonProperty("lastName")]
-    public string LastName { get; set; }
+    public string? LastName { get; set; }
 
     [JsonProperty("fullName")]
-    public string FullName { get; set; }
+    public string? FullName { get; set; }
 
     [JsonProperty("displayName")]
-    public string DisplayName { get; set; }
+    public string? DisplayName { get; set; }
 
     [JsonProperty("shortName")]
-    public string ShortName { get; set; }
+    public string? ShortName { get; set; }
 
     [JsonProperty("weight")]
     public decimal Weight { get; set; }
 
     [JsonProperty("displayWeight")]
-    public string DisplayWeight { get; set; }
+    public string? DisplayWeight { get; set; }
 
     [JsonProperty("height")]
     public decimal Height { get; set; }
 
     [JsonProperty("displayHeight")]
-    public string DisplayHeight { get; set; }
+    public string? DisplayHeight { get; set; }
 
     [JsonProperty("age")]
     public int Age { get; set; }
 
     [JsonProperty("dateOfBirth")]
-    public string DateOfBirth { get; set; }
+    public string? DateOfBirth { get; set; }
 
     [JsonProperty("links")]
-    public List<EspnLinkFullDto> Links { get; set; }
+    public List<EspnLinkFullDto>? Links { get; set; }
 
     [JsonProperty("birthPlace")]
-    public EspnAthleteBirthPlaceDto BirthPlace { get; set; }
+    public EspnAthleteBirthPlaceDto? BirthPlace { get; set; }
 
     [JsonProperty("college")]
-    public EspnLinkDto College { get; set; }
+    public EspnLinkDto? College { get; set; }
 
     [JsonProperty("slug")]
-    public string Slug { get; set; }
+    public string? Slug { get; set; }
 
     [JsonProperty("headshot")]
     public EspnAthleteHeadshot? Headshot { get; set; }
 
     [JsonProperty("injuries")]
-    public List<object> Injuries { get; set; }
+    public List<object>? Injuries { get; set; }
 
     [JsonProperty("linked")]
     public bool Linked { get; set; }
 
     [JsonProperty("team")]
-    public EspnLinkDto Team { get; set; }
+    public EspnLinkDto? Team { get; set; }
 
     [JsonProperty("teams")]
-    public List<EspnLinkDto> Teams { get; set; }
+    public List<EspnLinkDto>? Teams { get; set; }
 
     [JsonProperty("statisticslog")]
-    public EspnLinkDto Statistics { get; set; }
+    public EspnLinkDto? Statistics { get; set; }
 
     [JsonProperty("notes")]
-    public EspnLinkDto Notes { get; set; }
+    public EspnLinkDto? Notes { get; set; }
 
     [JsonProperty("experience")]
-    public EspnAthleteExperience Experience { get; set; }
+    public EspnAthleteExperience? Experience { get; set; }
 
     [JsonProperty("proAthlete")]
-    public EspnLinkDto ProAthlete { get; set; }
+    public EspnLinkDto? ProAthlete { get; set; }
 
     [JsonProperty("active")]
     public bool Active { get; set; }
 
     [JsonProperty("eventLog")]
-    public EspnLinkDto EventLog { get; set; }
+    public EspnLinkDto? EventLog { get; set; }
 
     [JsonProperty("status")]
-    public EspnAthleteStatusDto Status { get; set; }
+    public EspnAthleteStatusDto? Status { get; set; }
 }
 
 public class EspnAthleteExperience

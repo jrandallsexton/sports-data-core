@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Models.Canonical;
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Venues.Queries
@@ -40,12 +40,12 @@ namespace SportsData.Producer.Application.Venues.Queries
         public class Handler : IRequestHandler<Query, Result<Dto>>
         {
             private readonly ILogger<Handler> _logger;
-            private readonly AppDataContext _dataContext;
+            private readonly BaseDataContext _dataContext;
             private readonly IMapper _mapper;
 
             public Handler(
                 ILogger<Handler> logger,
-                AppDataContext dataContext,
+                BaseDataContext dataContext,
                 IMapper mapper)
             {
                 _logger = logger;

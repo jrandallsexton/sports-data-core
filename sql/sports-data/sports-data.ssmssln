@@ -3,7 +3,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # SQL Server Management Studio Solution File, Format Version 20.00
 VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{863B5812-1561-42B8-94B1-69901962795D}"
+	ProjectSection(SolutionItems) = preProject
+		sports-data-groupAndGroupSeason.sql = sports-data-groupAndGroupSeason.sql
+		sports-data-resourceIndexes.sql = sports-data-resourceIndexes.sql
+		sports-data-working.sql = sports-data-working.sql
+	EndProjectSection
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|Default = Default|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{49BDBCFE-D9C7-43FC-965B-BC1D5F95D62A}.Default|Default.ActiveCfg = Default
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection

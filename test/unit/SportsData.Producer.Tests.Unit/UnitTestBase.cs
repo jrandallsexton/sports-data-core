@@ -1,14 +1,15 @@
 ﻿using AutoFixture;
 
 using AutoMapper;
-
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Moq.AutoMock;
 
-using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Tests.Unit
 {
@@ -21,7 +22,9 @@ namespace SportsData.Producer.Tests.Unit
 
         public ListLogger Logger { get; }
 
-        public AppDataContext DataContext { get; }
+        public FootballDataContext FootballDataContext { get; }
+
+        public TeamSportDataContext TeamSportDataContext => FootballDataContext;
 
         internal UnitTestBase()
         {
@@ -29,8 +32,10 @@ namespace SportsData.Producer.Tests.Unit
 
             Fixture = new Fixture();
 
-            DataContext = new AppDataContext(GetDataContextOptions());
-            Mocker.Use(typeof(AppDataContext), DataContext);
+            FootballDataContext = new FootballDataContext(GetFootballDataContextOptions());
+            Mocker.Use(typeof(BaseDataContext), FootballDataContext);
+            Mocker.Use(typeof(TeamSportDataContext), FootballDataContext);
+            Mocker.Use(FootballDataContext);
 
             Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
@@ -39,11 +44,11 @@ namespace SportsData.Producer.Tests.Unit
             Mocker.Use(typeof(IMapper), mapper);
         }
 
-        private static DbContextOptions<AppDataContext> GetDataContextOptions()
+        private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()
         {
             // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
             var dbName = Guid.NewGuid().ToString().Substring(0, 5);
-            return new DbContextOptionsBuilder<AppDataContext>()
+            return new DbContextOptionsBuilder<FootballDataContext>()
                 .UseInMemoryDatabase(dbName)
                 .Options;
         }

@@ -5,42 +5,56 @@ using System.Collections.Generic;
 
 namespace SportsData.Core.Eventing.Events.Images
 {
-    public class ProcessImageRequest(
-        string url,
-        Guid imageId,
-        Guid parentEntityId,
-        string imageName,
-        Sport sport,
-        int? seasonYear,
-        DocumentType documentType,
-        SourceDataProvider sourceDataProvider,
-        long height,
-        long width,
-        List<string>? rel,
-        Guid correlationId,
-        Guid causationId)
-        : EventBase(correlationId, causationId)
+    public class ProcessImageRequest : EventBase
     {
-        public string Url { get; init; } = url;
+        public ProcessImageRequest(
+            string url,
+            Guid imageId,
+            Guid parentEntityId,
+            string name,
+            Sport sport,
+            int? seasonYear,
+            DocumentType documentType,
+            SourceDataProvider sourceDataProvider,
+            long height,
+            long width,
+            List<string>? rel,
+            Guid correlationId,
+            Guid causationId) : base(correlationId, causationId)
+        {
+            Url = url;
+            ImageId = imageId;
+            ParentEntityId = parentEntityId;
+            Name = name;
+            Sport = sport;
+            SeasonYear = seasonYear;
+            DocumentType = documentType;
+            SourceDataProvider = sourceDataProvider;
+            Height = height;
+            Width = width;
+            Rel = rel ?? [];
+        }
 
-        public Guid ImageId { get; init; } = imageId;
+        public string Url { get; init; }
 
-        public Guid ParentEntityId { get; init; } = parentEntityId;
+        public Guid ImageId { get; init; }
 
-        public string Name { get; init; } = imageName;
+        public Guid ParentEntityId { get; init; }
 
-        public Sport Sport { get; init; } = sport;
+        public string Name { get; init; }
 
-        public int? SeasonYear { get; init; } = seasonYear;
+        public Sport Sport { get; init; }
 
-        public DocumentType DocumentType { get; init; } = documentType;
+        public int? SeasonYear { get; init; }
 
-        public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
+        public DocumentType DocumentType { get; init; }
 
-        public long Height { get; init; } = height;
+        public SourceDataProvider SourceDataProvider { get; init; }
 
-        public long Width { get; init; } = width;
+        public long Height { get; init; }
 
-        public List<string>? Rel { get; init; } = rel;
+        public long Width { get; init; }
+
+        public List<string>? Rel { get; init; }
     }
 }

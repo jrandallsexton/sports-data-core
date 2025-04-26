@@ -1,0 +1,18 @@
+.spinner {
+    margin-right: 8px;
+    animation: spin 1s linear infinite;
+    font-size: 1.2rem;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .week-dates {
+    font-size: 1rem;
+    color: #bbb;
+    margin-top: 5px;
+  }
+  
+  

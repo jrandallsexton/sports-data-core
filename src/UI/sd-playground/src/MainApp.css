@@ -1,0 +1,88 @@
+/* --- General Layout --- */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #111;
+  color: #fff;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #222;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  white-space: nowrap;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-link {
+  color: #61dafb;
+  text-decoration: none;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.nav-link:hover {
+  background-color: #333;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.nav-link.active {
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #333;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.nav-icon {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* --- Main Content --- */
+.main-content {
+  flex: 1;
+  padding: 40px;
+}
+
+/* --- Responsive Sidebar --- */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 80px; /* Collapse width */
+    align-items: center;
+    padding: 20px 5px;
+  }
+
+  .sidebar-title {
+    display: none; /* Hide title */
+  }
+
+  .nav-link {
+    justify-content: center; /* Center the icons */
+    font-size: 1.5rem;
+  }
+
+  .nav-icon {
+    margin-right: 0; /* Remove space between icon and text */
+  }
+
+  .nav-link span {
+    display: none; /* Hide text labels */
+  }
+}

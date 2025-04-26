@@ -1,0 +1,89 @@
+.signup-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh;
+    background-color: #111;
+    padding: 20px;
+  }
+  
+  .signup-card {
+    background-color: #222;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    color: #fff;
+  }
+  
+  .third-party-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .third-party-button {
+    background-color: #333;
+    color: #eee;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .third-party-button:hover {
+    background-color: #444;
+  }
+  
+  .google {
+    background-color: #db4437;
+  }
+  
+  .facebook {
+    background-color: #3b5998;
+  }
+  
+  .github {
+    background-color: #333;
+  }
+  
+  .apple {
+    background-color: #000;
+  }
+  
+  .icon {
+    font-size: 1.2rem;
+  }
+  
+  .divider {
+    border: 0;
+    height: 1px;
+    background: #444;
+    margin: 20px 0;
+  }
+  
+  .email-signup-button {
+    background-color: #61dafb;
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+  }
+  
+  .email-signup-button:hover {
+    background-color: #4ea0d9;
+  }
+  

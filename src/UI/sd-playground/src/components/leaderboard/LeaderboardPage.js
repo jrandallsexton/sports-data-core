@@ -67,16 +67,17 @@ function LeaderboardPage() {
                 key={user.id}
                 className={user.id === currentUserId ? "current-user-row" : ""}
               >
-                <td>
-                  {userTrueRank}{" "}
+                <td className="rank-cell">
+                  <div className="rank-number">{userTrueRank}</div>
                   {movement > 0 && (
-                    <span className="movement-up">+{movement} 🔺</span>
+                    <div className="movement-up">+{movement} 🔺</div>
                   )}
                   {movement < 0 && (
-                    <span className="movement-down">{movement} 🔻</span>
+                    <div className="movement-down">{movement} 🔻</div>
                   )}
-                  {movement === 0 && <span className="movement-same">➡️</span>}
+                  {movement === 0 && <div className="movement-same">➡️</div>}
                 </td>
+
                 <td>
                   {user.name}{" "}
                   {user.id === currentUserId && (

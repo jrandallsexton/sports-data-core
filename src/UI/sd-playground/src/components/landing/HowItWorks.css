@@ -1,0 +1,66 @@
+.how-it-works {
+    padding: 60px 20px;
+    background-color: #222;
+    color: #fff;
+    text-align: center;
+  }
+  
+  .how-it-works h2 {
+    font-size: 2.4rem;
+    margin-bottom: 40px;
+    color: #61dafb;
+  }
+  
+  .steps-grid {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  
+  .step-card {
+    background-color: #333;
+    padding: 30px;
+    border-radius: 12px;
+    width: 260px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .step-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  
+  .step-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #61dafb;
+  }
+  
+  .step-card h3 {
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+  }
+  
+  .step-card p {
+    font-size: 1rem;
+    color: #bbb;
+  }
+
+  .how-it-works {
+    padding: 60px 20px;
+    background-color: #222;
+    color: #fff;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  
+  .how-it-works.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  

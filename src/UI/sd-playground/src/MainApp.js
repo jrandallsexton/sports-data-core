@@ -1,22 +1,14 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
-import { FaHome, FaFootballBall, FaTrophy } from 'react-icons/fa';
+import { FaHome, FaFootballBall, FaTrophy, FaComments } from 'react-icons/fa';
 import './MainApp.css'; // Keep this
 
 import matchups from './data/matchups.js'; // Import matchups data
 import MatchupCard from './components/matchups/MatchupCard';
 import PicksPage from './components/picks/PicksPage';
 import LeaderboardPage from './components/leaderboard/LeaderboardPage'; // <-- NEW
+import MessageBoardPage from './components/messageboard/MessageboardPage.js';
 
 function HomePage() { return <div>🏠 Welcome Home</div>; }
-// function PicksPage() {
-//     return <div>
-//         <h2>🏈 Make your Picks</h2>
-//         {matchups.map(m => (
-//         <MatchupCard key={m.id} matchup={m} />
-//       ))}
-//         </div>;
-// }
-//function LeaderboardPage() { return <div>🏆 See the Leaderboard</div>; }
 
 function MainApp() {
   return (
@@ -33,6 +25,9 @@ function MainApp() {
         <NavLink to="/app/leaderboard" className="nav-link">
             <FaTrophy className="nav-icon" /><span>Leaderboard</span>
         </NavLink>
+        <NavLink to="/app/messageboard" className="nav-link">
+            <FaComments className="nav-icon" /><span>Message Board</span>
+        </NavLink>
         </nav>
       </aside>
 
@@ -41,6 +36,7 @@ function MainApp() {
           <Route path="/" element={<HomePage />} />
           <Route path="/picks" element={<PicksPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/messageboard" element={<MessageBoardPage />} />
         </Routes>
       </main>
     </div>

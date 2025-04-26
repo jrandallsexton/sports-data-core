@@ -1,0 +1,66 @@
+.feature-highlights {
+    padding: 60px 20px;
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+  }
+  
+  .feature-highlights h2 {
+    font-size: 2.4rem;
+    margin-bottom: 40px;
+    color: #61dafb;
+  }
+  
+  .features-grid {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  
+  .feature-card {
+    background-color: #222;
+    padding: 30px;
+    border-radius: 12px;
+    width: 280px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  
+  .feature-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #61dafb;
+  }
+  
+  .feature-card h3 {
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+  }
+  
+  .feature-card p {
+    font-size: 1rem;
+    color: #bbb;
+  }
+
+  .feature-highlights {
+    padding: 60px 20px;
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  
+  .feature-highlights.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  

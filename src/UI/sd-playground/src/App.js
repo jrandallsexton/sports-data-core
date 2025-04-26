@@ -1,28 +1,10 @@
 import { Toaster } from 'react-hot-toast';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import logo from './logo.svg';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
-// Import your real app shell
 import MainApp from './MainApp';
-
-function LandingPage() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>sportDeets.com</p>
-        <p>Coming August 2025</p>
-        <Link
-          to="/app"
-          className="App-link"
-        >
-          Enter App
-        </Link>
-      </header>
-    </div>
-  );
-}
+import SignupPage from './components/signup/SignupPage';
+import LandingPage from './components/landing/LandingPage'; // ✅ NEW
 
 function App() {
   return (
@@ -31,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/app/*" element={<MainApp />} />
+        <Route path="/signup" element={<SignupPage />} />
       </Routes>
     </Router>
   );

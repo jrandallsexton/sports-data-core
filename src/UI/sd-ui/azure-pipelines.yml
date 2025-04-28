@@ -4,13 +4,13 @@ trigger:
       - main
   paths:
     include:
-      - sd-ui/**
+      - src/UI/sd-ui/**
 
 pool:
   name: Default
 
 variables:
-  app_location: "sd-ui"          # Since YAML is at sd-ui root
+  app_location: "src/UI/sd-ui"
   output_location: "build"
   azure_static_web_apps_api_token: $(STATIC_WEB_APPS_API_TOKEN)
 

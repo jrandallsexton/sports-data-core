@@ -1,4 +1,3 @@
-// src/components/picks/SubmitButton.jsx
 
 import { FaSpinner } from "react-icons/fa";
 

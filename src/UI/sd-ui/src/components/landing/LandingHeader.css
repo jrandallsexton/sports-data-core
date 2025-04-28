@@ -3,7 +3,7 @@
   background-color: #111;
   padding: 15px 20px;
   display: flex;
-  justify-content: center; /* ✨ Center inner content */
+  justify-content: center; /* Center inner content */
   align-items: center;
   color: #61dafb;
   position: sticky;
@@ -19,11 +19,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  overflow: visible; /* ✨ optional safety */
+  overflow: visible;
   position: relative;
 }
 
-.logo a {
+.logo a, .logo-link {
   font-size: 1.8rem;
   color: #61dafb;
   text-decoration: none;
@@ -34,8 +34,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  overflow: visible; /* ✨ critical fix */
-  z-index: 1001; /* Add this line */
+  overflow: visible;
+  z-index: 1001;
 }
 
 .signin-button {
@@ -54,8 +54,9 @@
   color: #111;
 }
 
-/* ✨ Login Dropdown */
+/* Login Dropdown */
 .login-dropdown {
+  position: absolute;
   right: 0;
   top: 50px;
   background-color: #222;
@@ -66,24 +67,22 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
   flex-direction: column;
   align-items: stretch;
-  /* opacity: 0; */
-  visibility: hidden; /* Add this line */
+  opacity: 0;
+  visibility: hidden;
   transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
   z-index: 2000;
+  display: flex; /* Always flex */
 }
 
-/* ✨ Show when active */
+/* When shown */
 .login-dropdown.show {
-  display: flex !important; /* Add !important */
   opacity: 1;
-  visibility: visible; /* Add this line */
+  visibility: visible;
   transform: translateY(0);
-  background-color: red; /* Temporary debug color */
-  border: 3px solid yellow; /* Temporary debug border */
 }
 
-/* Inputs */
+/* Input fields inside dropdown */
 .login-dropdown input {
   width: 100%;
   margin-bottom: 10px;
@@ -94,7 +93,7 @@
   color: #fff;
 }
 
-/* Submit button */
+/* Submit Button */
 .submit-button {
   width: 100%;
   background-color: #61dafb;
@@ -112,7 +111,7 @@
   background-color: #4ea0d9;
 }
 
-/* Footer text */
+/* Footer text inside login dropdown */
 .login-footer-text {
   font-size: 0.8rem;
   color: #bbb;

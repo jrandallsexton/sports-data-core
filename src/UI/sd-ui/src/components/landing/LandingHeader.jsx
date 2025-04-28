@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./LandingHeader.css";
 
 function LandingHeader() {
   const [showLogin, setShowLogin] = useState(false);
 
-  function toggleLoginPanel() {
+  function toggleLoginPanel(event) {
+    event.preventDefault(); // <-- Different: prevent router from navigating
+    event.stopPropagation();
     setShowLogin((prev) => !prev);
   }
 
@@ -13,7 +15,7 @@ function LandingHeader() {
     <header className="landing-header">
       <div className="landing-header-inner">
         <div className="logo">
-          <Link to="/">sportDeets</Link>
+          <a href="/" className="logo-link">sportDeets</a> {/* Use plain <a> for now */}
         </div>
 
         <div className="header-actions">
@@ -24,11 +26,8 @@ function LandingHeader() {
             Sign In
           </button>
 
-          {/* Always render */}
           <div className={`login-dropdown ${showLogin ? "show" : ""}`}>
-            <p>
-              <strong>Sign In</strong>
-            </p>
+            <p><strong>Sign In</strong></p>
             <input type="email" placeholder="Email" />
             <input type="password" placeholder="Password" />
             <button className="submit-button">Login</button>
@@ -41,5 +40,6 @@ function LandingHeader() {
     </header>
   );
 }
+
 
 export default LandingHeader;

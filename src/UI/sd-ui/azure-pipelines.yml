@@ -28,7 +28,7 @@ steps:
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: 'dev-sports-data-connection'
+    azureSubscription: 'SportDeets-DevOpsConnection'
     scriptType: 'ps'
     scriptLocation: 'inlineScript'
     inlineScript: |

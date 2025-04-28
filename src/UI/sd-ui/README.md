@@ -63,4 +63,37 @@ This document tracks planned feature work, technical debt cleanup, and future en
 
 ---
 
+# sportDeets – Current Application Modules
+
+## Core Components
+- LandingPage (public entry point)
+- HomePage (dashboard after login)
+- PicksPage (make weekly picks)
+- LeaderboardPage (see rankings)
+- MessageBoardPage (user threads)
+- SettingsPage (theme + notifications)
+
+## PicksPage Child Components
+- GroupWeekSelector
+- MatchupList (for Card view)
+- MatchupGrid (for Grid view)
+- MatchupCard
+- SubmitButton
+- InsightDialog
+
+## Infrastructure
+- `apiWrapper.js` – centralized Axios API client
+- JSON Server mock backend (port 3001)
+- ThemeContext (for light/dark mode switching)
+
+## Layout
+- MainApp.jsx
+- Sidebar navigation
+- Responsive layout support
+
+## Dev Tools
+- `concurrently` to run React + JSON Server
+- `json-server` for mock API
+
+
 _Last Updated: April 28, 2025_

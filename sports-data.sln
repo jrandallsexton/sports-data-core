@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 		src\DockerfileSeason = src\DockerfileSeason
 		src\DockerfileVenue = src\DockerfileVenue
 		README.md = README.md
+		ROADMAP.md = ROADMAP.md
+		TECH_OVERVIEW.md = TECH_OVERVIEW.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SportsData.Core", "src\SportsData.Core\SportsData.Core.csproj", "{18224639-6EAE-458C-871C-49A0D82B9B82}"
@@ -90,8 +92,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{60F422
 		otlp-collector-confg.yml = otlp-collector-confg.yml
 		prometheus.yml = prometheus.yml
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NewFolder1", "NewFolder1", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

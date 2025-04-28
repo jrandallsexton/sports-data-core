@@ -1,56 +1,56 @@
-.feature-highlights {
+.how-it-works {
     padding: 60px 20px;
-    background-color: #111;
+    background-color: #222;
     color: #fff;
     text-align: center;
   }
   
-  .feature-highlights h2 {
+  .how-it-works h2 {
     font-size: 2.4rem;
     margin-bottom: 40px;
     color: #61dafb;
   }
   
-  .features-grid {
+  .steps-grid {
     display: flex;
     justify-content: center;
     gap: 30px;
     flex-wrap: wrap;
   }
   
-  .feature-card {
-    background-color: #222;
+  .step-card {
+    background-color: #333;
     padding: 30px;
     border-radius: 12px;
-    width: 280px;
+    width: 260px;
     text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
   }
   
-  .feature-card:hover {
+  .step-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   }
   
-  .feature-icon {
+  .step-icon {
     font-size: 3rem;
     margin-bottom: 20px;
     color: #61dafb;
   }
   
-  .feature-card h3 {
+  .step-card h3 {
     margin-bottom: 10px;
     font-size: 1.4rem;
   }
   
-  .feature-card p {
+  .step-card p {
     font-size: 1rem;
     color: #bbb;
   }
 
-  .feature-highlights {
+  .how-it-works {
     padding: 60px 20px;
-    background-color: #111;
+    background-color: #222;
     color: #fff;
     text-align: center;
     opacity: 0;
@@ -58,9 +58,25 @@
     transition: opacity 0.8s ease, transform 0.8s ease;
   }
   
-  .feature-highlights.visible {
+  .how-it-works.visible {
     opacity: 1;
     transform: translateY(0);
   }
+
+  .icon-users {
+    color: teal; /* Suggested color for users — clean and neutral */
+    font-size: 2.5rem;
+  }
+  
+  .icon-football {
+    color: saddlebrown; /* Brown football */
+    font-size: 2.5rem;
+  }
+  
+  .icon-bullseye {
+    color: darkorange; /* Good striking color for targeting */
+    font-size: 2.5rem;
+  }
+  
   
   

@@ -1,56 +1,56 @@
-.how-it-works {
+.feature-highlights {
     padding: 60px 20px;
-    background-color: #222;
+    background-color: #111;
     color: #fff;
     text-align: center;
   }
   
-  .how-it-works h2 {
+  .feature-highlights h2 {
     font-size: 2.4rem;
     margin-bottom: 40px;
     color: #61dafb;
   }
   
-  .steps-grid {
+  .features-grid {
     display: flex;
     justify-content: center;
     gap: 30px;
     flex-wrap: wrap;
   }
   
-  .step-card {
-    background-color: #333;
+  .feature-card {
+    background-color: #222;
     padding: 30px;
     border-radius: 12px;
-    width: 260px;
+    width: 280px;
     text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
   }
   
-  .step-card:hover {
+  .feature-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   }
   
-  .step-icon {
+  .feature-icon {
     font-size: 3rem;
     margin-bottom: 20px;
     color: #61dafb;
   }
   
-  .step-card h3 {
+  .feature-card h3 {
     margin-bottom: 10px;
     font-size: 1.4rem;
   }
   
-  .step-card p {
+  .feature-card p {
     font-size: 1rem;
     color: #bbb;
   }
 
-  .how-it-works {
+  .feature-highlights {
     padding: 60px 20px;
-    background-color: #222;
+    background-color: #111;
     color: #fff;
     text-align: center;
     opacity: 0;
@@ -58,9 +58,24 @@
     transition: opacity 0.8s ease, transform 0.8s ease;
   }
   
-  .how-it-works.visible {
+  .feature-highlights.visible {
     opacity: 1;
     transform: translateY(0);
   }
+
+  .icon-brain {
+    color: pink;
+  }
+  
+  .icon-bullhorn {
+    color: red; /* Red base */
+    /* Optional: if you want red+white two-tone effect, we'd need an SVG or different approach.
+       Standard FontAwesome single color unless using duotone versions. */
+  }
+  
+  .icon-trophy {
+    color: gold;
+  }
+  
   
   

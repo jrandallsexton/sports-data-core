@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { FaUsers, FaFootballBall, FaTrophy } from "react-icons/fa";
+import { FaUsers, FaFootballBall, FaBullseye } from "react-icons/fa";
 import "./HowItWorks.css";
 
 function HowItWorks() {
@@ -35,19 +35,19 @@ function HowItWorks() {
 
       <div className="steps-grid">
         <div className="step-card">
-          <FaUsers className="step-icon" />
+          <FaUsers className="step-icon icon-users" />
           <h3>Join a Group</h3>
           <p>Create a private group for your friends or join a public fan group.</p>
         </div>
 
         <div className="step-card">
-          <FaFootballBall className="step-icon" />
+          <FaFootballBall className="step-icon icon-football" />
           <h3>Make Your Picks</h3>
           <p>Pick winners straight up or against the spread each week.</p>
         </div>
 
         <div className="step-card">
-          <FaTrophy className="step-icon" />
+          <FaBullseye className="step-icon icon-bullseye" />
           <h3>Dominate the Leaderboard</h3>
           <p>Crush the competition and earn ultimate bragging rights.</p>
         </div>

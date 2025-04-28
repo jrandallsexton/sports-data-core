@@ -7,7 +7,7 @@ trigger:
       - sd-ui/**
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default
 
 variables:
   app_location: "."          # Since YAML is at sd-ui root

@@ -26,9 +26,12 @@ steps:
   workingDirectory: $(app_location)
   displayName: 'Build React App'
 
-- task: AzureStaticWebApp@0
+- task: AzureCLI@2
   inputs:
-    app_location: $(app_location)
-    output_location: $(output_location)
-    azure_static_web_apps_api_token: $(azure_static_web_apps_api_token)
+    azureSubscription: 'dev-sports-data-connection'
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az staticwebapp upload --name devsportdeets --resource-group rg-sportDeets-dev --source $(Build.SourcesDirectory)/src/UI/sd-ui/build
   displayName: 'Deploy to Azure Static Web App'
+

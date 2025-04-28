@@ -4,26 +4,18 @@ import LandingHero from './LandingHero'; // Import the Hero we discussed
 import FeatureHighlights from "./FeatureHighlights";
 import HowItWorks from "./HowItWorks";
 import LandingFooter from "./LandingFooter";
+import ScrollToTopButton from '../shared/ScrollToTopButton';
+import LandingHeader from "./LandingHeader";
 
 function LandingPage() {
   return (
     <div className="landing-page">
+      <LandingHeader />
       <LandingHero />
       <FeatureHighlights />
       <HowItWorks />
-      {/* Later add FeatureHighlights, Testimonials, Footer, etc. */}
-
-      <div className="landing-links">
-        <Link to="/app" className="App-link">
-          Sign In
-        </Link>
-
-        <Link to="/signup" className="App-link secondary-link">
-          Sign Up
-        </Link>
-      </div>
-
       <LandingFooter />
+      <ScrollToTopButton />
     </div>
   );
 }

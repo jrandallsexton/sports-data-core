@@ -1,70 +1,66 @@
-# Getting Started with Create React App
+# sportDeets Feature Roadmap
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This document tracks planned feature work, technical debt cleanup, and future enhancements for the sportDeets application.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🏈 Current Application Summary
+- Pick'em style NCAA football app
+- Supports multiple groups (private leagues, work pools, public contests)
+- Pick against the spread (ATS) format
+- Dual views: Card View and Grid View
+- AI Insights available to subscribed users
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🚀 Upcoming Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Picks and Matchups
+- [ ] Allow users to select **Straight Up** or **Against the Spread** when picking
+- [ ] Add **Over-Under Picks** support
+- [ ] Display **game time** and **location** consistently in both views
+- [ ] Separate "Consensus" into:
+  - [ ] Spread consensus
+  - [ ] Over-Under consensus
+  - [ ] Straight Up consensus
+- [ ] Add color coding for confidence levels or consensus percentages
 
-### `npm test`
+### Submissions
+- [ ] Save user picks to backend API (currently simulated with `console.log`)
+- [ ] Validate pick completeness before submission (e.g., no missing picks)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### API Integrations
+- [ ] Real API endpoints for:
+  - [ ] Matchups by Group/Week
+  - [ ] Leaderboard by Group/Week
+  - [ ] User Picks Submit/Fetch
+- [ ] Graceful API error handling
+- [ ] Automatic retries/backoff (using Axios interceptors)
 
-### `npm run build`
+### User Profile
+- [ ] Editable display name
+- [ ] Update notification settings (email alerts, push notifications)
+- [ ] Light/Dark theme toggle saved to user profile
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🛠️ Technical Debt / Cleanup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- [ ] Move inline styles inside components into proper `.css` modules
+- [ ] Normalize flexbox and grid layouts across all pages
+- [ ] Extract constants (like Group names, Week numbers) into `/src/constants/`
+- [ ] Improve accessibility (ARIA labels for buttons, etc.)
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🎯 Future Nice-to-Haves
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- [ ] **Public Leaderboards** with top overall users
+- [ ] **Confidence Points** system for ranked picks
+- [ ] **Live Score Updates** via external API
+- [ ] Mobile app using React Native (stretch goal)
+- [ ] Admin panel for managing groups, matchups, etc.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+_Last Updated: April 28, 2025_

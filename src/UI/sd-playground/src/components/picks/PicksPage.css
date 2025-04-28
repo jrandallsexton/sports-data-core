@@ -1,23 +1,58 @@
+.picks-page-container {
+  position: relative;
+}
+
 .spinner {
-    margin-right: 8px;
-    animation: spin 1s linear infinite;
-    font-size: 1.2rem;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+  font-size: 1.2rem;
+}
 
-  .week-dates {
-    font-size: 1rem;
-    color: #bbb;
-    margin-top: 5px;
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-  .picks-page-container {
-    position: relative;
-  }
-  
-  
-  
+.week-dates {
+  font-size: 1rem;
+  color: #bbb;
+  margin-top: 5px;
+}
+
+.toggle-view-button {
+  background-color: #444;
+  color: #61dafb;
+  padding: 8px 16px;
+  border: 1px solid #61dafb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.toggle-view-button:hover {
+  background-color: #61dafb;
+  color: #111;
+}
+
+/* .toggle-view-button {
+  background-color: #61dafb;
+  color: #111;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.toggle-view-button:hover {
+  background-color: #4ea0d9;
+  transform: translateY(-2px);
+}
+
+.toggle-view-button:active {
+  transform: translateY(0);
+} */
+

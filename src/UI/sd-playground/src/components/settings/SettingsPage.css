@@ -1,0 +1,57 @@
+/* src/pages/SettingsPage.css */
+
+.settings-page {
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    color: #ddd;
+  }
+  
+  .settings-page h1 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #61dafb;
+  }
+  
+  .settings-section {
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  
+  .settings-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #4ea0d9;
+  }
+  
+  .setting-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .setting-option label {
+    margin-left: 10px;
+    font-size: 1rem;
+    color: #ccc;
+  }
+  
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #61dafb;
+  }
+  
+  select {
+    background-color: #333;
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    margin-top: 10px;
+    font-size: 1rem;
+  }
+  

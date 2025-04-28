@@ -4,18 +4,25 @@ import './App.css';
 
 import MainApp from './MainApp';
 import SignupPage from './components/signup/SignupPage';
-import LandingPage from './components/landing/LandingPage'; // ✅ NEW
+import LandingPage from './components/landing/LandingPage';
+import TermsPage from "./components/legal/TermsPage";
+import PrivacyPage from "./components/legal/PrivacyPage";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 function App() {
   return (
-    <Router>
-      <Toaster position="top-center" reverseOrder={false} />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/app/*" element={<MainApp />} />
-        <Route path="/signup" element={<SignupPage />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Toaster position="top-center" reverseOrder={false} />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/app/*" element={<MainApp />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

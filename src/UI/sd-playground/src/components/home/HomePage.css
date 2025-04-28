@@ -1,0 +1,148 @@
+/* HomePage.css */
+
+.home-page {
+  padding: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+h1 {
+  color: #fff;
+  font-size: 2.2rem;
+  margin-bottom: 30px;
+}
+
+.section {
+  margin-top: 50px;
+}
+
+h2 {
+  color: #61dafb;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+/* Cards */
+.card-section {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+.card {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  flex: 1 1 300px;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-link {
+  margin-top: 10px;
+  color: #61dafb;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+/* Pick record list */
+.pick-record {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.highlight-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.highlight-number {
+  color: #61dafb;
+}
+
+/* Chart container */
+.chart-container {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  height: 400px;
+}
+
+/* Tip Card */
+.tip-card {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 10px;
+  color: #eee;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tip-note {
+  font-style: italic;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+/* News Card */
+.news-card {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 10px;
+  color: #ddd;
+}
+
+/* 📊 Chart Section Layout */
+.chart-section {
+  display: flex;
+  gap: 20px;
+  margin-top: 40px;
+  flex-wrap: wrap; /* ✅ Allows stacking on small screens */
+  justify-content: center;
+}
+
+.chart-block {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  flex: 1;
+  min-width: 300px;
+  max-width: 600px;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-block h2 {
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 300px;
+}
+
+/* 📰 Featured Article */
+.article-card {
+  background-color: #2a2a2a;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+  color: #eee;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 20px auto;
+  font-size: 1rem;
+}
+
+.article-card p {
+  margin-bottom: 16px;
+}
+

@@ -1,0 +1,35 @@
+.legal-page {
+  min-height: 100vh;
+  background-color: #111;
+  color: #ddd;
+  padding: 80px 20px 40px;
+  text-align: center;
+}
+
+.legal-page h2 {
+  font-size: 2.4rem;
+  margin-bottom: 30px;
+  color: #61dafb;
+}
+
+.legal-page p {
+  max-width: 800px;
+  margin: 0 auto 20px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.back-home-link {
+  margin-top: 30px;
+}
+
+.back-home-link a {
+  color: #61dafb;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.back-home-link a:hover {
+  color: #4ea0d9;
+}

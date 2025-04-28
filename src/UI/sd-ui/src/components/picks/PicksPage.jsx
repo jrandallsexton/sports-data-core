@@ -13,7 +13,7 @@ function PicksPage() {
   const [userPicks, setUserPicks] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribed] = useState(false);
   const [selectedMatchup, setSelectedMatchup] = useState(null);
   const [isInsightDialogOpen, setIsInsightDialogOpen] = useState(false);
   const [loadingInsight, setLoadingInsight] = useState(false);

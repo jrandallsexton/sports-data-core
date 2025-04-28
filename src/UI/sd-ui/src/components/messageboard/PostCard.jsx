@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaThumbsUp, FaThumbsDown, FaReply } from "react-icons/fa";
 
 function PostCard({ post, onReply, onReact, parentId = null }) {

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import "./LandingPage.css"; // (You can create this or reuse App.css styles for now)
 import LandingHero from './LandingHero'; // Import the Hero we discussed
 import FeatureHighlights from "./FeatureHighlights";

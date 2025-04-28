@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import "./LandingHero.css";
-import { Logo} from "../../logo.svg"; // Adjust the path as needed
 
 function LandingHero() {
   return (

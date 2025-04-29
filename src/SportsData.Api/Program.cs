@@ -30,7 +30,7 @@ namespace SportsData.Api
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-            services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
+            //services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
             //services.AddCaching(config);
@@ -46,7 +46,7 @@ namespace SportsData.Api
             //    Authorization = new[] { new DashboardAuthFilter() }
             //});
 
-            app.UseAuthorization();
+            //app.UseAuthorization();
 
             //app.UseHealthChecks("/health", new HealthCheckOptions()
             //{

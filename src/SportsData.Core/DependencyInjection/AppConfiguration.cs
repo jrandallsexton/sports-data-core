@@ -23,35 +23,38 @@ namespace SportsData.Core.DependencyInjection
     {
         public static WebApplicationBuilder UseCommon(this WebApplicationBuilder builder)
         {
-            builder.Host.UseSerilog((context, configuration) =>
-            {
-                configuration
-                    .ReadFrom.Configuration(context.Configuration)
-                    .Enrich.FromLogContext()
-                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
-                    .WriteTo.OpenTelemetry(options =>
-                    {
-                        // TODO: Move this to az app config
-                        options.Endpoint = "http://localhost:4317/v1/logs";
-                        options.Protocol = OtlpProtocol.Grpc;
-                        options.ResourceAttributes = new Dictionary<string, object>
-                        {
-                            ["service.name"] = builder.Environment.ApplicationName
-                        };
-                    });
-            });
+            Console.WriteLine("UseCommon!");
+            //builder.Host.UseSerilog((context, configuration) =>
+            //{
+            //    configuration
+            //        .ReadFrom.Configuration(context.Configuration)
+            //        .Enrich.FromLogContext()
+            //        .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
+            //        .WriteTo.OpenTelemetry(options =>
+            //        {
+            //            // TODO: Move this to az app config
+            //            options.Endpoint = "http://localhost:4317/v1/logs";
+            //            options.Protocol = OtlpProtocol.Grpc;
+            //            options.ResourceAttributes = new Dictionary<string, object>
+            //            {
+            //                ["service.name"] = builder.Environment.ApplicationName
+            //            };
+            //        });
+            //});
 
-            builder.Logging.AddOpenTelemetry(x =>
-            {
-                x.IncludeScopes = true;
-                x.IncludeFormattedMessage = true;
-            });
+            //builder.Logging.AddOpenTelemetry(x =>
+            //{
+            //    x.IncludeScopes = true;
+            //    x.IncludeFormattedMessage = true;
+            //});
 
             return builder;
         }
 
         public static WebApplication UseCommonFeatures(this WebApplication app, string buildConfiguration = "Debug")
         {
+            Console.WriteLine("UseCommonFeatures!");
+
             app.UseHealthChecks("/api/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckWriter.WriteResponse
@@ -122,8 +125,8 @@ namespace SportsData.Core.DependencyInjection
                 }
             }
 
-            app.UseSerilogRequestLogging();
-            app.MapPrometheusScrapingEndpoint();
+            //app.UseSerilogRequestLogging();
+            //app.MapPrometheusScrapingEndpoint();
 
             return app;
         }

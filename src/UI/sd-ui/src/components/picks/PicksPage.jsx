@@ -8,6 +8,7 @@ import GroupWeekSelector from "./GroupWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx"; // ✅ add this
 import SubmitButton from "./SubmitButton.jsx";
+import mockMatchups from "../../data/matchups.js"; // ✅ import mock data
 
 function PicksPage() {
   const [userPicks, setUserPicks] = useState({});
@@ -38,8 +39,10 @@ function PicksPage() {
         );
         setMatchups(response.data);
       } catch (error) {
-        console.error("Failed to load matchups:", error);
-        toast.error("Failed to load matchups!");
+        //console.error("Failed to load matchups:", error);
+        //toast.error("Failed to load matchups! Loading mock data ...");
+        const fallbackData = mockMatchups[selectedGroup]?.[selectedWeek] || [];
+        setMatchups(fallbackData);
       } finally {
         setLoadingMatchups(false);
       }

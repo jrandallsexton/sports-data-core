@@ -1,6 +1,6 @@
 // src/data/mockMatchups.js
 
-const matchups = {
+const mockMatchups = {
   "Friends League": {
     6: [
       {
@@ -117,4 +117,4 @@ const matchups = {
   }
 };
 
-export default matchups;
+export default mockMatchups;

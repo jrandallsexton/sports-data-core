@@ -19,7 +19,7 @@ const apiClient = axios.create({
 apiClient.interceptors.response.use(
   response => response,
   error => {
-    toast.error("Something went wrong. Please try again.");
+    //toast.error("Something went wrong. Please try again.");
     return Promise.reject(error);
   }
 );

@@ -35,7 +35,7 @@ variables:
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-api-svc-conn'
-  appName: 'sportdeetsapi'
+  appName: 'sportdeets-api-dev'
 
 stages:
 - stage: BuildAndTest
@@ -91,3 +91,23 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+
+- stage: DeployToAppService
+  displayName: 'Deploy: API to Azure App Service'
+  dependsOn: BuildImagePushACR
+  condition: succeeded()
+
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy container to Azure Web App'
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - task: AzureWebAppContainer@2
+      displayName: 'Deploy to Azure Web App (Container)'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appName: 'sportdeets-api-dev'
+        containers: |
+          $(containerRegistry)/$(imageRepository):$(tag)

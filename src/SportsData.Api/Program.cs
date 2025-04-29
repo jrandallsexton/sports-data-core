@@ -29,8 +29,8 @@ namespace SportsData.Api
             services.AddSwaggerGen();
             services.AddProviders(config);
             services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
-            services.AddInstrumentation(builder.Environment.ApplicationName);
-            services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+            //services.AddInstrumentation(builder.Environment.ApplicationName);
+            //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
             services.AddCaching(config);
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
@@ -39,10 +39,10 @@ namespace SportsData.Api
             // Configure the HTTP request pipeline.
             //app.UseHttpsRedirection();
 
-            app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            {
-                Authorization = new[] { new DashboardAuthFilter() }
-            });
+            //app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            //{
+            //    Authorization = new[] { new DashboardAuthFilter() }
+            //});
 
             app.UseAuthorization();
 

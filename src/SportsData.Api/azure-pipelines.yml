@@ -9,6 +9,8 @@ trigger:
 
 pool:
   name: Default
+  demands:
+    - Agent.Name -equals Bender
 
 resources:
 - repo: self

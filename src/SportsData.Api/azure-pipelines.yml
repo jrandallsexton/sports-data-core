@@ -104,11 +104,11 @@ stages:
       demands:
         - Agent.Name -equals Bender
     steps:
-    - task: AzureWebApp@1
+    - task: AzureWebAppContainer@1
       displayName: 'Deploy to Azure Web App (Container)'
       inputs:
         azureSubscription: $(azureSubscription)
-        appName: 'sportdeets-api-dev'
-        deployToSlotOrASE: false
-        images: |
+        appName: $(appName)
+        containers: |
           $(containerRegistry)/$(imageRepository):$(tag)
+

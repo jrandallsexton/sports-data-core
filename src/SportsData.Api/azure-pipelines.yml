@@ -8,7 +8,7 @@ trigger:
       - 'src/SportsData.Api/*'
 
 pool:
-  vmImage: 'windows-latest'
+  name: Default
 
 resources:
 - repo: self

@@ -104,10 +104,12 @@ stages:
       vmImage: $(vmImageName)
 
     steps:
-    - task: AzureWebAppContainer@2
+    - task: AzureWebApp@1
       displayName: 'Deploy to Azure Web App (Container)'
       inputs:
         azureSubscription: $(azureSubscription)
         appName: 'sportdeets-api-dev'
-        containers: |
+        deployToSlotOrASE: false
+        images: |
           $(containerRegistry)/$(imageRepository):$(tag)
+

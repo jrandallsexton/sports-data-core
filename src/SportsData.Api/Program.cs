@@ -18,6 +18,8 @@ namespace SportsData.Api
             var builder = WebApplication.CreateBuilder(args);
             builder.UseCommon();
 
+            Console.WriteLine("I AM NEW!");
+
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
@@ -31,8 +33,8 @@ namespace SportsData.Api
             services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
-            services.AddCaching(config);
-            services.AddHealthChecksMaster(builder.Environment.ApplicationName);
+            //services.AddCaching(config);
+            //services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             var app = builder.Build();
 
@@ -46,10 +48,10 @@ namespace SportsData.Api
 
             app.UseAuthorization();
 
-            app.UseHealthChecks("/health", new HealthCheckOptions()
-            {
-                ResponseWriter = HealthCheckWriter.WriteResponse
-            });
+            //app.UseHealthChecks("/health", new HealthCheckOptions()
+            //{
+            //    ResponseWriter = HealthCheckWriter.WriteResponse
+            //});
 
             app.MapControllers();
 

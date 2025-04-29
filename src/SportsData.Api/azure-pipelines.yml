@@ -21,9 +21,6 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileApi'
   tag: '$(Build.BuildId)'
 
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
-
   # Build Solution Vars
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
@@ -43,6 +40,10 @@ stages:
   jobs:
   - job: BuildAndTest
     displayName: 'Build & Test: API'
+    pool:
+      name: Default
+      demands:
+        - Agent.Name -equals Bender
     steps:
     - task: UseDotNet@2
       displayName: 'Use .NET 9 SDK'
@@ -72,15 +73,14 @@ stages:
 
 - stage: BuildImagePushACR
   displayName: 'Build Image & Push to ACR'
-  pool: 
-   name: Default
-   demands:
-    - Agent.Name -equals Bender
+  dependsOn: BuildAndTest
   jobs:
-  - job: Build
-    displayName: Build
+  - job: BuildImage
+    displayName: 'Build and Push Image'
     pool:
-      vmImage: $(vmImageName)
+      name: Default
+      demands:
+        - Agent.Name -equals Bender
     steps:
     - task: Docker@2
       displayName: 'Build & Push'
@@ -96,15 +96,13 @@ stages:
   displayName: 'Deploy: API to Azure App Service'
   dependsOn: BuildImagePushACR
   condition: succeeded()
-  pool: 
-   name: Default
-   demands:
-    - Agent.Name -equals Bender
   jobs:
   - job: Deploy
     displayName: 'Deploy container to Azure Web App'
     pool:
-      vmImage: $(vmImageName)
+      name: Default
+      demands:
+        - Agent.Name -equals Bender
     steps:
     - task: AzureWebApp@1
       displayName: 'Deploy to Azure Web App (Container)'
@@ -114,4 +112,3 @@ stages:
         deployToSlotOrASE: false
         images: |
           $(containerRegistry)/$(imageRepository):$(tag)
-

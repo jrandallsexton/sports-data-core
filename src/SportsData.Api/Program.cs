@@ -34,7 +34,7 @@ namespace SportsData.Api
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
             //services.AddCaching(config);
-            //services.AddHealthChecksMaster(builder.Environment.ApplicationName);
+            services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             var app = builder.Build();
 
@@ -48,10 +48,10 @@ namespace SportsData.Api
 
             //app.UseAuthorization();
 
-            //app.UseHealthChecks("/health", new HealthCheckOptions()
-            //{
-            //    ResponseWriter = HealthCheckWriter.WriteResponse
-            //});
+            app.UseHealthChecks("/health", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckWriter.WriteResponse
+            });
 
             app.MapControllers();
 

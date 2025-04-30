@@ -18,7 +18,7 @@ function LandingHeader() {
           <a href="/" className="logo-link">sportDeets</a> {/* Use plain <a> for now */}
         </div>
 
-        <div className="header-actions">
+        {/* <div className="header-actions">
           <button
             onClick={toggleLoginPanel}
             className={`signin-button ${showLogin ? "active" : ""}`}
@@ -35,7 +35,7 @@ function LandingHeader() {
               New here? <Link to="/signup">Get Started Free</Link>
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </header>
   );

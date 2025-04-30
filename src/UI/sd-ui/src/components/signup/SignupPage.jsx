@@ -1,10 +1,60 @@
+import { useState } from "react";
 import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import Login from "../login/Login.jsx";
+import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";
 import "./SignupPage.css";
 
 function SignupPage() {
-  function handleThirdPartySignIn(provider) {
-    alert(`Sign in with ${provider} clicked!`);
-    // Later you replace this with real auth logic
+  const [firebaseUser, setFirebaseUser] = useState(null);
+
+  async function handleThirdPartySignIn(providerName) {
+    const auth = getAuth();
+    let provider;
+
+    switch (providerName) {
+      case "Google":
+        provider = new GoogleAuthProvider();
+        break;
+      case "Facebook":
+        alert("Facebook not implemented yet.");
+        return;
+      default:
+        alert(`${providerName} sign-in not implemented.`);
+        return;
+    }
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const token = await result.user.getIdToken();
+      localStorage.setItem("authToken", token);
+
+      // 🧠 Show onboarding card
+      setFirebaseUser(result.user);
+    } catch (err) {
+      console.error(err);
+      alert("Sign-in failed.");
+    }
+  }
+
+  function handleOnboardingSubmit(data) {
+    console.log("User onboarding data:", data);
+    // TODO: Save user data to backend via API
+    // TODO: Navigate to /app or show success screen
+  }
+
+  // 🔀 Show onboarding if Firebase user is ready
+  if (firebaseUser && firebaseUser.displayName) {
+    return (
+      <div className="signup-page">
+        <div className="signup-card">
+          <UserSummaryCard
+            user={firebaseUser}
+            onSubmit={handleOnboardingSubmit}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -20,21 +70,18 @@ function SignupPage() {
           >
             <FaGoogle className="icon" /> Continue with Google
           </button>
-
           <button
             className="third-party-button facebook"
             onClick={() => handleThirdPartySignIn("Facebook")}
           >
             <FaFacebook className="icon" /> Continue with Facebook
           </button>
-
           <button
             className="third-party-button github"
             onClick={() => handleThirdPartySignIn("GitHub")}
           >
             <FaGithub className="icon" /> Continue with GitHub
           </button>
-
           <button
             className="third-party-button apple"
             onClick={() => handleThirdPartySignIn("Apple")}
@@ -46,9 +93,13 @@ function SignupPage() {
         <hr className="divider" />
 
         <p>Prefer using your email?</p>
-        <button className="email-signup-button">
-          Sign up with Email
-        </button>
+        <button className="email-signup-button">Sign up with Email</button>
+
+        <hr className="divider" />
+        <p className="switch-to-login">Already have an account?</p>
+        <div className="login-section">
+          <Login />
+        </div>
       </div>
     </div>
   );

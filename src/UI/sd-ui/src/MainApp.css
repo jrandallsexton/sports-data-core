@@ -99,3 +99,30 @@
   color: var(--text-color);
 }
 
+.logout-button {
+  background: none;
+  border: none;
+  color: #61dafb;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #333;
+  color: #ffffff;
+}
+
+.logout-button:focus {
+  outline: none;
+  box-shadow: 0 0 8px rgba(97, 218, 251, 0.6);
+}
+
+
+

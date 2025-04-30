@@ -1,5 +1,5 @@
-import { Routes, Route, NavLink } from 'react-router-dom';
-import { FaHome, FaFootballBall, FaTrophy, FaComments, FaCog } from 'react-icons/fa';
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
+import { FaHome, FaFootballBall, FaTrophy, FaComments, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import './MainApp.css';
 
 import PicksPage from './components/picks/PicksPage.jsx';
@@ -9,6 +9,14 @@ import HomePage from './components/home/HomePage.jsx';
 import SettingsPage from './components/settings/SettingsPage.jsx';
 
 function MainApp() {
+
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    localStorage.removeItem("authToken");
+    navigate("/");
+  };
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -29,6 +37,9 @@ function MainApp() {
           <NavLink to="/app/settings" className="nav-link">
             <FaCog className="nav-icon" /><span>Settings</span>
           </NavLink>
+          <button className="nav-link logout-button" onClick={handleSignOut}>
+            <FaSignOutAlt className="nav-icon" /><span>Sign Out</span>
+          </button>
         </nav>
       </aside>
 

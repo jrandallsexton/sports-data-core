@@ -16,6 +16,9 @@
 }
 
 .team {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-weight: bold;
 }
 
@@ -66,7 +69,6 @@
   text-align: center;
   transition: background-color 0.3s;
 }
-
 
 .pick-button:hover {
   background-color: #4ea0d9;
@@ -125,7 +127,6 @@
   flex: 0; /* ✨ Prevent Insight button from stretching wide */
 }
 
-
 .insight-button:disabled {
   border-color: #777;
   color: #777;
@@ -137,10 +138,24 @@
   border-color: #4ea0d9;
 }
 
-.team-logo {
+.matchup-logo {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  margin-right: 6px;
+  display: inline-block;
+  margin-right: 4px;
   vertical-align: middle;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+}
+
+
+.team-link {
+  color: #0d6efd;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.team-link:hover {
+  text-decoration: underline;
 }

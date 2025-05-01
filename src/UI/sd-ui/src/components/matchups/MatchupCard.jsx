@@ -1,6 +1,7 @@
 import "./MatchupCard.css";
 import { FaChartLine, FaLock } from "react-icons/fa";
 import teams from "../../data/teams";
+import { Link } from "react-router-dom";
 
 function MatchupCard({
   matchup,
@@ -9,8 +10,12 @@ function MatchupCard({
   onViewInsight,
   isInsightUnlocked,
 }) {
-  const awayTeamInfo = teams[matchup.awayTeam];
-  const homeTeamInfo = teams[matchup.homeTeam];
+  const awayTeamInfo = Object.values(teams).find(
+    (t) => t.name?.toLowerCase() === matchup.awayTeam.toLowerCase()
+  );
+  const homeTeamInfo = Object.values(teams).find(
+    (t) => t.name?.toLowerCase() === matchup.homeTeam.toLowerCase()
+  );
 
   return (
     <div className="matchup-card">
@@ -20,10 +25,13 @@ function MatchupCard({
             <img
               src={awayTeamInfo.logoUrl}
               alt={`${matchup.awayTeam} logo`}
-              className="team-logo"
+              className="matchup-logo"
             />
           )}
-          {matchup.awayTeam} (
+          <Link to={`/app/team/${awayTeamInfo?.slug}`} className="team-link">
+            {matchup.awayTeam}
+          </Link>{" "}
+          (
           {matchup.spread.startsWith("-")
             ? `+${Math.abs(parseFloat(matchup.spread))}`
             : `+${matchup.spread}`}
@@ -37,10 +45,13 @@ function MatchupCard({
             <img
               src={homeTeamInfo.logoUrl}
               alt={`${matchup.homeTeam} logo`}
-              className="team-logo"
+              className="matchup-logo"
             />
           )}
-          {matchup.homeTeam} ({matchup.spread})
+          <Link to={`/app/team/${homeTeamInfo?.slug}`} className="team-link">
+            {matchup.homeTeam}
+          </Link>{" "}
+          ({matchup.spread})
         </div>
       </div>
 

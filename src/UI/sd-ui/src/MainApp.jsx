@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
+import { toast } from "react-hot-toast";
 import {
   FaHome,
   FaFootballBall,
@@ -17,8 +18,10 @@ import MessageBoardPage from "./components/messageboard/MessageboardPage.jsx";
 import HomePage from "./components/home/HomePage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
+import TeamCard from "./components/teams/TeamCard";
 
 function MainApp() {
+
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
 
@@ -26,10 +29,12 @@ function MainApp() {
     const auth = getAuth();
     try {
       await signOut(auth); // ✅ invalidate Firebase session
-      localStorage.removeItem("authToken"); // ✅ remove stored token
+      localStorage.removeItem("authToken");
+      toast.success("Signed out successfully 👋");
       navigate("/"); // ✅ redirect to landing page
     } catch (error) {
       console.error("Sign-out failed:", error);
+      toast.error("Sign-out failed. Please try again.");
     }
   };
 
@@ -86,6 +91,7 @@ function MainApp() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/messageboard" element={<MessageBoardPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="team/:slug" element={<TeamCard />} />
         </Routes>
       </main>
     </div>

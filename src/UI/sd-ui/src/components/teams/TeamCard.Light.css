@@ -1,0 +1,98 @@
+body {
+    background-color: #121212; /* full-page dark backdrop */
+  }
+  
+  .team-card {
+    background-color: #ffffff;
+    color: #212529;
+    border-radius: 12px;
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 2rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  
+  .team-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .team-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+  }
+  
+  .team-name {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: #111;
+  }
+  
+  .team-location,
+  .team-stadium {
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    color: #555;
+  }
+  
+  .team-news h3,
+  .team-schedule h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid #e60000;
+    padding-left: 0.5rem;
+    color: #222;
+  }
+  
+  .team-news ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .team-news li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .team-news a {
+    color: #0076ce;
+    text-decoration: none;
+  }
+  
+  .team-news a:hover {
+    text-decoration: underline;
+  }
+  
+  .team-schedule table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  
+  .team-schedule th,
+  .team-schedule td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .team-schedule th {
+    background-color: #f7f7f7;
+    text-align: left;
+    color: #333;
+  }
+  
+  .team-schedule tr:hover {
+    background-color: #f1f1f1;
+  }
+  

@@ -2,7 +2,7 @@
 
 namespace SportsData.Api.Application.User
 {
-    public class UserDto
+    public class UpsertUserCommand
     {
         public string? FirebaseUid { get; set; }
 
@@ -14,7 +14,6 @@ namespace SportsData.Api.Application.User
         public string? PhotoUrl { get; set; }
 
         public string? Timezone { get; set; }
-
-        public DateTime LastLoginUtc { get; set; }
     }
+
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Auth;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
@@ -11,7 +12,7 @@ namespace SportsData.Api.Application.User
 {
     [ApiController]
     [Route("[controller]")]
-    public class UserController : ApiControllerBase
+    public class UserController : ControllerBase
     {
         private readonly AppDataContext _dbContext;
 
@@ -22,7 +23,7 @@ namespace SportsData.Api.Application.User
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> UpsertUser([FromBody] UserDto dto)
+        public async Task<IActionResult> UpsertUser([FromBody] UpsertUserCommand dto)
         {
             if (!ModelState.IsValid)
             {
@@ -58,5 +59,34 @@ namespace SportsData.Api.Application.User
             await _dbContext.SaveChangesAsync();
             return Ok();
         }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<ActionResult<UserDto>> GetCurrentUser()
+        {
+            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (firebaseUid == null)
+                return Unauthorized();
+
+            var user = await _dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
+
+            if (user == null)
+                return NotFound(new { message = $"User with UID '{firebaseUid}' not found." });
+
+            var dto = new UserDto
+            {
+                FirebaseUid = user.FirebaseUid,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                Timezone = user.Timezone,
+                LastLoginUtc = user.LastLoginUtc
+                //PhotoUrl = user.PhotoUrl
+            };
+
+            return Ok(dto);
+        }
+
     }
 }

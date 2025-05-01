@@ -22,13 +22,13 @@ namespace SportsData.Api.Infrastructure.Data
             modelBuilder.Entity<User>().HasData(new User
             {
                 Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                FirebaseUid = "a3GLn01j7pepPpVUSugtKWbRtQG3",
-                Email = "jrandallsexton@gmail.com",
-                EmailVerified = false,
+                FirebaseUid = "ngovRAr5E8cjMVaZNvcqN1nPFPJ2",
+                Email = "foo@bar.com",
+                EmailVerified = true,
                 SignInProvider = "password",
                 CreatedUtc = DateTime.UtcNow,
                 LastLoginUtc = DateTime.UtcNow,
-                DisplayName = "Randall Sexton"
+                DisplayName = "Foo Bar"
             });
         }
 

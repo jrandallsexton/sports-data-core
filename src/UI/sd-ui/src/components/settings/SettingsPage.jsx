@@ -1,47 +1,68 @@
-import { useTheme } from "../../contexts/ThemeContext"; // ✅ correct import
+import { useEffect, useState } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
+import apiWrapper from "../../api/apiWrapper";
 import "./SettingsPage.css";
 
 function SettingsPage() {
-  const { theme, toggleTheme } = useTheme(); // ✅ useTheme directly
+  const { theme, toggleTheme } = useTheme();
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await apiWrapper.Users.getCurrentUser();
+        setUser(response.data);
+      } catch (err) {
+        console.error("Failed to load user:", err);
+        setError("Could not fetch user settings.");
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="settings-page">
       <h1>Settings</h1>
 
-      {/* Profile Section */}
+      {error && <p className="error">{error}</p>}
+
       <section className="settings-section">
         <h2>Profile</h2>
         <div className="settings-item">
-          <label>Email:</label>
-          <p>user@example.com</p> {/* Placeholder */}
+          <span className="label">Email:</span>
+          <span>{user?.email || "Loading..."}</span>
         </div>
         <div className="settings-item">
-          <label>Display Name:</label>
-          <p>sportsFan123</p> {/* Placeholder */}
+          <span className="label">Display Name:</span>
+          <span>{user?.displayName || "Loading..."}</span>
+        </div>
+        <div className="settings-item">
+          <span className="label">Timezone:</span>
+          <span>{user?.timezone || "Loading..."}</span>
         </div>
       </section>
 
-      {/* Theme Section */}
       <section className="settings-section">
         <h2>Theme</h2>
         <div className="settings-item">
-          <label>Current Theme:</label>
-          <p>{theme}</p>
+          <span className="label">Current Theme:</span>
+          <span>{theme}</span>
           <button className="toggle-theme-button" onClick={toggleTheme}>
             Toggle Theme
           </button>
         </div>
       </section>
 
-      {/* Notifications Section */}
       <section className="settings-section">
         <h2>Notifications</h2>
         <div className="settings-item">
-          <label>Email Alerts:</label>
+          <span className="label">Email Alerts:</span>
           <input type="checkbox" disabled />
         </div>
         <div className="settings-item">
-          <label>Push Notifications:</label>
+          <span className="label">Push Notifications:</span>
           <input type="checkbox" disabled />
         </div>
       </section>

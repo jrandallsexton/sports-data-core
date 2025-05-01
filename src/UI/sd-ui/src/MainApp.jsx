@@ -30,6 +30,7 @@ function MainApp() {
     const hasSeenWelcome = localStorage.getItem("seenWelcomeDialog");
     if (!hasSeenWelcome) {
       setShowWelcome(true);
+      localStorage.setItem("seenWelcomeDialog", "true");
     }
   }, []);
 

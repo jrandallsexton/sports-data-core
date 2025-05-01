@@ -44,7 +44,7 @@ function SignupPage() {
   }
 
   // 🔀 Show onboarding if Firebase user is ready
-  if (firebaseUser && firebaseUser.displayName) {
+  if (firebaseUser) {
     return (
       <div className="signup-page">
         <div className="signup-card">

@@ -8,10 +8,10 @@ import { FaEnvelope, FaLock } from "react-icons/fa";
 import "./Login.css";
 
 const Login = () => {
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [token, setToken] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -21,10 +21,9 @@ const Login = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
-      setToken(token);
       localStorage.setItem("authToken", token);
 
-      const result = await apiWrapper.Auth.validateToken();
+      await apiWrapper.Auth.validateToken();
       navigate("/app");
     } catch (error) {
       setErrorMsg(error.message || "Login failed");

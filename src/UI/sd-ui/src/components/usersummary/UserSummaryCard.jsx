@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
+import moment from "moment-timezone";
+
 import "./UserSummaryCard.css";
 
-function UserSummaryCard({ firebaseUser }) {
+function UserSummaryCard({ user }) {
+  const timezoneOptions = moment.tz.names();
+
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -15,14 +19,14 @@ function UserSummaryCard({ firebaseUser }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (firebaseUser) {
+    if (user) {
       setFormData({
-        displayName: firebaseUser.displayName || "",
-        email: firebaseUser.email || "",
+        displayName: user.displayName || "",
+        email: user.email || "",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
       });
     }
-  }, [firebaseUser]);
+  }, [user]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -41,18 +45,12 @@ function UserSummaryCard({ firebaseUser }) {
     }
   };
 
-  if (!firebaseUser) {
-    return null; // or a loader if preferred
-  }
+  if (!user) return null;
 
   return (
     <div className="user-summary-card">
-      {firebaseUser.photoURL ? (
-        <img
-          src={firebaseUser.photoURL}
-          alt="Profile"
-          className="profile-image"
-        />
+      {user.photoURL ? (
+        <img src={user.photoURL} alt="Profile" className="profile-image" />
       ) : (
         <div className="default-avatar">👤</div>
       )}
@@ -60,7 +58,7 @@ function UserSummaryCard({ firebaseUser }) {
       <h3>Welcome!</h3>
       <p>Just a few more details to complete your profile.</p>
 
-      <form onSubmit={handleSubmit}>
+      <form className="onboarding-form" onSubmit={handleSubmit}>
         <label>
           Display Name:
           <input
@@ -74,13 +72,18 @@ function UserSummaryCard({ firebaseUser }) {
 
         <label>
           Timezone:
-          <input
-            type="text"
+          <select
             name="timezone"
             value={formData.timezone}
             onChange={handleChange}
             required
-          />
+          >
+            {timezoneOptions.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
@@ -90,7 +93,9 @@ function UserSummaryCard({ firebaseUser }) {
 
         {error && <p className="error">{error}</p>}
 
-        <button type="submit">Continue to App</button>
+        <button type="submit" className="submit-button">
+          Continue to App
+        </button>
       </form>
     </div>
   );

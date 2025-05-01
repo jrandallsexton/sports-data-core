@@ -1,0 +1,263 @@
+[
+  {
+    "id": "rookie_picker",
+    "name": "Rookie Picker",
+    "description": "Completed first weekly pick set",
+    "icon": "\ud83c\udfc1",
+    "rarity": "Common",
+    "visualTheme": "Starting Flag",
+    "trigger": {
+      "type": "picks_submitted",
+      "conditions": {
+        "totalPicks": 1
+      }
+    },
+    "earnedDate": "2025-01-19T16:50:33.032164Z"
+  },
+  {
+    "id": "perfect_week",
+    "name": "Perfect Week",
+    "description": "100% correct picks in a given week",
+    "icon": "\ud83c\udfaf",
+    "rarity": "Rare",
+    "visualTheme": "Bullseye",
+    "trigger": {
+      "type": "weekly_accuracy",
+      "conditions": {
+        "accuracy": 1.0
+      }
+    },
+    "earnedDate": "2025-02-12T16:50:33.032180Z"
+  },
+  {
+    "id": "against_the_odds",
+    "name": "Against the Odds",
+    "description": "Picked an underdog with +14 spread or worse who wins",
+    "icon": "\ud83d\udc3a",
+    "rarity": "Epic",
+    "visualTheme": "Underdog Icon",
+    "trigger": {
+      "type": "single_pick_result",
+      "conditions": {
+        "spread": {
+          "gte": 14
+        },
+        "result": "correct"
+      }
+    },
+    "earnedDate": "2025-04-11T16:50:33.032184Z"
+  },
+  {
+    "id": "spread_master",
+    "name": "Spread Master",
+    "description": "Maintains \u226570% ATS accuracy over 5+ weeks",
+    "icon": "\ud83d\udcca",
+    "rarity": "Epic",
+    "visualTheme": "Graph Climb",
+    "trigger": {
+      "type": "rolling_stats",
+      "conditions": {
+        "window": 5,
+        "type": "ATS",
+        "accuracy": {
+          "gte": 0.7
+        }
+      }
+    }
+  },
+  {
+    "id": "straight_shooter",
+    "name": "Straight Shooter",
+    "description": "Perfect Straight Up picks in a week",
+    "icon": "\ud83c\udfaf",
+    "rarity": "Rare",
+    "visualTheme": "Crosshair",
+    "trigger": {
+      "type": "weekly_accuracy",
+      "conditions": {
+        "pickType": "SU",
+        "accuracy": 1.0
+      }
+    }
+  },
+  {
+    "id": "conference_king",
+    "name": "Conference King",
+    "description": "Dominated a single conference all season",
+    "icon": "\ud83c\udfc6",
+    "rarity": "Rare",
+    "visualTheme": "Conference Trophy",
+    "trigger": {
+      "type": "conference_accuracy",
+      "conditions": {
+        "seasonAccuracy": {
+          "gte": 0.8
+        }
+      }
+    }
+  },
+  {
+    "id": "consistency_champ",
+    "name": "Consistency Champ",
+    "description": "Top 3 in group leaderboard 3 weeks in a row",
+    "icon": "\ud83d\udd01",
+    "rarity": "Rare",
+    "visualTheme": "Arrow Loop",
+    "trigger": {
+      "type": "weekly_rank",
+      "conditions": {
+        "rankThreshold": 3,
+        "streakWeeks": 3
+      }
+    },
+    "earnedDate": "2025-03-05T16:50:33.032189Z"
+  },
+  {
+    "id": "deets_veteran",
+    "name": "Deets Veteran",
+    "description": "Played full pick'em for 2 seasons",
+    "icon": "\ud83e\uddd3",
+    "rarity": "Legendary",
+    "visualTheme": "Helmet w/ Stars",
+    "trigger": {
+      "type": "lifetime_participation",
+      "conditions": {
+        "seasonsPlayed": {
+          "gte": 2
+        },
+        "fullParticipation": true
+      }
+    }
+  },
+  {
+    "id": "clutch_picker",
+    "name": "Clutch Picker",
+    "description": "Late picks (Sat/Sun) shifted you up 3+ ranks",
+    "icon": "\u23f1\ufe0f",
+    "rarity": "Epic",
+    "visualTheme": "Stopwatch + Arrow",
+    "trigger": {
+      "type": "late_picks_rank_jump",
+      "conditions": {
+        "submittedAfter": "Friday",
+        "rankChange": {
+          "gte": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "lone_wolf",
+    "name": "Lone Wolf",
+    "description": "Only one to pick a team\u2014and they won",
+    "icon": "\ud83d\udc3a",
+    "rarity": "Epic",
+    "visualTheme": "Howling Wolf",
+    "trigger": {
+      "type": "solo_pick_success",
+      "conditions": {
+        "isOnlyUser": true,
+        "result": "correct"
+      }
+    }
+  },
+  {
+    "id": "social_sharer",
+    "name": "Social Sharer",
+    "description": "Shared your picks or leaderboard to social media",
+    "icon": "\ud83d\udce2",
+    "rarity": "Common",
+    "visualTheme": "Megaphone",
+    "trigger": {
+      "type": "social_share",
+      "conditions": {
+        "shared": true
+      }
+    },
+    "earnedDate": "2025-04-21T16:50:33.032194Z"
+  },
+  {
+    "id": "streak_buster",
+    "name": "Streak Buster",
+    "description": "Ended another user's 3+ win streak",
+    "icon": "\u26a1",
+    "rarity": "Rare",
+    "visualTheme": "Lightning Break",
+    "trigger": {
+      "type": "head_to_head",
+      "conditions": {
+        "opponentStreak": {
+          "gte": 3
+        },
+        "userWins": true
+      }
+    },
+    "earnedDate": "2025-01-10T16:50:33.032199Z"
+  },
+  {
+    "id": "perfect_season",
+    "name": "Perfect Season",
+    "description": "100% correct picks for entire season",
+    "icon": "\ud83c\udf1f",
+    "rarity": "Legendary",
+    "visualTheme": "Golden Perfection Crown",
+    "trigger": {
+      "type": "season_accuracy",
+      "conditions": {
+        "accuracy": 1.0
+      }
+    }
+  },
+  {
+    "id": "ironman",
+    "name": "Ironman",
+    "description": "Submitted picks every week of the season",
+    "icon": "\ud83e\uddbe",
+    "rarity": "Rare",
+    "visualTheme": "Robot Arm",
+    "trigger": {
+      "type": "seasonal_consistency",
+      "conditions": {
+        "weeksMissed": 0
+      }
+    },
+    "earnedDate": "2025-03-05T16:50:33.032207Z"
+  },
+  {
+    "id": "early_bird",
+    "name": "Early Bird",
+    "description": "Picks submitted before Thursday for X weeks",
+    "icon": "\ud83d\udc23",
+    "rarity": "Common",
+    "visualTheme": "Sunrise",
+    "trigger": {
+      "type": "early_submission_streak",
+      "conditions": {
+        "cutoffDay": "Wednesday",
+        "weeksMet": {
+          "gte": 5
+        }
+      }
+    }
+  },
+  {
+    "id": "comeback_kid",
+    "name": "Comeback Kid",
+    "description": "Climbed from bottom 3rd to top 3rd of leaderboard",
+    "icon": "\ud83d\udcc8",
+    "rarity": "Rare",
+    "visualTheme": "Rocket Trail",
+    "trigger": {
+      "type": "season_rank_change",
+      "conditions": {
+        "startPercentile": {
+          "gte": 67
+        },
+        "endPercentile": {
+          "lte": 33
+        }
+      }
+    },
+    "earnedDate": "2025-03-04T16:50:33.032211Z"
+  }
+]

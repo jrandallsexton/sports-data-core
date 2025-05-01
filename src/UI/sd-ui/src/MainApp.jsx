@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { getAuth, signOut } from "firebase/auth";
 import {
   FaHome,
   FaFootballBall,
@@ -21,9 +22,15 @@ function MainApp() {
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
 
-  const handleSignOut = () => {
-    localStorage.removeItem("authToken");
-    navigate("/");
+  const handleSignOut = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth); // ✅ invalidate Firebase session
+      localStorage.removeItem("authToken"); // ✅ remove stored token
+      navigate("/"); // ✅ redirect to landing page
+    } catch (error) {
+      console.error("Sign-out failed:", error);
+    }
   };
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Login from "../login/Login.jsx";
@@ -6,7 +7,9 @@ import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";
 import "./SignupPage.css";
 
 function SignupPage() {
+  
   const [firebaseUser, setFirebaseUser] = useState(null);
+  const navigate = useNavigate();
 
   async function handleThirdPartySignIn(providerName) {
     const auth = getAuth();
@@ -29,8 +32,20 @@ function SignupPage() {
       const token = await result.user.getIdToken();
       localStorage.setItem("authToken", token);
 
-      // 🧠 Show onboarding card
-      setFirebaseUser(result.user);
+      // 🔍 Check if backend has this user
+      const response = await fetch("/api/user/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 404) {
+        setFirebaseUser(result.user); // Show onboarding
+      } else if (response.ok) {
+        navigate("/app"); // Skip onboarding
+      } else {
+        throw new Error(`Unexpected status ${response.status}`);
+      }
     } catch (err) {
       console.error(err);
       alert("Sign-in failed.");

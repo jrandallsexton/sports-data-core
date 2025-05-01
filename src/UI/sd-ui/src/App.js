@@ -1,16 +1,23 @@
 import { useEffect } from "react";
-import { Toaster } from 'react-hot-toast';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import './App.css';
+import { Toaster } from "react-hot-toast";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import "./App.css";
 
-import MainApp from './MainApp';
-import SignupPage from './components/signup/SignupPage';
-import LandingPage from './components/landing/LandingPage';
+import MainApp from "./MainApp";
+import SignupPage from "./components/signup/SignupPage";
+import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import PrivateRoute from "./routes/PrivateRoute";
+import { AuthProvider } from "./contexts/AuthContext";
 
-// Wrapped to use navigation logic
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,7 +35,14 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/app/*" element={<MainApp />} />
+        <Route
+          path="/app/*"
+          element={
+            <PrivateRoute>
+              <MainApp />
+            </PrivateRoute>
+          }
+        />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
@@ -39,9 +53,11 @@ function AppRoutes() {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

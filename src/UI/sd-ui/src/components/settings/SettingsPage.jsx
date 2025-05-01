@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 import apiWrapper from "../../api/apiWrapper";
 import "./SettingsPage.css";
+import BadgesPanel from "../badges/BadgesPanel";
 
 function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
@@ -66,6 +67,8 @@ function SettingsPage() {
           <input type="checkbox" disabled />
         </div>
       </section>
+
+      <BadgesPanel />
     </div>
   );
 }

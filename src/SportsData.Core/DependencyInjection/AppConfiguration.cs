@@ -23,7 +23,6 @@ namespace SportsData.Core.DependencyInjection
     {
         public static WebApplicationBuilder UseCommon(this WebApplicationBuilder builder)
         {
-            Console.WriteLine("UseCommon!");
             //builder.Host.UseSerilog((context, configuration) =>
             //{
             //    configuration

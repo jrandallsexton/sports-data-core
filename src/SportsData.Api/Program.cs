@@ -26,16 +26,7 @@ namespace SportsData.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1. Initialize Firebase Admin SDK
-            var credentialPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = GoogleCredential.FromFile(credentialPath)
-            });
-
-
-            // 2. Configure JWT Authentication
+            // Configure JWT Authentication
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -56,7 +47,6 @@ namespace SportsData.Api
                 options.ModelBinderProviders.Insert(0, new FirebaseUserClaimsBinderProvider());
             });
 
-
             // 3. Add Authorization middleware
             builder.Services.AddAuthorization();
 
@@ -66,13 +56,14 @@ namespace SportsData.Api
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
+                    policy.WithOrigins(
+                            "http://localhost:3000",
+                            "https://dev.sportdeets.com")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials(); // if using cookies or Authorization header
                 });
             });
-
 
             // Add services to the container.
             var config = builder.Configuration;
@@ -80,6 +71,12 @@ namespace SportsData.Api
 
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
+
+            FirebaseApp.Create(new AppOptions
+            {
+                Credential = GoogleCredential.FromJson(config["CommonConfig:FirebaseConfigJson"])
+            });
+
             services.AddCoreServices(config);
             services.AddControllers();
             services.AddEndpointsApiExplorer();

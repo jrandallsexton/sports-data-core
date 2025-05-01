@@ -14,8 +14,6 @@ namespace SportsData.Api.Application.User
         public string? PhotoUrl { get; set; }
 
         public string? Timezone { get; set; }
-
-        public string LastLoginUtc { get; set; }
     }
 
 }

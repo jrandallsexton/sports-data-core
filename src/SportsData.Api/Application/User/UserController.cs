@@ -10,7 +10,7 @@ using System.Security.Claims;
 namespace SportsData.Api.Application.User
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class UserController : ApiControllerBase
     {
         private readonly AppDataContext _dbContext;

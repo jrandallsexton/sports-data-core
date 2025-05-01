@@ -9,6 +9,8 @@ using SportsData.Core.Infrastructure.Clients.Venue;
 
 using System.Collections.Generic;
 
+using static SportsData.Core.Config.CommonConfig;
+
 namespace SportsData.Core.Config
 {
     public class CommonConfig
@@ -27,16 +29,58 @@ namespace SportsData.Core.Config
 
         public List<ProviderConfig> ProviderConfigs { get; set; }
 
+        public FirebaseConfiguration FirebaseConfig { get; set; }
+
+        public string FirebaseConfigJson { get; set; }
+
         public class ProviderConfig
         {
             public string Name { get; set; }
             public string SecretKey { get; set; }
             public string ApiUrl { get; set; }
         }
+
+        public class FirebaseConfiguration
+        {
+            public string Type { get; set; }
+            public string ProjectId { get; set; }
+            public string PrivateKeyId { get; set; }
+            public string PrivateKey { get; set; }
+            public string ClientEmail { get; set; }
+            public string ClientId { get; set; }
+            public string AuthUri { get; set; }
+            public string TokenUri { get; set; }
+            public string AuthProviderX509CertUrl { get; set; }
+            public string ClientX509CertUrl { get; set; }
+            public string UniverseDomain { get; set; }
+        }
     }
 
     public static class CommonConfigKeys
     {
+        public static string FirebaseConfigType =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.Type)}";
+        public static string FirebaseConfigProjectId =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.ProjectId)}";
+        public static string FirebaseConfigPrivateKeyId =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.PrivateKeyId)}";
+        public static string FirebaseConfigPrivateKey =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.PrivateKey)}";
+        public static string FirebaseConfigClientEmail =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.ClientEmail)}";
+        public static string FirebaseConfigClientId =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.ClientId)}";
+        public static string FirebaseConfigAuthUri =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.AuthUri)}";
+        public static string FirebaseConfigTokenUri =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.TokenUri)}";
+        public static string FirebaseConfigAuthProviderX509CertUrl =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.AuthProviderX509CertUrl)}";
+        public static string FirebaseConfigClientX509CertUrl =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.ClientX509CertUrl)}";
+        public static string FirebaseConfigUniverseDomain =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.FirebaseConfig)}:{nameof(FirebaseConfiguration.UniverseDomain)}";
+
         public static string AzureBlobStorage =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageConnectionString)}";
 

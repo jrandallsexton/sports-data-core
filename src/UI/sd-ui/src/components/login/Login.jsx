@@ -21,8 +21,11 @@ const Login = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
-      localStorage.setItem("authToken", token);
-
+      
+      // Send token to backend to set HttpOnly cookie
+      await apiWrapper.Auth.setToken(token);
+      
+      // Validate the token
       await apiWrapper.Auth.validateToken();
       navigate("/app");
     } catch (error) {

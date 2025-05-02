@@ -1,33 +1,66 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import apiClient from '../api/apiClient';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // start as loading
+  const [loading, setLoading] = useState(true);
+
+  const handleSignOut = async () => {
+    const auth = getAuth();
+    try {
+      console.log('Signing out: Clearing token cookie');
+      // Clear the token cookie first
+      await apiClient.post('/auth/clear-token');
+      
+      // Then sign out from Firebase
+      await firebaseSignOut(auth);
+      
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const auth = getAuth();
-
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('Auth state changed:', firebaseUser ? 'User present' : 'No user');
+      
       if (firebaseUser) {
-        setUser(firebaseUser);
-        const token = await firebaseUser.getIdToken();
-        localStorage.setItem('authToken', token);
+        try {
+          // Get the ID token and set it in the cookie
+          const token = await firebaseUser.getIdToken();
+          console.log('Setting token cookie for user:', firebaseUser.uid);
+          await apiClient.post('/auth/set-token', { token });
+          setUser(firebaseUser);
+        } catch (error) {
+          console.error('Token setup failed:', error);
+          setUser(null);
+        }
       } else {
+        // Only clear the token if we're explicitly signing out
+        if (user !== null) {
+          console.log('Clearing token cookie due to auth state change');
+          await apiClient.post('/auth/clear-token');
+        }
         setUser(null);
-        localStorage.removeItem('authToken');
       }
 
-      setLoading(false); // stop loading after initial check
+      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, handleSignOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -19,6 +19,7 @@ import HomePage from "./components/home/HomePage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
+import apiWrapper from "./api/apiWrapper";
 
 function MainApp() {
 
@@ -28,10 +29,14 @@ function MainApp() {
   const handleSignOut = async () => {
     const auth = getAuth();
     try {
-      await signOut(auth); // ✅ invalidate Firebase session
-      localStorage.removeItem("authToken");
+      // Clear the token cookie first
+      await apiWrapper.Auth.clearToken();
+      
+      // Then sign out from Firebase
+      await signOut(auth);
+      
       toast.success("Signed out successfully 👋");
-      navigate("/"); // ✅ redirect to landing page
+      navigate("/");
     } catch (error) {
       console.error("Sign-out failed:", error);
       toast.error("Sign-out failed. Please try again.");

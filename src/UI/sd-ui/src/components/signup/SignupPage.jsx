@@ -5,6 +5,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Login from "../login/Login.jsx";
 import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";
 import "./SignupPage.css";
+import apiWrapper from "../../api/apiWrapper";
 
 function SignupPage() {
   
@@ -30,13 +31,13 @@ function SignupPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const token = await result.user.getIdToken();
-      localStorage.setItem("authToken", token);
+      
+      // Send token to backend to set HttpOnly cookie
+      await apiWrapper.Auth.setToken(token);
 
       // 🔍 Check if backend has this user
       const response = await fetch("/api/user/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include' // Include cookies in the request
       });
 
       if (response.status === 404) {

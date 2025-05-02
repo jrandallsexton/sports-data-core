@@ -56,8 +56,6 @@ namespace SportsData.Core.DependencyInjection
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                var connString = configuration[$"{applicationName}:ConnectionStrings:AppDataContext"];
-                Console.WriteLine($"Connecting to SQL using: {connString}");
                 options.UseSqlServer(configuration[$"{applicationName}:ConnectionStrings:AppDataContext"]);
             });
 

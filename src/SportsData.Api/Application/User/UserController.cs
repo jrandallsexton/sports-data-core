@@ -30,7 +30,7 @@ namespace SportsData.Api.Application.User
                 return BadRequest(ModelState);
             }
 
-            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var firebaseUid = User.FindFirst("user_id")?.Value;
             if (firebaseUid == null)
                 return Unauthorized();
 
@@ -64,7 +64,7 @@ namespace SportsData.Api.Application.User
         [Authorize]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
-            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var firebaseUid = User.FindFirst("user_id")?.Value;
             if (firebaseUid == null)
                 return Unauthorized();
 

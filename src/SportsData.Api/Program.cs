@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Config;
+using Microsoft.Extensions.Logging;
 
 namespace SportsData.Api
 {
@@ -38,7 +39,30 @@ namespace SportsData.Api
                         ValidIssuer = "https://securetoken.google.com/sportdeets-dev",
                         ValidateAudience = true,
                         ValidAudience = "sportdeets-dev",
-                        ValidateLifetime = true
+                        ValidateLifetime = true,
+                        NameClaimType = "user_id",
+                        RoleClaimType = "role"
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            // Get the token from the cookie
+                            context.Token = context.Request.Cookies["authToken"];
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = context =>
+                        {
+                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                            logger.LogError(context.Exception, "Authentication failed");
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = context =>
+                        {
+                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                            logger.LogInformation("Token validated for user {UserId}", context.Principal.FindFirst("user_id")?.Value);
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
@@ -61,7 +85,8 @@ namespace SportsData.Api
                             "https://dev.sportdeets.com")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials(); // if using cookies or Authorization header
+                        .AllowCredentials() // if using cookies or Authorization header
+                        .SetIsOriginAllowed(origin => true); // Allow all origins for development
                 });
             });
 

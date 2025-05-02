@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // we’ll discuss next
+import { useAuth } from '../contexts/AuthContext';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -9,7 +9,12 @@ function PrivateRoute({ children }) {
     return <div className="route-loading">Loading...</div>;
   }
 
-  return user ? children : <Navigate to="/signup" replace state={{ from: location }} />;
+  // If we don't have a user, redirect to signup
+  if (!user) {
+    return <Navigate to="/signup" replace state={{ from: location }} />;
+  }
+
+  return children;
 }
 
 export default PrivateRoute;

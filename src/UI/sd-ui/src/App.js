@@ -16,18 +16,23 @@ import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import PrivateRoute from "./routes/PrivateRoute";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token && location.pathname === "/") {
-      navigate("/app");
+    // Only redirect if we're not loading and we're on the root path
+    if (!loading && user && location.pathname === "/") {
+      navigate("/app", { replace: true });
     }
-  }, [location, navigate]);
+  }, [location, navigate, user, loading]);
+
+  if (loading) {
+    return <div className="app-loading">Loading...</div>;
+  }
 
   return (
     <>

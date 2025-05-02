@@ -67,22 +67,33 @@ namespace SportsData.Api.Application.Auth
             }
 
             var cookieDomain = GetCookieDomain();
-            _logger.LogInformation("Setting token cookie for request from {RemoteIpAddress}. Domain: {CookieDomain}", 
+            _logger.LogInformation("Setting token cookie for request from {RemoteIpAddress}. Domain: {CookieDomain}, Origin: {Origin}", 
                 HttpContext.Connection.RemoteIpAddress, 
-                cookieDomain);
+                cookieDomain,
+                Request.Headers["Origin"].ToString());
 
             // Set the token as an HttpOnly cookie
-            Response.Cookies.Append("authToken", request.Token, new CookieOptions
+            var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(7),
                 Domain = cookieDomain
-            });
+            };
 
-            _logger.LogInformation("Cookie set with options: HttpOnly=true, Secure=true, SameSite=None, Domain={CookieDomain}", 
-                cookieDomain);
+            Response.Cookies.Append("authToken", request.Token, cookieOptions);
+
+            _logger.LogInformation("Cookie set with options: HttpOnly={HttpOnly}, Secure={Secure}, SameSite={SameSite}, Domain={Domain}, Path={Path}", 
+                cookieOptions.HttpOnly,
+                cookieOptions.Secure,
+                cookieOptions.SameSite,
+                cookieOptions.Domain,
+                cookieOptions.Path);
+
+            // Verify the cookie was set in the response
+            var setCookieHeader = Response.Headers["Set-Cookie"].ToString();
+            _logger.LogInformation("Set-Cookie header: {SetCookieHeader}", setCookieHeader);
 
             return Ok(new { message = "Token set successfully" });
         }

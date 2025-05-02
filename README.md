@@ -1,4 +1,4 @@
-
+[![Deploy React App to Azure Static Web App](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml)
 ## sports-data-core
 
 Mono repo for Sports Data project. All projects except for sports-data-core are independent services.  Build pipelines exist for all services within the repo.

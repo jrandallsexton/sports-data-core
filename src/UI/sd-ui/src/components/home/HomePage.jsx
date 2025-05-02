@@ -179,7 +179,7 @@ function HomePage() {
           </p>
           <p>
             SportDeets AI models are also updating weekly now with more weight
-            on injury reports, weather conditions, and even coaching changes —
+            on injury reports, coaching changes, and even weather conditions —
             so be sure to review the AI recommendations in your dashboard before
             locking your picks!
           </p>

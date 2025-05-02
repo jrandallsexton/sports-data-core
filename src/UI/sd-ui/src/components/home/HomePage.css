@@ -1,9 +1,9 @@
 /* HomePage.css */
 
 .home-page {
-  padding: 20px;
   max-width: 1280px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 h1 {
@@ -85,6 +85,7 @@ h2 {
   border-radius: 10px;
   color: #eee;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  flex: 1;
 }
 
 .tip-note {
@@ -98,8 +99,8 @@ h2 {
   background-color: #2a2a2a;
   padding: 20px;
   border-radius: 10px;
-  margin-top: 10px;
   color: #ddd;
+  flex: 1;
 }
 
 /* 📊 Chart Section Layout */
@@ -135,6 +136,19 @@ h2 {
 }
 
 /* 📰 Featured Article */
+.featured-article {
+  margin-top: 0;
+  clear: both;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.featured-article h2 {
+  color: #61dafb;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
 .article-card {
   background-color: #2a2a2a;
   padding: 30px;
@@ -142,8 +156,6 @@ h2 {
   box-shadow: 0 6px 12px rgba(0,0,0,0.4);
   color: #eee;
   line-height: 1.6;
-  max-width: 800px;
-  margin: 20px auto;
   font-size: 1rem;
 }
 
@@ -177,5 +189,25 @@ h2 {
 .group-dropdown option {
   background-color: #2a2a2a;
   color: #eee;
+}
+
+.info-section {
+  display: flex;
+  gap: 20px;
+  margin-top: 50px;
+  margin-bottom: 50px;
+}
+
+.info-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-block h2 {
+  color: #61dafb;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
 }
 

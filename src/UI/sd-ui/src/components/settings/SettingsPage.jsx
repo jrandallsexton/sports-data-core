@@ -10,25 +10,42 @@ function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchUser = async () => {
       try {
         const response = await apiWrapper.Users.getCurrentUser();
-        setUser(response.data);
+        if (isMounted) {
+          setUser(response.data);
+          setIsLoading(false);
+        }
       } catch (err) {
         console.error("Failed to load user:", err);
-        if (err.isUnauthorized) {
-          // Instead of signing out, just redirect to signup
-          navigate('/signup', { replace: true });
-          return;
+        if (isMounted) {
+          if (err.isUnauthorized) {
+            // Instead of signing out, just redirect to signup
+            navigate('/signup', { replace: true });
+            return;
+          }
+          setError("Could not fetch user settings.");
+          setIsLoading(false);
         }
-        setError("Could not fetch user settings.");
       }
     };
 
     fetchUser();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
+
+  if (isLoading) {
+    return <div className="settings-page">Loading settings...</div>;
+  }
 
   return (
     <div className="settings-page">
@@ -40,15 +57,15 @@ function SettingsPage() {
         <h2>Profile</h2>
         <div className="settings-item">
           <span className="label">Email:</span>
-          <span>{user?.email || "Loading..."}</span>
+          <span>{user?.email || "Not set"}</span>
         </div>
         <div className="settings-item">
           <span className="label">Display Name:</span>
-          <span>{user?.displayName || "Loading..."}</span>
+          <span>{user?.displayName || "Not set"}</span>
         </div>
         <div className="settings-item">
           <span className="label">Timezone:</span>
-          <span>{user?.timezone || "Loading..."}</span>
+          <span>{user?.timezone || "Not set"}</span>
         </div>
       </section>
 

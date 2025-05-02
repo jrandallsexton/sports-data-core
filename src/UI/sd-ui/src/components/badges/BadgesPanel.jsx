@@ -4,24 +4,40 @@ import './BadgesPanel.css';
 export default function BadgesPanel() {
   const [badges, setBadges] = useState(null);
   const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/data/badges.json')
-      .then(response => {
+    let isMounted = true;
+
+    const fetchBadges = async () => {
+      try {
+        const response = await fetch('/data/badges.json');
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        return response.json();
-      })
-      .then(data => setBadges(data))
-      .catch(err => {
+        const data = await response.json();
+        if (isMounted) {
+          setBadges(data);
+          setIsLoading(false);
+        }
+      } catch (err) {
         console.error('Failed to load badges.json:', err);
-        setError(true);
-        setBadges([]);
-      });
+        if (isMounted) {
+          setError(true);
+          setBadges([]);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchBadges();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  if (badges === null) {
+  if (isLoading) {
     return <div className="badges-spinner">Loading badges…</div>;
   }
 

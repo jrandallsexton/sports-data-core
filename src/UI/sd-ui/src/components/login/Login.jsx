@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase"; // ✅ centralized Firebase setup
-import apiWrapper from "../../api/apiWrapper.js";
+import { useAuth } from "../../contexts/AuthContext";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import "./Login.css";
 
@@ -13,6 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { setToken } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,13 +21,7 @@ const Login = () => {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
-      
-      // Send token to backend to set HttpOnly cookie
-      await apiWrapper.Auth.setToken(token);
-      
-      // Validate the token
-      await apiWrapper.Auth.validateToken();
+      await setToken(userCredential.user);
       navigate("/app");
     } catch (error) {
       setErrorMsg(error.message || "Login failed");
@@ -66,8 +61,10 @@ const Login = () => {
             </div>
           </div>
 
-          {errorMsg && <p className="error">{errorMsg}</p>}
-          <button type="submit">Login</button>
+          {errorMsg && <div className="error-message">{errorMsg}</div>}
+          <button type="submit" className="login-button">
+            Sign In
+          </button>
         </form>
       </div>
     </div>

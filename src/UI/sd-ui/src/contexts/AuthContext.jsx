@@ -26,6 +26,18 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const setToken = async (firebaseUser) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      console.log('Setting token cookie for user:', firebaseUser.uid);
+      await apiClient.post('/auth/set-token', { token });
+      setUser(firebaseUser);
+    } catch (error) {
+      console.error('Token setup failed:', error);
+      setUser(null);
+    }
+  };
+
   useEffect(() => {
     const auth = getAuth();
     
@@ -33,15 +45,12 @@ export function AuthProvider({ children }) {
       console.log('Auth state changed:', firebaseUser ? 'User present' : 'No user');
       
       if (firebaseUser) {
-        try {
-          // Get the ID token and set it in the cookie
-          const token = await firebaseUser.getIdToken();
-          console.log('Setting token cookie for user:', firebaseUser.uid);
-          await apiClient.post('/auth/set-token', { token });
+        // Only set the token if we're explicitly signing in
+        // This prevents automatic token setting on page refresh
+        if (user === null) {
+          await setToken(firebaseUser);
+        } else {
           setUser(firebaseUser);
-        } catch (error) {
-          console.error('Token setup failed:', error);
-          setUser(null);
         }
       } else {
         // Only clear the token if we're explicitly signing out
@@ -61,7 +70,7 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, handleSignOut }}>
+    <AuthContext.Provider value={{ user, loading, handleSignOut, setToken }}>
       {children}
     </AuthContext.Provider>
   );

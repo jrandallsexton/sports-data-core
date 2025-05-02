@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import { Badge } from '../../types/badge';
 import './BadgesPanel.css';
 
-export default function BadgesPanel() {
-  const [badges, setBadges] = useState(null);
-  const [error, setError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+const BadgesPanel: React.FC = () => {
+  const [badges, setBadges] = useState<Badge[] | null>(null);
+  const [error, setError] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchBadges = async () => {
+    const fetchBadges = async (): Promise<void> => {
       try {
         const response = await fetch('/data/badges.json');
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        const data = await response.json();
+        const data = await response.json() as Badge[];
         if (isMounted) {
           setBadges(data);
           setIsLoading(false);
@@ -47,11 +48,11 @@ export default function BadgesPanel() {
       {error && (
         <p className="badges-error">Something went wrong while loading your badges. Please try again later.</p>
       )}
-      {badges.length === 0 ? (
+      {badges?.length === 0 ? (
         <p className="badges-empty">No badges earned yet. Keep playing each week to unlock your first one!</p>
       ) : (
         <div className="badges-grid">
-          {badges.map(badge => (
+          {badges?.map(badge => (
             <div
               className={`badge-card ${!badge.earnedDate ? 'badge-locked' : ''}`}
               key={badge.id}
@@ -74,4 +75,6 @@ export default function BadgesPanel() {
       )}
     </div>
   );
-}
+};
+
+export default BadgesPanel; 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import apiWrapper from "../../api/apiWrapper";
 import "./SettingsPage.css";
-import BadgesPanel from "../badges/BadgesPanel";
+import BadgesPanel from "../../components/badges/BadgesPanel.tsx";
 
 function SettingsPage() {
   const navigate = useNavigate();

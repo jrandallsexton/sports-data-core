@@ -85,8 +85,9 @@ namespace SportsData.Api
                             "https://dev.sportdeets.com")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials() // if using cookies or Authorization header
-                        .SetIsOriginAllowed(origin => true); // Allow all origins for development
+                        .AllowCredentials() // Required for cookies
+                        .WithExposedHeaders("Set-Cookie") // Explicitly expose Set-Cookie header
+                        .SetIsOriginAllowedToAllowWildcardSubdomains(); // Allow subdomains
                 });
             });
 

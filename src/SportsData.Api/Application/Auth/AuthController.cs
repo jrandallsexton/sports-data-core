@@ -24,10 +24,15 @@ namespace SportsData.Api.Application.Auth
         private string GetCookieDomain()
         {
             var host = Request.Host.Host;
+            _logger.LogInformation("Determining cookie domain for host: {Host}", host);
+            
             if (host.Contains("sportdeets.com"))
             {
+                _logger.LogInformation("Using domain: .sportdeets.com");
                 return ".sportdeets.com";
             }
+            
+            _logger.LogInformation("Using domain: localhost");
             return "localhost";
         }
 
@@ -61,7 +66,10 @@ namespace SportsData.Api.Application.Auth
                 return BadRequest("Token is required");
             }
 
-            _logger.LogInformation("Setting token cookie for request from {RemoteIpAddress}", HttpContext.Connection.RemoteIpAddress);
+            var cookieDomain = GetCookieDomain();
+            _logger.LogInformation("Setting token cookie for request from {RemoteIpAddress}. Domain: {CookieDomain}", 
+                HttpContext.Connection.RemoteIpAddress, 
+                cookieDomain);
 
             // Set the token as an HttpOnly cookie
             Response.Cookies.Append("authToken", request.Token, new CookieOptions
@@ -70,8 +78,11 @@ namespace SportsData.Api.Application.Auth
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(7),
-                Domain = GetCookieDomain()
+                Domain = cookieDomain
             });
+
+            _logger.LogInformation("Cookie set with options: HttpOnly=true, Secure=true, SameSite=None, Domain={CookieDomain}", 
+                cookieDomain);
 
             return Ok(new { message = "Token set successfully" });
         }
@@ -79,7 +90,10 @@ namespace SportsData.Api.Application.Auth
         [HttpPost("clear-token")]
         public IActionResult ClearToken()
         {
-            _logger.LogInformation("Clearing token cookie for request from {RemoteIpAddress}", HttpContext.Connection.RemoteIpAddress);
+            var cookieDomain = GetCookieDomain();
+            _logger.LogInformation("Clearing token cookie for request from {RemoteIpAddress}. Domain: {CookieDomain}", 
+                HttpContext.Connection.RemoteIpAddress, 
+                cookieDomain);
 
             // Clear the token cookie
             Response.Cookies.Delete("authToken", new CookieOptions
@@ -87,7 +101,7 @@ namespace SportsData.Api.Application.Auth
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Domain = GetCookieDomain()
+                Domain = cookieDomain
             });
 
             return Ok(new { message = "Token cleared successfully" });

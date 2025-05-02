@@ -70,7 +70,12 @@ h2 {
   background-color: #1e1e1e;
   padding: 20px;
   border-radius: 10px;
-  height: 400px;
+  height: 300px;
+  overflow: visible;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Tip Card */
@@ -125,23 +130,8 @@ h2 {
 }
 
 .chart-block h2 {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   text-align: center;
-}
-
-/* Chart container */
-.chart-container {
-  background-color: #1e1e1e;
-  padding: 20px;
-  border-radius: 10px;
-  height: 300px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(97, 218, 251, 0.1);
-  overflow: visible;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* 📰 Featured Article */
@@ -159,5 +149,33 @@ h2 {
 
 .article-card p {
   margin-bottom: 16px;
+}
+
+.group-selector {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.group-dropdown {
+  background-color: #2a2a2a;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 2px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 200px;
+  text-align: center;
+}
+
+.group-dropdown:focus {
+  outline: none;
+  border-color: #61dafb;
+}
+
+.group-dropdown option {
+  background-color: #2a2a2a;
+  color: #eee;
 }
 

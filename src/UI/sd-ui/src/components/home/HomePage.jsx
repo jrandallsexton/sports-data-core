@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -30,36 +31,95 @@ const CustomLabel = ({ x, y, value, data, index }) => {
 };
 
 function HomePage() {
-  const pickAccuracyData = [
-    { week: "1", accuracy: 45, correctPicks: 9, totalPicks: 20 },
-    { week: "2", accuracy: 65, correctPicks: 13, totalPicks: 20 },
-    { week: "3", accuracy: 52, correctPicks: 10, totalPicks: 19 },
-    { week: "4", accuracy: 78, correctPicks: 16, totalPicks: 20 },
-    { week: "5", accuracy: 60, correctPicks: 12, totalPicks: 20 },
-    { week: "6", accuracy: 85, correctPicks: 17, totalPicks: 20 },
-    { week: "7", accuracy: 72, correctPicks: 14, totalPicks: 19 },
-  ];
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [selectedAIGroup, setSelectedAIGroup] = useState("all");
+
+  // Sample data structure for multiple groups
+  const pickGroups = {
+    all: {
+      name: "All Groups",
+      data: [
+        { week: "1", accuracy: 45, correctPicks: 9, totalPicks: 20 },
+        { week: "2", accuracy: 65, correctPicks: 13, totalPicks: 20 },
+        { week: "3", accuracy: 52, correctPicks: 10, totalPicks: 19 },
+        { week: "4", accuracy: 78, correctPicks: 16, totalPicks: 20 },
+        { week: "5", accuracy: 60, correctPicks: 12, totalPicks: 20 },
+        { week: "6", accuracy: 85, correctPicks: 17, totalPicks: 20 },
+        { week: "7", accuracy: 72, correctPicks: 14, totalPicks: 19 },
+      ]
+    },
+    group1: {
+      name: "Fantasy Football League",
+      data: [
+        { week: "1", accuracy: 50, correctPicks: 8, totalPicks: 16 },
+        { week: "2", accuracy: 62, correctPicks: 10, totalPicks: 16 },
+        { week: "3", accuracy: 56, correctPicks: 9, totalPicks: 16 },
+        { week: "4", accuracy: 75, correctPicks: 12, totalPicks: 16 },
+        { week: "5", accuracy: 68, correctPicks: 11, totalPicks: 16 },
+        { week: "6", accuracy: 81, correctPicks: 13, totalPicks: 16 },
+        { week: "7", accuracy: 75, correctPicks: 12, totalPicks: 16 },
+      ]
+    },
+    group2: {
+      name: "Office Pool",
+      data: [
+        { week: "1", accuracy: 40, correctPicks: 6, totalPicks: 15 },
+        { week: "2", accuracy: 66, correctPicks: 10, totalPicks: 15 },
+        { week: "3", accuracy: 46, correctPicks: 7, totalPicks: 15 },
+        { week: "4", accuracy: 80, correctPicks: 12, totalPicks: 15 },
+        { week: "5", accuracy: 53, correctPicks: 8, totalPicks: 15 },
+        { week: "6", accuracy: 86, correctPicks: 13, totalPicks: 15 },
+        { week: "7", accuracy: 66, correctPicks: 10, totalPicks: 15 },
+      ]
+    }
+  };
 
   // ✨ NEW: AI Accuracy Data
-  const aiAccuracyData = [
-    { week: "1", aiAccuracy: 55, correctPicks: 11, totalPicks: 20 },
-    { week: "2", aiAccuracy: 70, correctPicks: 14, totalPicks: 20 },
-    { week: "3", aiAccuracy: 65, correctPicks: 13, totalPicks: 20 },
-    { week: "4", aiAccuracy: 82, correctPicks: 16, totalPicks: 19 },
-    { week: "5", aiAccuracy: 75, correctPicks: 15, totalPicks: 20 },
-    { week: "6", aiAccuracy: 88, correctPicks: 18, totalPicks: 20 },
-    { week: "7", aiAccuracy: 80, correctPicks: 16, totalPicks: 20 },
-  ];
+  const aiAccuracyData = {
+    all: [
+      { week: "1", aiAccuracy: 55, correctPicks: 11, totalPicks: 20 },
+      { week: "2", aiAccuracy: 70, correctPicks: 14, totalPicks: 20 },
+      { week: "3", aiAccuracy: 65, correctPicks: 13, totalPicks: 20 },
+      { week: "4", aiAccuracy: 82, correctPicks: 16, totalPicks: 19 },
+      { week: "5", aiAccuracy: 75, correctPicks: 15, totalPicks: 20 },
+      { week: "6", aiAccuracy: 88, correctPicks: 18, totalPicks: 20 },
+      { week: "7", aiAccuracy: 80, correctPicks: 16, totalPicks: 20 },
+    ],
+    group1: [
+      { week: "1", aiAccuracy: 56, correctPicks: 9, totalPicks: 16 },
+      { week: "2", aiAccuracy: 68, correctPicks: 11, totalPicks: 16 },
+      { week: "3", aiAccuracy: 62, correctPicks: 10, totalPicks: 16 },
+      { week: "4", aiAccuracy: 81, correctPicks: 13, totalPicks: 16 },
+      { week: "5", aiAccuracy: 75, correctPicks: 12, totalPicks: 16 },
+      { week: "6", aiAccuracy: 87, correctPicks: 14, totalPicks: 16 },
+      { week: "7", aiAccuracy: 81, correctPicks: 13, totalPicks: 16 },
+    ],
+    group2: [
+      { week: "1", aiAccuracy: 53, correctPicks: 8, totalPicks: 15 },
+      { week: "2", aiAccuracy: 73, correctPicks: 11, totalPicks: 15 },
+      { week: "3", aiAccuracy: 66, correctPicks: 10, totalPicks: 15 },
+      { week: "4", aiAccuracy: 80, correctPicks: 12, totalPicks: 15 },
+      { week: "5", aiAccuracy: 73, correctPicks: 11, totalPicks: 15 },
+      { week: "6", aiAccuracy: 86, correctPicks: 13, totalPicks: 15 },
+      { week: "7", aiAccuracy: 80, correctPicks: 12, totalPicks: 15 },
+    ]
+  };
 
-  // Find the maximum value across both datasets
+  // Find the maximum value across all datasets
   const maxValue = Math.max(
-    ...pickAccuracyData.map(d => d.accuracy),
-    ...aiAccuracyData.map(d => d.aiAccuracy)
+    ...Object.values(pickGroups).flatMap(group => 
+      group.data.map(d => d.accuracy)
+    ),
+    ...Object.values(aiAccuracyData).flatMap(group => 
+      group.map(d => d.aiAccuracy)
+    )
   );
 
-  // Calculate mean values
-  const pickMean = pickAccuracyData.reduce((sum, item) => sum + item.accuracy, 0) / pickAccuracyData.length;
-  const aiMean = aiAccuracyData.reduce((sum, item) => sum + item.aiAccuracy, 0) / aiAccuracyData.length;
+  // Calculate mean values for the selected group
+  const selectedGroupData = pickGroups[selectedGroup].data;
+  const selectedAIGroupData = aiAccuracyData[selectedAIGroup];
+  const pickMean = selectedGroupData.reduce((sum, item) => sum + item.accuracy, 0) / selectedGroupData.length;
+  const aiMean = selectedAIGroupData.reduce((sum, item) => sum + item.aiAccuracy, 0) / selectedAIGroupData.length;
 
   const articleCardStyle = {
     backgroundColor: "#2a2a2a",
@@ -139,12 +199,24 @@ function HomePage() {
       </section>
 
       <section className="chart-section">
+        {/* Group-Specific Pick Accuracy Chart */}
         <div className="chart-block">
           <h2>Pick Accuracy by Week</h2>
+          <div className="group-selector">
+            <select 
+              value={selectedGroup} 
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="group-dropdown"
+            >
+              {Object.entries(pickGroups).map(([key, group]) => (
+                <option key={key} value={key}>{group.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={pickAccuracyData}
+                data={selectedGroupData}
                 margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
               >
                 <defs>
@@ -217,12 +289,24 @@ function HomePage() {
           </div>
         </div>
 
+        {/* AI Accuracy Chart */}
         <div className="chart-block">
           <h2>AI Accuracy by Week</h2>
+          <div className="group-selector">
+            <select 
+              value={selectedAIGroup} 
+              onChange={(e) => setSelectedAIGroup(e.target.value)}
+              className="group-dropdown"
+            >
+              {Object.entries(pickGroups).map(([key, group]) => (
+                <option key={key} value={key}>{group.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={aiAccuracyData}
+                data={selectedAIGroupData}
                 margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
               >
                 <defs>

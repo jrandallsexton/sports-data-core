@@ -21,6 +21,16 @@ namespace SportsData.Api.Application.Auth
             _logger = logger;
         }
 
+        private string GetCookieDomain()
+        {
+            var host = Request.Host.Host;
+            if (host.Contains("sportdeets.com"))
+            {
+                return ".sportdeets.com";
+            }
+            return "localhost";
+        }
+
         [HttpGet]
         [Authorize]
         public IActionResult Get()
@@ -60,7 +70,7 @@ namespace SportsData.Api.Application.Auth
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(7),
-                Domain = "localhost"
+                Domain = GetCookieDomain()
             });
 
             return Ok(new { message = "Token set successfully" });
@@ -77,7 +87,7 @@ namespace SportsData.Api.Application.Auth
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Domain = "localhost"
+                Domain = GetCookieDomain()
             });
 
             return Ok(new { message = "Token cleared successfully" });

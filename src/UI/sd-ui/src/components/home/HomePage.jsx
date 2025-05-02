@@ -47,8 +47,6 @@ function HomePage() {
 
   return (
     <div className="home-page">
-      <h1>Welcome back to sportDeets!</h1>
-
       {/* Leaderboard + Your Stats */}
       <section className="card-section">
         <div className="card">

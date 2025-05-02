@@ -19,8 +19,9 @@ function MatchupCard({
 
   return (
     <div className="matchup-card">
-      <div className="teams">
-        <div className="team">
+      {/* Away Team Row */}
+      <div className="team-row">
+        <div className="team-info">
           {awayTeamInfo && (
             <img
               src={awayTeamInfo.logoUrl}
@@ -28,19 +29,33 @@ function MatchupCard({
               className="matchup-logo"
             />
           )}
-          <Link to={`/app/team/${awayTeamInfo?.slug}`} className="team-link">
-            {matchup.awayTeam}
-          </Link>{" "}
-          (
+          <div className="team-details">
+            <div className="team-name-row">
+              {awayTeamInfo?.ranking && (
+                <span className="team-ranking">#{awayTeamInfo.ranking}</span>
+              )}
+              <Link to={`/app/team/${awayTeamInfo?.slug}`} className="team-link">
+                {matchup.awayTeam}
+              </Link>
+            </div>
+            <div className="team-record">
+              <span>Overall: {awayTeamInfo?.overallRecord || "TBD"}</span>
+              <span>Conference: {awayTeamInfo?.conferenceRecord || "TBD"}</span>
+            </div>
+          </div>
+        </div>
+        <div className="team-spread">
           {matchup.spread.startsWith("-")
             ? `+${Math.abs(parseFloat(matchup.spread))}`
             : `+${matchup.spread}`}
-          )
         </div>
+      </div>
 
-        <div>at</div>
+      <div className="at-divider">at</div>
 
-        <div className="team">
+      {/* Home Team Row */}
+      <div className="team-row">
+        <div className="team-info">
           {homeTeamInfo && (
             <img
               src={homeTeamInfo.logoUrl}
@@ -48,14 +63,23 @@ function MatchupCard({
               className="matchup-logo"
             />
           )}
-          <Link to={`/app/team/${homeTeamInfo?.slug}`} className="team-link">
-            {matchup.homeTeam}
-          </Link>{" "}
-          ({matchup.spread})
+          <div className="team-details">
+            <div className="team-name-row">
+              {homeTeamInfo?.ranking && (
+                <span className="team-ranking">#{homeTeamInfo.ranking}</span>
+              )}
+              <Link to={`/app/team/${homeTeamInfo?.slug}`} className="team-link">
+                {matchup.homeTeam}
+              </Link>
+            </div>
+            <div className="team-record">
+              <span>Overall: {homeTeamInfo?.overallRecord || "TBD"}</span>
+              <span>Conference: {homeTeamInfo?.conferenceRecord || "TBD"}</span>
+            </div>
+          </div>
         </div>
+        <div className="team-spread">{matchup.spread}</div>
       </div>
-
-      <div className="spread-ou">O/U: {matchup.overUnder}</div>
 
       <div className="game-time-location">
         {matchup.gameTime} | {matchup.stadium} | {matchup.location}
@@ -78,9 +102,7 @@ function MatchupCard({
         </div>
       </div>
 
-      <div className="spread-ou">
-        Spread: {matchup.spread} | O/U: {matchup.overUnder}
-      </div>
+      <div className="spread-ou">O/U: {matchup.overUnder}</div>
 
       <div className="pick-buttons">
         <button

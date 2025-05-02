@@ -34,7 +34,7 @@ function LeaderboardPage() {
     .map((player, index) => ({ id: player.id, rank: index + 1 }));
 
   return (
-    <div>
+    <div className="leaderboard-container">
       <h2>Group Leaderboard Through Week {currentWeek}</h2>
       <p>🏆 See how you stack up against your friends!</p>
       <table className="leaderboard-table">

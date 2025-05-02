@@ -15,8 +15,9 @@ export function AuthProvider({ children }) {
       // Clear the token cookie first
       await apiClient.post('/auth/clear-token');
       
-      // Then sign out from Firebase
+      // Then sign out from Firebase and clear persisted auth state
       await firebaseSignOut(auth);
+      await auth.signOut(); // This clears the persisted auth state
       
       setUser(null);
     } catch (error) {
@@ -67,5 +68,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

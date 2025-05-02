@@ -47,20 +47,29 @@ namespace SportsData.Api
                     {
                         OnMessageReceived = context =>
                         {
+                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                            var cookie = context.Request.Cookies["authToken"];
+                            logger.LogInformation("JWT OnMessageReceived - Cookie present: {HasCookie}, Path: {Path}, Method: {Method}", 
+                                !string.IsNullOrEmpty(cookie),
+                                context.Request.Path,
+                                context.Request.Method);
+                            
                             // Get the token from the cookie
-                            context.Token = context.Request.Cookies["authToken"];
+                            context.Token = cookie;
                             return Task.CompletedTask;
                         },
                         OnAuthenticationFailed = context =>
                         {
                             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogError(context.Exception, "Authentication failed");
+                            logger.LogError(context.Exception, "Authentication failed for request to {Path}", context.Request.Path);
                             return Task.CompletedTask;
                         },
                         OnTokenValidated = context =>
                         {
                             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogInformation("Token validated for user {UserId}", context.Principal.FindFirst("user_id")?.Value);
+                            logger.LogInformation("Token validated for user {UserId} on path {Path}", 
+                                context.Principal.FindFirst("user_id")?.Value,
+                                context.Request.Path);
                             return Task.CompletedTask;
                         }
                     };

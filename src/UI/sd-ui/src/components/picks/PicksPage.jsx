@@ -89,54 +89,56 @@ function PicksPage() {
 
   return (
     <div className="picks-page-container">
-      <div className="picks-page-header">
-        <GroupWeekSelector
-          selectedGroup={selectedGroup}
-          setSelectedGroup={setSelectedGroup}
-          selectedWeek={selectedWeek}
-          setSelectedWeek={setSelectedWeek}
-        />
-        <button onClick={toggleViewMode} className="view-mode-toggle">
-          {viewMode === "card" ? "Grid View" : "Card View"}
-        </button>
-      </div>
-
-      {loadingMatchups ? (
-        <div>Loading matchups...</div>
-      ) : (
-        <>
-          {viewMode === "card" ? (
-            <MatchupList
-              matchups={matchups}
-              userPicks={userPicks}
-              onPick={handlePick}
-              onViewInsight={handleViewInsight}
-              isSubscribed={isSubscribed}
-            />
-          ) : (
-            <MatchupGrid
-              matchups={matchups}
-              userPicks={userPicks}
-              onPick={handlePick}
-              onViewInsight={handleViewInsight}
-              isSubscribed={isSubscribed}
-            />
-          )}
-          <SubmitButton
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitted={submitted}
+      <div className="picks-content-wrapper">
+        <div className="picks-page-header">
+          <GroupWeekSelector
+            selectedGroup={selectedGroup}
+            setSelectedGroup={setSelectedGroup}
+            selectedWeek={selectedWeek}
+            setSelectedWeek={setSelectedWeek}
           />
-        </>
-      )}
+          <button onClick={toggleViewMode} className="view-mode-toggle">
+            {viewMode === "card" ? "Grid View" : "Card View"}
+          </button>
+        </div>
 
-      {isInsightDialogOpen && (
-        <InsightDialog
-          matchup={selectedMatchup}
-          onClose={() => setIsInsightDialogOpen(false)}
-          loading={loadingInsight}
-        />
-      )}
+        {loadingMatchups ? (
+          <div>Loading matchups...</div>
+        ) : (
+          <>
+            {viewMode === "card" ? (
+              <MatchupList
+                matchups={matchups}
+                userPicks={userPicks}
+                onPick={handlePick}
+                onViewInsight={handleViewInsight}
+                isSubscribed={isSubscribed}
+              />
+            ) : (
+              <MatchupGrid
+                matchups={matchups}
+                userPicks={userPicks}
+                onPick={handlePick}
+                onViewInsight={handleViewInsight}
+                isSubscribed={isSubscribed}
+              />
+            )}
+            <SubmitButton
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              submitted={submitted}
+            />
+          </>
+        )}
+
+        {isInsightDialogOpen && (
+          <InsightDialog
+            matchup={selectedMatchup}
+            onClose={() => setIsInsightDialogOpen(false)}
+            loading={loadingInsight}
+          />
+        )}
+      </div>
     </div>
   );
 }

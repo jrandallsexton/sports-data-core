@@ -1,5 +1,6 @@
 // src/components/matchups/MatchupList.jsx
 
+import "./MatchupList.css";
 import MatchupCard from "./MatchupCard";
 import { FaSpinner } from "react-icons/fa";
 
@@ -14,7 +15,7 @@ function MatchupList({ matchups, loading, userPicks, onPick, onViewInsight, isSu
   }
 
   return (
-    <>
+    <div className="matchup-list">
       {matchups.map((matchup, index) => (
         <MatchupCard
           key={matchup.id}
@@ -25,7 +26,7 @@ function MatchupList({ matchups, loading, userPicks, onPick, onViewInsight, isSu
           isInsightUnlocked={index === 0 || isSubscribed}
         />
       ))}
-    </>
+    </div>
   );
 }
 

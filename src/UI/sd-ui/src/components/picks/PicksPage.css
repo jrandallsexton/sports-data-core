@@ -1,8 +1,40 @@
 .picks-page-container {
   position: relative;
-  max-width: 1280px;
+  max-width: 800px; /* Match MatchupCard max-width */
   margin: 0 auto;
   padding: 20px;
+}
+
+.picks-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  height: 40px;
+  max-width: 800px; /* Match MatchupCard max-width */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.view-mode-toggle {
+  background-color: #444;
+  color: #61dafb;
+  padding: 0 12px;
+  border: 1px solid #61dafb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  line-height: 32px;
+}
+
+.view-mode-toggle:hover {
+  background-color: #61dafb;
+  color: #111;
 }
 
 .spinner {
@@ -20,22 +52,6 @@
   font-size: 1rem;
   color: #bbb;
   margin-top: 5px;
-}
-
-.toggle-view-button {
-  background-color: #444;
-  color: #61dafb;
-  padding: 8px 16px;
-  border: 1px solid #61dafb;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-.toggle-view-button:hover {
-  background-color: #61dafb;
-  color: #111;
 }
 
 /* .toggle-view-button {

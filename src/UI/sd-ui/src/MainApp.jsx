@@ -19,12 +19,13 @@ import HomePage from "./components/home/HomePage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
+import ConfirmationDialog from "./components/common/ConfirmationDialog";
 import apiWrapper from "./api/apiWrapper";
 
 function MainApp() {
-
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   const handleSignOut = async () => {
     const auth = getAuth();
@@ -40,6 +41,15 @@ function MainApp() {
     } catch (error) {
       console.error("Sign-out failed:", error);
       toast.error("Sign-out failed. Please try again.");
+    }
+  };
+
+  const handleSignOutClick = () => {
+    const dontAskAgain = localStorage.getItem("dontAskSignOut");
+    if (dontAskAgain === "true") {
+      handleSignOut();
+    } else {
+      setShowSignOutDialog(true);
     }
   };
 
@@ -59,6 +69,15 @@ function MainApp() {
   return (
     <div className="app-container">
       {showWelcome && <WelcomeDialog onClose={handleWelcomeClose} />}
+      <ConfirmationDialog
+        isOpen={showSignOutDialog}
+        onClose={() => setShowSignOutDialog(false)}
+        onConfirm={handleSignOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        confirmText="Sign Out"
+        storageKey="dontAskSignOut"
+      />
       <aside className="sidebar">
         <h1 className="sidebar-title">sportDeets</h1>
         <nav className="nav-links">
@@ -82,7 +101,7 @@ function MainApp() {
             <FaCog className="nav-icon" />
             <span>Settings</span>
           </NavLink>
-          <button className="nav-link logout-button" onClick={handleSignOut}>
+          <button className="nav-link logout-button" onClick={handleSignOutClick}>
             <FaSignOutAlt className="nav-icon" />
             <span>Sign Out</span>
           </button>

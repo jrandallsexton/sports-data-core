@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
-import { useAuth } from "../../contexts/AuthContext";
 import apiWrapper from "../../api/apiWrapper";
 import "./SettingsPage.css";
 import BadgesPanel from "../badges/BadgesPanel";
@@ -9,7 +8,6 @@ import BadgesPanel from "../badges/BadgesPanel";
 function SettingsPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { handleSignOut } = useAuth();
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
 

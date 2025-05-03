@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 function FeaturedArticleCard() {
   return (
     <section className="featured-article">

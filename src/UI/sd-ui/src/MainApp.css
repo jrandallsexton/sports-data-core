@@ -1,9 +1,29 @@
 /* --- General Layout --- */
 .app-container {
-  display: flex;
   min-height: 100vh;
-  background-color: #111;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.main-content.side-nav-active {
+  margin-left: 250px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .main-content.side-nav-active {
+    margin-left: 0;
+  }
 }
 
 .sidebar {
@@ -50,53 +70,9 @@
   box-shadow: 0 0 8px rgba(97, 218, 251, 0.6); /* ✨ Light blue glow */
 }
 
-
 .nav-icon {
   margin-right: 8px;
   vertical-align: middle;
-}
-
-
-/* --- Main Content --- */
-.main-content {
-  flex: 1;
-  padding: 40px;
-}
-
-/* --- Responsive Sidebar --- */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 80px; /* Collapse width */
-    align-items: center;
-    padding: 20px 5px;
-  }
-
-  .sidebar-title {
-    display: none; /* Hide title */
-  }
-
-  .nav-link {
-    justify-content: center; /* Center the icons */
-    font-size: 1.5rem;
-  }
-
-  .nav-icon {
-    margin-right: 0; /* Remove space between icon and text */
-  }
-
-  .nav-link span {
-    display: none; /* Hide text labels */
-  }
-}
-
-.sidebar {
-  background-color: var(--sidebar-background-color);
-  color: var(--text-color);
-}
-
-.main-content {
-  background-color: var(--background-color);
-  color: var(--text-color);
 }
 
 .logout-button {

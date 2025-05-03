@@ -1,15 +1,8 @@
-import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
-import {
-  FaHome,
-  FaFootballBall,
-  FaTrophy,
-  FaComments,
-  FaCog,
-  FaSignOutAlt,
-} from "react-icons/fa";
+import Navigation from "./components/layout/Navigation";
 import "./MainApp.css";
 
 import PicksPage from "./components/picks/PicksPage.jsx";
@@ -26,16 +19,13 @@ function MainApp() {
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
+  const [isSideNav, setIsSideNav] = useState(false);
 
   const handleSignOut = async () => {
     const auth = getAuth();
     try {
-      // Clear the token cookie first
       await apiWrapper.Auth.clearToken();
-      
-      // Then sign out from Firebase
       await signOut(auth);
-      
       toast.success("Signed out successfully 👋");
       navigate("/");
     } catch (error) {
@@ -78,43 +68,18 @@ function MainApp() {
         confirmText="Sign Out"
         storageKey="dontAskSignOut"
       />
-      <aside className="sidebar">
-        <h1 className="sidebar-title">sportDeets</h1>
-        <nav className="nav-links">
-          <NavLink to="/app/" end className="nav-link">
-            <FaHome className="nav-icon" />
-            <span>Home</span>
-          </NavLink>
-          <NavLink to="/app/picks" className="nav-link">
-            <FaFootballBall className="nav-icon" />
-            <span>Picks</span>
-          </NavLink>
-          <NavLink to="/app/leaderboard" className="nav-link">
-            <FaTrophy className="nav-icon" />
-            <span>Leaderboard</span>
-          </NavLink>
-          <NavLink to="/app/messageboard" className="nav-link">
-            <FaComments className="nav-icon" />
-            <span>Message Board</span>
-          </NavLink>
-          <NavLink to="/app/settings" className="nav-link">
-            <FaCog className="nav-icon" />
-            <span>Settings</span>
-          </NavLink>
-          <button className="nav-link logout-button" onClick={handleSignOutClick}>
-            <FaSignOutAlt className="nav-icon" />
-            <span>Sign Out</span>
-          </button>
-        </nav>
-      </aside>
-
-      <main className="main-content">
+      <Navigation 
+        isSideNav={isSideNav} 
+        onToggle={() => setIsSideNav(!isSideNav)}
+        onSignOut={handleSignOutClick}
+      />
+      <main className={`main-content ${isSideNav ? 'side-nav-active' : ''}`}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/picks" element={<PicksPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/messageboard" element={<MessageBoardPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route index element={<HomePage />} />
+          <Route path="picks" element={<PicksPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
+          <Route path="messageboard" element={<MessageBoardPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="team/:slug" element={<TeamCard />} />
         </Routes>
       </main>

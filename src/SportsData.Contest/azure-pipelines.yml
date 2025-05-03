@@ -14,7 +14,7 @@ pool:
     - Agent.Name -equals Bender
 
 resources:
-- repo: self
+  - repo: self
 
 variables:
   # Container registry service connection established during pipeline creation
@@ -45,23 +45,23 @@ stages:
       displayName: BuildAndTest
       steps:
         - task: UseDotNet@2
-            displayName: 'Use .NET 9 SDK'
-            inputs:
+          displayName: 'Use .NET 9 SDK'
+          inputs:
             packageType: 'sdk'
             version: '9.0.x'
             includePreviewVersions: true
 
         - task: NuGetCommand@2
-            displayName: 'NuGet Restore'
-            inputs:
+          displayName: 'NuGet Restore'
+          inputs:
             command: 'restore'
             restoreSolution: '**/sports-data-contest.sln'
             feedsToUse: 'select'
             vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
         - task: MSBuild@1
-            displayName: 'Build sports-data-contest solution'
-            inputs:
+          displayName: 'Build sports-data-contest solution'
+          inputs:
             solution: '**\sports-data-contest.sln'
             msbuildArchitecture: 'x64'
             clean: true
@@ -71,15 +71,15 @@ stages:
             msbuildArguments: '/t:Restore'
 
         - task: DotNetCoreCLI@2
-            displayName: 'Run Unit Tests'
-            inputs:
+          displayName: 'Run Unit Tests'
+          inputs:
             command: 'test'
             projects: '**/SportsData.Contest.Tests.Unit.csproj'
             testRunTitle: 'contest-tests-unit'
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR
-    dependsOn: BuildAndTest
+  dependsOn: BuildAndTest
   jobs:
   - job: BuildImage
     displayName: 'Build and Push Image'

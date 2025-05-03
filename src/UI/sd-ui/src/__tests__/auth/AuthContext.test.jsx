@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
-import { getAuth, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged} from 'firebase/auth';
 import apiClient from '../../api/apiClient';
 
 // Mock Firebase auth

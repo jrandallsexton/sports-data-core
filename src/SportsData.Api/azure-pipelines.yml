@@ -67,7 +67,6 @@ stages:
               clean: true
               platform: '$(buildPlatform)'
               configuration: '$(buildConfiguration)'
-              restoreNugetPackages: true
               msbuildArguments: '/t:Restore'
 
   - stage: BuildImagePushACR

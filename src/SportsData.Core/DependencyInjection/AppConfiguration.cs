@@ -52,8 +52,6 @@ namespace SportsData.Core.DependencyInjection
 
         public static WebApplication UseCommonFeatures(this WebApplication app, string buildConfiguration = "Debug")
         {
-            Console.WriteLine("UseCommonFeatures!");
-
             app.UseHealthChecks("/api/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckWriter.WriteResponse

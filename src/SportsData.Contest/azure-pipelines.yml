@@ -8,7 +8,7 @@ trigger:
       - 'src/SportsData.Contest/*'
 
 pool:
-  vmImage: 'windows-latest'
+  name: Default
 
 resources:
 - repo: self
@@ -20,9 +20,6 @@ variables:
   containerRegistry: 'sportdeets.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileContest'
   tag: '$(Build.BuildId)'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
 
   # Build Solution Vars
   solution: '**/*.sln'

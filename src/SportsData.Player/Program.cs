@@ -10,7 +10,6 @@ namespace SportsData.Player
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.UseCommon();
 
             // Add services to the container.
             var config = builder.Configuration;
@@ -21,6 +20,11 @@ namespace SportsData.Player
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+
+            // Add Serilog
+            builder.UseCommon();
+
+            services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
@@ -29,13 +33,18 @@ namespace SportsData.Player
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
             app.UseCommonFeatures();
 
             app.MapControllers();
+
+            var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration;
+
+            app.UseCommonFeatures(buildConfigurationName);
 
             app.Run();
         }

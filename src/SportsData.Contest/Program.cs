@@ -33,13 +33,18 @@ namespace SportsData.Contest
             var app = builder.Build();
             
             // Configure the HTTP request pipeline.
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
             app.UseCommonFeatures();
 
             app.MapControllers();
+
+            var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration;
+
+            app.UseCommonFeatures(buildConfigurationName);
 
             app.Run();
         }

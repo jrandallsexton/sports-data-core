@@ -1,6 +1,8 @@
 using SportsData.Core.DependencyInjection;
 using SportsData.Franchise.Infrastructure.Data;
 
+using System.Reflection;
+
 namespace SportsData.Franchise
 {
     public class Program
@@ -22,6 +24,7 @@ namespace SportsData.Franchise
             // Add Serilog
             builder.UseCommon();
 
+            services.AddProviders(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
@@ -30,13 +33,18 @@ namespace SportsData.Franchise
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
             app.UseCommonFeatures();
 
             app.MapControllers();
+
+            var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration;
+
+            app.UseCommonFeatures(buildConfigurationName);
 
             app.Run();
         }

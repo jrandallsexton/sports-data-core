@@ -7,11 +7,14 @@ trigger:
     include:
       - 'src/SportsData.Franchise/*'
 
+# Centralized agent and demand config for all stages/jobs
 pool:
-  vmImage: 'windows-latest'
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
 
 resources:
-- repo: self
+  - repo: self
 
 variables:
   # Container registry service connection established during pipeline creation
@@ -20,9 +23,6 @@ variables:
   containerRegistry: 'sportdeets.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileFranchise'
   tag: '$(Build.BuildId)'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
 
   # Build Solution Vars
   solution: '**/*.sln'
@@ -35,59 +35,53 @@ variables:
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-api-svc-conn'
-  appName: 'dev-sdfranchise'
+  appName: 'sportdeets-franchise-dev'
 
 stages:
 - stage: BuildAndTest
   displayName: "Build & Test: Franchise"
   jobs:
-  - job: BuildAndTest
-    displayName: BuildAndTest
-    steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET 9 SDK'
-      inputs:
-        packageType: 'sdk'
-        version: '9.0.x'
-        includePreviewVersions: true
+    - job: BuildAndTest
+      displayName: BuildAndTest
+      steps:
+        - task: UseDotNet@2
+          displayName: 'Use .NET 9 SDK'
+          inputs:
+            packageType: 'sdk'
+            version: '9.0.x'
+            includePreviewVersions: true
 
-    - task: NuGetCommand@2
-      displayName: 'NuGet Restore'
-      inputs:
-        command: 'restore'
-        restoreSolution: '**/sports-data-franchise.sln'
-        feedsToUse: 'select'
-        vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
+        - task: NuGetCommand@2
+          displayName: 'NuGet Restore'
+          inputs:
+            command: 'restore'
+            restoreSolution: '**/sports-data-franchise.sln'
+            feedsToUse: 'select'
+            vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
     
-    - task: MSBuild@1
-      displayName: 'Build sports-data-franchise solution'
-      inputs:
-        solution: '**\sports-data-franchise.sln'
-        msbuildArchitecture: 'x64'
-        clean: true
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
-        restoreNugetPackages: true
-        msbuildArguments: '/t:Restore'
+        - task: MSBuild@1
+          displayName: 'Build sports-data-franchise solution'
+          inputs:
+            solution: '**\sports-data-franchise.sln'
+            msbuildArchitecture: 'x64'
+            clean: true
+            platform: '$(buildPlatform)'
+            configuration: '$(buildConfiguration)'
+            msbuildArguments: '/t:Restore'
 
-    - task: DotNetCoreCLI@2
-      displayName: 'Run Unit Tests'
-      inputs:
-        command: 'test'
-        projects: '**/SportsData.Franchise.Tests.Unit.csproj'
-        testRunTitle: 'franchise-tests-unit'
+        - task: DotNetCoreCLI@2
+          displayName: 'Run Unit Tests'
+          inputs:
+            command: 'test'
+            projects: '**/SportsData.Franchise.Tests.Unit.csproj'
+            testRunTitle: 'franchise-tests-unit'
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR
-  pool: 
-   name: Default
-   demands:
-    - Agent.Name -equals Bender
+  dependsOn: BuildAndTest
   jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
+  - job: BuildImage
+    displayName: 'Build and Push Image'
     steps:
     - task: Docker@2
       displayName: Build and push an image to container registry
@@ -98,3 +92,19 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+
+- stage: DeployToAppService
+  displayName: 'Deploy: API to Azure App Service'
+  dependsOn: BuildImagePushACR
+  condition: succeeded()
+  jobs:
+    - job: Deploy
+      displayName: 'Deploy container to Azure Web App'
+      steps:
+        - task: AzureWebAppContainer@1
+          displayName: 'Deploy to Azure Web App (Container)'
+          inputs:
+            azureSubscription: $(azureSubscription)
+            appName: $(appName)
+            containers: |
+              $(containerRegistry)/$(imageRepository):$(tag)

@@ -34,7 +34,7 @@ function FeatureHighlights() {
       ref={sectionRef}
       className={`feature-highlights ${isVisible ? "visible" : ""}`}
     >
-      <h2>Why Choose sportDeets?</h2>
+      <h2>Why sportDeets?</h2>
 
       <div className="features-grid">
         <div className="feature-card">

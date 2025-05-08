@@ -13,6 +13,7 @@ import SettingsPage from "./components/settings/SettingsPage.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
 import ConfirmationDialog from "./components/common/ConfirmationDialog";
+import VenuePage from "components/venues/VenuePage";
 import apiWrapper from "./api/apiWrapper";
 
 function MainApp() {
@@ -80,7 +81,8 @@ function MainApp() {
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="messageboard" element={<MessageBoardPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="team/:slug" element={<TeamCard />} />
+          <Route path="sport/football/ncaa/team/:slug" element={<TeamCard />} />
+          <Route path="venue/:slug" element={<VenuePage />} />
         </Routes>
       </main>
     </div>

@@ -15,7 +15,9 @@ function LandingHeader() {
     <header className="landing-header">
       <div className="landing-header-inner">
         <div className="logo">
-          <a href="/" className="logo-link">sportDeets</a> {/* Use plain <a> for now */}
+          <a href="/" className="logo-link">
+            sportDeets<span className="tm-symbol">™</span>
+          </a>
         </div>
 
         <div className="header-actions">
@@ -27,7 +29,9 @@ function LandingHeader() {
           </button>
 
           <div className={`login-dropdown ${showLogin ? "show" : ""}`}>
-            <p><strong>Sign In</strong></p>
+            <p>
+              <strong>Sign In</strong>
+            </p>
             <input type="email" placeholder="Email" />
             <input type="password" placeholder="Password" />
             <button className="submit-button">Login</button>
@@ -40,6 +44,5 @@ function LandingHeader() {
     </header>
   );
 }
-
 
 export default LandingHeader;

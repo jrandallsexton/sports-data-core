@@ -1,63 +1,72 @@
 .landing-hero {
-    min-height: 100vh;
-    background: linear-gradient(to bottom, #111, #222);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-    text-align: center;
-    color: #fff;
-  }
-  
-  .hero-content {
-    max-width: 800px;
-  }
-  
-  .hero-content h1 {
-    font-size: 2.8rem;
-    margin-bottom: 20px;
-    color: #61dafb;
-  }
-  
-  .hero-content p {
-    font-size: 1.2rem;
-    margin-bottom: 30px;
-    color: #ccc;
-  }
-  
-  .hero-buttons {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  
-  .primary-button,
-  .secondary-button {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: bold;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-  
-  .primary-button {
-    background-color: #61dafb;
-    color: #111;
-  }
-  
-  .primary-button:hover {
-    background-color: #4ea0d9;
-  }
-  
-  .secondary-button {
-    background-color: transparent;
-    border: 2px solid #61dafb;
-    color: #61dafb;
-  }
-  
-  .secondary-button:hover {
-    background-color: #61dafb;
-    color: #111;
-  }
-  
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #111, #222);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+  color: #fff;
+}
+
+.hero-content {
+  max-width: 800px;
+}
+
+.hero-content h1 {
+  font-size: 2.8rem;
+  margin-bottom: 20px;
+  color: #61dafb;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  color: #ccc;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.primary-button {
+  background-color: #61dafb;
+  color: #111;
+}
+
+.primary-button:hover {
+  background-color: #4ea0d9;
+}
+
+.secondary-button {
+  background-color: transparent;
+  border: 2px solid #61dafb;
+  color: #61dafb;
+}
+
+.secondary-button:hover {
+  background-color: #61dafb;
+  color: #111;
+}
+
+.tm-symbol {
+  font-size: 0.8rem;
+  vertical-align: text-top;
+  margin-left: 2px;
+  position: relative;
+  top: 0.25em;
+  color: #61dafb;
+}
+

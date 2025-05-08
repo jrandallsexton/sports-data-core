@@ -34,7 +34,7 @@ function MatchupCard({
               {awayTeamInfo?.ranking && (
                 <span className="team-ranking">#{awayTeamInfo.ranking}</span>
               )}
-              <Link to={`/app/team/${awayTeamInfo?.slug}`} className="team-link">
+              <Link to={`/app/sport/football/ncaa/team/${awayTeamInfo?.slug}`} className="team-link">
                 {matchup.awayTeam}
               </Link>
             </div>
@@ -68,7 +68,7 @@ function MatchupCard({
               {homeTeamInfo?.ranking && (
                 <span className="team-ranking">#{homeTeamInfo.ranking}</span>
               )}
-              <Link to={`/app/team/${homeTeamInfo?.slug}`} className="team-link">
+              <Link to={`/app/sport/football/ncaa/team/${homeTeamInfo?.slug}`} className="team-link">
                 {matchup.homeTeam}
               </Link>
             </div>

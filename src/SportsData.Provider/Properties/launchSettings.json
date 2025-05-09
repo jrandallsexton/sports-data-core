@@ -5,7 +5,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7075;http://localhost:5205"
@@ -15,7 +16,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Local"
       }
     },
     "Container (Dockerfile)": {
@@ -36,7 +38,8 @@
       "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "SERVICE_MODE": "All"
+        "SERVICE_MODE": "All",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"
@@ -45,10 +48,11 @@
       "commandName": "Project",
       "commandLineArgs": "-mode FootballNcaa",
       "launchBrowser": true,
-      "launchUrl": "dashboard",
+      "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "SERVICE_MODE": "All"
+        "SERVICE_MODE": "All",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"
@@ -60,7 +64,8 @@
       "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "SERVICE_MODE": "All"
+        "SERVICE_MODE": "All",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"
@@ -72,7 +77,8 @@
       "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "SERVICE_MODE": "All"
+        "SERVICE_MODE": "All",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"
@@ -84,7 +90,8 @@
       "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "SERVICE_MODE": "All"
+        "SERVICE_MODE": "All",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5205"

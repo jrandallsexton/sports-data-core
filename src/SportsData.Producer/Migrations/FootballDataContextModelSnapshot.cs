@@ -681,6 +681,10 @@ namespace SportsData.Producer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Group", (string)null);
@@ -1020,6 +1024,10 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ShortName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

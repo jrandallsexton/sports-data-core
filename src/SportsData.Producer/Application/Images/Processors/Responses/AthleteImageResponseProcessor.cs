@@ -5,14 +5,15 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
-    public class AthleteImageResponseProcessor : IProcessLogoAndImageResponses
+    public class AthleteImageResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
+        where TDataContext : BaseDataContext
     {
-        private readonly ILogger<AthleteImageResponseProcessor> _logger;
-        private readonly BaseDataContext _dataContext;
+        private readonly ILogger<AthleteImageResponseProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
 
         public AthleteImageResponseProcessor(
-            ILogger<AthleteImageResponseProcessor> logger,
-            BaseDataContext dataContext)
+            ILogger<AthleteImageResponseProcessor<TDataContext>> logger,
+            TDataContext dataContext)
         {
             _logger = logger;
             _dataContext = dataContext;

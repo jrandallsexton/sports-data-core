@@ -10,6 +10,8 @@ using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSp
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Images.Processors.Requests;
 using SportsData.Producer.Application.Images.Processors.Responses;
+using SportsData.Producer.Application.Slugs;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.DependencyInjection
 {
@@ -20,21 +22,21 @@ namespace SportsData.Producer.DependencyInjection
             /* Local Services */
             services.AddDataPersistenceExternal();
             services.AddScoped<AthleteDocumentProcessor>();
-            services.AddScoped<AthleteImageRequestProcessor>();
-            services.AddScoped<AthleteImageResponseProcessor>();
+            services.AddScoped<AthleteImageRequestProcessor<FootballDataContext>>();
+            services.AddScoped<AthleteImageResponseProcessor<FootballDataContext>>();
             services.AddScoped<AwardDocumentProcessor>();
             services.AddScoped<ContestDocumentProcessor>();
             services.AddScoped<DocumentCreatedProcessor>();
-            services.AddScoped<FranchiseDocumentProcessor>();
-            services.AddScoped<FranchiseLogoRequestProcessor>();
-            services.AddScoped<FranchiseLogoResponseProcessor>();
-            services.AddScoped<FranchiseSeasonLogoRequestProcessor>();
-            services.AddScoped<FranchiseSeasonLogoResponseProcessor>();
+            services.AddScoped<FranchiseDocumentProcessor<FootballDataContext>>();
+            services.AddScoped<FranchiseLogoRequestProcessor<FootballDataContext>>();
+            services.AddScoped<FranchiseLogoResponseProcessor<FootballDataContext>>();
+            services.AddScoped<FranchiseSeasonLogoRequestProcessor<FootballDataContext>>();
+            services.AddScoped<FranchiseSeasonLogoResponseProcessor<FootballDataContext>>();
             services.AddScoped<GroupBySeasonDocumentProcessor>();
-            services.AddScoped<GroupLogoRequestProcessor>();
-            services.AddScoped<GroupLogoResponseProcessor>();
-            services.AddScoped<GroupSeasonLogoRequestProcessor>();
-            services.AddScoped<GroupSeasonLogoResponseProcessor>();
+            services.AddScoped<GroupLogoRequestProcessor<FootballDataContext>>();
+            services.AddScoped<GroupLogoResponseProcessor<FootballDataContext>>();
+            services.AddScoped<GroupSeasonLogoRequestProcessor<FootballDataContext>>();
+            services.AddScoped<GroupSeasonLogoResponseProcessor<FootballDataContext>>();
             services.AddScoped<IDocumentProcessorFactory, DocumentProcessorFactory>();
             services.AddScoped<IImageProcessorFactory, ImageProcessorFactory>();
             services.AddScoped<ImageProcessedProcessor>();
@@ -42,13 +44,14 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IProcessImageRequests, ImageRequestedProcessor>();
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddScoped<PositionDocumentProcessor>();
+            services.AddScoped<ISlugGenerator, DefaultSlugGenerator>();
+            services.AddScoped<PositionDocumentProcessor<FootballDataContext>>();
             services.AddScoped<TeamDocumentProcessor>();
             services.AddScoped<TeamInformationDocumentProcessor>();
-            services.AddScoped<TeamSeasonDocumentProcessor>();
-            services.AddScoped<VenueDocumentProcessor>();
-            services.AddScoped<VenueImageRequestProcessor>();
-            services.AddScoped<VenueImageResponseProcessor>();
+            services.AddScoped<TeamSeasonDocumentProcessor<FootballDataContext>>();
+            services.AddScoped<VenueDocumentProcessor<FootballDataContext>>();
+            services.AddScoped<VenueImageRequestProcessor<FootballDataContext>>();
+            services.AddScoped<VenueImageResponseProcessor<FootballDataContext>>();
             return services;
         }
 
@@ -62,8 +65,8 @@ namespace SportsData.Producer.DependencyInjection
             {
                 DocumentType.Venue,
                 DocumentType.Franchise,
-                DocumentType.Position,
-                DocumentType.Athlete
+                //DocumentType.Position,
+                //DocumentType.Athlete
             };
 
             foreach (var docType in documentTypesToLoad)
@@ -79,10 +82,10 @@ namespace SportsData.Producer.DependencyInjection
 
             var documentTypesBySeasonToLoad = new List<DocumentType>()
             {
-                DocumentType.AthleteBySeason,
-                DocumentType.GroupBySeason,
-                DocumentType.TeamBySeason,
-                DocumentType.CoachBySeason
+                //DocumentType.AthleteBySeason,
+                //DocumentType.GroupBySeason,
+                //DocumentType.TeamBySeason,
+                //DocumentType.CoachBySeason
             };
 
             var seasonsToLoad = new List<int>()

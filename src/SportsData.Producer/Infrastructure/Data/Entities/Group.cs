@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Group : CanonicalEntityBase<Guid>
+    public class Group : CanonicalEntityBase<Guid>, IHasSlug
     {
         public string Name { get; set; }
 
@@ -14,6 +15,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string ShortName { get; set; }
 
         public string MidsizeName { get; set; }
+
+        public string Slug { get; set; }
 
         public bool IsConference { get; set; } = true;
 

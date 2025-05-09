@@ -6,14 +6,15 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
-    public class FranchiseSeasonLogoResponseProcessor : IProcessLogoAndImageResponses
+    public class FranchiseSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<FranchiseSeasonLogoResponseProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<FranchiseSeasonLogoResponseProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
 
         public FranchiseSeasonLogoResponseProcessor(
-            ILogger<FranchiseSeasonLogoResponseProcessor> logger,
-            TeamSportDataContext dataContext)
+            ILogger<FranchiseSeasonLogoResponseProcessor<TDataContext>> logger,
+            TDataContext dataContext)
         {
             _logger = logger;
             _dataContext = dataContext;

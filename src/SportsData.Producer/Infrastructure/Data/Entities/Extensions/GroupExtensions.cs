@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Models.Canonical;
+using SportsData.Producer.Application.Slugs;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
@@ -9,7 +10,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         public static Group AsEntity(
             this EspnGroupBySeasonDto dto,
             Guid groupId,
-            Guid correlationId)
+            Guid correlationId,
+            ISlugGenerator slugGenerator)
         {
             return new Group()
             {
@@ -30,7 +32,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Name = dto.Name,
                 //ParentGroupId = espnDto.Parent. // TODO: Determine how to set/get this
                 ShortName = dto.ShortName,
-                Seasons = []
+                Seasons = [],
+                Slug = slugGenerator.GenerateSlug([dto.ShortName, dto.Name])
             };
         }
 

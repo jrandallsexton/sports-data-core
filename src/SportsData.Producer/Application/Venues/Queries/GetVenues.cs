@@ -29,15 +29,15 @@ namespace SportsData.Producer.Application.Venues.Queries
             }
         }
 
-        public class Handler : IRequestHandler<Query, Result<List<Dto>>>
+        public class Handler<TDataContext> : IRequestHandler<Query, Result<List<Dto>>> where TDataContext : BaseDataContext
         {
-            private readonly ILogger<Handler> _logger;
-            private readonly BaseDataContext _dataContext;
+            private readonly ILogger<Handler<TDataContext>> _logger;
+            private readonly TDataContext _dataContext;
             private readonly IMapper _mapper;
 
             public Handler(
-                ILogger<Handler> logger,
-                BaseDataContext dataContext,
+                ILogger<Handler<TDataContext>> logger,
+                TDataContext dataContext,
                 IMapper mapper)
             {
                 _logger = logger;

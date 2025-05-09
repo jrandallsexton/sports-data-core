@@ -11,25 +11,30 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Slugs;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common
 {
-    public class VenueDocumentProcessor : IProcessDocuments
+    public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
+        where TDataContext : BaseDataContext
     {
-        private readonly ILogger<VenueDocumentProcessor> _logger;
-        private readonly BaseDataContext _dataContext;
+        private readonly ILogger<VenueDocumentProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ISlugGenerator _slugGenerator;
 
         public VenueDocumentProcessor(
-            ILogger<VenueDocumentProcessor> logger,
-            BaseDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+            ILogger<VenueDocumentProcessor<TDataContext>> logger,
+            TDataContext dataContext,
+            IPublishEndpoint publishEndpoint,
+            ISlugGenerator slugGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
+            _slugGenerator = slugGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -71,7 +76,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnVenueDto dto)
         {
             // 1. map to the entity and save it
-            var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId);
+            var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId, _slugGenerator);
             _dataContext.Add(newEntity);
 
             // 2. Any images?

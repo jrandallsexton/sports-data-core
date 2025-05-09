@@ -10,18 +10,19 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
-    public class GroupSeasonLogoResponseProcessor : IProcessLogoAndImageResponses
+    public class GroupSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<GroupSeasonLogoResponseProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<GroupSeasonLogoResponseProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
 
         public GroupSeasonLogoResponseProcessor(
-            ILogger<GroupSeasonLogoResponseProcessor> logger,
-            TeamSportDataContext dataContext,
+            ILogger<GroupSeasonLogoResponseProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

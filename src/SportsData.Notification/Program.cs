@@ -2,6 +2,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Notification.Infrastructure.Data;
 
 using System.Reflection;
+using SportsData.Core.Common;
 
 namespace SportsData.Notification
 {
@@ -21,7 +22,7 @@ namespace SportsData.Notification
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);

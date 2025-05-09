@@ -1,3 +1,4 @@
+/* franchises */
 declare @franchise int, @franchiseExternalId int, @franchiseLogo int
 declare @franchiseSeason int, @franchiseSeasonLogo int
 
@@ -9,6 +10,7 @@ select @franchiseSeasonLogo = count(*) from dbo.franchiseSeasonLogo
 
 select @franchise AS Franchise, @franchiseExternalId as franchiseExternalId, @franchiseLogo as franchiseLogo, @franchiseSeason as franchiseSeason, @franchiseSeasonLogo as franchiseSeasonLogo
 
+/* groups (conferences) */
 declare @group int, @groupExtId int, @groupLogo int, @groupSeason int, @groupSeasonLogo int
 
 select @group = count(*) from dbo.[Group]
@@ -19,12 +21,20 @@ select @groupSeasonLogo = count(*) from dbo.GroupSeasonLogo
 
 select @group as [Group], @groupExtId as GroupExt, @groupLogo as GroupLogo, @groupSeason as GroupSeason, @groupSeasonLogo as GroupSeasonLogo
 
+/* venues */
 declare @venue int, @venueExtId int,  @venueImage int
 select @venue = count(*) from dbo.Venue
 select @venueExtId = count(*) from dbo.VenueExternalId
 select @venueImage = count(*) from dbo.VenueImage
 
 select @venue as [Venue], @venueExtId as VenueExtId, @venueImage as VenueImage
+
+/* athletes */
+declare @athlete int, @athleteExtId int
+select @athlete = count(*) from dbo.Athlete
+select @athleteExtId = count(*) from dbo.AthleteExternalIds
+
+select @athlete as [Athlete], @athleteExtId as AthleteExtId
 
 --DELETE FROM [dbo].[FranchiseSeasonLogo]
 --DELETE FROM [dbo].[FranchiseSeason]
@@ -39,6 +49,8 @@ select @venue as [Venue], @venueExtId as VenueExtId, @venueImage as VenueImage
 --DELETE FROM [dbo].[Venue]
 --DELETE FROM [dbo].[VenueExternalId]
 --DELETE FROM [dbo].[VenueImage]
+--DELETE FROM [dbo].[Athlete]
+--DELETE FROM [dbo].[AthleteExternalIds]
 
 --DELETE FROM dbo.OutboxMessage
 --DELETE FROM dbo.OutboxState

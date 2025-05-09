@@ -2,6 +2,8 @@
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors;
 
@@ -64,19 +66,19 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.Contest:
                 return _serviceProvider.GetRequiredService<ContestDocumentProcessor>();
             case DocumentType.Franchise:
-                return _serviceProvider.GetRequiredService<FranchiseDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<FranchiseDocumentProcessor<FootballDataContext>>();
             case DocumentType.GroupBySeason:
                 return _serviceProvider.GetRequiredService<GroupBySeasonDocumentProcessor>();
             case DocumentType.Position:
-                return _serviceProvider.GetRequiredService<PositionDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<PositionDocumentProcessor<FootballDataContext>>();
             //case DocumentType.Team:
             //    return _serviceProvider.GetRequiredService<TeamDocumentProcessor>();
             case DocumentType.TeamBySeason:
-                return _serviceProvider.GetRequiredService<TeamSeasonDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<TeamSeasonDocumentProcessor<FootballDataContext>>();
             case DocumentType.TeamInformation:
                 return _serviceProvider.GetRequiredService<TeamInformationDocumentProcessor>();
             case DocumentType.Venue:
-                return _serviceProvider.GetRequiredService<VenueDocumentProcessor>();
+                return _serviceProvider.GetRequiredService<VenueDocumentProcessor<FootballDataContext>>();
             case DocumentType.Seasons:
                 return _serviceProvider.GetRequiredService<SeasonsDocumentProcessor>();
             case DocumentType.GameSummary:

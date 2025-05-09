@@ -5,6 +5,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
@@ -35,63 +36,57 @@ namespace SportsData.Provider
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddSingleton<DocumentService>();
 
-            //services.AddMessaging(config);
+            services.AddMessaging(config);
 
-            services.AddMassTransit(x =>
-            {
-                x.SetKebabCaseEndpointNameFormatter();
+            //services.AddMassTransit(x =>
+            //{
+            //    x.SetKebabCaseEndpointNameFormatter();
 
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    cfg.Host("localhost", "/", h =>
-                    {
-                        h.Username("guest");
-                        h.Password("guest");
-                    });
+            //    //x.UsingRabbitMq((context, cfg) =>
+            //    //{
+            //    //    cfg.Host("localhost", "/", h =>
+            //    //    {
+            //    //        h.Username("guest");
+            //    //        h.Password("guest");
+            //    //    });
 
-                    cfg.ConfigureJsonSerializerOptions(o =>
-                    {
-                        o.IncludeFields = true;
-                        return o;
-                    });
+            //    //    cfg.ConfigureJsonSerializerOptions(o =>
+            //    //    {
+            //    //        o.IncludeFields = true;
+            //    //        return o;
+            //    //    });
 
-                    cfg.ConfigureEndpoints(context);
-                });
+            //    //    cfg.ConfigureEndpoints(context);
+            //    //});
 
-                //x.UsingAzureServiceBus((context, cfg) =>
-                //{
-                //    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+            //    x.UsingAzureServiceBus((context, cfg) =>
+            //    {
+            //        cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
 
-                //    //cfg.Message<DocumentCreated>(x =>
-                //    //{
-                //    //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
-                //    //    x.SetEntityName(entityName.ToLower());
-                //    //});
+            //        //cfg.Message<DocumentCreated>(x =>
+            //        //{
+            //        //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
+            //        //    x.SetEntityName(entityName.ToLower());
+            //        //});
 
-                //    cfg.ConfigureJsonSerializerOptions(o =>
-                //    {
-                //        o.IncludeFields = true;
-                //        return o;
-                //    });
-                //    cfg.ConfigureEndpoints(context);
-                //});
-            });
+            //        cfg.ConfigureJsonSerializerOptions(o =>
+            //        {
+            //            o.IncludeFields = true;
+            //            return o;
+            //        });
+            //        cfg.ConfigureEndpoints(context);
+            //    });
+            //});
 
             services.AddInstrumentation(builder.Environment.ApplicationName);
 
-            services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
             builder.Services.Configure<ProviderDocDatabase>(
                 builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabase"));
-
-            services.AddHangfireServer(serverOptions =>
-            {
-                // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = 50;
-            });
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
@@ -101,7 +96,7 @@ namespace SportsData.Provider
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             using (var scope = app.Services.CreateScope())
             {
@@ -122,7 +117,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            await app.Services.ConfigureHangfireJobs(mode);
+            //await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

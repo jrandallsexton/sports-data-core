@@ -14,6 +14,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 
 using System.Reflection;
+using SportsData.Core.Config;
 
 namespace SportsData.Producer;
 
@@ -23,10 +24,9 @@ public class Program
     {
         var mode = (args.Length > 0 && args[0] == "-mode") ?
             Enum.Parse<Sport>(args[1]) :
-            Sport.GolfPga;
+            Sport.All;
 
         var builder = WebApplication.CreateBuilder(args);
-        builder.UseCommon();
 
         // Add services to the container.
         var config = builder.Configuration;
@@ -37,16 +37,19 @@ public class Program
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+
+        builder.UseCommon();
+
         services.AddProviders(config);
         
         switch (mode)
         {
             case Sport.GolfPga:
-                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName);
+                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName, mode);
                 break;
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
-                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName);
+                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode);
                 services.AddScoped<TeamSportDataContext, FootballDataContext>();
                 services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
@@ -57,6 +60,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
+        services.AddHangfire(config, builder.Environment.ApplicationName, mode);
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
@@ -73,7 +77,7 @@ public class Program
                     break;
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
+                    x.AddEntityFrameworkOutbox<FootballDataContext>(o =>
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);
@@ -91,38 +95,31 @@ public class Program
             x.AddConsumer<ProcessImageRequestedHandler>();
             x.AddConsumer<ProcessImageResponseHandler>();
 
-            //x.UsingAzureServiceBus((context, cfg) =>
-            //{
-            //    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-            //    cfg.ConfigureEndpoints(context);
-            //});
-
-            x.UsingRabbitMq((context, cfg) =>
+            x.UsingAzureServiceBus((context, cfg) =>
             {
-                cfg.Host("localhost", "/", h =>
-                {
-                    h.Username("guest");
-                    h.Password("guest");
-                });
-
-                cfg.ConfigureJsonSerializerOptions(o =>
-                {
-                    o.IncludeFields = true;
-                    return o;
-                });
-
+                cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
                 cfg.ConfigureEndpoints(context);
             });
+
+            //x.UsingRabbitMq((context, cfg) =>
+            //{
+            //    cfg.Host("localhost", "/", h =>
+            //    {
+            //        h.Username("guest");
+            //        h.Password("guest");
+            //    });
+
+            //    cfg.ConfigureJsonSerializerOptions(o =>
+            //    {
+            //        o.IncludeFields = true;
+            //        return o;
+            //    });
+
+            //    cfg.ConfigureEndpoints(context);
+            //});
         });
 
         services.AddInstrumentation(builder.Environment.ApplicationName);
-
-        services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
-        services.AddHangfireServer(serverOptions =>
-        {
-            // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-            serverOptions.WorkerCount = 50;
-        });
 
         switch (mode)
         {

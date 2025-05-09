@@ -22,8 +22,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 		src\DockerfileProvider = src\DockerfileProvider
 		src\DockerfileSeason = src\DockerfileSeason
 		src\DockerfileVenue = src\DockerfileVenue
+		LLMs.md = LLMs.md
 		README.md = README.md
 		ROADMAP.md = ROADMAP.md
+		SERVICES.md = SERVICES.md
 		TECH_OVERVIEW.md = TECH_OVERVIEW.md
 	EndProjectSection
 EndProject

@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Venue : CanonicalEntityBase<Guid>
+    public class Venue : CanonicalEntityBase<Guid>, IHasSlug
     {
         public string Name { get; set; }
 
@@ -14,6 +15,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public bool IsGrass { get; set; }
 
         public bool IsIndoor { get; set; }
+        public string Slug { get; set; }
 
         public List<VenueExternalId> ExternalIds { get; set; }
 

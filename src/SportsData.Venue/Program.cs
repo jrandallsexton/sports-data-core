@@ -12,6 +12,7 @@ using SportsData.Venue.Infrastructure.Data;
 
 using System.Net;
 using System.Reflection;
+using SportsData.Core.Common;
 
 namespace SportsData.Venue
 {
@@ -59,7 +60,7 @@ namespace SportsData.Venue
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddCaching(config);

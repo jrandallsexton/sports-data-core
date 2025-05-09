@@ -1,8 +1,6 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 
-using MongoDB.Driver;
-
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
@@ -22,7 +20,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly ILogger<ResourceIndexJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
-        private readonly DocumentService _documentService;
+        private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
@@ -32,14 +30,14 @@ namespace SportsData.Provider.Application.Jobs
             ILogger<ResourceIndexJob> logger,
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
-            DocumentService documentService,
+            IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _espnApi = espnApi;
-            _documentService = documentService;
+            _documentStore = documentStore;
             _decoder = decoder;
             _backgroundJobProvider = backgroundJobProvider;
         }
@@ -92,10 +90,7 @@ namespace SportsData.Provider.Application.Jobs
 
             try
             {
-                var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
-                var filter = Builders<DocumentBase>.Filter.Empty;
-                var dbCursor = await dbObjects.FindAsync(filter);
-                var dbDocuments = await dbCursor.ToListAsync();
+                var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(collectionName);
 
                 _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
 

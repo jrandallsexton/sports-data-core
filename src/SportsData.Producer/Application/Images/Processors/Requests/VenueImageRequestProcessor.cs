@@ -11,18 +11,19 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
-    public class VenueImageRequestProcessor : IProcessLogoAndImageRequests
+    public class VenueImageRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
+        where TDataContext : BaseDataContext
     {
-        private readonly ILogger<VenueImageRequestProcessor> _logger;
-        private readonly BaseDataContext _dataContext;
+        private readonly ILogger<VenueImageRequestProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
 
         public VenueImageRequestProcessor(
-            ILogger<VenueImageRequestProcessor> logger,
-            BaseDataContext dataContext,
+            ILogger<VenueImageRequestProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

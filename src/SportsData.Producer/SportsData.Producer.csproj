@@ -12,6 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Application\NewFolder\**" />
+    <Content Remove="Application\NewFolder\**" />
+    <EmbeddedResource Remove="Application\NewFolder\**" />
+    <None Remove="Application\NewFolder\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.3.4" />
     <PackageReference Include="MassTransit.SqlTransport.SqlServer" Version="8.3.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
@@ -36,9 +43,7 @@
     <Folder Include="Application\Documents\Processors\Providers\Cbs\" />
     <Folder Include="Application\Documents\Processors\Providers\Espn\Basketball\" />
     <Folder Include="Application\Documents\Processors\Providers\Yahoo\" />
-    <Folder Include="Application\Franchises\" />
     <Folder Include="Application\Seasons\" />
-    <Folder Include="Application\Players\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

@@ -16,11 +16,15 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using Azure.Identity;
 
 namespace SportsData.Core.DependencyInjection
 {
     public static class AppConfiguration
     {
+        private const string AppConfigLabel = "APPCONFIG_LABEL";
+        private const string AppConfigConnString = "APPCONFIG_CONNSTR";
+
         public static WebApplicationBuilder UseCommon(this WebApplicationBuilder builder)
         {
             //builder.Host.UseSerilog((context, configuration) =>
@@ -134,25 +138,35 @@ namespace SportsData.Core.DependencyInjection
             string applicationName,
             Sport mode = Sport.All)
         {
-            cfg.AddJsonFile("secrets.json", true);
+            cfg.AddUserSecrets(Assembly.GetExecutingAssembly());
+            cfg.AddUserSecrets(Assembly.GetCallingAssembly());
+            cfg.AddUserSecrets<CommonConfig>();
 
-            var appConfigConnectionString = Environment.GetEnvironmentVariable("APPCONFIG_CONNSTR");
+            var label = cfg[AppConfigLabel] ?? Environment.GetEnvironmentVariable(AppConfigLabel);
+
+            var appConfigConnectionString = cfg[AppConfigConnString];
+
             if (string.IsNullOrEmpty(appConfigConnectionString))
                 appConfigConnectionString = cfg.GetSection("AzAppConfigConnString").Value;
+
+            if (string.IsNullOrWhiteSpace(appConfigConnectionString))
+                throw new InvalidOperationException($"Missing AppConfig connection string. Set {AppConfigConnString}.");
 
             cfg.AddAzureAppConfiguration(azAppConfig =>
             {
                 azAppConfig.Connect(appConfigConnectionString)
-                    .Select("CommonConfig", environmentName)
-                    .Select("CommonConfig", $"{environmentName}.{mode}")
-                    .Select(applicationName, environmentName)
-                    .Select(applicationName, $"{environmentName}.{mode}");
+                    .Select("CommonConfig", string.Empty)
+                    .Select("CommonConfig", label)
+                    .Select("CommonConfig:*", label)
+                    .Select("CommonConfig:*", $"{label}.{mode}")
+                    .Select(applicationName, label)
+                    .Select(applicationName, $"{label}.{mode}")
+                    .ConfigureKeyVault(kv =>
+                    {
+                        kv.SetCredential(new DefaultAzureCredential());
+                    });
             });
 
-            // TODO: Determine a better way of doing this
-            cfg.AddUserSecrets(Assembly.GetExecutingAssembly());
-            cfg.AddUserSecrets(Assembly.GetCallingAssembly());
-            cfg.AddUserSecrets<CommonConfig>();
             return cfg;
         }
     }

@@ -2,6 +2,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Franchise.Infrastructure.Data;
 
 using System.Reflection;
+using SportsData.Core.Common;
 
 namespace SportsData.Franchise
 {
@@ -9,6 +10,10 @@ namespace SportsData.Franchise
     {
         public static void Main(string[] args)
         {
+            var mode = (args.Length > 0 && args[0] == "-mode") ?
+                Enum.Parse<Sport>(args[1]) :
+                Sport.All;
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
@@ -25,7 +30,7 @@ namespace SportsData.Franchise
             builder.UseCommon();
 
             services.AddProviders(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);

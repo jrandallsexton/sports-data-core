@@ -7,21 +7,21 @@ namespace SportsData.Provider.Middleware.Health
     public class DocumentDatabaseHealthCheck : IHealthCheck
     {
         private readonly ILogger<DocumentDatabaseHealthCheck> _logger;
-        private readonly DocumentService dataService;
+        private readonly IDocumentStore _documentStore;
 
         public DocumentDatabaseHealthCheck(
             ILogger<DocumentDatabaseHealthCheck> logger,
-            DocumentService dataService)
+            IDocumentStore documentStore)
         {
             _logger = logger;
-            this.dataService = dataService;
+            _documentStore = documentStore;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
         {
             try
             {
-                var canConnect = !string.IsNullOrEmpty(dataService.Database.DatabaseNamespace.DatabaseName);
+                var canConnect = _documentStore.CanConnect();
 
                 var result = canConnect ?
                     HealthCheckResult.Healthy() :

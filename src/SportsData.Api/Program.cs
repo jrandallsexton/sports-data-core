@@ -18,6 +18,7 @@ using SportsData.Api.Application.Auth;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Config;
 using Microsoft.Extensions.Logging;
+using SportsData.Core.Common;
 
 namespace SportsData.Api
 {
@@ -117,7 +118,7 @@ namespace SportsData.Api
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddProviders(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             //services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));

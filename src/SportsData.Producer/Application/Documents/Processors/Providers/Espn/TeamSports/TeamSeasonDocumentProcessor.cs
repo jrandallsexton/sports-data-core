@@ -15,15 +15,16 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports
 {
-    public class TeamSeasonDocumentProcessor : IProcessDocuments
+    public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<TeamSeasonDocumentProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
 
         public TeamSeasonDocumentProcessor(
-            ILogger<TeamSeasonDocumentProcessor> logger,
-            TeamSportDataContext dataContext,
+            ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IPublishEndpoint publishEndpoint)
         {
             _logger = logger;

@@ -1,7 +1,5 @@
 ﻿using MassTransit;
 
-using MongoDB.Driver;
-
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
@@ -17,18 +15,18 @@ namespace SportsData.Provider.Application.Processors
     public class PublishDocumentEventsProcessor : IProcessPublishDocumentEvents
     {
         private readonly ILogger<PublishDocumentEventsProcessor> _logger;
-        private readonly DocumentService _documentService;
+        private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IPublishEndpoint _bus;
 
         public PublishDocumentEventsProcessor(
             ILogger<PublishDocumentEventsProcessor> logger,
-            DocumentService documentService,
+            IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             IPublishEndpoint bus)
         {
             _logger = logger;
-            _documentService = documentService;
+            _documentStore = documentStore;
             _decoder = decoder;
             _bus = bus;
         }
@@ -42,12 +40,7 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.Season);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(typeAndName.CollectionName);
-
-            // https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/crud/read-operations/retrieve/
-            var filter = Builders<DocumentBase>.Filter.Empty;
-            var dbCursor = await dbObjects.FindAsync(filter);
-            var dbDocuments = await dbCursor.ToListAsync();
+            var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(typeAndName.CollectionName);
 
             var correlationId = Guid.NewGuid();
             var causationId = Guid.NewGuid();

@@ -2,6 +2,8 @@
 using SportsData.Producer.Application.Images.Processors;
 using SportsData.Producer.Application.Images.Processors.Requests;
 using SportsData.Producer.Application.Images.Processors.Responses;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -33,22 +35,23 @@ namespace SportsData.Producer.Application.Images
             {
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
-                    return _serviceProvider.GetRequiredService<AthleteImageRequestProcessor>();
+                case DocumentType.AthleteImage:
+                    return _serviceProvider.GetRequiredService<AthleteImageRequestProcessor<FootballDataContext>>();
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
-                    return _serviceProvider.GetRequiredService<VenueImageRequestProcessor>();
+                    return _serviceProvider.GetRequiredService<VenueImageRequestProcessor<FootballDataContext>>();
                 case DocumentType.GroupBySeason:
                 case DocumentType.GroupBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<GroupSeasonLogoRequestProcessor>();
+                    return _serviceProvider.GetRequiredService<GroupSeasonLogoRequestProcessor<FootballDataContext>>();
                 case DocumentType.GroupLogo:
-                    return _serviceProvider.GetRequiredService<GroupLogoRequestProcessor>();
+                    return _serviceProvider.GetRequiredService<GroupLogoRequestProcessor<FootballDataContext>>();
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseLogoRequestProcessor>();
+                    return _serviceProvider.GetRequiredService<FranchiseLogoRequestProcessor<FootballDataContext>>();
                 case DocumentType.TeamInformation:
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoRequestProcessor>();
+                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoRequestProcessor<FootballDataContext>>();
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:
@@ -69,22 +72,23 @@ namespace SportsData.Producer.Application.Images
             {
                 case DocumentType.Athlete:
                 case DocumentType.AthleteBySeason:
-                    return _serviceProvider.GetRequiredService<AthleteImageResponseProcessor>();
+                case DocumentType.AthleteImage:
+                    return _serviceProvider.GetRequiredService<AthleteImageResponseProcessor<FootballDataContext>>();
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
-                    return _serviceProvider.GetRequiredService<VenueImageResponseProcessor>();
+                    return _serviceProvider.GetRequiredService<VenueImageResponseProcessor<FootballDataContext>>();
                 case DocumentType.GroupBySeason:
                 case DocumentType.GroupBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<GroupSeasonLogoResponseProcessor>();
+                    return _serviceProvider.GetRequiredService<GroupSeasonLogoResponseProcessor<FootballDataContext>>();
                 case DocumentType.GroupLogo:
-                    return _serviceProvider.GetRequiredService<GroupLogoResponseProcessor>();
+                    return _serviceProvider.GetRequiredService<GroupLogoResponseProcessor<FootballDataContext>>();
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseLogoResponseProcessor>();
+                    return _serviceProvider.GetRequiredService<FranchiseLogoResponseProcessor<FootballDataContext>>();
                 case DocumentType.TeamInformation:
                 case DocumentType.TeamBySeason:
                 case DocumentType.TeamBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoResponseProcessor>();
+                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoResponseProcessor<FootballDataContext>>();
                 case DocumentType.Award:
                 case DocumentType.CoachBySeason:
                 case DocumentType.Contest:

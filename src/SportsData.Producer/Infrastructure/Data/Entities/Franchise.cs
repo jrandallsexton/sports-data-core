@@ -3,10 +3,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Franchise : CanonicalEntityBase<Guid>
+    public class Franchise : CanonicalEntityBase<Guid>, IHasSlug
     {
         public Sport Sport { get; set; }
 
@@ -26,13 +27,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsActive { get; set; }
 
+        public string Slug { get; set; }
+
         public Guid VenueId { get; set; }
 
         public List<FranchiseLogo> Logos { get; set; } = [];
 
         public List<FranchiseSeason> Seasons { get; set; }
-
-        public string Slug { get; set; }
 
         public List<FranchiseExternalId> ExternalIds { get; set; }
 

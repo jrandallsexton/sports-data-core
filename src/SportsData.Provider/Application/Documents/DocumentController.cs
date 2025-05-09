@@ -1,11 +1,6 @@
-﻿using MassTransit;
-
-using Microsoft.AspNetCore.Mvc;
-
-using MongoDB.Driver;
+﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
@@ -20,21 +15,21 @@ namespace SportsData.Provider.Application.Documents
     public class DocumentController : ApiControllerBase
     {
         private readonly ILogger<DocumentController> _logger;
-        private readonly DocumentService _documentService;
+        private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBlobStorage _blobStorage;
         private readonly IProvideHashes _hashProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public DocumentController(
-            DocumentService documentService,
+            IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage,
             IProvideHashes hashProvider,
             IProvideBackgroundJobs backgroundJobProvider)
         {
-            _documentService = documentService;
+            _documentStore = documentStore;
             _decoder = decoder;
             _logger = logger;
             _blobStorage = blobStorage;
@@ -51,12 +46,8 @@ namespace SportsData.Provider.Application.Documents
         {
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
-
-            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
-
-            var dbResult = await dbObjects.FindAsync(filter);
-            var dbItem = await dbResult.FirstOrDefaultAsync();
+            var dbItem = await _documentStore
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId);
 
             // TODO: Clean this up
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
@@ -72,12 +63,8 @@ namespace SportsData.Provider.Application.Documents
         {
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, seasonId);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
-
-            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
-
-            var dbResult = await dbObjects.FindAsync(filter);
-            var dbItem = await dbResult.FirstOrDefaultAsync();
+            var dbItem = await _documentStore
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId);
 
             // TODO: Clean this up
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
@@ -122,15 +109,11 @@ namespace SportsData.Provider.Application.Documents
                 query.DocumentType,
                 query.SeasonYear);
 
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(collectionName);
-
             // generate a hash for the collection retrieval
             var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
-            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, hash);
-
-            var dbResult = await dbObjects.FindAsync(filter);
-            var dbItem = await dbResult.FirstOrDefaultAsync();
+            var dbItem = await _documentStore
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash);
 
             if (dbItem is not null)
             {
@@ -154,7 +137,7 @@ namespace SportsData.Provider.Application.Documents
             var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{hash}.png");
 
             // save a record for the hash and blob url
-            await dbObjects.InsertOneAsync(new DocumentBase()
+            await _documentStore.InsertOneAsync(collectionName, new DocumentBase()
             {
                 Id = hash,
                 CanonicalId = query.CanonicalId,

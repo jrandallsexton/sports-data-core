@@ -1,4 +1,6 @@
-﻿using MassTransit;
+﻿using Hangfire;
+
+using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -51,12 +53,17 @@ namespace SportsData.Core.DependencyInjection
         public static IServiceCollection AddDataPersistence<T>(
             this IServiceCollection services,
             IConfiguration configuration,
-            string applicationName) where T : DbContext
+            string applicationName,
+            Sport mode) where T : DbContext
         {
+            // TODO: Clean up this hacky mess
+            var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
+            var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
+
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                options.UseSqlServer(configuration[$"{applicationName}:ConnectionStrings:AppDataContext"]);
+                options.UseSqlServer(connString);
             });
 
             return services;
@@ -96,6 +103,25 @@ namespace SportsData.Core.DependencyInjection
             services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+            return services;
+        }
+
+        public static IServiceCollection AddHangfire(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            string applicationName,
+            Sport mode)
+        {
+            // TODO: Clean up this hacky mess
+            var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
+            var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
+
+            services.AddHangfire(x => x.UseSqlServerStorage(connString));
+            services.AddHangfireServer(serverOptions =>
+            {
+                // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
+                serverOptions.WorkerCount = 50;
+            });
             return services;
         }
 

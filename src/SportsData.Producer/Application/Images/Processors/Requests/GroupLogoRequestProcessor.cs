@@ -10,18 +10,19 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
-    public class GroupLogoRequestProcessor : IProcessLogoAndImageRequests
+    public class GroupLogoRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<GroupLogoRequestProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<GroupLogoRequestProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
 
         public GroupLogoRequestProcessor(
-            ILogger<GroupLogoRequestProcessor> logger,
-            TeamSportDataContext dataContext,
+            ILogger<GroupLogoRequestProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,

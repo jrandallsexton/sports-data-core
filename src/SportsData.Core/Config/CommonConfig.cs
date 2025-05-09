@@ -23,11 +23,27 @@ namespace SportsData.Core.Config
 
         public required string AzureServiceBusConnectionString { get; set; }
 
+        public required string SqlBaseConnectionString { get; set; }
+
         public required string SeqUri { get; set; }
 
         public required string RedisUri { get; set; }
 
-        public List<ProviderConfig> ProviderConfigs { get; set; }
+        public ProviderConfig ContestProviderConfig { get; set; }
+
+        public ProviderConfig FranchiseProviderConfig { get; set; }
+
+        public ProviderConfig NotificationProviderConfig { get; set; }
+
+        public ProviderConfig PlayerProviderConfig { get; set; }
+
+        public ProviderConfig ProducerProviderConfig { get; set; }
+
+        public ProviderConfig ProviderProviderConfig { get; set; }
+
+        public ProviderConfig SeasonProviderConfig { get; set; }
+
+        public ProviderConfig VenueProviderConfig { get; set; }
 
         public FirebaseConfiguration FirebaseConfig { get; set; }
 
@@ -35,7 +51,6 @@ namespace SportsData.Core.Config
 
         public class ProviderConfig
         {
-            public string Name { get; set; }
             public string SecretKey { get; set; }
             public string ApiUrl { get; set; }
         }

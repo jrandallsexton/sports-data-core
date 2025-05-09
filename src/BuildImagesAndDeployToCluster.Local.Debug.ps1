@@ -50,22 +50,12 @@ kubectl delete service --all --namespace=local
 # Change working directory to K8s yaml
 Write-Host ""
 Write-Host "Changing working directory"
-Set-Location C:\Projects\sports-data-config\00_local
+Set-Location C:\Projects\sports-data-config\app\overlays\00_local
 
-# Apply Deployments
+# Apply Kustomize
 Write-Host ""
-Write-Host "Applying Deployments"
-kubectl apply -f Deployments
-
-# Apply Services
-Write-Host ""
-Write-Host "Applying Services"
-kubectl apply -f Services
-
-# Apply Prometheus Configuration
-Write-Host ""
-Write-Host "Applying Prometheus Configuration"
-kubectl apply -f ./deployments/prometheus/prometheus-config.yml -n local
+Write-Host "Applying Kustomize"
+kubectl apply -k .
 
 Write-Host ""
 Read-Host -Prompt "Build & Deploy Complete. Press <Enter> to exit"

@@ -13,6 +13,8 @@ using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System.Collections;
+
 namespace SportsData.Provider.Application.Processors
 {
     public interface IProcessResourceIndexItems
@@ -25,7 +27,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly ILogger<ResourceIndexItemProcessor> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
-        private readonly DocumentService _documentService;
+        private readonly IDocumentStore _documentStore;
         private readonly IBus _bus;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideHashes _hashProvider;
@@ -36,7 +38,7 @@ namespace SportsData.Provider.Application.Processors
             ILogger<ResourceIndexItemProcessor> logger,
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
-            DocumentService documentService,
+            IDocumentStore documentStore,
             IBus bus,
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideHashes hashProvider,
@@ -46,7 +48,7 @@ namespace SportsData.Provider.Application.Processors
             _logger = logger;
             _dataContext = dataContext;
             _espnApi = espnApi;
-            _documentService = documentService;
+            _documentStore = documentStore;
             _bus = bus;
             _decoder = decoder;
             _hashProvider = hashProvider;
@@ -112,9 +114,7 @@ namespace SportsData.Provider.Application.Processors
         private async Task HandleValid(ProcessResourceIndexItemCommand command, Guid correlationId)
         {
             var type = _decoder.GetTypeAndCollectionName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
-
-            var dbObjects = _documentService.Database.GetCollection<DocumentBase>(type.CollectionName);
-
+            
             // get the item's json
             var itemJson = await _espnApi.GetResource(command.Href, true);
 
@@ -123,15 +123,14 @@ namespace SportsData.Provider.Application.Processors
                 ? long.Parse($"{command.Id}{command.SeasonYear.Value}")
                 : command.Id;
 
-            var filter = Builders<DocumentBase>.Filter.Eq(x => x.Id, documentId);
-            var dbResult = await dbObjects.FindAsync(filter);
-            var dbItem = await dbResult.FirstOrDefaultAsync();
+            var dbItem = await _documentStore
+                .GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentId);
 
             // TODO: break these off into different handlers
             if (dbItem is null)
             {
                 // no ?  save it and broadcast event
-                await dbObjects.InsertOneAsync(new DocumentBase()
+                await _documentStore.InsertOneAsync(type.CollectionName, new DocumentBase()
                 {
                     Id = documentId,
                     Data = itemJson

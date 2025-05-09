@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Models.Canonical;
+using SportsData.Producer.Application.Slugs;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
@@ -9,7 +10,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         public static Venue AsEntity(
             this EspnVenueDto dto,
             Guid venueId,
-            Guid correlationId)
+            Guid correlationId,
+            ISlugGenerator slugGenerator)
         {
             return new Venue()
             {
@@ -20,7 +22,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 IsGrass = dto.Grass,
                 IsIndoor = dto.Indoor,
                 Name = dto.FullName,
-                ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName
+                ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName,
+                Slug = slugGenerator.GenerateSlug([dto.ShortName, dto.FullName])
             };
         }
 

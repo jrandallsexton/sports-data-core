@@ -5,8 +5,8 @@ using SportsData.Producer.Application.Venues.Queries;
 
 namespace SportsData.Producer.Application.Venues
 {
-    [Route("api/venue")]
-    public class VenueController : ApiControllerBase
+    [Route("api/venues")]
+    public class VenuesController : ApiControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetVenues()

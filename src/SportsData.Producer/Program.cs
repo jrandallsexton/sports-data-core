@@ -62,7 +62,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        //services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+        services.AddHangfire(config, builder.Environment.ApplicationName, mode);
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
@@ -150,33 +150,33 @@ public class Program
         // Configure the HTTP request pipeline.
         app.UseHttpsRedirection();
 
-        //using (var scope = app.Services.CreateScope())
-        //{
-        //    var appServices = scope.ServiceProvider;
+        using (var scope = app.Services.CreateScope())
+        {
+            var appServices = scope.ServiceProvider;
 
-        //    switch (mode)
-        //    {
-        //        case Sport.GolfPga:
-        //            var golfContext = appServices.GetRequiredService<GolfDataContext>();
-        //            await golfContext.Database.MigrateAsync();
-        //            break;
-        //        case Sport.FootballNcaa:
-        //        case Sport.FootballNfl:
-        //            var context = appServices.GetRequiredService<FootballDataContext>();
-        //            await context.Database.MigrateAsync();
-        //            break;
-        //        case Sport.All:
-        //        case Sport.BaseballMlb:
-        //        case Sport.BasketballNba:
-        //        default:
-        //            throw new ArgumentOutOfRangeException();
-        //    }
-        //}
+            switch (mode)
+            {
+                case Sport.GolfPga:
+                    var golfContext = appServices.GetRequiredService<GolfDataContext>();
+                    await golfContext.Database.MigrateAsync();
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    var context = appServices.GetRequiredService<FootballDataContext>();
+                    await context.Database.MigrateAsync();
+                    break;
+                case Sport.All:
+                case Sport.BaseballMlb:
+                case Sport.BasketballNba:
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
-        //app.UseHangfireDashboard("/dashboard", new DashboardOptions
-        //{
-        //    Authorization = [new DashboardAuthFilter()]
-        //});
+        app.UseHangfireDashboard("/dashboard", new DashboardOptions
+        {
+            Authorization = [new DashboardAuthFilter()]
+        });
 
         app.UseAuthorization();
 

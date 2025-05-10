@@ -146,7 +146,7 @@ public class Program
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
-        //app.UseHttpsRedirection();
+        app.UseHttpsRedirection();
 
         using (var scope = app.Services.CreateScope())
         {

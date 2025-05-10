@@ -94,7 +94,7 @@ stages:
           $(tag)
 
 - stage: DeployToAppService
-  displayName: 'Deploy: API to Azure App Service'
+  displayName: 'Deploy: Producer to Azure App Service'
   dependsOn: BuildImagePushACR
   condition: succeeded()
   jobs:

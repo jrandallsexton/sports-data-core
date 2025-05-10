@@ -26,6 +26,8 @@ public class Program
             Enum.Parse<Sport>(args[1]) :
             Sport.All;
 
+        Console.WriteLine($"Mode: {mode}");
+
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.

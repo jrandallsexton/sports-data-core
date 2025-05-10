@@ -39,4 +39,4 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["dotnet", "SportsData.Producer.dll"]
+ENTRYPOINT ["dotnet", "SportsData.Api.dll", "-mode", "FootballNcaa"]

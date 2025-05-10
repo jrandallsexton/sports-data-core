@@ -35,7 +35,7 @@ variables:
 
   # Deploy Vars
   azureSubscription: 'dev-sports-data-api-svc-conn'
-  appName: 'sportdeets-provider-dev'
+  appName: 'provider-football-ncaa-dev'
 
 stages:
 - stage: BuildAndTest

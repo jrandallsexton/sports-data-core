@@ -13,10 +13,10 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 
             base.GenerateNonSeasonalResources(values, sport, "football", league);
 
-            foreach (var season in seasons)
-            {
-                base.GenerateSeasonalResources(values, sport, "football", league, season);
-            }
+            //foreach (var season in seasons)
+            //{
+            //    base.GenerateSeasonalResources(values, sport, "football", league, season);
+            //}
 
             return values;
         }

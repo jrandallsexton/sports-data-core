@@ -10,8 +10,6 @@ namespace SportsData.Provider.Infrastructure.Data
 {
     public interface IDocumentStore
     {
-        IMongoCollection<T> GetCollection<T>(string collectionName);
-
         public Task<List<T>> GetAllDocumentsAsync<T>(string collectionName);
 
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
@@ -25,7 +23,7 @@ namespace SportsData.Provider.Infrastructure.Data
     {
         private readonly IMongoDatabase _database;
 
-        public DocumentService(IOptions<ProviderDocDatabase> options)
+        public DocumentService(IOptions<ProviderDocDatabaseConfig> options)
         {
             // https://stackoverflow.com/questions/44513786/error-on-mongodb-authentication
             const string mongoDbAuthMechanism = "SCRAM-SHA-1";
@@ -47,9 +45,6 @@ namespace SportsData.Provider.Infrastructure.Data
 
             _database = mongoClient.GetDatabase(options.Value.DatabaseName);
         }
-
-        public IMongoCollection<T> GetCollection<T>(string collectionName)
-            => _database.GetCollection<T>(collectionName);
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string collectionName)
         {

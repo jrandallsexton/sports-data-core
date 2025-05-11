@@ -85,13 +85,15 @@ namespace SportsData.Provider
 
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-            builder.Services.Configure<ProviderDocDatabase>(
-                builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabase"));
+            builder.Services.Configure<ProviderDocDatabaseConfig>(
+                builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabaseConfig"));
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
-            services.AddLocalServices(mode);
+            var docDbProviderValue = config["SportsData.Provider:ProviderDocDatabaseConfig:Provider"];
+            var useMongo = docDbProviderValue == "Mongo";
+            services.AddLocalServices(mode, useMongo);
 
             var app = builder.Build();
 
@@ -117,7 +119,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            //await app.Services.ConfigureHangfireJobs(mode);
+            await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

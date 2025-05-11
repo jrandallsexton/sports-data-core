@@ -16,7 +16,7 @@ namespace SportsData.Provider.DependencyInjection
 {
     public static class ServiceRegistration
     {
-        public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
+        public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode, bool useMongo)
         {
             services.AddDataPersistenceExternal();
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
@@ -25,6 +25,16 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
+
+            if (useMongo)
+            {
+                services.AddSingleton<IDocumentStore, DocumentService>();
+            }
+            else
+            {
+                services.AddSingleton<IDocumentStore, CosmosDocumentService>();
+            }
+
             services.AddSingleton(new EspnApiClientConfig());
 
             return services;

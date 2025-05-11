@@ -155,10 +155,15 @@ namespace SportsData.Core.DependencyInjection
             cfg.AddAzureAppConfiguration(azAppConfig =>
             {
                 azAppConfig.Connect(appConfigConnectionString)
+                    // Shared values
                     .Select("CommonConfig", string.Empty)
                     .Select("CommonConfig", label)
                     .Select("CommonConfig:*", label)
                     .Select("CommonConfig:*", $"{label}.{mode}")
+
+                    // Application-specific values
+                    .Select($"{applicationName}:*", label)
+                    .Select($"{applicationName}:*", $"{label}.{mode}")
                     .Select(applicationName, label)
                     .Select(applicationName, $"{label}.{mode}")
                     .ConfigureKeyVault(kv =>

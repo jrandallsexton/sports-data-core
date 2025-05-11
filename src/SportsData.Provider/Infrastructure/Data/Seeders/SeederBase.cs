@@ -40,41 +40,41 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Ordinal = resources.Count
             });
 
-            /* Athletes */
-            resources.Add(new ResourceIndex()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.Athlete,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/athletes",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                Ordinal = resources.Count
-            });
+            ///* Athletes */
+            //resources.Add(new ResourceIndex()
+            //{
+            //    Id = Guid.NewGuid(),
+            //    Provider = SourceDataProvider.Espn,
+            //    SportId = sport,
+            //    DocumentType = DocumentType.Athlete,
+            //    Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/athletes",
+            //    EndpointMask = null,
+            //    CreatedBy = Guid.Empty,
+            //    IsSeasonSpecific = true,
+            //    IsEnabled = true,
+            //    Ordinal = resources.Count
+            //});
 
-            // While I realize this method is about non-seasonal resources,
-            // this is a ResourceIndex for all seasons. Not season-specific.
-            // We still need it.
-            /* Season */
-            resources.Add(new ResourceIndex()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.Seasons,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                Ordinal = resources.Count
-            });
+            //// While I realize this method is about non-seasonal resources,
+            //// this is a ResourceIndex for all seasons. Not season-specific.
+            //// We still need it.
+            ///* Season */
+            //resources.Add(new ResourceIndex()
+            //{
+            //    Id = Guid.NewGuid(),
+            //    Provider = SourceDataProvider.Espn,
+            //    SportId = sport,
+            //    DocumentType = DocumentType.Seasons,
+            //    Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons",
+            //    EndpointMask = null,
+            //    CreatedBy = Guid.Empty,
+            //    IsSeasonSpecific = true,
+            //    IsEnabled = true,
+            //    Ordinal = resources.Count
+            //});
 
-            if (_teamSports.Contains(sport))
-                resources.AddRange(GenerateNonSeasonalResourcesForTeamSports(resources, sport, espnSportName, league));
+            //if (_teamSports.Contains(sport))
+            //    resources.AddRange(GenerateNonSeasonalResourcesForTeamSports(resources, sport, espnSportName, league));
 
             return resources;
         }

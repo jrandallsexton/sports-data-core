@@ -23,6 +23,8 @@ namespace SportsData.Provider
                 Enum.Parse<Sport>(args[1]) :
                 Sport.All;
 
+            Console.WriteLine($"Mode: {mode}");
+
             var builder = WebApplication.CreateBuilder(args);
             builder.UseCommon();
 

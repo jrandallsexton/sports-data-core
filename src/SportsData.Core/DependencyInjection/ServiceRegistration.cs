@@ -60,8 +60,6 @@ namespace SportsData.Core.DependencyInjection
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
 
-            Console.WriteLine($"Using SqlConn: {connString}");
-
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
@@ -117,6 +115,8 @@ namespace SportsData.Core.DependencyInjection
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
+
+            Console.WriteLine($"Hangfire ConnStr: {connString}");
 
             services.AddHangfire(x => x.UseSqlServerStorage(connString));
             services.AddHangfireServer(serverOptions =>

@@ -2,6 +2,7 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
+using SportsData.Core.Extensions;
 using SportsData.Provider.Config;
 
 namespace SportsData.Provider.Infrastructure.Data
@@ -14,6 +15,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public CosmosDocumentService(IOptions<ProviderDocDatabaseConfig> options)
         {
+            Console.WriteLine($"Cosmos began with databaseName: {options.Value.DatabaseName}");
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
@@ -59,6 +61,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document)
         {
+            Console.WriteLine($"Cosmos inserting: {document.ToJson()}");
             var container = _client.GetContainer(_databaseName, collectionName);
             await container.CreateItemAsync(document);
         }

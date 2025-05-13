@@ -105,9 +105,10 @@ namespace SportsData.Core.Common
 
         public string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
         {
-            return season.HasValue ?
-                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
-                $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
+            return docType.ToString();
+            //return season.HasValue ?
+            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
+            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
         }
 
         public DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)

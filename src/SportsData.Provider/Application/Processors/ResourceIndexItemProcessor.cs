@@ -133,7 +133,10 @@ namespace SportsData.Provider.Application.Processors
                 await _documentStore.InsertOneAsync(type.CollectionName, new DocumentBase()
                 {
                     Id = documentId,
-                    Data = itemJson
+                    Data = itemJson,
+                    Sport = command.Sport,
+                    DocumentType = command.DocumentType,
+                    SourceDataProvider = command.SourceDataProvider
                 });
 
                 var evt = new DocumentCreated(

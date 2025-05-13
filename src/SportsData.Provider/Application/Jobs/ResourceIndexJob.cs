@@ -104,7 +104,8 @@ namespace SportsData.Provider.Application.Jobs
                 while (resourceIndexDto.pageIndex <= resourceIndexDto.pageCount)
                 {
                     _logger.LogInformation("Processing {@CurrentPage} of {@TotalPages} for {@DocumentType}",
-                        resourceIndexDto.pageIndex, resourceIndexDto.pageCount, jobDefinition.DocumentType);
+                        resourceIndexDto.pageIndex, resourceIndexDto.pageCount, jobDefinition.DocumentType)
+                        ;
 
                     foreach (var cmd in resourceIndexDto.items.Select(item =>
                                  new ProcessResourceIndexItemCommand(

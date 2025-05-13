@@ -20,12 +20,24 @@ namespace SportsData.Provider.Infrastructure.Data
             _defaultContainer = _client.GetContainer(_databaseName, "default");
         }
 
-        public async Task<List<T>> GetAllDocumentsAsync<T>(string collectionName)
+        public async Task<List<T>> GetAllDocumentsAsync<T>(string containerName)
         {
-            var container = _client.GetContainer(_databaseName, collectionName);
-            var query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: false);
-            return await Task.FromResult(query.ToList());
+            var container = _client.GetContainer(_databaseName, containerName);
+
+            var query = container.GetItemLinqQueryable<T>()
+                .ToFeedIterator();
+
+            var results = new List<T>();
+
+            while (query.HasMoreResults)
+            {
+                var response = await query.ReadNextAsync();
+                results.AddRange(response);
+            }
+
+            return results;
         }
+
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> predicate)
         {

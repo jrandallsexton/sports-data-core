@@ -27,23 +27,31 @@ namespace SportsData.Core.DependencyInjection
 
         public static WebApplicationBuilder UseCommon(this WebApplicationBuilder builder)
         {
-            //builder.Host.UseSerilog((context, configuration) =>
-            //{
-            //    configuration
-            //        .ReadFrom.Configuration(context.Configuration)
-            //        .Enrich.FromLogContext()
-            //        .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
-            //        .WriteTo.OpenTelemetry(options =>
-            //        {
-            //            // TODO: Move this to az app config
-            //            options.Endpoint = "http://localhost:4317/v1/logs";
-            //            options.Protocol = OtlpProtocol.Grpc;
-            //            options.ResourceAttributes = new Dictionary<string, object>
-            //            {
-            //                ["service.name"] = builder.Environment.ApplicationName
-            //            };
-            //        });
-            //});
+            builder.Host.UseSerilog((context, configuration) =>
+            {
+                var seqUri = context.Configuration["CommonConfig:SeqUri"];
+
+                configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName);
+
+                if (!string.IsNullOrWhiteSpace(seqUri))
+                {
+                    configuration.WriteTo.Seq(seqUri);
+                }
+
+                //.WriteTo.OpenTelemetry(options =>
+                //{
+                //    // TODO: Move this to az app config
+                //    options.Endpoint = "http://localhost:4317/v1/logs";
+                //    options.Protocol = OtlpProtocol.Grpc;
+                //    options.ResourceAttributes = new Dictionary<string, object>
+                //    {
+                //        ["service.name"] = builder.Environment.ApplicationName
+                //    };
+                //});
+            });
 
             //builder.Logging.AddOpenTelemetry(x =>
             //{

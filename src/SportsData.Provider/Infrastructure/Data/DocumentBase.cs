@@ -1,10 +1,12 @@
-﻿using SportsData.Core.Common;
+﻿using System.Text.Json.Serialization;
+using SportsData.Core.Common;
 
 namespace SportsData.Provider.Infrastructure.Data
 {
     public class DocumentBase
     {
-        public long Id { get; set; }
+        [JsonPropertyName("id")] // or JsonProperty if using Newtonsoft
+        public string Id { get; set; }
 
         public string? CanonicalId { get; set; }
 

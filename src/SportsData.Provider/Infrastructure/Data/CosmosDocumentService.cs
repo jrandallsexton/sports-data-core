@@ -17,7 +17,7 @@ namespace SportsData.Provider.Infrastructure.Data
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
-            _defaultContainer = _client.GetContainer(_databaseName, "default");
+            _defaultContainer = _client.GetContainer(_databaseName, "provider-dev");
         }
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string containerName)

@@ -47,7 +47,7 @@ namespace SportsData.Provider.Application.Documents
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId);
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
 
             // TODO: Clean this up
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
@@ -64,7 +64,7 @@ namespace SportsData.Provider.Application.Documents
             var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, seasonId);
 
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId);
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
 
             // TODO: Clean this up
             return dbItem != null ? Ok(dbItem.Data) : NotFound();
@@ -113,7 +113,7 @@ namespace SportsData.Provider.Application.Documents
             var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash);
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash.ToString());
 
             if (dbItem is not null)
             {
@@ -139,7 +139,7 @@ namespace SportsData.Provider.Application.Documents
             // save a record for the hash and blob url
             await _documentStore.InsertOneAsync(collectionName, new DocumentBase()
             {
-                Id = hash,
+                Id = hash.ToString(),
                 CanonicalId = query.CanonicalId,
                 Data = externalUrl
             });

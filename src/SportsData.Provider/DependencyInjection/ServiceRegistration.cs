@@ -64,8 +64,11 @@ namespace SportsData.Provider.DependencyInjection
 
             foreach (var resource in resources)
             {
-                var def = new DocumentJobDefinition(resource);
-                backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
+                if (resource.DocumentType == DocumentType.Venue)
+                {
+                    var def = new DocumentJobDefinition(resource);
+                    backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
+                }
             }
 
             //recurringJobManager.AddOrUpdate<IProvideDocuments>(

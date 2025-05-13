@@ -124,7 +124,7 @@ namespace SportsData.Provider.Application.Processors
                 : command.Id;
 
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentId);
+                .GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentId.ToString());
 
             // TODO: break these off into different handlers
             if (dbItem is null)
@@ -132,7 +132,7 @@ namespace SportsData.Provider.Application.Processors
                 // no ?  save it and broadcast event
                 await _documentStore.InsertOneAsync(type.CollectionName, new DocumentBase()
                 {
-                    Id = documentId,
+                    Id = documentId.ToString(),
                     Data = itemJson,
                     Sport = command.Sport,
                     DocumentType = command.DocumentType,
@@ -196,7 +196,7 @@ namespace SportsData.Provider.Application.Processors
             // yes: update and broadcast
             await dbObjects.ReplaceOneAsync(filter, new DocumentBase()
             {
-                Id = documentId,
+                Id = documentId.ToString(),
                 Data = itemJson
             });
 

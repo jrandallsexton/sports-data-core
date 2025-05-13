@@ -26,11 +26,12 @@ namespace SportsData.Provider
             Console.WriteLine($"Mode: {mode}");
 
             var builder = WebApplication.CreateBuilder(args);
-            builder.UseCommon();
 
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
+
+            builder.UseCommon();
 
             var services = builder.Services;
             services.AddCoreServices(config);

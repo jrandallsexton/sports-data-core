@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Azure.Identity;
+using Google.Protobuf.WellKnownTypes;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -30,6 +31,7 @@ namespace SportsData.Core.DependencyInjection
             builder.Host.UseSerilog((context, configuration) =>
             {
                 var seqUri = context.Configuration["CommonConfig:SeqUri"];
+                Console.WriteLine($"[DEBUG] SeqUri from config: {seqUri}");
 
                 configuration
                     .ReadFrom.Configuration(context.Configuration)

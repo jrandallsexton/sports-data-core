@@ -48,10 +48,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
         public async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnDto = command.Document.FromJson<EspnTeamSeasonDto>(new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore
-            });
+            var espnDto = command.Document.FromJson<EspnTeamSeasonDto>();
 
             var franchiseExternalId = await _dataContext.FranchiseExternalIds
                 .Include(x => x.Franchise)

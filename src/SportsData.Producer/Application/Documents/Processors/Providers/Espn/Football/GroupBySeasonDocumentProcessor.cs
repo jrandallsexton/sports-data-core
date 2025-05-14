@@ -51,10 +51,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var externalProviderDto = command.Document.FromJson<EspnGroupBySeasonDto>(new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore
-            });
+            var externalProviderDto = command.Document.FromJson<EspnGroupBySeasonDto>();
 
             // 1. Does this group (conference) exist? If not, we must create it prior to creating a season for it
             var groupEntity = await _dataContext.Groups

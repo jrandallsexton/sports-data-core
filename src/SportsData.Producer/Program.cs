@@ -33,14 +33,14 @@ public class Program
         // Add services to the container.
         var config = builder.Configuration;
         config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
+        
+        builder.UseCommon();
 
         var services = builder.Services;
         services.AddCoreServices(config);
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-
-        builder.UseCommon();
 
         services.AddProviders(config);
         

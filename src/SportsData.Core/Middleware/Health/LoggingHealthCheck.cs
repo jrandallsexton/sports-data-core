@@ -22,12 +22,7 @@ namespace SportsData.Core.Middleware.Health
             HealthCheckContext context,
             CancellationToken cancellationToken = new CancellationToken())
         {
-            //var response = await new HttpClient().GetAsync("http://seq-ui/#/events?range=1d", cancellationToken);
-            //var response = await new HttpClient().GetAsync("http://localhost:8090/#/events?range=1d", cancellationToken);
-
-            //var response = await new HttpClient().GetAsync(_config.Value.SeqUri, cancellationToken);
-            // TODO: Move this updated value to AzAppConfig
-            var response = await new HttpClient().GetAsync("http://localhost:8090/health", cancellationToken);
+            var response = await new HttpClient().GetAsync(_config.Value.SeqUri, cancellationToken);
 
             return response.IsSuccessStatusCode ?
                 HealthCheckResult.Healthy() :

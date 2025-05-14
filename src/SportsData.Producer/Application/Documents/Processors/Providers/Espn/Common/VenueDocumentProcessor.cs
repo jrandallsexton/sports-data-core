@@ -53,7 +53,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnDto = command.Document.FromJson<EspnVenueDto>();
+            //var espnDto = command.Document.FromJson<EspnVenueDto>();
+            var espnDto = JsonConvert.DeserializeObject<EspnVenueDto>(command.Document);
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var exists = await _dataContext.Venues.AnyAsync(x =>

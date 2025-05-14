@@ -126,11 +126,11 @@ public class Program
         switch (mode)
         {
             case Sport.GolfPga:
-                services.AddHealthChecks<GolfDataContext, Program>(builder.Environment.ApplicationName);
+                services.AddHealthChecks<GolfDataContext, Program>(builder.Environment.ApplicationName, mode);
                 break;
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
-                services.AddHealthChecks<FootballDataContext, Program>(builder.Environment.ApplicationName);
+                services.AddHealthChecks<FootballDataContext, Program>(builder.Environment.ApplicationName, mode);
                 break;
             case Sport.All:
             case Sport.BaseballMlb:
@@ -184,7 +184,7 @@ public class Program
 
         app.MapControllers();
 
-        //app.Services.ConfigureHangfireJobs(mode);
+        app.Services.ConfigureHangfireJobs(mode);
 
         await app.RunAsync();
     }

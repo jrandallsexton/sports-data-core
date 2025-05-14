@@ -33,7 +33,7 @@ namespace SportsData.Player
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
-            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
+            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
 
             var app = builder.Build();
 

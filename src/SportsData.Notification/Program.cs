@@ -25,7 +25,7 @@ namespace SportsData.Notification
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);
-            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName);
+            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, Sport.All);
 
             // Add Serilog
             builder.UseCommon();

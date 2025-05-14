@@ -130,7 +130,7 @@ namespace SportsData.Core.DependencyInjection
         public static IServiceCollection AddHealthChecks<TDbContext, TPublisher>(
             this IServiceCollection services,
             string apiName,
-            string mode = "All")
+            Sport mode)
             where TDbContext : DbContext where TPublisher : class
         {
             services.AddHealthChecks()

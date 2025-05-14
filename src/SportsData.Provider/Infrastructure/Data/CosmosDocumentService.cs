@@ -65,7 +65,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document)
         {
-            _logger.LogInformation("Cosmos inserting @{document}", document);
+            _logger.LogInformation("Cosmos inserting {@Document}", document);
             var container = _client.GetContainer(_databaseName, collectionName);
             await container.CreateItemAsync(document);
         }

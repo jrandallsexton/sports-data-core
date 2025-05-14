@@ -9,13 +9,17 @@ namespace SportsData.Provider.Infrastructure.Data
 {
     public class CosmosDocumentService : IDocumentStore
     {
+        private readonly ILogger<CosmosDocumentService> _logger;
         private readonly CosmosClient _client;
         private readonly string _databaseName;
         private readonly Container _defaultContainer;
 
-        public CosmosDocumentService(IOptions<ProviderDocDatabaseConfig> options)
+        public CosmosDocumentService(
+            ILogger<CosmosDocumentService> logger,
+            IOptions<ProviderDocDatabaseConfig> options)
         {
-            Console.WriteLine($"Cosmos began with databaseName: {options.Value.DatabaseName}");
+            _logger = logger;
+            _logger.LogInformation($"Cosmos began with databaseName: {options.Value.DatabaseName}");
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
@@ -61,7 +65,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document)
         {
-            Console.WriteLine($"Cosmos inserting: {document.ToJson()}");
+            _logger.LogInformation("Cosmos inserting @{document}", document);
             var container = _client.GetContainer(_databaseName, collectionName);
             await container.CreateItemAsync(document);
         }

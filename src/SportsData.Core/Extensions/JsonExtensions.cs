@@ -1,35 +1,34 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Text.Json;
 
 namespace SportsData.Core.Extensions
 {
-    // TODO: Convert this to System.Text.Json
     public static class JsonExtensions
     {
+        private static readonly JsonSerializerOptions DefaultOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        };
 
-        public static T FromJson<T>(this string json, JsonSerializerSettings jsonSerializerSettings = null)
+        public static T FromJson<T>(this string json, JsonSerializerOptions options = null)
             where T : class
         {
-            jsonSerializerSettings ??= new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore
-            };
-
-            return string.IsNullOrEmpty(json) ? default : JsonConvert.DeserializeObject<T>(json, jsonSerializerSettings);
+            if (string.IsNullOrWhiteSpace(json)) return default;
+            return JsonSerializer.Deserialize<T>(json, options ?? DefaultOptions);
         }
 
-        public static object FromJson(this string value)
+        public static object FromJson(this string value, Type type, JsonSerializerOptions options = null)
         {
-            return JsonConvert.DeserializeObject<object>(value);
+            if (string.IsNullOrWhiteSpace(value)) return default;
+            return JsonSerializer.Deserialize(value, type, options ?? DefaultOptions);
         }
 
-        public static string ToJson(this object obj, JsonSerializerSettings jsonSerializerSettings = null)
+        public static string ToJson(this object obj, JsonSerializerOptions options = null)
         {
-            var defaultSerializerSettings = new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                NullValueHandling = NullValueHandling.Ignore
-            };
-            return JsonConvert.SerializeObject(obj, Formatting.None, jsonSerializerSettings ?? defaultSerializerSettings);
+            return JsonSerializer.Serialize(obj, options ?? DefaultOptions);
         }
     }
 }

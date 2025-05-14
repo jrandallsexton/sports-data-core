@@ -1,23 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
+
+using SportsData.Core.Extensions;
+
 using Xunit;
 
 namespace SportsData.Core.Tests.Unit.Extensions
 {
     public class JsonExtensionsTests
     {
-        [Fact]
-        public void TestJsonExtensions()
+        private class SampleModel
         {
-            // arrange
-
-            // act
-
-            // assert
+            public string Id { get; set; }
+            public int Count { get; set; }
+            public string NullValue { get; set; }
         }
 
+        [Fact]
+        public void ToJson_And_FromJson_Should_Serialize_And_Deserialize_Correctly()
+        {
+            // arrange
+            var model = new SampleModel
+            {
+                Id = "abc123",
+                Count = 42,
+                NullValue = null
+            };
+
+            // act
+            string json = model.ToJson();
+            var deserialized = json.FromJson<SampleModel>();
+
+            // assert
+            Assert.Equal("abc123", deserialized.Id);
+            Assert.Equal(42, deserialized.Count);
+            Assert.Null(deserialized.NullValue);
+
+            // Also ensure camelCasing is applied
+            Assert.Contains("\"id\"", json);
+            Assert.Contains("\"count\"", json);
+            Assert.DoesNotContain("NullValue", json); // Should be omitted
+        }
     }
 }

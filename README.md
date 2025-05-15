@@ -1,4 +1,5 @@
 [![Deploy React App to Azure Static Web App](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml)
+
 [![Build Status](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)](https://dev.azure.com/jrandallsexton/sport-deets/_build/latest?definitionId=18&branchName=main)
 ## sports-data-core
 

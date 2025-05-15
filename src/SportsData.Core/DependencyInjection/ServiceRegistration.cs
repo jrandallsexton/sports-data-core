@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Hangfire.PostgreSql;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -58,12 +59,12 @@ namespace SportsData.Core.DependencyInjection
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
-            var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
+            var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
 
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                options.UseSqlServer(connString);
+                options.UseNpgsql(connString);
             });
 
             return services;
@@ -114,11 +115,11 @@ namespace SportsData.Core.DependencyInjection
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
-            var connString = $"{cc};Initial Catalog=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
+            var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
 
             Console.WriteLine($"Hangfire ConnStr: {connString}");
 
-            services.AddHangfire(x => x.UseSqlServerStorage(connString));
+            services.AddHangfire(x => x.UsePostgreSqlStorage(connString));
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/

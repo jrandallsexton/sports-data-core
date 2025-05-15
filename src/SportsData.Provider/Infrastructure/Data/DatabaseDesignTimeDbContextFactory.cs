@@ -9,7 +9,7 @@ namespace SportsData.Provider.Infrastructure.Data
         public AppDataContext CreateDbContext(string[] args)
         {
             var builder = new DbContextOptionsBuilder<AppDataContext>();
-            builder.UseSqlServer();
+            builder.UseNpgsql();
             return new AppDataContext(builder.Options);
         }
     }

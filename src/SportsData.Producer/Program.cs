@@ -74,7 +74,7 @@ public class Program
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);
-                        o.UseSqlServer().UseBusOutbox();
+                        o.UsePostgres().UseBusOutbox();
                     });
                     break;
                 case Sport.FootballNcaa:
@@ -83,7 +83,7 @@ public class Program
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);
-                        o.UseSqlServer().UseBusOutbox();
+                        o.UsePostgres().UseBusOutbox();
                     });
                     break;
                 case Sport.All:

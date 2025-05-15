@@ -105,11 +105,12 @@ namespace SportsData.Provider
             // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
 
+            await services.ApplyMigrations<AppDataContext>();
             using (var scope = app.Services.CreateScope())
             {
                 var appServices = scope.ServiceProvider;
                 var context = appServices.GetRequiredService<AppDataContext>();
-                await context.Database.MigrateAsync();
+                //await context.Database.MigrateAsync();
                 await LoadSeedData(context, mode);
             }
 
@@ -124,7 +125,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            await app.Services.ConfigureHangfireJobs(mode);
+            //await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

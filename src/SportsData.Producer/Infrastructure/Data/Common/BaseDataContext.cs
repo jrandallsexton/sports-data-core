@@ -8,21 +8,20 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public abstract class BaseDataContext(DbContextOptions options) : DbContext(options)
     {
-        public DbSet<Venue> Venues { get; set; }
-
-        public DbSet<VenueImage> VenueImages { get; set; }
-
-        public DbSet<Season> Seasons { get; set; }
-
         public DbSet<Athlete> Athletes { get; set; }
-
         public DbSet<AthleteExternalId> AthleteExternalIds { get; set; }
-
         public DbSet<AthleteImage> AthleteImages { get; set; }
+        public DbSet<Season> Seasons { get; set; }
+        public DbSet<Venue> Venues { get; set; }
+        public DbSet<VenueImage> VenueImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteImage.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new Season.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Venue.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueImage.EntityConfiguration());
             modelBuilder.AddInboxStateEntity();

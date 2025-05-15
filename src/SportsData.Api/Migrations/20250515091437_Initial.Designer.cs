@@ -2,9 +2,9 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Api.Infrastructure.Data;
 
 #nullable disable
@@ -12,7 +12,7 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250430105545_Initial")]
+    [Migration("20250515091437_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -21,52 +21,55 @@ namespace SportsData.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CanonicalId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DisplayName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailVerified")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("FirebaseUid")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastLoginUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SignInProvider")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
+
+                    b.Property<string>("Timezone")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -77,12 +80,12 @@ namespace SportsData.Api.Migrations
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 4, 30, 10, 55, 44, 710, DateTimeKind.Utc).AddTicks(1093),
-                            DisplayName = "Randall Sexton",
-                            Email = "jrandallsexton@gmail.com",
-                            EmailVerified = false,
-                            FirebaseUid = "a3GLn01j7pepPpVUSugtKWbRtQG3",
-                            LastLoginUtc = new DateTime(2025, 4, 30, 10, 55, 44, 710, DateTimeKind.Utc).AddTicks(1182),
+                            CreatedUtc = new DateTime(2025, 5, 15, 9, 14, 37, 276, DateTimeKind.Utc).AddTicks(5428),
+                            DisplayName = "Foo Bar",
+                            Email = "foo@bar.com",
+                            EmailVerified = true,
+                            FirebaseUid = "ngovRAr5E8cjMVaZNvcqN1nPFPJ2",
+                            LastLoginUtc = new DateTime(2025, 5, 15, 9, 14, 37, 276, DateTimeKind.Utc).AddTicks(5557),
                             SignInProvider = "password"
                         });
                 });

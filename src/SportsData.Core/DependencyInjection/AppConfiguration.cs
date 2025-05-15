@@ -86,23 +86,23 @@ namespace SportsData.Core.DependencyInjection
                         links.AppendLine("<a href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
                         links.AppendLine("<a href=\"/metrics\" target=\"_blank\">Metrics</a></br>");
 
-                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            links.AppendLine("<a href=\"http://localhost:30084/?orgId=1\" target=\"_blank\">Grafana</a></br>");
-                        }
-                        else
-                        {
-                            links.AppendLine("<a href=\"http://localhost:3000/?orgId=1\" target=\"_blank\">Grafana</a></br>");
-                        }
+                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                        //{
+                        //    links.AppendLine("<a href=\"http://localhost:30084/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                        //}
+                        //else
+                        //{
+                        //    links.AppendLine("<a href=\"http://localhost:3000/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                        //}
 
-                        if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            links.AppendLine("<a href=\"http://localhost:30083/graph\" target=\"_blank\">Prometheus</a></br>");
-                        }
-                        else
-                        {
-                            links.AppendLine("<a href=\"http://localhost:9090/graph\" target=\"_blank\">Prometheus</a></br>");
-                        }
+                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                        //{
+                        //    links.AppendLine("<a href=\"http://localhost:30083/graph\" target=\"_blank\">Prometheus</a></br>");
+                        //}
+                        //else
+                        //{
+                        //    links.AppendLine("<a href=\"http://localhost:9090/graph\" target=\"_blank\">Prometheus</a></br>");
+                        //}
 
                         if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
                         {

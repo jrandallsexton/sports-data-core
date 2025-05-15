@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+
 using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data
@@ -16,6 +18,15 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceIndex.EntityConfiguration).Assembly);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.ConfigureWarnings(x =>
+            {
+                x.Ignore([RelationalEventId.PendingModelChangesWarning]);
+            });
+            optionsBuilder.EnableSensitiveDataLogging(false);
         }
     }
 }

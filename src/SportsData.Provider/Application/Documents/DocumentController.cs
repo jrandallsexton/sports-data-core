@@ -55,6 +55,8 @@ namespace SportsData.Provider.Application.Documents
                 _logger.LogInformation("Started");
                 var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
+                _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+
                 var dbItem = await _documentStore
                     .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
 

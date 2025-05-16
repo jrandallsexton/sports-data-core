@@ -48,6 +48,7 @@ namespace SportsData.Provider.Infrastructure.Data
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> predicate)
         {
             var container = _client.GetContainer(_databaseName, collectionName);
+
             var iterator = container.GetItemLinqQueryable<T>()
                 .Where(predicate)
                 .ToFeedIterator();

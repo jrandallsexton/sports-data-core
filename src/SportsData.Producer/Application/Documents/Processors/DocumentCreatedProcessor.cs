@@ -54,6 +54,12 @@ namespace SportsData.Producer.Application.Documents.Processors
                 return;
             }
 
+            if (string.IsNullOrEmpty(document)) 
+            {
+                _logger.LogError("Document is empty or null");
+                return;
+            }
+
             _logger.LogInformation("Obtained new document from Provider {@DocumentType}", evt.DocumentType);
 
             var processor = _documentProcessorFactory.GetProcessor(

@@ -58,7 +58,7 @@ namespace SportsData.Provider.Application.Documents
                 _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
 
                 var dbItem = await _documentStore
-                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
+                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == documentId.ToString());
 
                 _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
 

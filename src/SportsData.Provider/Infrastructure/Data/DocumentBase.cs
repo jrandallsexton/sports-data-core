@@ -10,6 +10,9 @@ namespace SportsData.Provider.Infrastructure.Data
         [JsonPropertyName("id")]
         public string Id { get; set; }
 
+        [JsonIgnore]
+        public string id => Id;
+
         public string? CanonicalId { get; set; }
 
         public string Data { get; set; }

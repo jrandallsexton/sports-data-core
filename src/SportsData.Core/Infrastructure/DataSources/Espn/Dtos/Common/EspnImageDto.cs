@@ -6,7 +6,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnImageDto
     {
-        [JsonPropertyName("Href")]
+        [JsonPropertyName("href")]
         public Uri Href { get; set; }
 
         [JsonPropertyName("width")]

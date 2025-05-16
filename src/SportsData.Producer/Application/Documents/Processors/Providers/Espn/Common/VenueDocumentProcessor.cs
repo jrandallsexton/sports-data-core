@@ -71,6 +71,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         {
             // 1. map to the entity and save it
             var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId, _slugGenerator);
+
             _dataContext.Add(newEntity);
 
             // 2. Any images?

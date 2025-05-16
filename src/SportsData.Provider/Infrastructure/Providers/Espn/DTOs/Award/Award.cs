@@ -39,7 +39,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award
         [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
 
-        [JsonPropertyName("Href")]
+        [JsonPropertyName("href")]
         public Uri Href { get; set; }
 
         [JsonPropertyName("text")]

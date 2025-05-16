@@ -120,7 +120,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 
     public class EspnAthleteHeadshot
     {
-        [JsonPropertyName("Href")]
+        [JsonPropertyName("href")]
         public Uri Href { get; set; }
 
         [JsonPropertyName("alt")]

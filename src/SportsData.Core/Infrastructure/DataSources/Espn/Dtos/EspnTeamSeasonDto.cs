@@ -123,7 +123,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
 
-        [JsonPropertyName("Href")]
+        [JsonPropertyName("href")]
         public string Href { get; set; }
 
         [JsonPropertyName("text")]
@@ -141,7 +141,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 
     public class EspnTeamSeasonLogo
     {
-        [JsonPropertyName("Href")]
+        [JsonPropertyName("href")]
         public Uri Href { get; set; }
 
         [JsonPropertyName("width")]

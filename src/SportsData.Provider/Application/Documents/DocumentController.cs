@@ -63,7 +63,7 @@ namespace SportsData.Provider.Application.Documents
                 _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
 
                 // TODO: Clean this up
-                return dbItem != null ? Ok(dbItem.Data) : NotFound();
+                return dbItem != null ? Ok(dbItem.Data) : Ok(default);
             }
         }
 
@@ -81,7 +81,7 @@ namespace SportsData.Provider.Application.Documents
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
 
             // TODO: Clean this up
-            return dbItem != null ? Ok(dbItem.Data) : NotFound();
+            return dbItem != null ? Ok(dbItem.Data) : Ok(default);
         }
 
         [HttpGet("{providerId}/{externalUrl}")]

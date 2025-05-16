@@ -1,221 +1,296 @@
-﻿using Newtonsoft.Json;
+﻿using SportsData.Core.Converters;
 
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
+using System.Text.Json.Serialization;
+
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnLeagueDto
     {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
+        [JsonPropertyName("guid")]
         public string Guid { get; set; }
 
+        [JsonPropertyName("uid")]
         public string Uid { get; set; }
 
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; }
 
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
 
+        [JsonPropertyName("shortName")]
         public string ShortName { get; set; }
 
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
 
+        [JsonPropertyName("isTournament")]
         public bool IsTournament { get; set; }
 
+        [JsonPropertyName("season")]
         public EspnLeagueSeasonDto Season { get; set; }
 
+        [JsonPropertyName("seasons")]
         public EspnLinkDto Seasons { get; set; }
 
+        [JsonPropertyName("franchises")]
         public EspnLinkDto Franchises { get; set; }
 
+        [JsonPropertyName("teams")]
         public EspnLinkDto Teams { get; set; }
 
-        public Group Group { get; set; }
+        [JsonPropertyName("group")]
+        public EspnLinkDto Group { get; set; }
 
+        [JsonPropertyName("groups")]
         public EspnLinkDto Groups { get; set; }
 
+        [JsonPropertyName("events")]
         public EspnLinkDto Events { get; set; }
 
+        [JsonPropertyName("notes")]
         public EspnLinkDto Notes { get; set; }
 
+        [JsonPropertyName("rankings")]
         public EspnLinkDto Rankings { get; set; }
 
+        [JsonPropertyName("draft")]
         public EspnLinkDto Draft { get; set; }
 
+        [JsonPropertyName("awards")]
         public EspnLinkDto Awards { get; set; }
 
+        [JsonPropertyName("links")]
         public List<EspnLinkFullDto> Links { get; set; }
 
+        [JsonPropertyName("logos")]
         public List<Logo> Logos { get; set; }
 
+        [JsonPropertyName("athletes")]
         public EspnLinkDto Athletes { get; set; }
 
-        public Calendar Calendar { get; set; }
+        [JsonPropertyName("calendar")]
+        public EspnLinkDto Calendar { get; set; }
 
+        [JsonPropertyName("transactions")]
         public EspnLinkDto Transactions { get; set; }
 
+        [JsonPropertyName("leaders")]
         public EspnLinkDto Leaders { get; set; }
 
+        [JsonPropertyName("gender")]
         public string Gender { get; set; }
-    }
-
-    public class Item
-    {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
-        public string Id { get; set; }
-
-        public int Type { get; set; }
-
-        public string Name { get; set; }
-
-        public string Abbreviation { get; set; }
-
-        public int Year { get; set; }
-
-        public string StartDate { get; set; }
-
-        public string EndDate { get; set; }
-
-        public bool HasGroups { get; set; }
-
-        public bool HasStandings { get; set; }
-
-        public bool HasLegs { get; set; }
-
-        public EspnLinkDto Groups { get; set; }
-
-        public EspnLinkDto Weeks { get; set; }
-
-        public EspnLinkDto Corrections { get; set; }
-
-        public string Slug { get; set; }
-
-        public Week Week { get; set; }
-
-        public EspnLinkDto Leaders { get; set; }
-    }
-
-    public class Logo
-    {
-        public string Href { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public string Alt { get; set; }
-        public List<string> Rel { get; set; }
-        public string LastUpdated { get; set; }
     }
 
     public class EspnLeagueSeasonDto
     {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
+        [JsonPropertyName("year")]
         public int Year { get; set; }
 
+        [JsonPropertyName("startDate")]
         public string StartDate { get; set; }
 
+        [JsonPropertyName("endDate")]
         public string EndDate { get; set; }
 
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; }
 
+        [JsonPropertyName("type")]
         public EspnLeagueSeasonType Type { get; set; }
 
+        [JsonPropertyName("types")]
         public EspnLeagueSeasonTypes Types { get; set; }
 
+        [JsonPropertyName("rankings")]
         public EspnLinkDto Rankings { get; set; }
 
+        [JsonPropertyName("powerIndexes")]
         public EspnLinkDto PowerIndexes { get; set; }
 
+        [JsonPropertyName("powerIndexLeaders")]
         public EspnLinkDto PowerIndexLeaders { get; set; }
 
+        [JsonPropertyName("coaches")]
         public EspnLinkDto Coaches { get; set; }
 
+        [JsonPropertyName("athletes")]
         public EspnLinkDto Athletes { get; set; }
 
+        [JsonPropertyName("awards")]
         public EspnLinkDto Awards { get; set; }
 
+        [JsonPropertyName("futures")]
         public EspnLinkDto Futures { get; set; }
 
+        [JsonPropertyName("leaders")]
         public EspnLinkDto Leaders { get; set; }
-
     }
 
     public class EspnLeagueSeasonType
     {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
+        [JsonPropertyName("type")]
         public int Type { get; set; }
 
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
 
+        [JsonPropertyName("year")]
         public int Year { get; set; }
 
+        [JsonPropertyName("startDate")]
         public string StartDate { get; set; }
 
+        [JsonPropertyName("endDate")]
         public string EndDate { get; set; }
 
+        [JsonPropertyName("hasGroups")]
         public bool HasGroups { get; set; }
 
+        [JsonPropertyName("hasStandings")]
         public bool HasStandings { get; set; }
 
+        [JsonPropertyName("hasLegs")]
         public bool HasLegs { get; set; }
 
+        [JsonPropertyName("groups")]
         public EspnLinkDto Groups { get; set; }
 
+        [JsonPropertyName("week")]
         public Week Week { get; set; }
 
+        [JsonPropertyName("weeks")]
         public EspnLinkDto Weeks { get; set; }
 
+        [JsonPropertyName("corrections")]
         public EspnLinkDto Corrections { get; set; }
 
+        [JsonPropertyName("leaders")]
         public EspnLinkDto Leaders { get; set; }
 
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
     }
 
     public class EspnLeagueSeasonTypes
     {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
+        [JsonPropertyName("count")]
         public int Count { get; set; }
 
+        [JsonPropertyName("pageIndex")]
         public int PageIndex { get; set; }
 
+        [JsonPropertyName("pageSize")]
         public int PageSize { get; set; }
 
+        [JsonPropertyName("pageCount")]
         public int PageCount { get; set; }
 
+        [JsonPropertyName("items")]
         public List<EspnLeagueSeasonType> Items { get; set; }
+    }
+
+    public class Logo
+    {
+        [JsonPropertyName("href")]
+        public string Href { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+
+        [JsonPropertyName("alt")]
+        public string Alt { get; set; }
+
+        [JsonPropertyName("rel")]
+        public List<string> Rel { get; set; }
+
+        [JsonPropertyName("lastUpdated")]
+        public string LastUpdated { get; set; }
     }
 
     public class Week
     {
-        [JsonProperty("$ref")]
-        public string Ref { get; set; }
-
+        [JsonPropertyName("number")]
         public int Number { get; set; }
 
+        [JsonPropertyName("startDate")]
         public string StartDate { get; set; }
 
+        [JsonPropertyName("endDate")]
         public string EndDate { get; set; }
 
+        [JsonPropertyName("text")]
         public string Text { get; set; }
 
+        [JsonPropertyName("rankings")]
         public EspnLinkDto Rankings { get; set; }
+    }
+
+    public class Item
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        [JsonPropertyName("type")]
+        public int Type { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("abbreviation")]
+        public string Abbreviation { get; set; }
+
+        [JsonPropertyName("year")]
+        public int Year { get; set; }
+
+        [JsonPropertyName("startDate")]
+        public string StartDate { get; set; }
+
+        [JsonPropertyName("endDate")]
+        public string EndDate { get; set; }
+
+        [JsonPropertyName("hasGroups")]
+        public bool HasGroups { get; set; }
+
+        [JsonPropertyName("hasStandings")]
+        public bool HasStandings { get; set; }
+
+        [JsonPropertyName("hasLegs")]
+        public bool HasLegs { get; set; }
+
+        [JsonPropertyName("groups")]
+        public EspnLinkDto Groups { get; set; }
+
+        [JsonPropertyName("weeks")]
+        public EspnLinkDto Weeks { get; set; }
+
+        [JsonPropertyName("corrections")]
+        public EspnLinkDto Corrections { get; set; }
+
+        [JsonPropertyName("slug")]
+        public string Slug { get; set; }
+
+        [JsonPropertyName("week")]
+        public Week Week { get; set; }
+
+        [JsonPropertyName("leaders")]
+        public EspnLinkDto Leaders { get; set; }
     }
 }

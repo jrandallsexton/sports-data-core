@@ -77,7 +77,7 @@ namespace SportsData.Provider.Application.Jobs
 
             _logger.LogInformation("Updating access to ResourceIndex in the database");
             resourceIndexEntity.LastAccessed = DateTime.UtcNow;
-            resourceIndexEntity.TotalPageCount = resourceIndexDto.pageCount;
+            resourceIndexEntity.TotalPageCount = resourceIndexDto.PageCount;
 
             await _dataContext.SaveChangesAsync();
 
@@ -94,25 +94,25 @@ namespace SportsData.Provider.Application.Jobs
 
                 _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
 
-                if (dbDocuments.Count == resourceIndexDto.count)
+                if (dbDocuments.Count == resourceIndexDto.Count)
                 {
                     _logger.LogInformation(
                         $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
                     return;
                 }
 
-                while (resourceIndexDto.pageIndex <= resourceIndexDto.pageCount)
+                while (resourceIndexDto.PageIndex <= resourceIndexDto.PageCount)
                 {
                     _logger.LogInformation("Processing {@CurrentPage} of {@TotalPages} for {@DocumentType}",
-                        resourceIndexDto.pageIndex, resourceIndexDto.pageCount, jobDefinition.DocumentType)
+                        resourceIndexDto.PageIndex, resourceIndexDto.PageCount, jobDefinition.DocumentType)
                         ;
 
-                    foreach (var cmd in resourceIndexDto.items.Select(item =>
+                    foreach (var cmd in resourceIndexDto.Items.Select(item =>
                                  new ProcessResourceIndexItemCommand(
                                      resourceIndexEntity.Id,
                                      0,
-                                     item.id,
-                                     item.href,
+                                     item.Id,
+                                     item.Href,
                                      jobDefinition.Sport,
                                      jobDefinition.SourceDataProvider,
                                      jobDefinition.DocumentType,
@@ -124,21 +124,21 @@ namespace SportsData.Provider.Application.Jobs
 
                         await Task.Delay(500); // do NOT beat on their API
 
-                        resourceIndexEntity.LastPageIndex = resourceIndexDto.pageIndex;
+                        resourceIndexEntity.LastPageIndex = resourceIndexDto.PageIndex;
                         await _dataContext.SaveChangesAsync();
                     }
 
                     // TODO: I think I can remove this
-                    if (resourceIndexDto.pageIndex == resourceIndexDto.pageCount)
+                    if (resourceIndexDto.PageIndex == resourceIndexDto.PageCount)
                     {
                         break;
                     }
 
-                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={resourceIndexDto.pageIndex + 1}";
+                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={resourceIndexDto.PageIndex + 1}";
                     resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
                 }
 
-                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndexDto.items.Count} jobs spawned.");
+                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndexDto.Items.Count} jobs spawned.");
             }
             catch (Exception ex)
             {

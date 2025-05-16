@@ -14,7 +14,7 @@ namespace SportsData.Producer.Application.Venues
             return Ok(await Mediator.Send(new GetVenues.Query()));
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{Id}")]
         public async Task<IActionResult> GetVenue(string id)
         {
             return Ok(await Mediator.Send(new GetVenueById.Query(Guid.Parse(id))));

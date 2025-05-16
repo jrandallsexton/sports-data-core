@@ -1,86 +1,81 @@
-﻿using Newtonsoft.Json;
-
-using SportsData.Core.Converters;
+﻿using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnFranchiseDto
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
-
-        [JsonProperty("id")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
 
-        [JsonProperty("uid")]
+        [JsonPropertyName("uid")]
         public string Uid { get; set; }
 
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
 
-        [JsonProperty("location")]
+        [JsonPropertyName("location")]
         public string Location { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("nickname")]
+        [JsonPropertyName("nickname")]
         public string Nickname { get; set; }
 
-        [JsonProperty("abbreviation")]
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
 
-        [JsonProperty("displayName")]
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; }
 
-        [JsonProperty("shortDisplayName")]
+        [JsonPropertyName("shortDisplayName")]
         public string ShortDisplayName { get; set; }
 
-        [JsonProperty("color")]
+        [JsonPropertyName("color")]
         public string Color { get; set; }
 
-        [JsonProperty("isActive")]
+        [JsonPropertyName("isActive")]
         public bool IsActive { get; set; }
 
-        [JsonProperty("logos")]
+        [JsonPropertyName("logos")]
         public List<EspnImageDto> Logos { get; set; }
 
-        [JsonProperty("venue")]
+        [JsonPropertyName("venue")]
         public EspnVenueDto? Venue { get; set; }
 
-        [JsonProperty("team")]
+        [JsonPropertyName("team")]
         public EspnFranchiseAwards Team { get; set; }
 
-        [JsonProperty("awards")]
+        [JsonPropertyName("awards")]
         public EspnFranchiseAwards Awards { get; set; }
     }
 
     public class EspnFranchiseAwards
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
+        // $ref removed
     }
 
     public class EspnFranchiseImage
     {
-        [JsonProperty("href")]
+        [JsonPropertyName("Href")]
         public Uri Href { get; set; }
 
-        [JsonProperty("width")]
+        [JsonPropertyName("width")]
         public long Width { get; set; }
 
-        [JsonProperty("height")]
+        [JsonPropertyName("height")]
         public long Height { get; set; }
 
-        [JsonProperty("alt")]
+        [JsonPropertyName("alt")]
         public string Alt { get; set; }
 
-        [JsonProperty("rel")]
+        [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
     }
 }

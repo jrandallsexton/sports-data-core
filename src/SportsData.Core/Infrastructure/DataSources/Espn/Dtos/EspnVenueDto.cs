@@ -1,41 +1,36 @@
-﻿using Newtonsoft.Json;
-
-using SportsData.Core.Converters;
+﻿using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnVenueDto
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
-
-        [JsonProperty("id")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))] // Assumes you have or will rewrite this for System.Text.Json
         public long Id { get; set; }
 
-        [JsonProperty("fullName")]
+        [JsonPropertyName("fullName")]
         public string FullName { get; set; }
 
-        [JsonProperty("shortName")]
+        [JsonPropertyName("shortName")]
         public string ShortName { get; set; }
 
-        [JsonProperty("address")]
+        [JsonPropertyName("address")]
         public EspnAddressDto Address { get; set; }
 
-        [JsonProperty("capacity")]
+        [JsonPropertyName("capacity")]
         public long Capacity { get; set; }
 
-        [JsonProperty("grass")]
+        [JsonPropertyName("grass")]
         public bool Grass { get; set; }
 
-        [JsonProperty("indoor")]
+        [JsonPropertyName("indoor")]
         public bool Indoor { get; set; }
 
-        [JsonProperty("images")]
+        [JsonPropertyName("images")]
         public List<EspnImageDto> Images { get; set; }
     }
 }

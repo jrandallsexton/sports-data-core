@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-using SportsData.Core.Extensions;
+﻿using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
@@ -22,14 +20,14 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         public async Task<List<Award>> AwardsByFranchise(int franchiseId)
         {
             var franchiseAwards = await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
-            if (franchiseAwards == null || franchiseAwards.count == 0)
+            if (franchiseAwards == null || franchiseAwards.Count == 0)
                 return new List<Award>();
 
             var awards = new List<Award>();
 
-            await franchiseAwards.items.ForEachAsync(async i =>
+            await franchiseAwards.Items.ForEachAsync(async i =>
             {
-                var award = await GetAward(i.href);
+                var award = await GetAward(i.Href);
                 awards.Add(award);
                 await Task.Delay(1000);
             });
@@ -57,21 +55,21 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         {
             using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<EspnTeamSeasonDto>(venuesJson, JsonSerializerSettings);
+            return venuesJson.FromJson<EspnTeamSeasonDto>();
         }
 
         public async Task<TeamInformation> TeamInformation(int teamId)
         {
             using var response = await GetAsync(EspnApiEndpoints.TeamInformation(teamId));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<TeamInformation>(venuesJson, JsonSerializerSettings);
+            return venuesJson.FromJson<TeamInformation>();
         }
 
         public async Task<EspnResourceIndexDto> Teams(int fourDigitYear)
         {
             using var response = await GetAsync(EspnApiEndpoints.Teams(fourDigitYear));
             var venuesJson = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<EspnResourceIndexDto>(venuesJson, JsonSerializerSettings);
+            return venuesJson.FromJson<EspnResourceIndexDto>();
         }
 
         public async Task<EspnResourceIndexDto> GetResourceIndex(string uri, string? uriMask)
@@ -86,18 +84,18 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             if (string.IsNullOrEmpty(uriMask))
             {
                 // TODO: Work this as a span in-memory (no string allocs)
-                dto.items.ForEach(i =>
+                dto.Items.ForEach(i =>
                 {
-                    var qsIndex = i.href.IndexOf("?");
+                    var qsIndex = i.Href.IndexOf("?");
 
-                    var tmpUrl = i.href.Remove(qsIndex, i.href.Length - qsIndex);
+                    var tmpUrl = i.Href.Remove(qsIndex, i.Href.Length - qsIndex);
                     var lastSlashIndex = tmpUrl.LastIndexOf("/");
 
                     tmpUrl = tmpUrl.Remove(0, lastSlashIndex + 1);
 
                     if (int.TryParse(tmpUrl, out var indexItemId))
                     {
-                        i.id = indexItemId;
+                        i.Id = indexItemId;
                     }
                 });
             }
@@ -105,15 +103,15 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             {
                 const string mask1 = "?lang=en";
 
-                dto.items.ForEach(i =>
+                dto.Items.ForEach(i =>
                 {
-                    var url = i.href;
+                    var url = i.Href;
                     url = url.Replace(uriMask, string.Empty);
                     url = url.Replace(mask1, string.Empty);
 
                     if (int.TryParse(url, out var indexItemId))
                     {
-                        i.id = indexItemId;
+                        i.Id = indexItemId;
                     }
                 });
             }

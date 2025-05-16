@@ -1,208 +1,200 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 using SportsData.Core.Converters;
-
-using System;
-using System.Collections.Generic;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnTeamSeasonDto
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
-
-        [JsonProperty("id")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
 
-        [JsonProperty("uid")]
+        [JsonPropertyName("uid")]
         public string Uid { get; set; }
 
-        [JsonProperty("alternateIds")]
+        [JsonPropertyName("alternateIds")]
         public EspnTeamSeasonAlternateIds AlternateIds { get; set; }
 
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
 
-        [JsonProperty("location")]
+        [JsonPropertyName("location")]
         public string Location { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("nickname")]
+        [JsonPropertyName("nickname")]
         public string Nickname { get; set; }
 
-        [JsonProperty("abbreviation")]
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
 
-        [JsonProperty("displayName")]
+        [JsonPropertyName("displayName")]
         public string DisplayName { get; set; }
 
-        [JsonProperty("shortDisplayName")]
+        [JsonPropertyName("shortDisplayName")]
         public string ShortDisplayName { get; set; }
 
-        [JsonProperty("color")]
+        [JsonPropertyName("color")]
         public string Color { get; set; }
 
-        [JsonProperty("alternateColor")]
+        [JsonPropertyName("alternateColor")]
         public string AlternateColor { get; set; }
 
-        [JsonProperty("isActive")]
+        [JsonPropertyName("isActive")]
         public bool IsActive { get; set; }
 
-        [JsonProperty("isAllStar")]
+        [JsonPropertyName("isAllStar")]
         public bool IsAllStar { get; set; }
 
-        [JsonProperty("logos")]
+        [JsonPropertyName("logos")]
         public List<EspnTeamSeasonLogo> Logos { get; set; }
 
-        [JsonProperty("record")]
+        [JsonPropertyName("record")]
         public EspnTeamSeasonResourceIndex Record { get; set; }
 
-        [JsonProperty("oddsRecords")]
+        [JsonPropertyName("oddsRecords")]
         public EspnTeamSeasonResourceIndex OddsRecords { get; set; }
 
-        [JsonProperty("athletes")]
+        [JsonPropertyName("athletes")]
         public EspnTeamSeasonResourceIndex Athletes { get; set; }
 
-        [JsonProperty("venue")]
+        [JsonPropertyName("venue")]
         public EspnTeamSeasonVenue Venue { get; set; }
 
-        [JsonProperty("groups")]
+        [JsonPropertyName("groups")]
         public EspnTeamSeasonResourceIndex Groups { get; set; }
 
-        [JsonProperty("ranks")]
+        [JsonPropertyName("ranks")]
         public EspnTeamSeasonResourceIndex Ranks { get; set; }
 
-        [JsonProperty("links")]
+        [JsonPropertyName("links")]
         public List<EspnTeamSeasonLink> Links { get; set; }
 
-        [JsonProperty("injuries")]
+        [JsonPropertyName("injuries")]
         public EspnTeamSeasonResourceIndex Injuries { get; set; }
 
-        [JsonProperty("notes")]
+        [JsonPropertyName("notes")]
         public EspnTeamSeasonResourceIndex Notes { get; set; }
 
-        [JsonProperty("againstTheSpreadRecords")]
+        [JsonPropertyName("againstTheSpreadRecords")]
         public EspnTeamSeasonResourceIndex AgainstTheSpreadRecords { get; set; }
 
-        [JsonProperty("awards")]
+        [JsonPropertyName("awards")]
         public EspnTeamSeasonResourceIndex Awards { get; set; }
 
-        [JsonProperty("franchise")]
+        [JsonPropertyName("franchise")]
         public EspnTeamSeasonResourceIndex Franchise { get; set; }
 
-        [JsonProperty("projection")]
+        [JsonPropertyName("projection")]
         public EspnTeamSeasonResourceIndex Projection { get; set; }
 
-        [JsonProperty("events")]
+        [JsonPropertyName("events")]
         public EspnTeamSeasonResourceIndex Events { get; set; }
 
-        [JsonProperty("recruiting")]
+        [JsonPropertyName("recruiting")]
         public EspnTeamSeasonResourceIndex Recruiting { get; set; }
 
-        [JsonProperty("college")]
+        [JsonPropertyName("college")]
         public EspnTeamSeasonResourceIndex College { get; set; }
     }
 
     public class EspnTeamSeasonResourceIndex
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
+        // $ref removed
     }
 
     public class EspnTeamSeasonAlternateIds
     {
-        [JsonProperty("sdr")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("sdr")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Sdr { get; set; }
     }
 
     public class EspnTeamSeasonLink
     {
-        [JsonProperty("language")]
+        [JsonPropertyName("language")]
         public string Language { get; set; }
 
-        [JsonProperty("rel")]
+        [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
 
-        [JsonProperty("href")]
+        [JsonPropertyName("Href")]
         public string Href { get; set; }
 
-        [JsonProperty("text")]
+        [JsonPropertyName("text")]
         public string Text { get; set; }
 
-        [JsonProperty("shortText")]
+        [JsonPropertyName("shortText")]
         public string ShortText { get; set; }
 
-        [JsonProperty("isExternal")]
+        [JsonPropertyName("isExternal")]
         public bool IsExternal { get; set; }
 
-        [JsonProperty("isPremium")]
+        [JsonPropertyName("isPremium")]
         public bool IsPremium { get; set; }
     }
 
     public class EspnTeamSeasonLogo
     {
-        [JsonProperty("href")]
+        [JsonPropertyName("Href")]
         public Uri Href { get; set; }
 
-        [JsonProperty("width")]
+        [JsonPropertyName("width")]
         public long Width { get; set; }
 
-        [JsonProperty("height")]
+        [JsonPropertyName("height")]
         public long Height { get; set; }
 
-        [JsonProperty("alt")]
+        [JsonPropertyName("alt")]
         public string Alt { get; set; }
 
-        [JsonProperty("rel")]
+        [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
     }
 
     public class EspnTeamSeasonVenue
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
-
-        [JsonProperty("id")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
 
-        [JsonProperty("fullName")]
+        [JsonPropertyName("fullName")]
         public string FullName { get; set; }
 
-        [JsonProperty("shortName")]
+        [JsonPropertyName("shortName")]
         public string ShortName { get; set; }
 
-        [JsonProperty("address")]
+        [JsonPropertyName("address")]
         public EspnTeamSeasonAddress Address { get; set; }
 
-        [JsonProperty("capacity")]
+        [JsonPropertyName("capacity")]
         public long Capacity { get; set; }
 
-        [JsonProperty("grass")]
+        [JsonPropertyName("grass")]
         public bool Grass { get; set; }
 
-        [JsonProperty("indoor")]
+        [JsonPropertyName("indoor")]
         public bool Indoor { get; set; }
 
-        [JsonProperty("images")]
+        [JsonPropertyName("images")]
         public List<EspnTeamSeasonLogo> Images { get; set; }
     }
 
     public class EspnTeamSeasonAddress
     {
-        [JsonProperty("city")]
+        [JsonPropertyName("city")]
         public string City { get; set; }
 
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
-        [JsonProperty("zipCode")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("zipCode")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long ZipCode { get; set; }
     }
 }

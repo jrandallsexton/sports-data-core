@@ -1,65 +1,98 @@
-﻿using Newtonsoft.Json;
-
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnAthleteSeasonDto
     {
-        [JsonProperty("$ref")]
-        public Uri @ref { get; set; }
+        // $ref removed
 
+        [JsonPropertyName("season")]
         public EspnAthleteSeasonSeason Season { get; set; }
 
+        [JsonPropertyName("splits")]
         public EspnAthleteSeasonSplits Splits { get; set; }
 
+        [JsonPropertyName("seasonType")]
         public EspnAthleteSeasonSeasonType SeasonType { get; set; }
-    }
-
-    public class EspnAthleteSeasonCategory
-    {
-        public string name { get; set; }
-        public string displayName { get; set; }
-        public string shortDisplayName { get; set; }
-        public string abbreviation { get; set; }
-        public string summary { get; set; }
-        public List<EspnAthleteSeasonStat> stats { get; set; }
     }
 
     public class EspnAthleteSeasonSeason
     {
-        [JsonProperty("$ref")]
-        public string @ref { get; set; }
+        // $ref removed
     }
 
     public class EspnAthleteSeasonSeasonType
     {
-        [JsonProperty("$ref")]
-        public string @ref { get; set; }
+        // $ref removed
     }
 
     public class EspnAthleteSeasonSplits
     {
-        public string id { get; set; }
-        public string name { get; set; }
-        public string abbreviation { get; set; }
-        public string type { get; set; }
-        public List<EspnAthleteSeasonCategory> categories { get; set; }
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("abbreviation")]
+        public string Abbreviation { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+
+        [JsonPropertyName("categories")]
+        public List<EspnAthleteSeasonCategory> Categories { get; set; }
+    }
+
+    public class EspnAthleteSeasonCategory
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string DisplayName { get; set; }
+
+        [JsonPropertyName("shortDisplayName")]
+        public string ShortDisplayName { get; set; }
+
+        [JsonPropertyName("abbreviation")]
+        public string Abbreviation { get; set; }
+
+        [JsonPropertyName("summary")]
+        public string Summary { get; set; }
+
+        [JsonPropertyName("stats")]
+        public List<EspnAthleteSeasonStat> Stats { get; set; }
     }
 
     public class EspnAthleteSeasonStat
     {
-        public string name { get; set; }
-        public string displayName { get; set; }
-        public string shortDisplayName { get; set; }
-        public string description { get; set; }
-        public string abbreviation { get; set; }
-        public double value { get; set; }
-        public string displayValue { get; set; }
-        public double? perGameValue { get; set; }
-        public string perGameDisplayValue { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string DisplayName { get; set; }
+
+        [JsonPropertyName("shortDisplayName")]
+        public string ShortDisplayName { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("abbreviation")]
+        public string Abbreviation { get; set; }
+
+        [JsonPropertyName("value")]
+        public double Value { get; set; }
+
+        [JsonPropertyName("displayValue")]
+        public string DisplayValue { get; set; }
+
+        [JsonPropertyName("perGameValue")]
+        public double? PerGameValue { get; set; }
+
+        [JsonPropertyName("perGameDisplayValue")]
+        public string PerGameDisplayValue { get; set; }
     }
-
-
 }

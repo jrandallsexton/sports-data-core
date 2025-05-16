@@ -1,33 +1,30 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-using System;
-
-namespace SportsData.Core.Converters;
-
-public class ParseStringConverter : JsonConverter
+namespace SportsData.Core.Converters
 {
-    public override bool CanConvert(Type t) => t == typeof(long) || t == typeof(long?);
-
-    public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
+    public class ParseStringToLongConverter : JsonConverter<long>
     {
-        if (reader.TokenType == JsonToken.Null) return null;
-        var value = serializer.Deserialize<string>(reader);
-        long l;
-        if (Int64.TryParse(value, out l))
+        public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return l;
-        }
-        throw new Exception("Cannot unmarshal type long");
-    }
+            if (reader.TokenType == JsonTokenType.String &&
+                long.TryParse(reader.GetString(), out var value))
+            {
+                return value;
+            }
 
-    public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-    {
-        if (untypedValue == null)
-        {
-            serializer.Serialize(writer, null);
-            return;
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                return reader.GetInt64();
+            }
+
+            throw new JsonException("Expected string or number for long value.");
         }
-        var value = (long)untypedValue;
-        serializer.Serialize(writer, value.ToString());
+
+        public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
     }
 }

@@ -1,25 +1,24 @@
-﻿using Newtonsoft.Json;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnImageDto
     {
-        [JsonProperty("href")]
+        [JsonPropertyName("Href")]
         public Uri Href { get; set; }
 
-        [JsonProperty("width")]
+        [JsonPropertyName("width")]
         public long? Width { get; set; }
 
-        [JsonProperty("height")]
+        [JsonPropertyName("height")]
         public long? Height { get; set; }
 
-        [JsonProperty("alt")]
+        [JsonPropertyName("alt")]
         public string Alt { get; set; }
 
-        [JsonProperty("rel")]
+        [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
@@ -41,7 +40,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             foreach (var season in espnDto.Types.Items)
             {
-                // external id will be {seasonYear}{seasonId}
+                // external Id will be {seasonYear}{seasonId}
                 var externalId = $"{season.Year}{season.Id}";
 
                 var exists = await _dataContext.Seasons.AnyAsync(x =>

@@ -2,8 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using Newtonsoft.Json;
-
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Positions;
 using SportsData.Core.Extensions;

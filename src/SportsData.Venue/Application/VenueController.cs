@@ -14,7 +14,7 @@ namespace SportsData.Venue.Application
             return Ok(await Mediator.Send(new GetVenues.Query()));
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{Id:int}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]

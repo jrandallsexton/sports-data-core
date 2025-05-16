@@ -27,7 +27,7 @@ namespace SportsData.Provider.Tests.Unit.Infrastructure.Providers.Espn
             var result = sut.ExtractIds(dto, string.Empty);
 
             // assert
-            result.items.First().id.Should().BeGreaterThanOrEqualTo(0);
+            result.Items.First().Id.Should().BeGreaterThanOrEqualTo(0);
         }
     }
 }

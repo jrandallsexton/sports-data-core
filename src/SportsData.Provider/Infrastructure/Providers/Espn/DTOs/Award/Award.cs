@@ -1,72 +1,72 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
 using SportsData.Core.Converters;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award
 {
     public class Award
     {
-        [JsonProperty("$ref")]
-        public Uri Ref { get; set; }
-
-        [JsonProperty("id")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        [JsonProperty("history")]
+        [JsonPropertyName("history")]
         public string History { get; set; }
 
-        [JsonProperty("season")]
+        [JsonPropertyName("season")]
         public Item Season { get; set; }
 
-        [JsonProperty("winners")]
+        [JsonPropertyName("winners")]
         public List<Winner> Winners { get; set; }
 
-        [JsonProperty("links")]
+        [JsonPropertyName("links")]
         public List<Link> Links { get; set; }
     }
 
     public class Link
     {
-        [JsonProperty("language")]
+        [JsonPropertyName("language")]
         public string Language { get; set; }
 
-        [JsonProperty("rel")]
+        [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
 
-        [JsonProperty("href")]
+        [JsonPropertyName("Href")]
         public Uri Href { get; set; }
 
-        [JsonProperty("text")]
+        [JsonPropertyName("text")]
         public string Text { get; set; }
 
-        [JsonProperty("shortText")]
+        [JsonPropertyName("shortText")]
         public string ShortText { get; set; }
 
-        [JsonProperty("isExternal")]
+        [JsonPropertyName("isExternal")]
         public bool IsExternal { get; set; }
 
-        [JsonProperty("isPremium")]
+        [JsonPropertyName("isPremium")]
         public bool IsPremium { get; set; }
     }
 
     public class Item
     {
-        [JsonProperty("$ref")]
+        [JsonPropertyName("$ref")]
         public Uri Ref { get; set; }
     }
 
     public class Winner
     {
-        [JsonProperty("AthleteDto")]
+        [JsonPropertyName("AthleteDto")]
         public Item Athlete { get; set; }
 
-        [JsonProperty("team")]
+        [JsonPropertyName("team")]
         public Item Team { get; set; }
     }
 }

@@ -43,7 +43,7 @@ namespace SportsData.Api.Application
             return Ok(venues.Value);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{Id}")]
         [Produces<GetVenueByIdResponse>]
         public async Task<ActionResult<GetVenueByIdResponse>> GetVenueById(int id)
         {

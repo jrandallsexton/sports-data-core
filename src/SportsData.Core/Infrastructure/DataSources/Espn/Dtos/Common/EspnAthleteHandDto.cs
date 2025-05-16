@@ -1,16 +1,16 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnAthleteHandDto
     {
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonProperty("abbreviation")]
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
 
-        [JsonProperty("displayValue")]
+        [JsonPropertyName("displayValue")]
         public string DisplayValue { get; set; }
     }
 }

@@ -19,7 +19,7 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn.Dtos
             var dto = json.FromJson<EspnLeagueDto>();
 
             // assert
-            dto.Links.Count.Should().Be(7);
+            dto.Links.Count.Should().Be(11);
             dto.Name.Should().Be("NCAA - Football");
         }
     }

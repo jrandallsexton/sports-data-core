@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
@@ -6,34 +6,33 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Basketball
 {
     public class EspnBasketballAthleteDto : EspnAthleteDto
     {
-        [JsonProperty("debutYear")]
+        [JsonPropertyName("debutYear")]
         public int DebutYear { get; set; }
 
-        [JsonProperty("contract")]
+        [JsonPropertyName("contract")]
         public EspnBasketballAthleteContractDto Contract { get; set; }
 
-        [JsonProperty("draft")]
+        [JsonPropertyName("draft")]
         public EspnAthleteDraftDto Draft { get; set; }
 
-        //TODO: Finish mapping this
         public class EspnBasketballAthleteContractDto
         {
-            [JsonProperty("birdStatus")]
+            [JsonPropertyName("birdStatus")]
             public int BirdStatus { get; set; }
 
-            [JsonProperty("incomingTradeValue")]
+            [JsonPropertyName("incomingTradeValue")]
             public int IncomingTradeValue { get; set; }
 
-            [JsonProperty("outgoingTradeValue")]
+            [JsonPropertyName("outgoingTradeValue")]
             public int OutgoingTradeValue { get; set; }
 
-            [JsonProperty("salary")]
+            [JsonPropertyName("salary")]
             public int Salary { get; set; }
 
-            [JsonProperty("salaryRemaining")]
+            [JsonPropertyName("salaryRemaining")]
             public int SalaryRemaining { get; set; }
 
-            [JsonProperty("yearsRemaining")]
+            [JsonPropertyName("yearsRemaining")]
             public int YearsRemaining { get; set; }
         }
     }

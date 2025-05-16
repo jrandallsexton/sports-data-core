@@ -2,8 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using Newtonsoft.Json;
-
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Conferences;
 using SportsData.Core.Eventing.Events.Images;
@@ -111,7 +109,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         command.Season.Value,
                         command.CorrelationId);
 
-                _logger.LogInformation($"New GroupSeason with id: {newGroupSeason.Id} created for GroupId: {newGroupId}");
+                _logger.LogInformation($"New GroupSeason with Id: {newGroupSeason.Id} created for GroupId: {newGroupId}");
 
                 newGroupEntity.Seasons.Add(newGroupSeason);
 

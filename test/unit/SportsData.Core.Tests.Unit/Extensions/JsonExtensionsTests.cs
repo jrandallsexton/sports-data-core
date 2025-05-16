@@ -38,7 +38,7 @@ namespace SportsData.Core.Tests.Unit.Extensions
             // Also ensure camelCasing is applied
             Assert.Contains("\"id\"", json);
             Assert.Contains("\"count\"", json);
-            Assert.DoesNotContain("NullValue", json); // Should be omitted
+            Assert.DoesNotContain("nullValue", json); // Should be omitted
         }
     }
 }

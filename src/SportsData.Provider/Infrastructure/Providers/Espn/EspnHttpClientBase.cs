@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿
+using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
 {
@@ -13,14 +14,16 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             _config = config;
         }
 
-        public async Task<T> GetAsync<T>(string uri, bool ignoreCache = false)
+        public async Task<T> GetAsync<T>(string uri, bool ignoreCache = false) where T : class
         {
             if (!ignoreCache)
             {
                 var cachedJson = await GetJsonFromFile(uri);
 
                 if (!string.IsNullOrEmpty(cachedJson))
-                    return JsonConvert.DeserializeObject<T>(cachedJson, JsonSerializerSettings);
+                {
+                    return cachedJson.FromJson<T>();
+                }
             }
 
             _logger?.LogInformation("Beginning call to {uri}", uri);
@@ -29,7 +32,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             //await PersistJsonToDisk(uri, responseJson);
 
-            return JsonConvert.DeserializeObject<T>(responseJson, JsonSerializerSettings);
+            return responseJson.FromJson<T>();
         }
 
         public async Task<byte[]> GetMedia(string uri)
@@ -52,11 +55,11 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return await base.GetAsync(uri);
         }
 
-        public JsonSerializerSettings JsonSerializerSettings =>
-            new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore
-            };
+        //public JsonSerializerSettings JsonSerializerSettings =>
+        //    new JsonSerializerSettings
+        //    {
+        //        MetadataPropertyHandling = MetadataPropertyHandling.Ignore
+        //    };
 
         private async Task PersistJsonToDisk(string uri, string jsonData)
         {

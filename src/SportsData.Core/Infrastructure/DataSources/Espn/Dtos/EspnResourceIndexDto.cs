@@ -4,10 +4,14 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnResourceIndexDto
     {
-        public int count { get; set; }
-        public int pageIndex { get; set; }
-        public int pageSize { get; set; }
-        public int pageCount { get; set; }
-        public List<EspnResourceIndexItem> items { get; set; } = new();
+        public int Count { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+
+        public int PageCount { get; set; }
+
+        public List<EspnResourceIndexItem> Items { get; set; } = new();
     }
 }

@@ -2,8 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using Newtonsoft.Json;
-
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
@@ -62,7 +60,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
                 _logger.LogError("Could not find franchise {@Franchise} with this externalId: {@FranchiseExternalId}", espnDto.Name, espnDto.Id);
 
                 // TODO: Uncomment this throw after debugging?
-                //throw new ResourceNotFoundException("Could not find franchise with this external id");
+                //throw new ResourceNotFoundException("Could not find franchise with this external Id");
                 return;
             }
 

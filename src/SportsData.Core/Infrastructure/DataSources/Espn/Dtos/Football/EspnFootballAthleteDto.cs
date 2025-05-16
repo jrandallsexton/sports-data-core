@@ -1,20 +1,21 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
-
-public class EspnFootballAthleteDto : EspnAthleteDto
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
 {
-    [JsonProperty("position")]
-    public EspnAthletePositionDto Position { get; set; }
+    public class EspnFootballAthleteDto : EspnAthleteDto
+    {
+        [JsonPropertyName("position")]
+        public EspnAthletePositionDto Position { get; set; }
 
-    [JsonProperty("jersey")]
-    public int Jersey { get; set; }
+        [JsonPropertyName("jersey")]
+        public string Jersey { get; set; }
 
-    [JsonProperty("hand")]
-    public EspnAthleteHandDto Hand { get; set; }
+        [JsonPropertyName("hand")]
+        public EspnAthleteHandDto Hand { get; set; }
 
-    [JsonProperty("draft")]
-    public EspnAthleteDraftDto Draft { get; set; }
+        [JsonPropertyName("draft")]
+        public EspnAthleteDraftDto Draft { get; set; }
+    }
 }

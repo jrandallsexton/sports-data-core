@@ -63,7 +63,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         // 1. map to the entity add it
         var newEntityId = Guid.NewGuid();
 
-        // TODO: Get the current franchise id from the athleteDto?
+        // TODO: Get the current franchise Id from the athleteDto?
         var newEntity = externalProviderDto.AsEntity(newEntityId, null, command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 

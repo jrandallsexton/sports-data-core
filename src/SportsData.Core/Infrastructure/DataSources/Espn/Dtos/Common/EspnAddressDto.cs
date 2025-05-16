@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 using SportsData.Core.Converters;
 
@@ -6,14 +6,14 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnAddressDto
     {
-        [JsonProperty("city")]
+        [JsonPropertyName("city")]
         public string City { get; set; }
 
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
-        [JsonProperty("zipCode")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("zipCode")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long ZipCode { get; set; }
     }
 }

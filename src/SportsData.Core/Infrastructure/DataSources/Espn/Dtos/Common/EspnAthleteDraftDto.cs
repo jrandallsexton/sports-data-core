@@ -1,25 +1,25 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnAthleteDraftDto
     {
-        [JsonProperty("displayText")]
+        [JsonPropertyName("displayText")]
         public string Display { get; set; }
 
-        [JsonProperty("round")]
+        [JsonPropertyName("round")]
         public int Round { get; set; }
 
-        [JsonProperty("year")]
+        [JsonPropertyName("year")]
         public int Year { get; set; }
 
-        [JsonProperty("selection")]
+        [JsonPropertyName("selection")]
         public int Selection { get; set; }
 
-        [JsonProperty("team")]
+        [JsonPropertyName("team")]
         public EspnLinkDto Team { get; set; }
 
-        [JsonProperty("pick")]
+        [JsonPropertyName("pick")]
         public EspnLinkDto Pick { get; set; }
     }
 }

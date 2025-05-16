@@ -1,20 +1,22 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
+
+using SportsData.Core.Converters;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
     public class EspnAthleteStatusDto
     {
-        [JsonProperty("id")]
-        //[JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("id")]
+        [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonProperty("abbreviation")]
+        [JsonPropertyName("abbreviation")]
         public string Abbreviation { get; set; }
     }
 }

@@ -86,7 +86,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 request.SeasonYear
             );
 
-            _logger.LogInformation("Requesting new image");
+            _logger.LogInformation("Requesting new image with {@Query}", query);
 
             var response = await _providerClient.GetExternalDocument(query);
 

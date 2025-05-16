@@ -127,7 +127,7 @@ namespace SportsData.Provider.Application.Documents
             var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash.ToString());
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == hash.ToString());
 
             if (dbItem is not null)
             {

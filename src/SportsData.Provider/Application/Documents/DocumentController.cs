@@ -44,13 +44,25 @@ namespace SportsData.Provider.Application.Documents
             DocumentType typeId,
             long documentId)
         {
-            var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["SourceDataProvider"] = providerId,
+                       ["Sport"] = sportId,
+                       ["DocumentType"] = typeId,
+                       ["DocumentId"] = documentId,
+            }))
+            {
+                _logger.LogInformation("Started");
+                var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
-            var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
+                var dbItem = await _documentStore
+                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == documentId.ToString());
 
-            // TODO: Clean this up
-            return dbItem != null ? Ok(dbItem.Data) : NotFound();
+                _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
+
+                // TODO: Clean this up
+                return dbItem != null ? Ok(dbItem.Data) : NotFound();
+            }
         }
 
         [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}")]

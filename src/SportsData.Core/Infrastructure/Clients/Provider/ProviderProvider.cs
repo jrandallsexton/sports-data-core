@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -43,10 +44,19 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}" :
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}";
             _logger.LogInformation("Using {@BaseAddress} with {@Url}", HttpClient.BaseAddress, url);
-            var response = await HttpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            return tmp;
+
+            try
+            {
+                var response = await HttpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var tmp = await response.Content.ReadAsStringAsync();
+                return tmp;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to obtain document from Provider");
+                throw;
+            }
         }
 
         public async Task PublishDocumentEvents(PublishDocumentEventsCommand command)

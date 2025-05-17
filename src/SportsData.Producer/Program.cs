@@ -100,25 +100,9 @@ public class Program
             x.UsingAzureServiceBus((context, cfg) =>
             {
                 cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                cfg.UseConcurrencyLimit(10); // Global cap on concurrent message handling
                 cfg.ConfigureEndpoints(context);
             });
-
-            //x.UsingRabbitMq((context, cfg) =>
-            //{
-            //    cfg.Host("localhost", "/", h =>
-            //    {
-            //        h.Username("guest");
-            //        h.Password("guest");
-            //    });
-
-            //    cfg.ConfigureJsonSerializerOptions(o =>
-            //    {
-            //        o.IncludeFields = true;
-            //        return o;
-            //    });
-
-            //    cfg.ConfigureEndpoints(context);
-            //});
         });
 
         services.AddInstrumentation(builder.Environment.ApplicationName);

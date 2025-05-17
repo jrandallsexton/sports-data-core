@@ -125,7 +125,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            //await app.Services.ConfigureHangfireJobs(mode);
+            await app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

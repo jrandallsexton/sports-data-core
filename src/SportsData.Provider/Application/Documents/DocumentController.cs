@@ -126,6 +126,7 @@ namespace SportsData.Provider.Application.Documents
             // generate a hash for the collection retrieval
             var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
+            // Look for the item in the database first to see if we already have a link to it in blob storage
             var dbItem = await _documentStore
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == hash.ToString());
 
@@ -146,8 +147,8 @@ namespace SportsData.Provider.Application.Documents
 
             // upload it to blob storage
             var containerName = query.SeasonYear.HasValue
-                ? $"{query.Sport}{query.DocumentType.ToString()}{query.SeasonYear.Value}"
-                : $"{query.Sport}{query.DocumentType.ToString()}";
+                ? $"provider-{query.Sport.ToString().ToLower()}-{query.DocumentType.ToString().ToLower()}-{query.SeasonYear.Value}"
+                : $"provider-{query.Sport.ToString().ToLower()}-{query.DocumentType.ToString().ToLower()}";
             var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{hash}.png");
 
             // save a record for the hash and blob url

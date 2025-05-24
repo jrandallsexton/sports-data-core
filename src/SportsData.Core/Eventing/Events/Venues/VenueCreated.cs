@@ -5,10 +5,10 @@ using System;
 namespace SportsData.Core.Eventing.Events.Venues
 {
     public class VenueCreated(
-        VenueCanonicalModel venue,
+        VenueDto venue,
         Guid correlationId,
         Guid causationId) : EventBase(correlationId, causationId)
     {
-        public VenueCanonicalModel Canonical { get; init; } = venue;
+        public VenueDto Canonical { get; init; } = venue;
     }
 }

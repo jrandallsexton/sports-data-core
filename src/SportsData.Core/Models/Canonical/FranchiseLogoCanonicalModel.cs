@@ -6,7 +6,7 @@ namespace SportsData.Core.Models.Canonical
         Guid franchiseId,
         string url,
         int? height,
-        int? width) : CanonicalLogoModelBase(url, height, width)
+        int? width) : LogoDtoBase(url, height, width)
     {
         public Guid FranchiseId { get; init; } = franchiseId;
     }

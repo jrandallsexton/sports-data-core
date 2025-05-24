@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Models.Canonical
 {
-    public abstract class CanonicalLogoModelBase(string url, int? height, int? width)
+    public abstract class LogoDtoBase(string url, int? height, int? width)
     {
         public string Url { get; init; } = url;
 

@@ -31,10 +31,11 @@ public class VenuesController : ControllerBase
     {
         var context = _contextFactory.Resolve(_appMode.CurrentSport);
         var venues = await context.Venues
+            .Include(v => v.Images)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        var dtos = _mapper.Map<List<VenueCanonicalModel>>(venues);
+        var dtos = _mapper.Map<List<VenueDto>>(venues);
         return Ok(dtos);
     }
 
@@ -43,13 +44,14 @@ public class VenuesController : ControllerBase
     {
         var context = _contextFactory.Resolve(_appMode.CurrentSport);
         var venue = await context.Venues
+            .Include(v => v.Images)
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (venue == null)
             return NotFound();
 
-        var dto = _mapper.Map<VenueCanonicalModel>(venue);
+        var dto = _mapper.Map<VenueDto>(venue);
         return Ok(dto);
     }
 }

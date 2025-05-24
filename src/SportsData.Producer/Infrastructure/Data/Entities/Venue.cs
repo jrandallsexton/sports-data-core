@@ -15,6 +15,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public bool IsGrass { get; set; }
 
         public bool IsIndoor { get; set; }
+
         public string Slug { get; set; }
 
         public List<VenueExternalId> ExternalIds { get; set; }

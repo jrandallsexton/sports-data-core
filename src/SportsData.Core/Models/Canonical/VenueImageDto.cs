@@ -2,11 +2,11 @@
 
 namespace SportsData.Core.Models.Canonical
 {
-    public class VenueImageCanonicalModel(
+    public class VenueImageDto(
         Guid venueId,
         string url,
         int? height,
-        int? width) : CanonicalLogoModelBase(url, height, width)
+        int? width) : LogoDtoBase(url, height, width)
     {
         public Guid VenueId { get; init; } = venueId;
     }

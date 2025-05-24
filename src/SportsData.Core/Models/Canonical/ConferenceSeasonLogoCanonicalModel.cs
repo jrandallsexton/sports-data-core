@@ -6,7 +6,7 @@ namespace SportsData.Core.Models.Canonical
         Guid conferenceSeasonId,
         string url,
         int? height,
-        int? width) : CanonicalLogoModelBase(url, height, width)
+        int? width) : LogoDtoBase(url, height, width)
     {
         public Guid ConferenceSeasonId { get; init; } = conferenceSeasonId;
     }

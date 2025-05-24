@@ -12,7 +12,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 {
     public interface IProvideProducers : IProvideHealthChecks
     {
-        Task<VenueCanonicalModel> GetVenue(string id);
+        Task<VenueDto> GetVenue(string id);
     }
 
     public class ProducerProvider : ProviderBase, IProvideProducers
@@ -27,12 +27,12 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             _logger = logger;
         }
 
-        public async Task<VenueCanonicalModel> GetVenue(string id)
+        public async Task<VenueDto> GetVenue(string id)
         {
             var response = await HttpClient.GetAsync($"venue/{id}");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
-            var venue = tmp.FromJson<Success<VenueCanonicalModel>>();
+            var venue = tmp.FromJson<Success<VenueDto>>();
 
             return venue.Value;
         }

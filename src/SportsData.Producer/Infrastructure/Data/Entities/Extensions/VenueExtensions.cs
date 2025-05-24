@@ -27,16 +27,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static VenueCanonicalModel ToCanonicalModel(this Venue entity)
+        public static VenueDto ToCanonicalModel(this Venue entity)
         {
-            return new VenueCanonicalModel()
+            return new VenueDto()
             {
                 Id = entity.Id,
                 CreatedUtc = entity.CreatedUtc,
                 IsGrass = entity.IsGrass,
                 IsIndoor = entity.IsIndoor,
                 Name = entity.Name,
-                ShortName = entity.ShortName
+                ShortName = entity.ShortName,
+                Slug = entity.Slug
             };
         }
     }

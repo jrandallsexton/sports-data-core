@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Models.Canonical
 {
-    public class ConferenceCanonicalModel : CanonicalModelBase
+    public class ConferenceCanonicalModel : DtoBase
     {
     }
 }

@@ -9,8 +9,8 @@ namespace SportsData.Producer.Mapping
     {
         public MappingProfile()
         {
-            CreateMap<Venue, VenueCanonicalModel>();
+            CreateMap<Venue, VenueDto>();
+            CreateMap<VenueImage, VenueImageDto>();
         }
     }
-
 }

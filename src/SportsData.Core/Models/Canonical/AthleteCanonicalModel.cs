@@ -2,7 +2,7 @@
 
 namespace SportsData.Core.Models.Canonical
 {
-    public class AthleteCanonicalModel : CanonicalModelBase
+    public class AthleteCanonicalModel : DtoBase
     {
         public string LastName { get; set; }
 

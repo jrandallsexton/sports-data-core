@@ -2,7 +2,7 @@
 
 namespace SportsData.Core.Models.Canonical
 {
-    public class FranchiseCanonicalModel : CanonicalModelBase
+    public class FranchiseCanonicalModel : DtoBase
     {
         public Sport Sport { get; set; }
 

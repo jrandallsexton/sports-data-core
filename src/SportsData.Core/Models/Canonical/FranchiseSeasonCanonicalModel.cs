@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Models.Canonical
 {
-    public class FranchiseSeasonCanonicalModel : CanonicalModelBase
+    public class FranchiseSeasonCanonicalModel : DtoBase
     {
     }
 }

@@ -101,11 +101,13 @@ namespace SportsData.Provider.Application.Jobs
                     return;
                 }
 
+                // raise an event that document sourcing is about to start
+
+
                 while (resourceIndexDto.PageIndex <= resourceIndexDto.PageCount)
                 {
                     _logger.LogInformation("Processing {@CurrentPage} of {@TotalPages} for {@DocumentType}",
-                        resourceIndexDto.PageIndex, resourceIndexDto.PageCount, jobDefinition.DocumentType)
-                        ;
+                        resourceIndexDto.PageIndex, resourceIndexDto.PageCount, jobDefinition.DocumentType);
 
                     foreach (var cmd in resourceIndexDto.Items.Select(item =>
                                  new ProcessResourceIndexItemCommand(

@@ -2,14 +2,13 @@
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit
+namespace SportsData.Producer.Tests.Unit;
+
+public class DevOpsTests
 {
-    public class DevOpsTests
+    [Fact]
+    public void TrueShouldBeTrue()
     {
-        [Fact]
-        public void TrueShouldBeTrue()
-        {
-            true.Should().BeTrue();
-        }
+        true.Should().BeTrue();
     }
 }

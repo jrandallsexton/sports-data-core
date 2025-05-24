@@ -80,7 +80,7 @@ namespace SportsData.Provider.Application.Processors
 
             if (resourceIndexItemEntity is not null)
             {
-                // has it been retrieved with X units?
+                // has it been retrieved within X time units?
                 // TODO: Move to config for check duration
                 if (resourceIndexItemEntity.LastAccessed > DateTime.UtcNow.AddDays(-7))
                 {

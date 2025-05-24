@@ -11,58 +11,57 @@ using Moq.AutoMock;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 
-namespace SportsData.Producer.Tests.Unit
+namespace SportsData.Producer.Tests.Unit;
+
+// TODO: Move this to Core and share it
+public abstract class UnitTestBase<T>
 {
-    // TODO: Move this to Core and share it
-    public abstract class UnitTestBase<T>
+    public AutoMocker Mocker { get; }
+
+    public Fixture Fixture { get; }
+
+    public ListLogger Logger { get; }
+
+    public FootballDataContext FootballDataContext { get; }
+
+    public TeamSportDataContext TeamSportDataContext => FootballDataContext;
+
+    internal UnitTestBase()
     {
-        public AutoMocker Mocker { get; }
+        Mocker = new AutoMocker();
 
-        public Fixture Fixture { get; }
+        Fixture = new Fixture();
 
-        public ListLogger Logger { get; }
+        FootballDataContext = new FootballDataContext(GetFootballDataContextOptions());
+        Mocker.Use(typeof(BaseDataContext), FootballDataContext);
+        Mocker.Use(typeof(TeamSportDataContext), FootballDataContext);
+        Mocker.Use(FootballDataContext);
 
-        public FootballDataContext FootballDataContext { get; }
+        Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
-        public TeamSportDataContext TeamSportDataContext => FootballDataContext;
+        var mapperConfig = new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile()));
+        var mapper = mapperConfig.CreateMapper();
+        Mocker.Use(typeof(IMapper), mapper);
+    }
 
-        internal UnitTestBase()
-        {
-            Mocker = new AutoMocker();
+    private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()
+    {
+        // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
+        var dbName = Guid.NewGuid().ToString().Substring(0, 5);
+        return new DbContextOptionsBuilder<FootballDataContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+    }
 
-            Fixture = new Fixture();
+    public static ILogger CreateLogger(LoggerTypes type = LoggerTypes.Null)
+    {
+        return type == LoggerTypes.List ?
+            new ListLogger() :
+            NullLoggerFactory.Instance.CreateLogger("Null Logger");
+    }
 
-            FootballDataContext = new FootballDataContext(GetFootballDataContextOptions());
-            Mocker.Use(typeof(BaseDataContext), FootballDataContext);
-            Mocker.Use(typeof(TeamSportDataContext), FootballDataContext);
-            Mocker.Use(FootballDataContext);
-
-            Logger = CreateLogger(LoggerTypes.List) as ListLogger;
-
-            var mapperConfig = new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile()));
-            var mapper = mapperConfig.CreateMapper();
-            Mocker.Use(typeof(IMapper), mapper);
-        }
-
-        private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()
-        {
-            // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
-            var dbName = Guid.NewGuid().ToString().Substring(0, 5);
-            return new DbContextOptionsBuilder<FootballDataContext>()
-                .UseInMemoryDatabase(dbName)
-                .Options;
-        }
-
-        public static ILogger CreateLogger(LoggerTypes type = LoggerTypes.Null)
-        {
-            return type == LoggerTypes.List ?
-                new ListLogger() :
-                NullLoggerFactory.Instance.CreateLogger("Null Logger");
-        }
-
-        public async Task<string> LoadJsonTestData(string filename)
-        {
-            return await File.ReadAllTextAsync($"../../../Data/{filename}");
-        }
+    public async Task<string> LoadJsonTestData(string filename)
+    {
+        return await File.ReadAllTextAsync($"../../../Data/{filename}");
     }
 }

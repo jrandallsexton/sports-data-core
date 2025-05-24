@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace SportsData.Core.Middleware.Health
 {
@@ -18,14 +18,13 @@ namespace SportsData.Core.Middleware.Health
             {
                 var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
 
-                // TODO: Remove connection string from log
                 return canConnect ?
                     HealthCheckResult.Healthy() :
-                    HealthCheckResult.Unhealthy($"Unable to connect to: {dbContext.Database?.GetConnectionString()}");
+                    HealthCheckResult.Unhealthy($"Unable to connect to: {dbContext.Database?.ProviderName}");
             }
             catch (Exception ex)
             {
-                return HealthCheckResult.Unhealthy($"Unable to connect to: {dbContext.Database?.GetConnectionString()}", ex);
+                return HealthCheckResult.Unhealthy($"Unable to connect to: {dbContext.Database?.ProviderName}", ex);
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Application.Slugs;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions

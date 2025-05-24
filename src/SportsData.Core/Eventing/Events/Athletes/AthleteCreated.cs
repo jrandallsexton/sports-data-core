@@ -1,14 +1,13 @@
-﻿using SportsData.Core.Models.Canonical;
-
-using System;
+﻿using System;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Core.Eventing.Events.Athletes
 {
     public class AthleteCreated(
-        AthleteCanonicalModel athlete,
+        AthleteDto athlete,
         Guid correlationId,
         Guid causationId) : EventBase(correlationId, causationId)
     {
-        public AthleteCanonicalModel Canonical { get; init; } = athlete;
+        public AthleteDto Canonical { get; init; } = athlete;
     }
 }

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
-using SportsData.Core.Models.Canonical;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 

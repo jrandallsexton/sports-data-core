@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace SportsData.Core.Models.Canonical
+namespace SportsData.Core.Dtos.Canonical
 {
-    public class AthleteCanonicalModel : DtoBase
+    public class AthleteDto : DtoBase
     {
         public string LastName { get; set; }
 

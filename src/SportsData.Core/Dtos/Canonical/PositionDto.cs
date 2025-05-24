@@ -1,6 +1,6 @@
-﻿namespace SportsData.Core.Models.Canonical
+﻿namespace SportsData.Core.Dtos.Canonical
 {
-    public class PositionCanonicalModel : DtoBase
+    public class PositionDto : DtoBase
     {
         public string Name { get; set; }
 

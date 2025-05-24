@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Application.Slugs;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -37,9 +37,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static ConferenceCanonicalModel ToCanonicalModel(this Group entity)
+        public static ConferenceDto ToCanonicalModel(this Group entity)
         {
-            return new ConferenceCanonicalModel()
+            return new ConferenceDto()
             {
                 // TODO: Imeplement
             };

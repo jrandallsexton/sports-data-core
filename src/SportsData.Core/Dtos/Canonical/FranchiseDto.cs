@@ -1,8 +1,8 @@
 ﻿using SportsData.Core.Common;
 
-namespace SportsData.Core.Models.Canonical
+namespace SportsData.Core.Dtos.Canonical
 {
-    public class FranchiseCanonicalModel : DtoBase
+    public class FranchiseDto : DtoBase
     {
         public Sport Sport { get; set; }
 

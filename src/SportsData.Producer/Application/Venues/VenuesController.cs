@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Models.Canonical;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data;
 
 [Route("api/venues")]

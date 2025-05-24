@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace SportsData.Core.Models.Canonical
+namespace SportsData.Core.Dtos.Canonical
 {
-    public class FranchiseSeasonLogoCanonicalModel(
+    public class FranchiseSeasonLogoDto(
         Guid franchiseSeasonId,
         string url,
         int? height,

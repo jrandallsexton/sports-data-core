@@ -1,5 +1,5 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
+﻿using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
@@ -36,9 +36,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static FranchiseSeasonCanonicalModel ToCanonicalModel(this FranchiseSeason entity)
+        public static FranchiseSeasonDto ToCanonicalModel(this FranchiseSeason entity)
         {
-            return new FranchiseSeasonCanonicalModel()
+            return new FranchiseSeasonDto()
             {
                 // TODO: Implement
             };

@@ -1,5 +1,5 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Models.Canonical;
+﻿using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
@@ -22,9 +22,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static ConferenceSeasonCanonicalModel ToCanonicalModel(this GroupSeason entity)
+        public static ConferenceSeasonDto ToCanonicalModel(this GroupSeason entity)
         {
-            return new ConferenceSeasonCanonicalModel()
+            return new ConferenceSeasonDto()
             {
                 // TODO: Implement
             };

@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Core.Models.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -45,9 +45,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static AthleteCanonicalModel ToCanonicalModel(this Athlete entity)
+        public static AthleteDto ToCanonicalModel(this Athlete entity)
         {
-            return new AthleteCanonicalModel()
+            return new AthleteDto()
             {
                 Id = entity.Id,
                 CreatedUtc = entity.CreatedUtc,

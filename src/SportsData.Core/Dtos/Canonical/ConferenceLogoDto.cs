@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace SportsData.Core.Models.Canonical
+namespace SportsData.Core.Dtos.Canonical
 {
-    public class ConferenceLogoCanonicalModel(
+    public class ConferenceLogoDto(
         Guid conferenceId,
         string url,
         int? height,

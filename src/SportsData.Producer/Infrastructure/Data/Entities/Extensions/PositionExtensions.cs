@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Core.Models.Canonical;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
@@ -24,9 +24,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static PositionCanonicalModel ToCanonicalModel(this Position entity)
+        public static PositionDto ToCanonicalModel(this Position entity)
         {
-            return new PositionCanonicalModel()
+            return new PositionDto()
             {
                 Id = entity.Id,
                 Abbrevation = entity.Abbrevation,

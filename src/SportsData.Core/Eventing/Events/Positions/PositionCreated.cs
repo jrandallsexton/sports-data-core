@@ -1,14 +1,13 @@
-﻿using SportsData.Core.Models.Canonical;
-
-using System;
+﻿using System;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Core.Eventing.Events.Positions
 {
     public class PositionCreated(
-        PositionCanonicalModel model,
+        PositionDto model,
         Guid correlationId,
         Guid causationId) : EventBase(correlationId, causationId)
     {
-        public PositionCanonicalModel Canonical { get; set; }
+        public PositionDto Canonical { get; set; }
     }
 }

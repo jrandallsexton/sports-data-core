@@ -1,4 +1,4 @@
-﻿namespace SportsData.Core.Models.Canonical
+﻿namespace SportsData.Core.Dtos.Canonical
 {
     public abstract class LogoDtoBase(string url, int? height, int? width)
     {

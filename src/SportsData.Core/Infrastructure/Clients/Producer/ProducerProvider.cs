@@ -3,10 +3,9 @@
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Middleware.Health;
-using SportsData.Core.Models.Canonical;
-
 using System.Net.Http;
 using System.Threading.Tasks;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {

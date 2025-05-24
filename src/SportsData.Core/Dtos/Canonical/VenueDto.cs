@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SportsData.Core.Models.Canonical
+namespace SportsData.Core.Dtos.Canonical
 {
     public class VenueDto : DtoBase
     {

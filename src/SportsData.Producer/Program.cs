@@ -37,7 +37,7 @@ public class Program
         builder.UseCommon();
 
         var services = builder.Services;
-        services.AddCoreServices(config);
+        services.AddCoreServices(config, mode);
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();

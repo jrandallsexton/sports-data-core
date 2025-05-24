@@ -11,6 +11,8 @@ using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Images.Processors.Requests;
 using SportsData.Producer.Application.Images.Processors.Responses;
 using SportsData.Producer.Application.Slugs;
+using SportsData.Producer.Application.Venues;
+using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.DependencyInjection
@@ -20,6 +22,8 @@ namespace SportsData.Producer.DependencyInjection
         public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
         {
             /* Local Services */
+            services.AddScoped<IDataContextFactory, DataContextFactory>();
+
             services.AddDataPersistenceExternal();
             services.AddScoped<AthleteDocumentProcessor>();
             services.AddScoped<AthleteImageRequestProcessor<FootballDataContext>>();
@@ -52,6 +56,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<VenueDocumentProcessor<FootballDataContext>>();
             services.AddScoped<VenueImageRequestProcessor<FootballDataContext>>();
             services.AddScoped<VenueImageResponseProcessor<FootballDataContext>>();
+
             return services;
         }
 

@@ -98,12 +98,14 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddCoreServices(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            Sport mode = Sport.All)
         {
             services.AddSingleton<IProvideHashes, HashProvider>();
             services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+            services.AddSingleton<IAppMode>(new AppMode(mode));
             return services;
         }
 

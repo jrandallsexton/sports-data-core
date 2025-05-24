@@ -5,6 +5,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Images.Handlers;
@@ -12,9 +13,9 @@ using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
+using SportsData.Producer.Mapping;
 
 using System.Reflection;
-using SportsData.Core.Config;
 
 namespace SportsData.Producer;
 
@@ -126,7 +127,7 @@ public class Program
         services.AddLocalServices(mode);
 
         var hostAssembly = Assembly.GetExecutingAssembly();
-        services.AddAutoMapper(hostAssembly);
+        services.AddAutoMapper(typeof(MappingProfile));
         services.AddMediatR(hostAssembly);
 
         var app = builder.Build();

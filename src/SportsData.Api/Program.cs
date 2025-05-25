@@ -143,8 +143,18 @@ namespace SportsData.Api
             //});
 
             app.UseCors("AllowFrontend");
-            app.UseAuthentication();
-            app.UseAuthorization();
+
+            app.UseWhen(context =>
+                    !context.Request.Path.StartsWithSegments("/api/health") &&
+                    !context.Request.Path.StartsWithSegments("/swagger"),
+                appBuilder =>
+                {
+                    appBuilder.UseAuthentication();
+                    appBuilder.UseAuthorization();
+                });
+
+            //app.UseAuthentication();
+            //app.UseAuthorization();
 
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {

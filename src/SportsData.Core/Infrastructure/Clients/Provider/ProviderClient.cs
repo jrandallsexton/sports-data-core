@@ -21,12 +21,12 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         Task<GetExternalDocumentQueryResponse> GetExternalDocument(GetExternalDocumentQuery command);
     }
 
-    public class ProviderProvider : ProviderBase, IProvideProviders
+    public class ProviderClient : ProviderBase, IProvideProviders
     {
-        private readonly ILogger<ProviderProvider> _logger;
+        private readonly ILogger<ProviderClient> _logger;
 
-        public ProviderProvider(
-            ILogger<ProviderProvider> logger,
+        public ProviderClient(
+            ILogger<ProviderClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.ProviderClient, clientFactory)
         {

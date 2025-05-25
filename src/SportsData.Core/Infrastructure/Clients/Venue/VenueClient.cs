@@ -18,12 +18,12 @@ public interface IProvideVenues : IProvideHealthChecks
     Task<Result<GetVenueByIdResponse>> GetVenueById(int id);
 }
 
-public class VenueProvider : ProviderBase, IProvideVenues
+public class VenueClient : ProviderBase, IProvideVenues
 {
-    private readonly ILogger<VenueProvider> _logger;
+    private readonly ILogger<VenueClient> _logger;
 
-    public VenueProvider(
-        ILogger<VenueProvider> logger,
+    public VenueClient(
+        ILogger<VenueClient> logger,
         IHttpClientFactory clientFactory) :
         base(HttpClients.VenueClient, clientFactory)
     {
@@ -32,27 +32,35 @@ public class VenueProvider : ProviderBase, IProvideVenues
 
     public async Task<Result<GetVenuesResponse>> GetVenues()
     {
-        var response = await HttpClient.GetAsync("venue");
-        response.EnsureSuccessStatusCode();
-        var tmp = await response.Content.ReadAsStringAsync();
-        var venues = tmp.FromJson<Success<List<VenueDto>>>();
-        return new Success<GetVenuesResponse>(new GetVenuesResponse()
-        {
-            Venues = venues.Value
-        });
-    }
-
-    public async Task<Result<GetVenueByIdResponse>> GetVenueById(int id)
-    {
-        var response = await HttpClient.GetAsync($"venue/{id}");
+        var response = await HttpClient.GetAsync("venues");
 
         if (response.IsSuccessStatusCode)
         {
             var tmp = await response.Content.ReadAsStringAsync();
-            var venue = tmp.FromJson<Success<VenueDto>>();
+            var venues = tmp.FromJson<List<VenueDto>>();
+            return new Success<GetVenuesResponse>(new GetVenuesResponse
+            {
+                Venues = venues
+            });
+        }
+
+        var t = await response.Content.ReadAsStringAsync();
+        var v = t.FromJson<Failure<List<VenueDto>>>();
+        return new Failure<GetVenuesResponse>(new GetVenuesResponse(), v.Status, v.Errors);
+    }
+
+
+    public async Task<Result<GetVenueByIdResponse>> GetVenueById(int id)
+    {
+        var response = await HttpClient.GetAsync($"venues/{id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var tmp = await response.Content.ReadAsStringAsync();
+            var venue = tmp.FromJson<VenueDto>();
             return new Success<GetVenueByIdResponse>(new GetVenueByIdResponse()
             {
-                Venue = venue.Value
+                Venue = venue
             });
         }
 

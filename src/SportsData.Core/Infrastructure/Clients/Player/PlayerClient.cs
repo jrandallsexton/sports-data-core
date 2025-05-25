@@ -11,12 +11,12 @@ namespace SportsData.Core.Infrastructure.Clients.Player
 
     }
 
-    public class PlayerProvider : ProviderBase, IProvidePlayers
+    public class PlayerClient : ProviderBase, IProvidePlayers
     {
-        private readonly ILogger<PlayerProvider> _logger;
+        private readonly ILogger<PlayerClient> _logger;
 
-        public PlayerProvider(
-            ILogger<PlayerProvider> logger,
+        public PlayerClient(
+            ILogger<PlayerClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.PlayerClient, clientFactory)
         {

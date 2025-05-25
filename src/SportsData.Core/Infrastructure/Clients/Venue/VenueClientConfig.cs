@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Venue
 {
-    public class VenueProviderConfig
+    public class VenueClientConfig
     { 
         public string ApiUrl { get; set; }
     }

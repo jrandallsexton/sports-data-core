@@ -10,7 +10,7 @@ namespace SportsData.Api.Application
 {
     [ApiController]
     [Route("[controller]")]
-    public class VenueController : ApiControllerBase
+    public class VenuesController : ApiControllerBase
     {
         private readonly IProvideVenues _provider;
         private readonly IDistributedCache _cache;
@@ -18,7 +18,7 @@ namespace SportsData.Api.Application
 
         private const string CacheKeyDateTimeFormat = "yyyyMMdd_hhmm";
 
-        public VenueController(
+        public VenuesController(
             IProvideVenues provider,
             IDistributedCache cache,
             IDateTimeProvider dateTimeProvider)

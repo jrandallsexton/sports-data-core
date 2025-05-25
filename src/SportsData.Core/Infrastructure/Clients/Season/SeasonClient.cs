@@ -11,12 +11,12 @@ namespace SportsData.Core.Infrastructure.Clients.Season
 
     }
 
-    public class SeasonProvider : ProviderBase, IProvideSeasons
+    public class SeasonClient : ProviderBase, IProvideSeasons
     {
-        private readonly ILogger<SeasonProvider> _logger;
+        private readonly ILogger<SeasonClient> _logger;
 
-        public SeasonProvider(
-            ILogger<SeasonProvider> logger,
+        public SeasonClient(
+            ILogger<SeasonClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.SeasonClient, clientFactory)
         {

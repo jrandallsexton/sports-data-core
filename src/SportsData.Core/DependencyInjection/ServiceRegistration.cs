@@ -233,14 +233,14 @@ namespace SportsData.Core.DependencyInjection
         public static IServiceCollection AddProviders(this IServiceCollection services, IConfiguration configuration)
         {
             services
-                .AddProvider<IProvideContests, ContestProvider>(configuration, HttpClients.ContestClient, CommonConfigKeys.ContestProviderUri)
-                .AddProvider<IProvideFranchises, FranchiseProvider>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.FranchiseProviderUri)
-                .AddProvider<IProvideNotifications, NotificationProvider>(configuration, HttpClients.NotificationClient, CommonConfigKeys.NotificationProviderUri)
-                .AddProvider<IProvidePlayers, PlayerProvider>(configuration, HttpClients.PlayerClient, CommonConfigKeys.PlayerProviderUri)
-                .AddProvider<IProvideProducers, ProducerProvider>(configuration, HttpClients.ProducerClient, CommonConfigKeys.ProducerProviderUri)
-                .AddProvider<IProvideProviders, ProviderProvider>(configuration, HttpClients.ProviderClient, CommonConfigKeys.ProviderProviderUri)
-                .AddProvider<IProvideSeasons, SeasonProvider>(configuration, HttpClients.SeasonClient, CommonConfigKeys.SeasonProviderUri)
-                .AddProvider<IProvideVenues, VenueProvider>(configuration, HttpClients.VenueClient, CommonConfigKeys.VenueProviderUri);
+                .AddProvider<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.ContestProviderUri)
+                .AddProvider<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.FranchiseProviderUri)
+                .AddProvider<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.NotificationProviderUri)
+                .AddProvider<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.PlayerProviderUri)
+                .AddProvider<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.ProducerProviderUri)
+                .AddProvider<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.ProviderProviderUri)
+                .AddProvider<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.SeasonProviderUri)
+                .AddProvider<IProvideVenues, VenueClient>(configuration, HttpClients.VenueClient, CommonConfigKeys.VenueProviderUri);
             return services;
         }
 
@@ -251,7 +251,7 @@ namespace SportsData.Core.DependencyInjection
             string providerUrlKey) where TService : class
             where TImplementation : class, TService
         {
-            var options = new ContestProviderConfig()
+            var options = new ContestClientConfig()
             {
                 ApiUrl = configuration[providerUrlKey]
             };

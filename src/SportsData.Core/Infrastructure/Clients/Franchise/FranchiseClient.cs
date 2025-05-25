@@ -11,12 +11,12 @@ namespace SportsData.Core.Infrastructure.Clients.Franchise
 
     }
 
-    public class FranchiseProvider : ProviderBase, IProvideFranchises
+    public class FranchiseClient : ProviderBase, IProvideFranchises
     {
-        private readonly ILogger<FranchiseProvider> _logger;
+        private readonly ILogger<FranchiseClient> _logger;
 
-        public FranchiseProvider(
-            ILogger<FranchiseProvider> logger,
+        public FranchiseClient(
+            ILogger<FranchiseClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.FranchiseClient, clientFactory)
         {

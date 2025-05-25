@@ -11,12 +11,12 @@ namespace SportsData.Core.Infrastructure.Clients.Contest
 
     }
 
-    public class ContestProvider : ProviderBase, IProvideContests
+    public class ContestClient : ProviderBase, IProvideContests
     {
-        private readonly ILogger<ContestProvider> _logger;
+        private readonly ILogger<ContestClient> _logger;
 
-        public ContestProvider(
-            ILogger<ContestProvider> logger,
+        public ContestClient(
+            ILogger<ContestClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.ContestClient, clientFactory)
         {

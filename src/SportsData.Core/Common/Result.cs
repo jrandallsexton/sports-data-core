@@ -11,12 +11,6 @@ namespace SportsData.Core.Common
         public ResultStatus Status { get; } = status;
     }
 
-    //public class Failure<T>(T value, IEnumerable<string> errors) :
-    //    Result<T>(value)
-    //{
-    //    public IEnumerable<string> Errors { get; } = errors;
-    //}
-
     public class Failure<T>(T value, ResultStatus status, List<ValidationFailure> errors) :
         Result<T>(value, status)
     {

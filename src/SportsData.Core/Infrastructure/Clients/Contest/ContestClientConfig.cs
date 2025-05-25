@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Contest
 {
-    public class ContestProviderConfig
+    public class ContestClientConfig
     {
         public string ApiUrl { get; set; }
     }

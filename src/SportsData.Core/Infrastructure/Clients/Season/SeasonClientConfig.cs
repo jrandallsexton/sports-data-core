@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Season
 {
-    public class SeasonProviderConfig
+    public class SeasonClientConfig
     {
         public string ApiUrl { get; set; }
     }

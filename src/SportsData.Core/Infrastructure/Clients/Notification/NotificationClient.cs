@@ -11,12 +11,12 @@ namespace SportsData.Core.Infrastructure.Clients.Notification
 
     }
 
-    public class NotificationProvider : ProviderBase, IProvideNotifications
+    public class NotificationClient : ProviderBase, IProvideNotifications
     {
-        private readonly ILogger<NotificationProvider> _logger;
+        private readonly ILogger<NotificationClient> _logger;
 
-        public NotificationProvider(
-            ILogger<NotificationProvider> logger,
+        public NotificationClient(
+            ILogger<NotificationClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.NotificationClient, clientFactory)
         {

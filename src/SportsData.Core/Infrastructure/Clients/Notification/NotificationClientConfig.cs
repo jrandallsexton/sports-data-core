@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Notification
 {
-    public class NotificationProviderConfig
+    public class NotificationClientConfig
     {
         public string ApiUrl { get; set; }
     }

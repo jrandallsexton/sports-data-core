@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Infrastructure.Clients.Producer
 {
-    public class ProducerProviderConfig
+    public class ProducerClientConfig
     {
         public string ApiUrl { get; set; }
     }

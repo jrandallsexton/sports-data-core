@@ -14,12 +14,12 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         Task<VenueDto> GetVenue(string id);
     }
 
-    public class ProducerProvider : ProviderBase, IProvideProducers
+    public class ProducerClient : ProviderBase, IProvideProducers
     {
-        private readonly ILogger<ProducerProvider> _logger;
+        private readonly ILogger<ProducerClient> _logger;
 
-        public ProducerProvider(
-            ILogger<ProducerProvider> logger,
+        public ProducerClient(
+            ILogger<ProducerClient> logger,
             IHttpClientFactory clientFactory) :
             base(HttpClients.ProducerClient, clientFactory)
         {

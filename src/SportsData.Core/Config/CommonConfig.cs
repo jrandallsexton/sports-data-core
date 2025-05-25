@@ -112,27 +112,27 @@ namespace SportsData.Core.Config
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.RedisUri)}";
 
         public static string ContestProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(ContestProviderConfig)}:{nameof(ContestProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(ContestClientConfig)}:{nameof(ContestClientConfig.ApiUrl)}";
 
         public static string FranchiseProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(FranchiseProviderConfig)}:{nameof(FranchiseProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(FranchiseClientConfig)}:{nameof(FranchiseClientConfig.ApiUrl)}";
 
         public static string NotificationProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(NotificationProviderConfig)}:{nameof(NotificationProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(NotificationClientConfig)}:{nameof(NotificationClientConfig.ApiUrl)}";
 
         public static string PlayerProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(PlayerProviderConfig)}:{nameof(PlayerProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(PlayerClientConfig)}:{nameof(PlayerClientConfig.ApiUrl)}";
 
         public static string ProducerProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(ProducerProviderConfig)}:{nameof(ProducerProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(ProducerClientConfig)}:{nameof(ProducerClientConfig.ApiUrl)}";
 
         public static string ProviderProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(ProviderProviderConfig)}:{nameof(ProviderProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(ProviderClientConfig)}:{nameof(ProviderClientConfig.ApiUrl)}";
 
         public static string SeasonProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(SeasonProviderConfig)}:{nameof(SeasonProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(SeasonClientConfig)}:{nameof(SeasonClientConfig.ApiUrl)}";
 
         public static string VenueProviderUri =>
-            $"{nameof(CommonConfig)}:{nameof(VenueProviderConfig)}:{nameof(VenueProviderConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:{nameof(VenueClientConfig)}:{nameof(VenueClientConfig.ApiUrl)}";
     }
 }

@@ -137,12 +137,9 @@ namespace SportsData.Api
                 await dbContext.Database.MigrateAsync();
             }
 
-            //app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            //{
-            //    Authorization = new[] { new DashboardAuthFilter() }
-            //});
-
             app.UseCors("AllowFrontend");
+
+            app.UseRouting();
 
             app.UseWhen(context =>
                     !context.Request.Path.StartsWithSegments("/api/health") &&
@@ -152,9 +149,6 @@ namespace SportsData.Api
                     appBuilder.UseAuthentication();
                     appBuilder.UseAuthorization();
                 });
-
-            //app.UseAuthentication();
-            //app.UseAuthorization();
 
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {

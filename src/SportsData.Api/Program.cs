@@ -122,7 +122,7 @@ namespace SportsData.Api
             //services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
-            services.AddCaching(config);
+            //services.AddCaching(config);
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             var app = builder.Build();

@@ -150,7 +150,7 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
-                .AddCheck<CachingHealthCheck>("caching")
+                //.AddCheck<CachingHealthCheck>("caching")
                 .AddCheck<LoggingHealthCheck>("logging")
                 .AddCheck<ProviderHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 .AddCheck<ProviderHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)

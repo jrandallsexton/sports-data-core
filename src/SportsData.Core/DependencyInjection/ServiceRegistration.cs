@@ -152,14 +152,14 @@ namespace SportsData.Core.DependencyInjection
                 .AddCheck<HealthCheck>(apiName)
                 //.AddCheck<CachingHealthCheck>("caching")
                 .AddCheck<LoggingHealthCheck>("logging")
-                .AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
-                .AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
-                .AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
-                .AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
+                //.AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
+                //.AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
+                //.AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
+                //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
                 .AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
-                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient)
-                .AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
-                .AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient);
+                //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
+                //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
             return services;
         }
 
@@ -230,7 +230,7 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
             // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
@@ -241,9 +241,10 @@ namespace SportsData.Core.DependencyInjection
                 //.AddClient<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.GetFranchiseProviderUri)
                 //.AddClient<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.GetNotificationProviderUri)
                 //.AddClient<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.GetPlayerProviderUri)
-                .AddClient<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.GetProducerProviderUri)
-                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri);
+                .AddClient<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.GetProducerProviderUri())
+                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri());
                 //.AddClient<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.GetSeasonProviderUri);
+                //.AddClient<IProvideVenues, VenueClient>(configuration, HttpClients.VenueClient, CommonConfigKeys.GetVenueProviderUri);
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
@@ -270,8 +271,8 @@ namespace SportsData.Core.DependencyInjection
         private static IServiceCollection AddClient<TService, TImplementation>(
             this IServiceCollection services,
             IConfiguration configuration,
-            string providerName,
-            Func<Sport, string> getProviderUrlKey)
+            string clientName,
+            string clientUrlKey)
             where TService : class
             where TImplementation : class, TService
         {
@@ -287,13 +288,13 @@ namespace SportsData.Core.DependencyInjection
             // Create a named HTTP client for each supported sport
             foreach (var sport in supportedSports)
             {
-                var apiUrl = configuration[getProviderUrlKey(sport)];
+                var apiUrl = configuration[clientUrlKey];
                 if (string.IsNullOrEmpty(apiUrl))
                 {
                     continue; // Skip if no URL configured for this sport
                 }
 
-                services.AddHttpClient($"{providerName}-{sport}", client =>
+                services.AddHttpClient($"{clientName}", client =>
                 {
                     client.BaseAddress = new Uri(apiUrl);
                 });

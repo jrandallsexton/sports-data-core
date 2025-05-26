@@ -62,11 +62,11 @@ namespace SportsData.Core.Config
         public static string GetPlayerProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(PlayerClientConfig)}:{mode}:{nameof(PlayerClientConfig.ApiUrl)}";
 
-        public static string GetProducerProviderUri(Sport mode) =>
-            $"{nameof(CommonConfig)}:{nameof(ProducerClientConfig)}:{mode}:{nameof(ProducerClientConfig.ApiUrl)}";
+        public static string GetProducerProviderUri() =>
+            $"{nameof(CommonConfig)}:{nameof(ProducerClientConfig)}:{nameof(ProducerClientConfig.ApiUrl)}";
 
-        public static string GetProviderProviderUri(Sport mode) =>
-            $"{nameof(CommonConfig)}:{nameof(ProviderClientConfig)}:{mode}:{nameof(ProviderClientConfig.ApiUrl)}";
+        public static string GetProviderProviderUri() =>
+            $"{nameof(CommonConfig)}:{nameof(ProviderClientConfig)}:{nameof(ProviderClientConfig.ApiUrl)}";
 
         public static string GetSeasonProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(SeasonClientConfig)}:{mode}:{nameof(SeasonClientConfig.ApiUrl)}";

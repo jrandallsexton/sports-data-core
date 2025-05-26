@@ -54,7 +54,7 @@ public class VenueClientFactory : IVenueClientFactory
             _logger.LogInformation("Creating new VenueClient for mode: {Mode}", mode);
 
             var logger = _loggerFactory.CreateLogger<VenueClient>();
-            var clientName = $"{HttpClients.VenueClient}-{mode}";
+            var clientName = $"{HttpClients.VenueClient}";
 
             client = new VenueClient(logger, clientName, _httpClientFactory);
             _clientCache[mode] = client;

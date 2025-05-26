@@ -52,7 +52,7 @@ namespace SportsData.Api.Application
         public async Task<ActionResult<GetVenueByIdResponse>> GetVenueById(
             [FromRoute] string sport,
             [FromRoute] string league,
-            int id)
+            string id)
         {
             var client = _venueClientFactory.Resolve(sport, league);
             var venues = await client.GetVenueById(id);

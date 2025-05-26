@@ -15,7 +15,7 @@ namespace SportsData.Core.Infrastructure.Clients.Venue;
 public interface IProvideVenues : IProvideHealthChecks
 {
     Task<Result<GetVenuesResponse>> GetVenues();
-    Task<Result<GetVenueByIdResponse>> GetVenueById(int id);
+    Task<Result<GetVenueByIdResponse>> GetVenueById(string id);
 }
 
 public class VenueClient : ClientBase, IProvideVenues
@@ -51,7 +51,7 @@ public class VenueClient : ClientBase, IProvideVenues
     }
 
 
-    public async Task<Result<GetVenueByIdResponse>> GetVenueById(int id)
+    public async Task<Result<GetVenueByIdResponse>> GetVenueById(string id)
     {
         var response = await HttpClient.GetAsync($"venues/{id}");
 

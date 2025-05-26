@@ -14,6 +14,7 @@ import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
 import ConfirmationDialog from "./components/common/ConfirmationDialog";
 import VenuePage from "components/venues/VenuePage";
+import VenuesPage from "components/venues/VenuesPage";
 import apiWrapper from "./api/apiWrapper";
 
 function MainApp() {
@@ -69,12 +70,12 @@ function MainApp() {
         confirmText="Sign Out"
         storageKey="dontAskSignOut"
       />
-      <Navigation 
-        isSideNav={isSideNav} 
+      <Navigation
+        isSideNav={isSideNav}
         onToggle={() => setIsSideNav(!isSideNav)}
         onSignOut={handleSignOutClick}
       />
-      <main className={`main-content ${isSideNav ? 'side-nav-active' : ''}`}>
+      <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
         <Routes>
           <Route index element={<HomePage />} />
           <Route path="picks" element={<PicksPage />} />
@@ -82,7 +83,8 @@ function MainApp() {
           <Route path="messageboard" element={<MessageBoardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="sport/football/ncaa/team/:slug" element={<TeamCard />} />
-          <Route path="venue/:slug" element={<VenuePage />} />
+          <Route path="sport/:sport/:league/venue/:slug" element={<VenuePage />} />
+          <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
         </Routes>
       </main>
     </div>

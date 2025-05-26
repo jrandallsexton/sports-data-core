@@ -1,0 +1,12 @@
+.venues-page {
+  padding: 1rem;
+}
+
+.venue-list {
+  list-style: none;
+  padding: 0;
+}
+
+.venue-list-item {
+  margin-bottom: 0.5rem;
+}

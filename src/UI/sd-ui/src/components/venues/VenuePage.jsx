@@ -1,12 +1,29 @@
 import { useParams } from "react-router-dom";
-import mockVenues from "../../data/venues.js";
+import { useEffect, useState } from "react";
+import apiWrapper from "../../api/apiWrapper";
 import "./VenuePage.css";
 
 const VenuePage = () => {
-  const { slug } = useParams();
-  const venue = mockVenues[slug];
+  const { sport, league, slug } = useParams();
+  const [venue, setVenue] = useState(null);
+  const [error, setError] = useState(null);
 
-  if (!venue) return <div className="venue-page">Venue not found.</div>;
+  useEffect(() => {
+    const loadVenue = async () => {
+      try {
+        const res = await apiWrapper.Venues.getBySlug(sport, league, slug);
+        setVenue(res.data);
+      } catch (err) {
+        console.error("Failed to load venue:", err);
+        setError("Unable to load venue.");
+      }
+    };
+
+    loadVenue();
+  }, [sport, league, slug]);
+
+  if (error) return <div className="venue-page">{error}</div>;
+  if (!venue) return <div className="venue-page">Loading...</div>;
 
   return (
     <div className="venue-page">

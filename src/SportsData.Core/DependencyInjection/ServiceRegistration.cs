@@ -237,13 +237,13 @@ namespace SportsData.Core.DependencyInjection
 
             // Register single-mode services
             services
-                .AddClient<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.GetContestProviderUri)
-                .AddClient<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.GetFranchiseProviderUri)
-                .AddClient<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.GetNotificationProviderUri)
-                .AddClient<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.GetPlayerProviderUri)
+                //.AddClient<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.GetContestProviderUri)
+                //.AddClient<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.GetFranchiseProviderUri)
+                //.AddClient<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.GetNotificationProviderUri)
+                //.AddClient<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.GetPlayerProviderUri)
                 .AddClient<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.GetProducerProviderUri)
-                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri)
-                .AddClient<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.GetSeasonProviderUri);
+                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri);
+                //.AddClient<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.GetSeasonProviderUri);
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

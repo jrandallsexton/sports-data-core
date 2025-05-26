@@ -74,7 +74,8 @@ namespace SportsData.Core.DependencyInjection
             if (app.Environment.ApplicationName == "SportsData.Api")
             {
                 if (app.Environment.IsDevelopment() ||
-                    app.Environment.EnvironmentName == "Local")
+                    app.Environment.EnvironmentName == "Local" ||
+                    app.Environment.EnvironmentName == "Dev")
                 {
                     app.UseSwagger();
                     app.UseSwaggerUI(options =>

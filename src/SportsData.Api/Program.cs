@@ -145,8 +145,8 @@ namespace SportsData.Api
             app.UseRouting();
 
             app.UseWhen(context =>
-                    !context.Request.Path.StartsWithSegments("/api/health") &&
-                    !context.Request.Path.StartsWithSegments("/swagger"),
+                    !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) &&
+                    !context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase),
                 appBuilder =>
                 {
                     appBuilder.UseAuthentication();

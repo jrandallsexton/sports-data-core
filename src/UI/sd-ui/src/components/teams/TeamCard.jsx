@@ -77,7 +77,7 @@ function TeamCard() {
                 <td>{game.date}</td>
                 <td>
                   <Link
-                    to={`/app/team/${
+                    to={`/app/sport/football/ncaa/team/${
                       Object.values(teams).find((t) => t.name === game.opponent)
                         ?.slug
                     }`}

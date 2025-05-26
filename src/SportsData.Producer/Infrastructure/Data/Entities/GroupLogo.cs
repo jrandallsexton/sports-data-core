@@ -9,7 +9,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid GroupId { get; set; }
 
-        public int OriginalUrlHash { get; set; }
+        public string OriginalUrlHash { get; set; }
 
         public string Url { get; set; }
 
@@ -28,6 +28,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasOne<Group>()
                     .WithMany(x => x.Logos)
                     .HasForeignKey(x => x.GroupId);
+                builder.HasIndex(x => x.OriginalUrlHash);
+                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
             }
         }
     }

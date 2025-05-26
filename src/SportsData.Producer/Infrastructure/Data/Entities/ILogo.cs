@@ -2,7 +2,7 @@
 
 public interface ILogo
 {
-    public int OriginalUrlHash { get; set; }
+    public string OriginalUrlHash { get; set; }
 
     public string Url { get; set; }
 

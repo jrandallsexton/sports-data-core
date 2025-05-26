@@ -69,7 +69,9 @@ namespace SportsData.Provider.Application.Processors
             }
         }
 
-        private async Task ProcessInternal(ProcessResourceIndexItemCommand command, Guid correlationId)
+        private async Task ProcessInternal(
+            ProcessResourceIndexItemCommand command,
+            Guid correlationId)
         {
             var urlHash = _hashProvider.GenerateHashFromUrl(command.Href);
 

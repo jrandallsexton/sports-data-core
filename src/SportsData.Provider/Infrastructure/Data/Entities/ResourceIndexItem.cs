@@ -9,7 +9,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
     {
         public Guid ResourceIndexId { get; set; }
 
-        public int OriginalUrlHash { get; set; }
+        public string OriginalUrlHash { get; set; }
 
         public string Url { get; set; }
 
@@ -25,6 +25,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                     .WithMany(x => x.Items)
                     .HasForeignKey(x => x.ResourceIndexId);
                 builder.HasIndex(x => x.OriginalUrlHash);
+                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
             }
         }
 

@@ -8,7 +8,7 @@ namespace SportsData.Core.Eventing.Events.Images
     public class ProcessImageResponse(
         string url,
         string imageId,
-        int originalUrlHash,
+        string originalUrlHash,
         Guid parentEntityId,
         string name,
         Sport sport,
@@ -26,7 +26,7 @@ namespace SportsData.Core.Eventing.Events.Images
 
         public string ImageId { get; init; } = imageId;
 
-        public int OriginalUrlHash { get; init; } = originalUrlHash;
+        public string OriginalUrlHash { get; init; } = originalUrlHash;
 
         public Guid ParentEntityId { get; init; } = parentEntityId;
 

@@ -37,7 +37,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
     public class GetExternalDocumentQueryResponse
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
 
         public string CanonicalId { get; set; }
 

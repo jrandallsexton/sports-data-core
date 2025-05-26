@@ -118,7 +118,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
         private async Task HandleExisting(
             AthleteImage img,
-            int urlHash,
+            string urlHash,
             ProcessImageRequest request,
             DocumentType logoDocType)
         {

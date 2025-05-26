@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -10,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
     {
         public Guid AthleteId { get; set; }
 
-        public int OriginalUrlHash { get; set; }
+        public string OriginalUrlHash { get; set; }
 
         public required string Url { get; set; }
 
@@ -30,6 +30,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                     .WithMany(x => x.Images)
                     .HasForeignKey(x => x.AthleteId);
                 builder.HasIndex(x => x.OriginalUrlHash);
+                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
             }
         }
     }

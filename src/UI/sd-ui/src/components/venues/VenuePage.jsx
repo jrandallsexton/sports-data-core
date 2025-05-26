@@ -12,7 +12,7 @@ const VenuePage = () => {
     const loadVenue = async () => {
       try {
         const res = await apiWrapper.Venues.getBySlug(sport, league, slug);
-        setVenue(res.data.venue);
+        setVenue(res.data.value.venue);
       } catch (err) {
         console.error("Failed to load venue:", err);
         setError("Unable to load venue.");
@@ -29,20 +29,27 @@ const VenuePage = () => {
     ? Number(venue.capacity).toLocaleString()
     : "unknown";
 
+  // Grab first image URL if available
+  const firstImageUrl =
+    venue.images && venue.images.length > 0 ? venue.images[0].url : null;
+
   return (
     <div className="venue-page">
       <div className="venue-header">
-        <img
-          src={venue.imageUrl}
-          alt={venue.name || "Venue image"}
-          className="venue-image"
-        />
+        {firstImageUrl ? (
+          <img
+            src={firstImageUrl}
+            alt={venue.name || "Venue image"}
+            className="venue-image"
+          />
+        ) : (
+          <div className="venue-image-placeholder">No image available</div>
+        )}
         <div>
           <h2 className="venue-name">{venue.name || "Unnamed Venue"}</h2>
           <p className="venue-location">{venue.location || "Location unknown"}</p>
           <p className="venue-details">
-            {formattedCapacity} capacity •{" "}
-            {venue.isIndoor ? "Indoor" : "Outdoor"} •{" "}
+            {formattedCapacity} capacity • {venue.isIndoor ? "Indoor" : "Outdoor"} •{" "}
             {venue.isGrass ? "Grass" : "Artificial Turf"}
           </p>
         </div>

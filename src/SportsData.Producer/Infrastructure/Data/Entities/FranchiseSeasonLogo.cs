@@ -9,7 +9,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid FranchiseSeasonId { get; set; }
 
-        public int OriginalUrlHash { get; set; }
+        public string OriginalUrlHash { get; set; }
 
         public string Url { get; set; }
 

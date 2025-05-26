@@ -18,6 +18,8 @@ namespace SportsData.Core.Dtos.Canonical
 
         public List<VenueImageDto> Images { get; set; } = new List<VenueImageDto>();
 
+        public AddressDto Address { get; set; }
+
         // TODO: Get a physical address on this thing
     }
 }

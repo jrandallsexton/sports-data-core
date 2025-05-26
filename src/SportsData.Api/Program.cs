@@ -30,52 +30,52 @@ namespace SportsData.Api
             var builder = WebApplication.CreateBuilder(args);
 
             // Configure JWT Authentication
-            builder.Services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.Authority = "https://securetoken.google.com/sportdeets-dev";
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = "https://securetoken.google.com/sportdeets-dev",
-                        ValidateAudience = true,
-                        ValidAudience = "sportdeets-dev",
-                        ValidateLifetime = true,
-                        NameClaimType = "user_id",
-                        RoleClaimType = "role"
-                    };
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnMessageReceived = context =>
-                        {
-                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            var cookie = context.Request.Cookies["authToken"];
-                            logger.LogInformation("JWT OnMessageReceived - Cookie present: {HasCookie}, Path: {Path}, Method: {Method}", 
-                                !string.IsNullOrEmpty(cookie),
-                                context.Request.Path,
-                                context.Request.Method);
+            //builder.Services
+            //    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //    .AddJwtBearer(options =>
+            //    {
+            //        options.Authority = "https://securetoken.google.com/sportdeets-dev";
+            //        options.TokenValidationParameters = new TokenValidationParameters
+            //        {
+            //            ValidateIssuer = true,
+            //            ValidIssuer = "https://securetoken.google.com/sportdeets-dev",
+            //            ValidateAudience = true,
+            //            ValidAudience = "sportdeets-dev",
+            //            ValidateLifetime = true,
+            //            NameClaimType = "user_id",
+            //            RoleClaimType = "role"
+            //        };
+            //        options.Events = new JwtBearerEvents
+            //        {
+            //            OnMessageReceived = context =>
+            //            {
+            //                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            //                var cookie = context.Request.Cookies["authToken"];
+            //                logger.LogInformation("JWT OnMessageReceived - Cookie present: {HasCookie}, Path: {Path}, Method: {Method}", 
+            //                    !string.IsNullOrEmpty(cookie),
+            //                    context.Request.Path,
+            //                    context.Request.Method);
                             
-                            // Get the token from the cookie
-                            context.Token = cookie;
-                            return Task.CompletedTask;
-                        },
-                        OnAuthenticationFailed = context =>
-                        {
-                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogError(context.Exception, "Authentication failed for request to {Path}", context.Request.Path);
-                            return Task.CompletedTask;
-                        },
-                        OnTokenValidated = context =>
-                        {
-                            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogInformation("Token validated for user {UserId} on path {Path}", 
-                                context.Principal.FindFirst("user_id")?.Value,
-                                context.Request.Path);
-                            return Task.CompletedTask;
-                        }
-                    };
-                });
+            //                // Get the token from the cookie
+            //                context.Token = cookie;
+            //                return Task.CompletedTask;
+            //            },
+            //            OnAuthenticationFailed = context =>
+            //            {
+            //                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            //                logger.LogError(context.Exception, "Authentication failed for request to {Path}", context.Request.Path);
+            //                return Task.CompletedTask;
+            //            },
+            //            OnTokenValidated = context =>
+            //            {
+            //                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            //                logger.LogInformation("Token validated for user {UserId} on path {Path}", 
+            //                    context.Principal.FindFirst("user_id")?.Value,
+            //                    context.Request.Path);
+            //                return Task.CompletedTask;
+            //            }
+            //        };
+            //    });
 
             builder.Services.AddControllers(options =>
             {
@@ -83,7 +83,7 @@ namespace SportsData.Api
             });
 
             // 3. Add Authorization middleware
-            builder.Services.AddAuthorization();
+            //builder.Services.AddAuthorization();
 
             builder.UseCommon();
 

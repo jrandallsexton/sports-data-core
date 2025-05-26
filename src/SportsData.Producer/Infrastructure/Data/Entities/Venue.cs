@@ -18,6 +18,18 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string Slug { get; set; }
 
+        public int Capacity { get; set; }
+
+        public string City { get; set; }
+
+        public string State { get; set; }
+
+        public string Country { get; set; } = "US";
+
+        public decimal Latitude { get; set; }
+
+        public decimal Longitude { get; set; }
+
         public List<VenueExternalId> ExternalIds { get; set; }
 
         public List<VenueImage> Images { get; set; } = [];

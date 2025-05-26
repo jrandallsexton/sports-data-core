@@ -255,10 +255,10 @@ namespace SportsData.Core.DependencyInjection
             {
                 foreach (var sport in supportedModes)
                 {
-                    var apiUrl = configuration[CommonConfigKeys.GetVenueProviderUri(sport)];
+                    var apiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
                     if (!string.IsNullOrEmpty(apiUrl))
                     {
-                        var clientName = $"{HttpClients.VenueClient}-{sport}";
+                        var clientName = $"{HttpClients.VenueClient}";
                         services.AddHttpClient(clientName, client => client.BaseAddress = new Uri(apiUrl));
                     }
                 }

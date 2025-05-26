@@ -42,7 +42,7 @@ public class VenueClientFactory : IVenueClientFactory
 
         if (!_clientCache.TryGetValue(mode, out var client))
         {
-            var configKey = CommonConfigKeys.GetVenueProviderUri(mode);
+            var configKey = CommonConfigKeys.GetVenueProviderUri();
             var apiUrl = _configuration[configKey];
 
             if (string.IsNullOrWhiteSpace(apiUrl))

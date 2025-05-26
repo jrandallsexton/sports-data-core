@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Contest
 
     }
 
-    public class ContestClient : ProviderBase, IProvideContests
+    public class ContestClient : ClientBase, IProvideContests
     {
         private readonly ILogger<ContestClient> _logger;
 

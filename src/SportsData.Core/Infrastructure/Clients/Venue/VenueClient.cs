@@ -18,7 +18,7 @@ public interface IProvideVenues : IProvideHealthChecks
     Task<Result<GetVenueByIdResponse>> GetVenueById(int id);
 }
 
-public class VenueClient : ProviderBase, IProvideVenues
+public class VenueClient : ClientBase, IProvideVenues
 {
     private readonly ILogger<VenueClient> _logger;
 

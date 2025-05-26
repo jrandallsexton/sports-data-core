@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Notification
 
     }
 
-    public class NotificationClient : ProviderBase, IProvideNotifications
+    public class NotificationClient : ClientBase, IProvideNotifications
     {
         private readonly ILogger<NotificationClient> _logger;
 

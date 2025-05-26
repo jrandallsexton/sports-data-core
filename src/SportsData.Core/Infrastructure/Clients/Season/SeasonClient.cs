@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Season
 
     }
 
-    public class SeasonClient : ProviderBase, IProvideSeasons
+    public class SeasonClient : ClientBase, IProvideSeasons
     {
         private readonly ILogger<SeasonClient> _logger;
 

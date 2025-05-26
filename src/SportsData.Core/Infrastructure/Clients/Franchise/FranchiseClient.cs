@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Franchise
 
     }
 
-    public class FranchiseClient : ProviderBase, IProvideFranchises
+    public class FranchiseClient : ClientBase, IProvideFranchises
     {
         private readonly ILogger<FranchiseClient> _logger;
 

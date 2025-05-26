@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Player
 
     }
 
-    public class PlayerClient : ProviderBase, IProvidePlayers
+    public class PlayerClient : ClientBase, IProvidePlayers
     {
         private readonly ILogger<PlayerClient> _logger;
 

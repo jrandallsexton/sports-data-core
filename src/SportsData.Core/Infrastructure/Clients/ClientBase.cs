@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients
 {
-    public abstract class ProviderBase(
+    public abstract class ClientBase(
         string providerName,
         IHttpClientFactory clientFactory)
         : IProvideHealthChecks

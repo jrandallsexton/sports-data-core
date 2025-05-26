@@ -152,14 +152,14 @@ namespace SportsData.Core.DependencyInjection
                 .AddCheck<HealthCheck>(apiName)
                 //.AddCheck<CachingHealthCheck>("caching")
                 .AddCheck<LoggingHealthCheck>("logging")
-                .AddCheck<ProviderHealthCheck<IProvideContests>>(HttpClients.ContestClient)
-                .AddCheck<ProviderHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
-                .AddCheck<ProviderHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
-                .AddCheck<ProviderHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
-                .AddCheck<ProviderHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
-                .AddCheck<ProviderHealthCheck<IProvideProviders>>(HttpClients.ProviderClient)
-                .AddCheck<ProviderHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
-                .AddCheck<ProviderHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+                .AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
+                .AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
+                .AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
+                .AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
+                .AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
+                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient)
+                .AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
+                .AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
             return services;
         }
 

@@ -13,18 +13,18 @@ namespace SportsData.Api.Application
     public class VenuesController : ApiControllerBase
     {
         private readonly IVenueClientFactory _venueClientFactory;
-        private readonly IDistributedCache _cache;
+        //private readonly IDistributedCache _cache;
         private readonly IDateTimeProvider _dateTimeProvider;
 
         private const string CacheKeyDateTimeFormat = "yyyyMMdd_hhmm";
 
         public VenuesController(
             IVenueClientFactory venueClientFactory,
-            IDistributedCache cache,
+            //IDistributedCache cache,
             IDateTimeProvider dateTimeProvider)
         {
             _venueClientFactory = venueClientFactory;
-            _cache = cache;
+            //_cache = cache;
             _dateTimeProvider = dateTimeProvider;
         }
 

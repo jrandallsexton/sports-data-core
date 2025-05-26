@@ -230,40 +230,77 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddProviders(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration)
         {
+            // Enables IHttpClientFactory for named clients
+            services.AddHttpClient();
+
+            // Register single-mode services
             services
-                .AddProvider<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.ContestProviderUri)
-                .AddProvider<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.FranchiseProviderUri)
-                .AddProvider<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.NotificationProviderUri)
-                .AddProvider<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.PlayerProviderUri)
-                .AddProvider<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.ProducerProviderUri)
-                .AddProvider<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.ProviderProviderUri)
-                .AddProvider<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.SeasonProviderUri)
-                .AddProvider<IProvideVenues, VenueClient>(configuration, HttpClients.VenueClient, CommonConfigKeys.VenueProviderUri);
+                .AddClient<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.GetContestProviderUri)
+                .AddClient<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.GetFranchiseProviderUri)
+                .AddClient<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.GetNotificationProviderUri)
+                .AddClient<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.GetPlayerProviderUri)
+                .AddClient<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.GetProducerProviderUri)
+                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri)
+                .AddClient<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.GetSeasonProviderUri);
+
+            // VenueClient is handled via factory instead
+            services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
+
+            // Register venue clients by mode (for use by factory)
+            var supportedModes = configuration.GetSection("CommonConfig:Api:SupportedModes").Get<Sport[]>();
+            if (supportedModes != null)
+            {
+                foreach (var sport in supportedModes)
+                {
+                    var apiUrl = configuration[CommonConfigKeys.GetVenueProviderUri(sport)];
+                    if (!string.IsNullOrEmpty(apiUrl))
+                    {
+                        var clientName = $"{HttpClients.VenueClient}-{sport}";
+                        services.AddHttpClient(clientName, client => client.BaseAddress = new Uri(apiUrl));
+                    }
+                }
+            }
+
             return services;
         }
 
-        private static IServiceCollection AddProvider<TService, TImplementation>(
+
+        private static IServiceCollection AddClient<TService, TImplementation>(
             this IServiceCollection services,
             IConfiguration configuration,
             string providerName,
-            string providerUrlKey) where TService : class
+            Func<Sport, string> getProviderUrlKey)
+            where TService : class
             where TImplementation : class, TService
         {
-            var options = new ContestClientConfig()
-            {
-                ApiUrl = configuration[providerUrlKey]
-            };
-
             services.AddScoped<TService, TImplementation>();
 
-            services.AddHttpClient(providerName, client =>
+            // Get the supported sports from configuration
+            var supportedSports = configuration.GetSection("CommonConfig:Api:SupportedModes").Get<Sport[]>();
+            if (supportedSports == null || !supportedSports.Any())
             {
-                client.BaseAddress = new Uri(options.ApiUrl);
-            });
+                throw new InvalidOperationException("No supported sports configured");
+            }
+
+            // Create a named HTTP client for each supported sport
+            foreach (var sport in supportedSports)
+            {
+                var apiUrl = configuration[getProviderUrlKey(sport)];
+                if (string.IsNullOrEmpty(apiUrl))
+                {
+                    continue; // Skip if no URL configured for this sport
+                }
+
+                services.AddHttpClient($"{providerName}-{sport}", client =>
+                {
+                    client.BaseAddress = new Uri(apiUrl);
+                });
+            }
 
             return services;
         }
+
     }
 }

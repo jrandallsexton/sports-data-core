@@ -43,7 +43,7 @@ public class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
-        services.AddProviders(config);
+        services.AddClients(config);
         
         switch (mode)
         {

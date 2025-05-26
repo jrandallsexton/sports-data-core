@@ -29,7 +29,7 @@ namespace SportsData.Franchise
             // Add Serilog
             builder.UseCommon();
 
-            services.AddProviders(config);
+            services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config);
             services.AddInstrumentation(builder.Environment.ApplicationName);

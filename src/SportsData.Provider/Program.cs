@@ -39,7 +39,7 @@ namespace SportsData.Provider
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
-            services.AddProviders(config);
+            services.AddClients(config);
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddSingleton<DocumentService>();

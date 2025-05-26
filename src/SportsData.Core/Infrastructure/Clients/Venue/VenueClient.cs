@@ -24,8 +24,9 @@ public class VenueClient : ProviderBase, IProvideVenues
 
     public VenueClient(
         ILogger<VenueClient> logger,
+        string clientName,
         IHttpClientFactory clientFactory) :
-        base(HttpClients.VenueClient, clientFactory)
+        base(clientName, clientFactory)
     {
         _logger = logger;
     }

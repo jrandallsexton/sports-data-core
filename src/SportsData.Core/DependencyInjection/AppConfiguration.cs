@@ -168,14 +168,38 @@ namespace SportsData.Core.DependencyInjection
                     // Shared values
                     .Select("CommonConfig", string.Empty)
                     .Select("CommonConfig", label)
-                    .Select("CommonConfig:*", label)
-                    .Select("CommonConfig:*", $"{label}.{mode}")
+                    .Select("CommonConfig:*", label);
 
-                    // Application-specific values
+                if (mode == Sport.All)
+                {
+                    // Load SupportedModes from AppConfig under CommonConfig:Api
+                    var localTempConfig = new ConfigurationBuilder()
+                        .AddAzureAppConfiguration(options =>
+                            options.Connect(appConfigConnectionString)
+                                   .Select("CommonConfig:Api:SupportedModes", $"{label}.{mode}"))
+                        .Build();
+
+                    var supportedModes = localTempConfig
+                        .GetSection("CommonConfig:Api:SupportedModes")
+                        .Get<List<string>>() ?? new();
+
+                    foreach (var supportedMode in supportedModes)
+                    {
+                        azAppConfig
+                            .Select("CommonConfig:*", $"{label}.{supportedMode}")
+                            .Select($"{applicationName}:*", $"{label}.{supportedMode}");
+                    }
+                }
+                else
+                {
+                    azAppConfig
+                        .Select("CommonConfig:*", $"{label}.{mode}")
+                        .Select($"{applicationName}:*", $"{label}.{mode}");
+                }
+
+                azAppConfig
                     .Select($"{applicationName}:*", label)
-                    .Select($"{applicationName}:*", $"{label}.{mode}")
                     .Select(applicationName, label)
-                    .Select(applicationName, $"{label}.{mode}")
                     .ConfigureKeyVault(kv =>
                     {
                         kv.SetCredential(new DefaultAzureCredential());
@@ -184,5 +208,6 @@ namespace SportsData.Core.DependencyInjection
 
             return cfg;
         }
+
     }
 }

@@ -9,45 +9,53 @@ using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 namespace SportsData.Api.Application
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/sports/{sport}/leagues/{league}/venues")]
     public class VenuesController : ApiControllerBase
     {
-        private readonly IProvideVenues _provider;
+        private readonly IVenueClientFactory _venueClientFactory;
         private readonly IDistributedCache _cache;
         private readonly IDateTimeProvider _dateTimeProvider;
 
         private const string CacheKeyDateTimeFormat = "yyyyMMdd_hhmm";
 
         public VenuesController(
-            IProvideVenues provider,
+            IVenueClientFactory venueClientFactory,
             IDistributedCache cache,
             IDateTimeProvider dateTimeProvider)
         {
-            _provider = provider;
+            _venueClientFactory = venueClientFactory;
             _cache = cache;
             _dateTimeProvider = dateTimeProvider;
         }
 
         [HttpGet(Name = "GetVenues")]
         [Produces<GetVenuesResponse>]
-        public async Task<ActionResult<GetVenuesResponse>> GetVenues()
+        public async Task<ActionResult<GetVenuesResponse>> GetVenues(
+            [FromRoute] string sport,
+            [FromRoute] string league)
         {
-            var cacheKey = $"{nameof(GetVenuesResponse)}_{_dateTimeProvider.UtcNow().ToString(CacheKeyDateTimeFormat)}";
-            var cached = await _cache.GetRecordAsync<GetVenuesResponse>(cacheKey);
+            //var cacheKey = $"{nameof(GetVenuesResponse)}_{_dateTimeProvider.UtcNow().ToString(CacheKeyDateTimeFormat)}";
+            //var cached = await _cache.GetRecordAsync<GetVenuesResponse>(cacheKey);
 
-            if (cached?.Venues != null)
-                return Ok(cached);
+            //if (cached?.Venues != null)
+            //    return Ok(cached);
 
-            var venues = await _provider.GetVenues();
-            await _cache.SetRecordAsync(cacheKey, venues.Value);
+            var client = _venueClientFactory.Resolve(sport, league);
+            var venues = await client.GetVenues();
+
+            //await _cache.SetRecordAsync(cacheKey, venues.Value);
             return Ok(venues.Value);
         }
 
-        [HttpGet("{Id}")]
+        [HttpGet("{id}")]
         [Produces<GetVenueByIdResponse>]
-        public async Task<ActionResult<GetVenueByIdResponse>> GetVenueById(int id)
+        public async Task<ActionResult<GetVenueByIdResponse>> GetVenueById(
+            [FromRoute] string sport,
+            [FromRoute] string league,
+            int id)
         {
-            var venues = await _provider.GetVenueById(id);
+            var client = _venueClientFactory.Resolve(sport, league);
+            var venues = await client.GetVenueById(id);
 
             return venues is Success<GetVenueByIdResponse> success ?
                 MapSuccess(success) :

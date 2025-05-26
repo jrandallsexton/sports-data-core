@@ -73,59 +73,59 @@ namespace SportsData.Core.DependencyInjection
 
             if (app.Environment.ApplicationName == "SportsData.Api")
             {
-                if (app.Environment.IsDevelopment() ||
-                    app.Environment.EnvironmentName == "Local" ||
-                    app.Environment.EnvironmentName == "Dev")
+                //if (app.Environment.IsDevelopment() ||
+                //    app.Environment.EnvironmentName == "Local" ||
+                //    app.Environment.EnvironmentName == "Dev")
+                //{
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
                 {
-                    app.UseSwagger();
-                    app.UseSwaggerUI(options =>
-                    {
-                        var links = new StringBuilder();
-                        links.AppendLine($"<a Href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
-                        links.AppendLine($"<a Href=\"\" target=\"_blank\">BuildConfig: {buildConfiguration}</a></br>");
-                        links.AppendLine("<a Href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
-                        links.AppendLine("<a Href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
-                        links.AppendLine("<a Href=\"/metrics\" target=\"_blank\">Metrics</a></br>");
+                    var links = new StringBuilder();
+                    links.AppendLine($"<a Href=\"\" target=\"_blank\">Environment: {app.Environment.EnvironmentName}</a></br>");
+                    links.AppendLine($"<a Href=\"\" target=\"_blank\">BuildConfig: {buildConfiguration}</a></br>");
+                    links.AppendLine("<a Href=\"/health\" target=\"_blank\">HealthCheck</a></br>");
+                    links.AppendLine("<a Href=\"/dashboard\" target=\"_blank\">Hangfire</a></br>");
+                    links.AppendLine("<a Href=\"/metrics\" target=\"_blank\">Metrics</a></br>");
 
-                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:30084/?orgId=1\" target=\"_blank\">Grafana</a></br>");
-                        //}
-                        //else
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:3000/?orgId=1\" target=\"_blank\">Grafana</a></br>");
-                        //}
+                    //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:30084/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                    //}
+                    //else
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:3000/?orgId=1\" target=\"_blank\">Grafana</a></br>");
+                    //}
 
-                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:30083/graph\" target=\"_blank\">Prometheus</a></br>");
-                        //}
-                        //else
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:9090/graph\" target=\"_blank\">Prometheus</a></br>");
-                        //}
+                    //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:30083/graph\" target=\"_blank\">Prometheus</a></br>");
+                    //}
+                    //else
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:9090/graph\" target=\"_blank\">Prometheus</a></br>");
+                    //}
 
-                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:30082/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
-                        //}
-                        //else
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:8001/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
-                        //}
+                    //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:30082/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
+                    //}
+                    //else
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:8001/redis-stack/browser\" target=\"_blank\">Redis</a></br>");
+                    //}
 
-                        //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:30081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
-                        //}
-                        //else
-                        //{
-                        //    links.AppendLine("<a Href=\"http://localhost:8090/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
-                        //}
+                    //if (string.Equals(app.Environment.EnvironmentName, "Local", StringComparison.InvariantCultureIgnoreCase))
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:30081/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
+                    //}
+                    //else
+                    //{
+                    //    links.AppendLine("<a Href=\"http://localhost:8090/#/events?range=1d\" target=\"_blank\">Seq</a></br>");
+                    //}
 
-                        options.HeadContent = links.ToString();
-                    });
-                }
+                    options.HeadContent = links.ToString();
+                });
+                //}
             }
             else
             {

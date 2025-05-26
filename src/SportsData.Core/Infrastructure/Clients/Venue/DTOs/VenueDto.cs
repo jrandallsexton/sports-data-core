@@ -16,7 +16,7 @@ namespace SportsData.Core.Infrastructure.Clients.Venue.DTOs
 
         public required string Slug { get; set; }
 
-        public required int Capacity { get; set; } = 0;
+        public int Capacity { get; set; } = 0;
 
         public List<VenueImageDto> Images { get; set; } = new List<VenueImageDto>();
     }

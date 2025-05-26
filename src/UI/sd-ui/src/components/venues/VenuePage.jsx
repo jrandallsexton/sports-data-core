@@ -12,7 +12,7 @@ const VenuePage = () => {
     const loadVenue = async () => {
       try {
         const res = await apiWrapper.Venues.getBySlug(sport, league, slug);
-        setVenue(res.data);
+        setVenue(res.data.venue);
       } catch (err) {
         console.error("Failed to load venue:", err);
         setError("Unable to load venue.");
@@ -25,15 +25,23 @@ const VenuePage = () => {
   if (error) return <div className="venue-page">{error}</div>;
   if (!venue) return <div className="venue-page">Loading...</div>;
 
+  const formattedCapacity = isFinite(Number(venue.capacity))
+    ? Number(venue.capacity).toLocaleString()
+    : "unknown";
+
   return (
     <div className="venue-page">
       <div className="venue-header">
-        <img src={venue.imageUrl} alt={venue.name} className="venue-image" />
+        <img
+          src={venue.imageUrl}
+          alt={venue.name || "Venue image"}
+          className="venue-image"
+        />
         <div>
-          <h2 className="venue-name">{venue.name}</h2>
-          <p className="venue-location">{venue.location}</p>
+          <h2 className="venue-name">{venue.name || "Unnamed Venue"}</h2>
+          <p className="venue-location">{venue.location || "Location unknown"}</p>
           <p className="venue-details">
-            {venue.capacity.toLocaleString()} capacity •{" "}
+            {formattedCapacity} capacity •{" "}
             {venue.isIndoor ? "Indoor" : "Outdoor"} •{" "}
             {venue.isGrass ? "Grass" : "Artificial Turf"}
           </p>
@@ -43,8 +51,9 @@ const VenuePage = () => {
       <div className="venue-content">
         <h3>About This Venue</h3>
         <p>
-          {venue.name} is a football stadium located in {venue.location}. It
-          seats approximately {venue.capacity.toLocaleString()} fans and is{" "}
+          {venue.name || "This venue"} is a football stadium located in{" "}
+          {venue.location || "an unknown location"}. It seats approximately{" "}
+          {formattedCapacity} fans and is{" "}
           {venue.isIndoor ? "an indoor facility" : "an open-air stadium"} with{" "}
           {venue.isGrass ? "natural grass" : "artificial turf"}.
         </p>

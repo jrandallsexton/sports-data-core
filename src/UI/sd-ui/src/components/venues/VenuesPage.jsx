@@ -17,7 +17,7 @@ const VenuesPage = () => {
     const loadVenues = async () => {
       try {
         const res = await apiWrapper.Venues.getAll(sport, league);
-        cachedVenues = res.data.venues;
+        cachedVenues = res.data.value.venue;
         setVenues(cachedVenues);
       } catch (err) {
         console.error("Failed to load venues:", err);

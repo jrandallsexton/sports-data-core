@@ -6,11 +6,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class FranchiseExtensions
     {
-        public static Franchise AsEntity(this EspnFranchiseDto dto, Guid franchiseId, Guid correlationId)
+        public static Franchise AsEntity(
+            this EspnFranchiseDto dto,
+            Sport sport,
+            Guid franchiseId,
+            Guid correlationId)
         {
             return new Franchise()
             {
                 Id = franchiseId,
+                Sport = sport,
                 Abbreviation = dto.Abbreviation,
                 ColorCodeHex = string.IsNullOrEmpty(dto.Color) ? "ffffff" : dto.Color,
                 DisplayName = dto.DisplayName,

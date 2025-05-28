@@ -95,6 +95,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{60F422
 		prometheus.yml = prometheus.yml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SportsData.Api.Tests.Unit", "test\unit\SportsData.Api.Tests.Unit\SportsData.Api.Tests.Unit.csproj", "{58158F34-4F63-4845-B071-4CC4951D5F25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -213,6 +215,10 @@ Global
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58158F34-4F63-4845-B071-4CC4951D5F25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58158F34-4F63-4845-B071-4CC4951D5F25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58158F34-4F63-4845-B071-4CC4951D5F25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58158F34-4F63-4845-B071-4CC4951D5F25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -249,6 +255,7 @@ Global
 		{27D3B632-8EDC-438F-9BAC-DAF1FBE3EB1D} = {16688232-077A-447A-B0FB-CEEC46F1B707}
 		{A46B7696-8825-4AC3-8EF5-0776E2CFD567} = {1A515288-11F3-441F-AAEE-E390B64CA92A}
 		{60F422AC-305A-423A-9171-FE388170BAE2} = {1C824987-7B92-4D4F-89E7-409C1E4DFB78}
+		{58158F34-4F63-4845-B071-4CC4951D5F25} = {D0C49C69-DB6C-4E6F-8737-84A02168F22A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {83EA89D4-4979-4631-8BFD-0F65D4C81C05}

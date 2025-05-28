@@ -42,7 +42,17 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
             {
                 builder.ToTable("ResourceIndex");
                 builder.HasKey(t => t.Id);
+
+                builder.HasIndex(t => new { t.IsEnabled, t.Provider, t.SportId, t.DocumentType, t.SeasonYear })
+                    .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
+
+                builder.HasIndex(t => t.Endpoint)
+                    .HasDatabaseName("IX_ResourceIndex_Endpoint");
+
+                builder.HasIndex(t => t.LastAccessed)
+                    .HasDatabaseName("IX_ResourceIndex_LastAccessed");
             }
         }
+
     }
 }

@@ -12,6 +12,16 @@ namespace SportsData.Api.Infrastructure.Data
 
         public DbSet<User> Users { get; set; }
 
+        public DbSet<PickemGroupUserPick> UserPicks { get; set; }
+
+        public DbSet<Contest> Contests { get; set; }
+
+        public DbSet<PickemGroup> PickemGroups { get; set; }
+
+        public DbSet<PickResult> PickResults { get; set; }
+
+        public DbSet<PickemGroupWeekResult> PickemGroupWeekResults { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

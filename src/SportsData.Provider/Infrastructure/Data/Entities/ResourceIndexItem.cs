@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 
@@ -20,14 +20,30 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<ResourceIndexItem> builder)
             {
                 builder.ToTable("ResourceIndexItem");
+
                 builder.HasKey(t => t.Id);
+
                 builder.HasOne<ResourceIndex>()
                     .WithMany(x => x.Items)
-                    .HasForeignKey(x => x.ResourceIndexId);
-                builder.HasIndex(x => x.OriginalUrlHash);
-                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
+                    .HasForeignKey(x => x.ResourceIndexId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.Property(x => x.OriginalUrlHash)
+                    .HasMaxLength(64)
+                    .IsRequired();
+
+                builder.HasIndex(x => x.OriginalUrlHash)
+                    .HasDatabaseName("IX_ResourceIndexItem_OriginalUrlHash");
+
+                builder.HasIndex(x => new { x.ResourceIndexId, x.OriginalUrlHash })
+                    .IsUnique()
+                    .HasDatabaseName("IX_ResourceIndexItem_Composite");
+
+                builder.HasIndex(x => x.LastAccessed)
+                    .HasDatabaseName("IX_ResourceIndexItem_LastAccessed");
             }
         }
+
 
     }
 }

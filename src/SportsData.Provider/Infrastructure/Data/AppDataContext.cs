@@ -14,6 +14,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public DbSet<ResourceIndexItem> ResourceIndexItems { get; set; }
 
+        public DbSet<ScheduledSourcingTask> ScheduledTasks { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

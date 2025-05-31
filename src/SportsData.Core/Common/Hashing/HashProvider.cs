@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SportsData.Core.Common
+namespace SportsData.Core.Common.Hashing
 {
     public interface IProvideHashes
     {

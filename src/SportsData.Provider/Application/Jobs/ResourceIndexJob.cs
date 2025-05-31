@@ -62,7 +62,7 @@ namespace SportsData.Provider.Application.Jobs
             _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndexDto);
 
             // Log this access to AppDataContext
-            var resourceIndexEntity = await _dataContext.Resources
+            var resourceIndexEntity = await _dataContext.RecurringJobs
                 .Include(x => x.Items)
                 .Where(x => x.Id == jobDefinition.ResourceIndexId)
                 .FirstOrDefaultAsync();
@@ -112,7 +112,6 @@ namespace SportsData.Provider.Application.Jobs
                     foreach (var cmd in resourceIndexDto.Items.Select(item =>
                                  new ProcessResourceIndexItemCommand(
                                      resourceIndexEntity.Id,
-                                     0,
                                      item.Id,
                                      item.Href,
                                      jobDefinition.Sport,

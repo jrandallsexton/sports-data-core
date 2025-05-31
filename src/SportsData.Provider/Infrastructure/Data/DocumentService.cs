@@ -2,6 +2,7 @@
 
 using MongoDB.Driver;
 
+using SportsData.Core.Common.Hashing;
 using SportsData.Provider.Config;
 
 using System.Linq.Expressions;
@@ -14,7 +15,9 @@ namespace SportsData.Provider.Infrastructure.Data
 
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
 
-        Task InsertOneAsync<T>(string collectionName, T document);
+        Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl;
+
+        Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl;
 
         bool CanConnect();
     }
@@ -67,10 +70,15 @@ namespace SportsData.Provider.Infrastructure.Data
             return await cursor.FirstOrDefaultAsync();
         }
 
-        public async Task InsertOneAsync<T>(string collectionName, T document)
+        public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
             var collection = _database.GetCollection<T>(collectionName);
             await collection.InsertOneAsync(document);
+        }
+
+        public Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
+        {
+            throw new NotImplementedException();
         }
 
         public bool CanConnect()

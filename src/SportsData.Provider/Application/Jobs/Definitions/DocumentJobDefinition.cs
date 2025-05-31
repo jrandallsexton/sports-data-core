@@ -10,7 +10,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
             
         }
 
-        public DocumentJobDefinition(ResourceIndex resourceIndex)
+        public DocumentJobDefinition(RecurringJob resourceIndex)
         {
             Sport = resourceIndex.SportId;
             SourceDataProvider = resourceIndex.Provider;
@@ -19,6 +19,17 @@ namespace SportsData.Provider.Application.Jobs.Definitions
             EndpointMask = resourceIndex.EndpointMask;
             SeasonYear = resourceIndex.SeasonYear;
             ResourceIndexId = resourceIndex.Id;
+        }
+
+        public DocumentJobDefinition(ScheduledJob task)
+        {
+            Sport = task.Sport;
+            SourceDataProvider = task.SourceDataProvider;
+            DocumentType = task.DocumentType;
+            Endpoint = task.Href;
+            EndpointMask = string.Empty; // TODO: Do I need this?
+            SeasonYear = task.SeasonYear;
+            ResourceIndexId = task.Id;
         }
 
         public Guid ResourceIndexId { get; set; }

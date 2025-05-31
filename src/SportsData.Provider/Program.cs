@@ -110,8 +110,8 @@ namespace SportsData.Provider
             {
                 var appServices = scope.ServiceProvider;
                 var context = appServices.GetRequiredService<AppDataContext>();
-                //await context.Database.MigrateAsync();
-                await LoadSeedData(context, mode);
+                await context.Database.MigrateAsync();
+                //await LoadSeedData(context, mode);
             }
 
             app.UseHangfireDashboard("/dashboard", new DashboardOptions
@@ -132,7 +132,7 @@ namespace SportsData.Provider
         
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)
         {
-            if (await dbContext.Resources.AnyAsync())
+            if (await dbContext.RecurringJobs.AnyAsync())
                 return;
 
             switch (mode)
@@ -140,17 +140,17 @@ namespace SportsData.Provider
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
                     var footballValues = new FootballSeeder().Generate(mode, [2023, 2024]);
-                    await dbContext.Resources.AddRangeAsync(footballValues);
+                    await dbContext.RecurringJobs.AddRangeAsync(footballValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.GolfPga:
                     var golfValues = new GolfSeeder().Generate(mode, [2024]);
-                    await dbContext.Resources.AddRangeAsync(golfValues);
+                    await dbContext.RecurringJobs.AddRangeAsync(golfValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.BasketballNba:
                     var basketballValues = new BasketballSeeder().Generate(mode, [2024]);
-                    await dbContext.Resources.AddRangeAsync(basketballValues);
+                    await dbContext.RecurringJobs.AddRangeAsync(basketballValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.BaseballMlb:

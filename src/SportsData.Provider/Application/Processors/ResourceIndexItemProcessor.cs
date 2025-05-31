@@ -5,15 +5,14 @@ using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Parsing;
+using SportsData.Core.Common.Routing;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
-
-using System.Collections;
 
 namespace SportsData.Provider.Application.Processors
 {
@@ -33,6 +32,8 @@ namespace SportsData.Provider.Application.Processors
         private readonly IProvideHashes _hashProvider;
         private readonly IResourceIndexItemParser _resourceIndexItemParser;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IGenerateRoutingKeys _routingKeyGenerator;
+        private readonly IJsonHashCalculator _jsonHashCalculator;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
@@ -43,7 +44,9 @@ namespace SportsData.Provider.Application.Processors
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideHashes hashProvider,
             IResourceIndexItemParser resourceIndexItemParser,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IGenerateRoutingKeys routingKeyGenerator,
+            IJsonHashCalculator jsonHashCalculator)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -54,15 +57,17 @@ namespace SportsData.Provider.Application.Processors
             _hashProvider = hashProvider;
             _resourceIndexItemParser = resourceIndexItemParser;
             _backgroundJobProvider = backgroundJobProvider;
+            _routingKeyGenerator = routingKeyGenerator;
+            _jsonHashCalculator = jsonHashCalculator;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
             var correlationId = Guid.NewGuid();
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = correlationId
-                   }))
+            {
+                ["CorrelationId"] = correlationId
+            }))
             {
                 _logger.LogInformation("Started with {@command}", command);
                 await ProcessInternal(command, correlationId);
@@ -75,166 +80,142 @@ namespace SportsData.Provider.Application.Processors
         {
             var urlHash = _hashProvider.GenerateHashFromUrl(command.Href);
 
+            var now = DateTime.UtcNow;
+
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
-                .Where(x => x.ResourceIndexId == command.resourceIndexId &&
+                .Where(x => x.ResourceIndexId == command.ResourceIndexId &&
                             x.OriginalUrlHash == urlHash)
                 .FirstOrDefaultAsync();
 
             if (resourceIndexItemEntity is not null)
             {
-                // has it been retrieved within X time units?
-                // TODO: Move to config for check duration
-                if (resourceIndexItemEntity.LastAccessed > DateTime.UtcNow.AddDays(-7))
-                {
-                    // log something
-                    return;
-                }
-                resourceIndexItemEntity.LastAccessed = DateTime.UtcNow;
-                resourceIndexItemEntity.ModifiedUtc = DateTime.UtcNow;
+                resourceIndexItemEntity.LastAccessed = now;
+                resourceIndexItemEntity.ModifiedUtc = now;
                 resourceIndexItemEntity.ModifiedBy = Guid.Empty;
             }
             else
             {
-                // create a record for this access
                 await _dataContext.ResourceIndexItems.AddAsync(new ResourceIndexItem()
                 {
                     Id = Guid.NewGuid(),
-                    CreatedUtc = DateTime.UtcNow,
+                    CreatedUtc = now,
                     CreatedBy = Guid.Empty,
                     Url = command.Href,
                     OriginalUrlHash = urlHash,
-                    ResourceIndexId = command.resourceIndexId,
-                    LastAccessed = DateTime.UtcNow
+                    ResourceIndexId = command.ResourceIndexId,
+                    LastAccessed = now
                 });
             }
 
-            await HandleValid(command, correlationId);
-
+            await HandleValid(command, urlHash, correlationId);
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task HandleValid(ProcessResourceIndexItemCommand command, Guid correlationId)
+
+        private async Task HandleValid(ProcessResourceIndexItemCommand command, string urlHash, Guid correlationId)
         {
             var type = _decoder.GetTypeAndCollectionName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
-            
-            // get the item's json
-            var itemJson = await _espnApi.GetResource(command.Href, true);
-
-            // determine if we have this in the database
             var documentId = command.SeasonYear.HasValue
                 ? long.Parse($"{command.Id}{command.SeasonYear.Value}")
                 : command.Id;
 
-            var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentId.ToString());
+            var documentKey = documentId.ToString();
+            var itemJson = await _espnApi.GetResource(command.Href, true);
+            var dbItem = await _documentStore.GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentKey);
 
-            // TODO: break these off into different handlers
             if (dbItem is null)
             {
-                // no ?  save it and broadcast event
-                await _documentStore.InsertOneAsync(type.CollectionName, new DocumentBase()
-                {
-                    Id = documentId.ToString(),
-                    Data = itemJson,
-                    Sport = command.Sport,
-                    DocumentType = command.DocumentType,
-                    SourceDataProvider = command.SourceDataProvider
-                });
-
-                var evt = new DocumentCreated(
-                    documentId.ToString(),
-                    type.CollectionName,
-                    command.Sport,
-                    command.SeasonYear,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    correlationId,
-                    CausationId.Provider.ResourceIndexItemProcessor);
-
-                // TODO: Use transactional outbox pattern here?
-                await _bus.Publish(evt);
-
-                _logger.LogInformation("New document event published {@evt}", evt);
+                await HandleNewDocumentAsync(command, urlHash, correlationId, type.CollectionName, documentKey, itemJson);
             }
             else
             {
-                var evt = new DocumentCreated(
-                    documentId.ToString(),
-                    type.CollectionName,
-                    command.Sport,
-                    command.SeasonYear,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    correlationId,
-                    CausationId.Provider.ResourceIndexItemProcessor);
+                var newHash = _jsonHashCalculator.NormalizeAndHash(itemJson);
+                var currentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
 
-                // TODO: Use transactional outbox pattern here?
-                await _bus.Publish(evt);
-                //await HandleExisting(dbItem, itemJson, dbObjects, filter, documentId, type.CollectionName, command, correlationId);
+                if (newHash != currentHash)
+                {
+                    await HandleUpdatedDocumentAsync(command, urlHash, correlationId, type.CollectionName, documentKey, itemJson);
+                }
             }
-
-            // Dive N-Level deep into any contained links and generate an event for it to be processed?
-            // if so, we should specify the depth level on the event. processor can then be configured to not go too deep
-            //if (command.Level == 0)
-            //    await ProcessEmbeddedLinks(command, itemJson);
-            
         }
 
-        private async Task HandleExisting(DocumentBase dbItem,
-            string itemJson,
-            IMongoCollection<DocumentBase> dbObjects,
-            FilterDefinition<DocumentBase> filter,
-            long documentId,
-            string collectionName,
+        private async Task HandleNewDocumentAsync(
             ProcessResourceIndexItemCommand command,
-            Guid correlationId)
+            string urlHash,
+            Guid correlationId,
+            string collectionName,
+            string documentId,
+            string json)
         {
-            var dbJson = dbItem.ToJson();
-
-            // has it changed ?
-            if (string.Compare(itemJson, dbJson, StringComparison.InvariantCultureIgnoreCase) == 0)
-                return;
-
-            // yes: update and broadcast
-            await dbObjects.ReplaceOneAsync(filter, new DocumentBase()
+            var document = new DocumentBase
             {
-                Id = documentId.ToString(),
-                Data = itemJson
-            });
+                Id = documentId,
+                Data = json,
+                Sport = command.Sport,
+                DocumentType = command.DocumentType,
+                SourceDataProvider = command.SourceDataProvider,
+                Url = command.Href,
+                UrlHash = urlHash
+            };
 
-            var evt = new DocumentUpdated(
-            documentId.ToString(),
+            await _documentStore.InsertOneAsync(collectionName, document);
+
+            var evt = new DocumentCreated(
+                documentId,
                 collectionName,
+                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
+                urlHash,
                 command.Sport,
+                command.SeasonYear,
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
                 CausationId.Provider.ResourceIndexItemProcessor);
 
-            // TODO: Use transactional outbox pattern here
             await _bus.Publish(evt);
-
-            _logger.LogInformation("Document updated event {@evt}", evt);
+            _logger.LogInformation("DocumentCreated event published {@evt}", evt);
         }
 
-        private async Task ProcessEmbeddedLinks(ProcessResourceIndexItemCommand parentCommand, string itemJson)
+        private async Task HandleUpdatedDocumentAsync(
+            ProcessResourceIndexItemCommand command,
+            string urlHash,
+            Guid correlationId,
+            string collectionName,
+            string documentId,
+            string json)
         {
-            var links = _resourceIndexItemParser.ExtractEmbeddedLinks(itemJson);
+            var document = new DocumentBase
+            {
+                Id = documentId,
+                Data = json,
+                Sport = command.Sport,
+                DocumentType = command.DocumentType,
+                SourceDataProvider = command.SourceDataProvider,
+                Url = command.Href,
+                UrlHash = urlHash
+            };
 
-            //foreach (var link in links.Select(x =>
-            //        new ProcessResourceIndexItemCommand(Guid.Empty, parentCommand.Level + 1,
-            //            0, x.AbsoluteUri, parentCommand.Sport, parentCommand.SourceDataProvider,
-            //            parentCommand.DocumentType, parentCommand.SeasonYear))
-                        
-                        
+            await _documentStore.ReplaceOneAsync(collectionName, documentId, document);
 
-            await Task.CompletedTask;
+            var evt = new DocumentUpdated(
+                documentId,
+                collectionName,
+                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
+                urlHash,
+                command.Sport,
+                command.SeasonYear,
+                command.DocumentType,
+                command.SourceDataProvider,
+                correlationId,
+                CausationId.Provider.ResourceIndexItemProcessor);
+
+            await _bus.Publish(evt);
+            _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
         }
     }
 
     public record ProcessResourceIndexItemCommand(
-        Guid resourceIndexId,
-        int Level,
+        Guid ResourceIndexId,
         int Id,
         string Href,
         Sport Sport,

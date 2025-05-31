@@ -31,6 +31,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Hangfire.PostgreSql;
+using SportsData.Core.Common.Hashing;
 
 namespace SportsData.Core.DependencyInjection
 {

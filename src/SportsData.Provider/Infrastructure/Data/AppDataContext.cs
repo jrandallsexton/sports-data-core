@@ -10,16 +10,16 @@ namespace SportsData.Provider.Infrastructure.Data
         public AppDataContext(DbContextOptions<AppDataContext> options) :
             base(options) { }
 
-        public DbSet<ResourceIndex> Resources { get; set; }
+        public DbSet<RecurringJob> RecurringJobs { get; set; }
 
         public DbSet<ResourceIndexItem> ResourceIndexItems { get; set; }
 
-        public DbSet<ScheduledSourcingTask> ScheduledTasks { get; set; }
+        public DbSet<ScheduledJob> ScheduledJobs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceIndex.EntityConfiguration).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(RecurringJob.EntityConfiguration).Assembly);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

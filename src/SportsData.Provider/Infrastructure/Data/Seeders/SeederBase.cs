@@ -5,7 +5,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 {
     public interface ISeedResourceIndexes
     {
-        List<ResourceIndex> Generate(Sport sport, List<int> seasons);
+        List<RecurringJob> Generate(Sport sport, List<int> seasons);
     }
 
     public class SeederBase
@@ -20,14 +20,14 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 
         private const string EspnApiBaseUrl = "http://sports.core.api.espn.com/v2/sports";
 
-        public List<ResourceIndex> GenerateNonSeasonalResources(
-            List<ResourceIndex> resources,
+        public List<RecurringJob> GenerateNonSeasonalResources(
+            List<RecurringJob> resources,
             Sport sport,
             string espnSportName,
             string league)
         {
             /* Venues */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -79,14 +79,14 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             return resources;
         }
 
-        private List<ResourceIndex> GenerateNonSeasonalResourcesForTeamSports(
-            List<ResourceIndex> resources,
+        private List<RecurringJob> GenerateNonSeasonalResourcesForTeamSports(
+            List<RecurringJob> resources,
             Sport sport,
             string espnSportName,
             string league)
         {
             /* Franchises */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -100,7 +100,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             });
 
             /* Positions */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -116,8 +116,8 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             return resources;
         }
 
-        public List<ResourceIndex> GenerateSeasonalResources(
-            List<ResourceIndex> resources,
+        public List<RecurringJob> GenerateSeasonalResources(
+            List<RecurringJob> resources,
             Sport sport,
             string espnSportName,
             string league,
@@ -141,7 +141,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             //});
 
             /* Athletes By Season */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -162,15 +162,15 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             return resources;
         }
 
-        private List<ResourceIndex> GenerateSeasonalResourcesForTeamSports(
-            List<ResourceIndex> resources,
+        private List<RecurringJob> GenerateSeasonalResourcesForTeamSports(
+            List<RecurringJob> resources,
             Sport sport,
             string espnSportName,
             string league,
             int seasonYear)
         {
             /* SeasonBySeason */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -186,7 +186,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             });
 
             /* Teams By Season */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
@@ -202,7 +202,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             });
 
             /* Coaches By Season */
-            resources.Add(new ResourceIndex()
+            resources.Add(new RecurringJob()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,

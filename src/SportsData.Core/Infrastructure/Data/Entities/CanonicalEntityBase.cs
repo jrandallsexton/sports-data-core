@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SportsData.Core.Common.Hashing;
+
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SportsData.Core.Infrastructure.Data.Entities;
 
-public abstract class CanonicalEntityBase<T> : IEntity<T>
+public abstract class CanonicalEntityBase<T> : IEntity<T>, IHasSourceUrlHash
 {
     [Key]
     public required T Id { get; set; }
@@ -17,4 +19,6 @@ public abstract class CanonicalEntityBase<T> : IEntity<T>
     public Guid? ModifiedBy { get; set; }
 
     public DateTime LastModified => ModifiedUtc ?? CreatedUtc;
+
+    public string UrlHash { get; set; }
 }

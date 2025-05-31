@@ -4,24 +4,16 @@ using System;
 
 namespace SportsData.Core.Eventing.Events.Documents
 {
-    public class DocumentUpdated(
-        string id,
+    public class DocumentUpdated(string id,
         string name,
+        string routingKey,
+        string urlHash,
         Sport sport,
+        int ? seasonYear,
         DocumentType documentType,
         SourceDataProvider sourceDataProvider,
         Guid correlationId,
-        Guid causationId)
-        : EventBase(correlationId, causationId)
-    {
-        public string Id { get; init; } = id;
-
-        public string Name { get; init; } = name;
-
-        public Sport Sport { get; init; } = sport;
-
-        public DocumentType DocumentType { get; init; } = documentType;
-
-        public SourceDataProvider SourceDataProvider { get; set; } = sourceDataProvider;
-    }
+        Guid causationId) :
+        DocumentCreated(id, name, routingKey, urlHash, sport, seasonYear,
+            documentType, sourceDataProvider, correlationId, causationId) { }
 }

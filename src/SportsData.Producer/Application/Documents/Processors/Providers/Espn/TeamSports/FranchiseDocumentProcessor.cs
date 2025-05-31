@@ -68,7 +68,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
     {
         // 1. map to the entity add it
         var newFranchiseId = Guid.NewGuid();
-        var newEntity = dto.AsEntity(newFranchiseId, command.CorrelationId);
+        var newEntity = dto.AsEntity(command.Sport, newFranchiseId, command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
         if (dto.Venue is not null && dto.Venue.Id > 0)

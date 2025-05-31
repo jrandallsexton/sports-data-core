@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Routing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Provider.Infrastructure.Data;
@@ -18,22 +19,24 @@ namespace SportsData.Provider.Application.Processors
         private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IPublishEndpoint _bus;
+        private readonly IGenerateRoutingKeys _routingKeyGenerator;
 
         public PublishDocumentEventsProcessor(
             ILogger<PublishDocumentEventsProcessor> logger,
             IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
-            IPublishEndpoint bus)
+            IPublishEndpoint bus,
+            IGenerateRoutingKeys routingKeyGenerator)
         {
             _logger = logger;
             _documentStore = documentStore;
             _decoder = decoder;
             _bus = bus;
+            _routingKeyGenerator = routingKeyGenerator;
         }
 
         public async Task Process(PublishDocumentEventsCommand command)
         {
-            // TODO: Queue the request and return an Accepted
             var typeAndName = _decoder.GetTypeAndCollectionName(
                 command.SourceDataProvider,
                 command.Sport,
@@ -45,11 +48,12 @@ namespace SportsData.Provider.Application.Processors
             var correlationId = Guid.NewGuid();
             var causationId = Guid.NewGuid();
 
-            // TODO: Tackle correlation and causation ids
             var events = dbDocuments.Select(tmp =>
                     new DocumentCreated(
                         tmp.Id.ToString(),
                         typeAndName.Type.Name,
+                        _routingKeyGenerator.Generate(command.SourceDataProvider, tmp.Url),
+                        tmp.UrlHash,
                         command.Sport,
                         command.Season,
                         command.DocumentType,
@@ -58,12 +62,10 @@ namespace SportsData.Provider.Application.Processors
                         causationId))
                 .ToList();
 
-            // TODO: Batch or not?
             foreach (var evt in events)
             {
                 await _bus.Publish(evt);
             }
-            //await _bus.PublishBatch(events);
 
             _logger.LogInformation($"Published {events.Count} events.");
         }

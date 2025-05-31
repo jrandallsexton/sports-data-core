@@ -23,7 +23,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
                 builder.HasKey(t => t.Id);
 
-                builder.HasOne<ResourceIndex>()
+                builder.HasOne<RecurringJob>()
                     .WithMany(x => x.Items)
                     .HasForeignKey(x => x.ResourceIndexId)
                     .OnDelete(DeleteBehavior.Cascade);

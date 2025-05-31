@@ -1,11 +1,12 @@
 ﻿
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 
 using System.Text.Json.Serialization;
 
 namespace SportsData.Provider.Infrastructure.Data
 {
-    public class DocumentBase
+    public class DocumentBase : IHasSourceUrl
     {
         [JsonPropertyName("id")]
         public string Id { get; set; }
@@ -22,5 +23,12 @@ namespace SportsData.Provider.Infrastructure.Data
         public DocumentType DocumentType { get; set; }
 
         public SourceDataProvider SourceDataProvider { get; set; }
+
+        public string UrlHash { get; set; }
+
+        public string Url { get; set; }
+
+        [JsonPropertyName("_etag")]
+        public string? ETag { get; set; }  // Required for concurrency
     }
 }

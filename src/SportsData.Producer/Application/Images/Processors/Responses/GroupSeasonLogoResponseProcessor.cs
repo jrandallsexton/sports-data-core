@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Infrastructure.Data.Common;

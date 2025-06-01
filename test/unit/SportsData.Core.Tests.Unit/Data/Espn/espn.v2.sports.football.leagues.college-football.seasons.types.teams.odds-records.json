@@ -1,0 +1,508 @@
+{
+  "count": 10,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "abbreviation": "ML",
+      "displayName": "Money Line Overall Record",
+      "shortDisplayName": "Money Line",
+      "type": "moneyLineOverall",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 5.0,
+          "displayValue": "5"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 6.0,
+          "displayValue": "6"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -3.18,
+          "displayValue": "-3.180"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ML HOME",
+      "displayName": "Money Line Home Record",
+      "shortDisplayName": "Money Line Home",
+      "type": "moneyLineHome",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 5.0,
+          "displayValue": "5"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": 2.13,
+          "displayValue": "2.130"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ML AWAY",
+      "displayName": "Money Line Away Record",
+      "shortDisplayName": "Money Line Away",
+      "type": "moneyLineAway",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -17.33,
+          "displayValue": "-17.330"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ML UND",
+      "displayName": "Money Line Record as Underdog",
+      "shortDisplayName": "Money Line Underdog",
+      "type": "moneyLineUnderdog",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 6.0,
+          "displayValue": "6"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -16.5,
+          "displayValue": "-16.500"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ML FAV",
+      "displayName": "Money Line Record as Favorite",
+      "shortDisplayName": "Money Line Favorite",
+      "type": "moneyLineFavorite",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 5.0,
+          "displayValue": "5"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": 12.8,
+          "displayValue": "12.800"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ATS",
+      "displayName": "Spread Overall Record",
+      "shortDisplayName": "Spread Overall",
+      "type": "spreadOverall",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 5.0,
+          "displayValue": "5"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 6.0,
+          "displayValue": "6"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -2.95,
+          "displayValue": "-2.950"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ATS HOME",
+      "displayName": "Spread Home Record",
+      "shortDisplayName": "Spread Home",
+      "type": "spreadHome",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 5.0,
+          "displayValue": "5"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -4.5,
+          "displayValue": "-4.500"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ATS AWAY",
+      "displayName": "Spread Away Record",
+      "shortDisplayName": "Spread Away",
+      "type": "spreadAway",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 2.0,
+          "displayValue": "2"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 1.0,
+          "displayValue": "1"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": 1.17,
+          "displayValue": "1.170"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ATS UND",
+      "displayName": "Spread Record as Underdog",
+      "shortDisplayName": "Spread Underdog",
+      "type": "spreadUnderdog",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -4.83,
+          "displayValue": "-4.830"
+        }
+      ]
+    },
+    {
+      "abbreviation": "ATS FAV",
+      "displayName": "Spread Record as Favorite",
+      "shortDisplayName": "Spread Favorite",
+      "type": "spreadFavorite",
+      "stats": [
+        {
+          "displayName": "Wins",
+          "abbreviation": "W",
+          "type": "win",
+          "value": 2.0,
+          "displayValue": "2"
+        },
+        {
+          "displayName": "Losses",
+          "abbreviation": "L",
+          "type": "loss",
+          "value": 3.0,
+          "displayValue": "3"
+        },
+        {
+          "displayName": "Ties",
+          "abbreviation": "T",
+          "type": "push",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Over Total",
+          "abbreviation": "Over",
+          "type": "overTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Under Total",
+          "abbreviation": "Under",
+          "type": "underTotal",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "displayName": "Margin",
+          "abbreviation": "Margin",
+          "type": "margin",
+          "value": -0.7,
+          "displayValue": "-0.700"
+        }
+      ]
+    }
+  ]
+}

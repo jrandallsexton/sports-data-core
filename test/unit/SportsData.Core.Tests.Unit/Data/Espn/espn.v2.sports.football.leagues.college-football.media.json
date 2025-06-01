@@ -1,0 +1,32 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/media/148?lang=en&region=us",
+  "id": "148",
+  "callLetters": "FOX",
+  "name": "FOX",
+  "shortName": "FOX",
+  "slug": "fox",
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/guid/1567408b-ad27-3efd-94cb-b42a34de57e6/logos/default.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "lastUpdated": "2025-03-05T17:28Z"
+    },
+    {
+      "href": "https://a.espncdn.com/guid/1567408b-ad27-3efd-94cb-b42a34de57e6/logos/default-dark.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "lastUpdated": "2025-03-05T17:28Z"
+    }
+  ]
+}

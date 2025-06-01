@@ -1,0 +1,297 @@
+{
+  "count": 1,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/odds/58?lang=en&region=us",
+      "provider": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/providers/58?lang=en&region=us",
+        "id": "58",
+        "name": "ESPN BET",
+        "priority": 1
+      },
+      "details": "AUB -2.5",
+      "overUnder": 56.5,
+      "spread": 2.5,
+      "overOdds": -110.0,
+      "underOdds": -110.0,
+      "awayTeamOdds": {
+        "favorite": true,
+        "underdog": false,
+        "moneyLine": -135,
+        "spreadOdds": -105.0,
+        "open": {
+          "favorite": true,
+          "pointSpread": {
+            "alternateDisplayValue": "-2",
+            "american": "-2"
+          },
+          "spread": {
+            "value": 1.909,
+            "displayValue": "10/11",
+            "alternateDisplayValue": "-110",
+            "decimal": 1.909,
+            "fraction": "10/11",
+            "american": "-110"
+          },
+          "moneyLine": {
+            "value": 1.769,
+            "displayValue": "10/13",
+            "alternateDisplayValue": "-130",
+            "decimal": 1.769,
+            "fraction": "10/13",
+            "american": "-130"
+          }
+        },
+        "current": {
+          "pointSpread": {
+            "alternateDisplayValue": "-2.5",
+            "american": "-2.5"
+          },
+          "spread": {
+            "value": 1.952,
+            "displayValue": "20/21",
+            "alternateDisplayValue": "-105",
+            "decimal": 1.952,
+            "fraction": "20/21",
+            "american": "-105",
+            "outcome": {
+              "type": "pending"
+            }
+          },
+          "moneyLine": {
+            "value": 1.741,
+            "displayValue": "20/27",
+            "alternateDisplayValue": "-135",
+            "decimal": 1.741,
+            "fraction": "20/27",
+            "american": "-135",
+            "outcome": {
+              "type": "pending"
+            }
+          }
+        },
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en&region=us"
+        }
+      },
+      "homeTeamOdds": {
+        "favorite": false,
+        "underdog": true,
+        "moneyLine": 115,
+        "spreadOdds": -115.0,
+        "open": {
+          "favorite": false,
+          "pointSpread": {
+            "value": 1.909,
+            "displayValue": "10/11",
+            "alternateDisplayValue": "+2",
+            "decimal": 1.909,
+            "fraction": "10/11",
+            "american": "+2"
+          },
+          "spread": {
+            "value": 1.909,
+            "displayValue": "10/11",
+            "alternateDisplayValue": "-110",
+            "decimal": 1.909,
+            "fraction": "10/11",
+            "american": "-110"
+          },
+          "moneyLine": {
+            "value": 2.1,
+            "displayValue": "11/10",
+            "alternateDisplayValue": "+110",
+            "decimal": 2.1,
+            "fraction": "11/10",
+            "american": "+110"
+          }
+        },
+        "current": {
+          "pointSpread": {
+            "alternateDisplayValue": "+2.5",
+            "american": "+2.5"
+          },
+          "spread": {
+            "value": 1.87,
+            "displayValue": "20/23",
+            "alternateDisplayValue": "-115",
+            "decimal": 1.87,
+            "fraction": "20/23",
+            "american": "-115",
+            "outcome": {
+              "type": "pending"
+            }
+          },
+          "moneyLine": {
+            "value": 2.15,
+            "displayValue": "23/20",
+            "alternateDisplayValue": "+115",
+            "decimal": 2.15,
+            "fraction": "23/20",
+            "american": "+115",
+            "outcome": {
+              "type": "pending"
+            }
+          }
+        },
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/239?lang=en&region=us"
+        }
+      },
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "home",
+            "desktop",
+            "bets",
+            "espn-bet"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=1525e033-f9c5-484d-9ff1-56abda871c08&odds_numerator[0]=43&odds_denominator[0]=20",
+          "text": "Home Bet",
+          "shortText": "Home Bet",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "away",
+            "desktop",
+            "bets",
+            "espn-bet"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=5d6906af-c831-4126-8695-e56e3d355d0a&odds_numerator[0]=47&odds_denominator[0]=27",
+          "text": "Away Bet",
+          "shortText": "Away Bet",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "homeSpread",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=5aa3d77a-6687-46f4-813f-64200da2c9c0&odds_numerator[0]=43&odds_denominator[0]=23",
+          "text": "Home Point Spread",
+          "shortText": "Home Point Spread",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "awaySpread",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=078e7b94-e2be-4f5d-a56c-05f6381a128a&odds_numerator[0]=41&odds_denominator[0]=21",
+          "text": "Away Point Spread",
+          "shortText": "Away Point Spread",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "over",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=4723b700-fdb5-4320-8622-3975c77ca74d&odds_numerator[0]=21&odds_denominator[0]=11",
+          "text": "Over Odds",
+          "shortText": "Over Odds",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "under",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c&market_selection_id[0]=6a3f4e63-5517-4e2b-84a1-768b0a16d143&odds_numerator[0]=21&odds_denominator[0]=11",
+          "text": "Under Odds",
+          "shortText": "Under Odds",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "game",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://espnbet.app.link/integrations?%243p=a_espn&clr=espnbettingintegration&$canonical_url=/sport/football/organization/united-states/competition/ncaaf/event/0c978f3d-ec2d-477d-bd72-b787f202fb7c",
+          "text": "Game",
+          "shortText": "Game",
+          "isExternal": true,
+          "isPremium": false
+        }
+      ],
+      "moneylineWinner": false,
+      "spreadWinner": false,
+      "open": {
+        "over": {
+          "value": 1.909,
+          "displayValue": "10/11",
+          "alternateDisplayValue": "-110",
+          "decimal": 1.909,
+          "fraction": "10/11",
+          "american": "-110"
+        },
+        "under": {
+          "value": 1.909,
+          "displayValue": "10/11",
+          "alternateDisplayValue": "-110",
+          "decimal": 1.909,
+          "fraction": "10/11",
+          "american": "-110"
+        },
+        "total": {
+          "value": 1.909,
+          "displayValue": "10/11",
+          "alternateDisplayValue": "56.5",
+          "decimal": 1.909,
+          "fraction": "10/11",
+          "american": "56.5"
+        }
+      },
+      "current": {
+        "over": {
+          "value": 1.909,
+          "displayValue": "10/11",
+          "alternateDisplayValue": "-110",
+          "decimal": 1.909,
+          "fraction": "10/11",
+          "american": "-110",
+          "outcome": {
+            "type": "pending"
+          }
+        },
+        "under": {
+          "value": 1.909,
+          "displayValue": "10/11",
+          "alternateDisplayValue": "-110",
+          "decimal": 1.909,
+          "fraction": "10/11",
+          "american": "-110",
+          "outcome": {
+            "type": "pending"
+          }
+        },
+        "total": {
+          "alternateDisplayValue": "56.5",
+          "american": "56.5"
+        }
+      }
+    }
+  ]
+}

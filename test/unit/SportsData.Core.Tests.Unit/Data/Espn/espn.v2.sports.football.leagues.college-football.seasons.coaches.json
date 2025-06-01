@@ -1,0 +1,11 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/2574086?lang=en&region=us",
+  "id": "2574086",
+  "uid": "s:20~l:23~co:2574086",
+  "firstName": "Hugh",
+  "lastName": "Freeze",
+  "person": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/2574086?lang=en&region=us"
+  },
+  "experience": 10
+}

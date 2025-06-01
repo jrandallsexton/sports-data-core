@@ -1,0 +1,25 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4808759/injuries/167245?lang=en&region=us",
+  "id": "167245",
+  "longComment": "Brown had three catches for 26 yards and a touchdown on the entire season prior to this game, so perhaps coach Bryan Harsin was looking for an offensive spark for his struggling squad. In a high-octane visit to Starkville next weekend, Brown could be utilized yet again against Mississippi State.",
+  "shortComment": "Brown caught four passes for 83 yards and a touchdown Saturday against Arkansas.",
+  "status": "Active",
+  "date": "2022-10-29T21:41Z",
+  "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4808759?lang=en&region=us"
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/teams/2?lang=en&region=us"
+  },
+  "source": {
+    "id": "1",
+    "description": "basic/manual",
+    "state": "basic"
+  },
+  "type": {
+    "id": "0",
+    "name": "INJURY_STATUS_ACTIVE",
+    "description": "active",
+    "abbreviation": "A"
+  }
+}

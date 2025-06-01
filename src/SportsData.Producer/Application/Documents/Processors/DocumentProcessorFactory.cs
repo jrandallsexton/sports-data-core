@@ -2,7 +2,7 @@
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors;
@@ -15,18 +15,31 @@ public enum DocumentAction
 
 public interface IDocumentProcessorFactory
 {
+    [Obsolete]
     IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction);
+    IProcessDocuments GetProcessor(string routingKey, DocumentAction documentAction);
 }
 
 public class DocumentProcessorFactory : IDocumentProcessorFactory
 {
+    private readonly ILogger<DocumentProcessorFactory> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly Dictionary<(string RoutingKey, DocumentAction Action), string> _map;
 
-    public DocumentProcessorFactory(IServiceProvider serviceProvider)
+    public DocumentProcessorFactory(
+        IServiceProvider serviceProvider,
+        DocumentProcessorMappings mappings,
+        ILogger<DocumentProcessorFactory> logger)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
+
+        _map = mappings.Mappings.ToDictionary(
+            m => (m.RoutingKey.ToLowerInvariant(), m.Action),
+            m => m.ProcessorTypeName);
     }
 
+    [Obsolete]
     public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sourceDataProvider)
@@ -41,6 +54,12 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
+    public IProcessDocuments GetProcessor(string routingKey, DocumentAction documentAction)
+    {
+        throw new NotImplementedException();
+    }
+
+    [Obsolete]
     private IProcessDocuments GetEspnDocumentProcessor(Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sport)
@@ -54,6 +73,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
+    [Obsolete]
     private IProcessDocuments GetEspnFootballDocumentProcessor(DocumentType documentType, DocumentAction documentAction)
     {
         switch (documentType)

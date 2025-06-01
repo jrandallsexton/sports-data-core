@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Converters;
+﻿using SportsData.Core.Common.Routing;
+using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
-    public class EspnVenueDto
+    public class EspnVenueDto : IHasRoutingKey
     {
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))] // Assumes you have or will rewrite this for System.Text.Json
@@ -32,5 +33,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 
         [JsonPropertyName("images")]
         public List<EspnImageDto> Images { get; set; }
+
+        public string RoutingKey { get; } = "espn.v2.sports.football.leagues.college-football.venues";
     }
 }

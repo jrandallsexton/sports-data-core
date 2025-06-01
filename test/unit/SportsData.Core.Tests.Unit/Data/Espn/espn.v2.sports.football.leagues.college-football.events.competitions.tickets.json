@@ -1,0 +1,46 @@
+{
+  "count": 1,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/tickets/5331781?lang=en&region=us",
+      "id": "5331781",
+      "summary": "Tickets as low as $98",
+      "description": "Auburn Tigers at Baylor Bears Football (Rescheduled from 8/30)",
+      "maxPrice": 799.0,
+      "startingPrice": 98.0,
+      "numberAvailable": 1022,
+      "totalPostings": 202,
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "tickets",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.vividseats.com/baylor-bears-football-tickets-mclane-stadium-8-30-2025--sports-ncaa-football/production/5331781?wsUser=717",
+          "text": "Tickets",
+          "shortText": "Tickets",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "tickets",
+            "desktop",
+            "venue"
+          ],
+          "href": "https://www.vividseats.com/mclane-stadium-tickets/venue/11903?wsUser=717",
+          "text": "Tickets",
+          "shortText": "Tickets",
+          "isExternal": true,
+          "isPremium": false
+        }
+      ]
+    }
+  ]
+}

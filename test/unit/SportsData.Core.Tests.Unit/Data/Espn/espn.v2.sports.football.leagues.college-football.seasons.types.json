@@ -1,0 +1,23 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3?lang=en&region=us",
+  "id": "3",
+  "type": 3,
+  "name": "Postseason",
+  "abbreviation": "post",
+  "year": 2024,
+  "startDate": "2024-12-15T08:00Z",
+  "endDate": "2025-01-22T07:59Z",
+  "hasGroups": false,
+  "hasStandings": true,
+  "hasLegs": false,
+  "groups": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups?lang=en&region=us"
+  },
+  "weeks": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/weeks?lang=en&region=us"
+  },
+  "leaders": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/leaders?lang=en&region=us"
+  },
+  "slug": "post-season"
+}

@@ -1,0 +1,175 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685699?lang=en&region=us",
+  "id": "4685699",
+  "uid": "s:20~l:23~a:4685699",
+  "guid": "7861ab2e-1338-37ae-ac9c-1754b28bed68",
+  "type": "football",
+  "alternateIds": {
+    "sdr": "4685699"
+  },
+  "firstName": "Damari",
+  "lastName": "Alston",
+  "fullName": "Damari Alston",
+  "displayName": "Damari Alston",
+  "shortName": "D. Alston",
+  "weight": 209.0,
+  "displayWeight": "209 lbs",
+  "height": 69.0,
+  "displayHeight": "5' 9\"",
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "playercard",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4685699/damari-alston",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/stats/_/id/4685699/damari-alston",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "splits",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/splits/_/id/4685699/damari-alston",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "gamelog",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/gamelog/_/id/4685699/damari-alston",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "news",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/news/_/id/4685699/damari-alston",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "bio",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/bio/_/id/4685699/damari-alston",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "overview",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4685699/damari-alston",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Atlanta",
+    "state": "GA",
+    "country": "USA"
+  },
+  "birthCountry": {
+    "alternateId": "1",
+    "abbreviation": "USA"
+  },
+  "college": {
+    "$ref": "http://sports.core.api.espn.com/v2/colleges/2?lang=en&region=us"
+  },
+  "slug": "damari-alston",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4685699.png",
+    "alt": "Damari Alston"
+  },
+  "jersey": "0",
+  "flag": {
+    "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+    "alt": "USA",
+    "rel": [
+      "country-flag"
+    ]
+  },
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us",
+    "id": "9",
+    "name": "Running Back",
+    "displayName": "Running Back",
+    "abbreviation": "RB",
+    "leaf": false,
+    "parent": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us"
+    }
+  },
+  "injuries": [
+  ],
+  "linked": true,
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en&region=us"
+  },
+  "statistics": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/athletes/4685699/statistics?lang=en&region=us"
+  },
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685699/notes?lang=en&region=us"
+  },
+  "experience": {
+    "years": 3,
+    "displayValue": "Junior",
+    "abbreviation": "JR"
+  },
+  "active": true,
+  "eventLog": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685699/eventlog?lang=en&region=us"
+  },
+  "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+  }
+}

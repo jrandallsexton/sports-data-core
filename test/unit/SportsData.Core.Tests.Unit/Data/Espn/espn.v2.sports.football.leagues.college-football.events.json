@@ -1,0 +1,278 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667?lang=en&region=us",
+  "id": "401752667",
+  "uid": "s:20~l:23~e:401752667",
+  "date": "2025-08-30T00:00Z",
+  "name": "Auburn Tigers at Baylor Bears",
+  "shortName": "AUB @ BAY",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en&region=us"
+  },
+  "seasonType": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2?lang=en&region=us"
+  },
+  "week": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/1?lang=en&region=us"
+  },
+  "timeValid": true,
+  "competitions": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667?lang=en&region=us",
+      "id": "401752667",
+      "guid": "fec2385e-0f68-3016-ab30-a31c56b20393",
+      "uid": "s:20~l:23~e:401752667~c:401752667",
+      "date": "2025-08-30T00:00Z",
+      "attendance": 0,
+      "type": {
+        "id": "1",
+        "text": "Standard",
+        "abbreviation": "STD",
+        "slug": "standard",
+        "type": "standard"
+      },
+      "timeValid": true,
+      "dateValid": false,
+      "neutralSite": false,
+      "divisionCompetition": false,
+      "conferenceCompetition": false,
+      "previewAvailable": false,
+      "recapAvailable": false,
+      "boxscoreAvailable": false,
+      "lineupAvailable": false,
+      "gamecastAvailable": false,
+      "playByPlayAvailable": false,
+      "conversationAvailable": true,
+      "commentaryAvailable": false,
+      "pickcenterAvailable": true,
+      "summaryAvailable": true,
+      "liveAvailable": false,
+      "ticketsAvailable": true,
+      "shotChartAvailable": false,
+      "timeoutsAvailable": false,
+      "possessionArrowAvailable": false,
+      "onWatchESPN": false,
+      "recent": false,
+      "bracketAvailable": false,
+      "wallclockAvailable": false,
+      "highlightsAvailable": true,
+      "gameSource": {
+        "id": "1",
+        "description": "basic/manual",
+        "state": "basic"
+      },
+      "boxscoreSource": {
+        "id": "0",
+        "description": "none",
+        "state": "none"
+      },
+      "playByPlaySource": {
+        "id": "0",
+        "description": "none",
+        "state": "none"
+      },
+      "linescoreSource": {
+        "id": "1",
+        "description": "basic/manual",
+        "state": "basic"
+      },
+      "statsSource": {
+        "id": "0",
+        "description": "none",
+        "state": "none"
+      },
+      "venue": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/4727?lang=en&region=us",
+        "id": "4727",
+        "fullName": "McLane Stadium",
+        "address": {
+          "city": "Waco",
+          "state": "TX",
+          "zipCode": "76704",
+          "country": "USA"
+        },
+        "grass": false,
+        "indoor": false,
+        "images": [
+          {
+            "href": "https://a.espncdn.com/i/venues/college-football/day/4727.jpg",
+            "width": 2000,
+            "height": 1125,
+            "alt": "",
+            "rel": [
+              "full",
+              "day"
+            ]
+          }
+        ]
+      },
+      "competitors": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/239?lang=en&region=us",
+          "id": "239",
+          "uid": "s:20~l:23~t:239",
+          "type": "team",
+          "order": 0,
+          "homeAway": "home",
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/239?lang=en&region=us"
+          },
+          "score": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/239/score?lang=en&region=us"
+          },
+          "record": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/239/record?lang=en&region=us"
+          },
+          "curatedRank": {
+            "current": 99
+          }
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/2?lang=en&region=us",
+          "id": "2",
+          "uid": "s:20~l:23~t:2",
+          "type": "team",
+          "order": 1,
+          "homeAway": "away",
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en&region=us"
+          },
+          "score": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/2/score?lang=en&region=us"
+          },
+          "record": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/2/record?lang=en&region=us"
+          },
+          "curatedRank": {
+            "current": 99
+          }
+        }
+      ],
+      "notes": [
+      ],
+      "situation": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/situation?lang=en&region=us"
+      },
+      "status": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/status?lang=en&region=us"
+      },
+      "odds": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/odds?lang=en&region=us"
+      },
+      "broadcasts": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/broadcasts?lang=en&region=us"
+      },
+      "tickets": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/tickets?lang=en&region=us"
+      },
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "summary",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.espn.com/college-football/game/_/gameId/401752667/auburn-baylor",
+          "text": "Gamecast",
+          "shortText": "Summary",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "summary",
+            "sportscenter",
+            "app",
+            "event"
+          ],
+          "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401752667",
+          "text": "Gamecast",
+          "shortText": "Summary",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "now",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.espn.com/college-football/game/_/gameId/401752667",
+          "text": "Now",
+          "shortText": "Now",
+          "isExternal": false,
+          "isPremium": false
+        }
+      ],
+      "format": {
+        "regulation": {
+          "periods": 4,
+          "displayName": "Quarter",
+          "slug": "quarter",
+          "clock": 900.0
+        },
+        "overtime": {
+          "periods": 0,
+          "displayName": "untimed",
+          "slug": "untimed"
+        }
+      },
+      "drives": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/drives?lang=en&region=us"
+      },
+      "hasDefensiveStats": false
+    }
+  ],
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "summary",
+        "desktop",
+        "event"
+      ],
+      "href": "https://www.espn.com/college-football/game/_/gameId/401752667/auburn-baylor",
+      "text": "Gamecast",
+      "shortText": "Summary",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "summary",
+        "sportscenter",
+        "app",
+        "event"
+      ],
+      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401752667",
+      "text": "Gamecast",
+      "shortText": "Summary",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "now",
+        "desktop",
+        "event"
+      ],
+      "href": "https://www.espn.com/college-football/game/_/gameId/401752667",
+      "text": "Now",
+      "shortText": "Now",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "venues": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/4727?lang=en&region=us"
+    }
+  ],
+  "league": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football?lang=en&region=us"
+  }
+}

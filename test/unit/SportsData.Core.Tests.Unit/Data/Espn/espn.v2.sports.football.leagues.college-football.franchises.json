@@ -1,0 +1,80 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2?lang=en&region=us",
+  "id": "2",
+  "uid": "s:20~l:23~f:2",
+  "slug": "auburn-tigers",
+  "location": "Auburn",
+  "name": "Tigers",
+  "nickname": "Auburn",
+  "abbreviation": "AUB",
+  "displayName": "Auburn Tigers",
+  "shortDisplayName": "Auburn",
+  "color": "002b5c",
+  "isActive": true,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "lastUpdated": "2023-03-17T13:35Z"
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "lastUpdated": "2023-03-17T13:36Z"
+    }
+  ],
+  "venue": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3785?lang=en&region=us",
+    "id": "3785",
+    "fullName": "Jordan-Hare Stadium",
+    "address": {
+      "city": "Auburn",
+      "state": "AL",
+      "zipCode": "36849",
+      "country": "USA"
+    },
+    "grass": true,
+    "indoor": false,
+    "images": [
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/3785.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [
+          "full",
+          "day"
+        ]
+      },
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3785.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [
+          "full",
+          "day",
+          "interior"
+        ]
+      }
+    ]
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en&region=us"
+  },
+  "awards": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2/awards?lang=en&region=us"
+  }
+}

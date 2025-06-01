@@ -1,0 +1,9 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/drives?lang=en&region=us",
+  "count": 0,
+  "pageIndex": 0,
+  "pageSize": 25,
+  "pageCount": 0,
+  "items": [
+  ]
+}

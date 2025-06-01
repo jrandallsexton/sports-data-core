@@ -1,0 +1,15 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/status?lang=en&region=us",
+  "clock": 0.0,
+  "displayClock": "0:00",
+  "period": 0,
+  "type": {
+    "id": "1",
+    "name": "STATUS_SCHEDULED",
+    "state": "pre",
+    "completed": false,
+    "description": "Scheduled",
+    "detail": "Fri, August 29th at 8:00 PM EDT",
+    "shortDetail": "8/29 - 8:00 PM EDT"
+  }
+}

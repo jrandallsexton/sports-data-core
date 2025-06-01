@@ -1,0 +1,36 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3785?lang=en&region=us",
+  "id": "3785",
+  "fullName": "Jordan-Hare Stadium",
+  "address": {
+    "city": "Auburn",
+    "state": "AL",
+    "zipCode": "36849",
+    "country": "USA"
+  },
+  "grass": true,
+  "indoor": false,
+  "images": [
+    {
+      "href": "https://a.espncdn.com/i/venues/college-football/day/3785.jpg",
+      "width": 2000,
+      "height": 1125,
+      "alt": "",
+      "rel": [
+        "full",
+        "day"
+      ]
+    },
+    {
+      "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3785.jpg",
+      "width": 2000,
+      "height": 1125,
+      "alt": "",
+      "rel": [
+        "full",
+        "day",
+        "interior"
+      ]
+    }
+  ]
+}

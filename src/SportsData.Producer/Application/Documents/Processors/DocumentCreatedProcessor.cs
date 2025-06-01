@@ -63,9 +63,7 @@ namespace SportsData.Producer.Application.Documents.Processors
             _logger.LogInformation("Obtained new document from Provider {@DocumentType}", evt.DocumentType);
 
             var processor = _documentProcessorFactory.GetProcessor(
-                evt.SourceDataProvider,
-                evt.Sport,
-                evt.DocumentType,
+                evt.RoutingKey,
                 DocumentAction.Created);
 
             await processor.ProcessAsync(new ProcessDocumentCommand(

@@ -1,0 +1,20 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/239?lang=en&region=us",
+  "id": "239",
+  "uid": "s:20~l:23~t:239",
+  "type": "team",
+  "order": 0,
+  "homeAway": "home",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/239?lang=en&region=us"
+  },
+  "score": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752667/competitions/401752667/competitors/239/score?lang=en&region=us"
+  },
+  "record": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/239/record?lang=en&region=us"
+  },
+  "curatedRank": {
+    "current": 99
+  }
+}

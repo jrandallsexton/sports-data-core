@@ -14,8 +14,6 @@ namespace SportsData.Provider.Infrastructure.Data
         [JsonIgnore]
         public string id => Id;
 
-        public string? CanonicalId { get; set; }
-
         public string Data { get; set; }
 
         public Sport Sport { get; set; }
@@ -30,5 +28,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         [JsonPropertyName("_etag")]
         public string? ETag { get; set; }  // Required for concurrency
+
+        // 🔥 NEW — REQUIRED FOR COSMOS PARTITIONING
+        public string RoutingKey { get; set; }
     }
 }

@@ -9,11 +9,13 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
     {
         public Guid ResourceIndexId { get; set; }
 
-        public string OriginalUrlHash { get; set; }
+        public Guid? ParentItemId { get; set; }
 
         public string Url { get; set; }
 
         public DateTime? LastAccessed { get; set; }
+
+        public int Depth { get; set; } = 0;
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndexItem>
         {
@@ -23,19 +25,19 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
                 builder.HasKey(t => t.Id);
 
-                builder.HasOne<RecurringJob>()
+                builder.HasOne<ResourceIndex>()
                     .WithMany(x => x.Items)
                     .HasForeignKey(x => x.ResourceIndexId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.Property(x => x.OriginalUrlHash)
+                builder.Property(x => x.UrlHash)
                     .HasMaxLength(64)
                     .IsRequired();
 
-                builder.HasIndex(x => x.OriginalUrlHash)
-                    .HasDatabaseName("IX_ResourceIndexItem_OriginalUrlHash");
+                builder.HasIndex(x => x.UrlHash)
+                    .HasDatabaseName("IX_ResourceIndexItem_UrlHash");
 
-                builder.HasIndex(x => new { x.ResourceIndexId, x.OriginalUrlHash })
+                builder.HasIndex(x => new { x.ResourceIndexId, x.UrlHash })
                     .IsUnique()
                     .HasDatabaseName("IX_ResourceIndexItem_Composite");
 

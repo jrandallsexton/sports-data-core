@@ -15,9 +15,7 @@ public enum DocumentAction
 
 public interface IDocumentProcessorFactory
 {
-    [Obsolete]
     IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction);
-    IProcessDocuments GetProcessor(string routingKey, DocumentAction documentAction);
 }
 
 public class DocumentProcessorFactory : IDocumentProcessorFactory
@@ -39,7 +37,6 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             m => m.ProcessorTypeName);
     }
 
-    [Obsolete]
     public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sourceDataProvider)
@@ -54,12 +51,6 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
-    public IProcessDocuments GetProcessor(string routingKey, DocumentAction documentAction)
-    {
-        throw new NotImplementedException();
-    }
-
-    [Obsolete]
     private IProcessDocuments GetEspnDocumentProcessor(Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
         switch (sport)
@@ -73,7 +64,6 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         }
     }
 
-    [Obsolete]
     private IProcessDocuments GetEspnFootballDocumentProcessor(DocumentType documentType, DocumentAction documentAction)
     {
         switch (documentType)
@@ -105,12 +95,24 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
             case DocumentType.Scoreboard:
             case DocumentType.Season:
             case DocumentType.Weeks:
+                throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             case DocumentType.CoachBySeason:
+                return _serviceProvider.GetRequiredService<CoachBySeasonDocumentProcessor>();
+            case DocumentType.Group:
+                return _serviceProvider.GetRequiredService<GroupDocumentProcessor>();
+            case DocumentType.SeasonType:
+                return _serviceProvider.GetRequiredService<SeasonTypeDocumentProcessor>();
+            case DocumentType.Standings:
+                return _serviceProvider.GetRequiredService<StandingsDocumentProcessor>();
+            case DocumentType.TeamRank:
+                return _serviceProvider.GetRequiredService<TeamRankDocumentProcessor>();
             case DocumentType.GroupLogo:
             case DocumentType.FranchiseLogo:
             case DocumentType.GroupBySeasonLogo:
             case DocumentType.TeamBySeasonLogo:
             case DocumentType.VenueImage:
+            case DocumentType.AthleteImage:
+            case DocumentType.GolfCalendar:
             default:
                 throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
         }

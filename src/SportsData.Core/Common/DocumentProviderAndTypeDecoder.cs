@@ -86,6 +86,10 @@ namespace SportsData.Core.Common
                     return (typeof(EspnResourceIndexDto), name);
                 case DocumentType.Season:
                 case DocumentType.Award:
+                    return (typeof(EspnFootballAwardDto), name);
+                case DocumentType.Group:
+                    // TODO: This is a placeholder; should be EspnGroupDto when implemented
+                    return (typeof(EspnGroupBySeasonDto), name); 
                 case DocumentType.Contest:
                 // TODO: Create these => return typeof(EspnContestDto);
                 case DocumentType.GameSummary:
@@ -98,6 +102,9 @@ namespace SportsData.Core.Common
                 case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
                 case DocumentType.AthleteImage:
+                case DocumentType.GolfCalendar:
+                case DocumentType.Standings:
+                case DocumentType.TeamRank:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }

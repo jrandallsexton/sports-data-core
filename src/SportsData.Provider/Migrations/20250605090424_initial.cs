@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SportsData.Provider.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "RecurringJob",
+                name: "ResourceIndex",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -28,7 +28,8 @@ namespace SportsData.Provider.Migrations
                     EndpointMask = table.Column<string>(type: "text", nullable: true),
                     IsSeasonSpecific = table.Column<bool>(type: "boolean", nullable: false),
                     SeasonYear = table.Column<int>(type: "integer", nullable: true),
-                    LastAccessed = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastAccessedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastCompletedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     LastPageIndex = table.Column<int>(type: "integer", nullable: true),
                     TotalPageCount = table.Column<int>(type: "integer", nullable: true),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -39,7 +40,7 @@ namespace SportsData.Provider.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RecurringJob", x => x.Id);
+                    table.PrimaryKey("PK_ResourceIndex", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -80,45 +81,46 @@ namespace SportsData.Provider.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ResourceIndexId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OriginalUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    ParentItemId = table.Column<Guid>(type: "uuid", nullable: true),
                     Url = table.Column<string>(type: "text", nullable: false),
                     LastAccessed = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Depth = table.Column<int>(type: "integer", nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ResourceIndexItem", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ResourceIndexItem_RecurringJob_ResourceIndexId",
+                        name: "FK_ResourceIndexItem_ResourceIndex_ResourceIndexId",
                         column: x => x.ResourceIndexId,
-                        principalTable: "RecurringJob",
+                        principalTable: "ResourceIndex",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecurringJob_Enabled_Provider_Sport_DocumentType_Season",
-                table: "RecurringJob",
+                name: "IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season",
+                table: "ResourceIndex",
                 columns: new[] { "IsEnabled", "Provider", "SportId", "DocumentType", "SeasonYear" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecurringJob_Endpoint",
-                table: "RecurringJob",
+                name: "IX_ResourceIndex_Endpoint",
+                table: "ResourceIndex",
                 column: "Endpoint");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecurringJob_LastAccessed",
-                table: "RecurringJob",
-                column: "LastAccessed");
+                name: "IX_ResourceIndex_LastAccessed",
+                table: "ResourceIndex",
+                column: "LastAccessedUtc");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndexItem_Composite",
                 table: "ResourceIndexItem",
-                columns: new[] { "ResourceIndexId", "OriginalUrlHash" },
+                columns: new[] { "ResourceIndexId", "UrlHash" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -127,9 +129,9 @@ namespace SportsData.Provider.Migrations
                 column: "LastAccessed");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ResourceIndexItem_OriginalUrlHash",
+                name: "IX_ResourceIndexItem_UrlHash",
                 table: "ResourceIndexItem",
-                column: "OriginalUrlHash");
+                column: "UrlHash");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_ExecutionMode",
@@ -162,7 +164,7 @@ namespace SportsData.Provider.Migrations
                 name: "ScheduledJob");
 
             migrationBuilder.DropTable(
-                name: "RecurringJob");
+                name: "ResourceIndex");
         }
     }
 }

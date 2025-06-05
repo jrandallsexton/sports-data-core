@@ -34,7 +34,7 @@ namespace SportsData.Provider
             builder.UseCommon();
 
             var services = builder.Services;
-            services.AddCoreServices(config);
+            services.AddCoreServices(config, mode);
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
@@ -42,7 +42,6 @@ namespace SportsData.Provider
             services.AddClients(config);
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
-            services.AddSingleton<DocumentService>();
 
             services.AddMessaging(config);
 
@@ -111,7 +110,7 @@ namespace SportsData.Provider
                 var appServices = scope.ServiceProvider;
                 var context = appServices.GetRequiredService<AppDataContext>();
                 await context.Database.MigrateAsync();
-                //await LoadSeedData(context, mode);
+                await LoadSeedData(context, mode);
             }
 
             app.UseHangfireDashboard("/dashboard", new DashboardOptions
@@ -132,25 +131,26 @@ namespace SportsData.Provider
         
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)
         {
-            if (await dbContext.RecurringJobs.AnyAsync())
+            if (await dbContext.ResourceIndexJobs.AnyAsync())
                 return;
 
             switch (mode)
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    var footballValues = new FootballSeeder().Generate(mode, [2023, 2024]);
-                    await dbContext.RecurringJobs.AddRangeAsync(footballValues);
+                    // TODO: Move years to config
+                    var footballValues = new FootballSeeder().Generate(mode, [2024]);
+                    await dbContext.ResourceIndexJobs.AddRangeAsync(footballValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.GolfPga:
                     var golfValues = new GolfSeeder().Generate(mode, [2024]);
-                    await dbContext.RecurringJobs.AddRangeAsync(golfValues);
+                    await dbContext.ResourceIndexJobs.AddRangeAsync(golfValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.BasketballNba:
                     var basketballValues = new BasketballSeeder().Generate(mode, [2024]);
-                    await dbContext.RecurringJobs.AddRangeAsync(basketballValues);
+                    await dbContext.ResourceIndexJobs.AddRangeAsync(basketballValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.BaseballMlb:

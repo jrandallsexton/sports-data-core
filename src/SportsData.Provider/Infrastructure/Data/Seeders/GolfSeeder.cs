@@ -5,11 +5,11 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 {
     public class GolfSeeder : SeederBase, ISeedResourceIndexes
     {
-        public List<RecurringJob> Generate(Sport sport, List<int> seasons)
+        public List<ResourceIndex> Generate(Sport sport, List<int> seasons)
         {
             var league = "pga";
 
-            var values = new List<RecurringJob>();
+            var values = new List<ResourceIndex>();
 
             base.GenerateNonSeasonalResources(values, sport, "golf", league);
 
@@ -18,7 +18,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 base.GenerateSeasonalResources(values, sport, "golf", league, season);
             }
 
-            values.Add(new RecurringJob()
+            values.Add(new ResourceIndex()
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,

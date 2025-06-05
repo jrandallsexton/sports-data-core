@@ -1,15 +1,22 @@
-﻿using SportsData.Core.Common;
+﻿using Hangfire;
+
+using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Common.Routing;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Seeders
 {
     public interface ISeedResourceIndexes
     {
-        List<RecurringJob> Generate(Sport sport, List<int> seasons);
+        List<ResourceIndex> Generate(Sport sport, List<int> seasons);
     }
 
     public class SeederBase
     {
+        private readonly IProvideHashes _hashProvider = new HashProvider();
+        private readonly IGenerateRoutingKeys _routingKeyGenerator = new RoutingKeyGenerator();
+
         private readonly List<Sport> _teamSports =
         [
             Sport.FootballNcaa,
@@ -20,202 +27,239 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 
         private const string EspnApiBaseUrl = "http://sports.core.api.espn.com/v2/sports";
 
-        public List<RecurringJob> GenerateNonSeasonalResources(
-            List<RecurringJob> resources,
+        public List<ResourceIndex> GenerateNonSeasonalResources(
+            List<ResourceIndex> resources,
             Sport sport,
             string espnSportName,
             string league)
         {
             /* Venues */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.Venue,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsEnabled = true,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
+                isEnabled: true,
+                isRecurring: true,
+                seasonYear: null,
+                cronExpression: Cron.Weekly(DayOfWeek.Sunday),
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Venue));
 
-            ///* Athletes */
-            //resources.Add(new ResourceIndex()
-            //{
-            //    Id = Guid.NewGuid(),
-            //    Provider = SourceDataProvider.Espn,
-            //    SportId = sport,
-            //    DocumentType = DocumentType.Athlete,
-            //    Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/athletes",
-            //    EndpointMask = null,
-            //    CreatedBy = Guid.Empty,
-            //    IsSeasonSpecific = true,
-            //    IsEnabled = true,
-            //    Ordinal = resources.Count
-            //});
+            /* Season */
+            // each link in this resource index is a season definition (start and end dates, etc.)
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons",
+                isEnabled: true,
+                isRecurring: true,
+                seasonYear: null,
+                cronExpression: Cron.Weekly(DayOfWeek.Sunday),
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Seasons));
 
-            //// While I realize this method is about non-seasonal resources,
-            //// this is a ResourceIndex for all seasons. Not season-specific.
-            //// We still need it.
-            ///* Season */
-            //resources.Add(new ResourceIndex()
-            //{
-            //    Id = Guid.NewGuid(),
-            //    Provider = SourceDataProvider.Espn,
-            //    SportId = sport,
-            //    DocumentType = DocumentType.Seasons,
-            //    Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons",
-            //    EndpointMask = null,
-            //    CreatedBy = Guid.Empty,
-            //    IsSeasonSpecific = true,
-            //    IsEnabled = true,
-            //    Ordinal = resources.Count
-            //});
-
-            //if (_teamSports.Contains(sport))
-            //    resources.AddRange(GenerateNonSeasonalResourcesForTeamSports(resources, sport, espnSportName, league));
+            if (_teamSports.Contains(sport))
+                GenerateNonSeasonalResourcesForTeamSports(resources, sport, espnSportName, league);
 
             return resources;
         }
 
-        private List<RecurringJob> GenerateNonSeasonalResourcesForTeamSports(
-            List<RecurringJob> resources,
+        private void GenerateNonSeasonalResourcesForTeamSports(
+            List<ResourceIndex> resources,
             Sport sport,
             string espnSportName,
             string league)
         {
             /* Franchises */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.Franchise,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/franchises",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsEnabled = true,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/franchises",
+                isEnabled: true,
+                isRecurring: true,
+                seasonYear: null,
+                cronExpression: Cron.Weekly(DayOfWeek.Sunday),
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Franchise));
 
             /* Positions */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.Position,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/positions",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsEnabled = true,
-                Ordinal = resources.Count
-            });
-
-            return resources;
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/positions",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: null,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Position));
         }
 
-        public List<RecurringJob> GenerateSeasonalResources(
-            List<RecurringJob> resources,
+        public void GenerateSeasonalResources(
+            List<ResourceIndex> resources,
             Sport sport,
             string espnSportName,
             string league,
             int seasonYear)
         {
-            // TODO: This is NOT a ResourceIndex
-            ///* Season */
-            //resources.Add(new ResourceIndex()
-            //{
-            //    Id = Guid.NewGuid(),
-            //    Provider = SourceDataProvider.Espn,
-            //    SportId = sport,
-            //    DocumentType = DocumentType.Season,
-            //    Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}",
-            //    EndpointMask = null,
-            //    CreatedBy = Guid.Empty,
-            //    IsSeasonSpecific = true,
-            //    IsEnabled = true,
-            //    SeasonYear = seasonYear,
-            //    Ordinal = resources.Count
-            //});
-
             /* Athletes By Season */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.AthleteBySeason,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                SeasonYear = seasonYear,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.AthleteBySeason));
 
             if (_teamSports.Contains(sport))
                 resources.AddRange(GenerateSeasonalResourcesForTeamSports(resources, sport, espnSportName, league, seasonYear));
-
-            return resources;
+            
         }
 
-        private List<RecurringJob> GenerateSeasonalResourcesForTeamSports(
-            List<RecurringJob> resources,
+        private ResourceIndex GenerateResourceIndex(
+            List<ResourceIndex> resources,
+            string endpoint,
+            bool isEnabled,
+            bool isRecurring,
+            int? seasonYear,
+            string? cronExpression,
+            SourceDataProvider provider,
+            Sport sport,
+            DocumentType documentType)
+        {
+            return new ResourceIndex()
+            {
+                Id = Guid.NewGuid(),
+                CreatedBy = Guid.Empty,
+                CreatedUtc = DateTime.UtcNow,
+                CronExpression = cronExpression,
+                DocumentType = documentType,
+                Endpoint = endpoint,
+                EndpointMask = null,
+                IsEnabled = isEnabled,
+                IsRecurring = isRecurring,
+                IsSeasonSpecific = seasonYear.HasValue,
+                Items = [],
+                LastAccessedUtc = null,
+                LastCompletedUtc = null,
+                LastPageIndex = null,
+                ModifiedBy = null,
+                ModifiedUtc = null,
+                Name = _routingKeyGenerator.Generate(provider, endpoint),
+                Ordinal = resources.Count,
+                Provider = provider,
+                SeasonYear = seasonYear,
+                SportId = sport,
+                TotalPageCount = null,
+                UrlHash = _hashProvider.GenerateHashFromUrl(endpoint)
+            };
+        }
+
+        private List<ResourceIndex> GenerateSeasonalResourcesForTeamSports(
+            List<ResourceIndex> resources,
             Sport sport,
             string espnSportName,
             string league,
             int seasonYear)
         {
+            /* Awards Catalog */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/awards",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: null,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Award));
+
             /* SeasonBySeason */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.SeasonType,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                SeasonYear = seasonYear,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.SeasonType));
+
+            /* Groups (FBS, FCS, Divisions, etc.) */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups?lang=en&region=us",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Group));
+
+            /* Groups By Season (Big10, SEC, etc.) */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups/80/children?lang=en&region=us",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.GroupBySeason));
 
             /* Teams By Season */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.TeamBySeason,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/teams",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = true,
-                SeasonYear = seasonYear,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/teams",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.TeamBySeason));
 
             /* Coaches By Season */
-            resources.Add(new RecurringJob()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                SportId = sport,
-                DocumentType = DocumentType.CoachBySeason,
-                Endpoint = $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/coaches",
-                EndpointMask = null,
-                CreatedBy = Guid.Empty,
-                IsSeasonSpecific = true,
-                IsEnabled = false,
-                SeasonYear = seasonYear,
-                Ordinal = resources.Count
-            });
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/coaches",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.CoachBySeason));
+
+            /* Standings (DISABLED: ESPN returns 500s) */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/standings",
+                isEnabled: false,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Standings));
+
+            /* Ranks (Polls, Season-wide) */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/rankings?lang=en&region=us",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: string.Empty,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.TeamRank));
 
             return resources;
         }

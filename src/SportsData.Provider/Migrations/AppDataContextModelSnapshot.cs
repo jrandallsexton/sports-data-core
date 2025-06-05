@@ -22,7 +22,7 @@ namespace SportsData.Provider.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.RecurringJob", b =>
+            modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -50,13 +50,19 @@ namespace SportsData.Provider.Migrations
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsQueued")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsRecurring")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsSeasonSpecific")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("LastAccessed")
+                    b.Property<DateTime?>("LastAccessedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastCompletedUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("LastPageIndex")
@@ -94,15 +100,15 @@ namespace SportsData.Provider.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Endpoint")
-                        .HasDatabaseName("IX_RecurringJob_Endpoint");
+                        .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
-                    b.HasIndex("LastAccessed")
-                        .HasDatabaseName("IX_RecurringJob_LastAccessed");
+                    b.HasIndex("LastAccessedUtc")
+                        .HasDatabaseName("IX_ResourceIndex_LastAccessed");
 
                     b.HasIndex("IsEnabled", "Provider", "SportId", "DocumentType", "SeasonYear")
-                        .HasDatabaseName("IX_RecurringJob_Enabled_Provider_Sport_DocumentType_Season");
+                        .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
 
-                    b.ToTable("RecurringJob", (string)null);
+                    b.ToTable("ResourceIndex", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndexItem", b =>
@@ -117,6 +123,9 @@ namespace SportsData.Provider.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("Depth")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("LastAccessed")
                         .HasColumnType("timestamp with time zone");
 
@@ -126,10 +135,8 @@ namespace SportsData.Provider.Migrations
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("OriginalUrlHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<Guid?>("ParentItemId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ResourceIndexId")
                         .HasColumnType("uuid");
@@ -140,17 +147,18 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<string>("UrlHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("LastAccessed")
                         .HasDatabaseName("IX_ResourceIndexItem_LastAccessed");
 
-                    b.HasIndex("OriginalUrlHash")
-                        .HasDatabaseName("IX_ResourceIndexItem_OriginalUrlHash");
+                    b.HasIndex("UrlHash")
+                        .HasDatabaseName("IX_ResourceIndexItem_UrlHash");
 
-                    b.HasIndex("ResourceIndexId", "OriginalUrlHash")
+                    b.HasIndex("ResourceIndexId", "UrlHash")
                         .IsUnique()
                         .HasDatabaseName("IX_ResourceIndexItem_Composite");
 
@@ -248,14 +256,14 @@ namespace SportsData.Provider.Migrations
 
             modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndexItem", b =>
                 {
-                    b.HasOne("SportsData.Provider.Infrastructure.Data.Entities.RecurringJob", null)
+                    b.HasOne("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", null)
                         .WithMany("Items")
                         .HasForeignKey("ResourceIndexId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.RecurringJob", b =>
+            modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", b =>
                 {
                     b.Navigation("Items");
                 });

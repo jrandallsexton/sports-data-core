@@ -23,12 +23,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 IsIndoor = dto.Indoor,
                 Name = dto.FullName,
                 ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName,
-                Slug = slugGenerator.GenerateSlug([dto.ShortName, dto.FullName])
+                Slug = slugGenerator.GenerateSlug([dto.ShortName, dto.FullName]),
+                Capacity = dto.Capacity
             };
         }
 
-        public static VenueDto ToCanonicalModel(this Venue entity)
+        public static VenueDto AsCanonical(this Venue entity)
         {
+            // TODO: Address and Images
             return new VenueDto()
             {
                 Id = entity.Id,
@@ -37,7 +39,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 IsIndoor = entity.IsIndoor,
                 Name = entity.Name,
                 ShortName = entity.ShortName,
-                Slug = entity.Slug
+                Slug = entity.Slug,
+                Capacity = entity.Capacity,
+                Address = null,
+                Images = null,
+                UpdatedUtc = entity.LastModified
             };
         }
     }

@@ -6,13 +6,18 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Entities
 {
-    public class RecurringJob : CanonicalEntityBase<Guid>
+    public class ResourceIndex : CanonicalEntityBase<Guid>
     {
         public int Ordinal { get; set; }
 
         public string Name { get; set; }
 
         public bool IsRecurring { get; set; }
+
+        /// <summary>
+        /// Is this job queued for execution and/or currently processing?
+        /// </summary>
+        public bool IsQueued { get; set; }
 
         public string? CronExpression { get; set; }
 
@@ -32,7 +37,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public int? SeasonYear { get; set; }
 
-        public DateTime? LastAccessed { get; set; }
+        public DateTime? LastAccessedUtc { get; set; }
+
+        public DateTime? LastCompletedUtc { get; set; }
 
         public int? LastPageIndex { get; set; }
 
@@ -40,21 +47,21 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public List<ResourceIndexItem> Items { get; set; }
 
-        public class EntityConfiguration : IEntityTypeConfiguration<RecurringJob>
+        public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndex>
         {
-            public void Configure(EntityTypeBuilder<RecurringJob> builder)
+            public void Configure(EntityTypeBuilder<ResourceIndex> builder)
             {
-                builder.ToTable("RecurringJob");
+                builder.ToTable("ResourceIndex");
                 builder.HasKey(t => t.Id);
 
                 builder.HasIndex(t => new { t.IsEnabled, t.Provider, t.SportId, t.DocumentType, t.SeasonYear })
-                    .HasDatabaseName("IX_RecurringJob_Enabled_Provider_Sport_DocumentType_Season");
+                    .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
 
                 builder.HasIndex(t => t.Endpoint)
-                    .HasDatabaseName("IX_RecurringJob_Endpoint");
+                    .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
-                builder.HasIndex(t => t.LastAccessed)
-                    .HasDatabaseName("IX_RecurringJob_LastAccessed");
+                builder.HasIndex(t => t.LastAccessedUtc)
+                    .HasDatabaseName("IX_ResourceIndex_LastAccessed");
             }
         }
 

@@ -32,6 +32,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Hangfire.PostgreSql;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Common.Routing;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -107,6 +108,8 @@ namespace SportsData.Core.DependencyInjection
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
             services.AddSingleton<IAppMode>(new AppMode(mode));
+            services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
+            services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();
             return services;
         }
 
@@ -218,7 +221,8 @@ namespace SportsData.Core.DependencyInjection
                 
                 x.UsingAzureServiceBus((context, cfg) =>
                 {
-                    cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+                    cfg.Host(sbConnString);
                     //cfg.ClearSerialization();
                     cfg.ConfigureJsonSerializerOptions(o =>
                     {

@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Azure.Identity;
+
+using Google.Protobuf.WellKnownTypes;
+
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Serilog;
+using Serilog.Events;
 using Serilog.Sinks.OpenTelemetry;
 
 using SportsData.Core.Common;
@@ -16,8 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Azure.Identity;
-using Google.Protobuf.WellKnownTypes;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -34,13 +37,26 @@ namespace SportsData.Core.DependencyInjection
                 Console.WriteLine($"[DEBUG] SeqUri from config: {seqUri}");
 
                 configuration
+                    // Global minimum level
+                    .MinimumLevel.Information()
+
+                    // Per-namespace overrides
+                    .MinimumLevel.Override("SportsData", LogEventLevel.Information)
+                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                    .MinimumLevel.Override("System", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
                     .ReadFrom.Configuration(context.Configuration)
+
+                    // Enrich
                     .Enrich.FromLogContext()
-                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName);
+                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
+
+                    // Sinks
+                    .WriteTo.Console(); // Optional, for local debug
 
                 if (!string.IsNullOrWhiteSpace(seqUri))
                 {
-                    configuration.WriteTo.Seq(seqUri);
+                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: LogEventLevel.Verbose);
                 }
 
                 //.WriteTo.OpenTelemetry(options =>

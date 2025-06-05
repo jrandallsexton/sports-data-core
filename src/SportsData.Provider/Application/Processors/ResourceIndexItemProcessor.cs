@@ -2,8 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using MongoDB.Driver;
-
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Parsing;
@@ -27,7 +25,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
         private readonly IDocumentStore _documentStore;
-        private readonly IBus _bus;
+        private readonly IPublishEndpoint _publisher;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideHashes _hashProvider;
         private readonly IResourceIndexItemParser _resourceIndexItemParser;
@@ -40,7 +38,7 @@ namespace SportsData.Provider.Application.Processors
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             IDocumentStore documentStore,
-            IBus bus,
+            IPublishEndpoint publisher,
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideHashes hashProvider,
             IResourceIndexItemParser resourceIndexItemParser,
@@ -52,7 +50,7 @@ namespace SportsData.Provider.Application.Processors
             _dataContext = dataContext;
             _espnApi = espnApi;
             _documentStore = documentStore;
-            _bus = bus;
+            _publisher = publisher;
             _decoder = decoder;
             _hashProvider = hashProvider;
             _resourceIndexItemParser = resourceIndexItemParser;
@@ -79,12 +77,11 @@ namespace SportsData.Provider.Application.Processors
             Guid correlationId)
         {
             var urlHash = _hashProvider.GenerateHashFromUrl(command.Href);
-
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
                 .Where(x => x.ResourceIndexId == command.ResourceIndexId &&
-                            x.OriginalUrlHash == urlHash)
+                            x.UrlHash == urlHash)
                 .FirstOrDefaultAsync();
 
             if (resourceIndexItemEntity is not null)
@@ -95,13 +92,13 @@ namespace SportsData.Provider.Application.Processors
             }
             else
             {
-                await _dataContext.ResourceIndexItems.AddAsync(new ResourceIndexItem()
+                await _dataContext.ResourceIndexItems.AddAsync(new ResourceIndexItem
                 {
                     Id = Guid.NewGuid(),
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty,
                     Url = command.Href,
-                    OriginalUrlHash = urlHash,
+                    UrlHash = urlHash,
                     ResourceIndexId = command.ResourceIndexId,
                     LastAccessed = now
                 });
@@ -111,21 +108,19 @@ namespace SportsData.Provider.Application.Processors
             await _dataContext.SaveChangesAsync();
         }
 
-
         private async Task HandleValid(ProcessResourceIndexItemCommand command, string urlHash, Guid correlationId)
         {
-            var type = _decoder.GetTypeAndCollectionName(command.SourceDataProvider, command.Sport, command.DocumentType, command.SeasonYear);
-            var documentId = command.SeasonYear.HasValue
-                ? long.Parse($"{command.Id}{command.SeasonYear.Value}")
-                : command.Id;
+            var collectionName = command.Sport.ToString();
 
-            var documentKey = documentId.ToString();
             var itemJson = await _espnApi.GetResource(command.Href, true);
-            var dbItem = await _documentStore.GetFirstOrDefaultAsync<DocumentBase>(type.CollectionName, x => x.Id == documentKey);
+
+            var dbItem = await _documentStore.GetFirstOrDefaultAsync<DocumentBase>(
+                collectionName,
+                x => x.Id == urlHash);
 
             if (dbItem is null)
             {
-                await HandleNewDocumentAsync(command, urlHash, correlationId, type.CollectionName, documentKey, itemJson);
+                await HandleNewDocumentAsync(command, urlHash, correlationId, collectionName, itemJson);
             }
             else
             {
@@ -134,7 +129,7 @@ namespace SportsData.Provider.Application.Processors
 
                 if (newHash != currentHash)
                 {
-                    await HandleUpdatedDocumentAsync(command, urlHash, correlationId, type.CollectionName, documentKey, itemJson);
+                    await HandleUpdatedDocumentAsync(command, urlHash, correlationId, collectionName, itemJson);
                 }
             }
         }
@@ -144,24 +139,24 @@ namespace SportsData.Provider.Application.Processors
             string urlHash,
             Guid correlationId,
             string collectionName,
-            string documentId,
             string json)
         {
             var document = new DocumentBase
             {
-                Id = documentId,
+                Id = urlHash, // ✅ Set _id = UrlHash
                 Data = json,
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
                 Url = command.Href,
-                UrlHash = urlHash
+                UrlHash = urlHash,
+                RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
 
             await _documentStore.InsertOneAsync(collectionName, document);
 
             var evt = new DocumentCreated(
-                documentId,
+                urlHash,
                 collectionName,
                 _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
                 urlHash,
@@ -172,7 +167,7 @@ namespace SportsData.Provider.Application.Processors
                 correlationId,
                 CausationId.Provider.ResourceIndexItemProcessor);
 
-            await _bus.Publish(evt);
+            await _publisher.Publish(evt);
             _logger.LogInformation("DocumentCreated event published {@evt}", evt);
         }
 
@@ -181,24 +176,24 @@ namespace SportsData.Provider.Application.Processors
             string urlHash,
             Guid correlationId,
             string collectionName,
-            string documentId,
             string json)
         {
             var document = new DocumentBase
             {
-                Id = documentId,
+                Id = urlHash, // ✅ Use UrlHash consistently
                 Data = json,
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
                 Url = command.Href,
-                UrlHash = urlHash
+                UrlHash = urlHash,
+                RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
 
-            await _documentStore.ReplaceOneAsync(collectionName, documentId, document);
+            await _documentStore.ReplaceOneAsync(collectionName, urlHash, document);
 
             var evt = new DocumentUpdated(
-                documentId,
+                urlHash,
                 collectionName,
                 _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
                 urlHash,
@@ -209,9 +204,10 @@ namespace SportsData.Provider.Application.Processors
                 correlationId,
                 CausationId.Provider.ResourceIndexItemProcessor);
 
-            await _bus.Publish(evt);
+            await _publisher.Publish(evt);
             _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
         }
+
     }
 
     public record ProcessResourceIndexItemCommand(

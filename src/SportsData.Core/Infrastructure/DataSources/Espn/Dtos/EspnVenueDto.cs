@@ -23,7 +23,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public EspnAddressDto Address { get; set; }
 
         [JsonPropertyName("capacity")]
-        public long Capacity { get; set; }
+        public int Capacity { get; set; }
 
         [JsonPropertyName("grass")]
         public bool Grass { get; set; }

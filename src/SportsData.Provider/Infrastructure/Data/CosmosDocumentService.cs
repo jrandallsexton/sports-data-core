@@ -1,10 +1,12 @@
-﻿using System.Linq.Expressions;
-using Microsoft.Azure.Cosmos;
+﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
+
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Extensions;
 using SportsData.Provider.Config;
+
+using System.Linq.Expressions;
 
 namespace SportsData.Provider.Infrastructure.Data
 {
@@ -82,10 +84,21 @@ namespace SportsData.Provider.Infrastructure.Data
                 document.UrlHash = _hashProvider.GenerateHashFromUrl(document.Url);
             }
 
+            var routingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
+
+            // Assign routingKey to DocumentBase if needed
+            if (document is DocumentBase baseDoc)
+            {
+                baseDoc.Id = document.UrlHash;
+                baseDoc.RoutingKey = routingKey;
+            }
+
             _logger.LogInformation("Cosmos inserting {@Document}", document);
             var container = _client.GetContainer(_databaseName, collectionName);
-            await container.CreateItemAsync(document);
+
+            await container.CreateItemAsync(document, new PartitionKey(routingKey));
         }
+
 
         public async Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
         {
@@ -109,7 +122,12 @@ namespace SportsData.Provider.Infrastructure.Data
 
             try
             {
-                await container.ReplaceItemAsync(document, id, new PartitionKey(id), options);
+                var routingKey = document.UrlHash?.Substring(0, 3).ToUpperInvariant()
+                                 ?? throw new InvalidOperationException("Missing UrlHash for routing key.");
+
+                // Use routingKey as the partition key
+                await container.ReplaceItemAsync(document, id, new PartitionKey(routingKey), options);
+
             }
             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
             {

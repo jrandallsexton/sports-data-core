@@ -10,26 +10,27 @@ namespace SportsData.Provider.Application.Jobs.Definitions
             
         }
 
-        public DocumentJobDefinition(RecurringJob resourceIndex)
+        public DocumentJobDefinition(Infrastructure.Data.Entities.ResourceIndex resourceIndex)
         {
-            Sport = resourceIndex.SportId;
-            SourceDataProvider = resourceIndex.Provider;
             DocumentType = resourceIndex.DocumentType;
             Endpoint = resourceIndex.Endpoint;
             EndpointMask = resourceIndex.EndpointMask;
-            SeasonYear = resourceIndex.SeasonYear;
             ResourceIndexId = resourceIndex.Id;
+            SeasonYear = resourceIndex.SeasonYear;
+            SourceDataProvider = resourceIndex.Provider;
+            Sport = resourceIndex.SportId;
+            StartPage = resourceIndex.LastPageIndex ?? 1; // Default to page 1 if not set
         }
 
         public DocumentJobDefinition(ScheduledJob task)
         {
-            Sport = task.Sport;
-            SourceDataProvider = task.SourceDataProvider;
             DocumentType = task.DocumentType;
             Endpoint = task.Href;
             EndpointMask = string.Empty; // TODO: Do I need this?
-            SeasonYear = task.SeasonYear;
             ResourceIndexId = task.Id;
+            SeasonYear = task.SeasonYear;
+            SourceDataProvider = task.SourceDataProvider;
+            Sport = task.Sport;
         }
 
         public Guid ResourceIndexId { get; set; }

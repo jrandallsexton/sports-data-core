@@ -5,11 +5,11 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 {
     public class BasketballSeeder : SeederBase, ISeedResourceIndexes
     {
-        public List<RecurringJob> Generate(Sport sport, List<int> seasons)
+        public List<ResourceIndex> Generate(Sport sport, List<int> seasons)
         {
             var league = "nba";
 
-            var values = new List<RecurringJob>();
+            var values = new List<ResourceIndex>();
 
             base.GenerateNonSeasonalResources(values, sport, "basketball", league);
 

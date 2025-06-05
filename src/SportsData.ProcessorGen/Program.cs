@@ -55,7 +55,7 @@ namespace SportsData.ProcessorGen
             EspnJsonFetcher fetcher,
             RoutingKeyGenerator generator,
             int depth = 0,
-            int maxDepth = 5)
+            int maxDepth = 6)
         {
             if (depth > maxDepth)
             {
@@ -72,11 +72,8 @@ namespace SportsData.ProcessorGen
 
             allUrls.Add(normalizedUrl); // Record for logging
 
-            Console.WriteLine($"[Depth {depth}] Attempting to generate routing key for: {url}");
-            var routingKey = generator.Generate(SourceDataProvider.Espn, url);
-            Console.WriteLine($"[Depth {depth}] RoutingKey: {routingKey}");
-
-            var json = await fetcher.FetchAndSaveAsync(url, "D:\\Dropbox\\Code\\sports-data\\data", SourceDataProvider.Espn);
+            Console.WriteLine($"[Depth {depth}] Fetching: {url}");
+            var json = await fetcher.FetchJsonAsync(url);
 
             // === SHIM: Generate DTO using Ollama ===
             //var dtoGen = new DtoGenerator("http://localhost:11434", "deepseek-coder-v2");
@@ -87,37 +84,52 @@ namespace SportsData.ProcessorGen
             var extractor = new RefExtractor();
             var refs = extractor.ExtractRefs(json);
 
-            Console.WriteLine($"[Depth {depth}] Extracted {refs.Count()} refs from: {normalizedUrl}");
+            // Heuristic: treat documents with only $refs and no ID as index containers
+            bool isResourceIndex = refs.Count > 0 &&
+                (json.Contains("\"items\"") || json.Contains("\"entries\"")) &&
+                !json.Contains("\"id\"");
 
-            int countBefore = results.Count;
+            if (isResourceIndex)
+            {
+                Console.WriteLine($"[Depth {depth}] Skipped save — index document: {url}");
+            }
+            else
+            {
+                var routingKey = generator.Generate(SourceDataProvider.Espn, url);
+                if (!string.IsNullOrWhiteSpace(routingKey))
+                {
+                    await fetcher.SaveJsonAsync(json, url, "D:\\Dropbox\\Code\\sports-data\\data", SourceDataProvider.Espn);
+
+                    results.Add(new Result
+                    {
+                        RoutingKey = routingKey,
+                        Url = normalizedUrl,
+                        Depth = depth
+                    });
+                }
+                else
+                {
+                    Console.WriteLine($"[Depth {depth}] Could not generate routing key for: {url}");
+                }
+            }
+
+            Console.WriteLine($"[Depth {depth}] Extracted {refs.Count} refs from: {normalizedUrl}");
 
             foreach (var childUrl in refs)
             {
-                var childKey = generator.Generate(SourceDataProvider.Espn, childUrl);
-
-                if (results.Any(r => r.RoutingKey.Equals(childKey, StringComparison.OrdinalIgnoreCase)))
-                {
-                    Console.WriteLine($"[Depth {depth}] Skipping duplicate routing key: {childKey}");
-                    continue;
-                }
-
-                results.Add(new Result
-                {
-                    RoutingKey = childKey,
-                    Url = childUrl,
-                    Depth = depth + 1
-                });
-
-                Console.WriteLine($"[Depth {depth + 1}] → {childKey}");
+                Console.WriteLine($"[Depth {depth + 1}] → {childUrl}");
                 await TraverseAsync(childUrl, results, visited, allUrls, fetcher, generator, depth + 1, maxDepth);
             }
 
-            if (results.Count - countBefore >= 100)
+            // Save partial results occasionally (optional)
+            if (results.Count % 100 == 0)
             {
                 Console.WriteLine($"[Depth {depth}] Saving intermediate results...");
-                await File.WriteAllTextAsync("C:\\temp\\results.partial.json", FormatRoutingKeyMap(results));
+                await File.WriteAllTextAsync("C:\\temp\\results.partial.json", Program.FormatRoutingKeyMap(results));
             }
         }
+
+
 
         private static string NormalizeUrl(string url)
         {

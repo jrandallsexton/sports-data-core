@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -14,12 +15,12 @@ namespace SportsData.Core.Middleware.Health
     public class HeartbeatPublisher<T> : BackgroundService where T : class
     {
         private readonly ILogger<HeartbeatPublisher<T>> _logger;
-        private readonly IBus _bus;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public HeartbeatPublisher(IBus bus,
+        public HeartbeatPublisher(IServiceScopeFactory scopeFactory,
             ILogger<HeartbeatPublisher<T>> logger)
         {
-            _bus = bus;
+            _scopeFactory = scopeFactory;
             _logger = logger;
         }
 
@@ -27,12 +28,24 @@ namespace SportsData.Core.Middleware.Health
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await _bus.Publish(new Heartbeat()
+                try
                 {
-                    CreatedAt = DateTime.UtcNow,
-                    Producer = typeof(T).FullName
-                }, stoppingToken);
-                //_logger.LogInformation("heartbeat sent from {@t}", typeof(T));
+                    using var scope = _scopeFactory.CreateScope();
+                    var publisher = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+
+                    await publisher.Publish(new Heartbeat
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                        Producer = typeof(T).FullName
+                    }, stoppingToken);
+
+                    _logger.LogInformation("Heartbeat published for {Producer}", typeof(T).FullName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to publish heartbeat for {Producer}", typeof(T).FullName);
+                }
+
                 await Task.Delay(60_000, stoppingToken);
             }
         }

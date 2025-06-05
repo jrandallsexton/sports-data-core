@@ -10,7 +10,7 @@ namespace SportsData.Provider.Infrastructure.Data
         public AppDataContext(DbContextOptions<AppDataContext> options) :
             base(options) { }
 
-        public DbSet<RecurringJob> RecurringJobs { get; set; }
+        public DbSet<ResourceIndex> ResourceIndexJobs { get; set; }
 
         public DbSet<ResourceIndexItem> ResourceIndexItems { get; set; }
 
@@ -19,7 +19,7 @@ namespace SportsData.Provider.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(RecurringJob.EntityConfiguration).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceIndex.EntityConfiguration).Assembly);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

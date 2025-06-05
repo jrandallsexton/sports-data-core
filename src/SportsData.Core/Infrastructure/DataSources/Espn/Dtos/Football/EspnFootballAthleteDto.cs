@@ -1,6 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
 {

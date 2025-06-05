@@ -2,9 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using OpenTelemetry.Resources;
-
-using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
@@ -24,18 +21,21 @@ namespace SportsData.Provider.Application.Jobs
         private readonly ILogger<SourcingJobOrchestrator> _logger;
         private readonly AppDataContext _dbContext;
         private readonly IRecurringJobManager _recurringJobManager;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAppMode _mode;
 
         public SourcingJobOrchestrator(
             ILogger<SourcingJobOrchestrator> logger,
             AppDataContext dbContext,
             IRecurringJobManager recurringJobManager,
-            IAppMode mode)
+            IAppMode mode,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dbContext = dbContext;
             _recurringJobManager = recurringJobManager;
             _mode = mode;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task ExecuteAsync()
@@ -45,6 +45,9 @@ namespace SportsData.Provider.Application.Jobs
 
             // 2. Refresh recurring jobs based on ResourceIndex
             await RefreshRecurringSourcingJobs();
+
+            // 3. Add one-time jobs for any ResourceIndexes that are non-recurring and need to be processed
+            await RefreshOneTimeResourceIndexJobs();
         }
 
         private async Task ProcessScheduledJobs()
@@ -77,8 +80,8 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task RefreshRecurringSourcingJobs()
         {
-            var allResources = await _dbContext.RecurringJobs
-                .Where(x => x.SportId == _mode.CurrentSport)
+            var allResources = await _dbContext.ResourceIndexJobs
+                .Where(x => x.SportId == _mode.CurrentSport && x.IsRecurring)
                 .OrderBy(x => x.Ordinal)
                 .ToListAsync();
 
@@ -110,7 +113,61 @@ namespace SportsData.Provider.Application.Jobs
                 _logger.LogInformation("Removed disabled recurring job {JobId} for {Name}", jobId, resource.Name);
             }
         }
+        
+        private async Task RefreshOneTimeResourceIndexJobs()
+        {
+            // determine if any non-recurring jobs are currently processing
+            var any = await _dbContext.ResourceIndexJobs
+                .AnyAsync(x => x.SportId == _mode.CurrentSport &&
+                               !x.IsRecurring &&
+                               x.IsEnabled &&
+                               x.IsQueued &&
+                               x.LastCompletedUtc == null);
 
+            if (any)
+            {
+                _logger.LogWarning("One-time ResourceIndex jobs are currently processing. Skipping refresh of one-time jobs.");
+                return; // don't add any new jobs if there are already queued jobs
+            }
+
+            var nextJobToProcess = await _dbContext.ResourceIndexJobs
+                .Where(x => x.SportId == _mode.CurrentSport &&
+                            !x.IsRecurring &&
+                            x.IsEnabled &&
+                            !x.IsQueued &&
+                            !x.LastCompletedUtc.HasValue)
+                .OrderBy(x => x.Ordinal)
+                .Take(1)
+                .FirstOrDefaultAsync();
+
+            if (nextJobToProcess is null)
+            {
+                _logger.LogInformation("No non-recurring jobs to schedule");
+            }
+            else
+            {
+                // do one more quick-check to ensure something else did not begin processing
+                any = await _dbContext.ResourceIndexJobs
+                    .AnyAsync(x => x.SportId == _mode.CurrentSport &&
+                                   !x.IsRecurring &&
+                                   x.IsEnabled &&
+                                   x.IsQueued &&
+                                   x.LastCompletedUtc == null);
+                if (any)
+                {
+                    _logger.LogWarning("Second Check failed. One-time ResourceIndex jobs are currently processing. Skipping refresh of one-time jobs.");
+                    return; // don't add any new jobs if there are already queued jobs
+                }
+
+                _logger.LogInformation("Scheduling one-time ResourceIndex job for {Name} (Id: {Id})", nextJobToProcess.Name, nextJobToProcess.Id);
+                
+                nextJobToProcess.IsQueued = true;
+                await _dbContext.SaveChangesAsync();
+
+                var def = new DocumentJobDefinition(nextJobToProcess);
+                _backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
+            }
+        }
     }
 
 }

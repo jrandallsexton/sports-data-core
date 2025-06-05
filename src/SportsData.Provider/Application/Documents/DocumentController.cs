@@ -166,8 +166,7 @@ namespace SportsData.Provider.Application.Documents
             // save a record for the hash and blob url
             await _documentStore.InsertOneAsync(collectionName, new DocumentBase()
             {
-                Id = hash.ToString(),
-                CanonicalId = query.CanonicalId,
+                Id = hash,
                 Data = externalUrl
             });
 

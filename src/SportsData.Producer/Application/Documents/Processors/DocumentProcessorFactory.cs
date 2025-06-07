@@ -22,19 +22,19 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
 {
     private readonly ILogger<DocumentProcessorFactory> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly Dictionary<(string RoutingKey, DocumentAction Action), string> _map;
+    //private readonly Dictionary<(string RoutingKey, DocumentAction Action), string> _map;
 
     public DocumentProcessorFactory(
         IServiceProvider serviceProvider,
-        DocumentProcessorMappings mappings,
+        //DocumentProcessorMappings mappings,
         ILogger<DocumentProcessorFactory> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
 
-        _map = mappings.Mappings.ToDictionary(
-            m => (m.RoutingKey.ToLowerInvariant(), m.Action),
-            m => m.ProcessorTypeName);
+        //_map = mappings.Mappings.ToDictionary(
+        //    m => (m.RoutingKey.ToLowerInvariant(), m.Action),
+        //    m => m.ProcessorTypeName);
     }
 
     public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction)

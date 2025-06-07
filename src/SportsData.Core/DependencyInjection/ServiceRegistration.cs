@@ -103,7 +103,6 @@ namespace SportsData.Core.DependencyInjection
             IConfiguration configuration,
             Sport mode = Sport.All)
         {
-            services.AddSingleton<IProvideHashes, HashProvider>();
             services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
@@ -213,12 +212,6 @@ namespace SportsData.Core.DependencyInjection
             {
                 x.SetKebabCaseEndpointNameFormatter();
                 
-                // TODO: Pass in the assembly and use: x.AddConsumers(assembly)
-                consumers?.ForEach(z =>
-                {
-                    x.AddConsumer(z);
-                });
-                
                 x.UsingAzureServiceBus((context, cfg) =>
                 {
                     var sbConnString = config[CommonConfigKeys.AzureServiceBus];
@@ -230,6 +223,12 @@ namespace SportsData.Core.DependencyInjection
                         return o;
                     });
                     cfg.ConfigureEndpoints(context);
+                });
+
+                // TODO: Pass in the assembly and use: x.AddConsumers(assembly)
+                consumers?.ForEach(z =>
+                {
+                    x.AddConsumer(z);
                 });
             });
             return services;

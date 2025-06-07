@@ -17,6 +17,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string Abbreviation { get; set; }
 
+        public string Location { get; set; }
+
         public string DisplayName { get; set; }
 
         public string DisplayNameShort { get; set; }

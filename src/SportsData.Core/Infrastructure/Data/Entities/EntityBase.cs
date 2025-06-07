@@ -10,6 +10,9 @@ namespace SportsData.Core.Infrastructure.Data.Entities
         [Key]
         public T Id { get; set; }
 
+        /// <summary>
+        /// Id of the canonical entity this entity is associated with, if any.
+        /// </summary>
         public Guid? CanonicalId { get; set; }
 
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

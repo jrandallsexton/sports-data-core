@@ -27,7 +27,6 @@ namespace SportsData.Provider.Application.Processors
         private readonly IDocumentStore _documentStore;
         private readonly IPublishEndpoint _publisher;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
-        private readonly IProvideHashes _hashProvider;
         private readonly IResourceIndexItemParser _resourceIndexItemParser;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
@@ -40,7 +39,6 @@ namespace SportsData.Provider.Application.Processors
             IDocumentStore documentStore,
             IPublishEndpoint publisher,
             IDecodeDocumentProvidersAndTypes decoder,
-            IProvideHashes hashProvider,
             IResourceIndexItemParser resourceIndexItemParser,
             IProvideBackgroundJobs backgroundJobProvider,
             IGenerateRoutingKeys routingKeyGenerator,
@@ -52,7 +50,6 @@ namespace SportsData.Provider.Application.Processors
             _documentStore = documentStore;
             _publisher = publisher;
             _decoder = decoder;
-            _hashProvider = hashProvider;
             _resourceIndexItemParser = resourceIndexItemParser;
             _backgroundJobProvider = backgroundJobProvider;
             _routingKeyGenerator = routingKeyGenerator;
@@ -76,7 +73,7 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             Guid correlationId)
         {
-            var urlHash = _hashProvider.GenerateHashFromUrl(command.Href);
+            var urlHash = HashProvider.GenerateHashFromUrl(command.Href);
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems

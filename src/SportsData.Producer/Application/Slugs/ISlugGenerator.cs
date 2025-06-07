@@ -2,14 +2,9 @@
 
 namespace SportsData.Producer.Application.Slugs
 {
-    public interface ISlugGenerator
+    public static class SlugGenerator
     {
-        string GenerateSlug(params string[] inputs);
-    }
-
-    public class DefaultSlugGenerator : ISlugGenerator
-    {
-        public string GenerateSlug(params string[] inputs)
+        public static string GenerateSlug(params string[] inputs)
         {
             var input = inputs.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
 
@@ -31,8 +26,5 @@ namespace SportsData.Producer.Application.Slugs
 
             return slug.Trim('-');
         }
-
     }
-
-
 }

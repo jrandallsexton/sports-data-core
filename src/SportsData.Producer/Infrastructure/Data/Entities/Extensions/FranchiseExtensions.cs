@@ -1,4 +1,5 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
@@ -21,12 +22,20 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 DisplayName = dto.DisplayName,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
-                ExternalIds = [new FranchiseExternalId() { Id = Guid.NewGuid(), Value = dto.Id.ToString(), Provider = SourceDataProvider.Espn }],
+                ExternalIds = [ new FranchiseExternalId()
+                {
+                    Id = Guid.NewGuid(),
+                    Value = dto.Id.ToString(),
+                    Provider = SourceDataProvider.Espn,
+                    UrlHash = dto.Ref.UrlHash()
+                }],
                 DisplayNameShort = dto.ShortDisplayName,
                 IsActive = dto.IsActive,
                 Name = dto.Name,
                 Nickname = dto.Nickname,
                 Slug = dto.Slug,
+                Location = dto.Location,
+                
                 //Logos = dto.Logos.Select(x => new FranchiseLogo()
                 //{
                 //    Id = Guid.NewGuid(),

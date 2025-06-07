@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Entities
 {
-    public class ResourceIndexItem : CanonicalEntityBase<Guid>
+    public class ResourceIndexItem : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {
         public Guid ResourceIndexId { get; set; }
 
@@ -16,6 +16,8 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         public DateTime? LastAccessed { get; set; }
 
         public int Depth { get; set; } = 0;
+
+        public string UrlHash { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndexItem>
         {
@@ -45,7 +47,5 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                     .HasDatabaseName("IX_ResourceIndexItem_LastAccessed");
             }
         }
-
-
     }
 }

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Images.Processors.Requests;
 
-public class FranchiseLogoRequestProcessorTests : UnitTestBase<ImageRequestedProcessor>
+public class FranchiseLogoRequestProcessorTests : ProducerTestBase<ImageRequestedProcessor>
 {
     [Fact]
     public async Task WhenFoo_DoesBar()

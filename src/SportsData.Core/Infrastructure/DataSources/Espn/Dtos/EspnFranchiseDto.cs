@@ -9,6 +9,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnFranchiseDto
     {
+        [JsonPropertyName("$ref")]
+        public string Ref { get; set; }
+
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }
@@ -50,32 +53,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public EspnVenueDto? Venue { get; set; }
 
         [JsonPropertyName("team")]
-        public EspnFranchiseAwards Team { get; set; }
+        public EspnLinkDto Team { get; set; }
 
         [JsonPropertyName("awards")]
-        public EspnFranchiseAwards Awards { get; set; }
-    }
-
-    public class EspnFranchiseAwards
-    {
-        // $ref removed
-    }
-
-    public class EspnFranchiseImage
-    {
-        [JsonPropertyName("href")]
-        public Uri Href { get; set; }
-
-        [JsonPropertyName("width")]
-        public long Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public long Height { get; set; }
-
-        [JsonPropertyName("alt")]
-        public string Alt { get; set; }
-
-        [JsonPropertyName("rel")]
-        public List<string> Rel { get; set; }
+        public EspnLinkDto Awards { get; set; }
     }
 }

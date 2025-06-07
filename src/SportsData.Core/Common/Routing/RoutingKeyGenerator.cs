@@ -18,9 +18,15 @@ namespace SportsData.Core.Common.Routing
                 throw new ArgumentException("URL must not be null or empty", nameof(url));
 
             var uri = new Uri(url);
-            var path = Regex.Replace(uri.AbsolutePath, @"^/v\\d+/", "/");
+            var path = uri.AbsolutePath;
 
             var rawSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (rawSegments.Length == 1 && rawSegments[0].Equals("v2", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
             var cleaned = new List<string>();
 
             for (int i = 0; i < rawSegments.Length; i++)

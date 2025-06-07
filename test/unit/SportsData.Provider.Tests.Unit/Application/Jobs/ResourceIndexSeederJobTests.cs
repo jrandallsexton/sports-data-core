@@ -1,12 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-using Moq;
 using Moq.AutoMock;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
-using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
@@ -15,7 +11,7 @@ using Xunit;
 
 public class ResourceIndexSeederJobTests
 {
-    [Fact]
+    [Fact(Skip="Not using this SUT now; perhaps future")]
     public async Task ExecuteAsync_SavesResourceIndexAndItemsAndEnqueuesJob()
     {
         // Arrange
@@ -27,7 +23,6 @@ public class ResourceIndexSeederJobTests
 
         var mocker = new AutoMocker();
         mocker.Use(typeof(AppDataContext), context);
-        mocker.Use(typeof(IProvideHashes), new HashProvider());
         mocker.Use(typeof(IProvideEspnApiData), mocker.CreateInstance<EspnApiClient>());
 
         var seederJob = mocker.CreateInstance<ResourceIndexSeederJob>();

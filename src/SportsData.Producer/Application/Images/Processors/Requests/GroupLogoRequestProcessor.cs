@@ -16,7 +16,6 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
     {
         private readonly ILogger<GroupLogoRequestProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IProvideHashes _hashProvider;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IPublishEndpoint _bus;
         private readonly IProvideProviders _providerClient;
@@ -24,14 +23,12 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
         public GroupLogoRequestProcessor(
             ILogger<GroupLogoRequestProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IProvideHashes hashProvider,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IPublishEndpoint bus,
             IProvideProviders providerClient)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _hashProvider = hashProvider;
             _documentTypeDecoder = documentTypeDecoder;
             _bus = bus;
             _providerClient = providerClient;
@@ -50,7 +47,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 return;
             }
 
-            var urlHash = _hashProvider.GenerateHashFromUrl(request.Url);
+            var urlHash = HashProvider.GenerateHashFromUrl(request.Url);
 
             var logo = group.Logos.FirstOrDefault(x => x.OriginalUrlHash == urlHash);
 

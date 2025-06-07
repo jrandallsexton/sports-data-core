@@ -7,7 +7,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnGroupBySeasonDto
     {
-        // $ref removed
+        [JsonPropertyName("$ref")]
+        public string Ref { get; set; }
 
         [JsonPropertyName("uid")]
         public string Uid { get; set; }
@@ -52,6 +53,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         [JsonPropertyName("links")]
         public List<EspnGroupBySeasonLink> Links { get; set; }
 
+        // TODO: Review all of these removals and determine if they are needed for other purposes
         public class EspnGroupBySeasonSeason
         {
             // $ref removed

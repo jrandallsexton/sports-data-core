@@ -26,7 +26,6 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IProvideEspnApiData _espnApi;
         private readonly IDocumentStore _documentStore;
         private readonly JsonHashCalculator _hashCalculator;
-        private readonly IProvideHashes _hashProvider;
         private readonly IProvideBackgroundJobs _jobQueue;
 
         private readonly ConcurrentDictionary<string, bool> _visited = new();
@@ -43,8 +42,7 @@ namespace SportsData.Provider.Application.Jobs
             IProvideEspnApiData espnApi,
             IDocumentStore documentStore,
             JsonHashCalculator hashCalculator,
-            IProvideBackgroundJobs jobQueue,
-            IProvideHashes hashProvider)
+            IProvideBackgroundJobs jobQueue)
         {
             _logger = logger;
             _db = db;
@@ -52,7 +50,6 @@ namespace SportsData.Provider.Application.Jobs
             _documentStore = documentStore;
             _hashCalculator = hashCalculator;
             _jobQueue = jobQueue;
-            _hashProvider = hashProvider;
         }
 
         public async Task ExecuteAsync(
@@ -85,7 +82,7 @@ namespace SportsData.Provider.Application.Jobs
                 IsEnabled = true,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
-                Endpoint = rootUrl.ToString(),
+                Url = rootUrl.ToString(),
                 EndpointMask = null,
                 IsSeasonSpecific = false
             };
@@ -138,7 +135,7 @@ namespace SportsData.Provider.Application.Jobs
             {
                 if (await IsEspnResourceIndex(href))
                 {
-                    var hash = _hashProvider.GenerateHashFromUrl(href);
+                    var hash = HashProvider.GenerateHashFromUrl(href);
                     if (_visited.TryAdd(hash, true))
                     {
                         _items.Add(new ResourceIndexItem
@@ -172,7 +169,7 @@ namespace SportsData.Provider.Application.Jobs
                 return;
             }
 
-            var urlHash = _hashProvider.GenerateHashFromUrl(url.ToString());
+            var urlHash = HashProvider.GenerateHashFromUrl(url.ToString());
             if (!_visited.TryAdd(urlHash, true))
             {
                 _logger.LogDebug("Already visited {Url}", url);

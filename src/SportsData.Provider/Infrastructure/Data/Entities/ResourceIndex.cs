@@ -2,11 +2,12 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Entities
 {
-    public class ResourceIndex : CanonicalEntityBase<Guid>
+    public class ResourceIndex : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {
         public int Ordinal { get; set; }
 
@@ -29,7 +30,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public Sport SportId { get; set; }
 
-        public string Endpoint { get; set; }
+        public string Url { get; set; }
+
+        public string UrlHash { get; set; }
 
         public string? EndpointMask { get; set; }
 
@@ -57,13 +60,12 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                 builder.HasIndex(t => new { t.IsEnabled, t.Provider, t.SportId, t.DocumentType, t.SeasonYear })
                     .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
 
-                builder.HasIndex(t => t.Endpoint)
+                builder.HasIndex(t => t.Url)
                     .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
                 builder.HasIndex(t => t.LastAccessedUtc)
                     .HasDatabaseName("IX_ResourceIndex_LastAccessed");
             }
         }
-
     }
 }

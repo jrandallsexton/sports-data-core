@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SportsData.Provider.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,12 +19,14 @@ namespace SportsData.Provider.Migrations
                     Ordinal = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     IsRecurring = table.Column<bool>(type: "boolean", nullable: false),
+                    IsQueued = table.Column<bool>(type: "boolean", nullable: false),
                     CronExpression = table.Column<string>(type: "text", nullable: true),
                     IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
                     SportId = table.Column<int>(type: "integer", nullable: false),
-                    Endpoint = table.Column<string>(type: "text", nullable: false),
+                    Url = table.Column<string>(type: "text", nullable: false),
+                    UrlHash = table.Column<string>(type: "text", nullable: false),
                     EndpointMask = table.Column<string>(type: "text", nullable: true),
                     IsSeasonSpecific = table.Column<bool>(type: "boolean", nullable: false),
                     SeasonYear = table.Column<int>(type: "integer", nullable: true),
@@ -35,8 +37,7 @@ namespace SportsData.Provider.Migrations
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -67,8 +68,7 @@ namespace SportsData.Provider.Migrations
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -85,11 +85,11 @@ namespace SportsData.Provider.Migrations
                     Url = table.Column<string>(type: "text", nullable: false),
                     LastAccessed = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Depth = table.Column<int>(type: "integer", nullable: false),
+                    UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
-                    UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -110,7 +110,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndex_Endpoint",
                 table: "ResourceIndex",
-                column: "Endpoint");
+                column: "Url");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndex_LastAccessed",

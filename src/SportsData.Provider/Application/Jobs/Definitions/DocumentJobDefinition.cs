@@ -13,7 +13,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public DocumentJobDefinition(Infrastructure.Data.Entities.ResourceIndex resourceIndex)
         {
             DocumentType = resourceIndex.DocumentType;
-            Endpoint = resourceIndex.Endpoint;
+            Endpoint = resourceIndex.Url;
             EndpointMask = resourceIndex.EndpointMask;
             ResourceIndexId = resourceIndex.Id;
             SeasonYear = resourceIndex.SeasonYear;

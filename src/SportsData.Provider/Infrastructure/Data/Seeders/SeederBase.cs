@@ -14,7 +14,6 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
 
     public class SeederBase
     {
-        private readonly IProvideHashes _hashProvider = new HashProvider();
         private readonly IGenerateRoutingKeys _routingKeyGenerator = new RoutingKeyGenerator();
 
         private readonly List<Sport> _teamSports =
@@ -137,7 +136,6 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 CreatedUtc = DateTime.UtcNow,
                 CronExpression = cronExpression,
                 DocumentType = documentType,
-                Endpoint = endpoint,
                 EndpointMask = null,
                 IsEnabled = isEnabled,
                 IsRecurring = isRecurring,
@@ -154,7 +152,8 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 SeasonYear = seasonYear,
                 SportId = sport,
                 TotalPageCount = null,
-                UrlHash = _hashProvider.GenerateHashFromUrl(endpoint)
+                Url = endpoint,
+                UrlHash = HashProvider.GenerateHashFromUrl(endpoint)
             };
         }
 

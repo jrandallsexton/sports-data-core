@@ -13,18 +13,15 @@ namespace SportsData.Provider.Infrastructure.Data
     public class CosmosDocumentService : IDocumentStore
     {
         private readonly ILogger<CosmosDocumentService> _logger;
-        private readonly IProvideHashes _hashProvider;
         private readonly CosmosClient _client;
         private readonly string _databaseName;
         private readonly Container _defaultContainer;
 
         public CosmosDocumentService(
             ILogger<CosmosDocumentService> logger,
-            IProvideHashes hashProvider,
             IOptions<ProviderDocDatabaseConfig> options)
         {
             _logger = logger;
-            _hashProvider = hashProvider;
             _logger.LogInformation($"Cosmos began with databaseName: {options.Value.DatabaseName}");
             _databaseName = options.Value.DatabaseName;
 
@@ -81,7 +78,7 @@ namespace SportsData.Provider.Infrastructure.Data
                 if (string.IsNullOrWhiteSpace(document.Url))
                     throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
 
-                document.UrlHash = _hashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
             }
 
             var routingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
@@ -107,7 +104,7 @@ namespace SportsData.Provider.Infrastructure.Data
                 if (string.IsNullOrWhiteSpace(document.Url))
                     throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
 
-                document.UrlHash = _hashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
             }
 
             var container = _client.GetContainer(_databaseName, collectionName);

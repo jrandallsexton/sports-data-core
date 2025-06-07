@@ -4,27 +4,20 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using Moq;
-
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Application.Slugs;
 
 using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
-public class GroupBySeasonDocumentProcessorTests : UnitTestBase<GroupBySeasonDocumentProcessor>
+public class GroupBySeasonDocumentProcessorTests : ProducerTestBase<GroupBySeasonDocumentProcessor>
 {
     [Fact]
     public async Task WhenNeitherGroupNorSeasonExist_BothAreCreated()
     {
         // arrange
-        Mocker.GetMock<ISlugGenerator>()
-            .Setup(x => x.GenerateSlug(It.IsAny<string[]>()))
-            .Returns("slug");
-
         var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
         var documentJson = await LoadJsonTestData("GroupBySeason.json");
@@ -55,10 +48,6 @@ public class GroupBySeasonDocumentProcessorTests : UnitTestBase<GroupBySeasonDoc
     public async Task WhenGroupExistsButSeasonDoesNot_GroupSeasonIsCreated()
     {
         // arrange
-        Mocker.GetMock<ISlugGenerator>()
-            .Setup(x => x.GenerateSlug(It.IsAny<string[]>()))
-            .Returns("slug");
-
         var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
         var documentJson = await LoadJsonTestData("GroupBySeason.json");

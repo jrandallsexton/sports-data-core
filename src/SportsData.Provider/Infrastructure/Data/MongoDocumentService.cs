@@ -27,19 +27,16 @@ namespace SportsData.Provider.Infrastructure.Data
     public class MongoDocumentService : IDocumentStore
     {
         private readonly ILogger<MongoDocumentService> _logger;
-        private readonly IProvideHashes _hashProvider;
         private readonly IMongoCollection<BsonDocument> _rawCollection;
         private readonly IMongoDatabase _database;
         private readonly IAppMode _mode;
 
         public MongoDocumentService(
             ILogger<MongoDocumentService> logger,
-            IProvideHashes hashProvider,
             IOptions<ProviderDocDatabaseConfig> options,
             IAppMode mode)
         {
             _logger = logger;
-            _hashProvider = hashProvider;
             _mode = mode;
 
             var internalIdentity = new MongoInternalIdentity("admin", options.Value.Username);
@@ -80,7 +77,7 @@ namespace SportsData.Provider.Infrastructure.Data
             {
                 if (string.IsNullOrWhiteSpace(document.Url))
                     throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
-                document.UrlHash = _hashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
             }
 
             if (document is DocumentBase baseDoc)
@@ -100,7 +97,7 @@ namespace SportsData.Provider.Infrastructure.Data
             {
                 if (string.IsNullOrWhiteSpace(document.Url))
                     throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
-                document.UrlHash = _hashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
             }
 
             if (document is DocumentBase baseDoc)

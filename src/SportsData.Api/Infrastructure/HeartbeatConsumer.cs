@@ -9,7 +9,7 @@ namespace SportsData.Api.Infrastructure
     {
         public async Task Consume(ConsumeContext<Heartbeat> context)
         {
-            //logger.LogInformation("heartbeat received: {@heartbeat}", context.Message);
+            logger.LogInformation("heartbeat received: {@heartbeat}", context.Message);
             await Task.CompletedTask;
         }
     }

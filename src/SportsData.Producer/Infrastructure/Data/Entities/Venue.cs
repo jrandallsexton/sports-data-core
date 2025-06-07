@@ -24,6 +24,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string State { get; set; }
 
+        public string PostalCode { get; set; }
+
         public string Country { get; set; } = "US";
 
         public decimal Latitude { get; set; }

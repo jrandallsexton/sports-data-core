@@ -19,6 +19,7 @@ using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -45,7 +46,7 @@ namespace SportsData.Core.DependencyInjection
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .MinimumLevel.Override("System", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-                    .ReadFrom.Configuration(context.Configuration)
+                    //.ReadFrom.Configuration(context.Configuration)
 
                     // Enrich
                     .Enrich.FromLogContext()
@@ -58,6 +59,9 @@ namespace SportsData.Core.DependencyInjection
                 {
                     configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: LogEventLevel.Verbose);
                 }
+
+                Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
+
 
                 //.WriteTo.OpenTelemetry(options =>
                 //{

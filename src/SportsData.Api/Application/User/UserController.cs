@@ -41,6 +41,7 @@ namespace SportsData.Api.Application.User
             {
                 user = new Infrastructure.Data.Entities.User
                 {
+                    Id = Guid.NewGuid(),
                     FirebaseUid = firebaseUid,
                     Email = dto.Email,
                     DisplayName = dto.DisplayName,

@@ -15,5 +15,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("zipCode")]
         [JsonConverter(typeof(ParseStringToLongConverter))]
         public long ZipCode { get; set; }
+
+        [JsonPropertyName("country")]
+        public string Country { get; set; } = "USA";
     }
 }

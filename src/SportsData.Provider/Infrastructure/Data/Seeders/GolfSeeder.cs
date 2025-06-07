@@ -24,7 +24,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.GolfCalendar,
-                Endpoint = $"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar",
+                Url = $"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar",
                 EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,

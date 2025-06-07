@@ -39,9 +39,13 @@ namespace SportsData.Api.Application.Scoring
             var contestIds = unscored.Select(p => p.ContestId).Distinct().ToList();
             var leagueIds = unscored.Select(p => p.PickemGroupId).Distinct().ToList();
 
-            var contests = await _db.Contests
-                .Where(c => contestIds.Contains(c.ContestId) && c.IsFinal)
-                .ToDictionaryAsync(c => c.ContestId, cancellationToken);
+            var contestList = await _db.Contests
+                .Where(c => contestIds.Contains(c.ContestId))
+                .ToListAsync(cancellationToken);
+
+            var contests = contestList
+                .Where(c => c.IsFinal)
+                .ToDictionary(c => c.ContestId);
 
             var leagues = await _db.PickemGroups
                 .Where(l => leagueIds.Contains(l.Id))

@@ -1,176 +1,186 @@
-﻿//using AutoFixture;
+﻿using AutoFixture;
 
-//using FluentAssertions;
+using FluentAssertions;
 
-//using MassTransit;
+using MassTransit;
 
-//using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
-//using Moq;
+using Moq;
 
-//using SportsData.Core.Common;
-//using SportsData.Core.Eventing.Events.Franchise;
-//using SportsData.Producer.Application.Documents.Processors.Commands;
-//using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
-//using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Franchise;
+using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
-//using Xunit;
+using Xunit;
 
-//namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.TeamSports
-//{
-//    public class FranchiseDocumentProcessorTests : UnitTestBase<FranchiseDocumentProcessor>
-//    {
-//        [Fact]
-//        public async Task WhenEntityDoesNotExist_VenueDoesExist_IsAdded()
-//        {
-//            // arrange
-//            var bus = Mocker.GetMock<IPublishEndpoint>();
+namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.TeamSports
+{
+    public class FranchiseDocumentProcessorTests : ProducerTestBase<FranchiseDocumentProcessor<TeamSportDataContext>>
+    {
+        [Fact]
+        public async Task WhenEntityDoesNotExist_VenueDoesExist_IsAdded()
+        {
+            // arrange
+            var bus = Mocker.GetMock<IPublishEndpoint>();
 
-//            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor>();
+            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-//            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
 
-//            var command = Fixture.Build<ProcessDocumentCommand>()
-//                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-//                .With(x => x.Sport, Sport.FootballNcaa)
-//                .With(x => x.DocumentType, DocumentType.Franchise)
-//                .With(x => x.Document, documentJson)
-//                .OmitAutoProperties()
-//                .Create();
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.Franchise)
+                .With(x => x.Document, documentJson)
+                .OmitAutoProperties()
+                .Create();
 
-//            // add venue to test db
-//            var venueId = Guid.NewGuid();
-//            await base.FootballDataContext.Venues
-//                .AddAsync(new Venue()
-//                {
-//                    Id = venueId,
-//                    Name = "Tiger Stadium (LA)",
-//                    ShortName = "Tiger Stadium",
-//                    ExternalIds =
-//                    [
-//                        new VenueExternalId()
-//                        {
-//                            Id = Guid.NewGuid(),
-//                            Provider = SourceDataProvider.Espn,
-//                            Value = "3958"
-//                        }
-//                    ]
-//                });
-//            await base.FootballDataContext.SaveChangesAsync();
+            // add venue to test db
+            var venueId = Guid.NewGuid();
+            await base.FootballDataContext.Venues
+                .AddAsync(new Venue()
+                {
+                    Id = venueId,
+                    Name = "Tiger Stadium (LA)",
+                    ShortName = "Tiger Stadium",
+                    Slug = "tiger-stadium-la",
+                    City = "Baton Rouge",
+                    State = "LA",
+                    PostalCode = "71077",
+                    ExternalIds =
+                    [
+                        new VenueExternalId()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            Value = "3958",
+                            UrlHash = "someHash"
+                        }
+                    ]
+                });
+            await base.FootballDataContext.SaveChangesAsync();
 
-//            // act
-//            await sut.ProcessAsync(command);
+            // act
+            await sut.ProcessAsync(command);
 
-//            // assert
-//            var newEntity = await base.TeamSportDataContext.Franchises
-//                .AsNoTracking()
-//                .FirstOrDefaultAsync();
+            // assert
+            var newEntity = await base.TeamSportDataContext.Franchises
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-//            newEntity.Should().NotBeNull();
-//            newEntity.VenueId.Should().Be(venueId);
+            newEntity.Should().NotBeNull();
+            newEntity.VenueId.Should().Be(venueId);
 
-//            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Once);
-//        }
+            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
 
-//        [Fact]
-//        public async Task WhenEntityDoesNotExist_VenueDoesNotExist_IsAdded()
-//        {
-//            // arrange
-//            var bus = Mocker.GetMock<IPublishEndpoint>();
+        [Fact]
+        public async Task WhenEntityDoesNotExist_VenueDoesNotExist_IsAdded()
+        {
+            // arrange
+            var bus = Mocker.GetMock<IPublishEndpoint>();
 
-//            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor>();
+            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-//            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
 
-//            var command = Fixture.Build<ProcessDocumentCommand>()
-//                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-//                .With(x => x.Sport, Sport.FootballNcaa)
-//                .With(x => x.DocumentType, DocumentType.Franchise)
-//                .With(x => x.Document, documentJson)
-//                .OmitAutoProperties()
-//                .Create();
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.Franchise)
+                .With(x => x.Document, documentJson)
+                .OmitAutoProperties()
+                .Create();
 
-//            // act
-//            await sut.ProcessAsync(command);
+            // act
+            await sut.ProcessAsync(command);
 
-//            // assert
-//            var newEntity = await base.TeamSportDataContext.Franchises
-//                .AsNoTracking()
-//                .FirstOrDefaultAsync();
+            // assert
+            var newEntity = await base.TeamSportDataContext.Franchises
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-//            newEntity.Should().NotBeNull();
-//            newEntity.VenueId.Should().Be(Guid.Empty);
+            newEntity.Should().NotBeNull();
+            newEntity.VenueId.Should().Be(Guid.Empty);
 
-//            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Once);
-//        }
+            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
 
-//        [Fact]
-//        public async Task WhenEntityExists_IsUpdated()
-//        {
-//            // arrange
-//            var bus = Mocker.GetMock<IPublishEndpoint>();
+        [Fact]
+        public async Task WhenEntityExists_IsUpdated()
+        {
+            // arrange
+            var bus = Mocker.GetMock<IPublishEndpoint>();
 
-//            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor>();
+            var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-//            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
 
-//            var command = Fixture.Build<ProcessDocumentCommand>()
-//                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-//                .With(x => x.Sport, Sport.FootballNcaa)
-//                .With(x => x.DocumentType, DocumentType.Franchise)
-//                .With(x => x.Document, documentJson)
-//                .OmitAutoProperties()
-//                .Create();
+            // add venue to test db
+            var venueId = Guid.NewGuid();
+            await base.FootballDataContext.Venues
+                .AddAsync(new Venue()
+                {
+                    Id = venueId,
+                    Name = "Tiger Stadium (LA)",
+                    ShortName = "Tiger Stadium",
+                    Slug = "tiger-stadium-la",
+                    City = "Baton Rouge",
+                    State = "LA",
+                    PostalCode = "71077",
+                    ExternalIds =
+                    [
+                        new VenueExternalId()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            Value = "3958",
+                            UrlHash = "someHash"
+                        }
+                    ]
+                });
 
-//            // add venue to test db
-//            var venueId = Guid.NewGuid();
-//            await base.FootballDataContext.Venues
-//                .AddAsync(new Venue()
-//                {
-//                    Id = venueId,
-//                    Name = "Tiger Stadium (LA)",
-//                    ShortName = "Tiger Stadium",
-//                    ExternalIds =
-//                    [
-//                        new VenueExternalId()
-//                        {
-//                            Id = Guid.NewGuid(),
-//                            Provider = SourceDataProvider.Espn,
-//                            Value = "3958"
-//                        }
-//                    ]
-//                });
-//            await base.FootballDataContext.SaveChangesAsync();
+            var franchise = Fixture.Build<Franchise>()
+                .WithAutoProperties()
+                .With(x => x.VenueId, Guid.Empty)
+                .With(x => x.ExternalIds, [
+                    new FranchiseExternalId()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = "99",
+                        UrlHash = "someHash"
+                    }
+                ])
+                .Create();
 
-//            var franchise = Fixture.Build<Franchise>()
-//                .WithAutoProperties()
-//                .With(x => x.VenueId, Guid.Empty)
-//                .With(x => x.ExternalIds, [
-//                    new FranchiseExternalId()
-//                    {
-//                        Id = Guid.NewGuid(),
-//                        Provider = SourceDataProvider.Espn,
-//                        Value = "99"
-//                    }
-//                ])
-//                .Create();
+            await base.FootballDataContext.Franchises.AddAsync(franchise);
+            await base.FootballDataContext.SaveChangesAsync();
 
-//            await base.FootballDataContext.Franchises
-//                .AddAsync(franchise);
-//            await base.FootballDataContext.SaveChangesAsync();
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.Franchise)
+                .With(x => x.Document, documentJson)
+                .OmitAutoProperties()
+                .Create();
 
-//            // act
-//            await sut.ProcessAsync(command);
+            // act
+            await sut.ProcessAsync(command);
 
-//            // assert
-//            var updatedEntity = await base.TeamSportDataContext.Franchises
-//                .AsNoTracking()
-//                .FirstOrDefaultAsync();
+            // assert
+            var updatedEntity = await base.TeamSportDataContext.Franchises
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-//            updatedEntity.Should().NotBeNull();
-//            updatedEntity.VenueId.Should().Be(venueId);
+            updatedEntity.Should().NotBeNull();
+            updatedEntity.VenueId.Should().Be(venueId);
 
-//            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Never);
-//        }
-//    }
-//}
+            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+    }
+}

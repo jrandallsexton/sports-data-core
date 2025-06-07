@@ -145,6 +145,7 @@ namespace SportsData.Api.Application.Auth
             {
                 user = new Infrastructure.Data.Entities.User
                 {
+                    Id = Guid.NewGuid(),
                     FirebaseUid = userId,
                     Email = email,
                     CreatedUtc = DateTime.UtcNow

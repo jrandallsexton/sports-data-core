@@ -3,13 +3,13 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Slugs;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
@@ -21,18 +21,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private readonly ILogger<VenueDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
-        private readonly ISlugGenerator _slugGenerator;
 
         public VenueDocumentProcessor(
             ILogger<VenueDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
-            ISlugGenerator slugGenerator)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
-            _slugGenerator = slugGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -70,7 +67,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnVenueDto dto)
         {
             // 1. map to the entity and save it
-            var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId, _slugGenerator);
+            var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId);
 
             _dataContext.Add(newEntity);
 
@@ -114,8 +111,103 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
         private async Task ProcessUpdate(ProcessDocumentCommand command, EspnVenueDto dto)
         {
-            // TODO: implement update
-            await Task.CompletedTask;
+            var venue = await _dataContext.Venues
+                .Include(x => x.ExternalIds)
+                .Include(x => x.Images)
+                .FirstAsync(x => x.ExternalIds.Any(z => z.Value == dto.Id.ToString() && z.Provider == command.SourceDataProvider));
+
+            var updated = false;
+
+            if (venue.Name != dto.FullName)
+            {
+                _logger.LogInformation("Updating FullName from {Old} to {New}", venue.Name, dto.FullName);
+                venue.Name = dto.FullName;
+                updated = true;
+            }
+
+            if (venue.IsGrass != dto.Grass)
+            {
+                _logger.LogInformation("Updating Grass from {Old} to {New}", venue.IsGrass, dto.Grass);
+                venue.IsGrass = dto.Grass;
+                updated = true;
+            }
+
+            if (venue.IsIndoor != dto.Indoor)
+            {
+                _logger.LogInformation("Updating Indoor from {Old} to {New}", venue.IsIndoor, dto.Indoor);
+                venue.IsIndoor = dto.Indoor;
+                updated = true;
+            }
+
+            if (venue.Capacity != dto.Capacity)
+            {
+                _logger.LogInformation("Updating Capacity from {Old} to {New}", venue.Capacity, dto.Capacity);
+                venue.Capacity = dto.Capacity;
+                updated = true;
+            }
+
+            if (venue.City != dto.Address?.City ||
+                venue.State != dto.Address?.State ||
+                venue.PostalCode != dto.Address?.ZipCode.ToString() ||
+                venue.Country != dto.Address?.Country)
+            {
+                _logger.LogInformation("Updating address");
+                venue.City = dto.Address?.City;
+                venue.State = dto.Address?.State;
+                venue.PostalCode = dto.Address?.ZipCode.ToString();
+                venue.Country = dto.Address?.Country;
+                updated = true;
+            }
+
+            // === Detect new images
+            var newImages = dto.Images?
+                .Where(img => !venue.Images.Any(v => v.OriginalUrlHash == HashProvider.GenerateHashFromUrl(img.Href.AbsoluteUri)))
+                .ToList();
+
+            if (newImages?.Count > 0)
+            {
+                _logger.LogInformation("Found {Count} new images for venue", newImages.Count);
+
+                var imageEvents = new List<ProcessImageRequest>();
+
+                for (int i = 0; i < newImages.Count; i++)
+                {
+                    var img = newImages[i];
+                    imageEvents.Add(new ProcessImageRequest(
+                        img.Href.AbsoluteUri,
+                        Guid.NewGuid(),
+                        venue.Id,
+                        $"{venue.Id}-u{i}.png",
+                        command.Sport,
+                        command.Season,
+                        command.DocumentType,
+                        command.SourceDataProvider,
+                        0,
+                        0,
+                        null,
+                        command.CorrelationId,
+                        CausationId.Producer.FranchiseDocumentProcessor));
+                }
+
+                await _publishEndpoint.PublishBatch(imageEvents, CancellationToken.None);
+            }
+
+            if (updated || newImages?.Count > 0)
+            {
+                await _dataContext.SaveChangesAsync();
+
+                var evt = new VenueUpdated(venue.AsCanonical(), command.CorrelationId,
+                    CausationId.Producer.VenueCreatedDocumentProcessor);
+
+                await _publishEndpoint.Publish(evt, CancellationToken.None);
+
+                _logger.LogInformation("Updated venue {@Venue}", evt);
+            }
+            else
+            {
+                _logger.LogInformation("No changes detected for venue {Id}", venue.Id);
+            }
         }
+
     }
 }

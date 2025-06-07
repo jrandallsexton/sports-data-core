@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SportsData.Api.Infrastructure.Data.Entities
 {
-    public class User : EntityBase<Guid>
+    public class User : CanonicalEntityBase<Guid>
     {
         [Required]
         public string FirebaseUid { get; set; }

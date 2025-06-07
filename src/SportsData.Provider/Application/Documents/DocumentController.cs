@@ -19,7 +19,6 @@ namespace SportsData.Provider.Application.Documents
         private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBlobStorage _blobStorage;
-        private readonly IProvideHashes _hashProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public DocumentController(
@@ -27,14 +26,12 @@ namespace SportsData.Provider.Application.Documents
             IDecodeDocumentProvidersAndTypes decoder,
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage,
-            IProvideHashes hashProvider,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _documentStore = documentStore;
             _decoder = decoder;
             _logger = logger;
             _blobStorage = blobStorage;
-            _hashProvider = hashProvider;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
@@ -129,7 +126,7 @@ namespace SportsData.Provider.Application.Documents
             _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
 
             // generate a hash for the collection retrieval
-            var hash = _hashProvider.GenerateHashFromUrl(query.Url.ToLower());
+            var hash = HashProvider.GenerateHashFromUrl(query.Url.ToLower());
 
             _logger.LogInformation("Hash generated {@Hash}", hash);
 

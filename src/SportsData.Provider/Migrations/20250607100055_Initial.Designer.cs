@@ -12,8 +12,8 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250605094852_IsQueued")]
-    partial class IsQueued
+    [Migration("20250607100055_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,10 +42,6 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<int>("DocumentType")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("EndpointMask")
                         .HasColumnType("text");
@@ -96,17 +92,21 @@ namespace SportsData.Provider.Migrations
                     b.Property<int?>("TotalPageCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("UrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Endpoint")
-                        .HasDatabaseName("IX_ResourceIndex_Endpoint");
-
                     b.HasIndex("LastAccessedUtc")
                         .HasDatabaseName("IX_ResourceIndex_LastAccessed");
+
+                    b.HasIndex("Url")
+                        .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
                     b.HasIndex("IsEnabled", "Provider", "SportId", "DocumentType", "SeasonYear")
                         .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
@@ -235,10 +235,6 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<int?>("TotalPageCount")
                         .HasColumnType("integer");
-
-                    b.Property<string>("UrlHash")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

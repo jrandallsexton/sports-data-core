@@ -9,7 +9,6 @@ using SportsData.Core.Extensions;
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Slugs;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -21,18 +20,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;
         private readonly FootballDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
-        private readonly ISlugGenerator _slugGenerator;
 
         public GroupBySeasonDocumentProcessor(
             ILogger<GroupBySeasonDocumentProcessor> logger,
             FootballDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
-            ISlugGenerator slugGenerator)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
-            _slugGenerator = slugGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -101,7 +97,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 var newGroupSeasonId = Guid.NewGuid();
                 var newGroupId = Guid.NewGuid();
-                var newGroupEntity = externalProviderDto.AsEntity(newGroupId, command.CorrelationId, _slugGenerator);
+                var newGroupEntity = externalProviderDto.AsEntity(newGroupId, command.CorrelationId);
                 var newGroupSeason = externalProviderDto
                     .AsEntity(
                         newGroupId,

@@ -8,17 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoFixture" Version="4.18.1" />
-    <PackageReference Include="FluentAssertions" Version="7.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="Moq.AutoMock" Version="3.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
-    <PackageReference Include="xunit" Version="2.9.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\SportsData.Producer\SportsData.Producer.csproj" />
+    <ProjectReference Include="..\..\SportsData.Tests.Shared\SportsData.Tests.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

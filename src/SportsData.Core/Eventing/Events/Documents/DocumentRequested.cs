@@ -5,6 +5,7 @@ namespace SportsData.Core.Eventing.Events.Documents;
 
 public class DocumentRequested(
     string id,
+    string? parentId,
     string href,
     Sport sport,
     int? seasonYear,
@@ -15,6 +16,8 @@ public class DocumentRequested(
     : EventBase(correlationId, causationId)
 {
     public string Id { get; init; } = id;
+
+    public string? ParentId { get; set; } = parentId;
 
     public string Href { get; init; } = href;
 

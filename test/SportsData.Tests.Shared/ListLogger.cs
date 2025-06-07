@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace SportsData.Producer.Tests.Unit;
+namespace SportsData.Tests.Shared;
 
 public enum LoggerTypes
 {

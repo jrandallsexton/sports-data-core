@@ -4,10 +4,8 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Slugs;
 
-public class DefaultSlugGeneratorTests : UnitTestBase<DefaultSlugGenerator>
+public class SlugGeneratorTests : ProducerTestBase<SlugGeneratorTests>
 {
-    private readonly DefaultSlugGenerator _slugGenerator = new();
-
     [Theory]
     [InlineData("MAC", "mac")]
     [InlineData("Big Ten", "big-ten")]
@@ -23,7 +21,7 @@ public class DefaultSlugGeneratorTests : UnitTestBase<DefaultSlugGenerator>
     public void GenerateSlug_ShouldConvertToExpectedFormat(string input, string expected)
     {
         // Act
-        var result = _slugGenerator.GenerateSlug(input);
+        var result = SlugGenerator.GenerateSlug(input);
 
         // Assert
         Assert.Equal(expected, result);

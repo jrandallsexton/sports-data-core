@@ -9,6 +9,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
     public class EspnVenueDto : IHasRoutingKey
     {
+        [JsonPropertyName("$ref")]
+        public string Ref { get; set; }
+
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))] // Assumes you have or will rewrite this for System.Text.Json
         public long Id { get; set; }

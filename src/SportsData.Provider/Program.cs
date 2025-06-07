@@ -3,7 +3,8 @@ using Hangfire;
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
-
+using Serilog;
+using Serilog.Events;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;

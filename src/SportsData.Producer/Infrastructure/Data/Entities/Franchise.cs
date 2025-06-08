@@ -37,7 +37,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<FranchiseSeason> Seasons { get; set; }
 
-        public List<FranchiseExternalId> ExternalIds { get; set; }
+        public List<FranchiseExternalId> ExternalIds { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<Franchise>
         {

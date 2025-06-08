@@ -3,7 +3,6 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
@@ -66,7 +65,9 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
     }
 
-    private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnFranchiseDto dto)
+    private async Task ProcessNewEntity(
+        ProcessDocumentCommand command,
+        EspnFranchiseDto dto)
     {
         // 1. map to the entity add it
         var newFranchiseId = Guid.NewGuid();
@@ -132,7 +133,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
                 href: dto.Team.Ref.AbsoluteUri,
                 sport: command.Sport,
                 seasonYear: command.Season,
-                documentType: DocumentType.TeamBySeason, // Or use a mapper if unknown at runtime
+                documentType: DocumentType.TeamBySeason,
                 sourceDataProvider: command.SourceDataProvider,
                 correlationId: command.CorrelationId,
                 causationId: CausationId.Producer.FranchiseDocumentProcessor));
@@ -164,7 +165,10 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         await _dataContext.SaveChangesAsync();
     }
 
-    private async Task ProcessUpdate(ProcessDocumentCommand command, EspnFranchiseDto dto, Franchise entity)
+    private async Task ProcessUpdate(
+        ProcessDocumentCommand command,
+        EspnFranchiseDto dto,
+        Franchise entity)
     {
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)

@@ -6,7 +6,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Group : CanonicalEntityBase<Guid>, IHasSlug
+    public class Group : CanonicalEntityBase<Guid>, IHasSlug, IHasExternalIds
     {
         public string Name { get; set; }
 
@@ -24,7 +24,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<GroupSeason> Seasons { get; set; }
 
-        public List<GroupExternalId> ExternalIds { get; set; }
+        public List<GroupExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public List<GroupLogo> Logos { get; set; } = [];
 

@@ -612,7 +612,7 @@ namespace SportsData.Producer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Season")
+                    b.Property<int>("SeasonYear")
                         .HasColumnType("integer");
 
                     b.Property<string>("Slug")
@@ -850,7 +850,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Season")
+                    b.Property<int>("SeasonYear")
                         .HasColumnType("integer");
 
                     b.Property<string>("UrlHash")
@@ -997,7 +997,7 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("PositionExternalId");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonYear", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -1041,7 +1041,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Season", (string)null);
+                    b.ToTable("SeasonYear", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonExternalId", b =>
@@ -1390,13 +1390,13 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonExternalId", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Season", "Season")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonYear", "SeasonYear")
                         .WithMany("ExternalIds")
                         .HasForeignKey("SeasonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Season");
+                    b.Navigation("SeasonYear");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.VenueExternalId", b =>
@@ -1472,7 +1472,7 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("ExternalIds");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonYear", b =>
                 {
                     b.Navigation("ExternalIds");
                 });

@@ -123,7 +123,7 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Season",
+                name: "SeasonYear",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -464,7 +464,7 @@ namespace SportsData.Producer.Migrations
                     table.ForeignKey(
                         name: "FK_SeasonExternalId_Season_SeasonId",
                         column: x => x.SeasonId,
-                        principalTable: "Season",
+                        principalTable: "SeasonYear",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -855,7 +855,7 @@ namespace SportsData.Producer.Migrations
                 name: "OutboxState");
 
             migrationBuilder.DropTable(
-                name: "Season");
+                name: "SeasonYear");
 
             migrationBuilder.DropTable(
                 name: "Venue");

@@ -9,7 +9,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid FranchiseId { get; set; }
 
-        public int Season { get; set; }
+        public Guid? VenueId { get; set; }
+
+        public Guid? GroupId { get; set; }
+
+        public int SeasonYear { get; set; }
 
         public string Slug { get; set; }
 
@@ -39,15 +43,44 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int Ties { get; set; }
 
+        public List<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
+
+        public List<FranchiseSeasonRecord> Records { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeason> builder)
             {
                 builder.ToTable("FranchiseSeason");
                 builder.HasKey(t => t.Id);
+
+                builder.Property(t => t.Slug).HasMaxLength(100);
+                builder.Property(t => t.Location).HasMaxLength(100);
+                builder.Property(t => t.Name).HasMaxLength(100);
+                builder.Property(t => t.Abbreviation).HasMaxLength(20);
+                builder.Property(t => t.DisplayName).HasMaxLength(100);
+                builder.Property(t => t.DisplayNameShort).HasMaxLength(50);
+                builder.Property(t => t.ColorCodeHex).HasMaxLength(7);
+                builder.Property(t => t.ColorCodeAltHex).HasMaxLength(7);
+
                 builder.HasOne<Franchise>()
                     .WithMany(x => x.Seasons)
                     .HasForeignKey(x => x.FranchiseId);
+
+                builder.HasOne<Venue>()
+                    .WithMany()
+                    .HasForeignKey(x => x.VenueId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                builder.HasOne<Group>()
+                    .WithMany()
+                    .HasForeignKey(x => x.GroupId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                builder.HasMany(x => x.Records)
+                    .WithOne(r => r.Season)
+                    .HasForeignKey(r => r.FranchiseSeasonId)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
     }

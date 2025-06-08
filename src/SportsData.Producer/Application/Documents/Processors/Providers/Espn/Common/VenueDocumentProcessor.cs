@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
@@ -72,30 +73,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             _dataContext.Add(newEntity);
 
             // 2. Any images?
-            var events = new List<ProcessImageRequest>();
-            dto.Images?.ForEach(img =>
-            {
-                var imgId = Guid.NewGuid();
-                events.Add(new ProcessImageRequest(
-                    img.Href.AbsoluteUri,
-                    imgId,
-                    newEntity.Id,
-                    $"{newEntity.Id}-{events.Count}.png",
-                    command.Sport,
-                    command.Season,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    0,
-                    0,
-                    null,
-                    command.CorrelationId,
-                    CausationId.Producer.FranchiseDocumentProcessor));
-            });
+            var events = EventFactory.CreateProcessImageRequests(
+                dto.Images,
+                newEntity.Id,
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.VenueDocumentProcessor);
 
             if (events.Count > 0)
             {
-                _logger.LogInformation($"Requesting {events.Count} venue images.");
-                await _publishEndpoint.PublishBatch(events, CancellationToken.None);
+                _logger.LogInformation("Requesting {Count} venue images.", events.Count);
+                await _publishEndpoint.PublishBatch(events);
             }
 
             // 2. raise an integration event with the canonical model

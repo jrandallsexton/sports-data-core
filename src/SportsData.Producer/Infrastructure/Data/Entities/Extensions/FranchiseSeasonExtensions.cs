@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Dtos.Canonical;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -10,31 +12,46 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             Guid franchiseId,
             Guid franchiseSeasonId,
             int seasonYear,
-            Guid correlationId)
+            Guid correlationId,
+            Guid? venueId = null,
+            Guid? groupId = null)
         {
-            return new FranchiseSeason()
+            return new FranchiseSeason
             {
+                Id = franchiseSeasonId,
+                FranchiseId = franchiseId,
+                VenueId = venueId,
+                GroupId = groupId,
+                SeasonYear = seasonYear,
+                Slug = dto.Slug,
+                Location = dto.Location,
+                Name = dto.Name,
                 Abbreviation = dto.Abbreviation,
-                ColorCodeAltHex = dto.AlternateColor,
-                ColorCodeHex = dto.Color ?? string.Empty,
-                CreatedBy = correlationId,
-                CreatedUtc = DateTime.UtcNow,
                 DisplayName = dto.DisplayName,
                 DisplayNameShort = dto.ShortDisplayName,
-                FranchiseId = franchiseId,
-                Id = franchiseSeasonId,
+                ColorCodeHex = dto.Color ?? string.Empty,
+                ColorCodeAltHex = dto.AlternateColor,
                 IsActive = dto.IsActive,
                 IsAllStar = dto.IsAllStar,
-                Location = dto.Location,
                 Logos = [],
+                Wins = 0,
                 Losses = 0,
-                Name = dto.Name,
-                Season = seasonYear,
-                Slug = dto.Slug,
                 Ties = 0,
-                Wins = 0
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = correlationId,
+                ExternalIds = new List<FranchiseSeasonExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = dto.Id.ToString(),
+                        UrlHash = dto.Ref.UrlHash()
+                    }
+                }
             };
         }
+
 
         public static FranchiseSeasonDto ToCanonicalModel(this FranchiseSeason entity)
         {

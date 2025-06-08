@@ -27,7 +27,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             await franchiseAwards.Items.ForEachAsync(async i =>
             {
-                var award = await GetAward(i.Href);
+                var award = await GetAward(i.Ref);
                 awards.Add(award);
                 await Task.Delay(1000);
             });
@@ -86,9 +86,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 // TODO: Work this as a span in-memory (no string allocs)
                 dto.Items.ForEach(i =>
                 {
-                    var qsIndex = i.Href.IndexOf("?");
+                    var qsIndex = i.Ref.IndexOf("?");
 
-                    var tmpUrl = i.Href.Remove(qsIndex, i.Href.Length - qsIndex);
+                    var tmpUrl = i.Ref.Remove(qsIndex, i.Ref.Length - qsIndex);
                     var lastSlashIndex = tmpUrl.LastIndexOf("/");
 
                     tmpUrl = tmpUrl.Remove(0, lastSlashIndex + 1);
@@ -105,7 +105,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
                 dto.Items.ForEach(i =>
                 {
-                    var url = i.Href;
+                    var url = i.Ref;
                     url = url.Replace(uriMask, string.Empty);
                     url = url.Replace(mask1, string.Empty);
 

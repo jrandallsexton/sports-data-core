@@ -186,7 +186,7 @@ namespace SportsData.Provider.Migrations
                     b.Property<int>("ExecutionMode")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Href")
+                    b.Property<string>("Ref")
                         .IsRequired()
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)");
@@ -238,7 +238,7 @@ namespace SportsData.Provider.Migrations
                     b.HasIndex("ExecutionMode")
                         .HasDatabaseName("IX_ScheduledJob_ExecutionMode");
 
-                    b.HasIndex("Href")
+                    b.HasIndex("Ref")
                         .HasDatabaseName("IX_ScheduledJob_Href");
 
                     b.HasIndex("IsActive", "StartUtc", "EndUtc")

@@ -6,7 +6,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Venue : CanonicalEntityBase<Guid>, IHasSlug
+    public class Venue : CanonicalEntityBase<Guid>, IHasSlug, IHasExternalIds
     {
         public string Name { get; set; }
 
@@ -32,7 +32,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public decimal Longitude { get; set; }
 
-        public List<VenueExternalId> ExternalIds { get; set; }
+        public List<VenueExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public List<VenueImage> Images { get; set; } = [];
 
@@ -44,6 +46,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 //builder.UseTpcMappingStrategy();
                 builder.HasKey(t => t.Id);
                 builder.Property(p => p.Id).ValueGeneratedNever();
+                builder.Property(p => p.Country).HasMaxLength(20);
+                builder.Property(p => p.PostalCode).HasMaxLength(20);
+                builder.Property(p => p.State).HasMaxLength(20);
+                builder.Property(p => p.City).HasMaxLength(25);
             }
         }
     }

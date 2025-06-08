@@ -53,7 +53,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
                 if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
                 {
-                    _logger.LogWarning("Skipping invalid $ref href: {Href}", href);
+                    _logger.LogWarning("Skipping invalid $ref href: {Ref}", href);
                     continue;
                 }
 

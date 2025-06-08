@@ -136,7 +136,7 @@ namespace SportsData.Provider.Application.Jobs
                         var cmd = new ProcessResourceIndexItemCommand(
                             resourceIndexEntity.Id,
                             item.Id,
-                            item.Href,
+                            item.Ref,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
                             jobDefinition.DocumentType,
@@ -146,7 +146,7 @@ namespace SportsData.Provider.Application.Jobs
 
                         if (_appConfig.IsDryRun)
                         {
-                            _logger.LogInformation("DryRun enabled: skipping enqueue for {Href}", item.Href);
+                            _logger.LogInformation("DryRun enabled: skipping enqueue for {Ref}", item.Ref);
                         }
                         else
                         {

@@ -1,11 +1,13 @@
-﻿using System.Text.Json.Serialization;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
+
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
-public class EspnResourceIndexItem
+public class EspnResourceIndexItem : IHasRef
 {
     [JsonPropertyName("$ref")]
-    public string Href { get; set; }
+    public string Ref { get; set; }
 
     public int Id { get; set; }
 }

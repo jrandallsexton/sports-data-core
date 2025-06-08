@@ -17,6 +17,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseSeasonLogo> FranchiseSeasonLogos { get; set; }
 
+        public DbSet<FranchiseSeasonRecord> FranchiseSeasonRecords { get; set; }
+
         public DbSet<Group> Groups { get; set; }
 
         public DbSet<GroupExternalId> GroupExternalIds { get; set; }
@@ -37,6 +39,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonLogo.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordStat.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Group.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupLogo.EntityConfiguration());

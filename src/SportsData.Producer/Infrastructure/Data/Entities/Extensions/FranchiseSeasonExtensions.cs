@@ -52,7 +52,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-
         public static FranchiseSeasonDto ToCanonicalModel(this FranchiseSeason entity)
         {
             return new FranchiseSeasonDto()

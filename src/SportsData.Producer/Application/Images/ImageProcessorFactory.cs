@@ -1,9 +1,9 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Producer.Application.Images.Processors;
-using SportsData.Producer.Application.Images.Processors.Requests;
-using SportsData.Producer.Application.Images.Processors.Responses;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Football;
+
+using System.Reflection;
+using SportsData.Core.DependencyInjection;
 
 namespace SportsData.Producer.Application.Images
 {
@@ -16,89 +16,107 @@ namespace SportsData.Producer.Application.Images
 
     public class ImageProcessorFactory : IImageProcessorFactory
     {
+        private readonly IAppMode _appMode;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _provider;
+        private readonly BaseDataContext _dataContext;
+        private readonly ILogger<ImageProcessorFactory> _logger;
+
+        private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _requestProcessors = new();
+        private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _responseProcessors = new();
 
         public ImageProcessorFactory(
+            IAppMode appMode,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
-            IServiceProvider serviceProvider)
+            IServiceProvider provider,
+            BaseDataContext dataContext,
+            ILogger<ImageProcessorFactory> logger)
         {
+            _appMode = appMode ?? throw new ArgumentNullException(nameof(appMode));
             _documentTypeDecoder = documentTypeDecoder;
-            _serviceProvider = serviceProvider;
+            _provider = provider;
+            _dataContext = dataContext;
+            _logger = logger;
+
+            RegisterProcessors();
+        }
+
+        private void RegisterProcessors()
+        {
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(SafeGetTypes)
+                .Where(t => !t.IsAbstract && !t.IsInterface);
+
+            foreach (var type in types)
+            {
+                // Request processors
+                var requestAttrs = type.GetCustomAttributes<ImageRequestProcessorAttribute>();
+                foreach (var attr in requestAttrs)
+                {
+                    var key = (attr.Source, attr.Sport, attr.DocumentType);
+
+                    if (!_requestProcessors.ContainsKey(key))
+                    {
+                        _requestProcessors[key] = type;
+                        _logger.LogDebug("Registered image request processor: {Processor} for ({Source}, {Sport}, {Type})",
+                            type.Name, key.Item1, key.Item2, key.Item3);
+                    }
+                }
+
+                // Response processors
+                var responseAttrs = type.GetCustomAttributes<ImageResponseProcessorAttribute>();
+                foreach (var attr in responseAttrs)
+                {
+                    var key = (attr.Source, attr.Sport, attr.DocumentType);
+
+                    if (!_responseProcessors.ContainsKey(key))
+                    {
+                        _responseProcessors[key] = type;
+                        _logger.LogDebug("Registered image response processor: {Processor} for ({Source}, {Sport}, {Type})",
+                            type.Name, key.Item1, key.Item2, key.Item3);
+                    }
+                }
+            }
         }
 
         public IProcessLogoAndImageRequests GetRequestProcessor(DocumentType documentType)
         {
-            var imageLogoDocumentType = _documentTypeDecoder.GetLogoDocumentTypeFromDocumentType(documentType);
+            var normalizedType = _documentTypeDecoder.GetLogoDocumentTypeFromDocumentType(documentType);
+            var key = (SourceDataProvider.Espn, _appMode.CurrentSport, normalizedType);
 
-            switch (imageLogoDocumentType)
+            if (_requestProcessors.TryGetValue(key, out var openType))
             {
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
-                case DocumentType.AthleteImage:
-                    return _serviceProvider.GetRequiredService<AthleteImageRequestProcessor<FootballDataContext>>();
-                case DocumentType.Venue:
-                case DocumentType.VenueImage:
-                    return _serviceProvider.GetRequiredService<VenueImageRequestProcessor<FootballDataContext>>();
-                case DocumentType.GroupBySeason:
-                case DocumentType.GroupBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<GroupSeasonLogoRequestProcessor<FootballDataContext>>();
-                case DocumentType.GroupLogo:
-                    return _serviceProvider.GetRequiredService<GroupLogoRequestProcessor<FootballDataContext>>();
-                case DocumentType.Franchise:
-                case DocumentType.FranchiseLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseLogoRequestProcessor<FootballDataContext>>();
-                case DocumentType.TeamInformation:
-                case DocumentType.TeamBySeason:
-                case DocumentType.TeamBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoRequestProcessor<FootballDataContext>>();
-                case DocumentType.Award:
-                case DocumentType.CoachBySeason:
-                case DocumentType.Contest:
-                case DocumentType.GameSummary:
-                case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.Weeks:
-                default:
-                    throw new ArgumentOutOfRangeException();
+                var closedType = openType.IsGenericTypeDefinition
+                    ? openType.MakeGenericType(_dataContext.GetType())
+                    : openType;
+
+                return (IProcessLogoAndImageRequests)ActivatorUtilities.CreateInstance(_provider, closedType, _dataContext);
             }
+
+            throw new InvalidOperationException($"No image request processor registered for {key}");
         }
 
         public IProcessLogoAndImageResponses GetResponseProcessor(DocumentType documentType)
         {
-            var imageLogoDocumentType = _documentTypeDecoder.GetLogoDocumentTypeFromDocumentType(documentType);
+            var normalizedType = _documentTypeDecoder.GetLogoDocumentTypeFromDocumentType(documentType);
+            var key = (SourceDataProvider.Espn, _appMode.CurrentSport, normalizedType);
 
-            switch (imageLogoDocumentType)
+            if (_responseProcessors.TryGetValue(key, out var openType))
             {
-                case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
-                case DocumentType.AthleteImage:
-                    return _serviceProvider.GetRequiredService<AthleteImageResponseProcessor<FootballDataContext>>();
-                case DocumentType.Venue:
-                case DocumentType.VenueImage:
-                    return _serviceProvider.GetRequiredService<VenueImageResponseProcessor<FootballDataContext>>();
-                case DocumentType.GroupBySeason:
-                case DocumentType.GroupBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<GroupSeasonLogoResponseProcessor<FootballDataContext>>();
-                case DocumentType.GroupLogo:
-                    return _serviceProvider.GetRequiredService<GroupLogoResponseProcessor<FootballDataContext>>();
-                case DocumentType.Franchise:
-                case DocumentType.FranchiseLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseLogoResponseProcessor<FootballDataContext>>();
-                case DocumentType.TeamInformation:
-                case DocumentType.TeamBySeason:
-                case DocumentType.TeamBySeasonLogo:
-                    return _serviceProvider.GetRequiredService<FranchiseSeasonLogoResponseProcessor<FootballDataContext>>();
-                case DocumentType.Award:
-                case DocumentType.CoachBySeason:
-                case DocumentType.Contest:
-                case DocumentType.GameSummary:
-                case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.Weeks:
-                default:
-                    throw new ArgumentOutOfRangeException();
+                var closedType = openType.IsGenericTypeDefinition
+                    ? openType.MakeGenericType(_dataContext.GetType())
+                    : openType;
+
+                return (IProcessLogoAndImageResponses)ActivatorUtilities.CreateInstance(_provider, closedType, _dataContext);
             }
+
+            throw new InvalidOperationException($"No image response processor registered for {key}");
+        }
+
+        private static IEnumerable<Type> SafeGetTypes(Assembly assembly)
+        {
+            try { return assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t != null)!; }
         }
     }
 }

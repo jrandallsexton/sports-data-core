@@ -6,19 +6,25 @@ namespace SportsData.Core.Common
     {
         public static class Producer
         {
-            public static Guid AthleteDocumentProcessor = new Guid("0CF09E42-B9B1-42AB-9027-51CECF2D18D6");
-            public static Guid FranchiseDocumentProcessor = new Guid("0CF09E42-B9B1-42AB-9027-51CECF2D19D6");
-            public static Guid VenueCreatedDocumentProcessor = new Guid("0DF09E42-B9B1-42AB-9027-51CECF2D19D6");
-            public static Guid GroupBySeasonDocumentProcessor = new Guid("0EF09E42-B9B1-42AB-9027-51CECF2D19D6");
-            public static Guid TeamSeasonDocumentProcessor = new Guid("0FF09E42-B9B1-42AB-9027-51CECF2D19D6");
-            public static Guid ImageRequestedProcessor = new Guid("10F09E42-B9B1-42AB-9027-51CECF2D19D6");
-            public static Guid PositionDocumentProcessor = new Guid("10F09E42-B9B1-42AB-9027-51CECF2D19D5");
-            public static Guid VenueDocumentProcessor = new Guid("10F09E42-B9B1-42AB-9026-51CECF2D19D5");
+            public static Guid AthleteDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000001");
+            public static Guid FranchiseDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000002");
+            public static Guid FranchiseSeasonCreated = new Guid("10000000-0000-0000-0000-000000000003");
+
+            public static Guid VenueCreatedDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000004");
+            public static Guid VenueDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000005");
+
+            public static Guid GroupBySeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000006");
+            public static Guid PositionDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000007");
+
+            public static Guid TeamSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000008");
+            public static Guid TeamSeasonRecordDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000009");
+
+            public static Guid ImageRequestedProcessor = new Guid("10000000-0000-0000-0000-00000000000A");
         }
 
         public static class Provider
         {
-            public static Guid ResourceIndexItemProcessor = new Guid("3F3E7C5B-CCAD-4BEE-9696-280D9FBE34BA");
+            public static Guid ResourceIndexItemProcessor = new Guid("20000000-0000-0000-0000-000000000001");
         }
     }
 }

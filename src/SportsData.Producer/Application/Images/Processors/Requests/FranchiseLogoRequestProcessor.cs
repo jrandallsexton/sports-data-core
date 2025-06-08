@@ -11,6 +11,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
+    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Franchise)]
+    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.FranchiseLogo)]
     public class FranchiseLogoRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
         where TDataContext : TeamSportDataContext
     {

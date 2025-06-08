@@ -1,11 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamInformation)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamBySeason)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamBySeasonLogo)]
     public class FranchiseSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
         where TDataContext : TeamSportDataContext
     {

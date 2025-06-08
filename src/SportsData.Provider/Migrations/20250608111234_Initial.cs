@@ -141,7 +141,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_Href",
                 table: "ScheduledJob",
-                column: "Ref");
+                column: "Href");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_IsActive_StartUtc_EndUtc",

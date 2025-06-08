@@ -34,15 +34,10 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         using var doc = JsonDocument.Parse(json);
 
-        if (doc.RootElement.TryGetProperty("items", out var items))
+        // If it's an index (including hybrids), process refs only
+        if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
         {
-            if (items.ValueKind != JsonValueKind.Array)
-            {
-                _logger.LogWarning("Expected 'items' to be an array but found {Kind}. Ignoring.", items.ValueKind);
-                return;
-            }
-
-            _logger.LogInformation("Document is an index with {Count} items", items.GetArrayLength());
+            _logger.LogInformation("Document is an index (or hybrid) with {Count} items. Processing $ref only.", items.GetArrayLength());
 
             foreach (var item in items.EnumerateArray())
             {
@@ -74,10 +69,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     causationId: msg.CausationId));
             }
 
-            return;
+            return; // Never persist hybrid/index documents
         }
 
-        _logger.LogInformation("Document is not an index. Forwarding to ResourceIndexItemProcessor.");
+        // If it's not an index — treat it as a leaf document
+        _logger.LogInformation("Document is a leaf (non-index). Forwarding to ResourceIndexItemProcessor.");
 
         var urlHash = HashProvider.GenerateHashFromUrl(msg.Href);
 
@@ -88,6 +84,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             Sport: msg.Sport,
             SourceDataProvider: msg.SourceDataProvider,
             DocumentType: msg.DocumentType,
+            ParentId: msg.ParentId,
             SeasonYear: msg.SeasonYear));
     }
+
 }

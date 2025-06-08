@@ -5,7 +5,6 @@ using MassTransit;
 using Moq;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Provider.Application.Handlers;
 using SportsData.Provider.Application.Processors;
@@ -79,5 +78,37 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
                 d.DocumentType == DocumentType.TeamBySeason &&
                 d.Href == msg.Href), It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact]
+        public async Task WhenDocumentIsHybridWithItems_EmitsDocumentRequestedEvents()
+        {
+            // arrange
+            var json = await LoadJsonTestData("EspnTeamSeasonRecord.json"); // hybrid doc: top-level metadata + "items" with $refs
+
+            var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+            var publisher = Mocker.GetMock<IPublishEndpoint>();
+
+            espnApi.Setup(x => x.GetResource(It.IsAny<string>(), true)).ReturnsAsync(json);
+
+            var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+            var msg = Fixture.Build<DocumentRequested>()
+                .With(x => x.Href, "http://sports.core.api.espn.com/v2/sports/football/college-football/teams/99/record")
+                .With(x => x.DocumentType, DocumentType.TeamSeasonRecord)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .OmitAutoProperties()
+                .Create();
+
+            var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+            // act
+            await handler.Consume(ctx);
+
+            // assert
+            publisher.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
+                d.DocumentType == DocumentType.TeamSeasonRecord &&
+                !string.IsNullOrWhiteSpace(d.Href)), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        }
+
     }
 }

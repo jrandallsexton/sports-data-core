@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -91,8 +92,27 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         entity.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups, command.SourceDataProvider, () => _dataContext.Groups, _logger);
 
-        // TODO: Map Record (Wins/Losses) from dto.Record
-        // Example: dto.Record.Items or dto.Record.Overall → entity.Wins / entity.Losses
+        // Map Record (Wins/Losses/PtsFor/PtsAgainst) from dto.Record
+        if (!string.IsNullOrWhiteSpace(dto.Record?.Ref))
+        {
+            var recordHref = dto.Record?.Ref;
+
+            if (!string.IsNullOrEmpty(recordHref))
+            {
+                var recordId = new Uri(recordHref).Segments.Last().TrimEnd('/');
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    id: recordId,
+                    parentId: entity.Id.ToString(),
+                    href: recordHref,
+                    sport: command.Sport,
+                    seasonYear: command.Season,
+                    documentType: DocumentType.TeamSeasonRecord,
+                    sourceDataProvider: command.SourceDataProvider,
+                    correlationId: command.CorrelationId,
+                    causationId: CausationId.Producer.TeamSeasonDocumentProcessor));
+            }
+        }
 
         // TODO: Extract Ranks from dto.Ranks
         // Consider creating a new FranchiseSeasonRank entity to store weekly ranks per source

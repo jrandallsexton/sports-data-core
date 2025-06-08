@@ -7,6 +7,7 @@ namespace SportsData.Core.Eventing.Events.Documents
 {
     public class DocumentCreated(
         string id,
+        string? parentId,
         string name,
         string routingKey,
         string urlHash,
@@ -19,6 +20,8 @@ namespace SportsData.Core.Eventing.Events.Documents
         : EventBase(correlationId, causationId) , IHasSourceUrlHash
     {
         public string Id { get; init; } = id;
+
+        public string? ParentId { get; set; } = parentId;
 
         public string RoutingKey { get; set; } = routingKey;
 

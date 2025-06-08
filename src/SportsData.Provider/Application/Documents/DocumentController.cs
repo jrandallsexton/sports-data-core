@@ -35,6 +35,26 @@ namespace SportsData.Provider.Application.Documents
             _backgroundJobProvider = backgroundJobProvider;
         }
 
+        [HttpGet("urlHash/{hash}")]
+        public async Task<IActionResult> GetDocumentByUrlHash(string hash)
+        {
+            using (_logger.BeginScope(new Dictionary<string, object> { ["UrlHash"] = hash }))
+            {
+                _logger.LogInformation("Started");
+
+                var collectionName = "FootballNcaa";
+
+                _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+
+                var dbItem = await _documentStore
+                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.UrlHash == hash);
+
+                _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
+
+                return dbItem != null ? Ok(dbItem.Data) : NotFound("Document not found");
+            }
+        }
+
         [HttpGet("{providerId}/{sportId}/{typeId}/{documentId}")]
         public async Task<IActionResult> GetDocument(
             SourceDataProvider providerId,
@@ -51,6 +71,7 @@ namespace SportsData.Provider.Application.Documents
             }))
             {
                 _logger.LogInformation("Started");
+
                 var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
                 _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);

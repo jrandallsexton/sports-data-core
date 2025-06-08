@@ -14,6 +14,8 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 {
     public interface IProvideProviders : IProvideHealthChecks
     {
+        Task<string> GetDocumentByUrlHash(string urlHash);
+
         Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, long documentId, int? seasonId);
 
         Task PublishDocumentEvents(PublishDocumentEventsCommand command);
@@ -31,6 +33,25 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             base(HttpClients.ProviderClient, clientFactory)
         {
             _logger = logger;
+        }
+
+        public async Task<string> GetDocumentByUrlHash(string urlHash)
+        {
+            var url = $"document/urlHash/{urlHash}";
+            _logger.LogInformation("Using {@BaseAddress} with {@Url}", HttpClient.BaseAddress, url);
+
+            try
+            {
+                var response = await HttpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+                var tmp = await response.Content.ReadAsStringAsync();
+                return tmp;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to obtain document from Provider");
+                throw;
+            }
         }
 
         public async Task<string> GetDocumentByIdAsync(

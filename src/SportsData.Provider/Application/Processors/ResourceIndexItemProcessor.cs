@@ -140,7 +140,7 @@ namespace SportsData.Provider.Application.Processors
         {
             var document = new DocumentBase
             {
-                Id = urlHash, // ✅ Set _id = UrlHash
+                Id = urlHash,
                 Data = json,
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
@@ -154,6 +154,7 @@ namespace SportsData.Provider.Application.Processors
 
             var evt = new DocumentCreated(
                 urlHash,
+                command.ParentId,
                 collectionName,
                 _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
                 urlHash,
@@ -191,6 +192,7 @@ namespace SportsData.Provider.Application.Processors
 
             var evt = new DocumentUpdated(
                 urlHash,
+                command.ParentId,
                 collectionName,
                 _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
                 urlHash,
@@ -214,5 +216,6 @@ namespace SportsData.Provider.Application.Processors
         Sport Sport,
         SourceDataProvider SourceDataProvider,
         DocumentType DocumentType,
+        string? ParentId,
         int? SeasonYear = null);
 }

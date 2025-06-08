@@ -13,6 +13,8 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteBySeason)]
 public class AthleteDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<AthleteDocumentProcessor> _logger;

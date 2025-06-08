@@ -41,12 +41,7 @@ namespace SportsData.Producer.Application.Documents.Processors
         private async Task ProcessInternal(DocumentCreated evt)
         {
             // call Provider to obtain the new document
-            var document = await _provider.GetDocumentByIdAsync(
-                evt.SourceDataProvider,
-                evt.Sport,
-                evt.DocumentType,
-                long.Parse(evt.Id),
-                evt.SeasonYear);
+            var document = await _provider.GetDocumentByUrlHash(evt.UrlHash);
 
             if (document is null or "null")
             {
@@ -74,7 +69,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.SeasonYear,
                 evt.DocumentType,
                 document,
-                evt.CorrelationId));
+                evt.CorrelationId,
+                evt.ParentId));
         }
     }
 }

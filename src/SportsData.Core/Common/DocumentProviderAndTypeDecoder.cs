@@ -91,7 +91,7 @@ namespace SportsData.Core.Common
                     // TODO: This is a placeholder; should be EspnGroupDto when implemented
                     return (typeof(EspnGroupBySeasonDto), name); 
                 case DocumentType.Contest:
-                // TODO: Create these => return typeof(EspnContestDto);
+                    return (typeof(EspnFootballContestDto), name);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.TeamInformation:

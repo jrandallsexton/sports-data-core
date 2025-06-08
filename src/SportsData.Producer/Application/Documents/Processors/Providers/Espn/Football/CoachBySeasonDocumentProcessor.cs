@@ -1,9 +1,13 @@
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+
+using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+
+using System.Threading.Tasks;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachBySeason)]
     public class CoachBySeasonDocumentProcessor : IProcessDocuments
     {
         private readonly ILogger<CoachBySeasonDocumentProcessor> _logger;

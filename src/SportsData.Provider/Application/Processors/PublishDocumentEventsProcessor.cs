@@ -51,6 +51,7 @@ namespace SportsData.Provider.Application.Processors
             var events = dbDocuments.Select(tmp =>
                     new DocumentCreated(
                         tmp.Id.ToString(),
+                        null,
                         typeAndName.Type.Name,
                         _routingKeyGenerator.Generate(command.SourceDataProvider, tmp.Url),
                         tmp.UrlHash,

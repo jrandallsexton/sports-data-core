@@ -15,6 +15,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupBySeason)]
     public class GroupBySeasonDocumentProcessor : IProcessDocuments
     {
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;

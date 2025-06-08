@@ -4,7 +4,9 @@ using System;
 
 namespace SportsData.Core.Eventing.Events.Documents
 {
-    public class DocumentUpdated(string id,
+    public class DocumentUpdated(
+        string id,
+        string? parentId,
         string name,
         string routingKey,
         string urlHash,
@@ -14,6 +16,6 @@ namespace SportsData.Core.Eventing.Events.Documents
         SourceDataProvider sourceDataProvider,
         Guid correlationId,
         Guid causationId) :
-        DocumentCreated(id, name, routingKey, urlHash, sport, seasonYear,
+        DocumentCreated(id, parentId, name, routingKey, urlHash, sport, seasonYear,
             documentType, sourceDataProvider, correlationId, causationId) { }
 }

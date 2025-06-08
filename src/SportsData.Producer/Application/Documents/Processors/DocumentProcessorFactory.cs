@@ -1,9 +1,7 @@
 ﻿using SportsData.Core.Common;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
-using SportsData.Producer.Config;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
+
+using System.Reflection;
 
 namespace SportsData.Producer.Application.Documents.Processors;
 
@@ -20,101 +18,83 @@ public interface IDocumentProcessorFactory
 
 public class DocumentProcessorFactory : IDocumentProcessorFactory
 {
-    private readonly ILogger<DocumentProcessorFactory> _logger;
     private readonly IServiceProvider _serviceProvider;
-    //private readonly Dictionary<(string RoutingKey, DocumentAction Action), string> _map;
+    private readonly ILogger<DocumentProcessorFactory> _logger;
+    private readonly BaseDataContext _dataContext;
+    private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _processorMap;
 
     public DocumentProcessorFactory(
         IServiceProvider serviceProvider,
-        //DocumentProcessorMappings mappings,
-        ILogger<DocumentProcessorFactory> logger)
+        ILogger<DocumentProcessorFactory> logger,
+        BaseDataContext dataContext)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _dataContext = dataContext;
 
-        //_map = mappings.Mappings.ToDictionary(
-        //    m => (m.RoutingKey.ToLowerInvariant(), m.Action),
-        //    m => m.ProcessorTypeName);
+        _processorMap = BuildProcessorMap();
+    }
+
+    private Dictionary<(SourceDataProvider, Sport, DocumentType), Type> BuildProcessorMap()
+    {
+        var map = new Dictionary<(SourceDataProvider, Sport, DocumentType), Type>();
+
+        var processorTypes = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(SafeGetTypes)
+            .Where(t => typeof(IProcessDocuments).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface);
+
+        foreach (var type in processorTypes)
+        {
+            var attrs = type.GetCustomAttributes<DocumentProcessorAttribute>();
+
+            foreach (var attr in attrs)
+            {
+                var key = (attr.Source, attr.Sport, attr.DocumentType);
+
+                if (map.TryGetValue(key, out var value))
+                {
+                    _logger.LogWarning(
+                        "Duplicate DocumentProcessor for ({Source}, {Sport}, {Type}). Using: {Existing}, Ignoring: {Ignored}",
+                        key.Source, key.Sport, key.DocumentType, value.Name, type.Name);
+                    continue;
+                }
+
+                map[key] = type;
+
+                _logger.LogDebug("Registered processor: {Processor} for ({Source}, {Sport}, {Type})",
+                    type.Name, key.Source, key.Sport, key.DocumentType);
+            }
+        }
+
+        return map;
     }
 
     public IProcessDocuments GetProcessor(SourceDataProvider sourceDataProvider, Sport sport, DocumentType documentType, DocumentAction documentAction)
     {
-        switch (sourceDataProvider)
-        {
-            case SourceDataProvider.Espn:
-                return GetEspnDocumentProcessor(sport, documentType, documentAction);
-            case SourceDataProvider.SportsDataIO:
-            case SourceDataProvider.Cbs:
-            case SourceDataProvider.Yahoo:
-            default:
-                throw new ArgumentOutOfRangeException(nameof(sourceDataProvider), sourceDataProvider, null);
-        }
+        var key = (sourceDataProvider, sport, documentType);
+
+        if (!_processorMap.TryGetValue(key, out var openGenericType))
+            throw new InvalidOperationException($"No processor registered for ({sourceDataProvider}, {sport}, {documentType})");
+
+        var closedType = openGenericType.IsGenericTypeDefinition ?
+            openGenericType.MakeGenericType(_dataContext.GetType()) :
+            openGenericType;
+
+        return (IProcessDocuments)ActivatorUtilities.CreateInstance(
+            _serviceProvider,
+            closedType,
+            _dataContext);
     }
 
-    private IProcessDocuments GetEspnDocumentProcessor(Sport sport, DocumentType documentType, DocumentAction documentAction)
+    private static IEnumerable<Type> SafeGetTypes(Assembly assembly)
     {
-        switch (sport)
+        try
         {
-            case Sport.FootballNfl:
-            case Sport.FootballNcaa:
-                return GetEspnFootballDocumentProcessor(documentType, documentAction);
-            case Sport.All:
-            default:
-                throw new ArgumentOutOfRangeException(nameof(sport), sport, null);
+            return assembly.GetTypes();
         }
-    }
-
-    private IProcessDocuments GetEspnFootballDocumentProcessor(DocumentType documentType, DocumentAction documentAction)
-    {
-        switch (documentType)
+        catch (ReflectionTypeLoadException e)
         {
-            case DocumentType.AthleteBySeason:
-            case DocumentType.Athlete:
-                return _serviceProvider.GetRequiredService<AthleteDocumentProcessor>();
-            case DocumentType.Award:
-                return _serviceProvider.GetRequiredService<AwardDocumentProcessor>();
-            case DocumentType.Contest:
-                return _serviceProvider.GetRequiredService<ContestDocumentProcessor>();
-            case DocumentType.Franchise:
-                return _serviceProvider.GetRequiredService<FranchiseDocumentProcessor<FootballDataContext>>();
-            case DocumentType.GroupBySeason:
-                return _serviceProvider.GetRequiredService<GroupBySeasonDocumentProcessor>();
-            case DocumentType.Position:
-                return _serviceProvider.GetRequiredService<PositionDocumentProcessor<FootballDataContext>>();
-            //case DocumentType.Team:
-            //    return _serviceProvider.GetRequiredService<TeamDocumentProcessor>();
-            case DocumentType.TeamBySeason:
-                return _serviceProvider.GetRequiredService<TeamSeasonDocumentProcessor<FootballDataContext>>();
-            case DocumentType.TeamInformation:
-                return _serviceProvider.GetRequiredService<TeamInformationDocumentProcessor>();
-            case DocumentType.Venue:
-                return _serviceProvider.GetRequiredService<VenueDocumentProcessor<FootballDataContext>>();
-            case DocumentType.Seasons:
-                return _serviceProvider.GetRequiredService<SeasonsDocumentProcessor>();
-            case DocumentType.GameSummary:
-            case DocumentType.Scoreboard:
-            case DocumentType.Season:
-            case DocumentType.Weeks:
-                throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
-            case DocumentType.CoachBySeason:
-                return _serviceProvider.GetRequiredService<CoachBySeasonDocumentProcessor>();
-            case DocumentType.Group:
-                return _serviceProvider.GetRequiredService<GroupDocumentProcessor>();
-            case DocumentType.SeasonType:
-                return _serviceProvider.GetRequiredService<SeasonTypeDocumentProcessor>();
-            case DocumentType.Standings:
-                return _serviceProvider.GetRequiredService<StandingsDocumentProcessor>();
-            case DocumentType.TeamRank:
-                return _serviceProvider.GetRequiredService<TeamRankDocumentProcessor>();
-            case DocumentType.GroupLogo:
-            case DocumentType.FranchiseLogo:
-            case DocumentType.GroupBySeasonLogo:
-            case DocumentType.TeamBySeasonLogo:
-            case DocumentType.VenueImage:
-            case DocumentType.AthleteImage:
-            case DocumentType.GolfCalendar:
-            default:
-                throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
+            return e.Types.Where(t => t != null)!;
         }
     }
 }

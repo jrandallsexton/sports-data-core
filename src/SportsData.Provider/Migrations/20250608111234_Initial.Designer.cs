@@ -12,7 +12,7 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250607100055_Initial")]
+    [Migration("20250608111234_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

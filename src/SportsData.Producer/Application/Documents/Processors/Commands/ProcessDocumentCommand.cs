@@ -8,7 +8,8 @@ public class ProcessDocumentCommand(
     int? season,
     DocumentType documentType,
     string document,
-    Guid correlationId)
+    Guid correlationId,
+    string? parentId)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -21,4 +22,6 @@ public class ProcessDocumentCommand(
     public Guid CorrelationId { get; init; } = correlationId;
 
     public int? Season { get; init; } = season;
+
+    public string? ParentId { get; set; } = parentId;
 }

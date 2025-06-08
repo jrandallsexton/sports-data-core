@@ -140,6 +140,7 @@ namespace SportsData.Provider.Application.Jobs
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
                             jobDefinition.DocumentType,
+                            null,
                             jobDefinition.SeasonYear);
 
                         _logger.LogInformation("Preparing job for resourceIndexItem: {Id}", cmd.Id);

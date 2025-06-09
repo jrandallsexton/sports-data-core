@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using System.Collections.Generic;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {

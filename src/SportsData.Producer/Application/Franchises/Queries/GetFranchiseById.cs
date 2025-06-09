@@ -21,7 +21,7 @@ namespace SportsData.Producer.Application.Franchises.Queries
             public Guid Id { get; init; } = id;
         }
 
-        public class Dto : FranchiseDto, IMapFrom<Franchise>
+        public record Dto : FranchiseDto, IMapFrom<Franchise>
         {
             public void Mapping(Profile profile)
             {

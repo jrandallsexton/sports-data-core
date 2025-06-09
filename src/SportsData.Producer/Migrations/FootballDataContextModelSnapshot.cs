@@ -1068,7 +1068,7 @@ namespace SportsData.Producer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Abbrevation")
+                    b.Property<string>("Abbreviation")
                         .IsRequired()
                         .HasColumnType("text");
 

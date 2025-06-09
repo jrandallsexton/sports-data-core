@@ -2,7 +2,7 @@
 
 namespace SportsData.Core.Dtos.Canonical
 {
-    public class VenueDto : DtoBase
+    public record VenueDto : DtoBase
     {
         public required string Name { get; set; }
 
@@ -18,7 +18,7 @@ namespace SportsData.Core.Dtos.Canonical
 
         public List<VenueImageDto> Images { get; set; } = new List<VenueImageDto>();
 
-        public AddressDto Address { get; set; }
+        public AddressDto? Address { get; set; }
 
         // TODO: Get a physical address on this thing
     }

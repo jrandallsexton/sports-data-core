@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Dtos.Canonical
 {
-    public class ConferenceDto : DtoBase
+    public record ConferenceDto : DtoBase
     {
     }
 }

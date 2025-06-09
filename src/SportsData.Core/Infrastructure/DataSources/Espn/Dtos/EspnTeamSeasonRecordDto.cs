@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 using System;
 using System.Collections.Generic;

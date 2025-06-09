@@ -21,7 +21,7 @@ namespace SportsData.Producer.Application.Venues.Queries
             public Guid Id { get; init; } = id;
         }
 
-        public class Dto : VenueDto, IMapFrom<Venue>
+        public record Dto : VenueDto, IMapFrom<Venue>
         {
             public void Mapping(Profile profile)
             {

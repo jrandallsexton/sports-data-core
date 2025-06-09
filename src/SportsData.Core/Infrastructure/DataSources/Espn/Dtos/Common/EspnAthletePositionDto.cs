@@ -6,6 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnAthletePositionDto : IHasRef
     {
         [JsonPropertyName("$ref")]
@@ -30,4 +32,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("parent")]
         public EspnLinkDto Parent { get; set; }
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

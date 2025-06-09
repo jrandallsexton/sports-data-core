@@ -2,6 +2,8 @@
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnAthleteDraftDto
     {
         [JsonPropertyName("displayText")]
@@ -22,4 +24,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("pick")]
         public EspnLinkDto Pick { get; set; }
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

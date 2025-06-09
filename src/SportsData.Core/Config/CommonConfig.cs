@@ -1,13 +1,6 @@
-﻿using System.Collections.Generic;
-using SportsData.Core.Common;
-using SportsData.Core.Infrastructure.Clients.Contest;
-using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.Notification;
-using SportsData.Core.Infrastructure.Clients.Player;
-using SportsData.Core.Infrastructure.Clients.Producer;
-using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Season;
-using SportsData.Core.Infrastructure.Clients.Venue;
+﻿using SportsData.Core.Common;
+
+using System.Collections.Generic;
 
 namespace SportsData.Core.Config
 {

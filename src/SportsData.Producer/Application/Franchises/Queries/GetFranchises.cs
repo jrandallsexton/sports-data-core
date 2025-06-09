@@ -21,7 +21,7 @@ namespace SportsData.Producer.Application.Franchises.Queries
             }
         }
 
-        public class Dto : FranchiseDto, IMapFrom<Franchise>
+        public record Dto : FranchiseDto, IMapFrom<Franchise>
         {
             public void Mapping(Profile profile)
             {

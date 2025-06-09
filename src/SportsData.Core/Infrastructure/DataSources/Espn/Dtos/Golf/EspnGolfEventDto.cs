@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

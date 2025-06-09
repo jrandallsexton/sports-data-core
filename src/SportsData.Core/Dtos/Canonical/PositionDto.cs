@@ -1,11 +1,11 @@
 ﻿namespace SportsData.Core.Dtos.Canonical
 {
-    public class PositionDto : DtoBase
+    public record PositionDto : DtoBase
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
-        public string DisplayName { get; set; }
+        public string DisplayName { get; set; } = null!;
 
-        public string Abbrevation { get; set; }
+        public string Abbreviation { get; set; } = null!;
     }
 }

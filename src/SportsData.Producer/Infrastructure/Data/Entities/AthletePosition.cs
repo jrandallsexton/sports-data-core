@@ -8,7 +8,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class AthletePosition : CanonicalEntityBase<Guid>, IHasExternalIds
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         public string DisplayName { get; set; }
 

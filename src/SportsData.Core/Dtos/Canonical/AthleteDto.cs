@@ -2,34 +2,34 @@
 
 namespace SportsData.Core.Dtos.Canonical
 {
-    public class AthleteDto : DtoBase
+    public record AthleteDto : DtoBase
     {
-        public string LastName { get; set; }
+        public string LastName { get; init; } = null!;
 
-        public string FirstName { get; set; }
+        public string FirstName { get; init; } = null!;
 
-        public string DisplayName { get; set; }
+        public string? DisplayName { get; init; }
 
-        public string ShortName { get; set; }
+        public string? ShortName { get; init; }
 
-        public decimal WeightLb { get; set; }
+        public decimal? WeightLb { get; init; }
 
-        public string WeightDisplay { get; set; }
+        public string? WeightDisplay { get; init; }
 
-        public decimal HeightIn { get; set; }
+        public decimal? HeightIn { get; init; }
 
-        public string HeightDisplay { get; set; }
+        public string? HeightDisplay { get; init; }
 
-        public int Age { get; set; }
+        public int Age { get; init; } = -1; // default to -1 for unknown age
 
-        public DateTime DoB { get; set; }
+        public DateTime DoB { get; init; } = DateTime.MinValue; // default to MinValue for unknown DoB
 
-        public int CurrentExperience { get; set; }
+        public int CurrentExperience { get; init; } = -1; // default to -1 for unknown experience
 
-        public bool IsActive { get; set; }
+        public bool IsActive { get; init; }
 
-        public Guid PositionId { get; set; }
+        public Guid PositionId { get; init; }
 
-        public string PositionName { get; set; }
+        public string? PositionName { get; init; }
     }
 }

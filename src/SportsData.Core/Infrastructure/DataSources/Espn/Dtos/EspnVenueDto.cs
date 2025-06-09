@@ -9,6 +9,9 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 {
+
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnVenueDto : IHasRoutingKey, IHasRef
     {
         [JsonPropertyName("$ref")]
@@ -41,4 +44,5 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
 
         public string RoutingKey { get; } = "espn.v2.sports.football.leagues.college-football.venues";
     }
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

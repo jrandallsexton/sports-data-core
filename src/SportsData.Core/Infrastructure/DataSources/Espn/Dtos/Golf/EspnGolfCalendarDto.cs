@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 

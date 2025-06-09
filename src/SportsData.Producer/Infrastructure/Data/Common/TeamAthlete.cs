@@ -10,6 +10,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public Guid CurrentPosition { get; set; }
 
-        public Position Position { get; set; }
+        public AthletePosition Position { get; set; }
     }
 }

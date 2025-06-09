@@ -1,9 +1,9 @@
 ﻿namespace SportsData.Core.Dtos.Canonical
 {
-    public class AddressDto
+    public record AddressDto
     {
-        public string City { get; set; }
+        public required string City { get; init; }
 
-        public string State { get; set; }
+        public required string State { get; init; }
     }
 }

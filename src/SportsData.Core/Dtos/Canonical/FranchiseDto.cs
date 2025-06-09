@@ -2,24 +2,24 @@
 
 namespace SportsData.Core.Dtos.Canonical
 {
-    public class FranchiseDto : DtoBase
+    public record FranchiseDto : DtoBase
     {
-        public Sport Sport { get; set; }
+        public Sport Sport { get; init; }
 
-        public string Name { get; set; }
+        public string Name { get; init; } = null!;
 
-        public string Nickname { get; set; }
+        public string Nickname { get; init; } = null!;
 
-        public string Abbreviation { get; set; }
+        public string Abbreviation { get; init; } = null!;
 
-        public string DisplayName { get; set; }
+        public string DisplayName { get; init; } = null!;
 
-        public string DisplayNameShort { get; set; }
+        public string? DisplayNameShort { get; init; }
 
-        public string ColorCodeHex { get; set; }
+        public string ColorCodeHex { get; init; } = null!;
 
-        public string? ColorCodeAltHex { get; set; }
+        public string? ColorCodeAltHex { get; init; }
 
-        public string Slug { get; set; }
+        public string Slug { get; init; } = null!;
     }
 }

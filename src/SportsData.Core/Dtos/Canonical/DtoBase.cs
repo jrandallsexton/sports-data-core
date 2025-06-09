@@ -2,12 +2,12 @@
 
 namespace SportsData.Core.Dtos.Canonical
 {
-    public abstract class DtoBase
+    public abstract record DtoBase
     {
-        public Guid Id { get; set; }
+        public Guid Id { get; init; }
 
-        public DateTime CreatedUtc { get; set; }
+        public DateTime CreatedUtc { get; init; }
 
-        public DateTime? UpdatedUtc { get; set; }
+        public DateTime? UpdatedUtc { get; init; }
     }
 }

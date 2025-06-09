@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Converters;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 

@@ -4,6 +4,8 @@ using SportsData.Core.Converters;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnAddressDto
     {
         [JsonPropertyName("city")]
@@ -19,4 +21,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("country")]
         public string Country { get; set; } = "USA";
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

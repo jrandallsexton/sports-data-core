@@ -6,6 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnAthleteDto
     {
         [JsonPropertyName("id")]
@@ -126,4 +128,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("alt")]
         public string Alt { get; set; }
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

@@ -4,6 +4,8 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Basketball
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnBasketballAthleteDto : EspnAthleteDto
     {
         [JsonPropertyName("debutYear")]
@@ -36,4 +38,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Basketball
             public int YearsRemaining { get; set; }
         }
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

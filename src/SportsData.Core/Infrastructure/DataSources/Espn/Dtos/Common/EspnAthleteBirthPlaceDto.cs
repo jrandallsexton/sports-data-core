@@ -2,6 +2,8 @@
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
     public class EspnAthleteBirthPlaceDto
     {
         [JsonPropertyName("city")]
@@ -13,4 +15,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("country")]
         public string Country { get; set; }
     }
+
+#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

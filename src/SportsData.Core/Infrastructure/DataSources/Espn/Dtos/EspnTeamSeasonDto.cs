@@ -2,6 +2,7 @@
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -10,7 +11,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
     public class EspnTeamSeasonDto : IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))]

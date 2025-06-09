@@ -41,6 +41,7 @@ namespace SportsData.Producer.Application.Images
             RegisterProcessors();
         }
 
+        // TODO: refactor this as a singleton or static to avoid re-building the map on every request
         private void RegisterProcessors()
         {
             var types = AppDomain.CurrentDomain.GetAssemblies()

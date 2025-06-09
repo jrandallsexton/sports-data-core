@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
+
+using System;
 using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnLinkDto
+    public class EspnLinkDto : IHasRef
     {
         [JsonPropertyName("$ref")]
         public Uri Ref { get; set; }

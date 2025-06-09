@@ -29,6 +29,7 @@
         Venue = 24,
         VenueImage = 25,
         Weeks = 26,
-        TeamSeasonRecord = 27
+        TeamSeasonRecord = 27,
+        AthletePosition = 28
     }
 }

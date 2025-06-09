@@ -7,6 +7,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
     public abstract class TeamSportDataContext(DbContextOptions options) :
         BaseDataContext(options)
     {
+        public DbSet<AthletePosition> AthletePositions { get; set; }
+
         public DbSet<Franchise> Franchises { get; set; }
 
         public DbSet<FranchiseExternalId> FranchiseExternalIds { get; set; }
@@ -33,7 +35,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // TODO: See about registering these dynamically based on the context type
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfiguration(new AthletePosition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseLogo.EntityConfiguration());

@@ -38,9 +38,8 @@ namespace SportsData.Producer.DependencyInjection
                 return new ImageProcessorFactory(appMode, decoder, provider, context, logger);
             });
 
-            services.AddScoped<ImageProcessedProcessor>();
-
             services.AddScoped<ImageRequestedProcessor>();
+            services.AddScoped<ImageProcessedProcessor>();
 
             services.AddScoped<IProcessImageRequests, ImageRequestedProcessor>();
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();

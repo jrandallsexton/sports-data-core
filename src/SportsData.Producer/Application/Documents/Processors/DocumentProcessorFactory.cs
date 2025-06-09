@@ -35,6 +35,7 @@ public class DocumentProcessorFactory : IDocumentProcessorFactory
         _processorMap = BuildProcessorMap();
     }
 
+    // TODO: refactor this as a singleton or static to avoid re-building the map on every request
     private Dictionary<(SourceDataProvider, Sport, DocumentType), Type> BuildProcessorMap()
     {
         var map = new Dictionary<(SourceDataProvider, Sport, DocumentType), Type>();

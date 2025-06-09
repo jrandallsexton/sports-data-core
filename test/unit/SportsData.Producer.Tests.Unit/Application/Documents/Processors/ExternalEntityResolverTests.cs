@@ -74,7 +74,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
 
         var dtoRef = new EspnResourceIndexItem
         {
-            Ref = refUrl,
+            Ref = new Uri(refUrl),
             Id = 456
         };
 

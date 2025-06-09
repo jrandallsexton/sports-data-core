@@ -3,6 +3,7 @@ using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -11,7 +12,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
     public class EspnVenueDto : IHasRoutingKey, IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))] // Assumes you have or will rewrite this for System.Text.Json

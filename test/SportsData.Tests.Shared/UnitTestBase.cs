@@ -25,6 +25,13 @@ public abstract class UnitTestBase<T>
 
         Fixture = new Fixture();
 
+        Fixture.Behaviors
+            .OfType<ThrowingRecursionBehavior>()
+            .ToList()
+            .ForEach(b => Fixture.Behaviors.Remove(b));
+
+        Fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+
         Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
         var mapperConfig = new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile()));

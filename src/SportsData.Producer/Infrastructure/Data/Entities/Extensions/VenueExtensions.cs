@@ -23,7 +23,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     Id = Guid.NewGuid(),
                     Value = dto.Id.ToString(),
                     Provider = SourceDataProvider.Espn,
-                    UrlHash = HashProvider.GenerateHashFromUrl(dto.Ref)
+                    UrlHash = HashProvider.GenerateHashFromUrl(dto.Ref.AbsoluteUri)
                 }],
                 IsGrass = dto.Grass,
                 IsIndoor = dto.Indoor,

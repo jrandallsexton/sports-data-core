@@ -49,7 +49,7 @@ public static class ExternalEntityResolver
             return null;
 
         return await db.TryResolveEntityIdAsync(
-            dtoRef.Ref,
+            dtoRef.Ref.AbsoluteUri,
             provider,
             dbSetSelector,
             entity => entity.GetExternalIds(),

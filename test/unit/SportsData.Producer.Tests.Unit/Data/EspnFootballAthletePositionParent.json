@@ -1,0 +1,8 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us",
+  "id": "70",
+  "name": "Offense",
+  "displayName": "Offense",
+  "abbreviation": "OFF",
+  "leaf": false
+}

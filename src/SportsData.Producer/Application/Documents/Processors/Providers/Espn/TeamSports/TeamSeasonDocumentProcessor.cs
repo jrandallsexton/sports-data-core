@@ -93,25 +93,21 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             dto.Groups, command.SourceDataProvider, () => _dataContext.Groups, _logger);
 
         // Map Record (Wins/Losses/PtsFor/PtsAgainst) from dto.Record
-        if (!string.IsNullOrWhiteSpace(dto.Record?.Ref))
+        if (dto.Record?.Ref is not null)
         {
-            var recordHref = dto.Record?.Ref;
+            var recordUri = dto.Record.Ref;
+            var recordId = recordUri.Segments.Last().TrimEnd('/');
 
-            if (!string.IsNullOrEmpty(recordHref))
-            {
-                var recordId = new Uri(recordHref).Segments.Last().TrimEnd('/');
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    id: recordId,
-                    parentId: entity.Id.ToString(),
-                    href: recordHref,
-                    sport: command.Sport,
-                    seasonYear: command.Season,
-                    documentType: DocumentType.TeamSeasonRecord,
-                    sourceDataProvider: command.SourceDataProvider,
-                    correlationId: command.CorrelationId,
-                    causationId: CausationId.Producer.TeamSeasonDocumentProcessor));
-            }
+            await _publishEndpoint.Publish(new DocumentRequested(
+                id: recordId,
+                parentId: entity.Id.ToString(),
+                href: recordUri.AbsoluteUri,
+                sport: command.Sport,
+                seasonYear: command.Season,
+                documentType: DocumentType.TeamSeasonRecord,
+                sourceDataProvider: command.SourceDataProvider,
+                correlationId: command.CorrelationId,
+                causationId: CausationId.Producer.TeamSeasonDocumentProcessor));
         }
 
         // TODO: Extract Ranks from dto.Ranks

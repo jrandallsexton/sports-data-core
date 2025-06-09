@@ -46,7 +46,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
                         Value = dto.Id.ToString(),
-                        UrlHash = dto.Ref.UrlHash()
+                        UrlHash = dto.Ref.AbsoluteUri.UrlHash()
                     }
                 }
             };

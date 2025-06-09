@@ -1,12 +1,16 @@
 ﻿using SportsData.Core.Converters;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 using System;
 using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnAthletePositionDto
+    public class EspnAthletePositionDto : IHasRef
     {
+        [JsonPropertyName("$ref")]
+        public Uri Ref { get; set; }
+
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }

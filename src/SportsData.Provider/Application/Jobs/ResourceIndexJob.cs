@@ -136,7 +136,7 @@ namespace SportsData.Provider.Application.Jobs
                         var cmd = new ProcessResourceIndexItemCommand(
                             resourceIndexEntity.Id,
                             item.Id,
-                            item.Ref,
+                            item.Ref.AbsoluteUri,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
                             jobDefinition.DocumentType,

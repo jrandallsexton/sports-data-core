@@ -7,6 +7,8 @@ namespace SportsData.Core.Common
         public static class Producer
         {
             public static Guid AthleteDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000001");
+            public static Guid AthletePositionDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000000B");
+
             public static Guid FranchiseDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000002");
             public static Guid FranchiseSeasonCreated = new Guid("10000000-0000-0000-0000-000000000003");
 

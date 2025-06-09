@@ -72,7 +72,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public List<EspnLinkFullDto> Links { get; set; }
 
         [JsonPropertyName("logos")]
-        public List<Logo> Logos { get; set; }
+        public List<EspnImageDto> Logos { get; set; }
 
         [JsonPropertyName("athletes")]
         public EspnLinkDto Athletes { get; set; }
@@ -202,27 +202,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 
         [JsonPropertyName("items")]
         public List<EspnLeagueSeasonType> Items { get; set; }
-    }
-
-    public class Logo
-    {
-        [JsonPropertyName("href")]
-        public string Href { get; set; }
-
-        [JsonPropertyName("width")]
-        public int Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public int Height { get; set; }
-
-        [JsonPropertyName("alt")]
-        public string Alt { get; set; }
-
-        [JsonPropertyName("rel")]
-        public List<string> Rel { get; set; }
-
-        [JsonPropertyName("lastUpdated")]
-        public string LastUpdated { get; set; }
     }
 
     public class Week

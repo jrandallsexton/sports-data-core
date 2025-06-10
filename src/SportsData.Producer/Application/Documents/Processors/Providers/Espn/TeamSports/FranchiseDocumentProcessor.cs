@@ -50,6 +50,12 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var externalProviderDto = command.Document.FromJson<EspnFranchiseDto>();
 
+        if (externalProviderDto is null)
+        {
+            _logger.LogError($"Error deserializing {command.DocumentType}");
+            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+        }
+
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var entity = await _dataContext.Franchises.FirstOrDefaultAsync(x =>
             x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
@@ -129,15 +135,15 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             _logger.LogInformation("Requesting Team document: {Ref}", dto.Team.Ref);
 
             await _publishEndpoint.Publish(new DocumentRequested(
-                id: dto.Team.Ref.Segments.Last().TrimEnd('/'),
-                parentId: newFranchiseId.ToString(),
-                href: dto.Team.Ref.AbsoluteUri,
-                sport: command.Sport,
-                seasonYear: command.Season,
-                documentType: DocumentType.TeamBySeason,
-                sourceDataProvider: command.SourceDataProvider,
-                correlationId: command.CorrelationId,
-                causationId: CausationId.Producer.FranchiseDocumentProcessor));
+                dto.Team.Ref.Segments.Last().TrimEnd('/'),
+                newFranchiseId.ToString(),
+                dto.Team.Ref.AbsoluteUri,
+                command.Sport,
+                command.Season,
+                DocumentType.TeamBySeason,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.FranchiseDocumentProcessor));
         }
 
         if (dto.Awards?.Ref is not null)
@@ -145,15 +151,15 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             _logger.LogInformation("Requesting Franchise Awards document: {Ref}", dto.Awards.Ref);
 
             await _publishEndpoint.Publish(new DocumentRequested(
-                id: dto.Awards.Ref.Segments.Last().TrimEnd('/'),
-                parentId: newFranchiseId.ToString(),
-                href: dto.Awards.Ref.AbsoluteUri,
-                sport: command.Sport,
-                seasonYear: command.Season,
-                documentType: DocumentType.Award,
-                sourceDataProvider: command.SourceDataProvider,
-                correlationId: command.CorrelationId,
-                causationId: CausationId.Producer.FranchiseDocumentProcessor));
+                dto.Awards.Ref.Segments.Last().TrimEnd('/'),
+                newFranchiseId.ToString(),
+                dto.Awards.Ref.AbsoluteUri,
+                command.Sport,
+                command.Season,
+                DocumentType.Award,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.FranchiseDocumentProcessor));
         }
 
         // 4. Raise the integration event

@@ -49,8 +49,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            // deserialize the DTO
+            // Deserialize the DTO
             var espnDto = command.Document.FromJson<EspnVenueDto>();
+
+            if (espnDto is null)
+            {
+                _logger.LogError("Failed to deserialize document into EspnVenueDto. DocumentType: {DocumentType}, SourceDataProvider: {Provider}, CorrelationId: {CorrelationId}",
+                    command.DocumentType, command.SourceDataProvider, command.CorrelationId);
+
+                throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            }
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var exists = await _dataContext.Venues.AnyAsync(x =>
@@ -65,6 +73,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
                 await ProcessNewEntity(command, espnDto);
             }
         }
+
 
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnVenueDto dto)
         {
@@ -138,16 +147,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
                 updated = true;
             }
 
-            if (venue.City != dto.Address?.City ||
-                venue.State != dto.Address?.State ||
-                venue.PostalCode != dto.Address?.ZipCode.ToString() ||
-                venue.Country != dto.Address?.Country)
+            var address = dto.Address;
+
+            if (venue.City != address.City ||
+                 venue.State != address.State ||
+                 venue.PostalCode != address.ZipCode.ToString() ||
+                 venue.Country != address.Country)
             {
                 _logger.LogInformation("Updating address");
-                venue.City = dto.Address?.City;
-                venue.State = dto.Address?.State;
-                venue.PostalCode = dto.Address?.ZipCode.ToString();
-                venue.Country = dto.Address?.Country;
+                venue.City = address.City;
+                venue.State = address.State;
+                venue.PostalCode = address.ZipCode.ToString();
+                venue.Country = address.Country;
                 updated = true;
             }
 

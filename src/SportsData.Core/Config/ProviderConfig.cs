@@ -2,7 +2,7 @@
 {
     public class ProviderConfig
     {
-        public string SecretKey { get; set; }
-        public string ApiUrl { get; set; }
+        public required string SecretKey { get; set; }
+        public required string ApiUrl { get; set; }
     }
 }

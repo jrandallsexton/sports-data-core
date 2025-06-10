@@ -83,6 +83,8 @@ namespace SportsData.Provider.Application.Jobs
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Url = rootUrl.ToString(),
+                UrlHash = HashProvider.GenerateHashFromUrl(rootUrl.AbsoluteUri),
+                Name = Guid.NewGuid().ToString(),
                 EndpointMask = null,
                 IsSeasonSpecific = false
             };

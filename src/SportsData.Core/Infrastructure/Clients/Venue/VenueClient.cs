@@ -9,6 +9,7 @@ using SportsData.Core.Middleware.Health;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using FluentValidation.Results;
 
 namespace SportsData.Core.Infrastructure.Clients.Venue;
 
@@ -35,38 +36,53 @@ public class VenueClient : ClientBase, IProvideVenues
     {
         var response = await HttpClient.GetAsync("venues");
 
+        var content = await response.Content.ReadAsStringAsync();
+
         if (response.IsSuccessStatusCode)
         {
-            var tmp = await response.Content.ReadAsStringAsync();
-            var venues = tmp.FromJson<List<VenueDto>>();
+            var venues = content.FromJson<List<VenueDto>>() ?? [];
+
             return new Success<GetVenuesResponse>(new GetVenuesResponse
             {
                 Venues = venues
             });
         }
 
-        var t = await response.Content.ReadAsStringAsync();
-        var v = t.FromJson<Failure<List<VenueDto>>>();
-        return new Failure<GetVenuesResponse>(new GetVenuesResponse(), v.Status, v.Errors);
-    }
+        var failure = content.FromJson<Failure<List<VenueDto>>>();
 
+        var status = failure?.Status ?? ResultStatus.BadRequest;
+        var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing venue data")];
+
+        return new Failure<GetVenuesResponse>(new GetVenuesResponse(), status, errors);
+    }
 
     public async Task<Result<GetVenueByIdResponse>> GetVenueById(string id)
     {
         var response = await HttpClient.GetAsync($"venues/{id}");
+        var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
         {
-            var tmp = await response.Content.ReadAsStringAsync();
-            var venue = tmp.FromJson<VenueDto>();
-            return new Success<GetVenueByIdResponse>(new GetVenueByIdResponse()
+            var venue = content.FromJson<VenueDto>();
+
+            if (venue is null)
             {
-                Venue = venue
-            });
+                return new Failure<GetVenueByIdResponse>(
+                    new GetVenueByIdResponse(null),
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("Venue", $"Unable to deserialize venue with id {id}")]
+                );
+            }
+
+            return new Success<GetVenueByIdResponse>(new GetVenueByIdResponse(venue));
         }
 
-        var t = await response.Content.ReadAsStringAsync();
-        var v = t.FromJson<Failure<VenueDto>>();
-        return new Failure<GetVenueByIdResponse>(new GetVenueByIdResponse(), v.Status, v.Errors);
+        var failure = content.FromJson<Failure<VenueDto>>();
+        var status = failure?.Status ?? ResultStatus.BadRequest;
+        var errors = failure?.Errors ?? [new ValidationFailure("Response", $"Unable to retrieve venue with id {id}")];
+
+        return new Failure<GetVenueByIdResponse>(new GetVenueByIdResponse(null), status, errors);
     }
+
+
 }

@@ -14,17 +14,17 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             _config = config;
         }
 
-        public async Task<T> GetAsync<T>(string uri, bool ignoreCache = false) where T : class
+        public async Task<T?> GetAsync<T>(string uri, bool ignoreCache = false) where T : class
         {
-            if (!ignoreCache)
-            {
-                var cachedJson = await GetJsonFromFile(uri);
+            //if (!ignoreCache)
+            //{
+            //    var cachedJson = await GetJsonFromFile(uri);
 
-                if (!string.IsNullOrEmpty(cachedJson))
-                {
-                    return cachedJson.FromJson<T>();
-                }
-            }
+            //    if (!string.IsNullOrEmpty(cachedJson))
+            //    {
+            //        return cachedJson.FromJson<T>();
+            //    }
+            //}
 
             _logger?.LogInformation("Beginning call to {uri}", uri);
             using var response = await base.GetAsync(uri);
@@ -44,7 +44,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             using var response = await GetAsync(uri);
             var contentBytes = await response.Content.ReadAsByteArrayAsync();
 
-            await PersistMediaToDisk(uri, contentBytes);
+            //await PersistMediaToDisk(uri, contentBytes);
 
             return contentBytes;
         }
@@ -61,32 +61,32 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         //        MetadataPropertyHandling = MetadataPropertyHandling.Ignore
         //    };
 
-        private async Task PersistJsonToDisk(string uri, string jsonData)
-        {
-            uri = ConvertUriToFilename(uri);
-            uri = $"{uri}.json";
-            var path = Path.Combine(_config.DataDirectory, uri);
-            await File.WriteAllTextAsync(path, jsonData);
-        }
+        //private async Task PersistJsonToDisk(string uri, string jsonData)
+        //{
+        //    uri = ConvertUriToFilename(uri);
+        //    uri = $"{uri}.json";
+        //    var path = Path.Combine(_config.DataDirectory, uri);
+        //    await File.WriteAllTextAsync(path, jsonData);
+        //}
 
-        private async Task<string> GetJsonFromFile(string uri)
-        {
-            var filename = ConvertUriToFilename(uri);
-            filename = $"{filename}.json";
-            var path = Path.Combine(_config.DataDirectory, filename);
+        //private async Task<string> GetJsonFromFile(string uri)
+        //{
+        //    var filename = ConvertUriToFilename(uri);
+        //    filename = $"{filename}.json";
+        //    var path = Path.Combine(_config.DataDirectory, filename);
 
-            if (!File.Exists(path))
-                return string.Empty;
+        //    if (!File.Exists(path))
+        //        return string.Empty;
 
-            return await File.ReadAllTextAsync(path);
-        }
+        //    return await File.ReadAllTextAsync(path);
+        //}
 
-        private async Task PersistMediaToDisk(string uri, byte[] mediaBytes)
-        {
-            var filename = ConvertUriToFilename(uri);
-            var path = Path.Combine(_config.DataDirectory, filename);
-            await File.WriteAllBytesAsync(path, mediaBytes);
-        }
+        //private async Task PersistMediaToDisk(string uri, byte[] mediaBytes)
+        //{
+        //    var filename = ConvertUriToFilename(uri);
+        //    var path = Path.Combine(_config.DataDirectory, filename);
+        //    await File.WriteAllBytesAsync(path, mediaBytes);
+        //}
 
         private static string ConvertUriToFilename(string uri)
         {

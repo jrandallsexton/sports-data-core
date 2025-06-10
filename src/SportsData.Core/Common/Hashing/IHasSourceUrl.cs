@@ -4,4 +4,9 @@
     {
         string Url { get; set; }
     }
+
+    public interface IHasSourceUrlInitOnly : IHasSourceUrlHashInitOnly
+    {
+        string Url { get; init; }
+    }
 }

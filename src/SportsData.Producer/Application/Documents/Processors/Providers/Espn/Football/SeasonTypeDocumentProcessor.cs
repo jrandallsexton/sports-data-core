@@ -35,6 +35,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
+            await Task.Delay(100);
+
             // deserialize the DTO
             var espnDto = command.Document.FromJson<EspnFootballSeasonTypeDto>();
 

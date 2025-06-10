@@ -61,7 +61,7 @@ namespace SportsData.Api.Application.Auth
         }
 
         [HttpPost("set-token")]
-        public async Task<IActionResult> SetToken([FromBody] SetTokenRequest request)
+        public IActionResult SetToken([FromBody] SetTokenRequest request)
         {
             try
             {
@@ -135,6 +135,7 @@ namespace SportsData.Api.Application.Auth
         {
             var userId = User.FindFirstValue("user_id");
             var email = User.FindFirstValue(ClaimTypes.Email);
+            var provider = User.FindFirstValue("sign_in_provider") ?? "unknown";
 
             if (userId == null || email == null)
                 return Unauthorized();
@@ -148,7 +149,9 @@ namespace SportsData.Api.Application.Auth
                     Id = Guid.NewGuid(),
                     FirebaseUid = userId,
                     Email = email,
-                    CreatedUtc = DateTime.UtcNow
+                    CreatedUtc = DateTime.UtcNow,
+                    SignInProvider = provider,
+                    LastLoginUtc = DateTime.UtcNow,
                 };
 
                 _dbContext.Users.Add(user);
@@ -161,6 +164,6 @@ namespace SportsData.Api.Application.Auth
 
     public class SetTokenRequest
     {
-        public string Token { get; set; }
+        public string Token { get; set; } = null!;
     }
 }

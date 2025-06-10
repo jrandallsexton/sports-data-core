@@ -19,7 +19,7 @@ namespace SportsData.Producer.Application.Images.Handlers
             _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task Consume(ConsumeContext<ProcessImageRequest> context)
+        public Task Consume(ConsumeContext<ProcessImageRequest> context)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
@@ -29,6 +29,7 @@ namespace SportsData.Producer.Application.Images.Handlers
                 _logger.LogInformation("New ProcessImageRequest event received: {@message}", context.Message);
                 _backgroundJobProvider.Enqueue<ImageRequestedProcessor>(x => x.Process(context.Message));
             }
+            return Task.CompletedTask;
         }
     }
 }

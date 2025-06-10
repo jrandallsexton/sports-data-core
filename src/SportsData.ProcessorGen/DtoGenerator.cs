@@ -11,9 +11,14 @@ namespace SportsData.ProcessorGen
 
         public DtoGenerator(string baseUri, string model)
         {
-            _chatClient = new OllamaApiClient(new Uri(baseUri), _model); ;
-            _baseUri = new Uri(baseUri);
+            if (string.IsNullOrEmpty(model))
+            {
+                throw new ArgumentException("model is required");
+            }
+
             _model = model;
+            _chatClient = new OllamaApiClient(new Uri(baseUri), _model);
+            _baseUri = new Uri(baseUri);
         }
 
         public async Task<string> GenerateDtoFromJsonAsync(string json)
@@ -59,8 +64,8 @@ namespace SportsData.ProcessorGen
             //var chat = new Chat(client);
             var cm = new ChatMessage(new ChatRole(role), json);
 
-            var result = _chatClient.GetResponseAsync(cm);
-            return result.Result.Text;
+            var result = await _chatClient.GetResponseAsync(cm);
+            return result.Text;
             //var result = await _chatClient.GetResponseAsync(cm);
             //var chatCompletion = await _chatClient.CompleteAsync(prompt);
 

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging;
 
 using System;
 using System.Threading;
@@ -8,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Middleware.Health
 {
-    public class DatabaseHealthCheck<T>(T dbContext, ILogger<DatabaseHealthCheck<T>> logger) : IHealthCheck where T : DbContext
+    public class DatabaseHealthCheck<T>(T dbContext) :
+        IHealthCheck where T : DbContext
     {
         public async Task<HealthCheckResult> CheckHealthAsync(
             HealthCheckContext context,

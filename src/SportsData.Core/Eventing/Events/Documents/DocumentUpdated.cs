@@ -2,20 +2,21 @@
 
 using System;
 
-namespace SportsData.Core.Eventing.Events.Documents
-{
-    public class DocumentUpdated(
-        string id,
-        string? parentId,
-        string name,
-        string routingKey,
-        string urlHash,
-        Sport sport,
-        int ? seasonYear,
-        DocumentType documentType,
-        SourceDataProvider sourceDataProvider,
-        Guid correlationId,
-        Guid causationId) :
-        DocumentCreated(id, parentId, name, routingKey, urlHash, sport, seasonYear,
-            documentType, sourceDataProvider, correlationId, causationId) { }
-}
+namespace SportsData.Core.Eventing.Events.Documents;
+
+public record DocumentUpdated(
+    string Id,
+    string? ParentId,
+    string Name,
+    string RoutingKey,
+    string UrlHash,
+    Sport Sport,
+    int? SeasonYear,
+    DocumentType DocumentType,
+    SourceDataProvider SourceDataProvider,
+    Guid CorrelationId,
+    Guid CausationId
+) : DocumentCreated(
+    Id, ParentId, Name, RoutingKey, UrlHash, Sport, SeasonYear,
+    DocumentType, SourceDataProvider, CorrelationId, CausationId
+);

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>981ab36a-cd06-4a5c-aa84-035790ba7b58</UserSecretsId>
     <Configurations>Debug;Release;Local;Provider - FootballNcaa</Configurations>
+	  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

@@ -33,7 +33,7 @@ namespace SportsData.Contest
 
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
-            services.AddMessaging(config);
+            services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
 

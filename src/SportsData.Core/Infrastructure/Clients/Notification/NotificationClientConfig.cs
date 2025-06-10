@@ -2,6 +2,6 @@
 {
     public class NotificationClientConfig
     {
-        public string ApiUrl { get; set; }
+        public required string ApiUrl { get; set; }
     }
 }

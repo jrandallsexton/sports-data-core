@@ -123,6 +123,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             ProcessImageRequest request,
             DocumentType logoDocType)
         {
+            await Task.Delay(100);
             throw new NotImplementedException();
         }
     }

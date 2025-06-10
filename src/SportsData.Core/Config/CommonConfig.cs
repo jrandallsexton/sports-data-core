@@ -20,23 +20,23 @@ namespace SportsData.Core.Config
 
         public required string RedisUri { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> ContestClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> ContestClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> FranchiseClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> FranchiseClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> NotificationClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> NotificationClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> PlayerClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> PlayerClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> ProducerClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> ProducerClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> ProviderClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> ProviderClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> SeasonClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> SeasonClientConfigs { get; set; }
 
-        public Dictionary<Sport, ProviderConfig> VenueClientConfigs { get; set; }
+        public required Dictionary<Sport, ProviderConfig> VenueClientConfigs { get; set; }
 
-        public string FirebaseConfigJson { get; set; }
+        public required string FirebaseConfigJson { get; set; }
 
     }
 }

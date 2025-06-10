@@ -9,15 +9,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid FranchiseSeasonId { get; set; }
 
-        public string OriginalUrlHash { get; set; }
+        public required string OriginalUrlHash { get; set; }
 
-        public string Url { get; set; }
+        public required string Url { get; set; }
 
         public long? Height { get; set; }
 
         public long? Width { get; set; }
 
-        public List<string>? Rel { get; set; }
+        public List<string>? Rel { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonLogo>
         {
@@ -28,6 +28,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasOne<FranchiseSeason>()
                     .WithMany(x => x.Logos)
                     .HasForeignKey(x => x.FranchiseSeasonId);
+                builder.HasIndex(x => x.OriginalUrlHash);
+                builder.Property(x => x.Url).HasMaxLength(256);
+                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
             }
         }
     }

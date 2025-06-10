@@ -2,7 +2,7 @@
 {
     public class EspnApiClientConfig
     {
-        public string DataDirectory { get; set; }
-        public string MediaDirectory { get; set; }
+        public string? DataDirectory { get; set; }
+        public string? MediaDirectory { get; set; }
     }
 }

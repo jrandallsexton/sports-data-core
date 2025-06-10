@@ -18,7 +18,6 @@ public static class EspnTeamSeasonRecordExtensions
             FranchiseSeasonId = franchiseSeasonId,
             FranchiseId = franchiseId,
             SeasonYear = seasonYear,
-            RecordId = dto.Id,
             Name = dto.Name,
             Abbreviation = dto.Abbreviation,
             DisplayName = dto.DisplayName,
@@ -61,7 +60,6 @@ public static class EspnTeamSeasonRecordExtensions
             FranchiseId = entity.FranchiseId,
             SeasonYear = entity.SeasonYear,
 
-            RecordId = entity.RecordId,
             Name = entity.Name,
             Abbreviation = entity.Abbreviation,
             DisplayName = entity.DisplayName,

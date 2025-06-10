@@ -37,11 +37,13 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
     public class GetExternalDocumentQueryResponse
     {
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
-        public string CanonicalId { get; set; }
+        public required string CanonicalId { get; set; }
 
-        public string Href { get; set; }
+        public required string Href { get; set; }
+
+        public bool IsSuccess { get; set; } = true;
     }
 
     public class ProcessResourceIndexCommand
@@ -54,6 +56,6 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
         public int? Season { get; set; }
 
-        public string ResourceIndexUrl { get; set; }
+        public required string ResourceIndexUrl { get; set; }
     }
 }

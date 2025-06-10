@@ -6,7 +6,7 @@ namespace SportsData.Core.Dtos.Canonical
     {
         public required string Name { get; set; }
 
-        public required string ShortName { get; set; }
+        public string? ShortName { get; set; }
 
         public bool IsGrass { get; set; }
 

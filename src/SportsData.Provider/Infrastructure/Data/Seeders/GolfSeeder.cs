@@ -1,4 +1,5 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data.Seeders
@@ -21,6 +22,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             values.Add(new ResourceIndex()
             {
                 Id = Guid.NewGuid(),
+                Name = "GolfCalendar",
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.GolfCalendar,
@@ -30,7 +32,8 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 IsSeasonSpecific = true,
                 IsEnabled = true,
                 SeasonYear = 2025,
-                Ordinal = values.Count
+                Ordinal = values.Count,
+                UrlHash = HashProvider.GenerateHashFromUrl($"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar")
             });
 
             return values;

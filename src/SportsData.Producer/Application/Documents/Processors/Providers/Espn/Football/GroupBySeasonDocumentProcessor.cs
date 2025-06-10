@@ -48,6 +48,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             // deserialize the DTO
             var externalProviderDto = command.Document.FromJson<EspnGroupBySeasonDto>();
 
+            if (externalProviderDto is null)
+            {
+                _logger.LogError($"Error deserializing {command.DocumentType}");
+                throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            }
+
+            if (!command.Season.HasValue)
+            {
+                _logger.LogError($"SeasonYear is required for {command.DocumentType}");
+                throw new InvalidOperationException($"SeasonYear was not provided. CorrelationId: {command.CorrelationId}");
+            }
+
             // 1. Does this group (conference) exist? If not, we must create it prior to creating a season for it
             var groupEntity = await _dataContext.Groups
                 .Include(g => g.Seasons)
@@ -71,7 +83,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 if (groupTmp is { Group: not null })
                 {
                     // if the incoming season does not exist, add a new season to the existing group
-                    if (!groupTmp.Group.Seasons.Any(s => s.Season == command.Season.Value))
+                    if (groupTmp.Group.Seasons.All(s => s.Season != command.Season.Value))
                     {
                         groupTmp.Group.Seasons.Add(new GroupSeason()
                         {

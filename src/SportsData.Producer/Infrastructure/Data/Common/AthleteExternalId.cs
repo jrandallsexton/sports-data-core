@@ -7,7 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public class AthleteExternalId : ExternalId
     {
-        public Athlete Athlete { get; set; }
+        public Athlete Athlete { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<AthleteExternalId>
         {

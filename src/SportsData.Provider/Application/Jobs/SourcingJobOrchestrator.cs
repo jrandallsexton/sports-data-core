@@ -87,7 +87,7 @@ namespace SportsData.Provider.Application.Jobs
 
             foreach (var resource in allResources.Where(x => x.IsEnabled))
             {
-                if (!resource.CronExpression.IsValidCron())
+                if (string.IsNullOrEmpty(resource.CronExpression) || !resource.CronExpression.IsValidCron())
                 {
                     _logger.LogWarning("Skipping job registration: invalid cron '{Cron}' for ResourceIndex {Id} ({Name})",
                         resource.CronExpression, resource.Id, resource.Name);

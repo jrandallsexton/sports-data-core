@@ -12,38 +12,32 @@ using System.Threading.Tasks;
 
 namespace SportsData.Core.Middleware.Health
 {
-    public class HeartbeatPublisher<T> : BackgroundService where T : class
+    public class HeartbeatPublisher<T>(
+        IServiceScopeFactory scopeFactory,
+        ILogger<HeartbeatPublisher<T>> logger)
+        : BackgroundService
+        where T : class
     {
-        private readonly ILogger<HeartbeatPublisher<T>> _logger;
-        private readonly IServiceScopeFactory _scopeFactory;
-
-        public HeartbeatPublisher(IServiceScopeFactory scopeFactory,
-            ILogger<HeartbeatPublisher<T>> logger)
-        {
-            _scopeFactory = scopeFactory;
-            _logger = logger;
-        }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    using var scope = _scopeFactory.CreateScope();
+                    using var scope = scopeFactory.CreateScope();
                     var publisher = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
                     await publisher.Publish(new Heartbeat
                     {
                         CreatedAt = DateTime.UtcNow,
-                        Producer = typeof(T).FullName
+                        Producer = typeof(T).FullName ?? "UnknownProducer",
                     }, stoppingToken);
 
-                    _logger.LogInformation("Heartbeat published for {Producer}", typeof(T).FullName);
+                    logger.LogInformation("Heartbeat published for {Producer}", typeof(T).FullName);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to publish heartbeat for {Producer}", typeof(T).FullName);
+                    logger.LogError(ex, "Failed to publish heartbeat for {Producer}", typeof(T).FullName);
                 }
 
                 await Task.Delay(60_000, stoppingToken);

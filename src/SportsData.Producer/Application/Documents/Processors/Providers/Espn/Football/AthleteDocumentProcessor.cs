@@ -48,6 +48,14 @@ public class AthleteDocumentProcessor : IProcessDocuments
     {
         var externalProviderDto = command.Document.FromJson<EspnFootballAthleteDto>();
 
+        if (externalProviderDto is null)
+        {
+            _logger.LogError("Failed to deserialize document into EspnFootballAthleteDto. Sport: {Sport}, DocumentType: {DocumentType}, SourceDataProvider: {Provider}",
+                command.Sport, command.DocumentType, command.SourceDataProvider);
+
+            throw new InvalidOperationException($"Deserialization failed for EspnFootballAthleteDto. CorrelationId: {command.CorrelationId}");
+        }
+
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var exists = await _dataContext.Athletes
             .Include(x => x.ExternalIds)
@@ -66,7 +74,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
         var newEntityId = Guid.NewGuid();
 
         // TODO: Get the current franchise Id from the athleteDto?
-        var newEntity = externalProviderDto.AsEntity(newEntityId, null, command.CorrelationId);
+        // TODO: Get the source url
+        var newEntity = externalProviderDto.AsEntity(newEntityId, null, "FIX_ME", command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
         // 2. any headshot (image) for the AthleteDto?

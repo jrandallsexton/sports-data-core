@@ -20,22 +20,23 @@ namespace SportsData.Core.Eventing.Events
             Guid correlationId,
             Guid causationId)
         {
-            return images
-                .Select((img, index) => new ProcessImageRequest(
-                    url: img.Href?.ToString() ?? string.Empty,
-                    imageId: Guid.NewGuid(),
-                    parentEntityId: parentId,
-                    name: $"{parentId}-{index}.png",
-                    sport: sport,
-                    seasonYear: season,
-                    documentType: documentType,
-                    sourceDataProvider: provider,
-                    height: img.Height ?? 0,
-                    width: img.Width ?? 0,
-                    rel: img.Rel,
-                    correlationId: correlationId,
-                    causationId: causationId))
-                .ToList();
+            return images.Select((img, index) =>
+                new ProcessImageRequest(
+                    img.Href?.ToString() ?? string.Empty, // Url
+                    Guid.NewGuid(),                       // ImageId
+                    parentId,                             // ParentEntityId
+                    $"{parentId}-{index}.png",            // Name
+                    sport,                                // Sport
+                    season,                               // SeasonYear
+                    documentType,                         // DocumentType
+                    provider,                             // SourceDataProvider
+                    img.Height ?? 0,                      // Height
+                    img.Width ?? 0,                       // Width
+                    img.Rel,                              // Rel
+                    correlationId,                        // CorrelationId
+                    causationId                           // CausationId
+                )
+            ).ToList();
         }
     }
 }

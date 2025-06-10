@@ -9,6 +9,7 @@
     <DockerfileContext>..\..</DockerfileContext>
 	  <InvariantGlobalization>false</InvariantGlobalization>
 	  <Configurations>Debug;Release;Local;Provider - FootballNcaa</Configurations>
+	  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

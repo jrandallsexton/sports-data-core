@@ -9,12 +9,12 @@ namespace SportsData.Provider.Infrastructure.Data
     public class DocumentBase : IHasSourceUrl
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonIgnore]
         public string id => Id;
 
-        public string Data { get; set; }
+        public required string Data { get; set; }
 
         public Sport Sport { get; set; }
 
@@ -22,14 +22,14 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public SourceDataProvider SourceDataProvider { get; set; }
 
-        public string UrlHash { get; set; }
+        public required string UrlHash { get; set; }
 
-        public string Url { get; set; }
+        public required string Url { get; set; }
 
         [JsonPropertyName("_etag")]
         public string? ETag { get; set; }  // Required for concurrency
 
         // 🔥 NEW — REQUIRED FOR COSMOS PARTITIONING
-        public string RoutingKey { get; set; }
+        public required string RoutingKey { get; set; }
     }
 }

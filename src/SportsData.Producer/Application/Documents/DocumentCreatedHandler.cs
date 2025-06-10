@@ -32,6 +32,8 @@ namespace SportsData.Producer.Application.Documents
 
                 _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(context.Message));
             }
+
+            await Task.CompletedTask;
         }
     }
 }

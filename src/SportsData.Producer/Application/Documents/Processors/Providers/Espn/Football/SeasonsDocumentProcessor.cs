@@ -38,9 +38,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // deserialize the DTO
-            var espnDto = command.Document.FromJson<EspnFootballSeasonsDto>();
+            var externalProviderDto = command.Document.FromJson<EspnFootballSeasonsDto>();
 
-            foreach (var season in espnDto.Types.Items)
+            if (externalProviderDto is null)
+            {
+                _logger.LogError($"Error deserializing {command.DocumentType}");
+                throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            }
+
+            foreach (var season in externalProviderDto.Types.Items)
             {
                 // external Id will be {seasonYear}{seasonId}
                 var externalId = $"{season.Year}{season.Id}";

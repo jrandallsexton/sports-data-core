@@ -5,7 +5,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 
 public class GroupExternalId : ExternalId
 {
-    public Group Group { get; set; }
+    public Group Group { get; set; } = null!;
 
     public class EntityConfiguration : IEntityTypeConfiguration<GroupExternalId>
     {

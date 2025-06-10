@@ -5,7 +5,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 
 public class FranchiseExternalId : ExternalId
 {
-    public Franchise Franchise { get; set; }
+    public Franchise Franchise { get; set; } = null!;
 
     public class EntityConfiguration : IEntityTypeConfiguration<FranchiseExternalId>
     {

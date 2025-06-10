@@ -33,7 +33,11 @@ namespace SportsData.Core.Middleware
             TResponse response;
             if (request.BypassCache) return await next();
 
-            var cacheKey = request.GetType().FullName;
+            var type = request.GetType();
+            var cacheKey = type.FullName ?? type.Name;
+
+            if (type.FullName is null)
+                _logger.LogWarning("Type.FullName was null for request of type {Type}", type);
 
             var cachedResponse = await _cache.GetRecordAsync<TResponse>(cacheKey);
 

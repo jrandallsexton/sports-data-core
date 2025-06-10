@@ -44,7 +44,7 @@ namespace SportsData.Provider
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
 
-            services.AddMessaging(config);
+            services.AddMessaging(config, null);
 
             //services.AddMassTransit(x =>
             //{
@@ -105,7 +105,7 @@ namespace SportsData.Provider
             // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
 
-            await services.ApplyMigrations<AppDataContext>();
+            await services.ApplyMigrations<AppDataContext>(null);
             using (var scope = app.Services.CreateScope())
             {
                 var appServices = scope.ServiceProvider;
@@ -125,7 +125,7 @@ namespace SportsData.Provider
 
             app.MapControllers();
 
-            await app.Services.ConfigureHangfireJobs(mode);
+            app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

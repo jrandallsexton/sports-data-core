@@ -23,7 +23,7 @@ namespace SportsData.Notification
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
-            services.AddMessaging(config);
+            services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, Sport.All);
 

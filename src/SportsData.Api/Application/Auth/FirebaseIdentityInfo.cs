@@ -4,9 +4,9 @@ namespace SportsData.Api.Application.Auth
 {
     public class FirebaseIdentityInfo
     {
-        public Dictionary<string, string[]> Identities { get; set; }
+        public Dictionary<string, string[]> Identities { get; set; } = [];
 
         [JsonPropertyName("sign_in_provider")]
-        public string SignInProvider { get; set; }
+        public string SignInProvider { get; set; } = string.Empty;
     }
 }

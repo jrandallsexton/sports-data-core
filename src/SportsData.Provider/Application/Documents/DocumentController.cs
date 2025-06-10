@@ -2,6 +2,7 @@
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Common.Routing;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
@@ -20,19 +21,22 @@ namespace SportsData.Provider.Application.Documents
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBlobStorage _blobStorage;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IGenerateRoutingKeys _routingKeyGenerator;
 
         public DocumentController(
             IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IGenerateRoutingKeys routingKeyGenerator)
         {
             _documentStore = documentStore;
             _decoder = decoder;
             _logger = logger;
             _blobStorage = blobStorage;
             _backgroundJobProvider = backgroundJobProvider;
+            _routingKeyGenerator = routingKeyGenerator;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -106,6 +110,7 @@ namespace SportsData.Provider.Application.Documents
         [HttpGet("{providerId}/{externalUrl}")]
         public async Task<IActionResult> ProcessResourceIndex([FromBody] ProcessResourceIndexCommand command)
         {
+            await Task.Delay(100);
             throw new NotImplementedException();
             // Check to see if the document is in the database
 
@@ -122,7 +127,7 @@ namespace SportsData.Provider.Application.Documents
         /// <param name="command"></param>
         /// <returns></returns>
         [HttpPost("publish", Name = "PublishDocumentEvents")]
-        public async Task<IActionResult> PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
+        public IActionResult PublishDocumentEvents([FromBody]PublishDocumentEventsCommand command)
         {
             _backgroundJobProvider.Enqueue<PublishDocumentEventsProcessor>(x => x.Process(command));
             return Accepted();
@@ -185,7 +190,13 @@ namespace SportsData.Provider.Application.Documents
             await _documentStore.InsertOneAsync(collectionName, new DocumentBase()
             {
                 Id = hash,
-                Data = externalUrl
+                Data = externalUrl,
+                DocumentType = query.DocumentType,
+                RoutingKey = _routingKeyGenerator.Generate(query.SourceDataProvider, externalUrl),
+                Url = externalUrl,
+                UrlHash = hash,
+                SourceDataProvider = query.SourceDataProvider,
+                Sport = query.Sport
             });
 
             _logger.LogInformation("Document saved to database");

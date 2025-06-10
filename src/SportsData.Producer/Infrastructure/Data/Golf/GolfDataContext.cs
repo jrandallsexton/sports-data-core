@@ -10,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data.Golf
     public class GolfDataContext(DbContextOptions<GolfDataContext> options) :
         BaseDataContext(options)
     {
-        public DbSet<GolfAthlete> Athletes { get; set; }
+        public new DbSet<GolfAthlete> Athletes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -81,7 +81,7 @@ namespace SportsData.Venue
             });
 
             // Apply Migrations
-            await services.ApplyMigrations<AppDataContext>();
+            await services.ApplyMigrations<AppDataContext>(null);
 
             var app = builder.Build();
 

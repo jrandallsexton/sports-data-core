@@ -2,16 +2,16 @@
 {
     public class FirebaseConfiguration
     {
-        public string Type { get; set; }
-        public string ProjectId { get; set; }
-        public string PrivateKeyId { get; set; }
-        public string PrivateKey { get; set; }
-        public string ClientEmail { get; set; }
-        public string ClientId { get; set; }
-        public string AuthUri { get; set; }
-        public string TokenUri { get; set; }
-        public string AuthProviderX509CertUrl { get; set; }
-        public string ClientX509CertUrl { get; set; }
-        public string UniverseDomain { get; set; }
+        public required string Type { get; init; }
+        public required string ProjectId { get; init; }
+        public required string PrivateKeyId { get; init; }
+        public required string PrivateKey { get; init; }
+        public required string ClientEmail { get; init; }
+        public required string ClientId { get; init; }
+        public required string AuthUri { get; init; }
+        public required string TokenUri { get; init; }
+        public required string AuthProviderX509CertUrl { get; init; }
+        public required string ClientX509CertUrl { get; init; }
+        public required string UniverseDomain { get; init; }
     }
 }

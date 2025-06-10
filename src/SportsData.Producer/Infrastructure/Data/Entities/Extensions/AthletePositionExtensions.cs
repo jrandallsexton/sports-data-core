@@ -12,8 +12,6 @@ public static class AthletePositionExtensions
         Guid positionId,
         Guid? parentId = null)
     {
-        if (dto == null) return null;
-
         return new AthletePosition
         {
             Id = positionId,
@@ -34,8 +32,6 @@ public static class AthletePositionExtensions
 
     public static AthletePositionDto AsCanonical(this AthletePosition entity)
     {
-        if (entity == null) return null;
-
         return new AthletePositionDto
         {
             Id = entity.Id,

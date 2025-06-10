@@ -1,10 +1,6 @@
 ﻿using MediatR;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,9 +11,13 @@ namespace SportsData.Core.Middleware
     /// </summary>
     /// <typeparam name="TRequest"></typeparam>
     /// <typeparam name="TResponse"></typeparam>
-    public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    public class PerformanceBehaviour<TRequest, TResponse> :
+        IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
     {
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+        public async Task<TResponse> Handle(
+            TRequest request,
+            RequestHandlerDelegate<TResponse> next,
+            CancellationToken cancellationToken)
         {
             // Pre-request logic: Start timer
             var timer = Stopwatch.StartNew();

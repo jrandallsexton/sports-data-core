@@ -67,7 +67,8 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 Url = response.Url,
                 Height = response.Height,
                 Width = response.Width,
-                Rel = response.Rel
+                Rel = response.Rel,
+                OriginalUrlHash = response.OriginalUrlHash
             });
 
             await _dataContext.SaveChangesAsync();

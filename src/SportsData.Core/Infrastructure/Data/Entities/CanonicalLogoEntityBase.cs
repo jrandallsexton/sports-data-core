@@ -4,7 +4,7 @@ namespace SportsData.Core.Infrastructure.Data.Entities;
 
 public abstract class CanonicalLogoEntityBase<T> : CanonicalEntityBase<T>
 {
-    public string Url { get; set; }
+    public required string Url { get; set; }
 
     public long? Height { get; set; }
 

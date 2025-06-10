@@ -41,7 +41,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             refUrl,
             SourceDataProvider.Espn,
             () => FootballDataContext.Venues,
-            v => v.ExternalIds);
+            v => v.ExternalIds,
+            null);
 
         // Assert
         Assert.NotNull(result);
@@ -82,7 +83,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         var result = await FootballDataContext.TryResolveFromDtoRefAsync(
             dtoRef,
             SourceDataProvider.Espn,
-            () => FootballDataContext.Venues);
+            () => FootballDataContext.Venues,
+            null);
 
         // Assert
         Assert.NotNull(result);

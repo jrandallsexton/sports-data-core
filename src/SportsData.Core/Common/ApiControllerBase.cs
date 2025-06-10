@@ -17,54 +17,56 @@ namespace SportsData.Core.Common
         protected ISender Mediator => _mediator ??= HttpContext.RequestServices.GetRequiredService<ISender>();
 
         public async Task<ActionResult<TResponse>> Send<TRequest, TResponse>(TRequest request)
+            where TRequest : IRequest<Result<TResponse>>
         {
+            if (request is null)
+                return BadRequest("Request cannot be null.");
+
             var result = await Mediator.Send(request);
 
-            return result is Success<TResponse> success ?
-                MapSuccess(success) :
-                MapFailure(result as Failure<TResponse>);
+            return result switch
+            {
+                Success<TResponse> success => MapSuccess(success),
+                Failure<TResponse> failure => MapFailure(failure),
+                _ => StatusCode(500, "Unexpected result type")
+            };
         }
 
-        protected ActionResult MapFailure<T>(Failure<T> result)
+        protected ActionResult MapFailure<T>(Failure<T>? result)
         {
-            switch (result.Status)
+            if (result is null)
+                return StatusCode(500, "Unknown failure result");
+
+            return result.Status switch
             {
-                case ResultStatus.BadRequest:
-                case ResultStatus.Validation:
-                    return new BadRequestObjectResult(result);
-                case ResultStatus.Forbid:
-                    return new ForbidResult();
-                case ResultStatus.NotFound:
-                    return new NotFoundObjectResult(result);
-                case ResultStatus.Success:
-                    return new OkObjectResult(result);
-                case ResultStatus.Unauthorized:
-                    return new UnauthorizedObjectResult(result);
-                case ResultStatus.Accepted:
-                case ResultStatus.Created:
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                ResultStatus.BadRequest => new BadRequestObjectResult(result),
+                ResultStatus.Validation => new BadRequestObjectResult(result),
+                ResultStatus.Forbid => new ForbidResult(),
+                ResultStatus.NotFound => new NotFoundObjectResult(result),
+                ResultStatus.Success => new OkObjectResult(result),
+                ResultStatus.Unauthorized => new UnauthorizedObjectResult(result),
+                ResultStatus.Accepted or ResultStatus.Created or _ =>
+                    throw new ArgumentOutOfRangeException(nameof(result.Status), $"Unhandled status: {result.Status}")
+            };
         }
 
-        protected ActionResult MapSuccess<T>(Success<T> result)
+        protected ActionResult MapSuccess<T>(Success<T>? result)
         {
-            switch (result.Status)
+            if (result is null)
+                return StatusCode(500, "Unknown success result");
+
+            return result.Status switch
             {
-                case ResultStatus.Accepted:
-                    return new AcceptedResult();
-                case ResultStatus.Created:
-                    return new OkObjectResult(result);
-                case ResultStatus.Success:
-                    return new OkObjectResult(result);
-                case ResultStatus.BadRequest:
-                case ResultStatus.Forbid:
-                case ResultStatus.NotFound:
-                case ResultStatus.Unauthorized:
-                case ResultStatus.Validation:
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                ResultStatus.Accepted => new AcceptedResult(),
+                ResultStatus.Created => new OkObjectResult(result),
+                ResultStatus.Success => new OkObjectResult(result),
+                ResultStatus.BadRequest or
+                ResultStatus.Forbid or
+                ResultStatus.NotFound or
+                ResultStatus.Unauthorized or
+                ResultStatus.Validation or _ =>
+                    throw new ArgumentOutOfRangeException(nameof(result.Status), $"Unexpected success status: {result.Status}")
+            };
         }
     }
 }

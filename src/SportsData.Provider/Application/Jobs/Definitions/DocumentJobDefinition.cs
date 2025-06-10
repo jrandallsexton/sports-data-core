@@ -5,11 +5,6 @@ namespace SportsData.Provider.Application.Jobs.Definitions
 {
     public class DocumentJobDefinition
     {
-        public DocumentJobDefinition()
-        {
-            
-        }
-
         public DocumentJobDefinition(Infrastructure.Data.Entities.ResourceIndex resourceIndex)
         {
             DocumentType = resourceIndex.DocumentType;

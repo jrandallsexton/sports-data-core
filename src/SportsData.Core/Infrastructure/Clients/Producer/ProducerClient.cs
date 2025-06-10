@@ -1,17 +1,18 @@
 ﻿using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Middleware.Health;
+
 using System.Net.Http;
 using System.Threading.Tasks;
-using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
     public interface IProvideProducers : IProvideHealthChecks
     {
-        Task<VenueDto> GetVenue(string id);
+        Task<VenueDto?> GetVenue(string id);
     }
 
     public class ProducerClient : ClientBase, IProvideProducers
@@ -26,14 +27,14 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             _logger = logger;
         }
 
-        public async Task<VenueDto> GetVenue(string id)
+        public async Task<VenueDto?> GetVenue(string id)
         {
             var response = await HttpClient.GetAsync($"venue/{id}");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var venue = tmp.FromJson<Success<VenueDto>>();
 
-            return venue.Value;
+            return venue?.Value;
         }
     }
 }

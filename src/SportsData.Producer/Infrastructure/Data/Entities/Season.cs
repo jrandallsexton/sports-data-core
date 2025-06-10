@@ -9,17 +9,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public int Year { get; set; }
 
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string Abbreviation { get; set; }
 
-        public string Slug { get; set; }
+        public required string Slug { get; set; }
 
         public DateTime StartDate { get; set; }
 
         public DateTime EndDate { get; set; }
 
-        public List<SeasonExternalId> ExternalIds { get; set; }
+        public List<SeasonExternalId> ExternalIds { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<Season>
         {
@@ -28,6 +28,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable("SeasonYear");
                 builder.HasKey(t => t.Id);
                 builder.Property(p => p.Id).ValueGeneratedNever();
+                builder.Property(t => t.Name).HasMaxLength(100).IsRequired();
+                builder.Property(t => t.Abbreviation).HasMaxLength(10).IsRequired();
+                builder.Property(t => t.Slug).HasMaxLength(10).IsRequired();
             }
         }
     }

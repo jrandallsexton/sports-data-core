@@ -11,33 +11,31 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid FranchiseSeasonId { get; set; } // FK to FranchiseSeason
 
-        public FranchiseSeason Season { get; set; }
+        public FranchiseSeason Season { get; set; } = null!;
 
         public Guid FranchiseId { get; set; } // denormalized for convenience
 
         public int SeasonYear { get; set; } // denormalized for convenience
 
-        public string RecordId { get; set; } // ESPN's string-based id
+        public required string Name { get; set; }
 
-        public string Name { get; set; }
+        public required string Abbreviation { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string DisplayName { get; set; }
 
-        public string DisplayName { get; set; }
+        public required string ShortDisplayName { get; set; }
 
-        public string ShortDisplayName { get; set; }
+        public required string Description { get; set; }
 
-        public string Description { get; set; }
+        public required string Type { get; set; }
 
-        public string Type { get; set; }
+        public required string Summary { get; set; }
 
-        public string Summary { get; set; }
-
-        public string DisplayValue { get; set; }
+        public required string DisplayValue { get; set; }
 
         public double Value { get; set; }
 
-        public List<FranchiseSeasonRecordStat> Stats { get; set; } = new();
+        public List<FranchiseSeasonRecordStat> Stats { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecord>
         {
@@ -46,11 +44,36 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable("FranchiseSeasonRecord");
                 builder.HasKey(t => t.Id);
 
+                builder.Property(t => t.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                builder.Property(t => t.Abbreviation)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                builder.Property(t => t.DisplayName)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                builder.Property(t => t.ShortDisplayName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                builder.Property(t => t.Description)
+                    .IsRequired()
+                    .HasMaxLength(300);
+
                 builder.Property(t => t.Type)
                     .IsRequired()
                     .HasMaxLength(100);
 
+                builder.Property(t => t.Summary)
+                    .IsRequired()
+                    .HasMaxLength(300);
+
                 builder.Property(t => t.DisplayValue)
+                    .IsRequired()
                     .HasMaxLength(100);
 
                 builder.Property(t => t.Value)
@@ -68,6 +91,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }
+
     }
 
     public class FranchiseSeasonRecordStat
@@ -76,24 +100,24 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid FranchiseSeasonRecordId { get; set; }
 
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string DisplayName { get; set; }
+        public required string DisplayName { get; set; }
 
-        public string ShortDisplayName { get; set; }
+        public required string ShortDisplayName { get; set; }
 
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string Abbreviation { get; set; }
 
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         public double Value { get; set; }
 
-        public string DisplayValue { get; set; }
+        public required string DisplayValue { get; set; }
 
         [ForeignKey(nameof(FranchiseSeasonRecordId))]
-        public FranchiseSeasonRecord Record { get; set; }
+        public FranchiseSeasonRecord Record { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecordStat>
         {

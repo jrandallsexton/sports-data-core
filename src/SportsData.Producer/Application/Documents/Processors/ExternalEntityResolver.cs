@@ -16,7 +16,7 @@ public static class ExternalEntityResolver
         SourceDataProvider provider,
         Func<DbSet<TEntity>> dbSetSelector,
         Func<TEntity, IEnumerable<ExternalId>> externalIdsSelector,
-        ILogger logger = null) where TEntity : class
+        ILogger? logger) where TEntity : class
     {
         var urlHash = HashProvider.GenerateHashFromUrl(refUrl);
 
@@ -42,7 +42,7 @@ public static class ExternalEntityResolver
         IHasRef dtoRef,
         SourceDataProvider provider,
         Func<DbSet<TEntity>> dbSetSelector,
-        ILogger logger = null)
+        ILogger? logger)
         where TEntity : class, IHasExternalIds
     {
         if (dtoRef?.Ref is null)

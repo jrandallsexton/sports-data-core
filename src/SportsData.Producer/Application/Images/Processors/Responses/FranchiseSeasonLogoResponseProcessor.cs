@@ -46,7 +46,8 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 CreatedUtc = DateTime.UtcNow,
                 Url = response.Url,
                 Height = response.Height,
-                Width = response.Width
+                Width = response.Width,
+                OriginalUrlHash = response.OriginalUrlHash
             });
 
             await _dataContext.SaveChangesAsync();

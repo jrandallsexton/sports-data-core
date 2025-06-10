@@ -11,14 +11,15 @@ namespace SportsData.Core.Middleware.Health
 {
     public class HealthCheck : IHealthCheck
     {
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+        public async Task<HealthCheckResult> CheckHealthAsync(
+            HealthCheckContext context,
             CancellationToken cancellationToken = default)
         {
             var providerName = context.Registration.Name;
             var kvp = new Dictionary<string, object>()
             {
                 {"host", Environment.MachineName},
-                {"myName", Assembly.GetEntryAssembly().FullName}
+                {"myName", Assembly.GetEntryAssembly()?.FullName ?? providerName} // TODO: Revisit this logic
             };
 
             return

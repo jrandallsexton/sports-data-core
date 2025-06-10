@@ -15,19 +15,19 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int SeasonYear { get; set; }
 
-        public string Slug { get; set; }
+        public required string Slug { get; set; }
 
-        public string Location { get; set; }
+        public required string Location { get; set; }
 
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string Abbreviation { get; set; }
 
-        public string DisplayName { get; set; }
+        public required string DisplayName { get; set; }
 
-        public string DisplayNameShort { get; set; }
+        public required string DisplayNameShort { get; set; }
 
-        public string ColorCodeHex { get; set; }
+        public required string ColorCodeHex { get; set; }
 
         public string? ColorCodeAltHex { get; set; }
 

@@ -85,7 +85,9 @@ namespace SportsData.Core.DependencyInjection
         /// <param name="services"></param>
         /// <param name="seedFunction"></param>
         /// <returns></returns>
-        public static async Task<IServiceCollection> ApplyMigrations<T>(this IServiceCollection services, Func<T, Task> seedFunction = null) where T : DbContext
+        public static async Task<IServiceCollection> ApplyMigrations<T>(
+            this IServiceCollection services,
+            Func<T, Task>? seedFunction) where T : DbContext
         {
             await using var serviceProvider = services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<T>();
@@ -93,8 +95,8 @@ namespace SportsData.Core.DependencyInjection
             if (pending.Any())
                 await context.Database.MigrateAsync();
 
-            //if (seedFunction is not null)
-            //    await seedFunction(context);
+            if (seedFunction is not null)
+                await seedFunction(context);
             return services;
         }
 
@@ -124,7 +126,11 @@ namespace SportsData.Core.DependencyInjection
 
             Console.WriteLine($"Hangfire ConnStr: {connString}");
 
-            services.AddHangfire(x => x.UsePostgreSqlStorage(connString));
+            services.AddHangfire(x => x.UsePostgreSqlStorage(options =>
+            {
+                options.UseNpgsqlConnection(connString);
+            }));
+
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
@@ -206,7 +212,10 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration config, List<Type> consumers = null)
+        public static IServiceCollection AddMessaging(
+            this IServiceCollection services,
+            IConfiguration config,
+            List<Type>? consumers)
         {
             services.AddMassTransit(x =>
             {

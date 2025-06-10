@@ -11,7 +11,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
     {
         public int Ordinal { get; set; }
 
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         public bool IsRecurring { get; set; }
 
@@ -30,9 +30,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public Sport SportId { get; set; }
 
-        public string Url { get; set; }
+        public required string Url { get; set; }
 
-        public string UrlHash { get; set; }
+        public required string UrlHash { get; set; }
 
         public string? EndpointMask { get; set; }
 
@@ -48,7 +48,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public int? TotalPageCount { get; set; }
 
-        public List<ResourceIndexItem> Items { get; set; }
+        public List<ResourceIndexItem> Items { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndex>
         {
@@ -65,6 +65,18 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
                 builder.HasIndex(t => t.LastAccessedUtc)
                     .HasDatabaseName("IX_ResourceIndex_LastAccessed");
+
+                builder.Property(p => p.Url)
+                    .HasMaxLength(255);
+
+                builder.Property(p => p.UrlHash)
+                    .HasMaxLength(64);
+
+                builder.Property(p => p.EndpointMask)
+                    .HasMaxLength(20);
+
+                builder.Property(p => p.CronExpression)
+                    .HasMaxLength(20);
             }
         }
     }

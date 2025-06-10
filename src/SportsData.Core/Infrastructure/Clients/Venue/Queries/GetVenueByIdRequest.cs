@@ -2,13 +2,7 @@
 
 namespace SportsData.Core.Infrastructure.Clients.Venue.Queries
 {
-    public record GetVenueByIdRequest
-    {
-        public int Id { get; set; }
-    }
+    public record GetVenueByIdRequest(int Id);
 
-    public record GetVenueByIdResponse
-    {
-        public VenueDto Venue { get; set; }
-    }
+    public record GetVenueByIdResponse(VenueDto? Venue);
 }

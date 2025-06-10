@@ -4,11 +4,9 @@ using System;
 
 namespace SportsData.Core.Eventing.Events.Athletes
 {
-    public class AthletePositionCreated(
-        AthletePositionDto dto,
-        Guid correlationId,
-        Guid causationId) : EventBase(correlationId, causationId)
-    {
-        public AthletePositionDto Canonical { get; init; } = dto;
-    }
+    public record AthletePositionCreated(
+        AthletePositionDto Canonical,
+        Guid CorrelationId,
+        Guid CausationId
+    ) : EventBase(CorrelationId, CausationId);
 }

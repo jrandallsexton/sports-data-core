@@ -58,15 +58,16 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 var routingKey = HashProvider.GenerateHashFromUrl(href).Substring(0, 3).ToUpperInvariant();
 
                 await _publisher.Publish(new DocumentRequested(
-                    id: id,
-                    parentId: msg.ParentId,
-                    href: href,
-                    sport: msg.Sport,
-                    seasonYear: msg.SeasonYear,
-                    documentType: msg.DocumentType,
-                    sourceDataProvider: msg.SourceDataProvider,
-                    correlationId: msg.CorrelationId,
-                    causationId: msg.CausationId));
+                    id,
+                    msg.ParentId,
+                    href,
+                    msg.Sport,
+                    msg.SeasonYear,
+                    msg.DocumentType,
+                    msg.SourceDataProvider,
+                    msg.CorrelationId,
+                    msg.CausationId));
+
             }
 
             return; // Never persist hybrid/index documents

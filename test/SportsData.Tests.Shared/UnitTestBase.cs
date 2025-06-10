@@ -17,7 +17,7 @@ public abstract class UnitTestBase<T>
 
     public Fixture Fixture { get; }
 
-    public ListLogger Logger { get; }
+    public ListLogger? Logger { get; }
 
     protected UnitTestBase()
     {

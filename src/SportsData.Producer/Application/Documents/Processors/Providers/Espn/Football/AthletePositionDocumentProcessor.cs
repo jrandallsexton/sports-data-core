@@ -45,7 +45,13 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnAthletePositionDto>();
+        var externalProviderDto = command.Document.FromJson<EspnAthletePositionDto>();
+
+        if (externalProviderDto is null)
+        {
+            _logger.LogError($"Error deserializing {command.DocumentType}");
+            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+        }
 
         // TODO: Validate DTO
         var exists = false;
@@ -56,11 +62,11 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (exists)
         {
-            await ProcessUpdate(command, dto);
+            await ProcessUpdate(command, externalProviderDto);
         }
         else
         {
-            await ProcessNewEntity(command, dto);
+            await ProcessNewEntity(command, externalProviderDto);
         }
     }
 
@@ -93,6 +99,12 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var entity = await _dataContext.AthletePositions.Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.ExternalIds.Any(y => y.Value == dto.Id.ToString()));
+
+        if (entity is null)
+        {
+            _logger.LogWarning("AthletePosition entity not found for DTO ID {DtoId} during update.", dto.Id);
+            throw new InvalidOperationException($"No AthletePosition found for external ID {dto.Id}");
+        }
 
         var updated = false;
 

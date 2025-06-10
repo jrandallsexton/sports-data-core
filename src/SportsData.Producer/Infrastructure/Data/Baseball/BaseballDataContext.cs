@@ -8,7 +8,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
     public class BaseballDataContext(DbContextOptions<BaseballDataContext> options) :
         BaseDataContext(options)
     {
-        public DbSet<BaseballAthlete> Athletes { get; set; }
+        public new DbSet<BaseballAthlete> Athletes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

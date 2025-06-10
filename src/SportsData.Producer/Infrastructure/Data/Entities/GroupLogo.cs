@@ -9,15 +9,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid GroupId { get; set; }
 
-        public string OriginalUrlHash { get; set; }
+        public required string OriginalUrlHash { get; set; }
 
-        public string Url { get; set; }
+        public required string Url { get; set; }
 
         public long? Height { get; set; }
 
         public long? Width { get; set; }
 
-        public List<string>? Rel { get; set; }
+        public List<string>? Rel { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<GroupLogo>
         {
@@ -30,6 +30,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.GroupId);
                 builder.HasIndex(x => x.OriginalUrlHash);
                 builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
+                builder.Property(x => x.Url).HasMaxLength(256);
             }
         }
     }

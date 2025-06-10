@@ -93,7 +93,15 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             var response = await HttpClient.PostAsync($"document/external/", content);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
-            return tmp.FromJson<GetExternalDocumentQueryResponse>();
+            var json = tmp.FromJson<GetExternalDocumentQueryResponse>();
+
+            return json ?? new GetExternalDocumentQueryResponse()
+            {
+                CanonicalId = string.Empty,
+                Href = string.Empty,
+                Id = string.Empty,
+                IsSuccess = false
+            };
         }
     }
 }

@@ -48,29 +48,35 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
     public async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var espnDto = command.Document.FromJson<EspnTeamSeasonDto>();
+        var externalProviderDto = command.Document.FromJson<EspnTeamSeasonDto>();
+
+        if (externalProviderDto is null)
+        {
+            _logger.LogError($"Error deserializing {command.DocumentType}");
+            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+        }
 
         if (command.Season is null)
             throw new InvalidOperationException("Season year must be provided.");
 
         var franchise = await _dataContext.Franchises
             .Include(f => f.Seasons)
-            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.Value == espnDto.Id.ToString() &&
+            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.Value == externalProviderDto.Id.ToString() &&
                                                               id.Provider == command.SourceDataProvider));
 
         if (franchise is null)
-            throw new InvalidOperationException($"Franchise {espnDto.Id} not found.");
+            throw new InvalidOperationException($"Franchise {externalProviderDto.Id} not found.");
 
         var franchiseSeasonId = DeterministicGuid.Combine(franchise.Id, command.Season.Value);
         var existingSeason = franchise.Seasons.FirstOrDefault(s => s.Id == franchiseSeasonId);
 
         if (existingSeason is not null)
         {
-            await ProcessUpdateEntity(existingSeason, espnDto, command);
+            await ProcessUpdateEntity(existingSeason, externalProviderDto, command);
         }
         else
         {
-            await ProcessNewEntity(franchise.Id, franchiseSeasonId, espnDto, command);
+            await ProcessNewEntity(franchise.Id, franchiseSeasonId, externalProviderDto, command);
         }
 
         await _dataContext.SaveChangesAsync();
@@ -99,15 +105,15 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             var recordId = recordUri.Segments.Last().TrimEnd('/');
 
             await _publishEndpoint.Publish(new DocumentRequested(
-                id: recordId,
-                parentId: entity.Id.ToString(),
-                href: recordUri.AbsoluteUri,
-                sport: command.Sport,
-                seasonYear: command.Season,
-                documentType: DocumentType.TeamSeasonRecord,
-                sourceDataProvider: command.SourceDataProvider,
-                correlationId: command.CorrelationId,
-                causationId: CausationId.Producer.TeamSeasonDocumentProcessor));
+                recordId,
+                entity.Id.ToString(),
+                recordUri.AbsoluteUri,
+                command.Sport,
+                command.Season,
+                DocumentType.TeamSeasonRecord,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.TeamSeasonDocumentProcessor));
         }
 
         // TODO: Extract Ranks from dto.Ranks
@@ -151,6 +157,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessUpdateEntity(FranchiseSeason existing, EspnTeamSeasonDto dto, ProcessDocumentCommand command)
     {
+        await Task.Delay(100);
+
         // TODO: Compare and update if necessary
         // For now, log and skip
         _logger.LogInformation("FranchiseSeason {Id} already exists. Skipping update.", existing.Id);

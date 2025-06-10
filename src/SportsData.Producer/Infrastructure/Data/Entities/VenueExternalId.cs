@@ -5,7 +5,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 
 public class VenueExternalId : ExternalId
 {
-    public Venue Venue { get; set; }
+    public Venue Venue { get; set; } = null!;
 
     public class EntityConfiguration : IEntityTypeConfiguration<VenueExternalId>
     {

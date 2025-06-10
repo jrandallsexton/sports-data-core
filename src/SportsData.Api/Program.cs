@@ -163,7 +163,7 @@ namespace SportsData.Api
             app.MapControllers();
 
             var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
-            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration;
+            var buildConfigurationName = assemblyConfigurationAttribute?.Configuration ?? "Development";
 
             app.UseCommonFeatures(buildConfigurationName);
 

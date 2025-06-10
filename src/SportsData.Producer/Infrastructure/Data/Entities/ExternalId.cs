@@ -6,10 +6,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class ExternalId : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {
-        public string Value { get; set; }
+        public required string Value { get; set; }
 
         public SourceDataProvider Provider { get; set; }
 
-        public string UrlHash { get; set; }
+        public required string UrlHash { get; set; }
     }
 }

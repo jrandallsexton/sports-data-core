@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Data.Entities;
 
@@ -11,13 +12,13 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public Guid? ParentItemId { get; set; }
 
-        public string Url { get; set; }
+        public required string Url { get; set; }
 
         public DateTime? LastAccessed { get; set; }
 
         public int Depth { get; set; } = 0;
 
-        public string UrlHash { get; set; }
+        public required string UrlHash { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndexItem>
         {
@@ -31,6 +32,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                     .WithMany(x => x.Items)
                     .HasForeignKey(x => x.ResourceIndexId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.Property(p => p.Url)
+                    .HasMaxLength(255);
 
                 builder.Property(x => x.UrlHash)
                     .HasMaxLength(64)

@@ -51,7 +51,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Slug = entity.Slug,
                 Capacity = entity.Capacity,
                 Address = null,
-                Images = null,
+                Images = [], // TODO: Add image metadata
                 UpdatedUtc = entity.LastModified
             };
         }

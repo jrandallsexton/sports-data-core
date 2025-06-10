@@ -10,11 +10,9 @@ namespace SportsData.Core.Extensions
             this IEnumerable<T> enumerable,
             Func<T, Task> action)
         {
-            foreach (T obj in enumerable)
+            foreach (var obj in enumerable)
             {
-                T item = obj;
-                await action(item);
-                item = default(T);
+                await action(obj);
             }
         }
     }

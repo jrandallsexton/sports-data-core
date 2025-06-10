@@ -1,8 +1,4 @@
-﻿using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.Award;
-using SportsData.Provider.Infrastructure.Providers.Espn.DTOs.TeamInformation;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
 {
@@ -12,70 +8,81 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             base(logger, config)
         { }
 
-        public async Task<EspnResourceIndexDto> Awards(int franchiseId)
-        {
-            return await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
-        }
+        //public async Task<EspnResourceIndexDto> Awards(int franchiseId)
+        //{
+        //    return await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
+        //}
 
-        public async Task<List<Award>> AwardsByFranchise(int franchiseId)
-        {
-            var franchiseAwards = await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
-            if (franchiseAwards == null || franchiseAwards.Count == 0)
-                return new List<Award>();
+        //public async Task<List<Award>> AwardsByFranchise(int franchiseId)
+        //{
+        //    var franchiseAwards = await GetAsync<EspnResourceIndexDto>(EspnApiEndpoints.Awards(franchiseId));
+        //    if (franchiseAwards == null || franchiseAwards.Count == 0)
+        //        return new List<Award>();
 
-            var awards = new List<Award>();
+        //    var awards = new List<Award>();
 
-            await franchiseAwards.Items.ForEachAsync(async i =>
-            {
-                var award = await GetAward(i.Ref.AbsoluteUri);
-                awards.Add(award);
-                await Task.Delay(1000);
-            });
+        //    await franchiseAwards.Items.ForEachAsync(async i =>
+        //    {
+        //        var award = await GetAward(i.Ref.AbsoluteUri);
+        //        awards.Add(award);
+        //        await Task.Delay(1000);
+        //    });
 
-            return awards;
-        }
+        //    return awards;
+        //}
 
-        private async Task<Award> GetAward(string uri)
-        {
-            var award = await GetAsync<Award>(uri);
+        //private async Task<Award> GetAward(string uri)
+        //{
+        //    var award = await GetAsync<Award>(uri);
 
-            await award.Winners.Where(w => w.Athlete != null).ToList().ForEachAsync(async w =>
-            {
-                await GetAthlete(w.Athlete.Ref?.AbsoluteUri);
-            });
-            return award;
-        }
+        //    await award.Winners.Where(w => w.Athlete != null).ToList().ForEachAsync(async w =>
+        //    {
+        //        await GetAthlete(w.Athlete.Ref?.AbsoluteUri);
+        //    });
+        //    return award;
+        //}
 
-        private async Task<EspnAthleteDto> GetAthlete(string uri)
-        {
-            return await GetAsync<EspnAthleteDto>(uri);
-        }
+        //private async Task<EspnAthleteDto> GetAthlete(string uri)
+        //{
+        //    return await GetAsync<EspnAthleteDto>(uri);
+        //}
 
-        public async Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId)
-        {
-            using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
-            var venuesJson = await response.Content.ReadAsStringAsync();
-            return venuesJson.FromJson<EspnTeamSeasonDto>();
-        }
+        //public async Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId)
+        //{
+        //    using var response = await GetAsync(EspnApiEndpoints.Team(fourDigitYear, teamId));
+        //    var venuesJson = await response.Content.ReadAsStringAsync();
+        //    return venuesJson.FromJson<EspnTeamSeasonDto>();
+        //}
 
-        public async Task<TeamInformation> TeamInformation(int teamId)
-        {
-            using var response = await GetAsync(EspnApiEndpoints.TeamInformation(teamId));
-            var venuesJson = await response.Content.ReadAsStringAsync();
-            return venuesJson.FromJson<TeamInformation>();
-        }
+        //public async Task<TeamInformation> TeamInformation(int teamId)
+        //{
+        //    using var response = await GetAsync(EspnApiEndpoints.TeamInformation(teamId));
+        //    var venuesJson = await response.Content.ReadAsStringAsync();
+        //    return venuesJson.FromJson<TeamInformation>();
+        //}
 
-        public async Task<EspnResourceIndexDto> Teams(int fourDigitYear)
-        {
-            using var response = await GetAsync(EspnApiEndpoints.Teams(fourDigitYear));
-            var venuesJson = await response.Content.ReadAsStringAsync();
-            return venuesJson.FromJson<EspnResourceIndexDto>();
-        }
+        //public async Task<EspnResourceIndexDto> Teams(int fourDigitYear)
+        //{
+        //    using var response = await GetAsync(EspnApiEndpoints.Teams(fourDigitYear));
+        //    var venuesJson = await response.Content.ReadAsStringAsync();
+        //    return venuesJson.FromJson<EspnResourceIndexDto>();
+        //}
 
         public async Task<EspnResourceIndexDto> GetResourceIndex(string uri, string? uriMask)
         {
             var dto = await GetAsync<EspnResourceIndexDto>(uri, true);
 
+            if (dto is null)
+            {
+                return new EspnResourceIndexDto()
+                {
+                    Count = 0,
+                    Items = [],
+                    PageCount = 0,
+                    PageIndex = 0,
+                    PageSize = 0
+                };
+            }
             return ExtractIds(dto, uriMask);
         }
 

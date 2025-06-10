@@ -9,7 +9,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid VenueId {  get; set; }
 
-        public string OriginalUrlHash { get; set; }
+        public required string OriginalUrlHash { get; set; }
 
         public required string Url { get; set; }
 
@@ -30,6 +30,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.VenueId);
                 builder.HasIndex(x => x.OriginalUrlHash);
                 builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
+                builder.Property(x => x.Url).HasMaxLength(256);
             }
         }
     }

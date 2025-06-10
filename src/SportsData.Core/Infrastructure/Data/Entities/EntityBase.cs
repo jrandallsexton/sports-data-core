@@ -8,10 +8,10 @@ namespace SportsData.Core.Infrastructure.Data.Entities
     public abstract class EntityBase<T> : IEntity<T>, IHasSourceUrlHash
     {
         [Key]
-        public T Id { get; set; }
+        public required T Id { get; set; }
 
         /// <summary>
-        /// Id of the canonical entity this entity is associated with, if any.
+        /// Identifier of the canonical entity this entity is associated with, if any.
         /// </summary>
         public Guid? CanonicalId { get; set; }
 
@@ -25,6 +25,6 @@ namespace SportsData.Core.Infrastructure.Data.Entities
 
         public DateTime LastModified => ModifiedUtc ?? CreatedUtc;
 
-        public string UrlHash { get; set; }
+        public required string UrlHash { get; set; }
     }
 }

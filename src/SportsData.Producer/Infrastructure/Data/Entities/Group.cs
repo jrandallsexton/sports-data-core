@@ -8,21 +8,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class Group : CanonicalEntityBase<Guid>, IHasSlug, IHasExternalIds
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string Abbreviation { get; set; }
 
-        public string ShortName { get; set; }
+        public required string ShortName { get; set; }
 
-        public string MidsizeName { get; set; }
+        public required string MidsizeName { get; set; }
 
-        public string Slug { get; set; }
+        public required string Slug { get; set; }
 
         public bool IsConference { get; set; } = true;
 
         public Guid? ParentGroupId { get; set; }
 
-        public List<GroupSeason> Seasons { get; set; }
+        public List<GroupSeason> Seasons { get; set; } = [];
 
         public List<GroupExternalId> ExternalIds { get; set; } = [];
 
@@ -36,7 +36,28 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable("Group");
                 builder.HasKey(t => t.Id);
+
+                builder.Property(t => t.Name)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                builder.Property(t => t.Abbreviation)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                builder.Property(t => t.ShortName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                builder.Property(t => t.MidsizeName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                builder.Property(t => t.Slug)
+                    .IsRequired()
+                    .HasMaxLength(100);
             }
         }
+
     }
 }

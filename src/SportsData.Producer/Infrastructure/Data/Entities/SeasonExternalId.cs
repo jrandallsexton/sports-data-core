@@ -5,7 +5,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class SeasonExternalId : ExternalId
     {
-        public Season Season { get; set; }
+        public Season Season { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<SeasonExternalId>
         {

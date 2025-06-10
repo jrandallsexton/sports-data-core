@@ -44,13 +44,15 @@ namespace SportsData.Venue.Application.Handlers
             // map it to our entity
             var entity = new Infrastructure.Data.Entities.Venue()
             {
+                Id = -1, // TODO: Revisit once we bring this service online (not anytime soon)
                 Name = canonicalVenue.Name,
                 ShortName = canonicalVenue.ShortName,
                 CreatedUtc = DateTime.UtcNow,
                 CanonicalId = canonicalVenue.Id,
                 IsGrass = canonicalVenue.IsGrass,
                 IsIndoor = canonicalVenue.IsIndoor,
-                CreatedBy = context.Message.CorrelationId
+                CreatedBy = context.Message.CorrelationId,
+                UrlHash = Guid.NewGuid().ToString() // TODO: This will point to the URL in Producer
             };
 
             // store it

@@ -8,11 +8,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class AthletePosition : CanonicalEntityBase<Guid>, IHasExternalIds
     {
-        public string Name { get; set; } = null!;
+        public required string Name { get; set; }
 
-        public string DisplayName { get; set; }
+        public required string DisplayName { get; set; }
 
-        public string Abbreviation { get; set; }
+        public required string Abbreviation { get; set; }
 
         public bool Leaf { get; set; }
 
@@ -21,7 +21,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         /// </summary>
         public Guid? ParentId { get; set; }
 
-        public AthletePosition Parent { get; set; }
+        public AthletePosition? Parent { get; set; }
 
         public ICollection<AthletePosition> Children { get; set; } = new List<AthletePosition>();
 
@@ -38,12 +38,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasKey(p => p.Id);
 
                 builder.Property(p => p.Name)
+                    .IsRequired()
                     .HasMaxLength(100);
 
                 builder.Property(p => p.DisplayName)
+                    .IsRequired()
                     .HasMaxLength(100);
 
                 builder.Property(p => p.Abbreviation)
+                    .IsRequired()
                     .HasMaxLength(20);
 
                 builder.Property(p => p.Leaf)
@@ -55,5 +58,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .OnDelete(DeleteBehavior.Restrict);
             }
         }
+
     }
 }

@@ -37,6 +37,8 @@ namespace SportsData.Api.Application.User
             var user = await _dbContext.Users
                 .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
 
+            var provider = User.FindFirstValue("sign_in_provider") ?? "unknown";
+
             if (user == null)
             {
                 user = new Infrastructure.Data.Entities.User
@@ -46,7 +48,8 @@ namespace SportsData.Api.Application.User
                     Email = dto.Email,
                     DisplayName = dto.DisplayName,
                     Timezone = dto.Timezone,
-                    LastLoginUtc = DateTime.UtcNow
+                    LastLoginUtc = DateTime.UtcNow,
+                    SignInProvider = provider
                 };
                 _dbContext.Users.Add(user);
             }

@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Routing;
 
 using System.Text.Json;
+using SportsData.Core.Extensions;
 
 namespace SportsData.ProcessorGen
 {
@@ -37,7 +38,7 @@ namespace SportsData.ProcessorGen
 
             foreach (var url in urls)
             {
-                await TraverseAsync(url, results, visited, allUrls, fetcher, generator);
+                await TraverseAsync(new Uri(url), results, visited, allUrls, fetcher, generator);
             }
 
             await File.WriteAllTextAsync("C:\\temp\\results.json", FormatRoutingKeyMap(results));
@@ -48,7 +49,7 @@ namespace SportsData.ProcessorGen
         }
 
         private static async Task TraverseAsync(
-            string url,
+            Uri uri,
             List<Result> results,
             HashSet<string> visited,
             List<string> allUrls,
@@ -59,11 +60,11 @@ namespace SportsData.ProcessorGen
         {
             if (depth > maxDepth)
             {
-                Console.WriteLine($"[Depth {depth}] Max depth reached for {url}");
+                Console.WriteLine($"[Depth {depth}] Max depth reached for {uri.ToCleanUrl()}");
                 return;
             }
 
-            var normalizedUrl = NormalizeUrl(url);
+            var normalizedUrl = NormalizeUrl(uri.ToCleanUrl());
             if (!visited.Add(normalizedUrl))
             {
                 Console.WriteLine($"[Depth {depth}] Already visited URL: {normalizedUrl}");
@@ -72,8 +73,8 @@ namespace SportsData.ProcessorGen
 
             allUrls.Add(normalizedUrl); // Record for logging
 
-            Console.WriteLine($"[Depth {depth}] Fetching: {url}");
-            var json = await fetcher.FetchJsonAsync(url);
+            Console.WriteLine($"[Depth {depth}] Fetching: {uri}");
+            var json = await fetcher.FetchJsonAsync(uri);
 
             // === SHIM: Generate DTO using Ollama ===
             //var dtoGen = new DtoGenerator("http://localhost:11434", "deepseek-coder-v2");
@@ -91,14 +92,14 @@ namespace SportsData.ProcessorGen
 
             if (isResourceIndex)
             {
-                Console.WriteLine($"[Depth {depth}] Skipped save — index document: {url}");
+                Console.WriteLine($"[Depth {depth}] Skipped save — index document: {uri}");
             }
             else
             {
-                var routingKey = generator.Generate(SourceDataProvider.Espn, url);
+                var routingKey = generator.Generate(SourceDataProvider.Espn, uri);
                 if (!string.IsNullOrWhiteSpace(routingKey))
                 {
-                    await fetcher.SaveJsonAsync(json, url, "D:\\Dropbox\\Code\\sports-data\\data", SourceDataProvider.Espn);
+                    await fetcher.SaveJsonAsync(json, uri, "D:\\Dropbox\\Code\\sports-data\\data", SourceDataProvider.Espn);
 
                     results.Add(new Result
                     {
@@ -109,7 +110,7 @@ namespace SportsData.ProcessorGen
                 }
                 else
                 {
-                    Console.WriteLine($"[Depth {depth}] Could not generate routing key for: {url}");
+                    Console.WriteLine($"[Depth {depth}] Could not generate routing key for: {uri}");
                 }
             }
 
@@ -118,7 +119,7 @@ namespace SportsData.ProcessorGen
             foreach (var childUrl in refs)
             {
                 Console.WriteLine($"[Depth {depth + 1}] → {childUrl}");
-                await TraverseAsync(childUrl, results, visited, allUrls, fetcher, generator, depth + 1, maxDepth);
+                await TraverseAsync(new Uri(childUrl), results, visited, allUrls, fetcher, generator, depth + 1, maxDepth);
             }
 
             // Save partial results occasionally (optional)

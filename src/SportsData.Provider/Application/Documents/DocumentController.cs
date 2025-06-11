@@ -3,6 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
@@ -152,7 +153,7 @@ namespace SportsData.Provider.Application.Documents
             _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
 
             // generate a hash for the collection retrieval
-            var hash = HashProvider.GenerateHashFromUrl(query.Url.ToLower());
+            var hash = HashProvider.GenerateHashFromUri(query.Uri);
 
             _logger.LogInformation("Hash generated {@Hash}", hash);
 
@@ -166,13 +167,14 @@ namespace SportsData.Provider.Application.Documents
                 {
                     Id = hash,
                     CanonicalId = query.CanonicalId,
-                    Href = dbItem.Data
+                    Uri = dbItem.Uri,
+                    IsSuccess = true
                 });
             }
 
             // get the item via the url
             using var client = new HttpClient();
-            using var response = await client.GetAsync(query.Url);
+            using var response = await client.GetAsync(query.Uri);
             await using var stream = await response.Content.ReadAsStreamAsync();
 
             // upload it to blob storage
@@ -190,10 +192,10 @@ namespace SportsData.Provider.Application.Documents
             await _documentStore.InsertOneAsync(collectionName, new DocumentBase()
             {
                 Id = hash,
-                Data = externalUrl,
+                Data = externalUrl.ToCleanUrl(),
                 DocumentType = query.DocumentType,
                 RoutingKey = _routingKeyGenerator.Generate(query.SourceDataProvider, externalUrl),
-                Url = externalUrl,
+                Uri = externalUrl,
                 UrlHash = hash,
                 SourceDataProvider = query.SourceDataProvider,
                 Sport = query.Sport
@@ -206,7 +208,7 @@ namespace SportsData.Provider.Application.Documents
             {
                 Id = hash,
                 CanonicalId = query.CanonicalId,
-                Href = externalUrl
+                Uri = externalUrl
             });
         }
     }

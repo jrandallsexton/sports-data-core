@@ -75,7 +75,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         // TODO: Get the current franchise Id from the athleteDto?
         // TODO: Get the source url
-        var newEntity = externalProviderDto.AsEntity(newEntityId, null, "FIX_ME", command.CorrelationId);
+        var newEntity = externalProviderDto.AsEntity(newEntityId, null, new Uri("FIX_ME"), command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
         // 2. any headshot (image) for the AthleteDto?
@@ -83,7 +83,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         {
             var newImgId = Guid.NewGuid();
             var imgEvt = new ProcessImageRequest(
-                externalProviderDto.Headshot.Href.AbsoluteUri,
+                externalProviderDto.Headshot.Href,
                 newImgId,
                 newEntityId,
                 $"{newEntityId}-{newImgId}.png",

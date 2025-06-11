@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20250610105740_Initial")]
+    [Migration("20250611125524_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -344,7 +344,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -627,7 +627,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -810,7 +810,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1083,7 +1083,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1163,7 +1163,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1404,7 +1404,7 @@ namespace SportsData.Producer.Migrations
                     b.PrimitiveCollection<List<string>>("Rel")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");

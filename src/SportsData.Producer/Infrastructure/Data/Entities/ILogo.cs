@@ -4,7 +4,7 @@ public interface ILogo
 {
     public string OriginalUrlHash { get; set; }
 
-    public string Url { get; set; }
+    public Uri Uri { get; set; }
 
     public long? Height { get; set; }
 

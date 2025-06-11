@@ -38,7 +38,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         public async Task<string> GetDocumentByUrlHash(string urlHash)
         {
             var url = $"document/urlHash/{urlHash}";
-            _logger.LogInformation("Using {@BaseAddress} with {@Url}", HttpClient.BaseAddress, url);
+            _logger.LogInformation("Using {@BaseAddress} with {@Uri}", HttpClient.BaseAddress, url);
 
             try
             {
@@ -64,7 +64,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             var url = seasonId.HasValue ?
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}" :
                 $"document/{providerId}/{sportId}/{typeId}/{documentId}";
-            _logger.LogInformation("Using {@BaseAddress} with {@Url}", HttpClient.BaseAddress, url);
+            _logger.LogInformation("Using {@BaseAddress} with {@Uri}", HttpClient.BaseAddress, url);
 
             try
             {
@@ -98,7 +98,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             return json ?? new GetExternalDocumentQueryResponse()
             {
                 CanonicalId = string.Empty,
-                Href = string.Empty,
+                Uri = new Uri(string.Empty),
                 Id = string.Empty,
                 IsSuccess = false
             };

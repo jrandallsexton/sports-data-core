@@ -44,7 +44,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 //    FranchiseId = franchiseId,
                 //    Height = x.Height,
                 //    Width = x.Width,
-                //    Url = x.Ref.ToString()
+                //    Uri = x.Ref.ToString()
                 //}).ToList()
             };
         }

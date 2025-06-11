@@ -2,6 +2,7 @@
 
 using SportsData.Core.Converters;
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -10,7 +11,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
     public class EspnGroupBySeasonDto
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("uid")]
         public string Uid { get; set; }
@@ -74,7 +75,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos
         public class Logo
         {
             [JsonPropertyName("href")]
-            public string Href { get; set; }
+            public Uri Href { get; set; }
         }
 
         public class EspnGroupBySeasonTeams

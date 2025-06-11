@@ -89,7 +89,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Id = Guid.NewGuid(),
                         VenueId = existingVenueId,
                         OriginalUrlHash = "existinghash",
-                        Url = "https://example.com/existing.jpg",
+                        Uri = new Uri("https://example.com/existing.jpg"),
                     }
                 ]
             };

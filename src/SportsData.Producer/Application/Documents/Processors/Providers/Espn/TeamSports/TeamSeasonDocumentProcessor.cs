@@ -108,7 +108,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             await _publishEndpoint.Publish(new DocumentRequested(
                 recordId,
                 entity.Id.ToString(),
-                recordUri.AbsoluteUri,
+                recordUri,
                 command.Sport,
                 command.Season,
                 DocumentType.TeamSeasonRecord,

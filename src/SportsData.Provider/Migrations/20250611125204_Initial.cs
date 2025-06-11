@@ -25,7 +25,7 @@ namespace SportsData.Provider.Migrations
                     Provider = table.Column<int>(type: "integer", nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
                     SportId = table.Column<int>(type: "integer", nullable: false),
-                    Url = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     EndpointMask = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     IsSeasonSpecific = table.Column<bool>(type: "boolean", nullable: false),
@@ -50,7 +50,7 @@ namespace SportsData.Provider.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ExecutionMode = table.Column<int>(type: "integer", nullable: false),
-                    Href = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    Uri = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
                     SourceDataProvider = table.Column<int>(type: "integer", nullable: false),
                     Sport = table.Column<int>(type: "integer", nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
@@ -82,7 +82,7 @@ namespace SportsData.Provider.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ResourceIndexId = table.Column<Guid>(type: "uuid", nullable: false),
                     ParentItemId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Url = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     LastAccessed = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Depth = table.Column<int>(type: "integer", nullable: false),
                     UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
@@ -110,7 +110,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndex_Endpoint",
                 table: "ResourceIndex",
-                column: "Url");
+                column: "Uri");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndex_LastAccessed",
@@ -141,7 +141,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_Href",
                 table: "ScheduledJob",
-                column: "Href");
+                column: "Uri");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_IsActive_StartUtc_EndUtc",

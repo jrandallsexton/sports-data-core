@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-
+using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data
@@ -19,7 +19,8 @@ namespace SportsData.Provider.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceIndex.EntityConfiguration).Assembly);
+            modelBuilder.WithUriConverter();
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceIndex).Assembly);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

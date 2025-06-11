@@ -11,7 +11,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string OriginalUrlHash { get; set; }
 
-        public required string Url { get; set; }
+        public required Uri Uri { get; set; }
 
         public long? Height { get; set; }
 
@@ -29,7 +29,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithMany(x => x.Logos)
                     .HasForeignKey(x => x.GroupSeasonId);
                 builder.HasIndex(x => x.OriginalUrlHash);
-                builder.Property(x => x.Url).HasMaxLength(256);
+                builder.Property(x => x.Uri).HasMaxLength(256);
                 builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
             }
         }

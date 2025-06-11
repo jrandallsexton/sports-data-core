@@ -53,7 +53,7 @@ namespace SportsData.Provider.Application.Processors
                         tmp.Id.ToString(),
                         null,
                         typeAndName.Type.Name,
-                        _routingKeyGenerator.Generate(command.SourceDataProvider, tmp.Url),
+                        _routingKeyGenerator.Generate(command.SourceDataProvider, tmp.Uri),
                         tmp.UrlHash,
                         command.Sport,
                         command.Season,

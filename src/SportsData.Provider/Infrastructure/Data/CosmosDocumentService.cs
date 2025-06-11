@@ -2,7 +2,6 @@
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
 
-using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Provider.Config;
 
@@ -75,10 +74,10 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             if (string.IsNullOrWhiteSpace(document.UrlHash))
             {
-                if (string.IsNullOrWhiteSpace(document.Url))
-                    throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
+                if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
+                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
 
-                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             var routingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
@@ -101,10 +100,10 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             if (string.IsNullOrWhiteSpace(document.UrlHash))
             {
-                if (string.IsNullOrWhiteSpace(document.Url))
-                    throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
+                if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
+                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
 
-                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
+                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             var container = _client.GetContainer(_databaseName, collectionName);

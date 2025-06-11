@@ -1,5 +1,7 @@
 ﻿using SportsData.Core.Common;
 
+using System;
+
 namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 {
     public class PublishDocumentEventsCommand
@@ -15,7 +17,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
     public class GetExternalDocumentQuery(
         string canonicalId,
-        string url,
+        Uri uri,
         SourceDataProvider sourceDataProvider,
         Sport sport,
         DocumentType documentType,
@@ -24,7 +26,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
         public string CanonicalId { get; init; } = canonicalId;
 
-        public string Url { get; init; } = url;
+        public Uri Uri { get; init; } = uri;
 
         public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -41,7 +43,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 
         public required string CanonicalId { get; set; }
 
-        public required string Href { get; set; }
+        public required Uri Uri { get; set; }
 
         public bool IsSuccess { get; set; } = true;
     }

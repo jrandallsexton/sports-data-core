@@ -7,7 +7,7 @@ namespace SportsData.Core.Eventing.Events.Documents;
 public record DocumentRequested(
     string Id,
     string? ParentId,
-    string Href,
+    Uri Uri,
     Sport Sport,
     int? SeasonYear,
     DocumentType DocumentType,

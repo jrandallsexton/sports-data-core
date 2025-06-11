@@ -4,7 +4,7 @@ namespace SportsData.Core.Dtos.Canonical
 {
     public class FranchiseeLogoCanonicalModel(
         Guid franchiseId,
-        string url,
+        Uri url,
         int? height,
         int? width) : LogoDtoBase(url, height, width)
     {

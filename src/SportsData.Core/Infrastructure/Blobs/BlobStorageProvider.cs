@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 
 using SportsData.Core.Config;
 
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -12,7 +13,7 @@ namespace SportsData.Core.Infrastructure.Blobs
 {
     public interface IProvideBlobStorage
     {
-        Task<string> UploadImageAsync(Stream stream, string containerName, string filename);
+        Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename);
     }
 
     public class BlobStorageProvider : IProvideBlobStorage
@@ -24,7 +25,7 @@ namespace SportsData.Core.Infrastructure.Blobs
             _config = config;
         }
 
-        public async Task<string> UploadImageAsync(Stream stream, string containerName, string filename)
+        public async Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename)
         {
             containerName = $"{_config.Value.AzureBlobStorageContainerPrefix}-{containerName.ToLower()}";
 
@@ -41,7 +42,7 @@ namespace SportsData.Core.Infrastructure.Blobs
             await blobClient.UploadAsync(stream, true);
 
             // TODO: Return the url where it is located
-            return $"{_config.Value.AzureBlobStorageUrl}/{containerName}/{filename}";
+            return new Uri($"{_config.Value.AzureBlobStorageUrl}/{containerName}/{filename}");
         }
     }
 }

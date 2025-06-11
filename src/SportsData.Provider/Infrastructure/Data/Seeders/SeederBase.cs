@@ -37,6 +37,16 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
                 isEnabled: true,
+                isRecurring: false,
+                seasonYear: null,
+                cronExpression: null,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Venue));
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
+                isEnabled: true,
                 isRecurring: true,
                 seasonYear: null,
                 cronExpression: Cron.Weekly(DayOfWeek.Sunday),
@@ -129,6 +139,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             Sport sport,
             DocumentType documentType)
         {
+            var uri = new Uri(endpoint);
             return new ResourceIndex()
             {
                 Id = Guid.NewGuid(),
@@ -146,14 +157,14 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 LastPageIndex = null,
                 ModifiedBy = null,
                 ModifiedUtc = null,
-                Name = _routingKeyGenerator.Generate(provider, endpoint),
+                Name = _routingKeyGenerator.Generate(provider, uri),
                 Ordinal = resources.Count,
                 Provider = provider,
                 SeasonYear = seasonYear,
                 SportId = sport,
                 TotalPageCount = null,
-                Url = endpoint,
-                UrlHash = HashProvider.GenerateHashFromUrl(endpoint)
+                Uri = uri,
+                UrlHash = HashProvider.GenerateHashFromUri(uri)
             };
         }
 
@@ -191,7 +202,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             /* Groups (FBS, FCS, Divisions, etc.) */
             resources.Add(GenerateResourceIndex(
                 resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups?lang=en&region=us",
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups",
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
@@ -203,7 +214,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             /* Groups By Season (Big10, SEC, etc.) */
             resources.Add(GenerateResourceIndex(
                 resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups/80/children?lang=en&region=us",
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types/3/groups/80/children",
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
@@ -251,7 +262,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             /* Ranks (Polls, Season-wide) */
             resources.Add(GenerateResourceIndex(
                 resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/rankings?lang=en&region=us",
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/rankings",
                 isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,

@@ -6,8 +6,9 @@ using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Text.Json;
+using SportsData.Core.Extensions;
 
-namespace SportsData.Provider.Application.Handlers;
+namespace SportsData.Provider.Application.Documents;
 
 public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 {
@@ -28,9 +29,9 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     public async Task Consume(ConsumeContext<DocumentRequested> context)
     {
         var msg = context.Message;
-        _logger.LogInformation("Handling DocumentRequested: {@msg}", msg);
+        _logger.LogInformation("Handling DocumentRequested: {Msg}", msg);
 
-        var json = await _espnApi.GetResource(msg.Href, true);
+        var json = await _espnApi.GetResource(msg.Uri.ToCleanUrl(), true);
 
         using var doc = JsonDocument.Parse(json);
 
@@ -55,12 +56,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 var id = uri.Segments.LastOrDefault()?.TrimEnd('/');
                 if (string.IsNullOrWhiteSpace(id)) continue;
 
-                var routingKey = HashProvider.GenerateHashFromUrl(href).Substring(0, 3).ToUpperInvariant();
+                var routingKey = HashProvider.GenerateHashFromUri(uri).Substring(0, 3).ToUpperInvariant();
 
                 await _publisher.Publish(new DocumentRequested(
                     id,
                     msg.ParentId,
-                    href,
+                    uri,
                     msg.Sport,
                     msg.SeasonYear,
                     msg.DocumentType,
@@ -76,12 +77,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         // If it's not an index — treat it as a leaf document
         _logger.LogInformation("Document is a leaf (non-index). Forwarding to ResourceIndexItemProcessor.");
 
-        var urlHash = HashProvider.GenerateHashFromUrl(msg.Href);
+        var urlHash = HashProvider.GenerateHashFromUri(msg.Uri);
 
         await _publisher.Publish(new ProcessResourceIndexItemCommand(
             ResourceIndexId: Guid.Empty,
             Id: 0,
-            Href: msg.Href,
+            Uri: msg.Uri,
             Sport: msg.Sport,
             SourceDataProvider: msg.SourceDataProvider,
             DocumentType: msg.DocumentType,

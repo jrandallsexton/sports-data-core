@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using Hangfire.PostgreSql;
 
 using MassTransit;
 
@@ -12,17 +13,13 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Common.Routing;
 using SportsData.Core.Config;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.Contest;
-using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.Notification;
-using SportsData.Core.Infrastructure.Clients.Player;
 using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Season;
-using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Middleware.Health;
 
 using System;
@@ -30,9 +27,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Hangfire.PostgreSql;
-using SportsData.Core.Common.Hashing;
-using SportsData.Core.Common.Routing;
 
 namespace SportsData.Core.DependencyInjection
 {

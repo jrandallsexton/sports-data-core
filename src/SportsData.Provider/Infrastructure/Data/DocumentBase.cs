@@ -24,7 +24,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public required string UrlHash { get; set; }
 
-        public required string Url { get; set; }
+        public required Uri Uri { get; set; }
 
         [JsonPropertyName("_etag")]
         public string? ETag { get; set; }  // Required for concurrency

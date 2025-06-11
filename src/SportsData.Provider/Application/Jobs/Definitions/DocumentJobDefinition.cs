@@ -13,7 +13,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public DocumentJobDefinition(Infrastructure.Data.Entities.ResourceIndex resourceIndex)
         {
             DocumentType = resourceIndex.DocumentType;
-            Endpoint = resourceIndex.Url;
+            Endpoint = resourceIndex.Uri;
             EndpointMask = resourceIndex.EndpointMask;
             ResourceIndexId = resourceIndex.Id;
             SeasonYear = resourceIndex.SeasonYear;
@@ -25,7 +25,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public DocumentJobDefinition(ScheduledJob task)
         {
             DocumentType = task.DocumentType;
-            Endpoint = task.Href;
+            Endpoint = task.Uri;
             EndpointMask = string.Empty; // TODO: Do I need this?
             ResourceIndexId = task.Id;
             SeasonYear = task.SeasonYear;
@@ -41,7 +41,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
 
         public DocumentType DocumentType { get; init; }
 
-        public string? Endpoint { get; init; }
+        public Uri? Endpoint { get; init; }
 
         public string? EndpointMask { get; init; }
 

@@ -61,7 +61,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 return;
             }
 
-            var urlHash = HashProvider.GenerateHashFromUrl(request.Url);
+            var urlHash = HashProvider.GenerateHashFromUri(request.Url);
 
             var img = entity.Images.FirstOrDefault(x => x.OriginalUrlHash == urlHash);
 
@@ -94,7 +94,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             // raise an event for whoever requested this
             var outgoingEvt2 = new ProcessImageResponse(
-                response.Href,
+                response.Uri,
                 response.CanonicalId,
                 urlHash,
                 request.ParentEntityId,

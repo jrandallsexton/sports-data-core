@@ -9,6 +9,9 @@ using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System;
+using SportsData.Core.Extensions;
+
 namespace SportsData.Provider.Application.Jobs
 {
     public interface IProcessResourceIndexes
@@ -136,7 +139,7 @@ namespace SportsData.Provider.Application.Jobs
                         var cmd = new ProcessResourceIndexItemCommand(
                             resourceIndexEntity.Id,
                             item.Id,
-                            item.Ref.AbsoluteUri,
+                            item.Ref,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
                             jobDefinition.DocumentType,

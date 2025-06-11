@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Collections;
+using FluentAssertions;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Routing;
@@ -12,22 +13,62 @@ namespace SportsData.Core.Tests.Unit.Common.Routing
         private readonly RoutingKeyGenerator _generator = new();
 
         [Theory]
-        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/123",
-            "espn.v2.sports.football.leagues.college-football.venues", SourceDataProvider.Espn)]
-        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/85/record",
-            "espn.v2.sports.football.leagues.college-football.seasons.teams.record", SourceDataProvider.Espn)]
-        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/1234/competitions/5678/plays/12",
-            "espn.v2.sports.football.leagues.college-football.events.competitions.plays", SourceDataProvider.Espn)]
-        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/45/ats",
-            "espn.v2.sports.football.leagues.college-football.seasons.types.teams.ats", SourceDataProvider.Espn)]
-        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2/awards",
-            "espn.v2.sports.football.leagues.college-football.franchises.awards", SourceDataProvider.Espn)]
-        [InlineData("http://sports.core.api.espn.com/v2/", "", SourceDataProvider.Espn)]
-        public void Generate_ShouldReturnExpectedRoutingKey(string inputUrl, string expectedKey, SourceDataProvider provider)
+        [ClassData(typeof(RoutingKeyTestData))]
+        public void Generate_ShouldReturnExpectedRoutingKey(Uri inputUri, string expectedKey, SourceDataProvider provider)
         {
-            var result = _generator.Generate(provider, inputUrl);
+            var result = _generator.Generate(provider, inputUri);
             result.Should().Be(expectedKey);
         }
 
+    }
+
+    public class RoutingKeyTestData : IEnumerable<object[]>
+    {
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/123"),
+                "espn.v2.sports.football.leagues.college-football.venues",
+                SourceDataProvider.Espn
+            };
+
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/85/record"),
+                "espn.v2.sports.football.leagues.college-football.seasons.teams.record",
+                SourceDataProvider.Espn
+            };
+
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/1234/competitions/5678/plays/12"),
+                "espn.v2.sports.football.leagues.college-football.events.competitions.plays",
+                SourceDataProvider.Espn
+            };
+
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/45/ats"),
+                "espn.v2.sports.football.leagues.college-football.seasons.types.teams.ats",
+                SourceDataProvider.Espn
+            };
+
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2/awards"),
+                "espn.v2.sports.football.leagues.college-football.franchises.awards",
+                SourceDataProvider.Espn
+            };
+
+            yield return new object[]
+            {
+                new Uri("http://sports.core.api.espn.com/v2/"),
+                "",
+                SourceDataProvider.Espn
+            };
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

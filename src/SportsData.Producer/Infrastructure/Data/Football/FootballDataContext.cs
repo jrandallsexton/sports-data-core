@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -13,6 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
         }
     }

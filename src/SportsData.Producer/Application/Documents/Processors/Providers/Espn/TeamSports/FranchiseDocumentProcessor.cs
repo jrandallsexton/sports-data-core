@@ -108,7 +108,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         {
             var imgId = Guid.NewGuid();
             events.Add(new ProcessImageRequest(
-                logo.Href.AbsoluteUri,
+                logo.Href,
                 imgId,
                 newFranchiseId,
                 $"{newFranchiseId}.png",
@@ -137,7 +137,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             await _publishEndpoint.Publish(new DocumentRequested(
                 dto.Team.Ref.Segments.Last().TrimEnd('/'),
                 newFranchiseId.ToString(),
-                dto.Team.Ref.AbsoluteUri,
+                dto.Team.Ref,
                 command.Sport,
                 command.Season,
                 DocumentType.TeamBySeason,
@@ -153,7 +153,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             await _publishEndpoint.Publish(new DocumentRequested(
                 dto.Awards.Ref.Segments.Last().TrimEnd('/'),
                 newFranchiseId.ToString(),
-                dto.Awards.Ref.AbsoluteUri,
+                dto.Awards.Ref,
                 command.Sport,
                 command.Season,
                 DocumentType.Award,

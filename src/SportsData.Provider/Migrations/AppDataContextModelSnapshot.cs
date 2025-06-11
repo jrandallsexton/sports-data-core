@@ -91,7 +91,7 @@ namespace SportsData.Provider.Migrations
                     b.Property<int?>("TotalPageCount")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -106,7 +106,7 @@ namespace SportsData.Provider.Migrations
                     b.HasIndex("LastAccessedUtc")
                         .HasDatabaseName("IX_ResourceIndex_LastAccessed");
 
-                    b.HasIndex("Url")
+                    b.HasIndex("Uri")
                         .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
                     b.HasIndex("IsEnabled", "Provider", "SportId", "DocumentType", "SeasonYear")
@@ -145,7 +145,7 @@ namespace SportsData.Provider.Migrations
                     b.Property<Guid>("ResourceIndexId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -191,11 +191,6 @@ namespace SportsData.Provider.Migrations
                     b.Property<int>("ExecutionMode")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Href")
-                        .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -238,12 +233,17 @@ namespace SportsData.Provider.Migrations
                     b.Property<int?>("TotalPageCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Uri")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExecutionMode")
                         .HasDatabaseName("IX_ScheduledJob_ExecutionMode");
 
-                    b.HasIndex("Href")
+                    b.HasIndex("Uri")
                         .HasDatabaseName("IX_ScheduledJob_Href");
 
                     b.HasIndex("IsActive", "StartUtc", "EndUtc")

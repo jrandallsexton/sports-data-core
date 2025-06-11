@@ -164,7 +164,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
             // === Detect new images
             var newImages = dto.Images?
-                .Where(img => !venue.Images.Any(v => v.OriginalUrlHash == HashProvider.GenerateHashFromUrl(img.Href.AbsoluteUri)))
+                .Where(img => !venue.Images.Any(v => v.OriginalUrlHash == HashProvider.GenerateHashFromUri(img.Href)))
                 .ToList();
 
             if (newImages?.Count > 0)
@@ -177,7 +177,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
                 {
                     var img = newImages[i];
                     imageEvents.Add(new ProcessImageRequest(
-                        img.Href.AbsoluteUri,
+                        img.Href,
                         Guid.NewGuid(),
                         venue.Id,
                         $"{venue.Id}-u{i}.png",

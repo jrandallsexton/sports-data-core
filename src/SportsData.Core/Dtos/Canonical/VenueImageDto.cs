@@ -4,7 +4,7 @@ namespace SportsData.Core.Dtos.Canonical
 {
     public class VenueImageDto(
         Guid venueId,
-        string url,
+        Uri url,
         int? height,
         int? width) : LogoDtoBase(url, height, width)
     {

@@ -7,6 +7,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.Common.Routing;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
@@ -73,7 +74,7 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             Guid correlationId)
         {
-            var urlHash = HashProvider.GenerateHashFromUrl(command.Href);
+            var urlHash = HashProvider.GenerateHashFromUri(command.Uri);
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
@@ -94,7 +95,7 @@ namespace SportsData.Provider.Application.Processors
                     Id = Guid.NewGuid(),
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty,
-                    Url = command.Href,
+                    Uri = command.Uri,
                     UrlHash = urlHash,
                     ResourceIndexId = command.ResourceIndexId,
                     LastAccessed = now
@@ -109,7 +110,7 @@ namespace SportsData.Provider.Application.Processors
         {
             var collectionName = command.Sport.ToString();
 
-            var itemJson = await _espnApi.GetResource(command.Href, true);
+            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUrl(), true);
 
             var dbItem = await _documentStore
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == urlHash);
@@ -144,7 +145,7 @@ namespace SportsData.Provider.Application.Processors
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
-                Url = command.Href,
+                Uri = command.Uri,
                 UrlHash = urlHash,
                 RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
@@ -157,7 +158,7 @@ namespace SportsData.Provider.Application.Processors
                 urlHash,
                 command.ParentId,
                 collectionName,
-                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
+                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Uri),
                 urlHash,
                 command.Sport,
                 command.SeasonYear,
@@ -184,7 +185,7 @@ namespace SportsData.Provider.Application.Processors
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
-                Url = command.Href,
+                Uri = command.Uri,
                 UrlHash = urlHash,
                 RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
@@ -195,7 +196,7 @@ namespace SportsData.Provider.Application.Processors
                 urlHash,
                 command.ParentId,
                 collectionName,
-                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Href),
+                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Uri),
                 urlHash,
                 command.Sport,
                 command.SeasonYear,
@@ -213,7 +214,7 @@ namespace SportsData.Provider.Application.Processors
     public record ProcessResourceIndexItemCommand(
         Guid ResourceIndexId,
         int Id,
-        string Href,
+        Uri Uri,
         Sport Sport,
         SourceDataProvider SourceDataProvider,
         DocumentType DocumentType,

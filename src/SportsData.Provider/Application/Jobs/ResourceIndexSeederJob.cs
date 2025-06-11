@@ -82,8 +82,8 @@ namespace SportsData.Provider.Application.Jobs
                 IsEnabled = true,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
-                Url = rootUrl.ToString(),
-                UrlHash = HashProvider.GenerateHashFromUrl(rootUrl.AbsoluteUri),
+                Uri = rootUrl,
+                UrlHash = HashProvider.GenerateHashFromUri(rootUrl),
                 Name = Guid.NewGuid().ToString(),
                 EndpointMask = null,
                 IsSeasonSpecific = false
@@ -95,7 +95,7 @@ namespace SportsData.Provider.Application.Jobs
             //await TraverseAsync(rootUrl, null, 0, maxDepth);
             await TraverseFromFirstInstance(rootUrl, maxDepth);
 
-            var outputToShowBit = _items.Select(x => new { x.Depth, x.Url}).ToJson();
+            var outputToShowBit = _items.Select(x => new { x.Depth, Url = x.Uri}).ToJson();
 
             // 3. Persist to DB
             _logger.LogInformation("Saving ResourceIndex with {ItemCount} items", _items.Count);
@@ -119,7 +119,7 @@ namespace SportsData.Provider.Application.Jobs
             var firstInstanceRef = ExtractRefs(listDoc).FirstOrDefault();
             if (firstInstanceRef == null)
             {
-                _logger.LogWarning("No instance found in resource index {Url}", listUrl);
+                _logger.LogWarning("No instance found in resource index {Uri}", listUrl);
                 return;
             }
 
@@ -137,14 +137,14 @@ namespace SportsData.Provider.Application.Jobs
             {
                 if (await IsEspnResourceIndex(href))
                 {
-                    var hash = HashProvider.GenerateHashFromUrl(href);
+                    var hash = HashProvider.GenerateHashFromUri(new Uri(href));
                     if (_visited.TryAdd(hash, true))
                     {
                         _items.Add(new ResourceIndexItem
                         {
                             Id = Guid.NewGuid(),
                             ResourceIndexId = _resourceIndexId,
-                            Url = href,
+                            Uri = new Uri(href),
                             UrlHash = hash,
                             ParentItemId = null,
                             CreatedUtc = DateTime.UtcNow,
@@ -161,20 +161,18 @@ namespace SportsData.Provider.Application.Jobs
             }
         }
 
-
-
         private async Task TraverseInstanceTree(Uri url, Guid? parentItemId, int depth, int maxDepth)
         {
             if (depth > maxDepth)
             {
-                _logger.LogDebug("Max depth {Depth} reached at {Url}", depth, url);
+                _logger.LogDebug("Max depth {Depth} reached at {Uri}", depth, url);
                 return;
             }
 
-            var urlHash = HashProvider.GenerateHashFromUrl(url.ToString());
+            var urlHash = HashProvider.GenerateHashFromUri(url);
             if (!_visited.TryAdd(urlHash, true))
             {
-                _logger.LogDebug("Already visited {Url}", url);
+                _logger.LogDebug("Already visited {Uri}", url);
                 return;
             }
 
@@ -186,7 +184,7 @@ namespace SportsData.Provider.Application.Jobs
                 {
                     Id = Guid.NewGuid(),
                     ResourceIndexId = _resourceIndexId,
-                    Url = url.ToString(),
+                    Uri = url,
                     UrlHash = urlHash,
                     ParentItemId = parentItemId,
                     CreatedUtc = DateTime.UtcNow,
@@ -210,11 +208,9 @@ namespace SportsData.Provider.Application.Jobs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error traversing instance at {Url}", url);
+                _logger.LogError(ex, "Error traversing instance at {Uri}", url);
             }
         }
-
-
         private async Task<bool> IsEspnResourceIndex(string href)
         {
             try
@@ -237,15 +233,15 @@ namespace SportsData.Provider.Application.Jobs
         //{
         //    if (depth > maxDepth)
         //    {
-        //        _logger.LogDebug("Max depth {MaxDepth} reached at {Url}", maxDepth, url);
+        //        _logger.LogDebug("Max depth {MaxDepth} reached at {Uri}", maxDepth, url);
         //        return;
         //    }
 
-        //    var urlHash = _hashProvider.GenerateHashFromUrl(url.ToString());
+        //    var urlHash = _hashProvider.GenerateHashFromUri(url.ToString());
 
         //    if (!_visited.TryAdd(urlHash, true))
         //    {
-        //        _logger.LogDebug("Already visited {Url}", url);
+        //        _logger.LogDebug("Already visited {Uri}", url);
         //        return;
         //    }
 
@@ -258,7 +254,7 @@ namespace SportsData.Provider.Application.Jobs
         //        {
         //            Id = Guid.NewGuid(),
         //            ResourceIndexId = _resourceIndexId,
-        //            Url = url.ToString(),
+        //            Uri = url.ToString(),
         //            UrlHash = urlHash,
         //            ParentItemId = parentItemId,
         //            CreatedUtc = DateTime.UtcNow,
@@ -273,11 +269,11 @@ namespace SportsData.Provider.Application.Jobs
 
         //        if (!extractedRefs.Any())
         //        {
-        //            _logger.LogInformation("No references found in {Url}", url);
+        //            _logger.LogInformation("No references found in {Uri}", url);
         //            return;
         //        }
 
-        //        _logger.LogInformation("Extracted {RefCount} references from {Url}", extractedRefs.Count(), url);
+        //        _logger.LogInformation("Extracted {RefCount} references from {Uri}", extractedRefs.Count(), url);
 
         //        foreach (var href in extractedRefs)
         //        {
@@ -287,7 +283,7 @@ namespace SportsData.Provider.Application.Jobs
         //    }
         //    catch (Exception ex)
         //    {
-        //        _logger.LogError(ex, "Failed to fetch or process {Url}", url);
+        //        _logger.LogError(ex, "Failed to fetch or process {Uri}", url);
         //    }
         //}
 

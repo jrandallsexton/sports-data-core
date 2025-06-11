@@ -6,7 +6,8 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Provider.Application.Handlers;
+using SportsData.Core.Extensions;
+using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 using SportsData.Tests.Shared;
@@ -31,7 +32,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
             var msg = Fixture.Build<DocumentRequested>()
-                .With(x => x.Href, "http://sports.core.api.espn.com/v2/awards/index")
+                .With(x => x.Uri, new Uri("http://sports.core.api.espn.com/v2/awards/index"))
                 .With(x => x.DocumentType, DocumentType.Award)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .OmitAutoProperties()
@@ -45,7 +46,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
                 d.DocumentType == DocumentType.Award &&
-                !string.IsNullOrWhiteSpace(d.Href)), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                !string.IsNullOrWhiteSpace(d.Uri.ToCleanUrl())), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         }
 
         [Fact]
@@ -62,7 +63,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
             var msg = Fixture.Build<DocumentRequested>()
-                .With(x => x.Href, "http://sports.core.api.espn.com/v2/teams/99")
+                .With(x => x.Uri, new Uri("http://sports.core.api.espn.com/v2/teams/99"))
                 .With(x => x.DocumentType, DocumentType.TeamBySeason)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .OmitAutoProperties()
@@ -76,7 +77,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<ProcessResourceIndexItemCommand>(d =>
                 d.DocumentType == DocumentType.TeamBySeason &&
-                d.Href == msg.Href), It.IsAny<CancellationToken>()), Times.Once);
+                d.Uri == msg.Uri), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -93,7 +94,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
             var msg = Fixture.Build<DocumentRequested>()
-                .With(x => x.Href, "http://sports.core.api.espn.com/v2/sports/football/college-football/teams/99/record")
+                .With(x => x.Uri, new Uri("http://sports.core.api.espn.com/v2/sports/football/college-football/teams/99/record"))
                 .With(x => x.DocumentType, DocumentType.TeamSeasonRecord)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .OmitAutoProperties()
@@ -107,7 +108,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
                 d.DocumentType == DocumentType.TeamSeasonRecord &&
-                !string.IsNullOrWhiteSpace(d.Href)), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                !string.IsNullOrWhiteSpace(d.Uri.ToCleanUrl())), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         }
 
     }

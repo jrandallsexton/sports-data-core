@@ -55,7 +55,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 GroupSeasonId = response.ParentEntityId,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
-                Url = response.Url,
+                Uri = response.Uri,
                 Height = response.Height,
                 Width = response.Width,
                 OriginalUrlHash = response.OriginalUrlHash

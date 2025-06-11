@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace SportsData.Core.Eventing.Events.Images;
 
 public record ProcessImageResponse(
-    string Url,
+    Uri Uri,
     string ImageId,
     string OriginalUrlHash,
     Guid ParentEntityId,

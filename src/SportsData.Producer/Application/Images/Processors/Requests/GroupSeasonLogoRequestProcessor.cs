@@ -62,7 +62,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 return;
             }
 
-            var urlHash = HashProvider.GenerateHashFromUrl(request.Url);
+            var urlHash = HashProvider.GenerateHashFromUri(request.Url);
 
             var logo = groupSeason.Logos.FirstOrDefault(x => x.OriginalUrlHash == urlHash);
 
@@ -75,7 +75,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
 
                 var outgoingEvt = new ProcessImageResponse(
-                    logo.Url,
+                    logo.Uri,
                     logo.Id.ToString(),
                     urlHash,
                     request.ParentEntityId,
@@ -118,7 +118,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             // raise an event for whoever requested this
             var outgoingEvt2 = new ProcessImageResponse(
-                response.Href,
+                response.Uri,
                 response.CanonicalId,
                 urlHash,
                 request.ParentEntityId,

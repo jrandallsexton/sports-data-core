@@ -12,7 +12,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public Guid? ParentItemId { get; set; }
 
-        public required string Url { get; set; }
+        public required Uri Uri { get; set; }
 
         public DateTime? LastAccessed { get; set; }
 
@@ -33,7 +33,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.ResourceIndexId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.Property(p => p.Url)
+                builder.Property(p => p.Uri)
                     .HasMaxLength(255);
 
                 builder.Property(x => x.UrlHash)

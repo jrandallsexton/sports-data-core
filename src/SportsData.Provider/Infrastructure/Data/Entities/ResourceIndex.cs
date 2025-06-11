@@ -30,7 +30,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public Sport SportId { get; set; }
 
-        public required string Url { get; set; }
+        public required Uri Uri { get; set; }
 
         public required string UrlHash { get; set; }
 
@@ -60,13 +60,13 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                 builder.HasIndex(t => new { t.IsEnabled, t.Provider, t.SportId, t.DocumentType, t.SeasonYear })
                     .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");
 
-                builder.HasIndex(t => t.Url)
+                builder.HasIndex(t => t.Uri)
                     .HasDatabaseName("IX_ResourceIndex_Endpoint");
 
                 builder.HasIndex(t => t.LastAccessedUtc)
                     .HasDatabaseName("IX_ResourceIndex_LastAccessed");
 
-                builder.Property(p => p.Url)
+                builder.Property(p => p.Uri)
                     .HasMaxLength(255);
 
                 builder.Property(p => p.UrlHash)

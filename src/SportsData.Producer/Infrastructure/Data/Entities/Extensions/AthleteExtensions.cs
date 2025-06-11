@@ -13,7 +13,7 @@ public static class AthleteExtensions
         this EspnAthleteDto dto,
         Guid athleteId,
         Guid? franchiseId,
-        string sourceUrl,
+        Uri sourceUrl,
         Guid correlationId)
     {
         return new Athlete()
@@ -42,7 +42,7 @@ public static class AthleteExtensions
                     CreatedUtc = DateTime.UtcNow,
                     Provider = SourceDataProvider.Espn,
                     Value = dto.Id.ToString(),
-                    UrlHash = HashProvider.GenerateHashFromUrl(sourceUrl)
+                    UrlHash = HashProvider.GenerateHashFromUri(sourceUrl)
                 }
             ]
         };

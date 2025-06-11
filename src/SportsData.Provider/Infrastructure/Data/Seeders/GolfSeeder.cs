@@ -19,6 +19,8 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 base.GenerateSeasonalResources(values, sport, "golf", league, season);
             }
 
+            var uri = new Uri($"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar");
+
             values.Add(new ResourceIndex()
             {
                 Id = Guid.NewGuid(),
@@ -26,14 +28,14 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Provider = SourceDataProvider.Espn,
                 SportId = sport,
                 DocumentType = DocumentType.GolfCalendar,
-                Url = $"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar",
+                Uri = uri,
                 EndpointMask = null,
                 CreatedBy = Guid.Empty,
                 IsSeasonSpecific = true,
                 IsEnabled = true,
                 SeasonYear = 2025,
                 Ordinal = values.Count,
-                UrlHash = HashProvider.GenerateHashFromUrl($"http://sports.core.api.espn.com/v2/sports/golf/leagues/{league}/calendar")
+                UrlHash = HashProvider.GenerateHashFromUri(uri)
             });
 
             return values;

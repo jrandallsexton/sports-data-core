@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Common
@@ -23,6 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteImage.EntityConfiguration());

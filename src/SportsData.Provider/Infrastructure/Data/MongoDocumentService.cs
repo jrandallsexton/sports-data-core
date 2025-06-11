@@ -8,6 +8,7 @@ using SportsData.Provider.Config;
 
 using System.Linq.Expressions;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Infrastructure.Data
 {
@@ -75,9 +76,9 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             if (string.IsNullOrWhiteSpace(document.UrlHash))
             {
-                if (string.IsNullOrWhiteSpace(document.Url))
-                    throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
-                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
+                if (string.IsNullOrWhiteSpace(document.Uri.ToCleanUrl()))
+                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
+                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             if (document is DocumentBase baseDoc)
@@ -95,9 +96,9 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             if (string.IsNullOrWhiteSpace(document.UrlHash))
             {
-                if (string.IsNullOrWhiteSpace(document.Url))
-                    throw new InvalidOperationException("UrlHash is missing and Url is not provided.");
-                document.UrlHash = HashProvider.GenerateHashFromUrl(document.Url);
+                if (string.IsNullOrWhiteSpace(document.Uri.ToCleanUrl()))
+                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
+                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             if (document is DocumentBase baseDoc)

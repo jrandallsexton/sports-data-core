@@ -20,8 +20,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             .With(v => v.ExternalIds, new List<VenueExternalId>())
             .Create();
 
-        var refUrl = "http://espn.com/venues/123";
-        var hash = HashProvider.GenerateHashFromUrl(refUrl);
+        var refUrl = new Uri("http://espn.com/venues/123");
+        var hash = HashProvider.GenerateHashFromUri(refUrl);
 
         var externalId = new VenueExternalId
         {
@@ -57,8 +57,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             .With(v => v.ExternalIds, new List<VenueExternalId>())
             .Create();
 
-        var refUrl = "http://espn.com/venues/456";
-        var hash = HashProvider.GenerateHashFromUrl(refUrl);
+        var refUrl = new Uri("http://espn.com/venues/456");
+        var hash = HashProvider.GenerateHashFromUri(refUrl);
 
         var externalId = new VenueExternalId
         {
@@ -75,7 +75,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
 
         var dtoRef = new EspnResourceIndexItem
         {
-            Ref = new Uri(refUrl),
+            Ref = refUrl,
             Id = 456
         };
 

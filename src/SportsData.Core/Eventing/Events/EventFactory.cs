@@ -22,7 +22,7 @@ namespace SportsData.Core.Eventing.Events
         {
             return images.Select((img, index) =>
                 new ProcessImageRequest(
-                    img.Href?.ToString() ?? string.Empty, // Url
+                    img.Href,                             // Uri
                     Guid.NewGuid(),                       // ImageId
                     parentId,                             // ParentEntityId
                     $"{parentId}-{index}.png",            // Name

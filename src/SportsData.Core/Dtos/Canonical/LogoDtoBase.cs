@@ -1,8 +1,10 @@
-﻿namespace SportsData.Core.Dtos.Canonical
+﻿using System;
+
+namespace SportsData.Core.Dtos.Canonical
 {
-    public abstract class LogoDtoBase(string url, int? height, int? width)
+    public abstract class LogoDtoBase(Uri url, int? height, int? width)
     {
-        public string Url { get; init; } = url;
+        public Uri Url { get; init; } = url;
 
         public int? Height { get; init; } = height;
 

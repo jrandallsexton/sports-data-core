@@ -51,7 +51,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 FranchiseId = franchise.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,
-                Url = response.Url,
+                Uri = response.Uri,
                 Height = response.Height,
                 Width = response.Width,
                 Rel = response.Rel,

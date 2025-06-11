@@ -17,7 +17,7 @@ public class EspnJsonFetcher
     /// <summary>
     /// Fetches the raw JSON from a given URL without saving it.
     /// </summary>
-    public async Task<string> FetchJsonAsync(string url)
+    public async Task<string> FetchJsonAsync(Uri url)
     {
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
@@ -28,7 +28,7 @@ public class EspnJsonFetcher
     /// <summary>
     /// Saves the given JSON to disk based on its routing key.
     /// </summary>
-    public async Task SaveJsonAsync(string json, string url, string outputDirectory, SourceDataProvider provider)
+    public async Task SaveJsonAsync(string json, Uri url, string outputDirectory, SourceDataProvider provider)
     {
         var routingKey = _routingKeyGenerator.Generate(provider, url);
 
@@ -49,7 +49,7 @@ public class EspnJsonFetcher
     /// <summary>
     /// Convenience method to fetch and save a JSON document only if not already present.
     /// </summary>
-    public async Task<string> FetchAndSaveAsync(string url, string outputDirectory, SourceDataProvider provider)
+    public async Task<string> FetchAndSaveAsync(Uri url, string outputDirectory, SourceDataProvider provider)
     {
         var routingKey = _routingKeyGenerator.Generate(provider, url);
 

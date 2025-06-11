@@ -1,23 +1,23 @@
+using SportsData.Core.Extensions;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace SportsData.Core.Common.Routing
 {
     public interface IGenerateRoutingKeys
     {
-        string Generate(SourceDataProvider provider, string url);
+        string Generate(SourceDataProvider provider, Uri url);
     }
 
     public class RoutingKeyGenerator : IGenerateRoutingKeys
     {
-        public string Generate(SourceDataProvider provider, string url)
+        public string Generate(SourceDataProvider provider, Uri url)
         {
-            if (string.IsNullOrWhiteSpace(url))
-                throw new ArgumentException("URL must not be null or empty", nameof(url));
 
-            var uri = new Uri(url);
+            var uri = new Uri(url.ToCleanUrl());
+            
             var path = uri.AbsolutePath;
 
             var rawSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -29,7 +29,7 @@ namespace SportsData.Core.Common.Routing
 
             var cleaned = new List<string>();
 
-            for (int i = 0; i < rawSegments.Length; i++)
+            for (var i = 0; i < rawSegments.Length; i++)
             {
                 var segment = rawSegments[i];
 

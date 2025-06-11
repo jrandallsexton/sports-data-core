@@ -1,12 +1,14 @@
-﻿namespace SportsData.Core.Common.Hashing
+﻿using System;
+
+namespace SportsData.Core.Common.Hashing
 {
     public interface IHasSourceUrl : IHasSourceUrlHash
     {
-        string Url { get; set; }
+        Uri Uri { get; set; }
     }
 
     public interface IHasSourceUrlInitOnly : IHasSourceUrlHashInitOnly
     {
-        string Url { get; init; }
+        Uri Uri { get; init; }
     }
 }

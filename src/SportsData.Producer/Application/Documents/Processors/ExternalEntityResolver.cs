@@ -12,13 +12,13 @@ public static class ExternalEntityResolver
 {
     public static async Task<Guid?> TryResolveEntityIdAsync<TEntity>(
         this DbContext db,
-        string refUrl,
+        Uri refUrl,
         SourceDataProvider provider,
         Func<DbSet<TEntity>> dbSetSelector,
         Func<TEntity, IEnumerable<ExternalId>> externalIdsSelector,
         ILogger? logger) where TEntity : class
     {
-        var urlHash = HashProvider.GenerateHashFromUrl(refUrl);
+        var urlHash = HashProvider.GenerateHashFromUri(refUrl);
 
         // Materialize list and resolve in-memory if lazy-loading is off
         var entities = await dbSetSelector().ToListAsync();
@@ -49,7 +49,7 @@ public static class ExternalEntityResolver
             return null;
 
         return await db.TryResolveEntityIdAsync(
-            dtoRef.Ref.AbsoluteUri,
+            dtoRef.Ref,
             provider,
             dbSetSelector,
             entity => entity.GetExternalIds(),

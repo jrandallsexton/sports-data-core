@@ -35,13 +35,15 @@ namespace SportsData.Provider.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CronExpression")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("DocumentType")
                         .HasColumnType("integer");
 
                     b.Property<string>("EndpointMask")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("boolean");
@@ -91,11 +93,13 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("UrlHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -143,7 +147,8 @@ namespace SportsData.Provider.Migrations
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("UrlHash")
                         .IsRequired()

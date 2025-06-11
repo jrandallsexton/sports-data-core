@@ -6,9 +6,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Award)]
     public class AwardDocumentProcessor : IProcessDocuments
     {
-        public Task ProcessAsync(ProcessDocumentCommand command)
+        private readonly ILogger<AwardDocumentProcessor> _logger;
+
+        public AwardDocumentProcessor(ILogger<AwardDocumentProcessor> logger)
         {
-            throw new NotImplementedException();
+            _logger = logger;
+        }
+
+        public async Task ProcessAsync(ProcessDocumentCommand command)
+        {
+            _logger.LogInformation("Began with {Command}", command);
+            // TODO: Implement processing logic
+            await Task.Delay(100);
         }
     }
 }

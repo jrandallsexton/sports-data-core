@@ -4,6 +4,7 @@ using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -19,6 +20,13 @@ namespace SportsData.Producer.DependencyInjection
             services.AddDataPersistenceExternal();
 
             services.AddScoped<DocumentCreatedProcessor>();
+            services.AddScoped<CoachBySeasonDocumentProcessor>();
+
+            services.Scan(scan => scan
+                .FromAssemblyOf<IProcessDocuments>() // or FromAssemblyContaining<CoachBySeasonDocumentProcessor>
+                .AddClasses(c => c.AssignableTo<IProcessDocuments>())
+                .AsSelfWithInterfaces()
+                .WithScopedLifetime());
 
             services.AddScoped<IDocumentProcessorFactory>(provider =>
             {

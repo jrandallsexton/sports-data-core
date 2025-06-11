@@ -19,7 +19,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         public Task ProcessAsync(ProcessDocumentCommand command)
         {
-            _logger.LogInformation("Processing CoachBySeason document.");
+            _logger.LogInformation("Began with {Command}", command);
             // TODO: Implement processing logic
             return Task.CompletedTask;
         }

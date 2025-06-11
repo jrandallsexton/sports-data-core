@@ -36,8 +36,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
+            _logger.LogInformation("Began with {Command}", command);
+            // TODO: Implement processing logic
             await Task.Delay(100);
-            throw new NotImplementedException();
             //// deserialize the DTO
             //var externalProviderDto = command.Document.FromJson<EspnAthleteSeasonDto>(new JsonSerializerSettings
             //{

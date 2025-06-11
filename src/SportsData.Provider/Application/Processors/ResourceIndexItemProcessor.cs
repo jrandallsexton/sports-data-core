@@ -111,9 +111,8 @@ namespace SportsData.Provider.Application.Processors
 
             var itemJson = await _espnApi.GetResource(command.Href, true);
 
-            var dbItem = await _documentStore.GetFirstOrDefaultAsync<DocumentBase>(
-                collectionName,
-                x => x.Id == urlHash);
+            var dbItem = await _documentStore
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == urlHash);
 
             if (dbItem is null)
             {
@@ -151,6 +150,8 @@ namespace SportsData.Provider.Application.Processors
             };
 
             await _documentStore.InsertOneAsync(collectionName, document);
+
+            _logger.LogInformation("Persisted document {Document}", document);
 
             var evt = new DocumentCreated(
                 urlHash,

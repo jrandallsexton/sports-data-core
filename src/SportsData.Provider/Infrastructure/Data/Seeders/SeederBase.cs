@@ -180,7 +180,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types",
-                isEnabled: true,
+                isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: string.Empty,
@@ -216,7 +216,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/teams",
-                isEnabled: true,
+                isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: string.Empty,
@@ -252,7 +252,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/rankings?lang=en&region=us",
-                isEnabled: true,
+                isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: string.Empty,

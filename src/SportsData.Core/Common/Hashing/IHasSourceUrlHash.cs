@@ -2,11 +2,11 @@
 {
     public interface IHasSourceUrlHash
     {
-        string UrlHash { get; set; }
+        string SourceUrlHash { get; set; }
     }
 
     public interface IHasSourceUrlHashInitOnly
     {
-        string UrlHash { get; init; }
+        string SourceUrlHash { get; init; }
     }
 }

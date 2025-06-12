@@ -9,7 +9,9 @@ public class ProcessDocumentCommand(
     DocumentType documentType,
     string document,
     Guid correlationId,
-    string? parentId)
+    string? parentId,
+    Uri sourceUri,
+    string urlHash)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -24,4 +26,8 @@ public class ProcessDocumentCommand(
     public int? Season { get; init; } = season;
 
     public string? ParentId { get; set; } = parentId;
+
+    public Uri SourceUri { get; init; } = sourceUri;
+
+    public string UrlHash { get; init; } = urlHash;
 }

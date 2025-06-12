@@ -2,19 +2,20 @@
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonType)]
-    public class SeasonTypeDocumentProcessor : IProcessDocuments
+    public class SeasonTypeDocumentProcessor<TDataContext> : IProcessDocuments
+        where TDataContext : BaseDataContext
     {
-        private readonly ILogger<SeasonTypeDocumentProcessor> _logger;
-        private readonly FootballDataContext _dataContext;
+        private readonly ILogger<SeasonTypeDocumentProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
 
         public SeasonTypeDocumentProcessor(
-            ILogger<SeasonTypeDocumentProcessor> logger,
-            FootballDataContext dataContext)
+            ILogger<SeasonTypeDocumentProcessor<TDataContext>> logger,
+            TDataContext dataContext)
         {
             _logger = logger;
             _dataContext = dataContext;

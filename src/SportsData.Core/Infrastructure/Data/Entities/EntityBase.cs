@@ -25,6 +25,6 @@ namespace SportsData.Core.Infrastructure.Data.Entities
 
         public DateTime LastModified => ModifiedUtc ?? CreatedUtc;
 
-        public required string UrlHash { get; set; }
+        public required string SourceUrlHash { get; set; }
     }
 }

@@ -74,37 +74,37 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
-            if (string.IsNullOrWhiteSpace(document.UrlHash))
+            if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.ToCleanUrl()))
-                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
-                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
+                    throw new InvalidOperationException("SourceUrlHash is missing and Uri is not provided.");
+                document.SourceUrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             if (document is DocumentBase baseDoc)
             {
-                baseDoc.Id = document.UrlHash;
-                baseDoc.RoutingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
+                baseDoc.Id = document.SourceUrlHash;
+                baseDoc.RoutingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
             }
 
             var collection = _database.GetCollection<T>(collectionName);
-            _logger.LogInformation("Mongo inserting document with UrlHash: {UrlHash}", document.UrlHash);
+            _logger.LogInformation("Mongo inserting document with SourceUrlHash: {SourceUrlHash}", document.SourceUrlHash);
             await collection.InsertOneAsync(document);
         }
 
         public async Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
         {
-            if (string.IsNullOrWhiteSpace(document.UrlHash))
+            if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.ToCleanUrl()))
-                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
-                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
+                    throw new InvalidOperationException("SourceUrlHash is missing and Uri is not provided.");
+                document.SourceUrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             if (document is DocumentBase baseDoc)
             {
-                baseDoc.Id = document.UrlHash;
-                baseDoc.RoutingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
+                baseDoc.Id = document.SourceUrlHash;
+                baseDoc.RoutingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
             }
 
             var collection = _database.GetCollection<T>(collectionName);
@@ -114,11 +114,11 @@ namespace SportsData.Provider.Infrastructure.Data
 
             if (result.MatchedCount > 0)
             {
-                _logger.LogInformation("Mongo replaced document with _id (UrlHash): {UrlHash}", id);
+                _logger.LogInformation("Mongo replaced document with _id (SourceUrlHash): {SourceUrlHash}", id);
             }
             else
             {
-                _logger.LogInformation("Mongo inserted new document with _id (UrlHash): {UrlHash}", id);
+                _logger.LogInformation("Mongo inserted new document with _id (SourceUrlHash): {SourceUrlHash}", id);
             }
         }
 

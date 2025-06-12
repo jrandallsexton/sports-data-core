@@ -294,7 +294,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -428,7 +428,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -577,7 +577,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -760,7 +760,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1033,7 +1033,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1247,7 +1247,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1354,7 +1354,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UrlHash")
+                    b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
 

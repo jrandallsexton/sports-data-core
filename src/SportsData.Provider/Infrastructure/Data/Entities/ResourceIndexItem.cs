@@ -18,7 +18,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public int Depth { get; set; } = 0;
 
-        public required string UrlHash { get; set; }
+        public required string SourceUrlHash { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<ResourceIndexItem>
         {
@@ -36,14 +36,14 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                 builder.Property(p => p.Uri)
                     .HasMaxLength(255);
 
-                builder.Property(x => x.UrlHash)
+                builder.Property(x => x.SourceUrlHash)
                     .HasMaxLength(64)
                     .IsRequired();
 
-                builder.HasIndex(x => x.UrlHash)
+                builder.HasIndex(x => x.SourceUrlHash)
                     .HasDatabaseName("IX_ResourceIndexItem_UrlHash");
 
-                builder.HasIndex(x => new { x.ResourceIndexId, x.UrlHash })
+                builder.HasIndex(x => new { x.ResourceIndexId, UrlHash = x.SourceUrlHash })
                     .IsUnique()
                     .HasDatabaseName("IX_ResourceIndexItem_Composite");
 

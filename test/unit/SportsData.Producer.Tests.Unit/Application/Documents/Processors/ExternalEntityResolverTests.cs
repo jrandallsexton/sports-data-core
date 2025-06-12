@@ -27,7 +27,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         {
             Id = Guid.NewGuid(),
             Provider = SourceDataProvider.Espn,
-            UrlHash = hash,
+            SourceUrlHash = hash,
             Value = "123",
             Venue = venue
         };
@@ -64,7 +64,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         {
             Id = Guid.NewGuid(),
             Provider = SourceDataProvider.Espn,
-            UrlHash = hash,
+            SourceUrlHash = hash,
             Value = "456",
             Venue = venue
         };

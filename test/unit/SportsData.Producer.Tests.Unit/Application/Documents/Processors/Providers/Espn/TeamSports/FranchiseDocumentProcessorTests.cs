@@ -58,7 +58,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                             Id = Guid.NewGuid(),
                             Provider = SourceDataProvider.Espn,
                             Value = "3958",
-                            UrlHash = "someHash"
+                            SourceUrlHash = "someHash"
                         }
                     ]
                 });
@@ -139,7 +139,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                             Id = Guid.NewGuid(),
                             Provider = SourceDataProvider.Espn,
                             Value = "3958",
-                            UrlHash = "someHash"
+                            SourceUrlHash = "someHash"
                         }
                     ]
                 });
@@ -153,7 +153,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
                         Value = "99",
-                        UrlHash = "someHash"
+                        SourceUrlHash = "someHash"
                     }
                 ])
                 .Create();

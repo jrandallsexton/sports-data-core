@@ -72,20 +72,20 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
-            if (string.IsNullOrWhiteSpace(document.UrlHash))
+            if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
-                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
+                    throw new InvalidOperationException("SourceUrlHash is missing and Uri is not provided.");
 
-                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
+                document.SourceUrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
-            var routingKey = document.UrlHash.Substring(0, 3).ToUpperInvariant();
+            var routingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
 
             // Assign routingKey to DocumentBase if needed
             if (document is DocumentBase baseDoc)
             {
-                baseDoc.Id = document.UrlHash;
+                baseDoc.Id = document.SourceUrlHash;
                 baseDoc.RoutingKey = routingKey;
             }
 
@@ -98,12 +98,12 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
         {
-            if (string.IsNullOrWhiteSpace(document.UrlHash))
+            if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
-                    throw new InvalidOperationException("UrlHash is missing and Uri is not provided.");
+                    throw new InvalidOperationException("SourceUrlHash is missing and Uri is not provided.");
 
-                document.UrlHash = HashProvider.GenerateHashFromUri(document.Uri);
+                document.SourceUrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
             var container = _client.GetContainer(_databaseName, collectionName);
@@ -118,8 +118,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
             try
             {
-                var routingKey = document.UrlHash?.Substring(0, 3).ToUpperInvariant()
-                                 ?? throw new InvalidOperationException("Missing UrlHash for routing key.");
+                var routingKey = document.SourceUrlHash?.Substring(0, 3).ToUpperInvariant()
+                                 ?? throw new InvalidOperationException("Missing SourceUrlHash for routing key.");
 
                 // Use routingKey as the partition key
                 await container.ReplaceItemAsync(document, id, new PartitionKey(routingKey), options);

@@ -1,5 +1,4 @@
 ﻿using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -13,7 +12,7 @@ public static class AthleteExtensions
         this EspnAthleteDto dto,
         Guid athleteId,
         Guid? franchiseId,
-        Uri sourceUrl,
+        string sourceUrlHash,
         Guid correlationId)
     {
         return new Athlete()
@@ -42,7 +41,7 @@ public static class AthleteExtensions
                     CreatedUtc = DateTime.UtcNow,
                     Provider = SourceDataProvider.Espn,
                     Value = dto.Id.ToString(),
-                    UrlHash = HashProvider.GenerateHashFromUri(sourceUrl)
+                    SourceUrlHash = sourceUrlHash
                 }
             ]
         };

@@ -83,7 +83,7 @@ namespace SportsData.Provider.Application.Jobs
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Uri = rootUrl,
-                UrlHash = HashProvider.GenerateHashFromUri(rootUrl),
+                SourceUrlHash = HashProvider.GenerateHashFromUri(rootUrl),
                 Name = Guid.NewGuid().ToString(),
                 EndpointMask = null,
                 IsSeasonSpecific = false
@@ -145,7 +145,7 @@ namespace SportsData.Provider.Application.Jobs
                             Id = Guid.NewGuid(),
                             ResourceIndexId = _resourceIndexId,
                             Uri = new Uri(href),
-                            UrlHash = hash,
+                            SourceUrlHash = hash,
                             ParentItemId = null,
                             CreatedUtc = DateTime.UtcNow,
                             Depth = depth
@@ -185,7 +185,7 @@ namespace SportsData.Provider.Application.Jobs
                     Id = Guid.NewGuid(),
                     ResourceIndexId = _resourceIndexId,
                     Uri = url,
-                    UrlHash = urlHash,
+                    SourceUrlHash = urlHash,
                     ParentItemId = parentItemId,
                     CreatedUtc = DateTime.UtcNow,
                     Depth = depth
@@ -255,7 +255,7 @@ namespace SportsData.Provider.Application.Jobs
         //            Id = Guid.NewGuid(),
         //            ResourceIndexId = _resourceIndexId,
         //            Uri = url.ToString(),
-        //            UrlHash = urlHash,
+        //            SourceUrlHash = urlHash,
         //            ParentItemId = parentItemId,
         //            CreatedUtc = DateTime.UtcNow,
         //            Depth = depth

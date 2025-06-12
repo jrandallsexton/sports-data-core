@@ -32,7 +32,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public required Uri Uri { get; set; }
 
-        public required string UrlHash { get; set; }
+        public required string SourceUrlHash { get; set; }
 
         public string? EndpointMask { get; set; }
 
@@ -69,7 +69,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
                 builder.Property(p => p.Uri)
                     .HasMaxLength(255);
 
-                builder.Property(p => p.UrlHash)
+                builder.Property(p => p.SourceUrlHash)
                     .HasMaxLength(64);
 
                 builder.Property(p => p.EndpointMask)

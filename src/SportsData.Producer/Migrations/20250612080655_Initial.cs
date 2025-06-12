@@ -225,7 +225,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -250,7 +250,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -302,7 +302,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -419,7 +419,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -494,7 +494,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -546,7 +546,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -649,7 +649,7 @@ namespace SportsData.Producer.Migrations
                     ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     Value = table.Column<string>(type: "text", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "text", nullable: false)
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {

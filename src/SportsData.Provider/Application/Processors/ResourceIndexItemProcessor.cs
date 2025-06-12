@@ -6,6 +6,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Config;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
@@ -32,6 +34,8 @@ namespace SportsData.Provider.Application.Processors
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
         private readonly IJsonHashCalculator _jsonHashCalculator;
+        private readonly IConfiguration _commonConfig;
+        private readonly IAppMode _appMode;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
@@ -43,7 +47,9 @@ namespace SportsData.Provider.Application.Processors
             IResourceIndexItemParser resourceIndexItemParser,
             IProvideBackgroundJobs backgroundJobProvider,
             IGenerateRoutingKeys routingKeyGenerator,
-            IJsonHashCalculator jsonHashCalculator)
+            IJsonHashCalculator jsonHashCalculator,
+            IConfiguration commonConfig,
+            IAppMode appMode)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -55,6 +61,8 @@ namespace SportsData.Provider.Application.Processors
             _backgroundJobProvider = backgroundJobProvider;
             _routingKeyGenerator = routingKeyGenerator;
             _jsonHashCalculator = jsonHashCalculator;
+            _commonConfig = commonConfig;
+            _appMode = appMode;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -79,7 +87,7 @@ namespace SportsData.Provider.Application.Processors
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
                 .Where(x => x.ResourceIndexId == command.ResourceIndexId &&
-                            x.UrlHash == urlHash)
+                            x.SourceUrlHash == urlHash)
                 .FirstOrDefaultAsync();
 
             if (resourceIndexItemEntity is not null)
@@ -96,7 +104,7 @@ namespace SportsData.Provider.Application.Processors
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty,
                     Uri = command.Uri,
-                    UrlHash = urlHash,
+                    SourceUrlHash = urlHash,
                     ResourceIndexId = command.ResourceIndexId,
                     LastAccessed = now
                 });
@@ -146,7 +154,7 @@ namespace SportsData.Provider.Application.Processors
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
                 Uri = command.Uri,
-                UrlHash = urlHash,
+                SourceUrlHash = urlHash,
                 RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
 
@@ -154,11 +162,15 @@ namespace SportsData.Provider.Application.Processors
 
             _logger.LogInformation("Persisted document {Document}", document);
 
+            // TODO: pull this from CommonConfig and make it available within the class root
+            var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
+            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+
             var evt = new DocumentCreated(
                 urlHash,
                 command.ParentId,
                 collectionName,
-                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Uri),
+                providerRef,
                 urlHash,
                 command.Sport,
                 command.SeasonYear,
@@ -180,13 +192,13 @@ namespace SportsData.Provider.Application.Processors
         {
             var document = new DocumentBase
             {
-                Id = urlHash, // ✅ Use UrlHash consistently
+                Id = urlHash, // ✅ Use SourceUrlHash consistently
                 Data = json,
                 Sport = command.Sport,
                 DocumentType = command.DocumentType,
                 SourceDataProvider = command.SourceDataProvider,
                 Uri = command.Uri,
-                UrlHash = urlHash,
+                SourceUrlHash = urlHash,
                 RoutingKey = urlHash.Substring(0, 3).ToUpperInvariant()
             };
 
@@ -196,7 +208,7 @@ namespace SportsData.Provider.Application.Processors
                 urlHash,
                 command.ParentId,
                 collectionName,
-                _routingKeyGenerator.Generate(command.SourceDataProvider, command.Uri),
+                command.Uri,
                 urlHash,
                 command.Sport,
                 command.SeasonYear,

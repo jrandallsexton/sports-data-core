@@ -35,7 +35,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 IsEnabled = true,
                 SeasonYear = 2025,
                 Ordinal = values.Count,
-                UrlHash = HashProvider.GenerateHashFromUri(uri)
+                SourceUrlHash = HashProvider.GenerateHashFromUri(uri)
             });
 
             return values;

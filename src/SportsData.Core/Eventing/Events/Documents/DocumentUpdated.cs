@@ -8,7 +8,7 @@ public record DocumentUpdated(
     string Id,
     string? ParentId,
     string Name,
-    string RoutingKey,
+    Uri Ref,
     string UrlHash,
     Sport Sport,
     int? SeasonYear,
@@ -17,6 +17,6 @@ public record DocumentUpdated(
     Guid CorrelationId,
     Guid CausationId
 ) : DocumentCreated(
-    Id, ParentId, Name, RoutingKey, UrlHash, Sport, SeasonYear,
+    Id, ParentId, Name, Ref, UrlHash, Sport, SeasonYear,
     DocumentType, SourceDataProvider, CorrelationId, CausationId
 );

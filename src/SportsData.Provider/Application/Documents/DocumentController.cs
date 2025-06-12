@@ -43,7 +43,7 @@ namespace SportsData.Provider.Application.Documents
         [HttpGet("urlHash/{hash}")]
         public async Task<IActionResult> GetDocumentByUrlHash(string hash)
         {
-            using (_logger.BeginScope(new Dictionary<string, object> { ["UrlHash"] = hash }))
+            using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash }))
             {
                 _logger.LogInformation("Started");
 
@@ -52,7 +52,7 @@ namespace SportsData.Provider.Application.Documents
                 _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
 
                 var dbItem = await _documentStore
-                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.UrlHash == hash);
+                    .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.SourceUrlHash == hash);
 
                 _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
 
@@ -196,7 +196,7 @@ namespace SportsData.Provider.Application.Documents
                 DocumentType = query.DocumentType,
                 RoutingKey = _routingKeyGenerator.Generate(query.SourceDataProvider, externalUrl),
                 Uri = externalUrl,
-                UrlHash = hash,
+                SourceUrlHash = hash,
                 SourceDataProvider = query.SourceDataProvider,
                 Sport = query.Sport
             });

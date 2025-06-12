@@ -26,7 +26,7 @@ public static class ExternalEntityResolver
         var entity = entities.FirstOrDefault(e =>
             externalIdsSelector(e).Any(x =>
                 x.Provider == provider &&
-                x.UrlHash == urlHash));
+                x.SourceUrlHash == urlHash));
 
         if (entity == null)
         {

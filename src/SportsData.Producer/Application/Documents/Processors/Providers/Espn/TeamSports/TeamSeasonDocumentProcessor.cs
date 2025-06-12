@@ -91,11 +91,11 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var entity = dto.AsEntity(franchiseId, seasonId, command.Season!.Value, command.CorrelationId);
 
-        // Resolve VenueId via UrlHash
+        // Resolve VenueId via SourceUrlHash
         entity.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Venue, command.SourceDataProvider, () => _dataContext.Venues, _logger);
 
-        // Resolve GroupId via UrlHash
+        // Resolve GroupId via SourceUrlHash
         entity.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups, command.SourceDataProvider, () => _dataContext.Groups, _logger);
 

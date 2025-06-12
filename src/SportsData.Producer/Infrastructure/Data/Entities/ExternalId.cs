@@ -10,6 +10,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public SourceDataProvider Provider { get; set; }
 
-        public required string UrlHash { get; set; }
+        public required string SourceUrlHash { get; set; }
     }
 }

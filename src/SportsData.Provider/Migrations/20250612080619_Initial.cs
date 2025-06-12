@@ -26,7 +26,7 @@ namespace SportsData.Provider.Migrations
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
                     SportId = table.Column<int>(type: "integer", nullable: false),
                     Uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    SourceUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     EndpointMask = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     IsSeasonSpecific = table.Column<bool>(type: "boolean", nullable: false),
                     SeasonYear = table.Column<int>(type: "integer", nullable: true),
@@ -85,7 +85,7 @@ namespace SportsData.Provider.Migrations
                     Uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     LastAccessed = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Depth = table.Column<int>(type: "integer", nullable: false),
-                    UrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    SourceUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -120,7 +120,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndexItem_Composite",
                 table: "ResourceIndexItem",
-                columns: new[] { "ResourceIndexId", "UrlHash" },
+                columns: new[] { "ResourceIndexId", "SourceUrlHash" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -131,7 +131,7 @@ namespace SportsData.Provider.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ResourceIndexItem_UrlHash",
                 table: "ResourceIndexItem",
-                column: "UrlHash");
+                column: "SourceUrlHash");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduledJob_ExecutionMode",

@@ -26,7 +26,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Id = Guid.NewGuid(),
                         Value = dto.Id.ToString(),
                         Provider = SourceDataProvider.Espn,
-                        UrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
+                        SourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
                     }
                 ],
                 IsConference = dto.IsConference,

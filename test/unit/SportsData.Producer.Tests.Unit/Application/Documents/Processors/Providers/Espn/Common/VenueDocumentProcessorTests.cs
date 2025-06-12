@@ -79,7 +79,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
                         Value = espnId,
-                        UrlHash = "somehash"
+                        SourceUrlHash = "somehash"
                     }
                 ],
                 Images =

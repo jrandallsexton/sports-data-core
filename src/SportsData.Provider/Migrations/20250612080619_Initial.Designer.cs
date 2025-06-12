@@ -12,7 +12,7 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250611125204_Initial")]
+    [Migration("20250612080619_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -88,6 +88,11 @@ namespace SportsData.Provider.Migrations
                     b.Property<int?>("SeasonYear")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<int>("SportId")
                         .HasColumnType("integer");
 
@@ -98,11 +103,6 @@ namespace SportsData.Provider.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<string>("UrlHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -148,25 +148,25 @@ namespace SportsData.Provider.Migrations
                     b.Property<Guid>("ResourceIndexId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Uri")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<string>("UrlHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("LastAccessed")
                         .HasDatabaseName("IX_ResourceIndexItem_LastAccessed");
 
-                    b.HasIndex("UrlHash")
+                    b.HasIndex("SourceUrlHash")
                         .HasDatabaseName("IX_ResourceIndexItem_UrlHash");
 
-                    b.HasIndex("ResourceIndexId", "UrlHash")
+                    b.HasIndex("ResourceIndexId", "SourceUrlHash")
                         .IsUnique()
                         .HasDatabaseName("IX_ResourceIndexItem_Composite");
 

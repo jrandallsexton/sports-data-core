@@ -3,6 +3,7 @@
     public interface IProviderAppConfig
     {
         bool IsDryRun { get; set; }
+
         int? MaxResourceIndexItemsToProcess { get; set; }
     }
 

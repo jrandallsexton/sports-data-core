@@ -52,7 +52,7 @@ namespace SportsData.Venue.Application.Handlers
                 IsGrass = canonicalVenue.IsGrass,
                 IsIndoor = canonicalVenue.IsIndoor,
                 CreatedBy = context.Message.CorrelationId,
-                UrlHash = Guid.NewGuid().ToString() // TODO: This will point to the URL in Producer
+                SourceUrlHash = Guid.NewGuid().ToString() // TODO: This will point to the URL in Producer
             };
 
             // store it

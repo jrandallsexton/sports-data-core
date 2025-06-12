@@ -22,7 +22,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public SourceDataProvider SourceDataProvider { get; set; }
 
-        public required string UrlHash { get; set; }
+        public required string SourceUrlHash { get; set; }
 
         public required Uri Uri { get; set; }
 

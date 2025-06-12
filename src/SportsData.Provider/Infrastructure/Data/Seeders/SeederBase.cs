@@ -164,7 +164,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 SportId = sport,
                 TotalPageCount = null,
                 Uri = uri,
-                UrlHash = HashProvider.GenerateHashFromUri(uri)
+                SourceUrlHash = HashProvider.GenerateHashFromUri(uri)
             };
         }
 

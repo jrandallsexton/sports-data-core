@@ -1,23 +1,29 @@
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamRank)]
-    public class TeamRankDocumentProcessor : IProcessDocuments
+    public class TeamRankDocumentProcessor<TDataContext> : IProcessDocuments
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<TeamRankDocumentProcessor> _logger;
+        private readonly ILogger<TeamRankDocumentProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
 
-        public TeamRankDocumentProcessor(ILogger<TeamRankDocumentProcessor> logger)
+        public TeamRankDocumentProcessor(
+            ILogger<TeamRankDocumentProcessor<TDataContext>> logger,
+            TDataContext dataContext)
         {
             _logger = logger;
+            _dataContext = dataContext;
         }
 
-        public Task ProcessAsync(ProcessDocumentCommand command)
+        public async Task ProcessAsync(ProcessDocumentCommand command)
         {
-            _logger.LogInformation("Processing TeamRank document.");
+            _logger.LogInformation("Began with {Command}", command);
             // TODO: Implement processing logic
-            return Task.CompletedTask;
+            await Task.Delay(100);
         }
     }
 }

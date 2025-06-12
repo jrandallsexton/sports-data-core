@@ -27,7 +27,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     Id = Guid.NewGuid(),
                     Value = dto.Id.ToString(),
                     Provider = SourceDataProvider.Espn,
-                    UrlHash = dto.Ref.UrlHash()
+                    SourceUrlHash = dto.Ref.UrlHash()
                 }],
                 DisplayNameShort = dto.ShortDisplayName,
                 IsActive = dto.IsActive,

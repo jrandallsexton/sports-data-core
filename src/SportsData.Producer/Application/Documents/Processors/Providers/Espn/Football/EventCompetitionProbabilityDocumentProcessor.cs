@@ -1,23 +1,23 @@
 ﻿using MassTransit;
-
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
-    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionDrive)]
-    public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocuments
-        where TDataContext : FootballDataContext
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionProbability)]
+    public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProcessDocuments
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<EventCompetitionDriveDocumentProcessor<TDataContext>> _logger;
+        private readonly ILogger<EventCompetitionProbabilityDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public EventCompetitionDriveDocumentProcessor(
-            ILogger<EventCompetitionDriveDocumentProcessor<TDataContext>> logger,
+        public EventCompetitionProbabilityDocumentProcessor(
+            ILogger<EventCompetitionProbabilityDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IPublishEndpoint publishEndpoint)
         {
@@ -41,7 +41,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionDriveDto>();
+            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionProbabilityDto>();
 
             if (externalProviderDto is null)
             {

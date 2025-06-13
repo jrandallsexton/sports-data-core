@@ -33,6 +33,7 @@
         AthletePosition = 28,
         Event = 29,
         EventCompetition = 30,
-        EventCompetitionDrive = 31
+        EventCompetitionDrive = 31,
+        EventCompetitionProbability = 32
     }
 }

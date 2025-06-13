@@ -1,0 +1,26 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities/401628334101849902?lang=en",
+  "competition": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en"
+  },
+  "play": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334101849902?lang=en"
+  },
+  "homeTeam": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en"
+  },
+  "awayTeam": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en"
+  },
+  "tiePercentage": 0.0,
+  "homeWinPercentage": 0.5607,
+  "awayWinPercentage": 0.4393,
+  "lastModified": "2024-09-02T02:45Z",
+  "sequenceNumber": "101849902",
+  "source": {
+    "id": "2",
+    "description": "feed",
+    "state": "full"
+  },
+  "secondsLeft": 0
+}

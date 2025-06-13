@@ -59,7 +59,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : IProcessDocuments
             return;
         }
 
-        var dto = command.Document.FromJson<EspnTeamSeasonRecordIndexDto>();
+        var dto = command.Document.FromJson<EspnTeamSeasonRecordDto>();
         if (dto?.Items is null || dto.Items.Count == 0)
         {
             _logger.LogWarning("No TeamSeasonRecord items found in document for FranchiseSeason {Id}", franchiseSeasonId);

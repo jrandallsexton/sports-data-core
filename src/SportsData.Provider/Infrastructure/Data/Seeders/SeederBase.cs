@@ -245,7 +245,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 cronExpression: string.Empty,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
-                documentType: DocumentType.CoachBySeason));
+                documentType: DocumentType.CoachSeason));
 
             /* Standings (DISABLED: ESPN returns 500s) */
             resources.Add(GenerateResourceIndex(

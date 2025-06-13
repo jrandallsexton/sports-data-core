@@ -32,7 +32,7 @@ public static class EspnTeamSeasonRecordExtensions
         };
     }
 
-    public static FranchiseSeasonRecordStat AsEntity(this EspnTeamSeasonRecordStatDto dto)
+    public static FranchiseSeasonRecordStat AsEntity(this EspnTeamSeasonRecordItemStatDto dto)
     {
         return new FranchiseSeasonRecordStat
         {

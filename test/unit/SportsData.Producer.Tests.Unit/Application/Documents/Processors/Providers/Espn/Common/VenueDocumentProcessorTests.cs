@@ -19,7 +19,8 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common
 {
-    public class VenueDocumentProcessorTests : ProducerTestBase<VenueDocumentProcessor<FootballDataContext>>
+    public class VenueDocumentProcessorTests :
+        ProducerTestBase<VenueDocumentProcessor<FootballDataContext>>
     {
         [Fact]
         public async Task WhenEntityDoesNotExist_IsAdded()

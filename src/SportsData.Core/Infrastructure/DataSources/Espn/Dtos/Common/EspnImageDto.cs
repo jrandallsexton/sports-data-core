@@ -22,5 +22,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 
         [JsonPropertyName("rel")]
         public List<string> Rel { get; set; }
+
+        [JsonPropertyName("lastUpdated")]
+        public DateTime? LastUpdatedUtc { get; set; }
     }
 }

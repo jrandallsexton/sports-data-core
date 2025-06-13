@@ -6,8 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Conferences;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
-
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;

@@ -29,8 +29,8 @@ namespace SportsData.Core.Common
                     return typeof(EspnTeamSeasonDto);
                 case DocumentType.Venue:
                     return typeof(EspnVenueDto);
-                case DocumentType.CoachBySeason:
-                    return typeof(EspnCoachBySeasonDto);
+                case DocumentType.CoachSeason:
+                    return typeof(EspnCoachSeasonDto);
                 case DocumentType.Athlete:
                     return typeof(EspnAthleteDto);
                 case DocumentType.GroupBySeason:
@@ -70,8 +70,8 @@ namespace SportsData.Core.Common
                     return (typeof(EspnTeamSeasonDto), name);
                 case DocumentType.Venue:
                     return (typeof(EspnVenueDto), name);
-                case DocumentType.CoachBySeason:
-                    return (typeof(EspnCoachBySeasonDto), name);
+                case DocumentType.CoachSeason:
+                    return (typeof(EspnCoachSeasonDto), name);
                 case DocumentType.Athlete:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.GroupBySeason:
@@ -86,7 +86,7 @@ namespace SportsData.Core.Common
                     return (typeof(EspnResourceIndexDto), name);
                 case DocumentType.Season:
                 case DocumentType.Award:
-                    return (typeof(EspnFootballAwardDto), name);
+                    return (typeof(EspnAwardDto), name);
                 case DocumentType.Group:
                     // TODO: This is a placeholder; should be EspnGroupDto when implemented
                     return (typeof(EspnGroupBySeasonDto), name); 
@@ -139,7 +139,7 @@ namespace SportsData.Core.Common
                 case DocumentType.VenueImage:
                     return DocumentType.VenueImage;
                 case DocumentType.Award:
-                case DocumentType.CoachBySeason:
+                case DocumentType.CoachSeason:
                 case DocumentType.Contest:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:

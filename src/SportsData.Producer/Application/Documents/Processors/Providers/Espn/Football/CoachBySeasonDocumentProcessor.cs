@@ -4,7 +4,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
-    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachBySeason)]
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachSeason)]
     public class CoachBySeasonDocumentProcessor<TDataContext> : IProcessDocuments
         where TDataContext : BaseDataContext
     {

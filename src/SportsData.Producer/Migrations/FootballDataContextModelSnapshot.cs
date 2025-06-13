@@ -1576,13 +1576,13 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecordStat", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecord", "Record")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecord", "EspnCoachSeasonRecordDto")
                         .WithMany("Stats")
                         .HasForeignKey("FranchiseSeasonRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Record");
+                    b.Navigation("EspnCoachSeasonRecordDto");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupExternalId", b =>

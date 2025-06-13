@@ -49,7 +49,7 @@
       "commandLineArgs": "-mode FootballNcaa",
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "environmentVariables": {
+      "environmentVariables": {        
         "ASPNETCORE_ENVIRONMENT": "Development",
         "SERVICE_MODE": "All",
         "APPCONFIG_LABEL": "Local"

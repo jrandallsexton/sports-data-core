@@ -71,7 +71,7 @@ namespace SportsData.ProcessorGen
                 return;
             }
 
-            allUrls.Add(normalizedUrl); // Record for logging
+            allUrls.Add(normalizedUrl); // EspnCoachSeasonRecordDto for logging
 
             Console.WriteLine($"[Depth {depth}] Fetching: {uri}");
             var json = await fetcher.FetchJsonAsync(uri);

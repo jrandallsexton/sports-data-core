@@ -6,7 +6,7 @@
         AthleteBySeason = 1,
         AthleteImage = 2,
         Award = 3,
-        CoachBySeason = 4,
+        CoachSeason = 4,
         Contest = 5,
         Franchise = 6,
         FranchiseLogo = 7,
@@ -30,6 +30,9 @@
         VenueImage = 25,
         Weeks = 26,
         TeamSeasonRecord = 27,
-        AthletePosition = 28
+        AthletePosition = 28,
+        Event = 29,
+        EventCompetition = 30,
+        EventCompetitionDrive = 31
     }
 }

@@ -9,7 +9,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -99,7 +99,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         entity.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups, command.SourceDataProvider, () => _dataContext.Groups, _logger);
 
-        // Map Record (Wins/Losses/PtsFor/PtsAgainst) from dto.Record
+        // Map EspnCoachSeasonRecordDto (Wins/Losses/PtsFor/PtsAgainst) from dto.EspnCoachSeasonRecordDto
         if (dto.Record?.Ref is not null)
         {
             var recordUri = dto.Record.Ref;

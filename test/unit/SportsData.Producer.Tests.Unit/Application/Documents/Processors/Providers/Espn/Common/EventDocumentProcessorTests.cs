@@ -1,48 +1,166 @@
 ﻿using AutoFixture;
 
+using FluentAssertions;
+
 using MassTransit;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+using Moq;
+
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common
+namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common;
+
+public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
-    public class EventDocumentProcessorTests :
-        ProducerTestBase<EventDocumentProcessor<FootballDataContext>>        
+    [Fact]
+    public async Task WhenEntityDoesNotExist_VenueExists_ShouldAddWithVenue()
     {
-        [Fact]
-        public async Task WhenEntityDoesNotExist_IsAdded()
+        // arrange
+        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var sut = new EventDocumentProcessor<FootballDataContext>(
+            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
+            FootballDataContext,
+            bus.Object);
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+
+        var venueHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501".UrlHash();
+        var venueId = Guid.NewGuid();
+
+        await FootballDataContext.Venues.AddAsync(new Venue
         {
-            // arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            Id = venueId,
+            Name = "Tiger Stadium",
+            Slug = "tiger-stadium",
+            City = "Baton Rouge",
+            State = "LA",
+            PostalCode = "71077",
+            ExternalIds =
+            [
+                new VenueExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = venueHash,
+                    Value = "3958"
+                }
+            ]
+        });
 
-            var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        await FootballDataContext.SaveChangesAsync();
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.Season, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
 
-            var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-                .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.DocumentType, DocumentType.Event)
-                .With(x => x.Document, documentJson)
-                .OmitAutoProperties()
-                .Create();
+        // act
+        await sut.ProcessAsync(command);
 
-            // act
-            await sut.ProcessAsync(command);
+        // assert
+        var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
+        created.Should().NotBeNull();
+        created!.VenueId.Should().Be(venueId);
 
-            //// assert
-            //var venue = await base.FootballDataContext.Venues
-            //    .AsNoTracking()
-            //    .FirstOrDefaultAsync();
+        bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+        bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.EventCompetition), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
 
-            //venue.Should().NotBeNull();
+    [Fact]
+    public async Task WhenEntityDoesNotExist_VenueMissing_ShouldPublishDocumentRequested()
+    {
+        // arrange
+        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var sut = new EventDocumentProcessor<FootballDataContext>(
+            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
+            FootballDataContext,
+            bus.Object);
 
-            //bus.Verify(x => x.Publish(It.IsAny<VenueCreated>(), It.IsAny<CancellationToken>()), Times.Once);
-        }
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.Season, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert
+        var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
+        created.Should().NotBeNull();
+        created!.VenueId.Should().BeNull();
+
+        bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
+            d.DocumentType == DocumentType.Venue &&
+            d.ParentId == string.Empty), It.IsAny<CancellationToken>()), Times.Once);
+
+        bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
+            d.DocumentType == DocumentType.EventCompetition), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task WhenEntityAlreadyExists_ShouldSkipCreation_AndNotPublishContestCreated()
+    {
+        // arrange
+        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var sut = new EventDocumentProcessor<FootballDataContext>(
+            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
+            FootballDataContext,
+            bus.Object);
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+        var externalId = "401583027";
+
+        var contest = Fixture.Build<Contest>()
+            .With(x => x.ExternalIds, [
+                new ContestExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    Value = externalId,
+                    SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en".UrlHash()
+                }
+            ])
+            .Create();
+
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.Season, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, contest.ExternalIds.First().SourceUrlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert
+        bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

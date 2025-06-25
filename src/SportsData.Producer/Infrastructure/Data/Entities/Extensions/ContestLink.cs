@@ -1,0 +1,24 @@
+﻿using SportsData.Core.Infrastructure.Data.Entities;
+
+namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
+{
+    public class ContestLink : EntityBase<Guid>
+    {
+        public required string Rel { get; set; }
+
+        public required string Href { get; set; }
+
+        public string? Text { get; set; }
+
+        public string? ShortText { get; set; }
+
+        public bool IsExternal { get; set; }
+
+        public bool IsPremium { get; set; }
+
+        public Guid ContestId { get; set; }
+
+        public Contest Contest { get; set; } = null!;
+    }
+
+}

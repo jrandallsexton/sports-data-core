@@ -48,9 +48,9 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalProviderDto = command.Document.FromJson<EspnFranchiseDto>();
+        var externalDto = command.Document.FromJson<EspnFranchiseDto>();
 
-        if (externalProviderDto is null)
+        if (externalDto is null)
         {
             _logger.LogError($"Error deserializing {command.DocumentType}");
             throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
@@ -58,16 +58,16 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var entity = await _dataContext.Franchises.FirstOrDefaultAsync(x =>
-            x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
+            x.ExternalIds.Any(z => z.Value == externalDto.Id.ToString() &&
                                    z.Provider == command.SourceDataProvider));
 
         if (entity is null)
         {
-            await ProcessNewEntity(command, externalProviderDto);
+            await ProcessNewEntity(command, externalDto);
         }
         else
         {
-            await ProcessUpdate(command, externalProviderDto, entity);
+            await ProcessUpdate(command, externalDto, entity);
         }
 
     }
@@ -84,16 +84,12 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (dto.Venue is not null && dto.Venue.Id > 0)
         {
-            var venueEntity = await _dataContext.Venues
-                .Include(x => x.ExternalIds)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
-                    z.Provider == command.SourceDataProvider &&
-                    z.Value == dto.Venue.Id.ToString()));
+            var venueId = await _dataContext.TryResolveFromDtoRefAsync(
+                dto.Venue, command.SourceDataProvider, () => _dataContext.Venues, _logger);
 
-            if (venueEntity != null)
+            if (venueId != null)
             {
-                newEntity.VenueId = venueEntity.Id;
+                newEntity.VenueId = venueId.Value;
             }
             else
             {

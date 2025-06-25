@@ -8,6 +8,14 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
+/// <summary>
+/// Represents a competition within an ESPN event, providing detailed information about the competition's attributes, 
+/// participants, status, and related resources.
+/// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334
+/// </summary>
+/// <remarks>This class encapsulates various properties that describe the competition, including its unique
+/// identifiers,  date, venue, competitors, and availability of features such as play-by-play, boxscore, and commentary.
+/// It also includes links to related resources such as broadcasts, odds, and leaders.</remarks>
 public class EspnEventCompetitionDto : IHasRef
 {
     [JsonPropertyName("$ref")]

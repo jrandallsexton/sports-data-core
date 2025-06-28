@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class FranchiseSeason : CanonicalEntityBase<Guid>
+    public class FranchiseSeason : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Guid FranchiseId { get; set; }
 
@@ -44,6 +45,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public int Ties { get; set; }
 
         public List<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public List<FranchiseSeasonRecord> Records { get; set; } = [];
 

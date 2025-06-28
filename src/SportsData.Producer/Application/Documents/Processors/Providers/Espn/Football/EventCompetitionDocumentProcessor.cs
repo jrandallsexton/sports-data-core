@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-
+using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -41,17 +41,33 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionDto>();
+            var externalDto = command.Document.FromJson<EspnEventCompetitionDto>();
             
-            if (externalProviderDto is null)
+            if (externalDto is null)
             {
                 _logger.LogError($"Error deserializing {command.DocumentType}");
                 throw new InvalidOperationException($"Deserialization returned null for {nameof(EspnEventCompetitionDto)}");
             }
 
-            // TODO: Implement logic to process the event document
+            if (string.IsNullOrEmpty(command.ParentId))
+            {
+                _logger.LogError("ParentId not provided. Cannot process competition for null contest");
+                throw new InvalidOperationException("ParentId must be provided for EventCompetition processing.");
+            }
 
-            await Task.Delay(100); // Simulate processing delay
+            var contestId = Guid.Parse(command.ParentId);
+
+            var contest = await _dataContext.Contests
+                .FirstOrDefaultAsync(c => c.Id == contestId);
+
+            if (contest is null)
+            {
+                _logger.LogError("Contest not found.");
+                throw new InvalidOperationException($"Contest with ID {contestId} not found.");
+            }
+
+            contest.Attendance = externalDto.Attendance;
+
         }
     }
 }

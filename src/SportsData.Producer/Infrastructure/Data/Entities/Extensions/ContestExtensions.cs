@@ -22,8 +22,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
                 StartDateUtc = DateTime.Parse(dto.Date),
-                ExternalIds = new List<ContestExternalId>
-                {
+                ExternalIds =
+                [
                     new ContestExternalId
                     {
                         Id = Guid.NewGuid(),
@@ -31,7 +31,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Provider = SourceDataProvider.Espn,
                         SourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
                     }
-                },
+                ],
                 Sport = sport,
                 SeasonYear = seasonYear,
                 Status = ContestStatus.Undefined

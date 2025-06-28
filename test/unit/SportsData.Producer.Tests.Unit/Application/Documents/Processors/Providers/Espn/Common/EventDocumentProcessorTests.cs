@@ -13,12 +13,15 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
+
+using static SportsData.Core.Common.CausationId;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common;
 
@@ -29,10 +32,12 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     {
         // arrange
         var bus = Mocker.GetMock<IPublishEndpoint>();
+        var provider = Mocker.GetMock<IProvideProviders>();
         var sut = new EventDocumentProcessor<FootballDataContext>(
             Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
             FootballDataContext,
-            bus.Object);
+            bus.Object,
+            provider.Object);
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
 
@@ -87,10 +92,12 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     {
         // arrange
         var bus = Mocker.GetMock<IPublishEndpoint>();
+        var provider = Mocker.GetMock<IProvideProviders>();
         var sut = new EventDocumentProcessor<FootballDataContext>(
             Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
             FootballDataContext,
-            bus.Object);
+            bus.Object,
+            provider.Object);
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
 
@@ -124,10 +131,12 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     {
         // arrange
         var bus = Mocker.GetMock<IPublishEndpoint>();
+        var provider = Mocker.GetMock<IProvideProviders>();
         var sut = new EventDocumentProcessor<FootballDataContext>(
             Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
             FootballDataContext,
-            bus.Object);
+            bus.Object,
+            provider.Object);
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
         var externalId = "401583027";

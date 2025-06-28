@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class ContestLink : EntityBase<Guid>
     {

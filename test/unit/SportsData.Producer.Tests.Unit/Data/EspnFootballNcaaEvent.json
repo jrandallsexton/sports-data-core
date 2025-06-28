@@ -1,23 +1,23 @@
 {
-  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en",
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en&region=us",
   "id": "401628334",
   "uid": "s:20~l:23~e:401628334",
   "date": "2024-09-01T23:30Z",
   "name": "USC Trojans at LSU Tigers",
   "shortName": "USC VS LSU",
   "season": {
-    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024?lang=en"
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024?lang=en&region=us"
   },
   "seasonType": {
-    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2?lang=en"
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2?lang=en&region=us"
   },
   "week": {
-    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1?lang=en"
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1?lang=en&region=us"
   },
   "timeValid": true,
   "competitions": [
     {
-      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en",
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en&region=us",
       "id": "401628334",
       "guid": "d1055761-2a93-3c71-8274-9c99ef0106c6",
       "uid": "s:20~l:23~e:401628334~c:401628334",
@@ -81,7 +81,7 @@
         "state": "full"
       },
       "venue": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501?lang=en",
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501?lang=en&region=us",
         "id": "6501",
         "fullName": "Allegiant Stadium",
         "address": {
@@ -107,7 +107,7 @@
       },
       "competitors": [
         {
-          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99?lang=en",
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99?lang=en&region=us",
           "id": "99",
           "uid": "s:20~l:23~t:99",
           "type": "team",
@@ -115,35 +115,35 @@
           "homeAway": "home",
           "winner": false,
           "team": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
           },
           "score": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/score?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/score?lang=en&region=us"
           },
           "linescores": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores?lang=en&region=us"
           },
           "roster": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/roster?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/roster?lang=en&region=us"
           },
           "statistics": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/statistics?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/statistics?lang=en&region=us"
           },
           "leaders": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/leaders?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/leaders?lang=en&region=us"
           },
           "record": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/records?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/records?lang=en&region=us"
           },
           "ranks": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1/teams/99/ranks?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1/teams/99/ranks?lang=en&region=us"
           },
           "curatedRank": {
             "current": 13
           }
         },
         {
-          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30?lang=en",
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30?lang=en&region=us",
           "id": "30",
           "uid": "s:20~l:23~t:30",
           "type": "team",
@@ -151,28 +151,28 @@
           "homeAway": "away",
           "winner": true,
           "team": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en&region=us"
           },
           "score": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/score?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/score?lang=en&region=us"
           },
           "linescores": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/linescores?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/linescores?lang=en&region=us"
           },
           "roster": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/roster?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/roster?lang=en&region=us"
           },
           "statistics": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/statistics?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/statistics?lang=en&region=us"
           },
           "leaders": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/leaders?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/leaders?lang=en&region=us"
           },
           "record": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/records?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/records?lang=en&region=us"
           },
           "ranks": {
-            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1/teams/30/ranks?lang=en"
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1/teams/30/ranks?lang=en&region=us"
           },
           "curatedRank": {
             "current": 23
@@ -186,26 +186,26 @@
         }
       ],
       "situation": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/situation?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/situation?lang=en&region=us"
       },
       "status": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/status?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/status?lang=en&region=us"
       },
       "odds": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/odds?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/odds?lang=en&region=us"
       },
       "broadcasts": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/broadcasts?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/broadcasts?lang=en&region=us"
       },
       "details": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays?lang=en&region=us"
       },
       "leaders": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/leaders?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/leaders?lang=en&region=us"
       },
       "links": [
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "summary",
             "desktop",
@@ -218,7 +218,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "summary",
             "sportscenter",
@@ -232,7 +232,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "now",
             "desktop",
@@ -245,7 +245,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "teamstats",
             "desktop",
@@ -258,7 +258,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "boxscore",
             "desktop",
@@ -271,7 +271,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "boxscore",
             "sportscenter",
@@ -285,7 +285,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "gamecast",
             "desktop",
@@ -298,7 +298,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "gamecast",
             "mobile",
@@ -311,7 +311,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "gamecast",
             "sportscenter",
@@ -325,7 +325,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "recap",
             "desktop",
@@ -338,7 +338,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "pbp",
             "desktop",
@@ -351,7 +351,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "videos",
             "desktop",
@@ -364,7 +364,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "watchespn",
             "desktop",
@@ -377,7 +377,7 @@
           "isPremium": false
         },
         {
-          "language": "en",
+          "language": "en-US",
           "rel": [
             "watchespn",
             "app",
@@ -391,13 +391,13 @@
         }
       ],
       "predictor": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/predictor?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/predictor?lang=en&region=us"
       },
       "probabilities": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities?lang=en&region=us"
       },
       "powerIndexes": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/powerindex?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/powerindex?lang=en&region=us"
       },
       "format": {
         "regulation": {
@@ -413,14 +413,14 @@
         }
       },
       "drives": {
-        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/drives?lang=en"
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/drives?lang=en&region=us"
       },
       "hasDefensiveStats": true
     }
   ],
   "links": [
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "summary",
         "desktop",
@@ -433,7 +433,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "summary",
         "sportscenter",
@@ -447,7 +447,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "now",
         "desktop",
@@ -460,7 +460,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "teamstats",
         "desktop",
@@ -473,7 +473,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "boxscore",
         "desktop",
@@ -486,7 +486,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "boxscore",
         "sportscenter",
@@ -500,7 +500,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "gamecast",
         "desktop",
@@ -513,7 +513,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "gamecast",
         "mobile",
@@ -526,7 +526,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "gamecast",
         "sportscenter",
@@ -540,7 +540,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "recap",
         "desktop",
@@ -553,7 +553,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "pbp",
         "desktop",
@@ -566,7 +566,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "videos",
         "desktop",
@@ -579,7 +579,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "watchespn",
         "desktop",
@@ -592,7 +592,7 @@
       "isPremium": false
     },
     {
-      "language": "en",
+      "language": "en-US",
       "rel": [
         "watchespn",
         "app",
@@ -607,10 +607,10 @@
   ],
   "venues": [
     {
-      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501?lang=en"
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501?lang=en&region=us"
     }
   ],
   "league": {
-    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football?lang=en"
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football?lang=en&region=us"
   }
 }

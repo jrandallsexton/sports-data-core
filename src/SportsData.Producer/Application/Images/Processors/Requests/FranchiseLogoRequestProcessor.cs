@@ -88,7 +88,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             // who will return a link to blob storage or
             // fetch the image, upload it, then return that blob storage url
             // either way, the link we pass to the response will be that of blob storage
-            var query = new GetExternalDocumentQuery(
+            var query = new GetExternalImageQuery(
                 Guid.NewGuid().ToString(),
                 request.Url,
                 request.SourceDataProvider,
@@ -99,7 +99,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             _logger.LogInformation("Requesting new image");
 
-            var response = await _providerClient.GetExternalDocument(query);
+            var response = await _providerClient.GetExternalImage(query);
 
             _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 

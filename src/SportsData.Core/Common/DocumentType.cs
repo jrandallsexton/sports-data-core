@@ -34,6 +34,8 @@
         Event = 29,
         EventCompetition = 30,
         EventCompetitionDrive = 31,
-        EventCompetitionProbability = 32
+        EventCompetitionProbability = 32,
+        EventCompetitionStatus = 33,
+        EventCompetitionOdds = 34
     }
 }

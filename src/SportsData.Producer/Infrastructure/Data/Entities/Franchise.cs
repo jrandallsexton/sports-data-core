@@ -7,7 +7,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Franchise : CanonicalEntityBase<Guid>, IHasSlug
+    public class Franchise : CanonicalEntityBase<Guid>, IHasSlug, IHasExternalIds
     {
         public Sport Sport { get; set; }
 
@@ -38,6 +38,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public List<FranchiseSeason> Seasons { get; set; } = [];
 
         public List<FranchiseExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public class EntityConfiguration : IEntityTypeConfiguration<Franchise>
         {

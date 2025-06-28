@@ -3,21 +3,31 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Contest : CanonicalEntityBase<Guid>
+    public class Contest : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public required string Name { get; set; }
 
         public required string ShortName { get; set; }
+
+        public Guid HomeTeamFranchiseSeasonId { get; set; }
+
+        public Guid AwayTeamFranchiseSeasonId { get; set; }
 
         public required DateTime StartDateUtc { get; set; }
 
         public DateTime? EndDateUtc { get; set; }
 
         public required ContestStatus Status { get; set; }
+
+        public int Clock { get; set; } = -1; // In seconds, -1 means no clock (e.g., final)
+
+        public string DisplayClock { get; set; } = "00:00";
+
+        public int Period { get; set; } = -1;
 
         public required Sport Sport { get; set; }
 
@@ -37,7 +47,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<ContestLink> Links { get; set; } = []; // Normalized set of rel/href for downstream use
 
+        public List<ContestOdds> Odds { get; set; } = []; // Odds for the contest, if applicable
+
         public List<ContestExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public class EntityConfiguration : IEntityTypeConfiguration<Contest>
         {

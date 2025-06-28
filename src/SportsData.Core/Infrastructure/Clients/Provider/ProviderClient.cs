@@ -1,11 +1,11 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Middleware.Health;
 
+using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +20,9 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 
         Task PublishDocumentEvents(PublishDocumentEventsCommand command);
 
-        Task<GetExternalDocumentQueryResponse> GetExternalDocument(GetExternalDocumentQuery command);
+        Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query);
+
+        Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query);
     }
 
     public class ProviderClient : ClientBase, IProvideProviders
@@ -87,15 +89,33 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task<GetExternalDocumentQueryResponse> GetExternalDocument(GetExternalDocumentQuery query)
+        public async Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query)
         {
             var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"document/external/", content);
+            var response = await HttpClient.PostAsync($"document/external/document/", content);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
-            var json = tmp.FromJson<GetExternalDocumentQueryResponse>();
+            var json = tmp.FromJson<GetExternalDocumentResponse>();
 
-            return json ?? new GetExternalDocumentQueryResponse()
+            return json ?? new GetExternalDocumentResponse()
+            {
+                CanonicalId = string.Empty,
+                Uri = new Uri(string.Empty),
+                Id = string.Empty,
+                IsSuccess = false,
+                Data = string.Empty
+            };
+        }
+
+        public async Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query)
+        {
+            var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync($"document/external/image/", content);
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var json = tmp.FromJson<GetExternalImageResponse>();
+
+            return json ?? new GetExternalImageResponse()
             {
                 CanonicalId = string.Empty,
                 Uri = new Uri(string.Empty),

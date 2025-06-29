@@ -50,6 +50,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<FranchiseSeasonRecord> Records { get; set; } = [];
 
+        // TODO: Change to ICollection everywhere
+        public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeason> builder)

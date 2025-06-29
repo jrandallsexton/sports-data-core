@@ -7,6 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class ContestOdds : CanonicalEntityBase<Guid>
     {
+        // TODO: Re-analyze my decision to flatten this entity instead of normalizing it.
 
         public Guid ContestId { get; set; }
 

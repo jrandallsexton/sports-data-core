@@ -1004,6 +1004,33 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FranchiseSeasonStatisticCategory",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ShortDisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Abbreviation = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Summary = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FranchiseSeasonStatisticCategory", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FranchiseSeasonStatisticCategory_FranchiseSeason_FranchiseS~",
+                        column: x => x.FranchiseSeasonId,
+                        principalTable: "FranchiseSeason",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FranchiseSeasonRecordStat",
                 columns: table => new
                 {
@@ -1025,6 +1052,39 @@ namespace SportsData.Producer.Migrations
                         name: "FK_FranchiseSeasonRecordStat_FranchiseSeasonRecord_FranchiseSe~",
                         column: x => x.FranchiseSeasonRecordId,
                         principalTable: "FranchiseSeasonRecord",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FranchiseSeasonStatistic",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FranchiseSeasonStatisticCategoryId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ShortDisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Description = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    Abbreviation = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Value = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: false),
+                    DisplayValue = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Rank = table.Column<int>(type: "integer", nullable: false),
+                    RankDisplayValue = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    PerGameValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
+                    PerGameDisplayValue = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FranchiseSeasonStatistic", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FranchiseSeasonStatistic_FranchiseSeasonStatisticCategory_F~",
+                        column: x => x.FranchiseSeasonStatisticCategoryId,
+                        principalTable: "FranchiseSeasonStatisticCategory",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1133,6 +1193,16 @@ namespace SportsData.Producer.Migrations
                 name: "IX_FranchiseSeasonRecordStat_FranchiseSeasonRecordId",
                 table: "FranchiseSeasonRecordStat",
                 column: "FranchiseSeasonRecordId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FranchiseSeasonStatistic_FranchiseSeasonStatisticCategoryId",
+                table: "FranchiseSeasonStatistic",
+                column: "FranchiseSeasonStatisticCategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FranchiseSeasonStatisticCategory_FranchiseSeasonId",
+                table: "FranchiseSeasonStatisticCategory",
+                column: "FranchiseSeasonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GroupExternalId_GroupId",
@@ -1257,6 +1327,9 @@ namespace SportsData.Producer.Migrations
                 name: "FranchiseSeasonRecordStat");
 
             migrationBuilder.DropTable(
+                name: "FranchiseSeasonStatistic");
+
+            migrationBuilder.DropTable(
                 name: "GroupExternalId");
 
             migrationBuilder.DropTable(
@@ -1285,6 +1358,9 @@ namespace SportsData.Producer.Migrations
 
             migrationBuilder.DropTable(
                 name: "FranchiseSeasonRecord");
+
+            migrationBuilder.DropTable(
+                name: "FranchiseSeasonStatisticCategory");
 
             migrationBuilder.DropTable(
                 name: "GroupSeason");

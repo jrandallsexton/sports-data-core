@@ -36,6 +36,7 @@
         EventCompetitionDrive = 31,
         EventCompetitionProbability = 32,
         EventCompetitionStatus = 33,
-        EventCompetitionOdds = 34
+        EventCompetitionOdds = 34,
+        TeamSeasonStatistics = 35
     }
 }

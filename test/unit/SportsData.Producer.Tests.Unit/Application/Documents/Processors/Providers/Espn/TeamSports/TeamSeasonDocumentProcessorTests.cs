@@ -8,7 +8,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.TeamSports
 {
-    public class TeamSeasonDocumentProcessorTests : ProducerTestBase<TeamSeasonDocumentProcessor<TeamSportDataContext>>
+    public class TeamSeasonDocumentProcessorTests :
+        ProducerTestBase<TeamSeasonDocumentProcessor<TeamSportDataContext>>
     {
 
     }

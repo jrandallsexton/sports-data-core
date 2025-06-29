@@ -29,7 +29,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Abbreviation = dto.Abbreviation,
                 DisplayName = dto.DisplayName,
                 DisplayNameShort = dto.ShortDisplayName,
-                ColorCodeHex = dto.Color ?? string.Empty,
+                ColorCodeHex = dto.Color,
                 ColorCodeAltHex = dto.AlternateColor,
                 IsActive = dto.IsActive,
                 IsAllStar = dto.IsAllStar,
@@ -39,16 +39,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Ties = 0,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
-                ExternalIds = new List<FranchiseSeasonExternalId>
-                {
-                    new()
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
                         Value = dto.Id.ToString(),
                         SourceUrlHash = dto.Ref.AbsoluteUri.UrlHash()
                     }
-                }
+                ]
             };
         }
 

@@ -61,25 +61,7 @@ namespace SportsData.Core.DependencyInjection
                 }
 
                 Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
-
-
-                //.WriteTo.OpenTelemetry(options =>
-                //{
-                //    // TODO: Move this to az app config
-                //    options.Endpoint = "http://localhost:4317/v1/logs";
-                //    options.Protocol = OtlpProtocol.Grpc;
-                //    options.ResourceAttributes = new Dictionary<string, object>
-                //    {
-                //        ["service.name"] = builder.Environment.ApplicationName
-                //    };
-                //});
             });
-
-            //builder.Logging.AddOpenTelemetry(x =>
-            //{
-            //    x.IncludeScopes = true;
-            //    x.IncludeFormattedMessage = true;
-            //});
 
             return builder;
         }

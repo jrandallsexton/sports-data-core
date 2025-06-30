@@ -94,6 +94,21 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
+        public static async Task ApplyMigrations<T>(
+            this IServiceProvider services,
+            Func<T, Task>? seedFunction = null) where T : DbContext
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<T>();
+            var pending = await context.Database.GetPendingMigrationsAsync();
+            if (pending.Any())
+                await context.Database.MigrateAsync();
+
+            if (seedFunction is not null)
+                await seedFunction(context);
+        }
+
+
         public static IServiceCollection AddCoreServices(
             this IServiceCollection services,
             IConfiguration configuration,

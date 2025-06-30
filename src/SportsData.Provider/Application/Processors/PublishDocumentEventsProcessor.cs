@@ -37,6 +37,8 @@ namespace SportsData.Provider.Application.Processors
 
         public async Task Process(PublishDocumentEventsCommand command)
         {
+            _logger.LogInformation("Began with {@Command}", command);
+
             var typeAndName = _decoder.GetTypeAndCollectionName(
                 command.SourceDataProvider,
                 command.Sport,

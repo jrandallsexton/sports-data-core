@@ -39,56 +39,11 @@ namespace SportsData.Provider
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-
             services.AddClients(config);
-
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
-
-            services.AddMessaging(config, null);
-
-            //services.AddMassTransit(x =>
-            //{
-            //    x.SetKebabCaseEndpointNameFormatter();
-
-            //    //x.UsingRabbitMq((context, cfg) =>
-            //    //{
-            //    //    cfg.Host("localhost", "/", h =>
-            //    //    {
-            //    //        h.Username("guest");
-            //    //        h.Password("guest");
-            //    //    });
-
-            //    //    cfg.ConfigureJsonSerializerOptions(o =>
-            //    //    {
-            //    //        o.IncludeFields = true;
-            //    //        return o;
-            //    //    });
-
-            //    //    cfg.ConfigureEndpoints(context);
-            //    //});
-
-            //    x.UsingAzureServiceBus((context, cfg) =>
-            //    {
-            //        cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-
-            //        //cfg.Message<DocumentCreated>(x =>
-            //        //{
-            //        //    const string entityName = $"{nameof(DocumentCreated)}.FootballNcaa";
-            //        //    x.SetEntityName(entityName.ToLower());
-            //        //});
-
-            //        cfg.ConfigureJsonSerializerOptions(o =>
-            //        {
-            //            o.IncludeFields = true;
-            //            return o;
-            //        });
-            //        cfg.ConfigureEndpoints(context);
-            //    });
-            //});
-
-            services.AddInstrumentation(builder.Environment.ApplicationName);
-
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+            services.AddMessaging(config, null);
+            services.AddInstrumentation(builder.Environment.ApplicationName);
 
             builder.Services.Configure<ProviderDocDatabaseConfig>(
                 builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabaseConfig"));
@@ -102,17 +57,10 @@ namespace SportsData.Provider
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
 
-            await services.ApplyMigrations<AppDataContext>(null);
-            using (var scope = app.Services.CreateScope())
-            {
-                var appServices = scope.ServiceProvider;
-                var context = appServices.GetRequiredService<AppDataContext>();
-                await context.Database.MigrateAsync();
-                await LoadSeedData(context, mode);
-            }
+            // Apply migrations and seed data once using the real provider
+            await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
 
             app.UseHangfireDashboard("/dashboard", new DashboardOptions
             {
@@ -120,16 +68,15 @@ namespace SportsData.Provider
             });
 
             app.UseAuthorization();
-
             app.UseCommonFeatures();
-
             app.MapControllers();
 
             app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }
-        
+
+
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)
         {
             if (await dbContext.ResourceIndexJobs.AnyAsync())

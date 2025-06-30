@@ -1,3 +1,4 @@
+-- Active: 1751184123209@@127.0.0.1@5432@sdProducer.FootballNcaa
 DO
 $$
 DECLARE
@@ -10,6 +11,7 @@ BEGIN
         FROM information_schema.tables
         WHERE table_schema = 'public'
           AND table_type = 'BASE TABLE'
+        ORDER BY table_name
     LOOP
         EXECUTE format(
             'SELECT COUNT(*) FROM %I.%I',

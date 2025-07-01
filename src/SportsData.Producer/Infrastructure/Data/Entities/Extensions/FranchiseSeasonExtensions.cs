@@ -16,6 +16,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             Guid? venueId = null,
             Guid? groupId = null)
         {
+            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
             return new FranchiseSeason
             {
                 Id = franchiseSeasonId,
@@ -45,8 +46,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = dto.Id.ToString(),
-                        SourceUrlHash = dto.Ref.AbsoluteUri.UrlHash()
+                        Value = sourceUrlHash,
+                        SourceUrlHash = sourceUrlHash
                     }
                 ]
             };

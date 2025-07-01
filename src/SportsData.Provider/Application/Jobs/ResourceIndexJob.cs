@@ -10,6 +10,7 @@ using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Application.Jobs
@@ -64,7 +65,13 @@ namespace SportsData.Provider.Application.Jobs
                 ? $"{jobDefinition.Endpoint}?limit={PageSize}&page={jobDefinition.StartPage.Value}"
                 : $"{jobDefinition.Endpoint}?limit={PageSize}";
 
-            var resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
+            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+            {
+                _logger.LogError("Could not created URI from {@Url}", url);
+                throw new InvalidOperationException($"Invalid URI: {url}");
+            }
+
+            var resourceIndexDto = await _espnApi.GetResourceIndex(uri, jobDefinition.EndpointMask);
 
             _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndexDto);
 
@@ -138,7 +145,7 @@ namespace SportsData.Provider.Application.Jobs
 
                         var cmd = new ProcessResourceIndexItemCommand(
                             resourceIndexEntity.Id,
-                            item.Id,
+                            HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()),
                             item.Ref,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
@@ -172,7 +179,7 @@ namespace SportsData.Provider.Application.Jobs
 
                     var nextPage = resourceIndexDto.PageIndex + 1;
                     url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={nextPage}";
-                    resourceIndexDto = await _espnApi.GetResourceIndex(url, jobDefinition.EndpointMask);
+                    resourceIndexDto = await _espnApi.GetResourceIndex(new Uri(url), jobDefinition.EndpointMask);
                 }
 
                 resourceIndexEntity.IsQueued = false;

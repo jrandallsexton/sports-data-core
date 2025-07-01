@@ -13,6 +13,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             Guid venueId,
             Guid correlationId)
         {
+            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
             return new Venue()
             {
                 Id = venueId,
@@ -21,9 +22,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 ExternalIds = [ new VenueExternalId()
                 {
                     Id = Guid.NewGuid(),
-                    Value = dto.Id.ToString(),
+                    Value = sourceUrlHash,
                     Provider = SourceDataProvider.Espn,
-                    SourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
+                    SourceUrlHash = sourceUrlHash
                 }],
                 IsGrass = dto.Grass,
                 IsIndoor = dto.Indoor,

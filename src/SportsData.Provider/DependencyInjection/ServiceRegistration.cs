@@ -30,6 +30,7 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+            services.AddHttpClient<EspnHttpClient>();
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
             //services.AddScoped<ISeedResourceIndex, ResourceIndexSeederJob>();
@@ -43,7 +44,14 @@ namespace SportsData.Provider.DependencyInjection
                 services.AddSingleton<IDocumentStore, CosmosDocumentService>();
             }
 
-            services.AddSingleton(new EspnApiClientConfig());
+            // TODO: Move this to a config file
+            services.AddSingleton(new EspnApiClientConfig()
+            {
+                ForceLiveFetch = false,
+                PersistLocally = true,
+                ReadFromCache = true,
+                LocalCacheDirectory = "D:\\Dropbox\\Code\\sports-data\\data"
+            });
 
             return services;
         }

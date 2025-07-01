@@ -12,6 +12,7 @@ public static class AthletePositionExtensions
         Guid positionId,
         Guid? parentId = null)
     {
+        var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
         return new AthletePosition
         {
             Id = positionId,
@@ -23,9 +24,9 @@ public static class AthletePositionExtensions
             ExternalIds = [ new AthletePositionExternalId()
             {
                 Id = Guid.NewGuid(),
-                Value = dto.Id.ToString(),
+                Value = sourceUrlHash,
                 Provider = SourceDataProvider.Espn,
-                SourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
+                SourceUrlHash = sourceUrlHash
             }],
         };
     }

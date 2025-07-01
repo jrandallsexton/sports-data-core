@@ -59,12 +59,14 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     SourceUrlHash = venueHash,
-                    Value = "3958"
+                    Value = venueHash
                 }
             ]
         });
 
         await FootballDataContext.SaveChangesAsync();
+
+        // TODO: Load FranchiseSeason for both competitors
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)

@@ -84,6 +84,16 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/franchises",
                 isEnabled: true,
+                isRecurring: false,
+                seasonYear: null,
+                cronExpression: null,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Franchise));
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/franchises",
+                isEnabled: true,
                 isRecurring: true,
                 seasonYear: null,
                 cronExpression: Cron.Weekly(DayOfWeek.Sunday),
@@ -98,7 +108,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: null,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.Position));
@@ -118,7 +128,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.AthleteBySeason));
@@ -182,7 +192,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: null,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.Award));
@@ -194,7 +204,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.SeasonType));
@@ -206,7 +216,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.Group));
@@ -218,7 +228,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.GroupBySeason));
@@ -230,7 +240,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.TeamBySeason));
@@ -242,7 +252,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.CoachSeason));
@@ -254,7 +264,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.Standings));
@@ -266,7 +276,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 isEnabled: false,
                 isRecurring: false,
                 seasonYear: seasonYear,
-                cronExpression: string.Empty,
+                cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.TeamRank));

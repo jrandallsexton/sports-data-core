@@ -60,7 +60,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         var exists = await _dataContext.Athletes
             .Include(x => x.ExternalIds)
             .AsNoTracking()
-            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == externalProviderDto.Id.ToString() &&
+            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                   z.Provider == command.SourceDataProvider));
 
         if (exists)
@@ -76,7 +76,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         // TODO: Get the current franchise Id from the athleteDto?
 
         // TODO: Get the source url
-        var newEntity = externalProviderDto.AsEntity(newEntityId, null, command.UrlHash, command.CorrelationId);
+        var newEntity = externalProviderDto.AsEntity(newEntityId, null, command.CorrelationId);
         await _dataContext.AddAsync(newEntity);
 
         // 2. any headshot (image) for the AthleteDto?

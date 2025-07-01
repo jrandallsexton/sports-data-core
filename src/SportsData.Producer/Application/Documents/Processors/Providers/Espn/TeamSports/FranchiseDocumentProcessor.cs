@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
@@ -57,9 +58,9 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        var entity = await _dataContext.Franchises.FirstOrDefaultAsync(x =>
-            x.ExternalIds.Any(z => z.Value == externalDto.Id.ToString() &&
-                                   z.Provider == command.SourceDataProvider));
+        var entity = await _dataContext.Franchises
+            .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                             z.Provider == command.SourceDataProvider));
 
         if (entity is null)
         {
@@ -175,17 +176,17 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)
-            .FirstAsync(x => x.ExternalIds.Any(z => z.Value == dto.Id.ToString() &&
+            .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                     z.Provider == command.SourceDataProvider));
 
-        if (dto.Venue != null)
+        if (dto.Venue is not null)
         {
             var venue = await _dataContext.Venues
                 .Include(x => x.ExternalIds)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
                     z.Provider == command.SourceDataProvider &&
-                    z.Value == dto.Venue.Id.ToString()));
+                    z.Value == dto.Venue.Ref.ToString().UrlHash(false)));
 
             if (venue != null)
             {

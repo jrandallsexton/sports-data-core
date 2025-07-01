@@ -52,7 +52,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 var externalId = $"{season.Year}{season.Id}";
 
                 var exists = await _dataContext.Seasons.AnyAsync(x =>
-                    x.ExternalIds.Any(z => z.Value == externalId && z.Provider == command.SourceDataProvider));
+                    x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                           z.Provider == command.SourceDataProvider));
 
                 if (exists)
                 {

@@ -1,0 +1,167 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333?lang=en&region=us",
+  "id": "4426333",
+  "uid": "s:20~l:23~a:4426333",
+  "guid": "3545bd8d-815e-4494-2166-eb94b079291d",
+  "type": "football",
+  "alternateIds": {
+    "sdr": "4426333"
+  },
+  "firstName": "John",
+  "lastName": "Emery Jr.",
+  "fullName": "John Emery Jr.",
+  "displayName": "John Emery Jr.",
+  "shortName": "J. Emery Jr.",
+  "weight": 220,
+  "displayWeight": "220 lbs",
+  "height": 72,
+  "displayHeight": "6' 0\"",
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "playercard",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4426333/john-emery-jr",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/stats/_/id/4426333/john-emery-jr",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "splits",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/splits/_/id/4426333/john-emery-jr",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "gamelog",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/gamelog/_/id/4426333/john-emery-jr",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "news",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/news/_/id/4426333/john-emery-jr",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "bio",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/bio/_/id/4426333/john-emery-jr",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "overview",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4426333/john-emery-jr",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Saint Rose",
+    "state": "LA",
+    "country": "USA"
+  },
+  "birthCountry": {
+    "alternateId": "1",
+    "abbreviation": "USA"
+  },
+  "college": {
+    "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en&region=us"
+  },
+  "slug": "john-emery-jr",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4426333.png",
+    "alt": "John Emery Jr."
+  },
+  "jersey": "22",
+  "flag": {
+    "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+    "alt": "USA",
+    "rel": [
+      "country-flag"
+    ]
+  },
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us",
+    "id": "9",
+    "name": "Running Back",
+    "displayName": "Running Back",
+    "abbreviation": "RB",
+    "leaf": false,
+    "parent": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us"
+    }
+  },
+  "linked": true,
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en&region=us"
+  },
+  "experience": {
+    "years": 4,
+    "displayValue": "Senior",
+    "abbreviation": "SR"
+  },
+  "active": true,
+  "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+  },
+  "statisticslog": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333/statisticslog?lang=en&region=us"
+  }
+}

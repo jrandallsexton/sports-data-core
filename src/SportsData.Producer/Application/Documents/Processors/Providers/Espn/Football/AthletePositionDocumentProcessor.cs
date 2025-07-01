@@ -54,12 +54,9 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
         }
 
-        // TODO: Validate DTO
-        var exists = false;
-        //var exists = await _dataContext.AthletePositions
-        //    .Include(x => x.ExternalIds)
-        //    .Where(x => x.ExternalIds.Any(y => y.Value == dto.Id))
-        //    .FirstOrDefaultAsync();
+        var exists = await _dataContext.AthletePositions
+            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                  z.Provider == command.SourceDataProvider));
 
         if (exists)
         {
@@ -99,7 +96,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
     private async Task ProcessUpdate(ProcessDocumentCommand command, EspnAthletePositionDto dto)
     {
         var entity = await _dataContext.AthletePositions.Include(x => x.ExternalIds)
-            .FirstOrDefaultAsync(x => x.ExternalIds.Any(y => y.Value == dto.Id.ToString()));
+            .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                             z.Provider == command.SourceDataProvider));
 
         if (entity is null)
         {

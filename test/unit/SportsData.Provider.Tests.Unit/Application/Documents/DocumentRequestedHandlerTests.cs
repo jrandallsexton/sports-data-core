@@ -27,7 +27,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var espnApi = Mocker.GetMock<IProvideEspnApiData>();
             var publisher = Mocker.GetMock<IPublishEndpoint>();
 
-            espnApi.Setup(x => x.GetResource(It.IsAny<string>(), true)).ReturnsAsync(json);
+            espnApi.Setup(x => x.GetResource(It.IsAny<Uri>())).ReturnsAsync(json);
 
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
@@ -58,7 +58,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var espnApi = Mocker.GetMock<IProvideEspnApiData>();
             var publisher = Mocker.GetMock<IPublishEndpoint>();
 
-            espnApi.Setup(x => x.GetResource(It.IsAny<string>(), true)).ReturnsAsync(json);
+            espnApi.Setup(x => x.GetResource(It.IsAny<Uri>())).ReturnsAsync(json);
 
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
@@ -89,7 +89,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             var espnApi = Mocker.GetMock<IProvideEspnApiData>();
             var publisher = Mocker.GetMock<IPublishEndpoint>();
 
-            espnApi.Setup(x => x.GetResource(It.IsAny<string>(), true)).ReturnsAsync(json);
+            espnApi.Setup(x => x.GetResource(It.IsAny<Uri>())).ReturnsAsync(json);
 
             var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 

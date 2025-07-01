@@ -8,5 +8,10 @@ namespace SportsData.Core.Extensions
         {
             return $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}".ToLowerInvariant();
         }
+
+        public static Uri ToCleanUri(this Uri uri)
+        {
+            return new Uri($"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}");
+        }
     }
 }

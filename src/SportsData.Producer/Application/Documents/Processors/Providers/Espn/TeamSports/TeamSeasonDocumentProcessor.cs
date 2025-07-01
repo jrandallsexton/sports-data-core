@@ -61,7 +61,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         var franchise = await _dataContext.Franchises
             .Include(f => f.Seasons)
-            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.Value == externalProviderDto.Id.ToString() &&
+            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.Value == command.UrlHash &&
                                                               id.Provider == command.SourceDataProvider));
 
         if (franchise is null)

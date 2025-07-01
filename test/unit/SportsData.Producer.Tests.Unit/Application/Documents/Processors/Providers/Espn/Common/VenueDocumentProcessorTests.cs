@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -58,7 +59,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // Arrange
             var existingVenueId = Guid.NewGuid();
-            var espnId = "3810";
 
             var originalVenue = new Venue
             {
@@ -79,8 +79,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = espnId,
-                        SourceUrlHash = "somehash"
+                        Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en".UrlHash(),
+                        SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en".UrlHash()
                     }
                 ],
                 Images =
@@ -105,6 +105,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.Venue)
                 .With(x => x.Document, updatedJson)
+                .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en".UrlHash())
                 .OmitAutoProperties()
                 .Create();
 

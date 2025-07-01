@@ -60,8 +60,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             }
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
-            var exists = await _dataContext.Venues.AnyAsync(x =>
-                x.ExternalIds.Any(z => z.Value == espnDto.Id.ToString() && z.Provider == command.SourceDataProvider));
+            var exists = await _dataContext.Venues
+                .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                      z.Provider == command.SourceDataProvider));
 
             if (exists)
             {
@@ -114,8 +115,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             var venue = await _dataContext.Venues
                 .Include(x => x.ExternalIds)
                 .Include(x => x.Images)
-                .FirstAsync(x => x.ExternalIds.Any(z => z.Value == dto.Id.ToString() && z.Provider == command.SourceDataProvider));
-
+                .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                        z.Provider == command.SourceDataProvider));
             var updated = false;
 
             if (venue.Name != dto.FullName)

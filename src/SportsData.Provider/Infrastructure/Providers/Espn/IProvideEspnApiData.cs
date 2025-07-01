@@ -14,10 +14,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
         //Task<EspnResourceIndexDto> Teams(int fourDigitYear);
 
-        Task<byte[]> GetMedia(string uri);
+        //Task<byte[]> GetMedia(string uri);
 
-        Task<EspnResourceIndexDto> GetResourceIndex(string uri, string? uriMask);
+        Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask);
 
-        Task<string> GetResource(string uri, bool ignoreCache);
+        Task<string> GetResource(Uri uri);
     }
 }

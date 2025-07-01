@@ -55,7 +55,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException("ParentId must be provided for EventCompetition processing.");
             }
 
-            var contestId = Guid.Parse(command.ParentId);
+            if (!Guid.TryParse(command.ParentId, out var contestId))
+            {
+                _logger.LogError("Invalid ParentId format. Cannot parse to Guid.");
+                throw new InvalidOperationException($"ParentId '{command.ParentId}' is not a valid Guid.");
+            }
 
             var contest = await _dataContext.Contests
                 .FirstOrDefaultAsync(c => c.Id == contestId);

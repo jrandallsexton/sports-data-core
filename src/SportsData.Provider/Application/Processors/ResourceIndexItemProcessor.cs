@@ -82,7 +82,7 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             Guid correlationId)
         {
-            var urlHash = HashProvider.GenerateHashFromUri(command.Uri);
+            var urlHash = HashProvider.GenerateHashFromUri(command.Uri.ToCleanUri());
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
@@ -118,7 +118,7 @@ namespace SportsData.Provider.Application.Processors
         {
             var collectionName = command.Sport.ToString();
 
-            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUrl(), true);
+            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri());
 
             var dbItem = await _documentStore
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == urlHash);
@@ -225,7 +225,7 @@ namespace SportsData.Provider.Application.Processors
 
     public record ProcessResourceIndexItemCommand(
         Guid ResourceIndexId,
-        int Id,
+        string Id,
         Uri Uri,
         Sport Sport,
         SourceDataProvider SourceDataProvider,

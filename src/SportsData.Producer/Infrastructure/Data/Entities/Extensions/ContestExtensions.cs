@@ -14,6 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             Guid contestId,
             Guid correlationId)
         {
+            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
             return new Contest()
             {
                 Id = contestId,
@@ -27,9 +28,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     new ContestExternalId
                     {
                         Id = Guid.NewGuid(),
-                        Value = dto.Id.ToString(),
+                        Value = sourceUrlHash,
                         Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref)
+                        SourceUrlHash = sourceUrlHash
                     }
                 ],
                 Sport = sport,

@@ -31,7 +31,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         var msg = context.Message;
         _logger.LogInformation("Handling DocumentRequested: {Msg}", msg);
 
-        var json = await _espnApi.GetResource(msg.Uri.ToCleanUrl(), true);
+        var json = await _espnApi.GetResource(msg.Uri);
 
         using var doc = JsonDocument.Parse(json);
 
@@ -81,7 +81,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         await _publisher.Publish(new ProcessResourceIndexItemCommand(
             ResourceIndexId: Guid.Empty,
-            Id: 0,
+            Id: urlHash,
             Uri: msg.Uri,
             Sport: msg.Sport,
             SourceDataProvider: msg.SourceDataProvider,

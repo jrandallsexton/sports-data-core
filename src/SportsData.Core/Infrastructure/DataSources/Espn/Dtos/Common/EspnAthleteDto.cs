@@ -3,13 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
 #pragma warning disable CS8618 // Non-nullable property is uninitialized
 
-    public class EspnAthleteDto
+    public class EspnAthleteDto : IHasRef
     {
+        [JsonPropertyName("$ref")]
+        public Uri Ref { get; set; }
+
         [JsonPropertyName("id")]
         [JsonConverter(typeof(ParseStringToLongConverter))]
         public long Id { get; set; }

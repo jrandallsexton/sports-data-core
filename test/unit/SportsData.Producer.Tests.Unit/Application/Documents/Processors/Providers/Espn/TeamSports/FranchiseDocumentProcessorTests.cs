@@ -139,8 +139,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         {
                             Id = Guid.NewGuid(),
                             Provider = SourceDataProvider.Espn,
-                            Value = "3958",
-                            SourceUrlHash = "someHash"
+                            Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash(),
+                            SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash()
                         }
                     ]
                 });
@@ -153,8 +153,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = "99",
-                        SourceUrlHash = "someHash"
+                        Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us".UrlHash(),
+                        SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us".UrlHash()
                     }
                 ])
                 .Create();
@@ -167,6 +167,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.Franchise)
                 .With(x => x.Document, documentJson)
+                .With(x => x.UrlHash, franchise.ExternalIds.First().Value)
                 .OmitAutoProperties()
                 .Create();
 

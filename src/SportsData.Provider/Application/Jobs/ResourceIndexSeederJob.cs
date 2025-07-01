@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Common;
+﻿
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
@@ -113,7 +114,7 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task TraverseFromFirstInstance(Uri listUrl, int maxDepth)
         {
-            var listJson = await _espnApi.GetResource(listUrl.ToString(), true);
+            var listJson = await _espnApi.GetResource(listUrl);
             var listDoc = JsonDocument.Parse(listJson);
 
             var firstInstanceRef = ExtractRefs(listDoc).FirstOrDefault();
@@ -129,13 +130,19 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task TraverseOnlyResourceIndexes(Uri instanceUrl, int depth, int maxDepth)
         {
-            var rawJson = await _espnApi.GetResource(instanceUrl.ToString(), true);
+            var rawJson = await _espnApi.GetResource(instanceUrl);
             var doc = JsonDocument.Parse(rawJson);
             var refs = ExtractRefs(doc);
 
             foreach (var href in refs)
             {
-                if (await IsEspnResourceIndex(href))
+                if (!Uri.TryCreate(href, UriKind.RelativeOrAbsolute, out var uri))
+                {
+                    _logger.LogWarning("Skipping invalid URI: {Href}", href);
+                    continue;
+                }
+
+                if (await IsEspnResourceIndex(uri))
                 {
                     var hash = HashProvider.GenerateHashFromUri(new Uri(href));
                     if (_visited.TryAdd(hash, true))
@@ -178,7 +185,7 @@ namespace SportsData.Provider.Application.Jobs
 
             try
             {
-                var rawJson = await _espnApi.GetResource(url.ToString(), true);
+                var rawJson = await _espnApi.GetResource(url);
 
                 _items.Add(new ResourceIndexItem
                 {
@@ -196,13 +203,16 @@ namespace SportsData.Provider.Application.Jobs
 
                 foreach (var href in refs)
                 {
-                    await Task.Delay(250);
-
-                    if (await IsEspnResourceIndex(href))
+                    if (Uri.TryCreate(href, UriKind.RelativeOrAbsolute, out var uri))
                     {
-                        var indexUrl = new Uri(href);
-                        await TraverseInstanceTree(indexUrl, parentItemId: null, depth + 1, maxDepth);
-                        //break; // Only recurse into the *first* valid index
+                        await Task.Delay(250);
+
+                        if (await IsEspnResourceIndex(uri))
+                        {
+                            var indexUrl = new Uri(href);
+                            await TraverseInstanceTree(indexUrl, parentItemId: null, depth + 1, maxDepth);
+                            //break; // Only recurse into the *first* valid index
+                        }
                     }
                 }
             }
@@ -211,11 +221,11 @@ namespace SportsData.Provider.Application.Jobs
                 _logger.LogError(ex, "Error traversing instance at {Uri}", url);
             }
         }
-        private async Task<bool> IsEspnResourceIndex(string href)
+        private async Task<bool> IsEspnResourceIndex(Uri uri)
         {
             try
             {
-                var json = await _espnApi.GetResource(href, true);
+                var json = await _espnApi.GetResource(uri);
                 var parsed = JsonSerializer.Deserialize<EspnResourceIndexDto>(json, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true

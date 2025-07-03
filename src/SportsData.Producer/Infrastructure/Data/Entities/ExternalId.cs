@@ -4,7 +4,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class ExternalId : CanonicalEntityBase<Guid>, IHasSourceUrlHash
+    public abstract class ExternalId : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {
         public required string Value { get; set; }
 

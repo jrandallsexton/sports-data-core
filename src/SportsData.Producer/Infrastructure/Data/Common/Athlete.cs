@@ -46,11 +46,11 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public AthleteStatus? Status { get; set; }
 
-        public List<AthleteSeason> Seasons { get; set; } = [];
+        public ICollection<AthleteSeason> Seasons { get; set; } = new List<AthleteSeason>();
 
-        public List<AthleteImage> Images { get; set; } = [];
+        public ICollection<AthleteImage> Images { get; set; } = new List<AthleteImage>();
 
-        public List<AthleteExternalId> ExternalIds { get; set; } = [];
+        public ICollection<AthleteExternalId> ExternalIds { get; set; } = new List<AthleteExternalId>();
 
         public class EntityConfiguration : IEntityTypeConfiguration<Athlete>
         {
@@ -105,6 +105,5 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                     .HasForeignKey(a => a.StatusId);
             }
         }
-
     }
 }

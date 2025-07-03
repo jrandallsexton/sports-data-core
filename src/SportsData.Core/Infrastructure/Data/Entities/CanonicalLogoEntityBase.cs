@@ -10,5 +10,5 @@ public abstract class CanonicalLogoEntityBase<T> : CanonicalEntityBase<T>
 
     public long? Width { get; set; }
 
-    public List<string>? Rel { get; set; }
+    public ICollection<string>? Rel { get; set; }
 }

@@ -32,11 +32,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public decimal Longitude { get; set; }
 
-        public List<VenueExternalId> ExternalIds { get; set; } = [];
+        public ICollection<VenueExternalId> ExternalIds { get; set; } = new List<VenueExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public List<VenueImage> Images { get; set; } = [];
+        public ICollection<VenueImage> Images { get; set; } = new List<VenueImage>();
 
         public class EntityConfiguration : IEntityTypeConfiguration<Venue>
         {

@@ -31,6 +31,13 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseSeasonProjection> FranchiseSeasonProjections { get; set; }
 
+        public DbSet<FranchiseSeasonAward> FranchiseSeasonAwards { get; set; }
+
+        public DbSet<FranchiseSeasonAwardWinner> FranchiseSeasonAwardWinners { get; set; }
+
+        public DbSet<Award> Awards { get; set; }
+        public DbSet<AwardExternalId> AwardExternalIds { get; set; }
+
         public DbSet<Group> Groups { get; set; }
 
         public DbSet<GroupExternalId> GroupExternalIds { get; set; }
@@ -58,6 +65,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatisticCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonAward.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonAwardWinner.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new Award.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AwardExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Group.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupLogo.EntityConfiguration());

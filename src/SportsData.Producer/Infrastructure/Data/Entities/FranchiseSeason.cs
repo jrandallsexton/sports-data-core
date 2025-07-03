@@ -36,7 +36,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsAllStar { get; set; }
 
-        public List<FranchiseSeasonLogo> Logos { get; set; } = [];
+        public ICollection<FranchiseSeasonLogo> Logos { get; set; } = new List<FranchiseSeasonLogo>();
 
         public int Wins { get; set; }
 
@@ -44,14 +44,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int Ties { get; set; }
 
-        public List<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
+        public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = new List<FranchiseSeasonExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public List<FranchiseSeasonRecord> Records { get; set; } = [];
+        public ICollection<FranchiseSeasonRecord> Records { get; set; } = new List<FranchiseSeasonRecord>();
 
-        // TODO: Change to ICollection everywhere
-        public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = [];
+        public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = new List<FranchiseSeasonStatisticCategory>();
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>
         {

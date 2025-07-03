@@ -45,11 +45,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid? VenueId { get; set; }
 
-        public List<ContestLink> Links { get; set; } = []; // Normalized set of rel/href for downstream use
+        public ICollection<ContestLink> Links { get; set; } = new List<ContestLink>(); // Normalized set of rel/href for downstream use
 
-        public List<ContestOdds> Odds { get; set; } = []; // Odds for the contest, if applicable
+        public ICollection<ContestOdds> Odds { get; set; } = new List<ContestOdds>(); // Odds for the contest, if applicable
 
-        public List<ContestExternalId> ExternalIds { get; set; } = [];
+        public ICollection<ContestExternalId> ExternalIds { get; set; } = new List<ContestExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

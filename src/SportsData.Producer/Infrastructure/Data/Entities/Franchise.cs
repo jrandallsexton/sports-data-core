@@ -33,11 +33,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid VenueId { get; set; }
 
-        public List<FranchiseLogo> Logos { get; set; } = [];
+        public ICollection<FranchiseLogo> Logos { get; set; } = new List<FranchiseLogo>();
 
-        public List<FranchiseSeason> Seasons { get; set; } = [];
+        public ICollection<FranchiseSeason> Seasons { get; set; } = new List<FranchiseSeason>();
 
-        public List<FranchiseExternalId> ExternalIds { get; set; } = [];
+        public ICollection<FranchiseExternalId> ExternalIds { get; set; } = new List<FranchiseExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

@@ -22,13 +22,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid? ParentGroupId { get; set; }
 
-        public List<GroupSeason> Seasons { get; set; } = [];
+        public ICollection<GroupSeason> Seasons { get; set; } = new List<GroupSeason>();
 
-        public List<GroupExternalId> ExternalIds { get; set; } = [];
+        public ICollection<GroupExternalId> ExternalIds { get; set; } = new List<GroupExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public List<GroupLogo> Logos { get; set; } = [];
+        public ICollection<GroupLogo> Logos { get; set; } = new List<GroupLogo>();
 
         public class EntityConfiguration : IEntityTypeConfiguration<Group>
         {

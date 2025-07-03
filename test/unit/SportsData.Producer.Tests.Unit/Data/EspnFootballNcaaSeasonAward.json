@@ -1,0 +1,35 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/awards/3?lang=en",
+  "id": "3",
+  "name": "Davey O'Brien Award",
+  "description": "National Quarterback Award",
+  "history": "Presented to the nation's outstanding QB by the Davey O'Brien Foundation. The O'Brien Award, the oldest and most prestigious award in the country for college quarterbacks, just celebrated its 26th year and is named for O'Brien, the He was named to thirteen All-American teams and became the only college football player to win the Heisman, Maxwell, and Walter Camp trophies in the same year. In 1971 O’Brien was diagnosed with cancer and underwent surgery to remove a kidney and part of his right lung. He lost his courageous battle with cancer on November 18, 1977. O’Brien was named to the National Football Foundation Hall of Fame in 1955 and the Texas Sports Hall of Fame in 1956.",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019?lang=en"
+  },
+  "winners": [
+    {
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/athletes/3915511?lang=en"
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/99?lang=en"
+      }
+    }
+  ],
+  "links": [
+    {
+      "language": "en",
+      "rel": [
+        "index",
+        "desktop",
+        "awards"
+      ],
+      "href": "https://www.espn.com/college-football/awards/_/id/3",
+      "text": "Awards",
+      "shortText": "Awards",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/projection?lang=en",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en"
+  },
+  "chanceToWinDivision": 0.0,
+  "chanceToWinConference": 0.035,
+  "projectedWins": 7.852,
+  "projectedLosses": 4.247
+}

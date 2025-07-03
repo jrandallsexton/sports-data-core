@@ -1,9 +1,11 @@
 {
-  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en",
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en",
   "id": "99",
   "guid": "b9a22bd6-7449-92bc-0e95-a6d8da673b3e",
   "uid": "s:20~l:23~t:99",
-  "alternateIds": { "sdr": "6470" },
+  "alternateIds": {
+    "sdr": "6470"
+  },
   "slug": "lsu-tigers",
   "location": "LSU",
   "name": "Tigers",
@@ -21,7 +23,10 @@
       "width": 500,
       "height": 500,
       "alt": "",
-      "rel": [ "full", "default" ],
+      "rel": [
+        "full",
+        "default"
+      ],
       "lastUpdated": "2023-02-17T21:15Z"
     },
     {
@@ -29,7 +34,10 @@
       "width": 500,
       "height": 500,
       "alt": "",
-      "rel": [ "full", "dark" ],
+      "rel": [
+        "full",
+        "dark"
+      ],
       "lastUpdated": "2023-02-17T21:14Z"
     },
     {
@@ -37,7 +45,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "primary_logo_on_white_color" ],
+      "rel": [
+        "full",
+        "primary_logo_on_white_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -45,7 +56,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "primary_logo_on_black_color" ],
+      "rel": [
+        "full",
+        "primary_logo_on_black_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -53,7 +67,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "primary_logo_on_primary_color" ],
+      "rel": [
+        "full",
+        "primary_logo_on_primary_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -61,7 +78,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "primary_logo_on_secondary_color" ],
+      "rel": [
+        "full",
+        "primary_logo_on_secondary_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -69,7 +89,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "secondary_logo_on_white_color" ],
+      "rel": [
+        "full",
+        "secondary_logo_on_white_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -77,7 +100,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "secondary_logo_on_black_color" ],
+      "rel": [
+        "full",
+        "secondary_logo_on_black_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -85,7 +111,10 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "secondary_logo_on_primary_color" ],
+      "rel": [
+        "full",
+        "secondary_logo_on_primary_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     },
     {
@@ -93,21 +122,32 @@
       "width": 4096,
       "height": 4096,
       "alt": "",
-      "rel": [ "full", "secondary_logo_on_secondary_color" ],
+      "rel": [
+        "full",
+        "secondary_logo_on_secondary_color"
+      ],
       "lastUpdated": "2024-11-11T01:52Z"
     }
   ],
-  "record": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/record?lang=en" },
-  "oddsRecords": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/0/teams/99/odds-records?lang=en" },
-  "athletes": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/athletes?lang=en" },
+  "record": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/teams/99/record?lang=en"
+  },
+  "oddsRecords": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/0/teams/99/odds-records?lang=en"
+  },
+  "athletes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/athletes?lang=en"
+  },
   "venue": {
     "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en",
     "id": "3958",
+    "guid": "25cb6d73-2972-3aef-af90-db8755d9b403",
     "fullName": "Tiger Stadium (LA)",
     "address": {
       "city": "Baton Rouge",
       "state": "LA",
-      "zipCode": "70803"
+      "zipCode": "70803",
+      "country": "USA"
     },
     "grass": true,
     "indoor": false,
@@ -117,25 +157,38 @@
         "width": 2000,
         "height": 1125,
         "alt": "",
-        "rel": [ "full", "day" ]
+        "rel": [
+          "full",
+          "day"
+        ]
       },
       {
         "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3958.jpg",
         "width": 2000,
         "height": 1125,
         "alt": "",
-        "rel": [ "full", "day", "interior" ]
+        "rel": [
+          "full",
+          "day",
+          "interior"
+        ]
       }
     ]
   },
-  "groups": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups/8?lang=en" },
-  "ranks": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/ranks?lang=en" },
-  "statistics": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/statistics?lang=en" },
-  "leaders": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/leaders?lang=en" },
+  "groups": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/groups/8?lang=en"
+  },
+  "ranks": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/ranks?lang=en"
+  },
   "links": [
     {
       "language": "en",
-      "rel": [ "clubhouse", "desktop", "team" ],
+      "rel": [
+        "clubhouse",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
       "text": "Clubhouse",
       "shortText": "Clubhouse",
@@ -144,7 +197,11 @@
     },
     {
       "language": "en",
-      "rel": [ "clubhouse", "mobile", "team" ],
+      "rel": [
+        "clubhouse",
+        "mobile",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
       "text": "Clubhouse",
       "shortText": "Clubhouse",
@@ -153,7 +210,11 @@
     },
     {
       "language": "en",
-      "rel": [ "roster", "desktop", "team" ],
+      "rel": [
+        "roster",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/team/roster/_/id/99",
       "text": "Roster",
       "shortText": "Roster",
@@ -162,7 +223,11 @@
     },
     {
       "language": "en",
-      "rel": [ "stats", "desktop", "team" ],
+      "rel": [
+        "stats",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/team/stats/_/id/99",
       "text": "Statistics",
       "shortText": "Statistics",
@@ -171,7 +236,11 @@
     },
     {
       "language": "en",
-      "rel": [ "schedule", "desktop", "team" ],
+      "rel": [
+        "schedule",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/team/schedule/_/id/99",
       "text": "Schedule",
       "shortText": "Schedule",
@@ -180,7 +249,11 @@
     },
     {
       "language": "en",
-      "rel": [ "tickets", "desktop", "team" ],
+      "rel": [
+        "tickets",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.vividseats.com/lsu-tigers-football-tickets--sports-ncaa-football/performer/1003?wsUser=717",
       "text": "Tickets",
       "shortText": "Tickets",
@@ -189,7 +262,11 @@
     },
     {
       "language": "en",
-      "rel": [ "awards", "desktop", "team" ],
+      "rel": [
+        "awards",
+        "desktop",
+        "team"
+      ],
       "href": "https://www.espn.com/college-football/awards/_/team/99",
       "text": "Awards",
       "shortText": "Awards",
@@ -197,13 +274,31 @@
       "isPremium": false
     }
   ],
-  "injuries": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/injuries?lang=en" },
-  "notes": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/notes?lang=en" },
-  "againstTheSpreadRecords": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/ats?lang=en" },
-  "awards": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/awards?lang=en" },
-  "franchise": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en" },
-  "projection": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/projection?lang=en" },
-  "events": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/events?lang=en" },
-  "coaches": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/coaches?lang=en" },
-  "college": { "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en" }
+  "injuries": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/injuries?lang=en"
+  },
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/notes?lang=en"
+  },
+  "againstTheSpreadRecords": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/teams/99/ats?lang=en"
+  },
+  "awards": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/awards?lang=en"
+  },
+  "franchise": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en"
+  },
+  "projection": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/projection?lang=en"
+  },
+  "events": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/events?lang=en"
+  },
+  "coaches": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99/coaches?lang=en"
+  },
+  "college": {
+    "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en"
+  }
 }

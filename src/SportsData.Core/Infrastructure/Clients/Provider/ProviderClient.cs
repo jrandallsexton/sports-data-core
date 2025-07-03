@@ -45,7 +45,13 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             try
             {
                 var response = await HttpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Failed to obtain document from Provider, status code: {StatusCode}", response.StatusCode);
+                    return string.Empty;
+                }
+
                 var tmp = await response.Content.ReadAsStringAsync();
                 return tmp;
             }

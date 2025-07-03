@@ -26,9 +26,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         : ProducerTestBase<EventCompetitionOddsDocumentProcessor<FootballDataContext>>
     {
         [Fact]
-        public void Test_Deserialization()
+        public async Task Test_Deserialization()
         {
-            var documentJson = LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json").Result;
+            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
             var dto = documentJson.FromJson<EspnEventCompetitionOddsDto>();
             dto.Should().NotBeNull();
         }

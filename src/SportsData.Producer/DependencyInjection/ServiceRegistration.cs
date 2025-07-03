@@ -86,7 +86,7 @@ namespace SportsData.Producer.DependencyInjection
             {
                 //DocumentType.AthleteBySeason,
                 //DocumentType.GroupBySeason,
-                //DocumentType.TeamBySeason,
+                //DocumentType.TeamSeason,
                 //DocumentType.CoachSeason
             };
 

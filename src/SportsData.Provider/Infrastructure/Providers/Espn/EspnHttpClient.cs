@@ -18,10 +18,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             _logger = logger;
         }
 
-        public async Task<string> GetRawJsonAsync(Uri uri)
+        public async Task<string> GetRawJsonAsync(Uri uri, bool bypassCache = false)
         {
             // Check cache first
-            if (_config.ReadFromCache && !_config.ForceLiveFetch)
+            if (_config is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
             {
                 var cached = await TryLoadFromDiskAsync(uri);
                 if (!string.IsNullOrEmpty(cached))
@@ -35,13 +35,23 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             // Make HTTP call
             _logger.LogInformation("Fetching LIVE from ESPN: {Uri}", uri);
+
+            // TODO: Make this delay configurable via Azure App Settings
+            // prevent banging on ESPN API too fast
+            await Task.Delay(250);
+
             var response = await _httpClient.GetAsync(uri);
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Non-success status from ESPN: {StatusCode} for {Uri}", response.StatusCode, uri);
+                return string.Empty;
+            }
 
             var json = await response.Content.ReadAsStringAsync();
 
             // Optionally persist
-            if (_config.PersistLocally)
+            if (_config.PersistLocally && !bypassCache)
             {
                 await SaveToDiskAsync(uri, json);
             }
@@ -49,9 +59,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return json;
         }
 
-        public async Task<T?> GetDeserializedAsync<T>(Uri uri) where T : class
+
+        public async Task<T?> GetDeserializedAsync<T>(Uri uri, bool bypassCache = false) where T : class
         {
-            var json = await GetRawJsonAsync(uri);
+            var json = await GetRawJsonAsync(uri, bypassCache);
 
             if (string.IsNullOrWhiteSpace(json))
             {

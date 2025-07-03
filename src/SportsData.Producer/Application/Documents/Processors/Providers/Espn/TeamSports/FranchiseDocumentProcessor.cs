@@ -137,7 +137,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
                 dto.Team.Ref,
                 command.Sport,
                 command.Season,
-                DocumentType.TeamBySeason,
+                DocumentType.TeamSeason,
                 command.SourceDataProvider,
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor));

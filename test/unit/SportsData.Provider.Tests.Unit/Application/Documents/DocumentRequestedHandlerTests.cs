@@ -64,7 +64,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
 
             var msg = Fixture.Build<DocumentRequested>()
                 .With(x => x.Uri, new Uri("http://sports.core.api.espn.com/v2/teams/99"))
-                .With(x => x.DocumentType, DocumentType.TeamBySeason)
+                .With(x => x.DocumentType, DocumentType.TeamSeason)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .OmitAutoProperties()
                 .Create();
@@ -76,7 +76,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
 
             // assert
             publisher.Verify(x => x.Publish(It.Is<ProcessResourceIndexItemCommand>(d =>
-                d.DocumentType == DocumentType.TeamBySeason &&
+                d.DocumentType == DocumentType.TeamSeason &&
                 d.Uri == msg.Uri), It.IsAny<CancellationToken>()), Times.Once);
         }
 

@@ -45,16 +45,14 @@ namespace SportsData.Provider.Application.Documents
         {
             using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash }))
             {
-                _logger.LogInformation("Started");
-
                 var collectionName = "FootballNcaa";
 
-                _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+                _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 
                 var dbItem = await _documentStore
                     .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.SourceUrlHash == hash);
 
-                _logger.LogInformation(dbItem == null ? "No document found" : "Document found");
+                _logger.LogDebug(dbItem == null ? "No document found" : "Document found");
 
                 return dbItem != null ? Ok(dbItem.Data) : NotFound("Document not found");
             }
@@ -75,11 +73,9 @@ namespace SportsData.Provider.Application.Documents
                        ["DocumentId"] = documentId,
             }))
             {
-                _logger.LogInformation("Started");
-
                 var collectionName = _decoder.GetCollectionName(providerId, sportId, typeId, null);
 
-                _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+                _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 
                 var dbItem = await _documentStore
                     .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == documentId.ToString());
@@ -146,7 +142,7 @@ namespace SportsData.Provider.Application.Documents
                 query.DocumentType,
                 query.SeasonYear);
 
-            _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+            _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 
             // generate a hash for the collection retrieval
             var hash = HashProvider.GenerateHashFromUri(query.Uri);
@@ -216,7 +212,7 @@ namespace SportsData.Provider.Application.Documents
                 query.DocumentType,
                 query.SeasonYear);
 
-            _logger.LogInformation("Collection name decoded {@CollectionName}", collectionName);
+            _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 
             // generate a hash for the collection retrieval
             var hash = HashProvider.GenerateHashFromUri(query.Uri);

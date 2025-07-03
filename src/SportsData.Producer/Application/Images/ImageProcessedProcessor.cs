@@ -27,7 +27,7 @@ namespace SportsData.Producer.Application.Images
                        ["CorrelationId"] = response.CorrelationId
                    }))
             {
-                _logger.LogInformation("Began with {@evt}", response);
+                _logger.LogInformation("Began with {@Response}", response);
                 await ProcessInternal(response);
             }
         }

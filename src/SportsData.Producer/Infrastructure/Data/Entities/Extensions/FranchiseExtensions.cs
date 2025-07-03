@@ -57,12 +57,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Id = entity.Id,
                 Name = entity.Name,
                 CreatedUtc = entity.CreatedUtc,
-                Abbreviation = entity.Abbreviation,
+                Abbreviation = entity.Abbreviation ?? string.Empty,
                 ColorCodeAltHex = entity.ColorCodeAltHex,
                 ColorCodeHex = entity.ColorCodeHex,
                 DisplayName = entity.DisplayName,
                 DisplayNameShort = entity.DisplayNameShort,
-                Nickname = entity.Nickname,
+                Nickname = entity.Nickname ?? string.Empty,
                 Sport = entity.Sport
             };
         }

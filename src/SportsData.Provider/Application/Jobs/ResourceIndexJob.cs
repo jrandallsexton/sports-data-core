@@ -29,6 +29,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IProviderAppConfig _appConfig;
+        private readonly EspnApiClientConfig _espnApiClientConfig;
 
         private const int PageSize = 500;
 
@@ -39,7 +40,8 @@ namespace SportsData.Provider.Application.Jobs
             IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideBackgroundJobs backgroundJobProvider,
-            IProviderAppConfig appConfig)
+            IProviderAppConfig appConfig,
+            EspnApiClientConfig espnApiClientConfig)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -48,6 +50,7 @@ namespace SportsData.Provider.Application.Jobs
             _decoder = decoder;
             _backgroundJobProvider = backgroundJobProvider;
             _appConfig = appConfig;
+            _espnApiClientConfig = espnApiClientConfig;
         }
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
@@ -91,6 +94,7 @@ namespace SportsData.Provider.Application.Jobs
 
             _logger.LogInformation("Updating access to ResourceIndex in the database");
             resourceIndexEntity.LastAccessedUtc = DateTime.UtcNow;
+            resourceIndexEntity.IsQueued = true;
             resourceIndexEntity.TotalPageCount = resourceIndexDto.PageCount;
 
             await _dataContext.SaveChangesAsync();
@@ -110,8 +114,7 @@ namespace SportsData.Provider.Application.Jobs
 
                 if (dbDocuments.Count == resourceIndexDto.Count)
                 {
-                    _logger.LogInformation(
-                        $"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
+                    _logger.LogInformation($"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
                     return;
                 }
 
@@ -165,7 +168,6 @@ namespace SportsData.Provider.Application.Jobs
                         }
 
                         itemsProcessed++;
-                        await Task.Delay(250);
 
                         resourceIndexEntity.LastPageIndex = resourceIndexDto.PageIndex;
                         await _dataContext.SaveChangesAsync();

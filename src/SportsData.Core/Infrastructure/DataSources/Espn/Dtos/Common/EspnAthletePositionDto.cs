@@ -30,7 +30,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public bool Leaf { get; set; }
 
         [JsonPropertyName("parent")]
-        public EspnLinkDto Parent { get; set; }
+        public EspnLinkDto? Parent { get; set; }
     }
 
 #pragma warning restore CS8618 // Non-nullable property is uninitialized

@@ -8,13 +8,15 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public class Athlete : CanonicalEntityBase<Guid>
     {
-        public required string LastName { get; set; }
+        public string? LastName { get; set; }
 
-        public required string FirstName { get; set; }
+        public string? FirstName { get; set; }
 
-        public required string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
 
-        public required string ShortName { get; set; }
+        public string? ShortName { get; set; }
+
+        public string? Slug { get; set; }
 
         public decimal WeightLb { get; set; } = -1;
 
@@ -22,17 +24,27 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public decimal HeightIn { get; set; } = -1;
 
-        public required string HeightDisplay { get; set; }
+        public string? HeightDisplay { get; set; }
 
         public int Age { get; set; } = -1;
 
-        public DateTime DoB { get; set; }
+        public DateTime? DoB { get; set; }
 
-        // TODO: Birth location info
+        public Guid? BirthLocationId { get; set; }
 
-        public int CurrentExperience { get; set; } = -1;
+        public Location? BirthLocation { get; set; }
+
+        public string? ExperienceAbbreviation { get; set; }
+
+        public string? ExperienceDisplayValue { get; set; }
+
+        public int ExperienceYears { get; set; } = -1;
 
         public bool IsActive { get; set; }
+
+        public Guid? StatusId { get; set; }
+
+        public AthleteStatus? Status { get; set; }
 
         public List<AthleteSeason> Seasons { get; set; } = [];
 
@@ -46,7 +58,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             {
                 builder.ToTable("Athlete");
                 builder.HasKey(t => t.Id);
-                //builder.Property(x => x.Id).ValueGeneratedNever();
 
                 builder.Property(x => x.FirstName)
                     .IsRequired()
@@ -64,12 +75,34 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                     .IsRequired()
                     .HasMaxLength(100);
 
+                builder.Property(x => x.WeightLb)
+                    .HasPrecision(5, 2);
+
+                builder.Property(x => x.HeightIn)
+                    .HasPrecision(5, 2);
+
                 builder.Property(x => x.HeightDisplay)
-                    .IsRequired()
                     .HasMaxLength(20);
 
                 builder.Property(x => x.WeightDisplay)
                     .HasMaxLength(20);
+
+                builder.HasOne(a => a.BirthLocation)
+                    .WithMany()
+                    .HasForeignKey(a => a.BirthLocationId);
+
+                builder.Property(x => x.ExperienceAbbreviation)
+                    .HasMaxLength(10);
+
+                builder.Property(x => x.ExperienceDisplayValue)
+                    .HasMaxLength(20);
+
+                builder.Property(x => x.Slug)
+                    .HasMaxLength(64);
+
+                builder.HasOne(a => a.Status)
+                    .WithMany()
+                    .HasForeignKey(a => a.StatusId);
             }
         }
 

@@ -28,13 +28,12 @@ public static class ExternalEntityResolver
                 x.Provider == provider &&
                 x.SourceUrlHash == urlHash));
 
-        if (entity == null)
-        {
-            logger?.LogWarning("Could not resolve {Entity} from ref: {Ref}", typeof(TEntity).Name, refUrl);
-            return null;
-        }
+        if (entity != null)
+            return (Guid?)entity.GetType().GetProperty("Id")?.GetValue(entity);
 
-        return (Guid?)entity.GetType().GetProperty("Id")?.GetValue(entity);
+        logger?.LogInformation("Could not resolve {Entity} from ref: {Ref}", typeof(TEntity).Name, refUrl);
+        return null;
+
     }
 
     public static async Task<Guid?> TryResolveFromDtoRefAsync<TEntity>(

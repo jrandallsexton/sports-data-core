@@ -40,6 +40,25 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AthleteStatus",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ExternalId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Abbreviation = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AthleteStatus", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Contests",
                 columns: table => new
                 {
@@ -79,8 +98,8 @@ namespace SportsData.Producer.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Sport = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Nickname = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Abbreviation = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    Nickname = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Abbreviation = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     Location = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     DisplayName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     DisplayNameShort = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -145,6 +164,24 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Location",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    City = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    State = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    Country = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Location", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OutboxState",
                 columns: table => new
                 {
@@ -186,11 +223,11 @@ namespace SportsData.Producer.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    ShortName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Name = table.Column<string>(type: "character varying(75)", maxLength: 75, nullable: false),
+                    ShortName = table.Column<string>(type: "character varying(75)", maxLength: 75, nullable: true),
                     IsGrass = table.Column<bool>(type: "boolean", nullable: false),
                     IsIndoor = table.Column<bool>(type: "boolean", nullable: false),
-                    Slug = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(75)", maxLength: 75, nullable: false),
                     Capacity = table.Column<int>(type: "integer", nullable: false),
                     City = table.Column<string>(type: "character varying(25)", maxLength: 25, nullable: false),
                     State = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
@@ -209,45 +246,7 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Athlete",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    DisplayName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    ShortName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    WeightLb = table.Column<decimal>(type: "numeric", nullable: false),
-                    WeightDisplay = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    HeightIn = table.Column<decimal>(type: "numeric", nullable: false),
-                    HeightDisplay = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Age = table.Column<int>(type: "integer", nullable: false),
-                    DoB = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CurrentExperience = table.Column<int>(type: "integer", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
-                    FranchiseId = table.Column<Guid>(type: "uuid", nullable: true),
-                    FranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CurrentPosition = table.Column<Guid>(type: "uuid", nullable: true),
-                    PositionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Athlete", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Athlete_AthletePosition_PositionId",
-                        column: x => x.PositionId,
-                        principalTable: "AthletePosition",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AthletePositionExternalId",
+                name: "AthletePositionExternalIds",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -262,9 +261,9 @@ namespace SportsData.Producer.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AthletePositionExternalId", x => x.Id);
+                    table.PrimaryKey("PK_AthletePositionExternalIds", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AthletePositionExternalId_AthletePosition_AthletePositionId",
+                        name: "FK_AthletePositionExternalIds_AthletePosition_AthletePositionId",
                         column: x => x.AthletePositionId,
                         principalTable: "AthletePosition",
                         principalColumn: "Id",
@@ -647,6 +646,57 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Athlete",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    ShortName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    WeightLb = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    WeightDisplay = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    HeightIn = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    HeightDisplay = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    Age = table.Column<int>(type: "integer", nullable: false),
+                    DoB = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BirthLocationId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ExperienceAbbreviation = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
+                    ExperienceDisplayValue = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    ExperienceYears = table.Column<int>(type: "integer", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    StatusId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
+                    FranchiseId = table.Column<Guid>(type: "uuid", nullable: true),
+                    FranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PositionId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Athlete", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Athlete_AthletePosition_PositionId",
+                        column: x => x.PositionId,
+                        principalTable: "AthletePosition",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Athlete_AthleteStatus_StatusId",
+                        column: x => x.StatusId,
+                        principalTable: "AthleteStatus",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Athlete_Location_BirthLocationId",
+                        column: x => x.BirthLocationId,
+                        principalTable: "Location",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OutboxMessage",
                 columns: table => new
                 {
@@ -816,6 +866,33 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GroupSeasonLogo",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    GroupSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OriginalUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Uri = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Height = table.Column<long>(type: "bigint", nullable: true),
+                    Width = table.Column<long>(type: "bigint", nullable: true),
+                    Rel = table.Column<List<string>>(type: "text[]", nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GroupSeasonLogo", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GroupSeasonLogo_GroupSeason_GroupSeasonId",
+                        column: x => x.GroupSeasonId,
+                        principalTable: "GroupSeason",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AthleteExternalId",
                 columns: table => new
                 {
@@ -887,33 +964,6 @@ namespace SportsData.Producer.Migrations
                         name: "FK_AthleteSeason_Athlete_AthleteId",
                         column: x => x.AthleteId,
                         principalTable: "Athlete",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "GroupSeasonLogo",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    GroupSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OriginalUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    Uri = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    Height = table.Column<long>(type: "bigint", nullable: true),
-                    Width = table.Column<long>(type: "bigint", nullable: true),
-                    Rel = table.Column<List<string>>(type: "text[]", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_GroupSeasonLogo", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_GroupSeasonLogo_GroupSeason_GroupSeasonId",
-                        column: x => x.GroupSeasonId,
-                        principalTable: "GroupSeason",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1090,9 +1140,19 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Athlete_BirthLocationId",
+                table: "Athlete",
+                column: "BirthLocationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Athlete_PositionId",
                 table: "Athlete",
                 column: "PositionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Athlete_StatusId",
+                table: "Athlete",
+                column: "StatusId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AthleteExternalId_AthleteId",
@@ -1115,8 +1175,8 @@ namespace SportsData.Producer.Migrations
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AthletePositionExternalId_AthletePositionId",
-                table: "AthletePositionExternalId",
+                name: "IX_AthletePositionExternalIds_AthletePositionId",
+                table: "AthletePositionExternalIds",
                 column: "AthletePositionId");
 
             migrationBuilder.CreateIndex(
@@ -1297,7 +1357,7 @@ namespace SportsData.Producer.Migrations
                 name: "AthleteImage");
 
             migrationBuilder.DropTable(
-                name: "AthletePositionExternalId");
+                name: "AthletePositionExternalIds");
 
             migrationBuilder.DropTable(
                 name: "AthleteSeason");
@@ -1376,6 +1436,12 @@ namespace SportsData.Producer.Migrations
 
             migrationBuilder.DropTable(
                 name: "AthletePosition");
+
+            migrationBuilder.DropTable(
+                name: "AthleteStatus");
+
+            migrationBuilder.DropTable(
+                name: "Location");
 
             migrationBuilder.DropTable(
                 name: "FranchiseSeason");

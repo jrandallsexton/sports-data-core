@@ -1,4 +1,6 @@
-﻿using MassTransit;
+﻿using Azure;
+
+using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -44,6 +46,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                        ["CorrelationId"] = request.CorrelationId
                    }))
             {
+                _logger.LogInformation("Began with {@Request}", request);
                 await ProcessRequestInternal(request);
             }
         }

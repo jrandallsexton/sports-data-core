@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -16,9 +17,9 @@ public static class AthletePositionExtensions
         return new AthletePosition
         {
             Id = positionId,
-            Name = dto.Name,
-            DisplayName = dto.DisplayName,
-            Abbreviation = dto.Abbreviation,
+            Name = dto.Name.ToCanonicalForm(),
+            DisplayName = dto.DisplayName.ToCanonicalForm(),
+            Abbreviation = dto.Abbreviation?.Trim().ToUpper() ?? string.Empty,
             Leaf = dto.Leaf,
             ParentId = parentId,
             ExternalIds = [ new AthletePositionExternalId()

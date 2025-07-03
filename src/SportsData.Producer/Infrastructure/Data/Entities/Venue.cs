@@ -46,9 +46,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasKey(t => t.Id);
                 builder.Property(p => p.Id).ValueGeneratedNever();
                 builder.Property(p => p.Country).HasMaxLength(20);
-                builder.Property(p => p.Name).HasMaxLength(50);
-                builder.Property(p => p.ShortName).HasMaxLength(50);
-                builder.Property(p => p.Slug).HasMaxLength(50);
+                builder.Property(p => p.Name).HasMaxLength(75);
+                builder.Property(p => p.ShortName).HasMaxLength(75);
+                builder.Property(p => p.Slug).HasMaxLength(75);
                 builder.Property(p => p.PostalCode).HasMaxLength(20);
                 builder.Property(p => p.State).HasMaxLength(20);
                 builder.Property(p => p.City).HasMaxLength(25);

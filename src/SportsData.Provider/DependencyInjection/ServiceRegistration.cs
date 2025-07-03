@@ -3,6 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Http.Policies;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
@@ -22,7 +23,7 @@ namespace SportsData.Provider.DependencyInjection
             var appConfig = new ProviderAppConfig()
             {
                 IsDryRun = false,
-                MaxResourceIndexItemsToProcess = 5
+                MaxResourceIndexItemsToProcess = null
             };
             services.AddSingleton<IProviderAppConfig>(appConfig);
 
@@ -30,7 +31,9 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddHttpClient<EspnHttpClient>();
+            services.AddHttpClient<EspnHttpClient>()
+                .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
+
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
             //services.AddScoped<ISeedResourceIndex, ResourceIndexSeederJob>();

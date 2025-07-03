@@ -1,7 +1,7 @@
 {
   "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us",
   "id": "1",
-  "name": "Wide Receiver",
+  "name": " wide receiver ",
   "displayName": "Wide Receiver",
   "abbreviation": "WR",
   "leaf": true,

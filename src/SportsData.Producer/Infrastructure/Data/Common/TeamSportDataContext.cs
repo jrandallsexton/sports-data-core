@@ -9,6 +9,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
     {
         public DbSet<AthletePosition> AthletePositions { get; set; }
 
+        public DbSet<AthletePositionExternalId> AthletePositionExternalIds { get; set; }
+
         public DbSet<Contest> Contests { get; set; }
 
         public DbSet<ContestOdds> ContestOdds { get; set; }

@@ -52,7 +52,7 @@ namespace SportsData.Core.DependencyInjection
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
 
-                    // Sinks
+                // Sinks
                     .WriteTo.Console(); // Optional, for local debug
 
                 if (!string.IsNullOrWhiteSpace(seqUri))

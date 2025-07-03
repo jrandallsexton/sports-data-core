@@ -25,7 +25,7 @@ namespace SportsData.Core.Common
             {
                 case DocumentType.Franchise:
                     return typeof(EspnFranchiseDto);
-                case DocumentType.TeamBySeason:
+                case DocumentType.TeamSeason:
                     return typeof(EspnTeamSeasonDto);
                 case DocumentType.Venue:
                     return typeof(EspnVenueDto);
@@ -66,7 +66,7 @@ namespace SportsData.Core.Common
             {
                 case DocumentType.Franchise:
                     return (typeof(EspnFranchiseDto), name);
-                case DocumentType.TeamBySeason:
+                case DocumentType.TeamSeason:
                     return (typeof(EspnTeamSeasonDto), name);
                 case DocumentType.Venue:
                     return (typeof(EspnVenueDto), name);
@@ -132,7 +132,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupBySeason:
                 case DocumentType.GroupBySeasonLogo:
                     return DocumentType.GroupBySeasonLogo;
-                case DocumentType.TeamBySeason:
+                case DocumentType.TeamSeason:
                 case DocumentType.TeamBySeasonLogo:
                     return DocumentType.TeamBySeasonLogo;
                 case DocumentType.Venue:

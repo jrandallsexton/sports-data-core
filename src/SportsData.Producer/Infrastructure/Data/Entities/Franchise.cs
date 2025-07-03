@@ -13,9 +13,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string Name { get; set; }
 
-        public required string Nickname { get; set; }
+        public string? Nickname { get; set; }
 
-        public required string Abbreviation { get; set; }
+        public string? Abbreviation { get; set; }
 
         public required string Location { get; set; }
 
@@ -49,8 +49,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.Name).HasMaxLength(100).IsRequired();
-                builder.Property(t => t.Nickname).HasMaxLength(50).IsRequired();
-                builder.Property(t => t.Abbreviation).HasMaxLength(10).IsRequired();
+                builder.Property(t => t.Nickname).HasMaxLength(50);
+                builder.Property(t => t.Abbreviation).HasMaxLength(10);
                 builder.Property(t => t.Location).HasMaxLength(100).IsRequired();
                 builder.Property(t => t.DisplayName).HasMaxLength(150).IsRequired();
                 builder.Property(t => t.DisplayNameShort).HasMaxLength(100).IsRequired();

@@ -10,7 +10,7 @@ namespace SportsData.Core.Infrastructure.Data.Entities;
 public abstract class CanonicalEntityBase<T> : IEntity<T>
 {
     [Key]
-    public required T Id { get; set; }
+    public T? Id { get; set; }
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 

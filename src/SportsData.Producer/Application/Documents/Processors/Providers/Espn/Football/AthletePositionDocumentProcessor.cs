@@ -3,11 +3,13 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -70,17 +72,68 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnAthletePositionDto dto)
     {
+        // 1️⃣ Normalize the incoming Name for canonical matching
+        var normalizedName = dto.Name.ToCanonicalForm();
+
+        // 2️⃣ Try to find an existing AthletePosition by canonical Name
+        var existing = await _dataContext.AthletePositions
+            .Include(x => x.ExternalIds)
+            .FirstOrDefaultAsync(x => x.Name == normalizedName);
+
+        if (existing != null)
+        {
+            _logger.LogInformation("Found existing AthletePosition with same Name '{Name}'. Attaching new ExternalId.", normalizedName);
+
+            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+
+            await _dataContext.AthletePositionExternalIds.AddAsync(new AthletePositionExternalId
+            {
+                Id = Guid.NewGuid(),
+                AthletePositionId = existing.Id,
+                Provider = command.SourceDataProvider,
+                Value = sourceUrlHash,
+                SourceUrlHash = sourceUrlHash
+            });
+
+            existing.ModifiedUtc = DateTime.UtcNow;
+            existing.ModifiedBy = command.CorrelationId;
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Added new ExternalId to existing AthletePosition {Id}", existing.Id);
+            return;
+        }
+
+        // 3️⃣ No match found — proceed to create brand new AthletePosition
+        _logger.LogInformation("No existing AthletePosition found for Name '{Name}'. Creating new entity.", normalizedName);
+
         var newPositionId = Guid.NewGuid();
 
-        var parentId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Parent,
-            command.SourceDataProvider,
-            () => _dataContext.AthletePositions,
-            _logger);
+        Guid? parentId = null;
+
+        if (dto.Parent is not null)
+        {
+            parentId = await _dataContext.TryResolveFromDtoRefAsync(
+                dto.Parent,
+                command.SourceDataProvider,
+                () => _dataContext.AthletePositions,
+                _logger);
+
+            if (parentId is null)
+            {
+                _logger.LogError(
+                    "Unable to resolve ParentId for AthletePosition with Name '{Name}' (Ref: {Ref}). Likely parent position has not yet been sourced. Throwing to allow Hangfire retry.",
+                    dto.Name,
+                    dto.Parent?.Ref);
+
+                throw new InvalidOperationException($"Parent position not yet available for '{dto.Name}'. Will retry.");
+            }
+        }
 
         var entity = dto.AsEntity(newPositionId, parentId);
 
         _dataContext.AthletePositions.Add(entity);
+
+        await _dataContext.SaveChangesAsync();
 
         var evt = new AthletePositionCreated(
             entity.AsCanonical(),
@@ -88,10 +141,10 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             CausationId.Producer.AthletePositionDocumentProcessor);
 
         await _publishEndpoint.Publish(evt);
-        await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("New AthletePosition {@evt}", evt);
+        _logger.LogInformation("Created new AthletePosition {@evt}", evt);
     }
+
 
     private async Task ProcessUpdate(ProcessDocumentCommand command, EspnAthletePositionDto dto)
     {
@@ -135,18 +188,18 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             updated = true;
         }
 
-        var newParentId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Parent,
-            command.SourceDataProvider,
-            () => _dataContext.AthletePositions,
-            _logger);
+        //var newParentId = await _dataContext.TryResolveFromDtoRefAsync(
+        //    dto.Parent.Ref,
+        //    command.SourceDataProvider,
+        //    () => _dataContext.AthletePositions,
+        //    _logger);
 
-        if (entity.ParentId != newParentId)
-        {
-            _logger.LogInformation("Updating ParentId from {Old} to {New}", entity.ParentId, newParentId);
-            entity.ParentId = newParentId;
-            updated = true;
-        }
+        //if (entity.ParentId != newParentId)
+        //{
+        //    _logger.LogInformation("Updating ParentId from {Old} to {New}", entity.ParentId, newParentId);
+        //    entity.ParentId = newParentId;
+        //    updated = true;
+        //}
 
         if (updated)
         {

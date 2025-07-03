@@ -22,7 +22,7 @@ namespace SportsData.Core.Dtos.Canonical
 
         public int Age { get; init; } = -1; // default to -1 for unknown age
 
-        public DateTime DoB { get; init; } = DateTime.MinValue; // default to MinValue for unknown DoB
+        public DateTime? DoB { get; init; }
 
         public int CurrentExperience { get; init; } = -1; // default to -1 for unknown experience
 

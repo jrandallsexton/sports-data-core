@@ -1,0 +1,34 @@
+﻿using System;
+using System.Globalization;
+
+namespace SportsData.Core.Extensions
+{
+    public static class StringExtensions
+    {
+        public static string? ToCanonicalFormNullable(this string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return null;
+            }
+
+            var trimmed = input.Trim().ToLowerInvariant();
+
+            var textInfo = CultureInfo.InvariantCulture.TextInfo;
+            return textInfo.ToTitleCase(trimmed);
+        }
+
+        public static string ToCanonicalForm(this string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                throw new ArgumentNullException(nameof(input), "Input cannot be null or empty.");
+            }
+
+            var trimmed = input.Trim().ToLowerInvariant();
+
+            var textInfo = CultureInfo.InvariantCulture.TextInfo;
+            return textInfo.ToTitleCase(trimmed);
+        }
+    }
+}

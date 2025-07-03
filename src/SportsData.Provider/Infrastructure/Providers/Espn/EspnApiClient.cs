@@ -30,22 +30,21 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         public async Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask)
         {
             _logger.LogInformation("GetResourceIndex called for URI: {Uri}", uri);
-            var dto = await _http.GetDeserializedAsync<EspnResourceIndexDto>(uri);
+            var dto = await _http.GetDeserializedAsync<EspnResourceIndexDto>(uri, true);
 
-            if (dto is null)
+            if (dto is not null)
+                return ExtractIds(dto, uriMask);
+
+            _logger.LogWarning("Null or empty ResourceIndex returned for {Uri}", uri);
+            return new EspnResourceIndexDto
             {
-                _logger.LogWarning("Null or empty ResourceIndex returned for {Uri}", uri);
-                return new EspnResourceIndexDto
-                {
-                    Count = 0,
-                    Items = [],
-                    PageCount = 0,
-                    PageIndex = 0,
-                    PageSize = 0
-                };
-            }
+                Count = 0,
+                Items = [],
+                PageCount = 0,
+                PageIndex = 0,
+                PageSize = 0
+            };
 
-            return ExtractIds(dto, uriMask);
         }
 
         /// <summary>
@@ -54,7 +53,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         /// </summary>
         public EspnResourceIndexDto ExtractIds(EspnResourceIndexDto dto, string? uriMask)
         {
-            if (dto.Items == null || dto.Items.Count == 0)
+            if (dto.Items.Count == 0)
             {
                 return dto;
             }

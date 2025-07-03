@@ -124,3 +124,24 @@ public class EspnTeamSeasonDto : IHasRef
     [JsonPropertyName("coaches")]
     public EspnLinkDto Coaches { get; set; }
 }
+
+public class EspnTeamSeasonProjectionDto : IHasRef
+{
+    [JsonPropertyName("$ref")]
+    public Uri Ref { get; set; }
+
+    [JsonPropertyName("team")]
+    public EspnLinkDto Team { get; set; }
+
+    [JsonPropertyName("chanceToWinDivision")]
+    public int ChanceToWinDivision { get; set; }
+
+    [JsonPropertyName("chanceToWinConference")]
+    public double ChanceToWinConference { get; set; }
+
+    [JsonPropertyName("projectedWins")]
+    public double ProjectedWins { get; set; }
+
+    [JsonPropertyName("projectedLosses")]
+    public double ProjectedLosses { get; set; }
+}

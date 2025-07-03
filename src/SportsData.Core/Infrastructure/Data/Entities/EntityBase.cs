@@ -8,7 +8,7 @@ namespace SportsData.Core.Infrastructure.Data.Entities
     public abstract class EntityBase<T> : IEntity<T>, IHasSourceUrlHash
     {
         [Key]
-        public required T Id { get; set; }
+        public T? Id { get; set; }
 
         /// <summary>
         /// Identifier of the canonical entity this entity is associated with, if any.

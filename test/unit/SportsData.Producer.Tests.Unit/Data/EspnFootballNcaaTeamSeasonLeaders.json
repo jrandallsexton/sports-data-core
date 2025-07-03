@@ -1,0 +1,2489 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/leaders?lang=en&region=us",
+  "id": "0",
+  "name": "Season",
+  "abbreviation": "Season",
+  "type": "season",
+  "categories": [
+    {
+      "name": "passingLeader",
+      "displayName": "Passing Leader",
+      "shortDisplayName": "PASS",
+      "abbreviation": "PYDS",
+      "leaders": [
+        {
+          "displayValue": "337/525, 4052 YDS, 29 TD, 12 INT",
+          "value": 4052,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "5/5, 35 YDS",
+          "value": 35,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870645?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870645/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2/4, 10 YDS",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081405?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081405/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "rushingLeader",
+      "displayName": "Rushing Leader",
+      "shortDisplayName": "RUSH",
+      "abbreviation": "RYDS",
+      "leaders": [
+        {
+          "displayValue": "140 CAR, 753 YDS, 6 TD",
+          "value": 753,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "117 CAR, 482 YDS, 6 TD",
+          "value": 482,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "44 CAR, 150 YDS",
+          "value": 150,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "9 CAR, 76 YDS",
+          "value": 76,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "10 CAR, 61 YDS",
+          "value": 61,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "4 CAR, 18 YDS",
+          "value": 18,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870645?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870645/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "7 CAR, 14 YDS",
+          "value": 14,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "34 CAR, -38 YDS, 3 TD",
+          "value": -38,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receivingLeader",
+      "displayName": "Receiving Leader",
+      "shortDisplayName": "REC",
+      "abbreviation": "RECYDS",
+      "leaders": [
+        {
+          "displayValue": "61 REC, 884 YDS, 5 TD",
+          "value": 884,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4691138/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "58 REC, 866 YDS, 9 TD",
+          "value": 866,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431219?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431219/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "55 REC, 546 YDS, 2 TD",
+          "value": 546,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4808766/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "42 REC, 480 YDS",
+          "value": 480,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4605951?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4605951/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "31 REC, 263 YDS",
+          "value": 263,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "28 REC, 260 YDS, 2 TD",
+          "value": 260,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "9 REC, 243 YDS, 3 TD",
+          "value": 243,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431334?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431334/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "23 REC, 218 YDS, 2 TD",
+          "value": 218,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "13 REC, 101 YDS, 4 TD",
+          "value": 101,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079420?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079420/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "6 REC, 79 YDS",
+          "value": 79,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5084293/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3 REC, 55 YDS, 1 TD",
+          "value": 55,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4900640?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4900640/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "6 REC, 46 YDS",
+          "value": 46,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3 REC, 24 YDS",
+          "value": 24,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081131?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081131/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "5 REC, 22 YDS, 1 TD",
+          "value": 22,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1 REC, 10 YDS",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "passingYards",
+      "displayName": "Passing Yards",
+      "shortDisplayName": "PYDS",
+      "abbreviation": "YDS",
+      "leaders": [
+        {
+          "displayValue": "4,052",
+          "value": 4052,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "35",
+          "value": 35,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870645?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870645/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "10",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081405?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081405/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "rushingYards",
+      "displayName": "Rushing Yards",
+      "shortDisplayName": "RYDS",
+      "abbreviation": "YDS",
+      "leaders": [
+        {
+          "displayValue": "753",
+          "value": 753,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "482",
+          "value": 482,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "150",
+          "value": 150,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "76",
+          "value": 76,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "61",
+          "value": 61,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "18",
+          "value": 18,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870645?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870645/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "14",
+          "value": 14,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "-38",
+          "value": -38,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receivingYards",
+      "displayName": "Receiving Yards",
+      "shortDisplayName": "RECYDS",
+      "abbreviation": "YDS",
+      "leaders": [
+        {
+          "displayValue": "884",
+          "value": 884,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4691138/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "866",
+          "value": 866,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431219?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431219/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "546",
+          "value": 546,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4808766/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "480",
+          "value": 480,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4605951?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4605951/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "263",
+          "value": 263,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "260",
+          "value": 260,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "243",
+          "value": 243,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431334?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431334/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "218",
+          "value": 218,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "101",
+          "value": 101,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079420?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079420/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "79",
+          "value": 79,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5084293/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "55",
+          "value": 55,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4900640?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4900640/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "46",
+          "value": 46,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "24",
+          "value": 24,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081131?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081131/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "22",
+          "value": 22,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "10",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "totalTackles",
+      "displayName": "Tackles",
+      "shortDisplayName": "TACK",
+      "abbreviation": "TOT",
+      "leaders": [
+        {
+          "displayValue": "120",
+          "value": 120,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4871034?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4871034/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "84",
+          "value": 84,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431583?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431583/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "59",
+          "value": 59,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431424?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431424/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "52",
+          "value": 52,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603193?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603193/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "50",
+          "value": 50,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5078918?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5078918/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "49",
+          "value": 49,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4429036?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4429036/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "43",
+          "value": 43,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431539?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431539/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "40",
+          "value": 40,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603189?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603189/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "33",
+          "value": 33,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4696821?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4696821/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "31",
+          "value": 31,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079550?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079550/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "25",
+          "value": 25,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5218723?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5218723/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "24",
+          "value": 24,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4697755?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4697755/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "20",
+          "value": 20,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4430281?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4430281/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "20",
+          "value": 20,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5147354?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5147354/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "17",
+          "value": 17,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5125302?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5125302/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "16",
+          "value": 16,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4587724?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4587724/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "16",
+          "value": 16,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4685502?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4685502/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "13",
+          "value": 13,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4873636?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4873636/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "12",
+          "value": 12,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4871077?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4871077/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "10",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5146862?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5146862/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "10",
+          "value": 10,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5213029?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5213029/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "8",
+          "value": 8,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4685568?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4685568/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "8",
+          "value": 8,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4880967?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4880967/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "7",
+          "value": 7,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5127935?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5127935/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "4",
+          "value": 4,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870804?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870804/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "sacks",
+      "displayName": "Sacks",
+      "shortDisplayName": "SACK",
+      "abbreviation": "SACK",
+      "leaders": [
+        {
+          "displayValue": "8.5",
+          "value": 8.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431424?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431424/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "4.5",
+          "value": 4.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603189?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603189/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3.5",
+          "value": 3.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4871034?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4871034/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3",
+          "value": 3,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5127935?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5127935/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2.5",
+          "value": 2.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5213029?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5213029/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2",
+          "value": 2,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4697755?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4697755/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1.5",
+          "value": 1.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4429036?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4429036/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1.5",
+          "value": 1.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431583?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431583/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1.5",
+          "value": 1.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079550?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079550/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4430281?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4430281/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431539?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431539/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4696821?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4696821/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4880967?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4880967/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "0.5",
+          "value": 0.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603193?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603193/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "0.5",
+          "value": 0.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4685568?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4685568/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "0.5",
+          "value": 0.5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5146862?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5146862/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "interceptions",
+      "displayName": "Interceptions",
+      "shortDisplayName": "INT",
+      "abbreviation": "INT",
+      "leaders": [
+        {
+          "displayValue": "2",
+          "value": 2,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4696821?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4696821/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431539?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431539/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603193?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603193/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4871034?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4871034/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079550?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079550/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "passingTouchdowns",
+      "displayName": "Passing Touchdowns",
+      "shortDisplayName": "TD",
+      "abbreviation": "TD",
+      "leaders": [
+        {
+          "displayValue": "29",
+          "value": 29,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "quarterbackRating",
+      "displayName": "Quarterback Rating",
+      "shortDisplayName": "RAT",
+      "abbreviation": "RAT",
+      "leaders": [
+        {
+          "displayValue": "95.8",
+          "value": 95.8330001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870645?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870645/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "56.2",
+          "value": 56.25,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431219?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431219/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431334?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431334/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4570644?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4570644/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4603189?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4603189/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4605951?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4605951/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4685736?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4685736/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4691138/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4808766/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4871010?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4871010/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4900640?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4900640/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079420?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079420/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081131?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081131/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081405?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081405/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "39.6",
+          "value": 39.5830001831055,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5084293/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "rushingTouchdowns",
+      "displayName": "Rushing Touchdowns",
+      "shortDisplayName": "TD",
+      "abbreviation": "TD",
+      "leaders": [
+        {
+          "displayValue": "6",
+          "value": 6,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "6",
+          "value": 6,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3",
+          "value": 3,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4567747/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receptions",
+      "displayName": "Receptions",
+      "shortDisplayName": "REC",
+      "abbreviation": "REC",
+      "leaders": [
+        {
+          "displayValue": "61",
+          "value": 61,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4691138/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "58",
+          "value": 58,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431219?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431219/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "55",
+          "value": 55,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4808766/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "42",
+          "value": 42,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4605951?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4605951/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "31",
+          "value": 31,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4568024/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "28",
+          "value": 28,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "23",
+          "value": 23,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "13",
+          "value": 13,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079420?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079420/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "9",
+          "value": 9,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431334?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431334/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "6",
+          "value": 6,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4870839?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4870839/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "6",
+          "value": 6,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5084293/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "5",
+          "value": 5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3",
+          "value": 3,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4900640?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4900640/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3",
+          "value": 3,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5081131?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5081131/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4426333/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receivingTouchdowns",
+      "displayName": "Receiving Touchdowns",
+      "shortDisplayName": "TD",
+      "abbreviation": "TD",
+      "leaders": [
+        {
+          "displayValue": "9",
+          "value": 9,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431219?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431219/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "5",
+          "value": 5,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4691138/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "4",
+          "value": 4,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079420?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079420/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "3",
+          "value": 3,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4431334?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4431334/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2",
+          "value": 2,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4808766/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2",
+          "value": 2,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4869748/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "2",
+          "value": 2,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079379/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4900640?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/4900640/statistics/0?lang=en&region=us"
+          }
+        },
+        {
+          "displayValue": "1",
+          "value": 1,
+          "rel": [
+            "athlete"
+          ],
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079537?lang=en&region=us"
+          },
+          "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/teams/99/athletes/5079537/statistics/0?lang=en&region=us"
+          }
+        }
+      ]
+    }
+  ]
+}

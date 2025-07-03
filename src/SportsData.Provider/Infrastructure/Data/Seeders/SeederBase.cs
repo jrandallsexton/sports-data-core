@@ -243,7 +243,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
-                documentType: DocumentType.TeamBySeason));
+                documentType: DocumentType.TeamSeason));
 
             /* Coaches By Season */
             resources.Add(GenerateResourceIndex(

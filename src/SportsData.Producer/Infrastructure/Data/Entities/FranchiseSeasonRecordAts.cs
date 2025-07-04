@@ -22,7 +22,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? Pushes { get; set; }
 
-        public class FranchiseSeasonRecordAtsConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecordAts>
+        public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecordAts>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecordAts> builder)
             {

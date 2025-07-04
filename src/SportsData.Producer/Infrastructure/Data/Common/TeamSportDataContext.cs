@@ -23,6 +23,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Contest> Contests { get; set; }
 
+        public DbSet<ContestExternalId> ContestExternalIds { get; set; }
+
         public DbSet<ContestOdds> ContestOdds { get; set; }
 
         public DbSet<Franchise> Franchises { get; set; }
@@ -33,6 +35,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseSeason> FranchiseSeasons { get; set; }
 
+        public DbSet<FranchiseSeasonExternalId> FranchiseSeasonExternalIds { get; set; }
+
         public DbSet<FranchiseSeasonAward> FranchiseSeasonAwards { get; set; }
 
         public DbSet<FranchiseSeasonAwardWinner> FranchiseSeasonAwardWinners { get; set; }
@@ -42,6 +46,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<FranchiseSeasonProjection> FranchiseSeasonProjections { get; set; }
 
         public DbSet<FranchiseSeasonRecord> FranchiseSeasonRecords { get; set; }
+
+        public DbSet<FranchiseSeasonRecordAts> FranchiseSeasonRecordsAts { get; set; }
 
         public DbSet<FranchiseSeasonStatisticCategory> FranchiseSeasonStatistics { get; set; }
 
@@ -66,16 +72,20 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAward.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAwardWinner.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAts.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAtsCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordStat.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatisticCategory.EntityConfiguration());

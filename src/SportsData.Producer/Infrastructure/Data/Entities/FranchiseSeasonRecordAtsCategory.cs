@@ -12,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string Description { get; set; } = default!;
 
-        public class FranchiseSeasonRecordAtsCategoryConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecordAtsCategory>
+        public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonRecordAtsCategory>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecordAtsCategory> builder)
             {

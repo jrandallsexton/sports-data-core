@@ -23,6 +23,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Venue> Venues { get; set; }
 
+        public DbSet<VenueExternalId> VenueExternalIds { get; set; }
+
         public DbSet<VenueImage> VenueImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,6 +38,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new Location.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Season.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Venue.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new VenueExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueImage.EntityConfiguration());
             modelBuilder.AddInboxStateEntity();
             modelBuilder.AddOutboxStateEntity();

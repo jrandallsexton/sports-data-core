@@ -23,6 +23,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable("Person");
                 builder.HasKey(t => t.Id);
+                builder.Property(t => t.LastName).IsRequired().HasMaxLength(100);
+                builder.Property(t => t.FirstName).IsRequired().HasMaxLength(100);
+                builder.Property(t => t.Title).HasMaxLength(100);
+                builder.Property(t => t.Nickname).HasMaxLength(100);
             }
         }
     }

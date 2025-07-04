@@ -96,6 +96,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.Property(x => x.VenueId);
 
+                builder.Property(x => x.DisplayClock)
+                    .HasMaxLength(20);
+
                 builder
                     .HasMany(x => x.Links)
                     .WithOne(x => x.Contest)

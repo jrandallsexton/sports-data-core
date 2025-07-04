@@ -13,9 +13,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable("FranchiseSeasonExternalId");
                 builder.HasKey(t => t.Id);
-                //builder.HasOne<FranchiseSeason>()
-                //    .WithMany()
-                //    .HasForeignKey(x => x.Id);
+                builder.HasOne<FranchiseSeason>()
+                    .WithMany()
+                    .HasForeignKey(x => x.Id);
             }
         }
     }

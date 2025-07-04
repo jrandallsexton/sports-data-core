@@ -14,8 +14,6 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeason)]
@@ -153,7 +151,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Projection?.Ref is null)
         {
-            _logger.LogWarning("No projection reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No projection reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -225,7 +223,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Awards?.Ref is null)
         {
-            _logger.LogWarning("No awards reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No awards reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -249,7 +247,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.AgainstTheSpreadRecords?.Ref is null)
         {
-            _logger.LogWarning("No record reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No record reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -273,7 +271,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Injuries?.Ref is null)
         {
-            _logger.LogWarning("No injuries reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No injuries reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -297,7 +295,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Leaders?.Ref is null)
         {
-            _logger.LogWarning("No leaders reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No leaders reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -321,7 +319,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Statistics?.Ref is null)
         {
-            _logger.LogWarning("No statistics reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No statistics reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -345,7 +343,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Record?.Ref is null)
         {
-            _logger.LogWarning("No record found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No record found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
         // Request sourcing of team season record

@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Extensions;
+﻿#nullable enable
+using SportsData.Core.Extensions;
 
 using Xunit;
 
@@ -33,7 +34,7 @@ namespace SportsData.Core.Tests.Unit.Extensions
         [InlineData(" KICKER/PUNTER ", "Kicker/Punter")]
         public void ToCanonicalForm_ReturnsExpected(string? input, string? expected)
         {
-            var result = StringExtensions.ToCanonicalForm(input);
+            var result = input.ToCanonicalFormNullable();
             Assert.Equal(expected, result);
         }
     }

@@ -1,0 +1,25 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4426333/injuries/171387?lang=en&region=us",
+  "id": "171387",
+  "longComment": "Emery, a former 5-star from the 2019 recruiting class, is now in line to return to Baton Rouge next fall to pursue his last remaining year of eligibility. Despite missing three games this past campaign as a result of both an academic suspension and an Achilles injury, the 220-pound running back still set new career highs in carries (77), rushing yards (380), rushing touchdowns (six), receiving yards (129) and receiving touchdowns (two). With every LSU running back who's currently on scholarship set to return, Emery appears slated to be a part of another backfield committee throughout the 2023-24 season.",
+  "shortComment": "Emery didn't enter his name into the 2023 NFL Draft pool, meaning he'll return to LSU for his final collegiate season, Shea Dixon of On3Sports reports.",
+  "status": "Active",
+  "date": "2023-01-17T17:30Z",
+  "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4426333?lang=en&region=us"
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/teams/99?lang=en&region=us"
+  },
+  "source": {
+    "id": "1",
+    "description": "basic/manual",
+    "state": "basic"
+  },
+  "type": {
+    "id": "0",
+    "name": "INJURY_STATUS_ACTIVE",
+    "description": "active",
+    "abbreviation": "A"
+  }
+}

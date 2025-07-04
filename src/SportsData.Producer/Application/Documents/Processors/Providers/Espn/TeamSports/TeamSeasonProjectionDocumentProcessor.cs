@@ -84,12 +84,12 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : IProcessDocum
         else
         {
             // Create new entity
-            var entity = dto.AsEntity(
+            var projection = dto.AsEntity(
                 franchiseSeasonId,
                 franchiseSeason.FranchiseId,
                 franchiseSeason.SeasonYear,
                 command.CorrelationId);
-            await _dataContext.FranchiseSeasonProjections.AddAsync(entity);
+            await _dataContext.FranchiseSeasonProjections.AddAsync(projection);
             _logger.LogInformation("Created new FranchiseSeasonProjection for FranchiseSeason {FranchiseSeasonId}", franchiseSeasonId);
         }
 

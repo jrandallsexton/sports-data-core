@@ -67,6 +67,12 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : IProcessDocuments
             return;
         }
 
+        if (!dto.Items.Any())
+        {
+            _logger.LogInformation("No items to process for FranchiseSeason {Id}", franchiseSeasonId);
+            return;
+        }
+
         foreach (var item in dto.Items)
         {
             var entity = item.AsEntity(

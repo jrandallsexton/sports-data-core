@@ -50,6 +50,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<FranchiseSeasonRecord> Records { get; set; } = new List<FranchiseSeasonRecord>();
 
+        public ICollection<FranchiseSeasonRecordAts> RecordsAts { get; set; } = new List<FranchiseSeasonRecordAts>();
+
         public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = new List<FranchiseSeasonStatisticCategory>();
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>

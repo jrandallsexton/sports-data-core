@@ -16,7 +16,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecordAtsCategory> builder)
             {
-                builder.HasKey(c => c.Id);
+                builder.Property(c => c.Id)
+                    .ValueGeneratedNever()
+                    .HasDefaultValue(0);
+
                 builder.ToTable("lkRecordAtsCategory");
 
                 builder.Property(c => c.Name)

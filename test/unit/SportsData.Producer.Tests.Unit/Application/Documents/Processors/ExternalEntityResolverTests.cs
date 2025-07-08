@@ -17,6 +17,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
     {
         // Arrange
         var venue = Fixture.Build<Venue>()
+            .With(x => x.Id, Guid.NewGuid)
             .With(v => v.ExternalIds, new List<VenueExternalId>())
             .Create();
 
@@ -28,8 +29,9 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             Id = Guid.NewGuid(),
             Provider = SourceDataProvider.Espn,
             SourceUrlHash = hash,
-            Value = "123",
-            Venue = venue
+            Value = hash,
+            Venue = venue,
+            VenueId = venue.Id
         };
 
         venue.ExternalIds.Add(externalId);
@@ -54,6 +56,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
     {
         // Arrange
         var venue = Fixture.Build<Venue>()
+            .With(v => v.Id, Guid.NewGuid())
             .With(v => v.ExternalIds, new List<VenueExternalId>())
             .Create();
 
@@ -65,7 +68,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             Id = Guid.NewGuid(),
             Provider = SourceDataProvider.Espn,
             SourceUrlHash = hash,
-            Value = "456",
+            Value = hash,
             Venue = venue
         };
 

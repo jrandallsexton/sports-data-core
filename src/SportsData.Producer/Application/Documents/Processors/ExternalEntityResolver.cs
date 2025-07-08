@@ -14,14 +14,13 @@ public static class ExternalEntityResolver
         this DbContext db,
         Uri refUrl,
         SourceDataProvider provider,
-        Func<DbSet<TEntity>> dbSetSelector,
+        Func<IQueryable<TEntity>> querySelector,
         Func<TEntity, IEnumerable<ExternalId>> externalIdsSelector,
         ILogger? logger) where TEntity : class
     {
         var urlHash = HashProvider.GenerateHashFromUri(refUrl);
 
-        // Materialize list and resolve in-memory if lazy-loading is off
-        var entities = await dbSetSelector().ToListAsync();
+        var entities = await querySelector().ToListAsync();
 
         var entity = entities.FirstOrDefault(e =>
             externalIdsSelector(e).Any(x =>
@@ -33,14 +32,13 @@ public static class ExternalEntityResolver
 
         logger?.LogInformation("Could not resolve {Entity} from ref: {Ref}", typeof(TEntity).Name, refUrl);
         return null;
-
     }
 
     public static async Task<Guid?> TryResolveFromDtoRefAsync<TEntity>(
         this DbContext db,
         IHasRef dtoRef,
         SourceDataProvider provider,
-        Func<DbSet<TEntity>> dbSetSelector,
+        Func<IQueryable<TEntity>> querySelector,
         ILogger? logger)
         where TEntity : class, IHasExternalIds
     {
@@ -50,9 +48,10 @@ public static class ExternalEntityResolver
         return await db.TryResolveEntityIdAsync(
             dtoRef.Ref,
             provider,
-            dbSetSelector,
+            querySelector,
             entity => entity.GetExternalIds(),
             logger);
     }
+
 
 }

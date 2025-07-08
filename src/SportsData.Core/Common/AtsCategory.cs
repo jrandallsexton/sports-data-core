@@ -2,13 +2,15 @@
 {
     public enum AtsCategory
     {
-        AtsOverall = 0,
-        AtsFavorite = 1,
-        AtsUnderdog = 2,
-        AtsAway = 3,
-        AtsHome = 4,
-        AtsAwayFavorite = 5,
-        AtsAwayUnderdog = 6,
-        AtsHomeFavorite = 7
+        Unknown = 0,
+        AtsOverall = 1,
+        AtsFavorite = 2,
+        AtsUnderdog = 3,
+        AtsAway = 4,
+        AtsHome = 5,
+        AtsAwayFavorite = 6,
+        AtsAwayUnderdog = 7,
+        AtsHomeFavorite = 8
     }
+
 }

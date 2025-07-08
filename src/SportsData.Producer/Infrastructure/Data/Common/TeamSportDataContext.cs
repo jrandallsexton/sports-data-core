@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit.AzureServiceBusTransport.Topology;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -61,6 +62,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<GroupSeasonLogo> GroupSeasonLogos { get; set; }
 
+        public DbSet<SeasonFuture> SeasonFutures { get; set; }
+
+        public DbSet<SeasonFutureExternalId> SeasonFutureExternalIds { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // TODO: See about registering these dynamically based on the context type
@@ -94,6 +99,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new GroupLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupSeasonLogo.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonFuture.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonFutureExternalId.EntityConfiguration());
         }
     }
 }

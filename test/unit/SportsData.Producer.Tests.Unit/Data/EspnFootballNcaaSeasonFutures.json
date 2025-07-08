@@ -1,0 +1,2185 @@
+{
+  "count": 11,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/2758?lang=en",
+      "id": 2758,
+      "name": "NCAA(F) - Championship",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/194?lang=en"
+              },
+              "value": "+550"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/251?lang=en"
+              },
+              "value": "+550"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/61?lang=en"
+              },
+              "value": "+700"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/213?lang=en"
+              },
+              "value": "+750"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2483?lang=en"
+              },
+              "value": "+900"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/228?lang=en"
+              },
+              "value": "+1000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/333?lang=en"
+              },
+              "value": "+1200"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/87?lang=en"
+              },
+              "value": "+1300"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/130?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/145?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/245?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/57?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2390?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2633?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/201?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2579?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/9?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/30?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/97?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2641?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/59?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/158?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/254?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2294?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2567?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/84?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/142?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/239?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/356?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/38?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/52?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/153?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/252?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/264?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/8?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/26?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/68?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/96?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/127?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/135?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/152?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/183?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/197?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/221?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/238?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/259?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/275?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/277?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2116?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2305?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2439?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2628?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2655?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/12?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/24?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/25?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/36?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/58?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/62?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/77?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/98?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/103?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/113?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/120?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/150?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/151?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/164?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/189?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/235?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/248?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/256?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/258?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/309?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/324?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/326?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/344?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2006?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2026?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2032?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2084?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2132?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2199?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2226?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2229?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2247?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2335?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2348?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2429?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2459?lang=en"
+              },
+              "value": "+100000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/6?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/21?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/23?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/55?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/154?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/166?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/193?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/195?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/204?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/218?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/242?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/249?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/265?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/276?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/278?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/290?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/295?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/328?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/338?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/349?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2005?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2117?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2309?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2393?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2426?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2440?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2509?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2534?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2636?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2649?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2711?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2751?lang=en"
+              },
+              "value": "+200000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/5?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/41?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/167?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/202?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2050?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2433?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2572?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2638?lang=en"
+              },
+              "value": "+400000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2653?lang=en"
+              },
+              "value": "+400000"
+            }
+          ]
+        }
+      ],
+      "type": "winLeague",
+      "displayName": "National Championship Winner"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/4092?lang=en",
+      "id": 4092,
+      "name": "NCAA(F) - Big 12 Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "value": "+550"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/9?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/254?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2641?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/239?lang=en"
+              },
+              "value": "+650"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2628?lang=en"
+              },
+              "value": "+850"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "value": "+1000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2305?lang=en"
+              },
+              "value": "+1500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/252?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/38?lang=en"
+              },
+              "value": "+2000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2132?lang=en"
+              },
+              "value": "+2000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/248?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/277?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/12?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/197?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2116?lang=en"
+              },
+              "value": "+5000"
+            }
+          ]
+        }
+      ],
+      "type": "winConference",
+      "displayName": "Big 12 Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/11071?lang=en",
+      "id": 11071,
+      "name": "NCAA(F) - Atlantic Coast Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/228?lang=en"
+              },
+              "value": "+110"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2390?lang=en"
+              },
+              "value": "+425"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/97?lang=en"
+              },
+              "value": "+850"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2567?lang=en"
+              },
+              "value": "+850"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/59?lang=en"
+              },
+              "value": "+1300"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/52?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/150?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/153?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/259?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/152?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/221?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/25?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/103?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/183?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/258?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/24?lang=en"
+              },
+              "value": "+40000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/154?lang=en"
+              },
+              "value": "+40000"
+            }
+          ]
+        }
+      ],
+      "type": "winConference",
+      "displayName": "Atlantic Coast Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15225?lang=en",
+      "id": 15225,
+      "name": "NCAA(F) - American Athletic Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2655?lang=en"
+              },
+              "value": "+275"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2426?lang=en"
+              },
+              "value": "+375"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/349?lang=en"
+              },
+              "value": "+500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2636?lang=en"
+              },
+              "value": "+500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/235?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/58?lang=en"
+              },
+              "value": "+800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/249?lang=en"
+              },
+              "value": "+2000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/151?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2226?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/5?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/202?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/242?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2429?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/218?lang=en"
+              },
+              "value": "+40000"
+            }
+          ]
+        }
+      ],
+      "displayName": "American Athletic Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15226?lang=en",
+      "id": 15226,
+      "name": "NCAA(F) - Big Ten Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/194?lang=en"
+              },
+              "value": "+200"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/213?lang=en"
+              },
+              "value": "+275"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2483?lang=en"
+              },
+              "value": "+275"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/130?lang=en"
+              },
+              "value": "+850"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/30?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/84?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/356?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/158?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2294?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/264?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/26?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/127?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/135?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/164?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/275?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/120?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/77?lang=en"
+              },
+              "value": "+50000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2509?lang=en"
+              },
+              "value": "+50000"
+            }
+          ]
+        }
+      ],
+      "type": "winConference",
+      "displayName": "Big Ten Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15227?lang=en",
+      "id": 15227,
+      "name": "NCAA(F) - Conference USA",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2335?lang=en"
+              },
+              "value": "+145"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/98?lang=en"
+              },
+              "value": "+375"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/55?lang=en"
+              },
+              "value": "+750"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2348?lang=en"
+              },
+              "value": "+900"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2534?lang=en"
+              },
+              "value": "+1000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2229?lang=en"
+              },
+              "value": "+1300"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2393?lang=en"
+              },
+              "value": "+1500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2638?lang=en"
+              },
+              "value": "+1500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/166?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/338?lang=en"
+              },
+              "value": "+5000"
+            }
+          ]
+        }
+      ],
+      "displayName": "Conference USA Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15229?lang=en",
+      "id": 15229,
+      "name": "NCAA(F) - Mid-American Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2649?lang=en"
+              },
+              "value": "+260"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/195?lang=en"
+              },
+              "value": "+350"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2084?lang=en"
+              },
+              "value": "+400"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/193?lang=en"
+              },
+              "value": "+650"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/189?lang=en"
+              },
+              "value": "+1100"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2459?lang=en"
+              },
+              "value": "+1100"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2711?lang=en"
+              },
+              "value": "+1400"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2117?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2199?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/113?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2050?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2309?lang=en"
+              },
+              "value": "+30000"
+            }
+          ]
+        }
+      ],
+      "displayName": "Mid-American Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15230?lang=en",
+      "id": 15230,
+      "name": "NCAA(F) - Mountain West Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/68?lang=en"
+              },
+              "value": "-125"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2439?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/278?lang=en"
+              },
+              "value": "+700"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/23?lang=en"
+              },
+              "value": "+850"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2005?lang=en"
+              },
+              "value": "+1600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/36?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/62?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/21?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2751?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/328?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2440?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/167?lang=en"
+              },
+              "value": "+20000"
+            }
+          ]
+        }
+      ],
+      "displayName": "Mountain West Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15232?lang=en",
+      "id": 15232,
+      "name": "NCAA(F) - Southeastern Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/251?lang=en"
+              },
+              "value": "+250"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/61?lang=en"
+              },
+              "value": "+360"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/333?lang=en"
+              },
+              "value": "+400"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en"
+              },
+              "value": "+800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/145?lang=en"
+              },
+              "value": "+1100"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/245?lang=en"
+              },
+              "value": "+1600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2633?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/57?lang=en"
+              },
+              "value": "+2200"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2579?lang=en"
+              },
+              "value": "+2200"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/201?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/142?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/8?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/96?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/238?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/344?lang=en"
+              },
+              "value": "+50000"
+            }
+          ]
+        }
+      ],
+      "type": "winConference",
+      "displayName": "Southeastern Conference Champion"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15233?lang=en",
+      "id": 15233,
+      "name": "NCAA(F) - Sun Belt Conference",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/256?lang=en"
+              },
+              "value": "+325"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/309?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/6?lang=en"
+              },
+              "value": "+650"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/326?lang=en"
+              },
+              "value": "+650"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/290?lang=en"
+              },
+              "value": "+750"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/295?lang=en"
+              },
+              "value": "+1000"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2572?lang=en"
+              },
+              "value": "+1600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2653?lang=en"
+              },
+              "value": "+1600"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/324?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2026?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2032?lang=en"
+              },
+              "value": "+2200"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/276?lang=en"
+              },
+              "value": "+2500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2433?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2247?lang=en"
+              },
+              "value": "+4000"
+            }
+          ]
+        }
+      ],
+      "displayName": "NCAA(F) - Sun Belt Conference"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/15234?lang=en",
+      "id": 15234,
+      "name": "NCAA(F) - Heisman Trophy",
+      "futures": [
+        {
+          "provider": {
+            "id": "58",
+            "name": "ESPN BET",
+            "active": 1,
+            "priority": 1
+          },
+          "books": [
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870906?lang=en"
+              },
+              "value": "+600"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4567747?lang=en"
+              },
+              "value": "+900"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685413?lang=en"
+              },
+              "value": "+900"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079720?lang=en"
+              },
+              "value": "+900"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4714771?lang=en"
+              },
+              "value": "+1500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079555?lang=en"
+              },
+              "value": "+1800"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4875127?lang=en"
+              },
+              "value": "+2000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4915980?lang=en"
+              },
+              "value": "+2200"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685522?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078810?lang=en"
+              },
+              "value": "+3000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4430841?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870808?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+              },
+              "value": "+3500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685578?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5084084?lang=en"
+              },
+              "value": "+4000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4431580?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870971?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5105849?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141711?lang=en"
+              },
+              "value": "+5000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685454?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4837248?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870607?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870799?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079572?lang=en"
+              },
+              "value": "+6000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4428993?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4432803?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4596472?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685694?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4920227?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079653?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5151948?lang=en"
+              },
+              "value": "+7500"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4432759?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4678010?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685696?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4773919?lang=en"
+              },
+              "value": "+10000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4431465?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597499?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4801717?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5084180?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5121169?lang=en"
+              },
+              "value": "+15000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4431325?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4801299?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870612?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870760?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870819?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5075805?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5084047?lang=en"
+              },
+              "value": "+20000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685246?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685555?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685574?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4801307?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870513?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870653?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4871076?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4918414?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079376?lang=en"
+              },
+              "value": "+25000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4432767?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4565315?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4592532?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597679?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685401?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685497?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4816098?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4899046?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079600?lang=en"
+              },
+              "value": "+30000"
+            },
+            {
+              "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5081504?lang=en"
+              },
+              "value": "+30000"
+            }
+          ]
+        }
+      ],
+      "displayName": "NCAA(F) - Heisman Trophy"
+    }
+  ]
+}

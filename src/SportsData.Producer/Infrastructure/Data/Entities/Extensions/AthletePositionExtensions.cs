@@ -27,7 +27,8 @@ public static class AthletePositionExtensions
                 Id = Guid.NewGuid(),
                 Value = sourceUrlHash,
                 Provider = SourceDataProvider.Espn,
-                SourceUrlHash = sourceUrlHash
+                SourceUrlHash = sourceUrlHash,
+                SourceUrl = dto.Ref.ToCleanUrl()
             }],
         };
     }

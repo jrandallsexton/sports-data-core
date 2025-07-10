@@ -5,6 +5,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class SeasonExternalId : ExternalId
     {
+        public Guid SeasonId { get; set; }
+
         public Season Season { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<SeasonExternalId>
@@ -12,8 +14,19 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<SeasonExternalId> builder)
             {
                 builder.ToTable("SeasonExternalId");
-                builder.HasKey(t => t.Id);
+
+                builder.HasKey(e => e.Id);
+                builder.Property(e => e.Id).ValueGeneratedNever();
+
+                builder.Property(e => e.SeasonId)
+                    .IsRequired();
+
+                builder.HasOne(e => e.Season)
+                    .WithMany(s => s.ExternalIds)
+                    .HasForeignKey(e => e.SeasonId)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
+
         }
     }
 }

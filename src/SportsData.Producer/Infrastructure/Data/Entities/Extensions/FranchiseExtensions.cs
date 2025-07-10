@@ -10,49 +10,45 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         public static Franchise AsEntity(
             this EspnFranchiseDto dto,
             Sport sport,
-            Guid franchiseId,
-            Guid correlationId)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
-            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
-            return new Franchise()
+            if (dto.Ref == null)
+                throw new ArgumentException("Franchise DTO is missing its $ref property.");
+
+            // Generate canonical ID and hash from the franchise ref
+            var franchiseIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
+            return new Franchise
             {
-                Id = franchiseId,
+                Id = franchiseIdentity.CanonicalId,
                 Sport = sport,
                 Abbreviation = dto.Abbreviation,
                 ColorCodeHex = string.IsNullOrEmpty(dto.Color) ? "ffffff" : dto.Color,
                 DisplayName = dto.DisplayName,
                 CreatedUtc = DateTime.UtcNow,
-                CreatedBy = correlationId,
-                ExternalIds = [ new FranchiseExternalId()
-                {
-                    Id = Guid.NewGuid(),
-                    Value = sourceUrlHash,
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrlHash = sourceUrlHash
-                }],
+                ExternalIds =
+                [
+                    new FranchiseExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Value = franchiseIdentity.UrlHash,
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrlHash = franchiseIdentity.UrlHash,
+                        SourceUrl = franchiseIdentity.CleanUrl
+                    }
+                ],
                 DisplayNameShort = dto.ShortDisplayName,
                 IsActive = dto.IsActive,
                 Name = dto.Name,
                 Nickname = dto.Nickname,
                 Slug = dto.Slug,
-                Location = dto.Location,
-                
-                //Logos = dto.Logos.Select(x => new FranchiseLogo()
-                //{
-                //    Id = Guid.NewGuid(),
-                //    CreatedBy = correlationId,
-                //    CreatedUtc = DateTime.UtcNow,
-                //    FranchiseId = franchiseId,
-                //    Height = x.Height,
-                //    Width = x.Width,
-                //    Uri = x.Ref.ToString()
-                //}).ToList()
+                Location = dto.Location
             };
         }
 
         public static FranchiseDto ToCanonicalModel(this Franchise entity)
         {
-            return new FranchiseDto()
+            return new FranchiseDto
             {
                 Id = entity.Id,
                 Name = entity.Name,

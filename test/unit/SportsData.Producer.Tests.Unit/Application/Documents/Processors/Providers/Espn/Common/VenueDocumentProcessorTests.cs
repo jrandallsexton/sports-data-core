@@ -59,6 +59,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // Arrange
             var existingVenueId = Guid.NewGuid();
+            var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en";
 
             var originalVenue = new Venue
             {
@@ -79,8 +80,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en".UrlHash(),
-                        SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en".UrlHash()
+                        Value = venueUrl.UrlHash(),
+                        SourceUrlHash = venueUrl.UrlHash(),
+                        SourceUrl = venueUrl
                     }
                 ],
                 Images =

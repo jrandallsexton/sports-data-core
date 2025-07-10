@@ -81,7 +81,7 @@ namespace SportsData.Core.Common
                 case DocumentType.AthleteBySeason:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.Seasons:
-                    return (typeof(EspnFootballSeasonsDto), name);
+                    return (typeof(EspnFootballSeasonDto), name);
                 case DocumentType.SeasonType:
                     return (typeof(EspnResourceIndexDto), name);
                 case DocumentType.Season:

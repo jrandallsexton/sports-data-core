@@ -41,7 +41,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
 
-        var venueHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501".UrlHash();
+        var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501";
+        var venueHash = venueUrl.UrlHash();
         var venueId = Guid.NewGuid();
 
         await FootballDataContext.Venues.AddAsync(new Venue
@@ -59,7 +60,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     SourceUrlHash = venueHash,
-                    Value = venueHash
+                    Value = venueHash,
+                    SourceUrl = venueUrl
                 }
             ]
         });
@@ -143,6 +145,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
         var externalId = "401583027";
 
+        var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
+
         var contest = Fixture.Build<Contest>()
             .With(x => x.ExternalIds, [
                 new ContestExternalId
@@ -150,7 +154,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     Value = externalId,
-                    SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en".UrlHash()
+                    SourceUrlHash = eventUrl.UrlHash(),
+                    SourceUrl = eventUrl
                 }
             ])
             .Create();

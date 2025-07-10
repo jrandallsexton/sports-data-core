@@ -1,9 +1,96 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
-    public class SeasonExtensions
+    public static class SeasonExtensions
     {
+        public static Season AsEntity(
+            this EspnFootballSeasonDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        {
+            if (dto.Ref == null)
+                throw new ArgumentException("Season DTO is missing its $ref property.");
 
+            // Generate canonical ID and hash from the season ref
+            var seasonIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
+            var season = new Season
+            {
+                Id = seasonIdentity.CanonicalId,
+                Year = dto.Year,
+                Name = dto.DisplayName,
+                StartDate = DateTime.Parse(dto.StartDate),
+                EndDate = DateTime.Parse(dto.EndDate),
+                ExternalIds =
+                {
+                    new SeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        SeasonId = seasonIdentity.CanonicalId,
+                        Value = seasonIdentity.UrlHash,
+                        SourceUrl = seasonIdentity.CleanUrl,
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrlHash = seasonIdentity.UrlHash
+                    }
+                }
+            };
+
+            // Add phases
+            if (dto.Types?.Items != null)
+            {
+                foreach (var type in dto.Types.Items)
+                {
+                    if (type.Ref == null)
+                        continue;
+
+                    var phaseIdentity = externalRefIdentityGenerator.Generate(type.Ref);
+
+                    var phase = new SeasonPhase
+                    {
+                        Id = phaseIdentity.CanonicalId,
+                        SeasonId = seasonIdentity.CanonicalId,
+                        TypeCode = type.Type,
+                        Name = type.Name,
+                        Abbreviation = type.Abbreviation,
+                        Slug = type.Slug,
+                        Year = type.Year,
+                        StartDate = DateTime.Parse(type.StartDate),
+                        EndDate = DateTime.Parse(type.EndDate),
+                        HasGroups = type.HasGroups,
+                        HasStandings = type.HasStandings,
+                        HasLegs = type.HasLegs,
+                        ExternalIds =
+                        {
+                            new SeasonPhaseExternalId
+                            {
+                                Id = Guid.NewGuid(),
+                                SeasonPhaseId = phaseIdentity.CanonicalId,
+                                Value = phaseIdentity.UrlHash,
+                                SourceUrl = phaseIdentity.CleanUrl,
+                                Provider = SourceDataProvider.Espn,
+                                SourceUrlHash = phaseIdentity.UrlHash
+                            }
+                        }
+                    };
+
+                    season.Phases.Add(phase);
+                }
+            }
+
+            // Set ActivePhaseId by matching the hash of dto.Type.Ref
+            if (dto.Type?.Ref != null)
+            {
+                var activePhaseIdentity = externalRefIdentityGenerator.Generate(dto.Type.Ref);
+
+                if (season.Phases.Any(p => p.Id == activePhaseIdentity.CanonicalId))
+                {
+                    season.ActivePhaseId = activePhaseIdentity.CanonicalId;
+                }
+            }
+
+            return season;
+        }
     }
 }

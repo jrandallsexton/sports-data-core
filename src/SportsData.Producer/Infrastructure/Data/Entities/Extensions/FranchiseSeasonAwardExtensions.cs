@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -30,7 +31,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Value = espnAwardId,
                 SourceUrlHash = espnAwardSourceUrlHash,
                 CreatedBy = correlationId,
-                CreatedUtc = DateTime.UtcNow
+                CreatedUtc = DateTime.UtcNow,
+                SourceUrl = dto.Ref.ToCleanUrl()
             };
             award.ExternalIds.Add(awardExternalId);
 

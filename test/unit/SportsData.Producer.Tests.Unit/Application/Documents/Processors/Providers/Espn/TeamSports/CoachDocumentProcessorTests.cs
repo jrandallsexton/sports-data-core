@@ -71,7 +71,8 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
                     Id = Fixture.Create<Guid>(),
                     Provider = SourceDataProvider.Espn,
                     Value = urlHash,
-                    SourceUrlHash = urlHash
+                    SourceUrlHash = urlHash,
+                    SourceUrl = url
                 }
             ]
         };

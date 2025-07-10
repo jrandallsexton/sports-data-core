@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -30,7 +31,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Id = Guid.NewGuid(),
                         Value = sourceUrlHash,
                         Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = sourceUrlHash
+                        SourceUrlHash = sourceUrlHash,
+                        SourceUrl = dto.Ref.ToCleanUrl()
                     }
                 ],
                 Sport = sport,

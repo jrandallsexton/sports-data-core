@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -32,7 +33,8 @@ public static class SeasonFutureExtensions
                     Value = urlHash,
                     SourceUrlHash = urlHash,
                     CreatedBy = correlationId,
-                    CreatedUtc = DateTime.UtcNow
+                    CreatedUtc = DateTime.UtcNow,
+                    SourceUrl = dto.Ref.ToCleanUrl()
                 }
             }
         };

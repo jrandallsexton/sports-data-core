@@ -23,15 +23,18 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly ILogger<FranchiseDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -78,8 +81,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         EspnFranchiseDto dto)
     {
         // 1. map to the entity add it
-        var newFranchiseId = Guid.NewGuid();
-        var newEntity = dto.AsEntity(command.Sport, newFranchiseId, command.CorrelationId);
+        var newEntity = dto.AsEntity(command.Sport, _externalRefIdentityGenerator);
 
         await _dataContext.AddAsync(newEntity);
 
@@ -107,8 +109,8 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             events.Add(new ProcessImageRequest(
                 logo.Href,
                 imgId,
-                newFranchiseId,
-                $"{newFranchiseId}.png",
+                newEntity.Id,
+                $"{newEntity.Id}.png",
                 command.Sport,
                 command.Season,
                 command.DocumentType,
@@ -133,7 +135,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 dto.Team.Ref.Segments.Last().TrimEnd('/'),
-                newFranchiseId.ToString(),
+                newEntity.Id.ToString(),
                 dto.Team.Ref,
                 command.Sport,
                 command.Season,
@@ -149,7 +151,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 dto.Awards.Ref.Segments.Last().TrimEnd('/'),
-                newFranchiseId.ToString(),
+                newEntity.Id.ToString(),
                 dto.Awards.Ref,
                 command.Sport,
                 command.Season,

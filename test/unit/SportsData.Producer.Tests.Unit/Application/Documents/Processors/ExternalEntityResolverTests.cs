@@ -2,6 +2,7 @@
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -31,7 +32,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             SourceUrlHash = hash,
             Value = hash,
             Venue = venue,
-            VenueId = venue.Id
+            VenueId = venue.Id,
+            SourceUrl = refUrl.ToCleanUrl()
         };
 
         venue.ExternalIds.Add(externalId);
@@ -69,7 +71,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             Provider = SourceDataProvider.Espn,
             SourceUrlHash = hash,
             Value = hash,
-            Venue = venue
+            Venue = venue,
+            SourceUrl = refUrl.ToCleanUrl()
         };
 
         venue.ExternalIds.Add(externalId);

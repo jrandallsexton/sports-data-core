@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -67,7 +68,8 @@ public static class AthleteExtensions
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
                 Value = sourceUrlHash,
-                SourceUrlHash = sourceUrlHash
+                SourceUrlHash = sourceUrlHash,
+                SourceUrl = dto.Ref.ToCleanUrl()
             }
         ];
     }
@@ -114,7 +116,8 @@ public static class AthleteExtensions
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     Value = sourceUrlHash,
-                    SourceUrlHash = sourceUrlHash
+                    SourceUrlHash = sourceUrlHash,
+                    SourceUrl = dto.Ref.ToCleanUrl()
                 }
             ]
         };

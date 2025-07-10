@@ -42,6 +42,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // add venue to test db
             var venueId = Guid.NewGuid();
+            var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us";
             await base.FootballDataContext.Venues
                 .AddAsync(new Venue()
                 {
@@ -58,8 +59,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         {
                             Id = Guid.NewGuid(),
                             Provider = SourceDataProvider.Espn,
-                            Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash(),
-                            SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash()
+                            Value = venueUrl.UrlHash(),
+                            SourceUrlHash = venueUrl.UrlHash(),
+                            SourceUrl = venueUrl
                         }
                     ]
                 });
@@ -123,6 +125,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // add venue to test db
             var venueId = Guid.NewGuid();
+            var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us";
             await base.FootballDataContext.Venues
                 .AddAsync(new Venue()
                 {
@@ -139,12 +142,15 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         {
                             Id = Guid.NewGuid(),
                             Provider = SourceDataProvider.Espn,
-                            Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash(),
-                            SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3958?lang=en&region=us".UrlHash()
+                            Value = venueUrl.UrlHash(),
+                            SourceUrlHash = venueUrl.UrlHash(),
+                            SourceUrl = venueUrl
                         }
                     ]
                 });
 
+            var franchiseUrl =
+                "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us";
             var franchise = Fixture.Build<Franchise>()
                 .WithAutoProperties()
                 .With(x => x.VenueId, Guid.Empty)
@@ -153,8 +159,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us".UrlHash(),
-                        SourceUrlHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en&region=us".UrlHash()
+                        Value = franchiseUrl.UrlHash(),
+                        SourceUrlHash = franchiseUrl.UrlHash(),
+                        SourceUrl = franchiseUrl
                     }
                 ])
                 .Create();

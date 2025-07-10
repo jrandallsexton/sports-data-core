@@ -16,7 +16,7 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn.Dtos
             var json = await File.ReadAllTextAsync($"../../../Data/Espn/EspnSeasonsDtoFootballNcaa.json");
 
             // act
-            var dto = json.FromJson<EspnFootballSeasonsDto>();
+            var dto = json.FromJson<EspnFootballSeasonDto>();
 
             // assert
             dto.Should().NotBeNull();

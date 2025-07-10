@@ -92,7 +92,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
                 AthletePositionId = existing.Id,
                 Provider = command.SourceDataProvider,
                 Value = sourceUrlHash,
-                SourceUrlHash = sourceUrlHash
+                SourceUrlHash = sourceUrlHash,
+                SourceUrl = dto.Ref.ToCleanUrl()
             });
 
             existing.ModifiedUtc = DateTime.UtcNow;

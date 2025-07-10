@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -27,8 +28,6 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
             Id = Guid.NewGuid(),
             Year = 2025,
             Name = "2025 NCAA Football",
-            Abbreviation = "2025",
-            Slug = "2025",
             StartDate = new DateTime(2025, 8, 1),
             EndDate = new DateTime(2026, 1, 15)
         };
@@ -94,7 +93,8 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
                 Value = hash1,
-                SourceUrlHash = hash1
+                SourceUrlHash = hash1,
+                SourceUrl = teamRef1.ToCleanUrl()
             }
             })
             .Create();
@@ -110,7 +110,8 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
                 Value = hash2,
-                SourceUrlHash = hash2
+                SourceUrlHash = hash2,
+                SourceUrl = teamRef2.ToCleanUrl()
             }
             })
             .Create();

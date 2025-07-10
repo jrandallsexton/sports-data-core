@@ -31,7 +31,8 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var existingId = Guid.NewGuid();
-        var existingHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70".UrlHash();
+        var existingUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70";
+        var existingHash = existingUrl.UrlHash();
 
         var existingPosition = new AthletePosition
         {
@@ -45,7 +46,8 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     Value = existingHash,
-                    SourceUrlHash = existingHash
+                    SourceUrlHash = existingHash,
+                    SourceUrl = existingUrl
                 }
             ]
         };
@@ -98,7 +100,8 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var existingId = Guid.NewGuid();
-        var existingHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1".UrlHash();
+        var existingUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1";
+        var existingHash = existingUrl.UrlHash();
 
         var existingPosition = new AthletePosition
         {
@@ -112,7 +115,8 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
                     Value = existingHash,
-                    SourceUrlHash = existingHash
+                    SourceUrlHash = existingHash,
+                    SourceUrl = existingUrl
                 }
             ]
         };
@@ -169,7 +173,8 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
                     Provider = SourceDataProvider.Espn,
                     Value = "SOMEOTHERHASH",
                     SourceUrlHash = "SOMEOTHERHASH",
-                    AthletePositionId = existingId
+                    AthletePositionId = existingId,
+                    SourceUrl = "http://sports.core.api.espn.com/someFakeUrl"
                 }
             ]
         };

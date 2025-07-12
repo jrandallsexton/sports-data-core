@@ -24,15 +24,18 @@ public class AthleteDocumentProcessor : IProcessDocuments
     private readonly ILogger<AthleteDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public AthleteDocumentProcessor(
         ILogger<AthleteDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -75,12 +78,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
         }
 
         // 1. map to the entity add it
-        var newEntityId = Guid.NewGuid();
-
         // TODO: Get the current franchise Id from the athleteDto?
-
-        // TODO: Get the source url
-        var newEntity = externalProviderDto.AsFootballAthlete(newEntityId, null, command.CorrelationId);
+        var newEntity = externalProviderDto.AsFootballAthlete(_externalRefIdentityGenerator, null, command.CorrelationId);
 
         // 2. any headshot (image) for the AthleteDto?
         if (externalProviderDto.Headshot is not null)
@@ -89,8 +88,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
             var imgEvt = new ProcessImageRequest(
                 externalProviderDto.Headshot.Href,
                 newImgId,
-                newEntityId,
-                $"{newEntityId}-{newImgId}.png",
+                newEntity.Id,
+                $"{newEntity.Id}-{newImgId}.png",
                 command.Sport,
                 command.Season,
                 command.DocumentType,

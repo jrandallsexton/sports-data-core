@@ -12,17 +12,22 @@ public static class AthleteExtensions
 {
     public static FootballAthlete AsFootballAthlete(
         this EspnAthleteDto dto,
-        Guid athleteId,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid? franchiseId,
         Guid correlationId)
     {
+        if (dto.Ref == null)
+            throw new ArgumentException("Athlete DTO is missing its $ref property.");
+
+        var athleteIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
         var entity = new FootballAthlete
         {
-            Id = athleteId,
+            Id = athleteIdentity.CanonicalId,
             FranchiseId = franchiseId
         };
 
-        dto.MapAthleteProperties(entity, correlationId);
+        dto.MapAthleteProperties(entity, athleteIdentity, correlationId);
 
         return entity;
     }
@@ -30,11 +35,10 @@ public static class AthleteExtensions
     private static void MapAthleteProperties(
         this EspnAthleteDto dto,
         Athlete entity,
+        ExternalRefIdentity athleteIdentity,
         Guid correlationId)
     {
-        var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
-
-        entity.Id = entity.Id == Guid.Empty ? Guid.NewGuid() : entity.Id;
+        entity.Id = athleteIdentity.CanonicalId;
         entity.CreatedBy = correlationId;
         entity.CreatedUtc = DateTime.UtcNow;
 
@@ -67,23 +71,26 @@ public static class AthleteExtensions
             {
                 Id = Guid.NewGuid(),
                 Provider = SourceDataProvider.Espn,
-                Value = sourceUrlHash,
-                SourceUrlHash = sourceUrlHash,
-                SourceUrl = dto.Ref.ToCleanUrl()
+                Value = athleteIdentity.UrlHash,
+                SourceUrlHash = athleteIdentity.UrlHash,
+                SourceUrl = athleteIdentity.CleanUrl
             }
         ];
     }
 
     public static Athlete AsAthlete(
         this EspnAthleteDto dto,
-        Guid athleteId,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid correlationId)
     {
-        var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+        if (dto.Ref == null)
+            throw new ArgumentException("Athlete DTO is missing its $ref property.");
 
-        return new Athlete()
+        var athleteIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
+        return new Athlete
         {
-            Id = athleteId,
+            Id = athleteIdentity.CanonicalId,
             CreatedBy = correlationId,
             CreatedUtc = DateTime.UtcNow,
 
@@ -115,9 +122,9 @@ public static class AthleteExtensions
                 {
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
-                    Value = sourceUrlHash,
-                    SourceUrlHash = sourceUrlHash,
-                    SourceUrl = dto.Ref.ToCleanUrl()
+                    Value = athleteIdentity.UrlHash,
+                    SourceUrlHash = athleteIdentity.UrlHash,
+                    SourceUrl = athleteIdentity.CleanUrl
                 }
             ]
         };
@@ -125,7 +132,7 @@ public static class AthleteExtensions
 
     public static AthleteDto ToCanonicalModel(this Athlete entity)
     {
-        return new AthleteDto()
+        return new AthleteDto
         {
             Id = entity.Id,
             CreatedUtc = entity.CreatedUtc,
@@ -141,7 +148,7 @@ public static class AthleteExtensions
             HeightDisplay = entity.HeightDisplay,
             HeightIn = entity.HeightIn,
             LastName = entity.LastName ?? string.Empty,
-            UpdatedUtc = entity.ModifiedUtc,
+            UpdatedUtc = entity.ModifiedUtc ?? default,
             //PositionId = entity.CurrentPosition,
             //PositionName = entity.Position.Name
         };

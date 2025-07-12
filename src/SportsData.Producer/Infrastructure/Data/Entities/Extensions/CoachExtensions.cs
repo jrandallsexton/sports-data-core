@@ -1,5 +1,4 @@
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
@@ -7,12 +6,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 public static class CoachExtensions
 {
-    public static Coach AsEntity(this EspnCoachDto dto, Guid correlationId)
+    public static Coach AsEntity(this EspnCoachDto dto, SportsData.Core.Common.Hashing.IGenerateExternalRefIdentities externalRefIdentityGenerator, Guid correlationId)
     {
-        var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+        if (dto.Ref == null)
+            throw new ArgumentException("Coach DTO is missing its $ref property.");
+
+        var coachIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
         return new Coach
         {
-            Id = Guid.NewGuid(),
+            Id = coachIdentity.CanonicalId,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Experience = dto.Experience,
@@ -24,9 +27,9 @@ public static class CoachExtensions
                 {
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
-                    Value = sourceUrlHash,
-                    SourceUrlHash = sourceUrlHash,
-                    SourceUrl = dto.Ref.ToCleanUrl()
+                    Value = coachIdentity.UrlHash,
+                    SourceUrlHash = coachIdentity.UrlHash,
+                    SourceUrl = coachIdentity.CleanUrl
                 }
             }
         };

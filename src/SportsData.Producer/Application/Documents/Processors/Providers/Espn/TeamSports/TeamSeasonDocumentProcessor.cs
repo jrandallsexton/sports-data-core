@@ -23,15 +23,18 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -79,17 +82,17 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
         else
         {
-            await ProcessNewEntity(franchise.Id, franchiseSeasonId, externalProviderDto, command);
+            await ProcessNewEntity(franchise.Id, command.Season.Value, externalProviderDto, command);
         }
     }
 
     private async Task ProcessNewEntity(
         Guid franchiseId,
-        Guid seasonId,
+        int seasonYear,
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var franchiseSeason = dto.AsEntity(franchiseId, seasonId, command.Season!.Value, command.CorrelationId);
+        var franchiseSeason = dto.AsEntity(_externalRefIdentityGenerator, franchiseId, seasonYear, command.CorrelationId);
         
         // logos
         await ProcessLogos(franchiseSeason.Id, dto, command);

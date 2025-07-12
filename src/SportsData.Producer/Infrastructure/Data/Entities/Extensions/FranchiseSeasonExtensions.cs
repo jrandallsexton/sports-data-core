@@ -1,7 +1,6 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -10,17 +9,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     {
         public static FranchiseSeason AsEntity(
             this EspnTeamSeasonDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid franchiseId,
-            Guid franchiseSeasonId,
             int seasonYear,
             Guid correlationId,
             Guid? venueId = null,
             Guid? groupId = null)
         {
-            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+            if (dto.Ref == null)
+                throw new ArgumentException("FranchiseSeason DTO is missing its $ref property.");
+
+            var seasonIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+
             return new FranchiseSeason
             {
-                Id = franchiseSeasonId,
+                Id = seasonIdentity.CanonicalId,
                 FranchiseId = franchiseId,
                 VenueId = venueId,
                 GroupId = groupId,
@@ -47,9 +50,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = sourceUrlHash,
-                        SourceUrlHash = sourceUrlHash,
-                        SourceUrl = dto.Ref.ToCleanUrl()
+                        Value = seasonIdentity.UrlHash,
+                        SourceUrlHash = seasonIdentity.UrlHash,
+                        SourceUrl = seasonIdentity.CleanUrl
                     }
                 ]
             };
@@ -57,7 +60,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
         public static FranchiseSeasonDto ToCanonicalModel(this FranchiseSeason entity)
         {
-            return new FranchiseSeasonDto()
+            return new FranchiseSeasonDto
             {
                 // TODO: Implement
             };

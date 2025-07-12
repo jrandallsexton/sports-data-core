@@ -20,15 +20,18 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly ILogger<CoachDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public CoachDocumentProcessor(
         ILogger<CoachDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -59,7 +62,7 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (coach is null)
         {
-            await ProcessNewEntity(command, dto, urlHash);
+            await ProcessNewEntity(command, dto);
         }
         else
         {
@@ -67,9 +70,9 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
-    private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnCoachDto dto, string urlHash)
+    private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnCoachDto dto)
     {
-        var newEntity = dto.AsEntity(command.CorrelationId);
+        var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
         await _dataContext.Coaches.AddAsync(newEntity);
         await _dataContext.SaveChangesAsync();
         _logger.LogInformation("Created new Coach entity: {CoachId}", newEntity.Id);

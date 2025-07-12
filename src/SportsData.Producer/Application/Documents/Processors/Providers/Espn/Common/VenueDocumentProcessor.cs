@@ -22,15 +22,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private readonly ILogger<VenueDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public VenueDocumentProcessor(
             ILogger<VenueDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+            IPublishEndpoint publishEndpoint,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
+            _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -78,7 +81,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnVenueDto dto)
         {
             // 1. map to the entity and save it
-            var newEntity = dto.AsEntity(Guid.NewGuid(), command.CorrelationId);
+            var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
             _dataContext.Add(newEntity);
 

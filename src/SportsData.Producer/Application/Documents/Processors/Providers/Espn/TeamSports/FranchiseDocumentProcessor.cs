@@ -81,7 +81,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         EspnFranchiseDto dto)
     {
         // 1. map to the entity add it
-        var newEntity = dto.AsEntity(command.Sport, _externalRefIdentityGenerator);
+        var newEntity = dto.AsEntity(command.Sport, _externalRefIdentityGenerator, command.CorrelationId);
 
         await _dataContext.AddAsync(newEntity);
 

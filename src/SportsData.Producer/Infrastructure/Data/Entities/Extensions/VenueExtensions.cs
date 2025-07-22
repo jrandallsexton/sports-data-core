@@ -23,8 +23,8 @@ public static class VenueExtensions
             Id = venueIdentity.CanonicalId,
             CreatedBy = correlationId,
             CreatedUtc = DateTime.UtcNow,
-            ExternalIds =
-            [
+            ExternalIds = new List<VenueExternalId>
+            {
                 new VenueExternalId
                 {
                     Id = Guid.NewGuid(),
@@ -33,12 +33,12 @@ public static class VenueExtensions
                     SourceUrlHash = venueIdentity.UrlHash,
                     SourceUrl = venueIdentity.CleanUrl
                 }
-            ],
+            },
             IsGrass = dto.Grass,
             IsIndoor = dto.Indoor,
             Name = dto.FullName,
             ShortName = string.IsNullOrEmpty(dto.ShortName) ? dto.FullName : dto.ShortName,
-            Slug = SlugGenerator.GenerateSlug([dto.ShortName, dto.FullName]),
+            Slug = SlugGenerator.GenerateSlug(new[] { dto.ShortName, dto.FullName }),
             Capacity = dto.Capacity,
             City = dto.Address?.City ?? string.Empty,
             State = dto.Address?.State ?? string.Empty,
@@ -59,7 +59,7 @@ public static class VenueExtensions
             ShortName = entity.ShortName,
             Capacity = entity.Capacity,
             Address = null,
-            Images = [], // TODO: Add image metadata
+            Images = new List<VenueImageDto>(), // TODO: Add image metadata
             UpdatedUtc = entity.LastModified
         };
     }

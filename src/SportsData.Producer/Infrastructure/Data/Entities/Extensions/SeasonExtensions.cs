@@ -8,7 +8,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     {
         public static Season AsEntity(
             this EspnFootballSeasonDto dto,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid correlationId)
         {
             if (dto.Ref == null)
                 throw new ArgumentException("Season DTO is missing its $ref property.");
@@ -23,6 +24,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Name = dto.DisplayName,
                 StartDate = DateTime.Parse(dto.StartDate),
                 EndDate = DateTime.Parse(dto.EndDate),
+                CreatedBy = correlationId,
+                CreatedUtc = DateTime.UtcNow,
                 ExternalIds =
                 {
                     new SeasonExternalId
@@ -61,6 +64,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         HasGroups = type.HasGroups,
                         HasStandings = type.HasStandings,
                         HasLegs = type.HasLegs,
+                        CreatedBy = correlationId,
+                        CreatedUtc = DateTime.UtcNow,
                         ExternalIds =
                         {
                             new SeasonPhaseExternalId

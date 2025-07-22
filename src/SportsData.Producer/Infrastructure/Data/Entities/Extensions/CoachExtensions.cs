@@ -1,12 +1,15 @@
 using SportsData.Core.Common;
-using SportsData.Core.Extensions;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 public static class CoachExtensions
 {
-    public static Coach AsEntity(this EspnCoachDto dto, SportsData.Core.Common.Hashing.IGenerateExternalRefIdentities externalRefIdentityGenerator, Guid correlationId)
+    public static Coach AsEntity(
+        this EspnCoachDto dto,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        Guid correlationId)
     {
         if (dto.Ref == null)
             throw new ArgumentException("Coach DTO is missing its $ref property.");

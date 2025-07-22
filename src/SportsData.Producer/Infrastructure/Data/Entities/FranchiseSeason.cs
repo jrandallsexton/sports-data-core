@@ -3,12 +3,15 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class FranchiseSeason : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Guid FranchiseId { get; set; }
+
+        public Franchise Franchise { get; set; } = default!;
 
         public Guid? VenueId { get; set; }
 
@@ -58,7 +61,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeason> builder)
             {
-                builder.ToTable("FranchiseSeason");
+                builder.ToTable(nameof(FranchiseSeason));
                 builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.Slug).HasMaxLength(100);
@@ -70,9 +73,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(t => t.ColorCodeHex).HasMaxLength(7);
                 builder.Property(t => t.ColorCodeAltHex).HasMaxLength(7);
 
-                builder.HasOne<Franchise>()
-                    .WithMany(x => x.Seasons)
-                    .HasForeignKey(x => x.FranchiseId);
+                builder.HasOne(x => x.Franchise)
+                    .WithMany(f => f.Seasons)
+                    .HasForeignKey(x => x.FranchiseId)
+                    .IsRequired()
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasOne<Venue>()
                     .WithMany()

@@ -20,7 +20,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<AthleteSeason> builder)
             {
-                builder.ToTable("AthleteSeason");
+                builder.ToTable(nameof(AthleteSeason));
                 builder.HasKey(t => t.Id);
                 builder.HasOne<Athlete>()
                     .WithMany(x => x.Seasons)

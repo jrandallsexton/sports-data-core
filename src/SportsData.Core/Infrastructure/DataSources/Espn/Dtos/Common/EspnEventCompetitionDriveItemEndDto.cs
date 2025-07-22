@@ -11,7 +11,7 @@ public class EspnEventCompetitionDriveItemEndDto
     public EspnEventCompetitionDriveItemPeriodDto Period { get; set; }
 
     [JsonPropertyName("clock")]
-    public EspnEventCompetitionDriveItemClockDto Clock { get; set; }
+    public EspnClockDto Clock { get; set; }
 
     [JsonPropertyName("yardLine")]
     public int YardLine { get; set; }

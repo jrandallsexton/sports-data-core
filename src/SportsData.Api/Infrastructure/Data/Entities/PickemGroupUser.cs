@@ -18,7 +18,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<PickemGroupUser> builder)
             {
-                builder.ToTable("PickemGroupUser");
+                builder.ToTable(nameof(PickemGroupUser));
                 builder.HasKey(x => x.Id);
                 builder.HasIndex(x => new { x.PickemGroupId, x.UserId }).IsUnique();
             }

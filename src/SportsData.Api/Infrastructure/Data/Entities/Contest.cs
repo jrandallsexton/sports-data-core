@@ -57,7 +57,7 @@ public class Contest : CanonicalEntityBase<Guid>
     {
         public void Configure(EntityTypeBuilder<Contest> builder)
         {
-            builder.ToTable("Contest");
+            builder.ToTable(nameof(Contest));
             builder.HasKey(x => x.Id);
 
             builder.HasIndex(x => x.ContestId).IsUnique();

@@ -41,7 +41,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionDriveDto>();
+            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionDriveItemDto>();
 
             if (externalProviderDto is null)
             {

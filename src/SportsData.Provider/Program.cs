@@ -8,6 +8,7 @@ using Serilog.Events;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
+using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -42,7 +43,9 @@ namespace SportsData.Provider
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
-            services.AddMessaging(config, null);
+
+            services.AddMessaging(config, [typeof(DocumentRequestedHandler)]);
+
             services.AddInstrumentation(builder.Environment.ApplicationName);
 
             builder.Services.Configure<ProviderDocDatabaseConfig>(

@@ -126,7 +126,7 @@ namespace SportsData.Provider.Application.Jobs
 
             if (any)
             {
-                _logger.LogWarning("One-time ResourceIndex jobs are currently processing. Skipping refresh of one-time jobs.");
+                _logger.LogInformation("One-time ResourceIndex jobs are currently processing. Skipping refresh of one-time jobs.");
                 return; // don't add any new jobs if there are already queued jobs
             }
 

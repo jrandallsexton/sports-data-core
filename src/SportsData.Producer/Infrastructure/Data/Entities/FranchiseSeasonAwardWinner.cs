@@ -17,7 +17,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonAwardWinner> builder)
             {
-                builder.ToTable("FranchiseSeasonAwardWinner");
+                builder.ToTable(nameof(FranchiseSeasonAwardWinner));
                 builder.HasKey(x => x.Id);
                 builder.Property(x => x.AthleteRef).HasMaxLength(200);
                 builder.Property(x => x.TeamRef).HasMaxLength(200);

@@ -1,0 +1,164 @@
+{
+  "count": 3,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "type": {
+        "id": "1",
+        "shortName": "TV",
+        "longName": "Television",
+        "slug": "tv"
+      },
+      "channel": 2,
+      "station": "ABC",
+      "slug": "abc",
+      "priority": 1,
+      "market": {
+        "id": "1",
+        "type": "National"
+      },
+      "media": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/media/2?lang=en",
+        "id": "2",
+        "callLetters": "ABC",
+        "name": "ABC",
+        "shortName": "ABC",
+        "slug": "abc",
+        "logos": [
+          {
+            "href": "https://a.espncdn.com/guid/2acff74d-269f-36ac-96eb-9c66f8ba52ff/logos/default.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "default"
+            ],
+            "lastUpdated": "2025-03-05T17:27Z"
+          },
+          {
+            "href": "https://a.espncdn.com/guid/2acff74d-269f-36ac-96eb-9c66f8ba52ff/logos/default-dark.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "dark"
+            ],
+            "lastUpdated": "2025-03-05T17:27Z"
+          }
+        ],
+        "group": {
+          "id": "1",
+          "name": "Disney",
+          "slug": "disney"
+        }
+      },
+      "lang": "en",
+      "region": "us",
+      "competition": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en"
+      },
+      "partnered": false
+    },
+    {
+      "type": {
+        "id": "4",
+        "shortName": "Streaming",
+        "longName": "Streaming",
+        "slug": "streaming"
+      },
+      "channel": 755,
+      "station": "ESPN+",
+      "slug": "espnplus",
+      "priority": 2,
+      "market": {
+        "id": "1",
+        "type": "National"
+      },
+      "media": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/media/755?lang=en",
+        "id": "755",
+        "callLetters": "ESPN+",
+        "name": "ESPN+",
+        "shortName": "ESPN+",
+        "slug": "espnplus",
+        "logos": [
+          {
+            "href": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "default"
+            ],
+            "lastUpdated": "2025-03-05T17:27Z"
+          },
+          {
+            "href": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "dark"
+            ],
+            "lastUpdated": "2025-03-05T17:27Z"
+          }
+        ],
+        "group": {
+          "id": "1",
+          "name": "Disney",
+          "slug": "disney"
+        }
+      },
+      "lang": "en",
+      "region": "us",
+      "competition": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en"
+      },
+      "partnered": false
+    },
+    {
+      "type": {
+        "id": "5",
+        "shortName": "Radio",
+        "longName": "Radio",
+        "slug": "radio"
+      },
+      "channel": 133,
+      "url": "https://cerebro.espn.com/cerebro/search/airing/a120692799",
+      "station": "13715732",
+      "stationKey": "espn",
+      "slug": "13715732",
+      "priority": 1,
+      "market": {
+        "id": "1",
+        "type": "National"
+      },
+      "media": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/media/133?lang=en",
+        "id": "133",
+        "callLetters": "ERADM",
+        "name": "ESPN Radio",
+        "shortName": "ERADM",
+        "slug": "espn-radio",
+        "logos": [],
+        "group": {
+          "id": "1",
+          "name": "Disney",
+          "slug": "disney"
+        }
+      },
+      "lang": "en",
+      "region": "us",
+      "competition": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en"
+      },
+      "partnered": false
+    }
+  ]
+}

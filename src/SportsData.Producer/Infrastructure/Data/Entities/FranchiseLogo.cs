@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
@@ -23,7 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseLogo> builder)
             {
-                builder.ToTable("FranchiseLogo");
+                builder.ToTable(nameof(FranchiseLogo));
                 builder.HasKey(t => t.Id);
                 builder.HasOne<Franchise>()
                     .WithMany(x => x.Logos)

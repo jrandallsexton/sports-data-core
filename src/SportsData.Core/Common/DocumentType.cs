@@ -45,6 +45,12 @@
         TeamSeasonStatistics = 40,
         Venue = 41,
         VenueImage = 42,
-        Weeks = 43
+        Weeks = 43,
+        EventCompetitionPlay = 44,
+        EventCompetitionBroadcast = 45,
+        EventCompetitionLeaders = 46,
+        EventCompetitionPrediction = 47,
+        EventCompetitionPowerIndex = 48,
+        Unknown = 9999
     }
 }

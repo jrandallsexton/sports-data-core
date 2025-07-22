@@ -2,8 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Infrastructure.Data.Entities
+namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public class VenueImage : CanonicalEntityBase<Guid>, ILogo
     {
@@ -23,7 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<VenueImage> builder)
             {
-                builder.ToTable("VenueImage");
+                builder.ToTable(nameof(VenueImage));
                 builder.HasKey(t => t.Id);
                 builder.HasOne<Venue>()
                     .WithMany(x => x.Images)

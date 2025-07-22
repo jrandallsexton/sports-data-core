@@ -56,7 +56,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         {
             public void Configure(EntityTypeBuilder<Athlete> builder)
             {
-                builder.ToTable("Athlete");
+                builder.ToTable(nameof(Athlete));
                 builder.HasKey(t => t.Id);
 
                 builder.Property(x => x.FirstName)

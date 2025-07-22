@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
@@ -23,7 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required ContestStatus Status { get; set; }
 
-        public int Clock { get; set; } = -1; // In seconds, -1 means no clock (e.g., final)
+        public double Clock { get; set; } = -1; // In seconds, -1 means no clock (e.g., final)
 
         public string DisplayClock { get; set; } = "00:00";
 
@@ -37,10 +38,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? Week { get; set; }               // From `week` ref, parsed from URL or hydrated from companion doc
 
-        public bool? NeutralSite { get; set; }
-
-        public int? Attendance { get; set; }
-
         public string? EventNote { get; set; }       // e.g., "Modelo Vegas Kickoff Classic"
 
         public Guid? VenueId { get; set; }
@@ -51,13 +48,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<ContestExternalId> ExternalIds { get; set; } = new List<ContestExternalId>();
 
+        public ICollection<Competition> Competitions { get; set; } = new List<Competition>();
+
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public class EntityConfiguration : IEntityTypeConfiguration<Contest>
         {
             public void Configure(EntityTypeBuilder<Contest> builder)
             {
-                builder.ToTable("Contests");
+                builder.ToTable(nameof(Contest));
 
                 builder.HasKey(x => x.Id);
 
@@ -86,10 +85,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.SeasonType);
 
                 builder.Property(x => x.Week);
-
-                builder.Property(x => x.NeutralSite);
-
-                builder.Property(x => x.Attendance);
 
                 builder.Property(x => x.EventNote)
                     .HasMaxLength(250);

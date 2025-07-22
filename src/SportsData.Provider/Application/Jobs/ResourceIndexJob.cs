@@ -156,7 +156,8 @@ namespace SportsData.Provider.Application.Jobs
                             null,
                             jobDefinition.SeasonYear);
 
-                        _logger.LogInformation("Preparing job for resourceIndexItem: {Id}", cmd.Id);
+                        // TODO: Enable this logging if needed
+                        //_logger.LogInformation("Preparing job for resourceIndexItem: {Id}", cmd.Id);
 
                         if (_appConfig.IsDryRun)
                         {

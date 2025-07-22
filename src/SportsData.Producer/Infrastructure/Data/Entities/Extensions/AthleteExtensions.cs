@@ -24,10 +24,12 @@ public static class AthleteExtensions
         var entity = new FootballAthlete
         {
             Id = athleteIdentity.CanonicalId,
-            FranchiseId = franchiseId
+            FranchiseId = franchiseId,
+            CreatedBy = correlationId,
+            CreatedUtc = DateTime.UtcNow
         };
 
-        dto.MapAthleteProperties(entity, athleteIdentity, correlationId);
+        dto.MapAthleteProperties(entity, athleteIdentity);
 
         return entity;
     }
@@ -35,13 +37,8 @@ public static class AthleteExtensions
     private static void MapAthleteProperties(
         this EspnAthleteDto dto,
         Athlete entity,
-        ExternalRefIdentity athleteIdentity,
-        Guid correlationId)
+        ExternalRefIdentity athleteIdentity)
     {
-        entity.Id = athleteIdentity.CanonicalId;
-        entity.CreatedBy = correlationId;
-        entity.CreatedUtc = DateTime.UtcNow;
-
         entity.Age = dto.Age;
         entity.IsActive = dto.Active;
 

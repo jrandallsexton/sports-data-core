@@ -24,6 +24,14 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Contest> Contests { get; set; }
 
+        public DbSet<Competition> Competitions { get; set; }
+
+        public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
+
+        public DbSet<Drive> ContestDrives { get; set; }
+
+        public DbSet<Play> ContestPlays { get; set; }
+
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
 
         public DbSet<ContestOdds> ContestOdds { get; set; }
@@ -77,6 +85,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new Play.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());

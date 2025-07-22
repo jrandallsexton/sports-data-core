@@ -40,7 +40,7 @@ public class ContestResult : CanonicalEntityBase<Guid>
     {
         public void Configure(EntityTypeBuilder<ContestResult> builder)
         {
-            builder.ToTable("CompletedContest");
+            builder.ToTable(nameof(ContestResult));
             builder.HasKey(x => x.Id);
 
             builder.HasIndex(x => x.ContestId).IsUnique();

@@ -1,13 +1,17 @@
 ﻿using MassTransit;
+
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities?lang=en
+    /// </summary>
+    /// <typeparam name="TDataContext"></typeparam>
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionProbability)]
     public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProcessDocuments
         where TDataContext : TeamSportDataContext

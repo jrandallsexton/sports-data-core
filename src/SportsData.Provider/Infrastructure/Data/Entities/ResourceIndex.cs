@@ -54,8 +54,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<ResourceIndex> builder)
             {
-                builder.ToTable("ResourceIndex");
+                builder.ToTable(nameof(ResourceIndex));
                 builder.HasKey(t => t.Id);
+                builder.Property(x => x.Id).ValueGeneratedNever();
 
                 builder.HasIndex(t => new { t.IsEnabled, t.Provider, t.SportId, t.DocumentType, t.SeasonYear })
                     .HasDatabaseName("IX_ResourceIndex_Enabled_Provider_Sport_DocumentType_Season");

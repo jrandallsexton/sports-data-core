@@ -37,16 +37,6 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
                 isEnabled: true,
-                isRecurring: false,
-                seasonYear: null,
-                cronExpression: null,
-                provider: SourceDataProvider.Espn,
-                sport: sport,
-                documentType: DocumentType.Venue));
-            resources.Add(GenerateResourceIndex(
-                resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/venues",
-                isEnabled: true,
                 isRecurring: true,
                 seasonYear: null,
                 cronExpression: Cron.Weekly(DayOfWeek.Sunday),
@@ -138,6 +128,36 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             
         }
 
+        private ResourceIndex CloneResourceIndex(ResourceIndex source, bool isRecurring, string? cronExpression)
+        {
+            return new ResourceIndex
+            {
+                Id = Guid.NewGuid(),
+                CreatedBy = Guid.Empty,
+                CreatedUtc = DateTime.UtcNow,
+                CronExpression = cronExpression,
+                DocumentType = source.DocumentType,
+                EndpointMask = source.EndpointMask,
+                IsEnabled = true,
+                IsRecurring = isRecurring,
+                IsSeasonSpecific = source.SeasonYear.HasValue,
+                Items = [],
+                LastAccessedUtc = null,
+                LastCompletedUtc = null,
+                LastPageIndex = null,
+                ModifiedBy = null,
+                ModifiedUtc = null,
+                Name = source.Name,
+                Ordinal = source.Ordinal + 1, // Ensure unique ordinal
+                Provider = source.Provider,
+                SeasonYear = source.SeasonYear,
+                SportId = source.SportId,
+                TotalPageCount = null,
+                Uri = source.Uri,
+                SourceUrlHash = source.SourceUrlHash
+            };
+        }
+
         private ResourceIndex GenerateResourceIndex(
             List<ResourceIndex> resources,
             string endpoint,
@@ -150,7 +170,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             DocumentType documentType)
         {
             var uri = new Uri(endpoint);
-            return new ResourceIndex()
+            var resourceIndex = new ResourceIndex
             {
                 Id = Guid.NewGuid(),
                 CreatedBy = Guid.Empty,
@@ -176,6 +196,15 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 Uri = uri,
                 SourceUrlHash = HashProvider.GenerateHashFromUri(uri)
             };
+
+            if (isRecurring)
+            {
+                var oneTime = CloneResourceIndex(resourceIndex, isRecurring: false, cronExpression: null);
+                oneTime.Ordinal = resourceIndex.Ordinal + 1;
+                resources.Add(oneTime);
+            }
+
+            return resourceIndex;
         }
 
         private List<ResourceIndex> GenerateSeasonalResourcesForTeamSports(
@@ -201,7 +230,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/types",
-                isEnabled: false,
+                isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: null,
@@ -237,7 +266,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/teams",
-                isEnabled: false,
+                isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: null,
@@ -273,7 +302,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             resources.Add(GenerateResourceIndex(
                 resources: resources,
                 endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/rankings",
-                isEnabled: false,
+                isEnabled: true,
                 isRecurring: false,
                 seasonYear: seasonYear,
                 cronExpression: null,

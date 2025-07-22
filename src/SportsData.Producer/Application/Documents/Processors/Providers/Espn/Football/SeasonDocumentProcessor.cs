@@ -55,7 +55,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
 
             // Step 2: Map DTO -> Canonical Entity
-            var mappedSeason = externalProviderDto.AsEntity(_externalRefIdentityGenerator);
+            var mappedSeason = externalProviderDto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
             _logger.LogInformation("Mapped season: {@mappedSeason}", mappedSeason);
 
@@ -71,7 +71,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
             else
             {
-                await ProcessNewAsync(mappedSeason);
+                await ProcessNewEntity(command, externalProviderDto);
             }
 
             // Step 4: Save changes
@@ -80,10 +80,26 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             _logger.LogInformation("Finished processing season {SeasonId}", mappedSeason.Id);
         }
 
-        private async Task ProcessNewAsync(Season mappedSeason)
+        private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnFootballSeasonDto dto)
         {
-            await _dataContext.Seasons.AddAsync(mappedSeason);
-            _logger.LogInformation("Added new Season with Id {SeasonId}", mappedSeason.Id);
+            var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+
+            // capture the ActiveSeasonPhaseId if it exists (avoid circular reference)
+            // EF Core cannot save circular reference Season ↔ ActivePhaseId in same SaveChanges call
+            var currentSeasonPhaseId = newEntity.ActivePhaseId;
+
+            newEntity.ActivePhaseId = null;
+            await _dataContext.Seasons.AddAsync(newEntity);
+            await _dataContext.SaveChangesAsync();
+
+            // Re-attach the ActiveSeasonPhaseId after saving
+            if (currentSeasonPhaseId.HasValue)
+            {
+                newEntity.ActivePhaseId = currentSeasonPhaseId.Value;
+                await _dataContext.SaveChangesAsync();
+            }
+
+            _logger.LogInformation("Created new Season entity: {SeasonId}", newEntity.Id);
         }
 
         private Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)

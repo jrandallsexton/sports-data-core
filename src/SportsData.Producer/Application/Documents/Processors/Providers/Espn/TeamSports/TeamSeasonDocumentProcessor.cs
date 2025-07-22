@@ -22,13 +22,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -62,15 +62,39 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         if (command.Season is null)
             throw new InvalidOperationException("Season year must be provided.");
 
+        var franchiseIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Franchise.Ref);
+
+        if (franchiseIdentity is null)
+        {
+            _logger.LogError($"Failed to generate franchise hash for {externalProviderDto.Franchise.Ref}");
+            throw new InvalidOperationException($"Franchise hash generation failed for {externalProviderDto.Franchise.Ref}");
+        }
+
         var franchise = await _dataContext.Franchises
+            .Include(f => f.ExternalIds)
             .Include(f => f.Seasons)
-            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.Value == command.UrlHash &&
+            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.SourceUrlHash == franchiseIdentity.UrlHash &&
                                                               id.Provider == command.SourceDataProvider));
 
         if (franchise is null)
         {
-            _logger.LogError($"Franchise not found for UrlHash: {command.UrlHash} and Provider: {command.SourceDataProvider}");
-            throw new InvalidOperationException($"Franchise {externalProviderDto.Id} not found.");
+            _logger.LogError($"Franchise not found for UrlHash: {franchiseIdentity.UrlHash} and Provider: {command.SourceDataProvider}");
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: franchiseIdentity.UrlHash,
+                ParentId: null,
+                Uri: new Uri(franchiseIdentity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.Franchise,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: command.CorrelationId // or command.CanonicalId if preferred
+            ));
+            _dataContext.Add(new OutboxPing { Id = Guid.NewGuid(), Timestamp = DateTime.UtcNow });
+            await _dataContext.SaveChangesAsync();
+
+            throw new InvalidOperationException($"Franchise {externalProviderDto.Franchise.Ref} not found.");
         }
 
         var franchiseSeasonId = DeterministicGuid.Combine(franchise.Id, command.Season.Value);
@@ -82,18 +106,32 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
         else
         {
-            await ProcessNewEntity(franchise.Id, command.Season.Value, externalProviderDto, command);
+            await ProcessNewEntity(franchise, command.Season.Value, externalProviderDto, command);
         }
     }
 
     private async Task ProcessNewEntity(
-        Guid franchiseId,
+        Franchise franchise,
         int seasonYear,
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var franchiseSeason = dto.AsEntity(_externalRefIdentityGenerator, franchiseId, seasonYear, command.CorrelationId);
-        
+        var franchiseSeason = dto.AsEntity(
+            _externalRefIdentityGenerator,
+            franchise.Id,
+            seasonYear,
+            command.CorrelationId);
+
+        if (string.IsNullOrEmpty(franchiseSeason.ColorCodeHex))
+        {
+            franchiseSeason.ColorCodeHex = franchise.ColorCodeHex;
+        }
+
+        if (string.IsNullOrEmpty(franchiseSeason.Abbreviation))
+        {
+            franchiseSeason.Abbreviation = franchise.Abbreviation ?? "UNK";
+        }
+
         // logos
         await ProcessLogos(franchiseSeason.Id, dto, command);
 
@@ -162,7 +200,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         await _publishEndpoint.Publish(new DocumentRequested(
             dto.Projection.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
-            dto.Projection.Ref,
+            dto.Projection.Ref.ToCleanUri(),
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonProjection,
@@ -202,7 +240,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (dto.Coaches?.Ref is null)
         {
-            _logger.LogWarning("No coaches reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No coaches reference found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
@@ -370,7 +408,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        if (dto.Logos.Count == 0)
+        if (dto.Logos is null || dto.Logos.Count == 0)
         {
             _logger.LogInformation("No logos found in the DTO for TeamSeason {Season}", command.Season);
             return;

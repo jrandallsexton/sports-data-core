@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20250721121631_Initial")]
+    [Migration("20250723121525_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -70,7 +70,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("Delivered");
 
-                    b.ToTable("InboxState");
+                    b.ToTable("InboxState", (string)null);
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
@@ -161,7 +161,7 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("InboxMessageId", "InboxConsumerId", "SequenceNumber")
                         .IsUnique();
 
-                    b.ToTable("OutboxMessage");
+                    b.ToTable("OutboxMessage", (string)null);
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxState", b =>
@@ -191,7 +191,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("Created");
 
-                    b.ToTable("OutboxState");
+                    b.ToTable("OutboxState", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.Athlete", b =>
@@ -801,8 +801,8 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("AwayTeamFranchiseSeasonId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Clock")
-                        .HasColumnType("integer");
+                    b.Property<double>("Clock")
+                        .HasColumnType("double precision");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -870,7 +870,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Contests", (string)null);
+                    b.ToTable("Contest", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.ContestExternalId", b =>
@@ -2003,6 +2003,7 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonExternalId", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
@@ -2259,8 +2260,7 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecordAtsCategory", b =>
                 {
                     b.Property<int>("Id")
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -2764,6 +2764,20 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("GroupSeasonLogo", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.OutboxPing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OutboxPings");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2802,7 +2816,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("ActivePhaseId");
 
-                    b.ToTable("SeasonYear", (string)null);
+                    b.ToTable("Season", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonExternalId", b =>
@@ -3468,7 +3482,7 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Franchise", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Franchise", "Franchise")
                         .WithMany("Seasons")
                         .HasForeignKey("FranchiseId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -3483,6 +3497,8 @@ namespace SportsData.Producer.Migrations
                         .WithMany()
                         .HasForeignKey("VenueId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Franchise");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonAward", b =>
@@ -3520,12 +3536,6 @@ namespace SportsData.Producer.Migrations
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
                         .WithMany("ExternalIds")
                         .HasForeignKey("FranchiseSeasonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", null)
-                        .WithMany()
-                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

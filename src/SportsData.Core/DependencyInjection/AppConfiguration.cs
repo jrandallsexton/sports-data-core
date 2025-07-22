@@ -37,14 +37,17 @@ namespace SportsData.Core.DependencyInjection
                 var seqUri = context.Configuration["CommonConfig:SeqUri"];
                 Console.WriteLine($"[DEBUG] SeqUri from config: {seqUri}");
 
+                // TODO: LoggingLevelSwitch
+
                 configuration
                     // Global minimum level
-                    .MinimumLevel.Information()
+                    .MinimumLevel.Warning()
 
                     // Per-namespace overrides
-                    .MinimumLevel.Override("SportsData", LogEventLevel.Information)
+                    .MinimumLevel.Override("SportsData", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .MinimumLevel.Override("System", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
                     //.ReadFrom.Configuration(context.Configuration)
 
@@ -52,12 +55,12 @@ namespace SportsData.Core.DependencyInjection
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
 
-                // Sinks
+                    // Sinks
                     .WriteTo.Console(); // Optional, for local debug
 
                 if (!string.IsNullOrWhiteSpace(seqUri))
                 {
-                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: LogEventLevel.Verbose);
+                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: LogEventLevel.Warning);
                 }
 
                 Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));

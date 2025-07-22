@@ -1,0 +1,12 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/situation?lang=en",
+  "lastPlay": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334104999503?lang=en"
+  },
+  "down": 2,
+  "yardLine": 43,
+  "distance": 13,
+  "isRedZone": false,
+  "homeTimeouts": 3,
+  "awayTimeouts": 3
+}

@@ -86,7 +86,7 @@ public class EspnEventCompetitionDriveItemDto : IHasRef
     public EspnEventCompetitionDriveItemPeriodDto Period { get; set; }
 
     [JsonPropertyName("clock")]
-    public EspnEventCompetitionDriveItemClockDto Clock { get; set; }
+    public EspnClockDto Clock { get; set; }
 
     [JsonPropertyName("scoringPlay")]
     public bool ScoringPlay { get; set; }

@@ -39,7 +39,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecord> builder)
             {
-                builder.ToTable("FranchiseSeasonRecord");
+                builder.ToTable(nameof(FranchiseSeasonRecord));
                 builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.Name)

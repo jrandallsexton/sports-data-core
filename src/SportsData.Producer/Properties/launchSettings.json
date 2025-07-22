@@ -34,7 +34,7 @@
       "commandName": "Project",
       "commandLineArgs": "-mode FootballNcaa",
       "launchBrowser": true,
-      "launchUrl": "swagger",
+      "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "APPCONFIG_LABEL": "Local"

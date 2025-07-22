@@ -27,7 +27,7 @@ namespace SportsData.Core.Infrastructure.Blobs
 
         public async Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename)
         {
-            containerName = $"{_config.Value.AzureBlobStorageContainerPrefix}-{containerName.ToLower()}";
+            containerName = $"{_config.Value.AzureBlobStorageContainerPrefix.ToLower()}-{containerName.ToLower()}";
 
             var tmp = new BlobContainerClient(_config.Value.AzureBlobStorageConnectionString, containerName);
 

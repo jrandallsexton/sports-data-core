@@ -24,7 +24,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<ResourceIndexItem> builder)
             {
-                builder.ToTable("ResourceIndexItem");
+                builder.ToTable(nameof(ResourceIndexItem));
 
                 builder.HasKey(t => t.Id);
 

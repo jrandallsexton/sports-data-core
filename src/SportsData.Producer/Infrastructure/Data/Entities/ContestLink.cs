@@ -20,5 +20,4 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Contest Contest { get; set; } = null!;
     }
-
 }

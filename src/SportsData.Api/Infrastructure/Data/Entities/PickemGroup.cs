@@ -31,7 +31,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<PickemGroup> builder)
             {
-                builder.ToTable("PickemGroup");
+                builder.ToTable(nameof(PickemGroup));
                 builder.HasKey(x => x.Id);
                 builder.HasIndex(x => x.CommissionerUserId);
                 builder.Property(x => x.Name).HasMaxLength(100);

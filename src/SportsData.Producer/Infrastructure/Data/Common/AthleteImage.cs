@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Common
 {
@@ -24,7 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         {
             public void Configure(EntityTypeBuilder<AthleteImage> builder)
             {
-                builder.ToTable("AthleteImage");
+                builder.ToTable(nameof(AthleteImage));
                 builder.HasKey(t => t.Id);
                 builder.HasOne<Athlete>()
                     .WithMany(x => x.Images)

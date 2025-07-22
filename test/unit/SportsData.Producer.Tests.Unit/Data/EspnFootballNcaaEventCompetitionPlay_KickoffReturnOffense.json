@@ -1,0 +1,150 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334101849902?lang=en",
+  "id": "401628334101849902",
+  "sequenceNumber": "101849902",
+  "type": {
+    "id": "12",
+    "text": "Kickoff Return (Offense)"
+  },
+  "text": "Michael Lantz kickoff for 58 yds , Zavion Thomas return for 16 yds to the LSU 23",
+  "shortText": "M. Lantz kick for 58 yds,Z. Thomas return for 16 yds",
+  "alternativeText": "Michael Lantz kickoff for 58 yds , Zavion Thomas return for 16 yds to the LSU 23",
+  "shortAlternativeText": "M. Lantz kick for 58 yds,Z. Thomas return for 16 yds",
+  "awayScore": 0,
+  "homeScore": 0,
+  "period": {
+    "number": 1
+  },
+  "clock": {
+    "value": 900.0,
+    "displayValue": "15:00"
+  },
+  "scoringPlay": false,
+  "priority": false,
+  "scoreValue": 0,
+  "modified": "2024-12-02T21:44Z",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en"
+  },
+  "participants": [
+    {
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4430026?lang=en"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/30/roster/4430026/statistics/0?lang=en"
+      },
+      "stats": [
+        {
+          "name": "kickoffs",
+          "displayName": "Kickoffs",
+          "shortDisplayName": "K",
+          "description": "The number of kickoffs taken.",
+          "abbreviation": "K",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "name": "touchbacks",
+          "displayName": "Touchbacks",
+          "shortDisplayName": "TB",
+          "description": "The number of kickoffs that result in touchbacks.",
+          "abbreviation": "TB",
+          "value": 0.0,
+          "displayValue": "0"
+        },
+        {
+          "name": "touchbackPct",
+          "displayName": "Touchback Percentage",
+          "shortDisplayName": "TB%",
+          "description": "The percentage of kickoffs that are touchbacks.",
+          "abbreviation": "TB%",
+          "value": 0.0,
+          "displayValue": "0"
+        }
+      ],
+      "order": 1,
+      "type": "kicker"
+    },
+    {
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/roster/4869748/statistics/0?lang=en"
+      },
+      "stats": [
+        {
+          "name": "kickReturns",
+          "displayName": "Kick Returns",
+          "shortDisplayName": "KR",
+          "description": "The number of kick returns.",
+          "abbreviation": "KR",
+          "value": 1.0,
+          "displayValue": "1"
+        },
+        {
+          "name": "yardsPerKickReturn",
+          "displayName": "Yards Per Kick Return",
+          "shortDisplayName": "YDS/KR",
+          "description": "The average number of yards per kick return.",
+          "abbreviation": "YDS/KR",
+          "value": 16.0,
+          "displayValue": "16.0"
+        },
+        {
+          "name": "longKickReturn",
+          "displayName": "Long Kick Return",
+          "shortDisplayName": "LGKR",
+          "description": "The longest kick return in yards.",
+          "abbreviation": "LGKR",
+          "value": 16.0,
+          "displayValue": "16"
+        },
+        {
+          "name": "kickReturnTouchdowns",
+          "displayName": "Kick Return Touchdowns",
+          "shortDisplayName": "KRTD",
+          "description": "The number of kick return touchdowns.",
+          "abbreviation": "KRTD",
+          "value": 0.0,
+          "displayValue": "0"
+        }
+      ],
+      "order": 2,
+      "type": "returner"
+    }
+  ],
+  "probability": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities/401628334101849902?lang=en"
+  },
+  "wallclock": "2024-09-01T23:44:27Z",
+  "drive": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/drives/4016283341?lang=en"
+  },
+  "start": {
+    "down": 1,
+    "distance": 10,
+    "yardLine": 65,
+    "yardsToEndzone": 65,
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en"
+    }
+  },
+  "end": {
+    "down": -1,
+    "distance": 10,
+    "yardLine": 23,
+    "yardsToEndzone": 77,
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en"
+    }
+  },
+  "statYardage": 16
+}

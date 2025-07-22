@@ -8,7 +8,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     {
         public static Season AsEntity(
             this EspnFootballSeasonDto dto,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid correlationId)
         {
             if (dto.Ref == null)
                 throw new ArgumentException("Season DTO is missing its $ref property.");
@@ -21,8 +22,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Id = seasonIdentity.CanonicalId,
                 Year = dto.Year,
                 Name = dto.DisplayName,
-                StartDate = DateTime.Parse(dto.StartDate),
-                EndDate = DateTime.Parse(dto.EndDate),
+                StartDate = DateTime.Parse(dto.StartDate).ToUniversalTime(),
+                EndDate = DateTime.Parse(dto.EndDate).ToUniversalTime(),
+                CreatedBy = correlationId,
+                CreatedUtc = DateTime.UtcNow,
                 ExternalIds =
                 {
                     new SeasonExternalId
@@ -56,11 +59,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Abbreviation = type.Abbreviation,
                         Slug = type.Slug,
                         Year = type.Year,
-                        StartDate = DateTime.Parse(type.StartDate),
-                        EndDate = DateTime.Parse(type.EndDate),
+                        StartDate = DateTime.Parse(type.StartDate).ToUniversalTime(),
+                        EndDate = DateTime.Parse(type.EndDate).ToUniversalTime(),
                         HasGroups = type.HasGroups,
                         HasStandings = type.HasStandings,
                         HasLegs = type.HasLegs,
+                        CreatedBy = correlationId,
+                        CreatedUtc = DateTime.UtcNow,
                         ExternalIds =
                         {
                             new SeasonPhaseExternalId

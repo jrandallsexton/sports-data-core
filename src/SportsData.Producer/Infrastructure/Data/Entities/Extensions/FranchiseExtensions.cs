@@ -10,7 +10,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         public static Franchise AsEntity(
             this EspnFranchiseDto dto,
             Sport sport,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid correlationId)
         {
             if (dto.Ref == null)
                 throw new ArgumentException("Franchise DTO is missing its $ref property.");
@@ -26,6 +27,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 ColorCodeHex = string.IsNullOrEmpty(dto.Color) ? "ffffff" : dto.Color,
                 DisplayName = dto.DisplayName,
                 CreatedUtc = DateTime.UtcNow,
+                CreatedBy = correlationId,
                 ExternalIds =
                 [
                     new FranchiseExternalId

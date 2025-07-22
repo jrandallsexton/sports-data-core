@@ -2,7 +2,7 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Infrastructure.Data.Entities
+namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public abstract class ExternalId : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {

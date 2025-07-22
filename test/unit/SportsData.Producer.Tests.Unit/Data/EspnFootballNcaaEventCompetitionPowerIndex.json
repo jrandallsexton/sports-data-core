@@ -1,0 +1,41 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/powerindex/99?lang=en",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en"
+  },
+  "season": 2024,
+  "stats": [
+    {
+      "name": "teampredptdiff",
+      "displayName": "PRED PT DIFF",
+      "description": "Expected margin of victory for the FPI favorite.",
+      "abbreviation": "PRED PT DIFF",
+      "value": 1.927,
+      "displayValue": "1.9"
+    },
+    {
+      "name": "gameprojection",
+      "displayName": "WIN PROB",
+      "description": "Team's predicted win percentage in this game at time of given BPI run",
+      "abbreviation": "GAME PROJ",
+      "value": 54.705000000000005,
+      "displayValue": "54.7%"
+    },
+    {
+      "name": "matchupquality",
+      "displayName": "MATCHUP QUALITY",
+      "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+      "abbreviation": "MATCHUP QUALITY",
+      "value": 82.58,
+      "displayValue": "82.6"
+    },
+    {
+      "name": "teamadjgamescore",
+      "displayName": "GAME SCORE",
+      "description": "A measure of how well a team performed compared to their expected performance and the expected performance of a typical top 25 team.",
+      "abbreviation": "TEAM ADJ GAMESCORE",
+      "value": 61.464,
+      "displayValue": "61.5"
+    }
+  ]
+}

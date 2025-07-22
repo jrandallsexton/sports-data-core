@@ -44,7 +44,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<ScheduledJob> builder)
             {
-                builder.ToTable("ScheduledJob");
+                builder.ToTable(nameof(ScheduledJob ));
 
                 builder.HasKey(t => t.Id);
 

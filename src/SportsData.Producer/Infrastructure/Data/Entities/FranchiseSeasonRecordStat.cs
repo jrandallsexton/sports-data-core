@@ -34,7 +34,7 @@ public class FranchiseSeasonRecordStat
     {
         public void Configure(EntityTypeBuilder<FranchiseSeasonRecordStat> builder)
         {
-            builder.ToTable("FranchiseSeasonRecordStat");
+            builder.ToTable(nameof(FranchiseSeasonRecordStat));
             builder.HasKey(t => t.Id);
 
             builder.Property(t => t.Name).HasMaxLength(100);

@@ -151,7 +151,7 @@ namespace SportsData.Provider.Application.Documents
 
             // Look for the item in the database first to see if we already have a link to it in blob storage
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == hash.ToString());
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash.ToString());
 
             if (dbItem is not null)
             {
@@ -221,7 +221,7 @@ namespace SportsData.Provider.Application.Documents
 
             // Look for the item in the database first to see if we already have a link to it in blob storage
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.id == hash.ToString());
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash.ToString());
 
             if (dbItem is not null)
             {

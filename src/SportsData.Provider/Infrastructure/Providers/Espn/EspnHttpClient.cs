@@ -84,7 +84,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         private async Task<string?> TryLoadFromDiskAsync(Uri uri)
         {
             var path = GetCacheFilePath(uri);
-
+            
             if (File.Exists(path))
             {
                 return await File.ReadAllTextAsync(path);
@@ -103,10 +103,37 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 Directory.CreateDirectory(dir);
             }
 
-            await File.WriteAllTextAsync(path, json);
+            const int maxRetries = 3;
+            const int delayMilliseconds = 200;
 
-            _logger.LogInformation("Persisted JSON to {Path}", path);
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    await using var fileStream = new FileStream(
+                        path,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.ReadWrite, // 👈 Prevent locking conflicts (e.g., Dropbox, AV)
+                        bufferSize: 4096,
+                        useAsync: true
+                    );
+
+                    using var writer = new StreamWriter(fileStream);
+                    await writer.WriteAsync(json);
+                    _logger.LogInformation("Persisted JSON to {Path}", path);
+                    return;
+                }
+                catch (IOException ex) when (attempt < maxRetries)
+                {
+                    _logger.LogWarning(ex, "File write conflict on attempt {Attempt} for {Path}, retrying...", attempt, path);
+                    await Task.Delay(delayMilliseconds * attempt);
+                }
+            }
+
+            throw new IOException($"Failed to write file after {maxRetries} attempts: {path}");
         }
+
 
         private string GetCacheFilePath(Uri uri)
         {

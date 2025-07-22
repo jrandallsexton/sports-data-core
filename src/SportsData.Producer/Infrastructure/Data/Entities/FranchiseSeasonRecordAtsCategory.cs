@@ -35,49 +35,57 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     {
                         Id = (int)AtsCategory.AtsOverall,
                         Name = "atsOverall",
-                        Description = "Overall team season record against the spread"
+                        Description = "Overall team season record against the spread",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsFavorite,
                         Name = "atsFavorite",
-                        Description = "Team season record against the spread as the favorite"
+                        Description = "Team season record against the spread as the favorite",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsUnderdog,
                         Name = "atsUnderdog",
-                        Description = "Team season record against the spread as the underdog"
+                        Description = "Team season record against the spread as the underdog",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsAway,
                         Name = "atsAway",
-                        Description = "Team season record against the spread as the away team"
+                        Description = "Team season record against the spread as the away team",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsHome,
                         Name = "atsHome",
-                        Description = "Team season record against the spread as the home team"
+                        Description = "Team season record against the spread as the home team",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsAwayFavorite,
                         Name = "atsAwayFavorite",
-                        Description = "Team season record against the spread as the away favorite"
+                        Description = "Team season record against the spread as the away favorite",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsAwayUnderdog,
                         Name = "atsAwayUnderdog",
-                        Description = "Team season record against the spread as the away underdog"
+                        Description = "Team season record against the spread as the away underdog",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     },
                     new FranchiseSeasonRecordAtsCategory
                     {
                         Id = (int)AtsCategory.AtsHomeFavorite,
                         Name = "atsHomeFavorite",
-                        Description = "Team season record against the spread as the home favorite"
+                        Description = "Team season record against the spread as the home favorite",
+                        CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                     }
                 );
             }

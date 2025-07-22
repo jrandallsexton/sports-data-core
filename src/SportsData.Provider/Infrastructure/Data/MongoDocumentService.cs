@@ -66,7 +66,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter)
         {
-            _logger.LogInformation("Mongo querying: {Filter}", filter);
+            // TODO: Re-enable logging if needed?
+            //_logger.LogInformation("Mongo querying: {Filter}", filter);
             var collection = _database.GetCollection<T>(collectionName);
             var cursor = await collection.FindAsync(filter);
             return await cursor.FirstOrDefaultAsync();

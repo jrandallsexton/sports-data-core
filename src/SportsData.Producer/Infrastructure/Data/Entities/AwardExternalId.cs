@@ -16,8 +16,8 @@ public class AwardExternalId : ExternalId
             builder.ToTable("AwardExternalId");
             builder.HasKey(t => t.Id);
             builder.HasOne(t => t.Award)
-                   .WithMany()
-                   .HasForeignKey("AwardId");
+                   .WithMany(c => c.ExternalIds)
+                   .HasForeignKey(t => t.AwardId);
         } 
     }
 }

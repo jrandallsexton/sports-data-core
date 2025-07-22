@@ -220,4 +220,106 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         bus.Verify(x => x.Publish(It.IsAny<AthletePositionCreated>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task WhenParentExists_ShouldResolveAndSetParentId()
+    {
+        // Arrange
+        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
+
+        var parentUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70";
+        var parentHash = parentUrl.UrlHash();
+
+        var parentId = Guid.NewGuid();
+        var parentPosition = new AthletePosition
+        {
+            Id = parentId,
+            Name = "Offense",
+            DisplayName = "Offense",
+            Abbreviation = "OFF",
+            ExternalIds =
+            [
+                new AthletePositionExternalId
+            {
+                Id = Guid.NewGuid(),
+                Provider = SourceDataProvider.Espn,
+                Value = parentHash,
+                SourceUrlHash = parentHash,
+                SourceUrl = parentUrl
+            }
+            ]
+        };
+
+        await FootballDataContext.AthletePositions.AddAsync(parentPosition);
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
+            logger.Object,
+            FootballDataContext,
+            bus.Object
+        );
+
+        var json = await LoadJsonTestData("EspnFootballAthletePosition.json"); // assumes this has a valid "Parent.Ref"
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.AthletePosition)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1".UrlHash())
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        var created = await FootballDataContext.AthletePositions
+            .FirstOrDefaultAsync(x => x.Name == "Wide Receiver");
+
+        created.Should().NotBeNull();
+        created!.ParentId.Should().Be(parentId);
+
+        bus.Verify(x => x.Publish(It.IsAny<AthletePositionCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenParentDoesNotExist_ShouldThrowAndNotSave()
+    {
+        // Arrange
+        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
+
+        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
+            logger.Object,
+            FootballDataContext,
+            bus.Object
+        );
+
+        var json = await LoadJsonTestData("EspnFootballAthletePosition.json"); // includes Parent.Ref to a position that does NOT exist
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.AthletePosition)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1".UrlHash())
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        Func<Task> act = async () => await sut.ProcessAsync(command);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Parent position not yet available*");
+
+        var created = await FootballDataContext.AthletePositions
+            .FirstOrDefaultAsync(x => x.Name == "Wide Receiver");
+
+        created.Should().BeNull("we should not persist when parent is unresolved");
+
+        bus.Verify(x => x.Publish(It.IsAny<AthletePositionCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
 }

@@ -72,10 +72,10 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnAthletePositionDto dto)
     {
-        // 1️⃣ Normalize the incoming Name for canonical matching
+        // 1️ Normalize the incoming Name for canonical matching
         var normalizedName = dto.Name.ToCanonicalForm();
 
-        // 2️⃣ Try to find an existing AthletePosition by canonical Name
+        // 2️ Try to find an existing AthletePosition by canonical Name
         var existing = await _dataContext.AthletePositions
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.Name == normalizedName);
@@ -104,7 +104,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             return;
         }
 
-        // 3️⃣ No match found — proceed to create brand new AthletePosition
+        // 3️ No match found — proceed to create brand new AthletePosition
         _logger.LogInformation("No existing AthletePosition found for Name '{Name}'. Creating new entity.", normalizedName);
 
         var newPositionId = Guid.NewGuid();
@@ -116,7 +116,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             parentId = await _dataContext.TryResolveFromDtoRefAsync(
                 dto.Parent,
                 command.SourceDataProvider,
-                () => _dataContext.AthletePositions,
+                () => _dataContext.AthletePositions.Include(x => x.ExternalIds),
                 _logger);
 
             if (parentId is null)

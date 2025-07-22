@@ -120,6 +120,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddSingleton<IAppMode>(new AppMode(mode));
             services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
             services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();
+            services.AddSingleton<IGenerateExternalRefIdentities, ExternalRefIdentityGenerator>();
             return services;
         }
 

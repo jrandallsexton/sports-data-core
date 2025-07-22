@@ -317,6 +317,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -526,6 +530,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -620,9 +628,6 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("AwardId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AwardId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -638,6 +643,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -649,8 +658,6 @@ namespace SportsData.Producer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AwardId");
-
-                    b.HasIndex("AwardId1");
 
                     b.ToTable("AwardExternalId", (string)null);
                 });
@@ -722,6 +729,10 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
@@ -882,6 +893,10 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
@@ -1750,6 +1765,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2000,6 +2019,10 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
@@ -2267,7 +2290,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 1,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(4729),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Overall team season record against the spread",
                             Name = "atsOverall"
                         },
@@ -2275,7 +2298,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 2,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5212),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the favorite",
                             Name = "atsFavorite"
                         },
@@ -2283,7 +2306,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 3,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5214),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the underdog",
                             Name = "atsUnderdog"
                         },
@@ -2291,7 +2314,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 4,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5215),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the away team",
                             Name = "atsAway"
                         },
@@ -2299,7 +2322,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 5,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5216),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the home team",
                             Name = "atsHome"
                         },
@@ -2307,7 +2330,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 6,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5217),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the away favorite",
                             Name = "atsAwayFavorite"
                         },
@@ -2315,7 +2338,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 7,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5217),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the away underdog",
                             Name = "atsAwayUnderdog"
                         },
@@ -2323,7 +2346,7 @@ namespace SportsData.Producer.Migrations
                         {
                             Id = 8,
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 7, 8, 12, 43, 10, 374, DateTimeKind.Utc).AddTicks(5218),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Team season record against the spread as the home favorite",
                             Name = "atsHomeFavorite"
                         });
@@ -2590,6 +2613,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2739,10 +2766,8 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Abbreviation")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                    b.Property<Guid?>("ActivePhaseId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -2764,11 +2789,6 @@ namespace SportsData.Producer.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -2777,13 +2797,14 @@ namespace SportsData.Producer.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ActivePhaseId");
+
                     b.ToTable("SeasonYear", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonExternalId", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
@@ -2804,6 +2825,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2816,7 +2841,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("SeasonId");
 
-                    b.ToTable("SeasonExternalId");
+                    b.ToTable("SeasonExternalId", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonFuture", b =>
@@ -2919,6 +2944,10 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("SeasonFutureId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2975,6 +3004,113 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("SeasonFutureId");
 
                     b.ToTable("SeasonFutureItem");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("HasGroups")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasLegs")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasStandings")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TypeCode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId");
+
+                    b.ToTable("SeasonPhase", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhaseExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SeasonPhaseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonPhaseId");
+
+                    b.ToTable("SeasonPhaseExternalId", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Venue", b =>
@@ -3068,6 +3204,10 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
@@ -3234,14 +3374,10 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AwardExternalId", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Award", "Award")
-                        .WithMany()
+                        .WithMany("ExternalIds")
                         .HasForeignKey("AwardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Award", null)
-                        .WithMany("ExternalIds")
-                        .HasForeignKey("AwardId1");
 
                     b.Navigation("Award");
                 });
@@ -3514,6 +3650,16 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhase", "ActivePhase")
+                        .WithMany()
+                        .HasForeignKey("ActivePhaseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ActivePhase");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonExternalId", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Season", "Season")
@@ -3575,6 +3721,28 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("SeasonFuture");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhase", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Season", "Season")
+                        .WithMany("Phases")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhaseExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhase", "SeasonPhase")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("SeasonPhaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SeasonPhase");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.VenueExternalId", b =>
@@ -3699,6 +3867,8 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
                 {
                     b.Navigation("ExternalIds");
+
+                    b.Navigation("Phases");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonFuture", b =>
@@ -3711,6 +3881,11 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonFutureItem", b =>
                 {
                     b.Navigation("Books");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPhase", b =>
+                {
+                    b.Navigation("ExternalIds");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Venue", b =>

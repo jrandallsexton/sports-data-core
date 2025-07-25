@@ -82,12 +82,13 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             Guid correlationId)
         {
-            var urlHash = HashProvider.GenerateHashFromUri(command.Uri.ToCleanUri());
+            var urlHash = HashProvider.GenerateHashFromUri(command.Uri);
+            var resourceIndexItemId = DeterministicGuid.Combine(urlHash);
+
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
-                .Where(x => x.ResourceIndexId == command.ResourceIndexId &&
-                            x.SourceUrlHash == urlHash)
+                .Where(x => x.Id == resourceIndexItemId)
                 .FirstOrDefaultAsync();
 
             if (resourceIndexItemEntity is not null)
@@ -98,16 +99,17 @@ namespace SportsData.Provider.Application.Processors
             }
             else
             {
-                await _dataContext.ResourceIndexItems.AddAsync(new ResourceIndexItem
+                resourceIndexItemEntity = new ResourceIndexItem
                 {
-                    Id = Guid.NewGuid(),
+                    Id = resourceIndexItemId,
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty,
                     Uri = command.Uri,
                     SourceUrlHash = urlHash,
                     ResourceIndexId = command.ResourceIndexId,
                     LastAccessed = now
-                });
+                };
+                await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
             }
 
             await HandleValid(command, urlHash, correlationId);

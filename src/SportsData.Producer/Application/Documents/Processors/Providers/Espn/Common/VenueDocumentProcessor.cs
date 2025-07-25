@@ -81,7 +81,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnVenueDto dto)
         {
             // 1. map to the entity and save it
-            var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+            var newEntity = dto.AsEntity(
+                _externalRefIdentityGenerator,
+                command.CorrelationId);
 
             _dataContext.Add(newEntity);
 

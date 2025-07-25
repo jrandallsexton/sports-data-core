@@ -112,7 +112,9 @@ namespace SportsData.Core.Common
 
         public string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
         {
-            return docType.ToString();
+            // TODO: Use SportMode configuration to determine collection names
+            return "FootballNcaa";
+            //return docType.ToString();
             //return season.HasValue ?
             //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
             //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";

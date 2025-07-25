@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
@@ -26,7 +25,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecordAts> builder)
             {
-                builder.ToTable("FranchiseSeasonRecordAts");
+                builder.ToTable(nameof(FranchiseSeasonRecordAts));
 
                 builder.HasKey(e => e.Id);
 

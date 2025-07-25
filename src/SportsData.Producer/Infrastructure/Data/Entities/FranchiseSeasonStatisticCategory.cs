@@ -26,7 +26,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonStatisticCategory> builder)
             {
-                builder.ToTable("FranchiseSeasonStatisticCategory");
+                builder.ToTable(nameof(FranchiseSeasonStatisticCategory));
                 builder.HasKey(e => e.Id);
 
                 // FK to FranchiseSeason

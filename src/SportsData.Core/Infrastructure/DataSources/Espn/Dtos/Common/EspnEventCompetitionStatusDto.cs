@@ -21,7 +21,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public Uri Ref { get; set; }
 
         [JsonPropertyName("clock")]
-        public int Clock { get; set; }
+        public double Clock { get; set; }
 
         [JsonPropertyName("displayClock")]
         public string DisplayClock { get; set; }

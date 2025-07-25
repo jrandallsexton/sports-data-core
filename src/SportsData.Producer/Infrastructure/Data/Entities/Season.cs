@@ -27,7 +27,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<Season> builder)
             {
-                builder.ToTable("SeasonYear");
+                builder.ToTable(nameof(Season));
 
                 builder.HasKey(t => t.Id);
                 builder.Property(p => p.Id).ValueGeneratedNever();

@@ -19,7 +19,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         {
             public void Configure(EntityTypeBuilder<AthleteStatus> builder)
             {
-                builder.ToTable("AthleteStatus");
+                builder.ToTable(nameof(AthleteStatus));
 
                 builder.HasKey(s => s.Id);
 

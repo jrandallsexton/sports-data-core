@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace SportsData.Producer.Infrastructure.Data.Entities;
+namespace SportsData.Producer.Infrastructure.Data.Common;
 
 public class VenueExternalId : ExternalId
 {
@@ -13,7 +13,7 @@ public class VenueExternalId : ExternalId
     {
         public void Configure(EntityTypeBuilder<VenueExternalId> builder)
         {
-            builder.ToTable("VenueExternalId");
+            builder.ToTable(nameof(VenueExternalId));
             builder.HasKey(t => t.Id);
             builder.HasOne(t => t.Venue)
                    .WithMany(v => v.ExternalIds)

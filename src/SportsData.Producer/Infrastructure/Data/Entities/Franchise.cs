@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
@@ -45,7 +46,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<Franchise> builder)
             {
-                builder.ToTable("Franchise");
+                builder.ToTable(nameof(Franchise));
                 builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.Name).HasMaxLength(100).IsRequired();

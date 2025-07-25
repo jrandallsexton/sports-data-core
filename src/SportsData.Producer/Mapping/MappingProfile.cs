@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
+
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Mapping
 {

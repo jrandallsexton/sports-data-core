@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Producer.Infrastructure.Data.Common;
+
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class SeasonExternalId : ExternalId
@@ -13,7 +15,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<SeasonExternalId> builder)
             {
-                builder.ToTable("SeasonExternalId");
+                builder.ToTable(nameof(SeasonExternalId));
 
                 builder.HasKey(e => e.Id);
                 builder.Property(e => e.Id).ValueGeneratedNever();

@@ -21,7 +21,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<Person> builder)
             {
-                builder.ToTable("Person");
+                builder.ToTable(nameof(Person));
                 builder.HasKey(t => t.Id);
                 builder.Property(t => t.LastName).IsRequired().HasMaxLength(100);
                 builder.Property(t => t.FirstName).IsRequired().HasMaxLength(100);

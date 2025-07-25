@@ -1,11 +1,12 @@
 ﻿using AutoFixture;
-
+using FluentAssertions;
 using MassTransit;
-
+using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
@@ -21,7 +22,15 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // arrange
             var bus = Mocker.GetMock<IPublishEndpoint>();
 
-            // TODO: Create the parent event entity before processing the competition document
+            // Create the parent contest entity before processing the competition document
+            var contest = Fixture.Build<Contest>()
+                .WithAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .Create();
+
+            await base.FootballDataContext.Contests.AddAsync(contest);
+            await base.FootballDataContext.SaveChangesAsync();
 
             var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
 
@@ -29,7 +38,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
-                .With(x => x.ParentId, string.Empty)
+                .With(x => x.ParentId, contest.Id.ToString)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
@@ -40,14 +49,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // act
             await sut.ProcessAsync(command);
 
-            //// assert
-            //var venue = await base.FootballDataContext.Venues
-            //    .AsNoTracking()
-            //    .FirstOrDefaultAsync();
+            // assert
+            contest = await base.FootballDataContext.Contests
+                .FirstOrDefaultAsync(c => c.Id == contest.Id);
 
-            //venue.Should().NotBeNull();
-
-            //bus.Verify(x => x.Publish(It.IsAny<VenueCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+            contest.Should().NotBeNull();
         }
     }
 }

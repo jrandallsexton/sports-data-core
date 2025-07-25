@@ -21,7 +21,7 @@ public class CoachSeason : CanonicalEntityBase<Guid>
     {
         public void Configure(EntityTypeBuilder<CoachSeason> builder)
         {
-            builder.ToTable("CoachSeason");
+            builder.ToTable(nameof(CoachSeason));
             builder.HasKey(t => t.Id);
             builder.HasOne(cs => cs.Coach)
                 .WithMany(c => c.Seasons)

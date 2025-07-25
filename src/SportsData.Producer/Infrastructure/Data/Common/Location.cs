@@ -17,7 +17,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         {
             public void Configure(EntityTypeBuilder<Location> builder)
             {
-                builder.ToTable("Location");
+                builder.ToTable(nameof(Location));
 
                 builder.HasKey(l => l.Id);
 

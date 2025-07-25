@@ -366,7 +366,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<ContestOdds> builder)
             {
-                builder.ToTable("ContestOdds");
+                builder.ToTable(nameof(ContestOdds));
                 builder.HasKey(x => x.Id);
 
                 builder.HasOne<Contest>()

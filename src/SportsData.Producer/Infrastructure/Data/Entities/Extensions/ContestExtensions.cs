@@ -10,28 +10,30 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     {
         public static Contest AsEntity(
             this EspnEventDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Sport sport,
             int seasonYear,
-            Guid contestId,
             Guid correlationId)
         {
-            var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+
+            var identity = externalRefIdentityGenerator.Generate(dto.Ref);
+
             return new Contest()
             {
-                Id = contestId,
+                Id = identity.CanonicalId,
                 ShortName = dto.ShortName,
                 Name = dto.Name,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
-                StartDateUtc = DateTime.Parse(dto.Date),
+                StartDateUtc = DateTime.Parse(dto.Date).ToUniversalTime(),
                 ExternalIds =
                 [
                     new ContestExternalId
                     {
                         Id = Guid.NewGuid(),
-                        Value = sourceUrlHash,
+                        Value = identity.UrlHash,
                         Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = sourceUrlHash,
+                        SourceUrlHash = identity.UrlHash,
                         SourceUrl = dto.Ref.ToCleanUrl()
                     }
                 ],
@@ -54,8 +56,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Sport = entity.Sport,
                 SeasonYear = entity.SeasonYear,
                 Week = entity.Week,
-                NeutralSite = entity.NeutralSite,
-                Attendance = entity.Attendance,
                 EventNote = entity.EventNote,
                 VenueId = entity.VenueId
             };

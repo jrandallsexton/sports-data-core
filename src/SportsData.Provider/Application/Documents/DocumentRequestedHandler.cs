@@ -2,11 +2,12 @@
 
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Extensions;
+using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Text.Json;
-using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Application.Documents;
 
@@ -15,15 +16,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideEspnApiData _espnApi;
     private readonly ILogger<DocumentRequestedHandler> _logger;
     private readonly IPublishEndpoint _publisher;
+    private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
-        IPublishEndpoint publisher)
+        IPublishEndpoint publisher,
+        IProcessResourceIndexItems resourceIndexItemProcessor,
+        IProvideBackgroundJobs backgroundJobProvider)
     {
         _espnApi = espnApi;
         _logger = logger;
         _publisher = publisher;
+        _backgroundJobProvider = backgroundJobProvider;
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
@@ -79,7 +84,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         var urlHash = HashProvider.GenerateHashFromUri(msg.Uri);
 
-        await _publisher.Publish(new ProcessResourceIndexItemCommand(
+        // TODO: Create a default ResourceIndex
+        var cmd = new ProcessResourceIndexItemCommand(
             ResourceIndexId: Guid.Empty,
             Id: urlHash,
             Uri: msg.Uri,
@@ -87,7 +93,9 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             SourceDataProvider: msg.SourceDataProvider,
             DocumentType: msg.DocumentType,
             ParentId: msg.ParentId,
-            SeasonYear: msg.SeasonYear));
+            SeasonYear: msg.SeasonYear);
+
+        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -83,8 +83,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnFootballSeasonDto dto)
         {
             var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+
+            // capture the ActiveSeasonPhaseId if it exists (avoid circular reference)
+            // EF Core cannot save circular reference Season ↔ ActivePhaseId in same SaveChanges call
+            var currentSeasonPhaseId = newEntity.ActivePhaseId;
+
+            newEntity.ActivePhaseId = null;
             await _dataContext.Seasons.AddAsync(newEntity);
             await _dataContext.SaveChangesAsync();
+
+            // Re-attach the ActiveSeasonPhaseId after saving
+            if (currentSeasonPhaseId.HasValue)
+            {
+                newEntity.ActivePhaseId = currentSeasonPhaseId.Value;
+                await _dataContext.SaveChangesAsync();
+            }
+
             _logger.LogInformation("Created new Season entity: {SeasonId}", newEntity.Id);
         }
 

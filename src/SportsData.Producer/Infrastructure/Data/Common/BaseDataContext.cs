@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,15 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<VenueImage> VenueImages { get; set; }
 
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+        public DbSet<OutboxState> OutboxStates => Set<OutboxState>();
+
+        public DbSet<InboxState> InboxStates => Set<InboxState>();
+
+        public DbSet<OutboxPing> OutboxPings => Set<OutboxPing>();
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -49,9 +59,21 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new Venue.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueImage.EntityConfiguration());
-            modelBuilder.AddInboxStateEntity();
-            modelBuilder.AddOutboxStateEntity();
-            modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.AddInboxStateEntity(cfg =>
+            {
+                cfg.ToTable(nameof(InboxState));
+            });
+
+            modelBuilder.AddOutboxStateEntity(cfg =>
+            {
+                cfg.ToTable(nameof(OutboxState));
+            });
+
+            modelBuilder.AddOutboxMessageEntity(cfg =>
+            {
+                cfg.ToTable(nameof(OutboxMessage));
+            });
+
             //modelBuilder.Entity<Venue>().UseTpcMappingStrategy();
         }
 

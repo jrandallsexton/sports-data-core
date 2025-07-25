@@ -16,12 +16,11 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
-
-using static SportsData.Core.Common.CausationId;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common;
 
@@ -31,13 +30,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityDoesNotExist_VenueExists_ShouldAddWithVenue()
     {
         // arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
-        var provider = Mocker.GetMock<IProvideProviders>();
-        var sut = new EventDocumentProcessor<FootballDataContext>(
-            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
-            FootballDataContext,
-            bus.Object,
-            provider.Object);
+        var bus = Mocker.GetMock<IBus>();
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
 
@@ -95,13 +89,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityDoesNotExist_VenueMissing_ShouldPublishDocumentRequested()
     {
         // arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
-        var provider = Mocker.GetMock<IProvideProviders>();
-        var sut = new EventDocumentProcessor<FootballDataContext>(
-            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
-            FootballDataContext,
-            bus.Object,
-            provider.Object);
+        var bus = Mocker.GetMock<IBus>();
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
 
@@ -134,13 +123,8 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityAlreadyExists_ShouldSkipCreation_AndNotPublishContestCreated()
     {
         // arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
-        var provider = Mocker.GetMock<IProvideProviders>();
-        var sut = new EventDocumentProcessor<FootballDataContext>(
-            Mocker.GetMock<ILogger<EventDocumentProcessor<FootballDataContext>>>().Object,
-            FootballDataContext,
-            bus.Object,
-            provider.Object);
+        var bus = Mocker.GetMock<IBus>();
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
         var externalId = "401583027";

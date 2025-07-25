@@ -19,7 +19,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<PickemGroupContest> builder)
             {
-                builder.ToTable("PickemGroupContest");
+                builder.ToTable(nameof(PickemGroupContest));
                 builder.HasKey(gc => gc.Id);
 
                 builder.HasIndex(gc => new {

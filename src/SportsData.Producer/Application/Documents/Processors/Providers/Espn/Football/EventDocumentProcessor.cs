@@ -23,19 +23,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IBus _publishEndpoint;
         private readonly IProvideProviders _providerClient;
+        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public EventDocumentProcessor(
             ILogger<EventDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
-            IProvideProviders providerClient)
+            IBus publishEndpoint,
+            IProvideProviders providerClient,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
             _providerClient = providerClient;
+            _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -67,7 +70,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
-            var entity = await _dataContext.Contests.FirstOrDefaultAsync(x =>
+            var entity = await _dataContext.Contests
+                .Include(x => x.ExternalIds)
+                .FirstOrDefaultAsync(x =>
                 x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
                                        z.Provider == command.SourceDataProvider));
 
@@ -86,8 +91,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto externalDto,
             int seasonYear)
         {
-            var contestId = Guid.NewGuid();
-            var contest = externalDto.AsEntity(command.Sport, seasonYear, contestId, command.CorrelationId);
+            var contest = externalDto.AsEntity(
+                _externalRefIdentityGenerator,
+                command.Sport,
+                seasonYear,
+                command.CorrelationId);
 
             // Add contest links from dto.Links
             AddLinks(externalDto, contest);
@@ -116,7 +124,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto externalDto,
             Contest contest)
         {
-
             foreach (var competition in externalDto.Competitions)
             {
                 // raise an event to source the competition
@@ -157,17 +164,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 }
 
                 // raise an event to source the odds
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(competition.Ref),
-                    ParentId: contest.Id.ToString(),
-                    Uri: competition.Odds.Ref,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionOdds,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor
-                ));
+                if (competition.Odds?.Ref is not null)
+                {
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: HashProvider.GenerateHashFromUri(competition.Ref),
+                        ParentId: contest.Id.ToString(),
+                        Uri: competition.Odds.Ref,
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.EventCompetitionOdds,
+                        SourceDataProvider: command.SourceDataProvider,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventDocumentProcessor
+                    ));
+                }
             }
         }
 
@@ -205,7 +215,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 // Resolve VenueId via SourceUrlHash
                 var venueId = await _dataContext.TryResolveFromDtoRefAsync(
-                    venue, command.SourceDataProvider, () => _dataContext.Venues, _logger);
+                    venue,
+                    command.SourceDataProvider,
+                    () => _dataContext.Venues.Include(x => x.ExternalIds),
+                    _logger);
 
                 if (venueId != null)
                 {
@@ -238,26 +251,81 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var homeTeam = externalDto
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "home");
+
             var homeTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                homeTeam, command.SourceDataProvider, () => _dataContext.FranchiseSeasons, _logger);
+                homeTeam.Team,
+                command.SourceDataProvider,
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                _logger);
+
             if (homeTeamFranchiseSeasonId == null)
             {
+                // request sourcing
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    homeTeam.Team.Ref.ToCleanUrl(),
+                    null,
+                    homeTeam.Team.Ref,
+                    command.Sport,
+                    command.Season,
+                    DocumentType.TeamSeason,
+                    command.SourceDataProvider,
+                    command.CorrelationId,
+                    CausationId.Producer.TeamSeasonDocumentProcessor));
+                await _dataContext.SaveChangesAsync();
+
                 throw new InvalidOperationException(
                     $"Home team franchise season not found for {homeTeam.Ref} in command {command.CorrelationId}");
             }
+
             contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId.Value;
 
             var awayTeam = externalDto
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "away");
+
             var awayTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                awayTeam, command.SourceDataProvider, () => _dataContext.FranchiseSeasons, _logger);
+                awayTeam.Team,
+                command.SourceDataProvider,
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                _logger);
+
             if (awayTeamFranchiseSeasonId == null)
             {
+                // request sourcing
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    awayTeam.Team.Ref.ToCleanUrl(),
+                    null,
+                    awayTeam.Team.Ref,
+                    command.Sport,
+                    command.Season,
+                    DocumentType.TeamSeason,
+                    command.SourceDataProvider,
+                    command.CorrelationId,
+                    CausationId.Producer.TeamSeasonDocumentProcessor));
+                await _dataContext.SaveChangesAsync();
+
                 throw new InvalidOperationException(
                     $"Away team franchise season not found for {awayTeam.Ref} in command {command.CorrelationId}");
             }
             contest.AwayTeamFranchiseSeasonId = awayTeamFranchiseSeasonId.Value;
+
+            if (string.IsNullOrEmpty(contest.ShortName))
+            {
+                var awayFranchise = await _dataContext.FranchiseSeasons
+                    .Include(s => s.Franchise)
+                    .Where(x => x.Id == awayTeamFranchiseSeasonId)
+                    .FirstOrDefaultAsync();
+
+                var homeFranchise = await _dataContext.FranchiseSeasons
+                    .Include(s => s.Franchise)
+                    .Where(x => x.Id == homeTeamFranchiseSeasonId)
+                    .FirstOrDefaultAsync();
+
+                if (awayFranchise != null && homeFranchise != null)
+                {
+                    contest.ShortName = $"{homeFranchise.Franchise.Abbreviation ?? homeFranchise.Franchise.Name} @ {awayFranchise.Franchise.Abbreviation ?? awayFranchise.Franchise.Name}";
+                }
+            }
         }
 
         private async Task ProcessUpdate(

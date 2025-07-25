@@ -1,4 +1,4 @@
-﻿using SportsData.Core.Common;
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
@@ -22,8 +22,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Id = seasonIdentity.CanonicalId,
                 Year = dto.Year,
                 Name = dto.DisplayName,
-                StartDate = DateTime.Parse(dto.StartDate),
-                EndDate = DateTime.Parse(dto.EndDate),
+                StartDate = DateTime.Parse(dto.StartDate).ToUniversalTime(),
+                EndDate = DateTime.Parse(dto.EndDate).ToUniversalTime(),
                 CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,
                 ExternalIds =
@@ -59,8 +59,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Abbreviation = type.Abbreviation,
                         Slug = type.Slug,
                         Year = type.Year,
-                        StartDate = DateTime.Parse(type.StartDate),
-                        EndDate = DateTime.Parse(type.EndDate),
+                        StartDate = DateTime.Parse(type.StartDate).ToUniversalTime(),
+                        EndDate = DateTime.Parse(type.EndDate).ToUniversalTime(),
                         HasGroups = type.HasGroups,
                         HasStandings = type.HasStandings,
                         HasLegs = type.HasLegs,

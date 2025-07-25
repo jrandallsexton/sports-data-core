@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Infrastructure.Data.Entities
+namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public class Venue : CanonicalEntityBase<Guid>, IHasSlug, IHasExternalIds
     {
@@ -42,7 +42,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<Venue> builder)
             {
-                builder.ToTable("Venue");
+                builder.ToTable(nameof(Venue));
                 builder.HasKey(t => t.Id);
                 builder.Property(p => p.Id).ValueGeneratedNever();
                 builder.Property(p => p.Country).HasMaxLength(20);

@@ -25,7 +25,7 @@ public class SeasonFutureItem : CanonicalEntityBase<Guid>
     {
         public void Configure(EntityTypeBuilder<SeasonFutureItem> builder)
         {
-            builder.ToTable("SeasonFutureItem");
+            builder.ToTable(nameof(SeasonFutureItem));
 
             builder.HasKey(t => t.Id);
             builder.Property(t => t.Id).ValueGeneratedNever();

@@ -27,7 +27,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonProjection> builder)
             {
-                builder.ToTable("FranchiseSeasonProjection");
+                builder.ToTable(nameof(FranchiseSeasonProjection));
                 builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.ChanceToWinDivision).IsRequired();

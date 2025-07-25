@@ -11,6 +11,26 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             
             var values = new List<ResourceIndex>();
 
+            // default resource index for external document sourcing requests
+            values.Add(new ResourceIndex
+            {
+                Id = Guid.Empty,
+                CreatedBy = Guid.Empty,
+                CreatedUtc = DateTime.UtcNow,
+                DocumentType = DocumentType.Unknown,
+                EndpointMask = null,
+                IsEnabled = false,
+                IsQueued = false,
+                IsRecurring = false,
+                IsSeasonSpecific = false,
+                Name = $"{sport} - {league} - Default",
+                Ordinal = 0,
+                Provider = SourceDataProvider.Espn,
+                SourceUrlHash = "default-url-hash",
+                SportId = sport,
+                Uri = new Uri("http://domain.none")
+            });
+
             base.GenerateNonSeasonalResources(values, sport, "football", league);
 
             foreach (var season in seasons)

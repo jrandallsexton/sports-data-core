@@ -17,7 +17,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<GroupSeason> builder)
             {
-                builder.ToTable("GroupSeason");
+                builder.ToTable(nameof(GroupSeason));
                 builder.HasKey(t => t.Id);
                 builder.HasOne<Group>()
                     .WithMany(x => x.Seasons)

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 #pragma warning disable CS8618
-public class EspnEventCompetitionDriveItemParticipantDto
+public class EspnEventCompetitionDriveParticipantDto
 {
     [JsonPropertyName("athlete")]
     public EspnLinkDto Athlete { get; set; }
@@ -18,7 +18,7 @@ public class EspnEventCompetitionDriveItemParticipantDto
     public EspnLinkDto Statistics { get; set; }
 
     [JsonPropertyName("stats")]
-    public List<EspnEventCompetitionDriveItemParticipantStatDto> Stats { get; set; }
+    public List<EspnEventCompetitionParticipantStatDto> Stats { get; set; }
 
     [JsonPropertyName("order")]
     public int Order { get; set; }

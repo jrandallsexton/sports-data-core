@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -12,15 +13,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid CompetitionId { get; set; } // FK to Competition
 
-        public Drive Drive { get; set; } = null!; // Navigation property to Drive
+        public Drive? Drive { get; set; } // Navigation property to Drive
 
-        public Guid DriveId { get; set; } // FK to ContestDrive
+        public Guid? DriveId { get; set; } // FK to ContestDrive
 
         public required string EspnId { get; set; } // Maps to "id" in JSON
 
         public required string SequenceNumber { get; set; }
 
-        public required string TypeText { get; set; }
+        public required PlayType Type { get; set; }
 
         public required string TypeId { get; set; }
 
@@ -84,7 +85,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasKey(x => x.Id);
                 builder.Property(x => x.EspnId).IsRequired().HasMaxLength(30);
                 builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(20);
-                builder.Property(x => x.TypeText).IsRequired().HasMaxLength(50);
                 builder.Property(x => x.TypeId).IsRequired().HasMaxLength(10);
                 builder.Property(x => x.Text).IsRequired().HasMaxLength(250);
                 builder.Property(x => x.ShortText).HasMaxLength(250);

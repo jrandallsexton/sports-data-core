@@ -19,11 +19,10 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
     public async Task WhenEntityDoesNotExist_ContestExists_ShouldAddDrive()
     {
         // arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
-        var sut = new EventCompetitionDriveDocumentProcessor<FootballDataContext>(
-            Mocker.GetMock<ILogger<EventCompetitionDriveDocumentProcessor<FootballDataContext>>>().Object,
-            FootballDataContext,
-            bus.Object);
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
 
@@ -40,7 +39,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         await sut.ProcessAsync(command);
 
         // assert
-        var created = await FootballDataContext.ContestDrives.FirstOrDefaultAsync();
+        var created = await FootballDataContext.Drives.FirstOrDefaultAsync();
         created.Should().NotBeNull();
 
         // Verify additional properties as needed based on your data model
@@ -54,11 +53,10 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
     public async Task WhenEntityAlreadyExists_ShouldSkipCreation_AndNotPublishDriveEvents()
     {
         // arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
-        var sut = new EventCompetitionDriveDocumentProcessor<FootballDataContext>(
-            Mocker.GetMock<ILogger<EventCompetitionDriveDocumentProcessor<FootballDataContext>>>().Object,
-            FootballDataContext,
-            bus.Object);
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
         

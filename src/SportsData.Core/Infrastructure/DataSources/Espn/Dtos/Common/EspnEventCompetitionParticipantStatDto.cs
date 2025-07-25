@@ -1,11 +1,10 @@
-﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+﻿#pragma warning disable CS8618
 
 using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-#pragma warning disable CS8618
-public class EspnEventCompetitionDriveItemParticipantStatDto
+public class EspnEventCompetitionParticipantStatDto
 {
     [JsonPropertyName("name")]
     public string Name { get; set; }

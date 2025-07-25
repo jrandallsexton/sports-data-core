@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 #pragma warning disable CS8618
-public class EspnEventCompetitionDriveItemPeriodDto
+public class EspnEventCompetitionDrivePeriodDto
 {
     [JsonPropertyName("type")]
     public string Type { get; set; }

@@ -17,13 +17,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             Guid? groupId = null)
         {
             if (dto.Ref == null)
-                throw new ArgumentException("FranchiseSeason DTO is missing its $ref property.");
+                throw new ArgumentException($"{nameof(EspnTeamSeasonDto)} is missing its $ref property.");
 
-            var seasonIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+            var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
             return new FranchiseSeason
             {
-                Id = seasonIdentity.CanonicalId,
+                Id = identity.CanonicalId,
                 FranchiseId = franchiseId,
                 VenueId = venueId,
                 GroupId = groupId,
@@ -50,9 +50,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     {
                         Id = Guid.NewGuid(),
                         Provider = SourceDataProvider.Espn,
-                        Value = seasonIdentity.UrlHash,
-                        SourceUrlHash = seasonIdentity.UrlHash,
-                        SourceUrl = seasonIdentity.CleanUrl
+                        Value = identity.UrlHash,
+                        SourceUrlHash = identity.UrlHash,
+                        SourceUrl = identity.CleanUrl
                     }
                 ]
             };

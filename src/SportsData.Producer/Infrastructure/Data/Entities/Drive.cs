@@ -27,8 +27,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         /// </summary>
         public required int Ordinal { get; set; }
 
-        public int Period { get; set; }
-
         /// <summary>
         /// eg. "DOWNS"
         /// </summary>
@@ -62,54 +60,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string? SourceId { get; set; }
 
         public string? SourceDescription { get; set; }
-
-        public string? TypeId { get; set; }
-
-        public string? TypeText { get; set; }
-
-        public string? TypeAbbreviation { get; set; }
-
-        public string? Text { get; set; }
-
-        public string? ShortText { get; set; }
-
-        public string? AlternativeText { get; set; }
-
-        public string? ShortAlternativeText { get; set; }
-
-        public int AwayScore { get; set; }
-
-        public int HomeScore { get; set; }
-
-        public bool ScoringPlay { get; set; }
-
-        public bool Priority { get; set; }
-
-        public int ScoreValue { get; set; }
-
-        public DateTime? Modified { get; set; }
-
-        public int StatYardage { get; set; }
-
-        public DateTime? Wallclock { get; set; }
-
-        public string? DriveRef { get; set; }
-
-        public string? ProbabilityRef { get; set; }
-
-        public string? ScoringTypeName { get; set; }
-
-        public string? ScoringTypeDisplayName { get; set; }
-
-        public string? ScoringTypeAbbreviation { get; set; }
-
-        public int? PointAfterAttemptId { get; set; }
-
-        public string? PointAfterAttemptText { get; set; }
-
-        public string? PointAfterAttemptAbbreviation { get; set; }
-
-        public int? PointAfterAttemptValue { get; set; }
 
         /// <summary>
         /// eg. Quarter
@@ -150,8 +100,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? StartShortDownDistanceText { get; set; }
 
-        public string? StartPossessionText { get; set; }
-
         /// <summary>
         /// eg. Quarter
         /// </summary>
@@ -191,8 +139,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? EndShortDownDistanceText { get; set; }
 
-        public string? EndPossessionText { get; set; }
-
         /// <summary>
         /// eg. "7:14"
         /// </summary>
@@ -223,30 +169,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.DisplayResult).HasMaxLength(50);
                 builder.Property(x => x.SourceId).HasMaxLength(20);
                 builder.Property(x => x.SourceDescription).HasMaxLength(100);
-                builder.Property(x => x.TypeId).HasMaxLength(20);
-                builder.Property(x => x.TypeText).HasMaxLength(50);
-                builder.Property(x => x.TypeAbbreviation).HasMaxLength(20);
-                builder.Property(x => x.Text).HasMaxLength(250);
-                builder.Property(x => x.ShortText).HasMaxLength(250);
-                builder.Property(x => x.AlternativeText).HasMaxLength(250);
-                builder.Property(x => x.ShortAlternativeText).HasMaxLength(250);
-                builder.Property(x => x.DriveRef).HasMaxLength(250);
-                builder.Property(x => x.ProbabilityRef).HasMaxLength(250);
-                builder.Property(x => x.ScoringTypeName).HasMaxLength(50);
-                builder.Property(x => x.ScoringTypeDisplayName).HasMaxLength(50);
-                builder.Property(x => x.ScoringTypeAbbreviation).HasMaxLength(20);
-                builder.Property(x => x.PointAfterAttemptText).HasMaxLength(50);
-                builder.Property(x => x.PointAfterAttemptAbbreviation).HasMaxLength(20);
                 builder.Property(x => x.StartText).HasMaxLength(100);
                 builder.Property(x => x.StartClockDisplayValue).HasMaxLength(20);
                 builder.Property(x => x.StartDownDistanceText).HasMaxLength(50);
                 builder.Property(x => x.StartShortDownDistanceText).HasMaxLength(50);
-                builder.Property(x => x.StartPossessionText).HasMaxLength(50);
                 builder.Property(x => x.EndText).HasMaxLength(100);
                 builder.Property(x => x.EndClockDisplayValue).HasMaxLength(20);
                 builder.Property(x => x.EndDownDistanceText).HasMaxLength(50);
                 builder.Property(x => x.EndShortDownDistanceText).HasMaxLength(50);
-                builder.Property(x => x.EndPossessionText).HasMaxLength(50);
                 builder.Property(x => x.TimeElapsedDisplay).HasMaxLength(20);
 
                 builder.HasMany(x => x.Plays)
@@ -265,7 +195,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithOne()
                     .HasForeignKey(x => x.DriveId)
                     .OnDelete(DeleteBehavior.Cascade);
-
             }
         }
     }

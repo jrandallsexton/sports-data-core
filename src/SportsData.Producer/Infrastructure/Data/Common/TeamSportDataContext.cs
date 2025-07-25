@@ -28,9 +28,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
-        public DbSet<Drive> ContestDrives { get; set; }
+        public DbSet<Drive> Drives { get; set; }
 
-        public DbSet<Play> ContestPlays { get; set; }
+        public DbSet<Play> Plays { get; set; }
 
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
 

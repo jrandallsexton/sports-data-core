@@ -1,9 +1,15 @@
 ﻿using AutoFixture;
+
 using FluentAssertions;
+
 using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -16,6 +22,21 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
     public class EventCompetitionDocumentProcessorTests :
         ProducerTestBase<EventCompetitionDocumentProcessor<FootballDataContext>>
     {
+        [Fact]
+        public async Task CanDeserializeCompetitionBroadcasts()
+        {
+            // arrange
+            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionBroadcasts.json");
+
+            // act
+            var broadcastsDto = documentJson.FromJson<EspnEventCompetitionBroadcastDto>();
+
+            // assert
+            broadcastsDto.Should().NotBeNull();
+            broadcastsDto.Items.Should().NotBeNull();
+            broadcastsDto.Items.Should().HaveCountGreaterThan(0);
+        }
+
         [Fact]
         public async Task WhenEntityDoesNotExist_IsAdded()
         {

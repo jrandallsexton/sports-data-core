@@ -4,15 +4,18 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
-    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionStatus)]
-    public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDocuments
+    /// <summary>
+    /// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/powerindex/99?lang=en
+    /// </summary>
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionPowerIndex)]
+    public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProcessDocuments
         where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<EventCompetitionStatusDocumentProcessor<TDataContext>> _logger;
+        private readonly ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
 
-        public EventCompetitionStatusDocumentProcessor(
-            ILogger<EventCompetitionStatusDocumentProcessor<TDataContext>> logger,
+        public EventCompetitionPowerIndexDocumentProcessor(
+            ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext)
         {
             _logger = logger;

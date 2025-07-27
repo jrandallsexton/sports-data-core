@@ -8,9 +8,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class Drive : CanonicalEntityBase<Guid>
     {
-        public Competition ContestCompetition { get; set; } = null!;
+        public Competition Competition { get; set; } = null!;
 
-        public Guid ContestCompetitionId { get; set; }
+        public Guid CompetitionId { get; set; }
 
         /// <summary>
         /// Example: "13 plays, 74 yards, 7:14"
@@ -180,15 +180,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.TimeElapsedDisplay).HasMaxLength(20);
 
                 builder.HasMany(x => x.Plays)
-                    .WithOne()
-                    .HasForeignKey(nameof(Play.DriveId))
+                    .WithOne(x => x.Drive)
+                    .HasForeignKey(x => x.DriveId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.Property(x => x.ContestCompetitionId).IsRequired();
+                builder.Property(x => x.CompetitionId).IsRequired();
 
-                builder.HasOne(x => x.ContestCompetition)
+                builder.HasOne(x => x.Competition)
                     .WithMany(x => x.Drives)
-                    .HasForeignKey(x => x.ContestCompetitionId)
+                    .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.ExternalIds)

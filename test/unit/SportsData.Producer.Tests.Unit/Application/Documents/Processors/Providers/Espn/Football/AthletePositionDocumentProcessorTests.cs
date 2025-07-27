@@ -27,6 +27,9 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
     public async Task WhenPositionDoesNotExist_ShouldCreateItAndPublishCreatedEvent()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
@@ -55,11 +58,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         await FootballDataContext.AthletePositions.AddAsync(existingPosition);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
-            logger.Object,
-            FootballDataContext,
-            bus.Object
-        );
+        var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballAthletePosition.json");
 
@@ -96,6 +95,9 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
     public async Task WhenPositionAlreadyExistsByExternalId_ShouldNotCreateOrPublish()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
@@ -124,11 +126,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         await FootballDataContext.AthletePositions.AddAsync(existingPosition);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
-            logger.Object,
-            FootballDataContext,
-            bus.Object
-        );
+        var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballAthletePosition.json");
 
@@ -155,6 +153,9 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
     public async Task WhenPositionExistsByCanonicalName_ShouldAddNewExternalId()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
@@ -182,11 +183,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         await FootballDataContext.AthletePositions.AddAsync(existingPosition);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
-            logger.Object,
-            FootballDataContext,
-            bus.Object
-        );
+        var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballAthletePosition.json");
         var newHash = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/99".UrlHash();
@@ -224,6 +221,9 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
     public async Task WhenParentExists_ShouldResolveAndSetParentId()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
@@ -253,11 +253,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         await FootballDataContext.AthletePositions.AddAsync(parentPosition);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
-            logger.Object,
-            FootballDataContext,
-            bus.Object
-        );
+        var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballAthletePosition.json"); // assumes this has a valid "Parent.Ref"
 
@@ -287,14 +283,13 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
     public async Task WhenParentDoesNotExist_ShouldThrowAndNotSave()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
-
-        var sut = new AthletePositionDocumentProcessor<FootballDataContext>(
-            logger.Object,
-            FootballDataContext,
-            bus.Object
-        );
+        
+        var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballAthletePosition.json"); // includes Parent.Ref to a position that does NOT exist
 

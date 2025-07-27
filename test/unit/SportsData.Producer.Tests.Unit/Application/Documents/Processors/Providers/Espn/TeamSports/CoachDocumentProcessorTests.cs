@@ -24,6 +24,8 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
     {
         // Arrange
         var bus = Mocker.GetMock<IPublishEndpoint>();
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaCoach.json");
         var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";

@@ -158,7 +158,7 @@ namespace SportsData.Core.DependencyInjection
             cfg.AddUserSecrets(Assembly.GetCallingAssembly());
             cfg.AddUserSecrets<CommonConfig>();
 
-            var label = cfg[AppConfigLabel] ?? Environment.GetEnvironmentVariable(AppConfigLabel);
+            var label = cfg[AppConfigLabel] ?? Environment.GetEnvironmentVariable(AppConfigLabel) ?? "Local";
 
             var appConfigConnectionString = cfg[AppConfigConnString];
 

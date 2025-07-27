@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Converters;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using SportsData.Core.Converters;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 using System;
@@ -6,8 +8,6 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-#pragma warning disable CS8618 // Non-nullable property is uninitialized
-
     public class EspnAthletePositionDto : IHasRef
     {
         [JsonPropertyName("$ref")]
@@ -32,6 +32,4 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("parent")]
         public EspnLinkDto? Parent { get; set; }
     }
-
-#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

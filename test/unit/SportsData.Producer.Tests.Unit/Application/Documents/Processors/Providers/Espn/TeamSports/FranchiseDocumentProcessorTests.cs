@@ -27,6 +27,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // arrange
             var bus = Mocker.GetMock<IPublishEndpoint>();
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
@@ -86,6 +88,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // arrange
             var bus = Mocker.GetMock<IPublishEndpoint>();
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 

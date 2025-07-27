@@ -248,6 +248,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto externalDto,
             Contest contest)
         {
+            /* Home Team */
             var homeTeam = externalDto
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "home");
@@ -279,6 +280,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId.Value;
 
+            /* Away Team */
             var awayTeam = externalDto
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "away");

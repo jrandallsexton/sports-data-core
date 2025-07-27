@@ -1,6 +1,6 @@
 ﻿namespace SportsData.Core.Common
 {
-    public enum PlayType
+    public enum PlayType : int
     {
         CoinToss = 70,
         EndOfGame = 66,
@@ -20,7 +20,8 @@
         Rush = 5,
         RushingTouchdown = 68,
         Sack = 7,
-        Timeout = 21
+        Timeout = 21,
+        Unknown = 9999
     }
 
 }

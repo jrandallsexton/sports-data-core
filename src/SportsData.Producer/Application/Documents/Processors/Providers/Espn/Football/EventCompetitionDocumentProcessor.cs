@@ -6,7 +6,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -20,19 +23,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IBus _publishEndpoint;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+        private readonly IProvideProviders _provider;
 
         public EventCompetitionDocumentProcessor(
             ILogger<EventDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IBus publishEndpoint,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            IProvideProviders provider
+            )
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
+            _provider = provider;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -146,6 +153,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             await ProcessPowerIndexes(command, externalDto, competition);
 
+            await ProcessDrives(command, externalDto, competition);
+
             await _dataContext.Competitions.AddAsync(competition);
             await _dataContext.SaveChangesAsync();
         }
@@ -232,7 +241,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
         }
 
-        private void ProcessNotes(
+        private static void ProcessNotes(
             ProcessDocumentCommand command,
             EspnEventCompetitionDto externalDto,
             Competition competition)
@@ -254,7 +263,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
         }
 
-        private async Task ProcessSituation(
+        private static async Task ProcessSituation(
             ProcessDocumentCommand command,
             EspnEventCompetitionDto externalDto,
             Competition competition)
@@ -287,6 +296,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Odds?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Odds.Ref),
                 ParentId: competition.Id.ToString(),
@@ -305,17 +317,34 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: HashProvider.GenerateHashFromUri(externalDto.Broadcasts.Ref),
-                ParentId: competition.Id.ToString(),
-                Uri: externalDto.Broadcasts.Ref,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionBroadcast,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
+            if (externalDto.Broadcasts?.Ref is null)
+                return;
+
+            var broadcastsResponse = await _provider.GetExternalDocument(
+                new GetExternalDocumentQuery(
+                    "",
+                    externalDto.Broadcasts.Ref,
+                    command.SourceDataProvider,
+                    command.Sport,
+                    DocumentType.EventCompetitionBroadcast,
+                    command.Season));
+
+            if (!string.IsNullOrEmpty(broadcastsResponse.Data))
+            {
+                var broadcastsDto = broadcastsResponse.Data.FromJson<EspnEventCompetitionBroadcastDto>();
+                if (broadcastsDto is null)
+                {
+                    _logger.LogError("Failed to deserialize broadcasts document for {@BroadcastRef}", externalDto.Broadcasts.Ref);
+                    throw new InvalidOperationException("Deserialization of EspnEventCompetitionBroadcastDto failed.");
+                }
+
+                var broadcasts = broadcastsDto.Items.Select(item => item.AsEntity(competition.Id)).ToList();
+                _dataContext.Broadcasts.AddRange(broadcasts);
+            }
+            else
+            {
+                _logger.LogError("Broadcast unable to be sourced from Provider. {@BroadcastRef}", externalDto.Broadcasts?.Ref);
+            }
         }
 
         private async Task ProcessPlays(
@@ -323,6 +352,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Details?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Details.Ref),
                 ParentId: competition.Id.ToString(),
@@ -341,6 +373,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Leaders?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Leaders.Ref),
                 ParentId: competition.Id.ToString(),
@@ -354,7 +389,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             ));
         }
 
-        private void ProcessLinks(
+        private static void ProcessLinks(
             ProcessDocumentCommand command,
             EspnEventCompetitionDto externalDto,
             Competition competition)
@@ -384,6 +419,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Predictor?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Predictor.Ref),
                 ParentId: competition.Id.ToString(),
@@ -402,6 +440,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Probabilities?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Probabilities.Ref),
                 ParentId: competition.Id.ToString(),
@@ -420,6 +461,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.PowerIndexes?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.PowerIndexes.Ref),
                 ParentId: competition.Id.ToString(),
@@ -438,6 +482,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Drives?.Ref is null)
+                return;
+
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Drives.Ref),
                 ParentId: competition.Id.ToString(),

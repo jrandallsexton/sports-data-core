@@ -45,7 +45,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf
         public string Name { get; set; }
     }
 
-    public class Competition
+    public class EspnGolfEventCompetition
     {
         [JsonPropertyName("boxscoreAvailable")]
         public bool BoxscoreAvailable { get; set; }
@@ -63,7 +63,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf
         public bool CommentaryAvailable { get; set; }
 
         [JsonPropertyName("competitors")]
-        public List<Competitor> Competitors { get; set; }
+        public List<EspnGolfEventCompetitor> Competitors { get; set; }
 
         [JsonPropertyName("conferenceCompetition")]
         public bool ConferenceCompetition { get; set; }
@@ -170,7 +170,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf
         public bool WallclockAvailable { get; set; }
     }
 
-    public class Competitor
+    public class EspnGolfEventCompetitor
     {
         [JsonPropertyName("amateur")]
         public bool Amateur { get; set; }
@@ -296,7 +296,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf
     public class EspnGolfEventDto
     {
         [JsonPropertyName("alternateIds")] public EspnAlternateIdDto AlternateIds { get; set; }
-        [JsonPropertyName("competitions")] public List<Competition> Competitions { get; set; }
+        [JsonPropertyName("competitions")] public List<EspnGolfEventCompetition> Competitions { get; set; }
         [JsonPropertyName("courses")] public List<Course> Courses { get; set; }
         [JsonPropertyName("date")] public string Date { get; set; }
         [JsonPropertyName("defendingChampion")]

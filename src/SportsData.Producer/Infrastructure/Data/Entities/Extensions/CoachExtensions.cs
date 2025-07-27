@@ -14,11 +14,11 @@ public static class CoachExtensions
         if (dto.Ref == null)
             throw new ArgumentException("Coach DTO is missing its $ref property.");
 
-        var coachIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
         return new Coach
         {
-            Id = coachIdentity.CanonicalId,
+            Id = identity.CanonicalId,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Experience = dto.Experience,
@@ -30,9 +30,9 @@ public static class CoachExtensions
                 {
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
-                    Value = coachIdentity.UrlHash,
-                    SourceUrlHash = coachIdentity.UrlHash,
-                    SourceUrl = coachIdentity.CleanUrl
+                    Value = identity.UrlHash,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
                 }
             }
         };

@@ -1,7 +1,6 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -19,17 +18,17 @@ public static class AthleteExtensions
         if (dto.Ref == null)
             throw new ArgumentException("Athlete DTO is missing its $ref property.");
 
-        var athleteIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
         var entity = new FootballAthlete
         {
-            Id = athleteIdentity.CanonicalId,
+            Id = identity.CanonicalId,
             FranchiseId = franchiseId,
             CreatedBy = correlationId,
             CreatedUtc = DateTime.UtcNow
         };
 
-        dto.MapAthleteProperties(entity, athleteIdentity);
+        dto.MapAthleteProperties(entity, identity);
 
         return entity;
     }
@@ -37,7 +36,7 @@ public static class AthleteExtensions
     private static void MapAthleteProperties(
         this EspnAthleteDto dto,
         Athlete entity,
-        ExternalRefIdentity athleteIdentity)
+        ExternalRefIdentity identity)
     {
         entity.Age = dto.Age;
         entity.IsActive = dto.Active;
@@ -66,11 +65,11 @@ public static class AthleteExtensions
         [
             new AthleteExternalId()
             {
-                Id = Guid.NewGuid(),
+                Id = identity.CanonicalId,
                 Provider = SourceDataProvider.Espn,
-                Value = athleteIdentity.UrlHash,
-                SourceUrlHash = athleteIdentity.UrlHash,
-                SourceUrl = athleteIdentity.CleanUrl
+                Value = identity.UrlHash,
+                SourceUrlHash = identity.UrlHash,
+                SourceUrl = identity.CleanUrl
             }
         ];
     }
@@ -83,11 +82,11 @@ public static class AthleteExtensions
         if (dto.Ref == null)
             throw new ArgumentException("Athlete DTO is missing its $ref property.");
 
-        var athleteIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
         return new Athlete
         {
-            Id = athleteIdentity.CanonicalId,
+            Id = identity.CanonicalId,
             CreatedBy = correlationId,
             CreatedUtc = DateTime.UtcNow,
 
@@ -117,11 +116,11 @@ public static class AthleteExtensions
             [
                 new AthleteExternalId()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = identity.CanonicalId,
                     Provider = SourceDataProvider.Espn,
-                    Value = athleteIdentity.UrlHash,
-                    SourceUrlHash = athleteIdentity.UrlHash,
-                    SourceUrl = athleteIdentity.CleanUrl
+                    Value = identity.UrlHash,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
                 }
             ]
         };

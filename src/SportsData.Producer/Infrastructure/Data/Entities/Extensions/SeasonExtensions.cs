@@ -15,11 +15,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 throw new ArgumentException("Season DTO is missing its $ref property.");
 
             // Generate canonical ID and hash from the season ref
-            var seasonIdentity = externalRefIdentityGenerator.Generate(dto.Ref);
+            var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
             var season = new Season
             {
-                Id = seasonIdentity.CanonicalId,
+                Id = identity.CanonicalId,
                 Year = dto.Year,
                 Name = dto.DisplayName,
                 StartDate = DateTime.Parse(dto.StartDate).ToUniversalTime(),
@@ -30,12 +30,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 {
                     new SeasonExternalId
                     {
-                        Id = Guid.NewGuid(),
-                        SeasonId = seasonIdentity.CanonicalId,
-                        Value = seasonIdentity.UrlHash,
-                        SourceUrl = seasonIdentity.CleanUrl,
+                        Id = identity.CanonicalId,
+                        Value = identity.UrlHash,
+                        SourceUrl = identity.CleanUrl,
                         Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = seasonIdentity.UrlHash
+                        SourceUrlHash = identity.UrlHash
                     }
                 }
             };
@@ -53,7 +52,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     var phase = new SeasonPhase
                     {
                         Id = phaseIdentity.CanonicalId,
-                        SeasonId = seasonIdentity.CanonicalId,
+                        SeasonId = identity.CanonicalId,
                         TypeCode = type.Type,
                         Name = type.Name,
                         Abbreviation = type.Abbreviation,
@@ -70,8 +69,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         {
                             new SeasonPhaseExternalId
                             {
-                                Id = Guid.NewGuid(),
-                                SeasonPhaseId = phaseIdentity.CanonicalId,
+                                Id = phaseIdentity.CanonicalId,
                                 Value = phaseIdentity.UrlHash,
                                 SourceUrl = phaseIdentity.CleanUrl,
                                 Provider = SourceDataProvider.Espn,

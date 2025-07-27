@@ -46,6 +46,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
                 d.DocumentType == DocumentType.Award &&
+                d.SourceDataProvider == SourceDataProvider.Espn &&
                 !string.IsNullOrWhiteSpace(d.Uri.ToCleanUrl())), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         }
 
@@ -77,11 +78,12 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<ProcessResourceIndexItemCommand>(d =>
                 d.DocumentType == DocumentType.TeamSeason &&
+                d.SourceDataProvider == SourceDataProvider.Espn &&
                 d.Uri == msg.Uri), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task WhenDocumentIsHybridWithItems_EmitsDocumentRequestedEvents()
+        public async Task WhenDocumentIsHybrid_EmitsDocumentRequestedEventsAndProcessCommand()
         {
             // arrange
             var json = await LoadJsonTestData("EspnTeamSeasonRecord.json"); // hybrid doc: top-level metadata + "items" with $refs
@@ -108,8 +110,37 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents
             // assert
             publisher.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
                 d.DocumentType == DocumentType.TeamSeasonRecord &&
+                d.SourceDataProvider == SourceDataProvider.Espn &&
                 !string.IsNullOrWhiteSpace(d.Uri.ToCleanUrl())), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+
+            publisher.Verify(x => x.Publish(It.Is<ProcessResourceIndexItemCommand>(d =>
+                d.DocumentType == DocumentType.TeamSeasonRecord &&
+                d.SourceDataProvider == SourceDataProvider.Espn &&
+                d.Uri == msg.Uri), It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Fact]
+        public async Task WhenDocumentIsInvalid_ThrowsException()
+        {
+            // arrange
+            var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+            var publisher = Mocker.GetMock<IPublishEndpoint>();
+
+            espnApi.Setup(x => x.GetResource(It.IsAny<Uri>())).ReturnsAsync("invalid json");
+
+            var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+            var msg = Fixture.Build<DocumentRequested>()
+                .With(x => x.Uri, new Uri("http://sports.core.api.espn.com/v2/teams/99"))
+                .With(x => x.DocumentType, DocumentType.TeamSeason)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .OmitAutoProperties()
+                .Create();
+
+            var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+            // act & assert
+            await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => handler.Consume(ctx));
+        }
     }
 }

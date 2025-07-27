@@ -10,10 +10,12 @@ public static class AthletePositionExtensions
 {
     public static AthletePosition AsEntity(
         this EspnAthletePositionDto dto,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid positionId,
         Guid? parentId = null)
     {
-        var sourceUrlHash = HashProvider.GenerateHashFromUri(dto.Ref);
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
+
         return new AthletePosition
         {
             Id = positionId,
@@ -22,14 +24,17 @@ public static class AthletePositionExtensions
             Abbreviation = dto.Abbreviation?.Trim().ToUpper() ?? string.Empty,
             Leaf = dto.Leaf,
             ParentId = parentId,
-            ExternalIds = [ new AthletePositionExternalId()
+            ExternalIds = new List<AthletePositionExternalId>()
             {
-                Id = Guid.NewGuid(),
-                Value = sourceUrlHash,
-                Provider = SourceDataProvider.Espn,
-                SourceUrlHash = sourceUrlHash,
-                SourceUrl = dto.Ref.ToCleanUrl()
-            }],
+                new()
+                {
+                    Id = identity.CanonicalId,
+                    Value = identity.UrlHash,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
+                }
+            }
         };
     }
 

@@ -1,13 +1,15 @@
-﻿using SportsData.Core.Converters;
+﻿
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
+
+using SportsData.Core.Converters;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
     public class EspnAthleteDto : IHasRef
     {
@@ -132,6 +134,4 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("alt")]
         public string Alt { get; set; }
     }
-
-#pragma warning restore CS8618 // Non-nullable property is uninitialized
 }

@@ -24,9 +24,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public AthletePosition? Parent { get; set; }
 
-        public ICollection<AthletePosition> Children { get; set; } = new List<AthletePosition>();
+        public ICollection<AthletePosition> Children { get; set; } = [];
 
-        public ICollection<AthletePositionExternalId> ExternalIds { get; set; } = new List<AthletePositionExternalId>();
+        public ICollection<AthletePositionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

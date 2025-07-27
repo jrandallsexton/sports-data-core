@@ -16,7 +16,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid HomeTeamFranchiseSeasonId { get; set; }
 
+        public FranchiseSeason? HomeTeamFranchiseSeason { get; set; }
+
         public Guid AwayTeamFranchiseSeasonId { get; set; }
+
+        public FranchiseSeason? AwayTeamFranchiseSeason { get; set; }
 
         public required DateTime StartDateUtc { get; set; }
 
@@ -39,6 +43,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public int? Week { get; set; }               // From `week` ref, parsed from URL or hydrated from companion doc
 
         public string? EventNote { get; set; }       // e.g., "Modelo Vegas Kickoff Classic"
+
+        public Venue? Venue { get; set; }
 
         public Guid? VenueId { get; set; }
 
@@ -90,6 +96,23 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasMaxLength(250);
 
                 builder.Property(x => x.VenueId);
+                builder
+                    .HasOne(x => x.Venue)                    // 👈 Venue navigation
+                    .WithMany()                             // 👈 no reverse nav from Venue to Contest
+                    .HasForeignKey(x => x.VenueId)          // 👈 foreign key
+                    .OnDelete(DeleteBehavior.Restrict);     // 👈 optional: prevent cascading deletes
+
+                builder
+                    .HasOne(x => x.HomeTeamFranchiseSeason)
+                    .WithMany()
+                    .HasForeignKey(x => x.HomeTeamFranchiseSeasonId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder
+                    .HasOne(x => x.AwayTeamFranchiseSeason)
+                    .WithMany()
+                    .HasForeignKey(x => x.AwayTeamFranchiseSeasonId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 builder.Property(x => x.DisplayClock)
                     .HasMaxLength(20);

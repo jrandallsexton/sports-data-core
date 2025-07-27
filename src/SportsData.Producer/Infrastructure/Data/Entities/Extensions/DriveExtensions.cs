@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Common.Hashing;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -7,8 +9,9 @@ public static class DriveExtensions
 {
     public static Drive AsEntity(
         this EspnEventCompetitionDriveDto dto,
+        Guid correlationId,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        Guid contestCompetitionId,
+        Guid competitionId,
         Guid? startFranchiseSeasonId = null,
         Guid? endFranchiseSeasonId = null)
     {
@@ -20,7 +23,9 @@ public static class DriveExtensions
         return new Drive
         {
             Id = identity.CanonicalId,
-            ContestCompetitionId = contestCompetitionId,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = correlationId,
+            CompetitionId = competitionId,
             Description = dto.Description,
             DisplayResult = dto.DisplayResult,
             EndClockDisplayValue = dto.End?.Clock?.DisplayValue,
@@ -57,7 +62,18 @@ public static class DriveExtensions
             StartYardsToEndzone = dto.Start?.YardsToEndzone,
             TimeElapsedDisplay = dto.TimeElapsed?.DisplayValue,
             TimeElapsedValue = dto.TimeElapsed?.Value,
-            Yards = dto.Yards
+            Yards = dto.Yards,
+            ExternalIds = new List<DriveExternalId>
+            {
+                new DriveExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    Value = identity.UrlHash,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
+                }
+            },
         };
     }
 }

@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Conferences;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -20,15 +21,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<GroupBySeasonDocumentProcessor> _logger;
         private readonly FootballDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public GroupBySeasonDocumentProcessor(
             ILogger<GroupBySeasonDocumentProcessor> logger,
             FootballDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+            IPublishEndpoint publishEndpoint,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
+            _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -109,7 +113,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 var newGroupSeasonId = Guid.NewGuid();
                 var newGroupId = Guid.NewGuid();
-                var newGroupEntity = externalProviderDto.AsEntity(newGroupId, command.CorrelationId);
+
+                var newGroupEntity = externalProviderDto.AsEntity(
+                    _externalRefIdentityGenerator,
+                    newGroupId,
+                    command.CorrelationId);
+                
                 var newGroupSeason = externalProviderDto
                     .AsEntity(
                         newGroupId,

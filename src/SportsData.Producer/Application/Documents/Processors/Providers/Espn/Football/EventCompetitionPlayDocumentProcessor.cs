@@ -74,6 +74,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException("ParentId must be a valid Guid.");
             }
 
+            var competitionExists = await _dataContext.Competitions
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == competitionId);
+
+            if (!competitionExists)
+            {
+                _logger.LogError("Competition not found for {CompetitionId}", competitionId);
+                throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+            }
+
             var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.Team,
                 command.SourceDataProvider,
@@ -120,6 +130,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 _logger);
 
             var play = externalDto.AsEntity(
+                _externalRefIdentityGenerator,
+                command.CorrelationId,
                 competitionId,
                 null,
                 franchiseSeasonId,

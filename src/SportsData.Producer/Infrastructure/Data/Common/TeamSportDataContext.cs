@@ -1,13 +1,16 @@
-﻿using MassTransit.AzureServiceBusTransport.Topology;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Common
 {
-    public abstract class TeamSportDataContext(DbContextOptions options) :
-        BaseDataContext(options)
+    public abstract class TeamSportDataContext : BaseDataContext
     {
+        protected TeamSportDataContext(DbContextOptions options)
+            : base(options)
+        {
+        }
+
         public DbSet<AthletePosition> AthletePositions { get; set; }
 
         public DbSet<AthletePositionExternalId> AthletePositionExternalIds { get; set; }
@@ -18,23 +21,29 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Coach> Coaches { get; set; }
 
-        public DbSet<CoachSeason> CoachSeasons { get; set; }
-
         public DbSet<CoachExternalId> CoachExternalIds { get; set; }
 
-        public DbSet<Contest> Contests { get; set; }
+        public DbSet<CoachSeason> CoachSeasons { get; set; }
 
         public DbSet<Competition> Competitions { get; set; }
 
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
-        public DbSet<Drive> Drives { get; set; }
-
-        public DbSet<Play> Plays { get; set; }
+        public DbSet<Contest> Contests { get; set; }
 
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
 
         public DbSet<ContestOdds> ContestOdds { get; set; }
+
+        public DbSet<Drive> Drives { get; set; }
+
+        public DbSet<DriveExternalId> DriveExternalIds { get; set; }
+
+        public DbSet<Play> Plays { get; set; }
+
+        public DbSet<PlayExternalId> PlayExternalIds { get; set; }
+
+        public DbSet<PlayTypeCategory> PlayTypeCategories { get; set; }
 
         public DbSet<Franchise> Franchises { get; set; }
 
@@ -76,18 +85,23 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // TODO: See about registering these dynamically based on the context type
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new AthletePosition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthletePositionExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Award.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AwardExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Coach.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new DriveExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Play.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new PlayExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new PlayTypeCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());

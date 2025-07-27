@@ -70,7 +70,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             actual.AwayTeamOdds.SpreadOdds.Should().Be(-120m);
 
             actual.AwayTeamOdds.Team.Should().NotBeNull();
-            actual.AwayTeamOdds.Team.Ref.Should().Contain("/teams/30");
+            actual.AwayTeamOdds.Team.Ref.ToString().Should().Contain("/teams/30");
 
             // AwayTeam.Open
             var awayOpen = actual.AwayTeamOdds.Open;
@@ -138,7 +138,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             actual.HomeTeamOdds.SpreadOdds.Should().Be(100m);
 
             actual.HomeTeamOdds.Team.Should().NotBeNull();
-            actual.HomeTeamOdds.Team.Ref.Should().Contain("/teams/99");
+            actual.HomeTeamOdds.Team.Ref.ToString().Should().Contain("/teams/99");
 
             // HomeTeam.Open
             var homeOpen = actual.HomeTeamOdds.Open;

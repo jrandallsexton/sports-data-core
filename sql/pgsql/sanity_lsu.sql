@@ -8,22 +8,38 @@ WHERE "DoB" > '2000-01-01'
  select * from public."AthletePosition" order by "Name"
  select * from public."AthletePositionExternalIds" where "AthletePositionId" = 'fadd0991-919d-4ab2-95a2-f0f1f205a25d'
   select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
+  
    select * from public."Franchise" order by "Name"
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'ohio-dominican-panthers'
-   select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'
+   
+   select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'   
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
+
+   select * from public."FranchiseSeasonExternalId" where "SourceUrlHash" = 'bc2c92ab7abfa9f3ec15b451fe92b34f9c1963bcd047ee6786a51dfed1b97ed8'
+   
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
    select * from public."SeasonPhase" order by "Year"
    select * from public."SeasonYear" order by "Year"
    select * from public."Venue"
+   
    select V."Name", V."City", V."State", C.* from public."Contest" C
    inner join public."Venue" V on V."Id" = C."VenueId"
    WHERE C."ShortName" LIKE '%LSU%' ORDER BY C."StartDateUtc"
+
+   select * from public."Broadcast"
    select * from public."Competition"
    select * from public."lkPlayType"
+
+   select * from public."Drive" D where D."Id" = 'a84b1a04-cd8c-92c2-db86-7f98fe8942f4'
+   select * from public."DriveExternalId"
    
-   select con."Name" as "Contest", V."Name", V."City", V."State", pt."Description", p.* from public."Play" p
+   select * from public."Drive" D
+   inner join public."DriveExternalId" DE on DE."DriveId" = D."Id"
+   where D."Id" = 'a84b1a04-cd8c-92c2-db86-7f98fe8942f4'
+   
+   select con."Name" as "Contest", V."Name", V."City", V."State", pt."Description", p.*
+   from public."Play" p
    inner join public."lkPlayType" pt on pt."Id" = p."Type"
    inner join public."Competition" c on c."Id" = p."CompetitionId"
    inner join public."Contest" con on con."Id" = c."ContestId"

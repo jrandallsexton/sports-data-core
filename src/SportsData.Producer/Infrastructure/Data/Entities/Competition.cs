@@ -11,7 +11,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Contest Contest { get; set; } = null!;
 
-        public Guid ContestId { get; set; } // FK to Contest
+        public Guid ContestId { get; set; }
 
         public DateTime Date { get; set; }
 
@@ -89,15 +89,19 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public CompetitionSource? StatsSource { get; set; }
 
+        public Venue? Venue { get; set; }
+
         public Guid? VenueId { get; set; } // FK to Venue
 
-        public ICollection<Competitor> Competitors { get; set; } = new List<Competitor>();
+        public ICollection<Competitor> Competitors { get; set; } = [];
 
-        public ICollection<CompetitionNote> Notes { get; set; } = new List<CompetitionNote>();
+        public ICollection<CompetitionNote> Notes { get; set; } = [];
 
-        public ICollection<Play> Plays { get; set; } = new List<Play>();
+        public ICollection<Play> Plays { get; set; } = [];
 
-        public ICollection<Drive> Drives { get; set; } = new List<Drive>();
+        public ICollection<Drive> Drives { get; set; } = [];
+
+        public ICollection<Broadcast> Broadcasts { get; set; } = [];
 
         public string? FormatRegulationDisplayName { get; set; }
 
@@ -113,9 +117,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? FormatOvertimeSlug { get; set; }
 
-        public ICollection<CompetitionLink> Links { get; set; } = new List<CompetitionLink>(); // Normalized set of rel/href for downstream use
-
-        public ICollection<CompetitionExternalId> ExternalIds { get; set; } = new List<CompetitionExternalId>();
+        public ICollection<CompetitionLink> Links { get; set; } = []; // Normalized set of rel/href for downstream use
+        
+        public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
@@ -125,15 +129,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable(nameof(Competition));
                 builder.HasKey(x => x.Id);
-                builder.Property(x => x.TypeId).HasMaxLength(20);
+                builder.Property(x => x.TypeId).HasMaxLength(50);
                 builder.Property(x => x.TypeText).HasMaxLength(50);
-                builder.Property(x => x.TypeAbbreviation).HasMaxLength(20);
-                builder.Property(x => x.TypeSlug).HasMaxLength(40);
-                builder.Property(x => x.TypeName).HasMaxLength(40);
+                builder.Property(x => x.TypeAbbreviation).HasMaxLength(50);
+                builder.Property(x => x.TypeSlug).HasMaxLength(50);
+                builder.Property(x => x.TypeName).HasMaxLength(50);
                 builder.Property(x => x.FormatRegulationDisplayName).HasMaxLength(50);
-                builder.Property(x => x.FormatRegulationSlug).HasMaxLength(40);
+                builder.Property(x => x.FormatRegulationSlug).HasMaxLength(50);
                 builder.Property(x => x.FormatOvertimeDisplayName).HasMaxLength(50);
-                builder.Property(x => x.FormatOvertimeSlug).HasMaxLength(40);
+                builder.Property(x => x.FormatOvertimeSlug).HasMaxLength(50);
+                builder.Property(x => x.FormatRegulationClock).HasPrecision(10, 2);
 
                 builder.HasMany(x => x.Competitors)
                     .WithOne()
@@ -157,6 +162,23 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder
                     .HasMany(x => x.Links)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder
+                    .HasMany(x => x.Broadcasts)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder
+                    .HasOne(x => x.Venue)
+                    .WithMany()
+                    .HasForeignKey(x => x.VenueId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasMany(x => x.Plays)
                     .WithOne(x => x.Competition)
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);

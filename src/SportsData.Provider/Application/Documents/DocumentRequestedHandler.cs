@@ -38,64 +38,84 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         var json = await _espnApi.GetResource(msg.Uri);
 
-        using var doc = JsonDocument.Parse(json);
+        // Guard against malformed JSON (e.g., truncated or HTML fallback)
+        var trimmed = json?.Trim();
 
-        // If it's an index (including hybrids), process refs only
-        if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+        if (string.IsNullOrWhiteSpace(trimmed) ||
+            (!trimmed.StartsWith("{") && !trimmed.StartsWith("[")) ||
+            (!trimmed.EndsWith("}") && !trimmed.EndsWith("]")) ||
+            trimmed.Contains("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("503 Backend fetch failed", StringComparison.OrdinalIgnoreCase))
         {
-            _logger.LogInformation("Document is an index (or hybrid) with {Count} items. Processing $ref only.", items.GetArrayLength());
-
-            foreach (var item in items.EnumerateArray())
-            {
-                if (!item.TryGetProperty("$ref", out var refProp)) continue;
-
-                var href = refProp.GetString();
-                if (string.IsNullOrWhiteSpace(href)) continue;
-
-                if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
-                {
-                    _logger.LogWarning("Skipping invalid $ref href: {Ref}", href);
-                    continue;
-                }
-
-                var id = uri.Segments.LastOrDefault()?.TrimEnd('/');
-                if (string.IsNullOrWhiteSpace(id)) continue;
-
-                var routingKey = HashProvider.GenerateHashFromUri(uri).Substring(0, 3).ToUpperInvariant();
-
-                await _publisher.Publish(new DocumentRequested(
-                    id,
-                    msg.ParentId,
-                    uri,
-                    msg.Sport,
-                    msg.SeasonYear,
-                    msg.DocumentType,
-                    msg.SourceDataProvider,
-                    msg.CorrelationId,
-                    msg.CausationId));
-
-            }
-
-            return; // Never persist hybrid/index documents
+            _logger.LogWarning("Skipping malformed or truncated response from {Uri}", msg.Uri);
+            return;
         }
 
-        // If it's not an index — treat it as a leaf document
-        _logger.LogInformation("Document is a leaf (non-index). Forwarding to ResourceIndexItemProcessor.");
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(trimmed);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse JSON for URI {Uri}. Document may be corrupted or truncated.", msg.Uri);
+            return;
+        }
 
-        var urlHash = HashProvider.GenerateHashFromUri(msg.Uri);
+        using (doc)
+        {
+            if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+            {
+                _logger.LogInformation("Document is an index (or hybrid) with {Count} items. Processing $ref only.", items.GetArrayLength());
 
-        // TODO: Create a default ResourceIndex
-        var cmd = new ProcessResourceIndexItemCommand(
-            ResourceIndexId: Guid.Empty,
-            Id: urlHash,
-            Uri: msg.Uri,
-            Sport: msg.Sport,
-            SourceDataProvider: msg.SourceDataProvider,
-            DocumentType: msg.DocumentType,
-            ParentId: msg.ParentId,
-            SeasonYear: msg.SeasonYear);
+                foreach (var item in items.EnumerateArray())
+                {
+                    if (!item.TryGetProperty("$ref", out var refProp)) continue;
 
-        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                    var href = refProp.GetString();
+                    if (string.IsNullOrWhiteSpace(href)) continue;
+
+                    if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
+                    {
+                        _logger.LogWarning("Skipping invalid $ref href: {Ref}", href);
+                        continue;
+                    }
+
+                    var id = uri.Segments.LastOrDefault()?.TrimEnd('/');
+                    if (string.IsNullOrWhiteSpace(id)) continue;
+
+                    var routingKey = HashProvider.GenerateHashFromUri(uri).Substring(0, 3).ToUpperInvariant();
+
+                    await _publisher.Publish(new DocumentRequested(
+                        id,
+                        msg.ParentId,
+                        uri,
+                        msg.Sport,
+                        msg.SeasonYear,
+                        msg.DocumentType,
+                        msg.SourceDataProvider,
+                        msg.CorrelationId,
+                        msg.CausationId));
+                }
+
+                return; // Never persist hybrid/index documents
+            }
+
+            _logger.LogInformation("Document is a leaf (non-index). Forwarding to ResourceIndexItemProcessor.");
+
+            var urlHash = HashProvider.GenerateHashFromUri(msg.Uri);
+
+            var cmd = new ProcessResourceIndexItemCommand(
+                ResourceIndexId: Guid.Empty,
+                Id: urlHash,
+                Uri: msg.Uri,
+                Sport: msg.Sport,
+                SourceDataProvider: msg.SourceDataProvider,
+                DocumentType: msg.DocumentType,
+                ParentId: msg.ParentId,
+                SeasonYear: msg.SeasonYear);
+
+            _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+        }
     }
-
 }

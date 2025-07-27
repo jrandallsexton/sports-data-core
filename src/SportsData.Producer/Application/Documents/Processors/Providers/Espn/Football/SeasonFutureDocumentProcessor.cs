@@ -3,6 +3,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -18,15 +19,18 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
     private readonly ILogger<SeasonFutureDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public SeasonFutureDocumentProcessor(
         ILogger<SeasonFutureDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -80,6 +84,7 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
 
         // Initial mapping from DTO ? Entity (without Books yet)
         var entity = dto.AsEntity(
+            _externalRefIdentityGenerator,
             season.Id,
             command.CorrelationId,
             command.UrlHash,

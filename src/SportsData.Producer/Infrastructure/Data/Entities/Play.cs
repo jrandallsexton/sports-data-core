@@ -9,19 +9,19 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class Play : CanonicalEntityBase<Guid>
     {
-        public Competition Competition { get; set; } = null!; // Navigation property to Competition
+        public Competition Competition { get; set; } = null!;
 
-        public Guid CompetitionId { get; set; } // FK to Competition
+        public Guid CompetitionId { get; set; }
 
-        public Drive? Drive { get; set; } // Navigation property to Drive
+        public Drive? Drive { get; set; }
 
-        public Guid? DriveId { get; set; } // FK to ContestDrive
+        public Guid? DriveId { get; set; }
 
         public required string EspnId { get; set; } // Maps to "id" in JSON
 
         public required string SequenceNumber { get; set; }
 
-        public required PlayType Type { get; set; }
+        public PlayType Type { get; set; }
 
         public required string TypeId { get; set; }
 
@@ -73,7 +73,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int StatYardage { get; set; }
 
-        public ICollection<PlayExternalId> ExternalIds { get; set; } = new List<PlayExternalId>();
+        public ICollection<PlayExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
@@ -83,17 +83,38 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable(nameof(Play));
                 builder.HasKey(x => x.Id);
+
                 builder.Property(x => x.EspnId).IsRequired().HasMaxLength(30);
                 builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(20);
                 builder.Property(x => x.TypeId).IsRequired().HasMaxLength(10);
-                builder.Property(x => x.Text).IsRequired().HasMaxLength(250);
+                builder.Property(x => x.Text).IsRequired().HasMaxLength(500);
                 builder.Property(x => x.ShortText).HasMaxLength(250);
-                builder.Property(x => x.AlternativeText).HasMaxLength(250);
+                builder.Property(x => x.AlternativeText).HasMaxLength(500);
                 builder.Property(x => x.ShortAlternativeText).HasMaxLength(250);
                 builder.Property(x => x.ClockDisplayValue).HasMaxLength(20);
                 builder.Property(x => x.Modified).IsRequired();
                 builder.Property(x => x.TeamFranchiseSeasonId).IsRequired();
-                builder.Property(x => x.DriveId).IsRequired();
+                builder.Property(x => x.DriveId).IsRequired(false); // Nullable FK
+                builder.Property(x => x.CompetitionId).IsRequired();
+
+                builder.Property(x => x.Type)
+                    .IsRequired()
+                    .HasConversion<int>();
+
+                builder.HasOne(x => x.Drive)
+                    .WithMany(x => x.Plays)
+                    .HasForeignKey(x => x.DriveId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.Competition)
+                    .WithMany(x => x.Plays)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.ExternalIds)
+                    .WithOne()
+                    .HasForeignKey(nameof(PlayExternalId.PlayId))
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
     }

@@ -1,20 +1,17 @@
-﻿using System.Text.Json.Serialization;
+﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
-namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
+using System.Text.Json.Serialization;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+
+public class EspnAthleteHandDto
 {
-#pragma warning disable CS8618 // Non-nullable property is uninitialized
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
 
-    public class EspnAthleteHandDto
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; }
+    [JsonPropertyName("abbreviation")]
+    public string Abbreviation { get; set; }
 
-        [JsonPropertyName("abbreviation")]
-        public string Abbreviation { get; set; }
-
-        [JsonPropertyName("displayValue")]
-        public string DisplayValue { get; set; }
-    }
-
-#pragma warning restore CS8618 // Non-nullable property is uninitialized
+    [JsonPropertyName("displayValue")]
+    public string DisplayValue { get; set; }
 }

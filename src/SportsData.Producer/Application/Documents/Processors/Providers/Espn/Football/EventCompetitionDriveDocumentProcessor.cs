@@ -57,23 +57,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException($"Deserialization returned null for {command.DocumentType}");
             }
 
-            if (!Guid.TryParse(command.ParentId, out var competitionId))
-            {
-                _logger.LogError("CompetitionId could not be parsed");
-                throw new InvalidOperationException("ParentId must be a valid Guid.");
-            }
+            var competitionId = await GetCompetitionId(command);
 
             var startFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.Team,
                 command.SourceDataProvider,
                 () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
                 _logger);
-
-            if (startFranchiseSeasonId is null)
-            {
-                _logger.LogError("FranchiseSeason could not be resolved from DTO reference: {@DtoRef}", externalDto.Team?.Ref);
-                throw new InvalidOperationException("FranchiseSeason could not be resolved from DTO reference.");
-            }
 
             var endFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.EndTeam,
@@ -94,7 +84,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     command,
                     externalDto,
                     competitionId,
-                    startFranchiseSeasonId.Value,
+                    startFranchiseSeasonId,
                     endFranchiseSeasonId);
             }
             else
@@ -103,14 +93,36 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
         }
 
+        private async Task<Guid> GetCompetitionId(ProcessDocumentCommand command)
+        {
+            if (!Guid.TryParse(command.ParentId, out var competitionId))
+            {
+                _logger.LogError("CompetitionId could not be parsed");
+                throw new InvalidOperationException("ParentId must be a valid Guid.");
+            }
+
+            var competitionExists = await _dataContext.Competitions
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == competitionId);
+
+            if (!competitionExists)
+            {
+                _logger.LogError("Competition not found for {CompetitionId}", competitionId);
+                throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+            }
+
+            return competitionId;
+        }
+        
         private async Task ProcessNewEntity(
             ProcessDocumentCommand command,
             EspnEventCompetitionDriveDto externalDto,
             Guid competitionId,
-            Guid startFranchiseSeasonId,
+            Guid? startFranchiseSeasonId,
             Guid? endFranchiseSeasonId)
         {
             var entity = externalDto.AsEntity(
+                command.CorrelationId,
                 _externalRefIdentityGenerator,
                 competitionId,
                 startFranchiseSeasonId,

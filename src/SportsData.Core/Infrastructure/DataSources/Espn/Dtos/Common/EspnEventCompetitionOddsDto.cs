@@ -80,7 +80,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public Current Current { get; set; }
 
         [JsonPropertyName("team")]
-        public Team Team { get; set; }
+        public EspnLinkDto Team { get; set; }
     }
 
     public class Close
@@ -261,12 +261,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 
         [JsonPropertyName("outcome")]
         public Outcome Outcome { get; set; }
-    }
-
-    public class Team
-    {
-        [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
     }
 
     public class Total

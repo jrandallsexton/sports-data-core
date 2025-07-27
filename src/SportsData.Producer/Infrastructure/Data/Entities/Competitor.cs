@@ -45,16 +45,50 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             {
                 builder.ToTable(nameof(Competitor));
                 builder.HasKey(x => x.Id);
-                builder.Property(x => x.Type).HasMaxLength(20);
-                builder.Property(x => x.HomeAway).HasMaxLength(10);
-                builder.Property(x => x.TeamRef).HasMaxLength(250);
-                builder.Property(x => x.LinescoresRef).HasMaxLength(250);
-                builder.Property(x => x.RosterRef).HasMaxLength(250);
-                builder.Property(x => x.StatisticsRef).HasMaxLength(250);
-                builder.Property(x => x.LeadersRef).HasMaxLength(250);
-                builder.Property(x => x.RecordRef).HasMaxLength(250);
-                builder.Property(x => x.RanksRef).HasMaxLength(250);
+
+                builder.Property(x => x.Type)
+                    .HasMaxLength(20);
+
+                builder.Property(x => x.HomeAway)
+                    .HasMaxLength(10);
+
+                builder.Property(x => x.TeamRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.LinescoresRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.RosterRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.StatisticsRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.LeadersRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.RecordRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.RanksRef)
+                    .HasMaxLength(250);
+
+                builder.Property(x => x.ScoreDisplayValue)
+                    .IsRequired()
+                    .HasMaxLength(10); // assuming a small value like "14" or "27-13"
+
+                builder.Property(x => x.CompetitionId)
+                    .IsRequired();
+
+                builder.Property(x => x.FranchiseSeasonId)
+                    .IsRequired();
+
+                builder.HasOne<Competition>()
+                    .WithMany(x => x.Competitors)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
+
     }
 }

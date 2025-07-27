@@ -6,7 +6,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.Common.Routing;
-using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;

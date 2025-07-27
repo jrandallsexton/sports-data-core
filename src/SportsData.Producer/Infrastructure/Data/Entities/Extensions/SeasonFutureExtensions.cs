@@ -1,5 +1,5 @@
 using SportsData.Core.Common;
-using SportsData.Core.Extensions;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -8,11 +8,14 @@ public static class SeasonFutureExtensions
 {
     public static SeasonFuture AsEntity(
         this EspnFootballSeasonFutureDto dto,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid seasonId,
         Guid correlationId,
         string urlHash,
         SourceDataProvider provider)
     {
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
+
         var entity = new SeasonFuture
         {
             Id = Guid.NewGuid(),
@@ -25,16 +28,13 @@ public static class SeasonFutureExtensions
             Items = new List<SeasonFutureItem>(),
             ExternalIds = new List<SeasonFutureExternalId>
             {
-                new SeasonFutureExternalId
+                new()
                 {
-                    Id = Guid.NewGuid(),
-                    SeasonFutureId = Guid.Empty,  // Temporary
-                    Provider = provider,
-                    Value = urlHash,
-                    SourceUrlHash = urlHash,
-                    CreatedBy = correlationId,
-                    CreatedUtc = DateTime.UtcNow,
-                    SourceUrl = dto.Ref.ToCleanUrl()
+                    Id = identity.CanonicalId,
+                    Value = identity.UrlHash,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
                 }
             }
         };

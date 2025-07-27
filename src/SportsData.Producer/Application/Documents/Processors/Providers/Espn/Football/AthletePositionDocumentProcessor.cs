@@ -22,15 +22,18 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly ILogger<AthletePositionDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public AthletePositionDocumentProcessor(
         ILogger<AthletePositionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
+        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -130,7 +133,10 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             }
         }
 
-        var entity = dto.AsEntity(newPositionId, parentId);
+        var entity = dto.AsEntity(
+            _externalRefIdentityGenerator,
+            newPositionId,
+            parentId);
 
         _dataContext.AthletePositions.Add(entity);
 

@@ -10,6 +10,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
     {
         public Guid AthleteId { get; set; }
 
+        public Athlete Athlete { get; set; } = null!;
+
         public required string OriginalUrlHash { get; set; }
 
         public required Uri Uri { get; set; }
@@ -26,12 +28,19 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             {
                 builder.ToTable(nameof(AthleteImage));
                 builder.HasKey(t => t.Id);
-                builder.HasOne<Athlete>()
+
+                builder.HasOne(x => x.Athlete)
                     .WithMany(x => x.Images)
-                    .HasForeignKey(x => x.AthleteId);
+                    .HasForeignKey(x => x.AthleteId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
                 builder.HasIndex(x => x.OriginalUrlHash);
-                builder.Property(x => x.Uri).HasMaxLength(256);
-                builder.Property(x => x.OriginalUrlHash).HasMaxLength(64);
+
+                builder.Property(x => x.Uri)
+                    .HasMaxLength(256);
+
+                builder.Property(x => x.OriginalUrlHash)
+                    .HasMaxLength(64);
             }
         }
     }

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
@@ -23,6 +25,7 @@ namespace SportsData.Provider.Application.Documents
         private readonly IProvideBlobStorage _blobStorage;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
+        private readonly IBus _bus;
 
         public DocumentController(
             IDocumentStore documentStore,
@@ -30,7 +33,8 @@ namespace SportsData.Provider.Application.Documents
             ILogger<DocumentController> logger,
             IProvideBlobStorage blobStorage,
             IProvideBackgroundJobs backgroundJobProvider,
-            IGenerateRoutingKeys routingKeyGenerator)
+            IGenerateRoutingKeys routingKeyGenerator,
+            IBus bus)
         {
             _documentStore = documentStore;
             _decoder = decoder;
@@ -38,6 +42,7 @@ namespace SportsData.Provider.Application.Documents
             _blobStorage = blobStorage;
             _backgroundJobProvider = backgroundJobProvider;
             _routingKeyGenerator = routingKeyGenerator;
+            _bus = bus;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -272,6 +277,13 @@ namespace SportsData.Provider.Application.Documents
                 CanonicalId = query.CanonicalId,
                 Uri = externalUrl
             });
+        }
+
+        [HttpPost("documentRequest", Name = "ProcessDocumentRequested")]
+        public async Task<IActionResult> ProcessDocumentRequested([FromBody] DocumentRequested command)
+        {
+            await _bus.Publish(command);
+            return Accepted(new { command.Uri, command.DocumentType, command.SourceDataProvider });
         }
     }
 }

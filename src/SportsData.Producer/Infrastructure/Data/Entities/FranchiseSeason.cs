@@ -47,15 +47,18 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int Ties { get; set; }
 
-        public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = new List<FranchiseSeasonExternalId>();
+        public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public ICollection<FranchiseSeasonRecord> Records { get; set; } = new List<FranchiseSeasonRecord>();
+        public ICollection<FranchiseSeasonRanking> Rankings { get; set; } = [];
 
-        public ICollection<FranchiseSeasonRecordAts> RecordsAts { get; set; } = new List<FranchiseSeasonRecordAts>();
 
-        public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = new List<FranchiseSeasonStatisticCategory>();
+        public ICollection<FranchiseSeasonRecord> Records { get; set; } = [];
+
+        public ICollection<FranchiseSeasonRecordAts> RecordsAts { get; set; } = [];
+
+        public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>
         {
@@ -91,6 +94,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.HasMany(x => x.Records)
                     .WithOne(r => r.Season)
+                    .HasForeignKey(r => r.FranchiseSeasonId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Rankings)
+                    .WithOne(r => r.FranchiseSeason)
                     .HasForeignKey(r => r.FranchiseSeasonId)
                     .OnDelete(DeleteBehavior.Cascade);
             }

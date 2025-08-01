@@ -12,7 +12,7 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250629074004_Initial")]
+    [Migration("20250729225736_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -28,7 +28,6 @@ namespace SportsData.Provider.Migrations
             modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")

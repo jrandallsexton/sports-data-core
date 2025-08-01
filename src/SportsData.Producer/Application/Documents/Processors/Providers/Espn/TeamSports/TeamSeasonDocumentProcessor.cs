@@ -55,8 +55,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalProviderDto is null)
         {
-            _logger.LogError($"Error deserializing {command.DocumentType}");
-            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnTeamSeasonDto Ref is null or empty. {@Command}", command);
+            return;
         }
 
         if (command.Season is null)
@@ -78,7 +84,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (franchise is null)
         {
-            _logger.LogError($"Franchise not found for UrlHash: {franchiseIdentity.UrlHash} and Provider: {command.SourceDataProvider}");
+            _logger.LogError("Franchise not found. {@Identity}", franchiseIdentity);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: franchiseIdentity.UrlHash,
@@ -140,11 +146,17 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         // Resolve VenueId via SourceUrlHash
         franchiseSeason.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Venue, command.SourceDataProvider, () => _dataContext.Venues, _logger);
+            dto.Venue,
+            command.SourceDataProvider,
+            () => _dataContext.Venues.AsNoTracking(),
+            _logger);
 
         // Resolve GroupId via SourceUrlHash
         franchiseSeason.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Groups, command.SourceDataProvider, () => _dataContext.Groups, _logger);
+            dto.Groups,
+            command.SourceDataProvider,
+            () => _dataContext.Groups.AsNoTracking(),
+            _logger);
 
         // TODO: Extract Ranks from dto.Ranks (data not available when following link)
         // FranchiseSeasonRank entity to store weekly ranks per source

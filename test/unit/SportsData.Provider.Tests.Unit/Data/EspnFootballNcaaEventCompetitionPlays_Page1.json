@@ -1,0 +1,3043 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays?source=2&lang=en&region=us",
+  "count": 179,
+  "pageIndex": 2,
+  "pageSize": 25,
+  "pageCount": 8,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101928703?lang=en&region=us",
+      "id": "401628420101928703",
+      "sequenceNumber": "101928703",
+      "type": {
+        "id": "53",
+        "text": "Kickoff",
+        "abbreviation": "K"
+      },
+      "text": "Trey Smack kickoff for 65 yds for a touchback",
+      "shortText": "T. Smack kick for 65 yds for a touchback",
+      "alternativeText": "Trey Smack kickoff for 65 yds for a touchback",
+      "shortAlternativeText": "T. Smack kick for 65 yds for a touchback",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 432.0,
+        "displayValue": "7:12"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869461?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/4869461/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "kickoffs",
+              "displayName": "Kickoffs",
+              "shortDisplayName": "K",
+              "description": "The number of kickoffs taken.",
+              "abbreviation": "K",
+              "value": 6.0,
+              "displayValue": "6"
+            },
+            {
+              "name": "touchbacks",
+              "displayName": "Touchbacks",
+              "shortDisplayName": "TB",
+              "description": "The number of kickoffs that result in touchbacks.",
+              "abbreviation": "TB",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "touchbackPct",
+              "displayName": "Touchback Percentage",
+              "shortDisplayName": "TB%",
+              "description": "The percentage of kickoffs that are touchbacks.",
+              "abbreviation": "TB%",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "kicker"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101928703?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:08:12Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 35,
+        "yardsToEndzone": 65,
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 75,
+        "yardsToEndzone": 75,
+        "downDistanceText": "1st & 10 at LSU 25",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 25",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101929301?lang=en&region=us",
+      "id": "401628420101929301",
+      "sequenceNumber": "101929301",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 4 yds to the LSU 29",
+      "shortText": "C. Durham run for 4 yds",
+      "alternativeText": "Caden Durham run for 4 yds to the LSU 29",
+      "shortAlternativeText": "C. Durham run for 4 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 426.0,
+        "displayValue": "7:06"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101929301?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:13:41Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 75,
+        "yardsToEndzone": 75,
+        "downDistanceText": "1st & 10 at LSU 25",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 25",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 6,
+        "yardLine": 71,
+        "yardsToEndzone": 71,
+        "downDistanceText": "2nd & 6 at LSU 29",
+        "shortDownDistanceText": "2nd & 6",
+        "possessionText": "LSU 29",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 4
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101936801?lang=en&region=us",
+      "id": "401628420101936801",
+      "sequenceNumber": "101936801",
+      "type": {
+        "id": "3",
+        "text": "Pass Incompletion"
+      },
+      "text": "Garrett Nussmeier pass incomplete to Ka'Morreun Pimpton",
+      "shortText": "G. Nussmeier pass incomplete",
+      "alternativeText": "Garrett Nussmeier pass incomplete to Ka'Morreun Pimpton",
+      "shortAlternativeText": "G. Nussmeier pass incomplete",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 391.0,
+        "displayValue": "6:31"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5084293/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5084293?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5084293/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 3,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101936801?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:14:17Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 6,
+        "yardLine": 71,
+        "yardsToEndzone": 71,
+        "downDistanceText": "2nd & 6 at LSU 29",
+        "shortDownDistanceText": "2nd & 6",
+        "possessionText": "LSU 29",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 6,
+        "yardLine": 71,
+        "yardsToEndzone": 71,
+        "downDistanceText": "3rd & 6 at LSU 29",
+        "shortDownDistanceText": "3rd & 6",
+        "possessionText": "LSU 29",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101937501?lang=en&region=us",
+      "id": "401628420101937501",
+      "sequenceNumber": "101937501",
+      "type": {
+        "id": "24",
+        "text": "Pass Reception",
+        "abbreviation": "REC"
+      },
+      "text": "Garrett Nussmeier pass complete to Mason Taylor for 11 yds to the LSU 40 for a 1ST down",
+      "shortText": "G. Nussmeier pass to M. Taylor for 11 yds for a 1ST down",
+      "alternativeText": "Garrett Nussmeier pass complete to Mason Taylor for 11 yds to the LSU 40 for a 1ST down",
+      "shortAlternativeText": "G. Nussmeier pass to M. Taylor for 11 yds for a 1ST down",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 384.0,
+        "displayValue": "6:24"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4808766?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4808766/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 6.0,
+              "displayValue": "6"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 59.0,
+              "displayValue": "59"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101937501?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:14:59Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 6,
+        "yardLine": 71,
+        "yardsToEndzone": 71,
+        "downDistanceText": "3rd & 6 at LSU 29",
+        "shortDownDistanceText": "3rd & 6",
+        "possessionText": "LSU 29",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 60,
+        "yardsToEndzone": 60,
+        "downDistanceText": "1st & 10 at LSU 40",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 40",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 11
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101944601?lang=en&region=us",
+      "id": "401628420101944601",
+      "sequenceNumber": "101944601",
+      "type": {
+        "id": "3",
+        "text": "Pass Incompletion"
+      },
+      "text": "Garrett Nussmeier pass incomplete",
+      "shortText": "G. Nussmeier pass incomplete",
+      "alternativeText": "Garrett Nussmeier pass incomplete",
+      "shortAlternativeText": "G. Nussmeier pass incomplete",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 353.0,
+        "displayValue": "5:53"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101944601?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:15:31Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 60,
+        "yardsToEndzone": 60,
+        "downDistanceText": "1st & 10 at LSU 40",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 40",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 60,
+        "yardsToEndzone": 60,
+        "downDistanceText": "2nd & 10 at LSU 40",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "LSU 40",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101945201?lang=en&region=us",
+      "id": "401628420101945201",
+      "sequenceNumber": "101945201",
+      "type": {
+        "id": "24",
+        "text": "Pass Reception",
+        "abbreviation": "REC"
+      },
+      "text": "Garrett Nussmeier pass complete to Aaron Anderson for 6 yds to the LSU 46",
+      "shortText": "G. Nussmeier pass to A. Anderson for 6 yds",
+      "alternativeText": "Garrett Nussmeier pass complete to Aaron Anderson for 6 yds to the LSU 46",
+      "shortAlternativeText": "G. Nussmeier pass to A. Anderson for 6 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 347.0,
+        "displayValue": "5:47"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4691138?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4691138/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 7.0,
+              "displayValue": "7"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 72.0,
+              "displayValue": "72"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101945201?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:16:07Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 60,
+        "yardsToEndzone": 60,
+        "downDistanceText": "2nd & 10 at LSU 40",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "LSU 40",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 4,
+        "yardLine": 54,
+        "yardsToEndzone": 54,
+        "downDistanceText": "3rd & 4 at LSU 46",
+        "shortDownDistanceText": "3rd & 4",
+        "possessionText": "LSU 46",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 6
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101949701?lang=en&region=us",
+      "id": "401628420101949701",
+      "sequenceNumber": "101949701",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 8 yds to the FLA 46 for a 1ST down",
+      "shortText": "C. Durham run for 8 yds for a 1ST down",
+      "alternativeText": "Caden Durham run for 8 yds to the FLA 46 for a 1ST down",
+      "shortAlternativeText": "C. Durham run for 8 yds for a 1ST down",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 302.0,
+        "displayValue": "5:02"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101949701?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:16:52Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 4,
+        "yardLine": 54,
+        "yardsToEndzone": 54,
+        "downDistanceText": "3rd & 4 at LSU 46",
+        "shortDownDistanceText": "3rd & 4",
+        "possessionText": "LSU 46",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 46,
+        "yardsToEndzone": 46,
+        "downDistanceText": "1st & 10 at FLA 46",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 46",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 8
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101957201?lang=en&region=us",
+      "id": "401628420101957201",
+      "sequenceNumber": "101957201",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 9 yds to the FLA 37",
+      "shortText": "C. Durham run for 9 yds",
+      "alternativeText": "Caden Durham run for 9 yds to the FLA 37",
+      "shortAlternativeText": "C. Durham run for 9 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 267.0,
+        "displayValue": "4:27"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101957201?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:17:27Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 46,
+        "yardsToEndzone": 46,
+        "downDistanceText": "1st & 10 at FLA 46",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 46",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 1,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "2nd & 1 at FLA 37",
+        "shortDownDistanceText": "2nd & 1",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 9
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101965801?lang=en&region=us",
+      "id": "401628420101965801",
+      "sequenceNumber": "101965801",
+      "type": {
+        "id": "3",
+        "text": "Pass Incompletion"
+      },
+      "text": "Garrett Nussmeier pass incomplete to Josh Williams",
+      "shortText": "G. Nussmeier pass incomplete",
+      "alternativeText": "Garrett Nussmeier pass incomplete to Josh Williams",
+      "shortAlternativeText": "G. Nussmeier pass incomplete",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 221.0,
+        "displayValue": "3:41"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4568024/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 4.0,
+              "displayValue": "4"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 31.0,
+              "displayValue": "31"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4568024/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 4.0,
+              "displayValue": "4"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 31.0,
+              "displayValue": "31"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 3,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101965801?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:18:15Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 1,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "2nd & 1 at FLA 37",
+        "shortDownDistanceText": "2nd & 1",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 1,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "3rd & 1 at FLA 37",
+        "shortDownDistanceText": "3rd & 1",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101966501?lang=en&region=us",
+      "id": "401628420101966501",
+      "sequenceNumber": "101966501",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Josh Williams run for 3 yds to the FLA 34 for a 1ST down",
+      "shortText": "J. Williams run for 3 yds for a 1ST down",
+      "alternativeText": "Josh Williams run for 3 yds to the FLA 34 for a 1ST down",
+      "shortAlternativeText": "J. Williams run for 3 yds for a 1ST down",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 214.0,
+        "displayValue": "3:34"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4568024/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 13.0,
+              "displayValue": "13"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 69.0,
+              "displayValue": "69"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101966501?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:18:55Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 1,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "3rd & 1 at FLA 37",
+        "shortDownDistanceText": "3rd & 1",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 34,
+        "downDistanceText": "1st & 10 at FLA 34",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 3
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101974001?lang=en&region=us",
+      "id": "401628420101974001",
+      "sequenceNumber": "101974001",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Zavion Thomas run for 2 yds to the FLA 32",
+      "shortText": "Z. Thomas run for 2 yds",
+      "alternativeText": "Zavion Thomas run for 2 yds to the FLA 32",
+      "shortAlternativeText": "Z. Thomas run for 2 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 179.0,
+        "displayValue": "2:59"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4869748/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 2.0,
+              "displayValue": "2"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101974001?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:19:29Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 34,
+        "downDistanceText": "1st & 10 at FLA 34",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 8,
+        "yardLine": 32,
+        "yardsToEndzone": 32,
+        "downDistanceText": "2nd & 8 at FLA 32",
+        "shortDownDistanceText": "2nd & 8",
+        "possessionText": "FLA 32",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 2
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101978202?lang=en&region=us",
+      "id": "401628420101978202",
+      "sequenceNumber": "101978202",
+      "type": {
+        "id": "8",
+        "text": "Penalty",
+        "abbreviation": "PEN"
+      },
+      "text": "LSU Penalty, False Start (Will Campbell) to the FLA 37",
+      "shortText": "LSU penalty, False Start (W. Campbell)",
+      "alternativeText": "LSU Penalty, False Start (Will Campbell) to the FLA 37",
+      "shortAlternativeText": "LSU penalty, False Start (W. Campbell)",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 137.0,
+        "displayValue": "2:17"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4685298?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "penalized"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101978202?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:20:15Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 8,
+        "yardLine": 32,
+        "yardsToEndzone": 32,
+        "downDistanceText": "2nd & 8 at FLA 32",
+        "shortDownDistanceText": "2nd & 8",
+        "possessionText": "FLA 32",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 13,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "2nd & 13 at FLA 37",
+        "shortDownDistanceText": "2nd & 13",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": -5
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101984801?lang=en&region=us",
+      "id": "401628420101984801",
+      "sequenceNumber": "101984801",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for a loss of 2 yards to the FLA 39",
+      "shortText": "C. Durham run for -2 yds",
+      "alternativeText": "Caden Durham run for a loss of 2 yards to the FLA 39",
+      "shortAlternativeText": "C. Durham run for -2 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 111.0,
+        "displayValue": "1:51"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101984801?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:21:06Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 13,
+        "yardLine": 37,
+        "yardsToEndzone": 37,
+        "downDistanceText": "2nd & 13 at FLA 37",
+        "shortDownDistanceText": "2nd & 13",
+        "possessionText": "FLA 37",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 15,
+        "yardLine": 39,
+        "yardsToEndzone": 39,
+        "downDistanceText": "3rd & 15 at FLA 39",
+        "shortDownDistanceText": "3rd & 15",
+        "possessionText": "FLA 39",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": -2
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101989401?lang=en&region=us",
+      "id": "401628420101989401",
+      "sequenceNumber": "101989401",
+      "type": {
+        "id": "24",
+        "text": "Pass Reception",
+        "abbreviation": "REC"
+      },
+      "text": "Garrett Nussmeier pass complete to Josh Williams for 5 yds to the FLA 34",
+      "shortText": "G. Nussmeier pass to J. Williams for 5 yds",
+      "alternativeText": "Garrett Nussmeier pass complete to Josh Williams for 5 yds to the FLA 34",
+      "shortAlternativeText": "G. Nussmeier pass to J. Williams for 5 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 65.0,
+        "displayValue": "1:05"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4567747?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5744680851,
+              "displayValue": "27/47"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 260.0,
+              "displayValue": "260"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4568024?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4568024/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 4.0,
+              "displayValue": "4"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 31.0,
+              "displayValue": "31"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101989401?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:21:52Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 15,
+        "yardLine": 39,
+        "yardsToEndzone": 39,
+        "downDistanceText": "3rd & 15 at FLA 39",
+        "shortDownDistanceText": "3rd & 15",
+        "possessionText": "FLA 39",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 4,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 34,
+        "downDistanceText": "4th & 10 at FLA 34",
+        "shortDownDistanceText": "4th & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 5
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101997201?lang=en&region=us",
+      "id": "401628420101997201",
+      "sequenceNumber": "101997201",
+      "type": {
+        "id": "60",
+        "text": "Field Goal Missed",
+        "abbreviation": "FGM"
+      },
+      "text": "Damian Ramos 51 Yard Field Goal Missed",
+      "shortText": "Damian Ramos 51 Yard Field Goal Missed",
+      "alternativeText": "Damian Ramos 51 Yard Field Goal Missed",
+      "shortAlternativeText": "Damian Ramos 51 Yard Field Goal Missed",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 27.0,
+        "displayValue": "0:27"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4893639?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4893639/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "made/attempts",
+              "displayName": "Made / Attempts",
+              "shortDisplayName": "FGM/FGA",
+              "description": "The number of field goals attempted and made.",
+              "abbreviation": "FGM/FGA",
+              "value": 0.75,
+              "displayValue": "3/4"
+            },
+            {
+              "name": "longFieldGoalMade",
+              "displayName": "Long Field Goal Made",
+              "shortDisplayName": "LFGM",
+              "description": "The distance of the longest field goal made.",
+              "abbreviation": "LNG",
+              "value": 50.0,
+              "displayValue": "50"
+            },
+            {
+              "name": "extraPointsMade",
+              "displayName": "Extra Points Made",
+              "shortDisplayName": "XPM",
+              "description": "The number of extra point attempts made.",
+              "abbreviation": "XPM",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ],
+          "order": 1,
+          "type": "kicker"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101997201?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:22:57Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284205?lang=en&region=us"
+      },
+      "start": {
+        "down": 4,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 34,
+        "downDistanceText": "4th & 10 at FLA 34",
+        "shortDownDistanceText": "4th & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 66,
+        "downDistanceText": "1st & 10 at FLA 34",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 52
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101997801?lang=en&region=us",
+      "id": "401628420101997801",
+      "sequenceNumber": "101997801",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Jadan Baugh run for 11 yds to the FLA 45 for a 1ST down",
+      "shortText": "J. Baugh run for 11 yds for a 1ST down",
+      "alternativeText": "Jadan Baugh run for 11 yds to the FLA 45 for a 1ST down",
+      "shortAlternativeText": "J. Baugh run for 11 yds for a 1ST down",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 21.0,
+        "displayValue": "0:21"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079322?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079322/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 6.0,
+              "displayValue": "6"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 65.0,
+              "displayValue": "65"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101997801?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:24:52Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 34,
+        "yardsToEndzone": 66,
+        "downDistanceText": "1st & 10 at FLA 34",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 34",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "1st & 10 at FLA 45",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 11
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420101997802?lang=en&region=us",
+      "id": "401628420101997802",
+      "sequenceNumber": "101997802",
+      "type": {
+        "id": "2",
+        "text": "End Period",
+        "abbreviation": "EP"
+      },
+      "text": "End of 1st Quarter",
+      "shortText": "End of 1st Quarter",
+      "alternativeText": "End of 1st Quarter",
+      "shortAlternativeText": "End of 1st Quarter",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 0.0,
+        "displayValue": "0:00"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420101997802?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:24:57Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 0,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 66,
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "1st & 10 at FLA 45",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102854301?lang=en&region=us",
+      "id": "401628420102854301",
+      "sequenceNumber": "102854301",
+      "type": {
+        "id": "3",
+        "text": "Pass Incompletion"
+      },
+      "text": "DJ Lagway pass incomplete to Jadan Baugh",
+      "shortText": "D. Lagway pass incomplete",
+      "alternativeText": "DJ Lagway pass incomplete to Jadan Baugh",
+      "shortAlternativeText": "D. Lagway pass incomplete",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 896.0,
+        "displayValue": "14:56"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079555?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079555/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5,
+              "displayValue": "13/26"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 226.0,
+              "displayValue": "226"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079322?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079322/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079322?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079322/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 3,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102854301?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:28:04Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "1st & 10 at FLA 45",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "2nd & 10 at FLA 45",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102855001?lang=en&region=us",
+      "id": "401628420102855001",
+      "sequenceNumber": "102855001",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Jadan Baugh run for no gain to the FLA 45",
+      "shortText": "J. Baugh run for 0 yds",
+      "alternativeText": "Jadan Baugh run for no gain to the FLA 45",
+      "shortAlternativeText": "J. Baugh run for 0 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 889.0,
+        "displayValue": "14:49"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079322?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079322/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 6.0,
+              "displayValue": "6"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 65.0,
+              "displayValue": "65"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102855001?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:28:41Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "2nd & 10 at FLA 45",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "3rd & 10 at FLA 45",
+        "shortDownDistanceText": "3rd & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102859201?lang=en&region=us",
+      "id": "401628420102859201",
+      "sequenceNumber": "102859201",
+      "type": {
+        "id": "24",
+        "text": "Pass Reception",
+        "abbreviation": "REC"
+      },
+      "text": "DJ Lagway pass complete to Arlis Boardingham for 4 yds to the FLA 49",
+      "shortText": "D. Lagway pass to A. Boardingham for 4 yds",
+      "alternativeText": "DJ Lagway pass complete to Arlis Boardingham for 4 yds to the FLA 49",
+      "shortAlternativeText": "D. Lagway pass to A. Boardingham for 4 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 847.0,
+        "displayValue": "14:07"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079555?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/5079555/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "completions/attempts",
+              "displayName": "Completions / Attempts",
+              "shortDisplayName": "COMP/ATT",
+              "description": "The number of passing completions and attempts.",
+              "abbreviation": "COMP/ATT",
+              "value": 0.5,
+              "displayValue": "13/26"
+            },
+            {
+              "name": "passingYards",
+              "displayName": "Passing Yards",
+              "shortDisplayName": "Pass Yards",
+              "description": "The total passing yards.",
+              "abbreviation": "YDS",
+              "value": 226.0,
+              "displayValue": "226"
+            },
+            {
+              "name": "passingTouchdowns",
+              "displayName": "Passing Touchdowns",
+              "shortDisplayName": "Touchdowns",
+              "description": "The total number of passing touchdowns.",
+              "abbreviation": "TD",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "interceptions",
+              "displayName": "Interceptions",
+              "shortDisplayName": "INT",
+              "description": "The number of passes thrown that were intercepted by the opposing team.",
+              "abbreviation": "INT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "passer"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4702556?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/189/roster/4702556/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "receptions",
+              "displayName": "Receptions",
+              "shortDisplayName": "Receptions",
+              "description": "The total number of receptions.",
+              "abbreviation": "REC",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "receivingYards",
+              "displayName": "Receiving Yards",
+              "shortDisplayName": "Rec. Yards",
+              "description": "The total receiving yards.",
+              "abbreviation": "YDS",
+              "value": 4.0,
+              "displayValue": "4"
+            },
+            {
+              "name": "receivingTouchdowns",
+              "displayName": "Receiving Touchdowns",
+              "shortDisplayName": "Receiving Touchdowns",
+              "description": "The total number of receiving touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 2,
+          "type": "receiver"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102859201?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:29:25Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 10,
+        "yardLine": 45,
+        "yardsToEndzone": 55,
+        "downDistanceText": "3rd & 10 at FLA 45",
+        "shortDownDistanceText": "3rd & 10",
+        "possessionText": "FLA 45",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 4,
+        "distance": 6,
+        "yardLine": 49,
+        "yardsToEndzone": 51,
+        "downDistanceText": "4th & 6 at FLA 49",
+        "shortDownDistanceText": "4th & 6",
+        "possessionText": "FLA 49",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "statYardage": 4
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102866901?lang=en&region=us",
+      "id": "401628420102866901",
+      "sequenceNumber": "102866901",
+      "type": {
+        "id": "52",
+        "text": "Punt",
+        "abbreviation": "PUNT"
+      },
+      "text": "Jeremy Crawshaw punt for 35 yds, fair catch by Zavion Thomas at the LSU 16",
+      "shortText": "J. Crawshaw punt for 35 yds, fair catch by Z. Thomas",
+      "alternativeText": "Jeremy Crawshaw punt for 35 yds, fair catch by Zavion Thomas at the LSU 16",
+      "shortAlternativeText": "J. Crawshaw punt for 35 yds, fair catch by Z. Thomas",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 810.0,
+        "displayValue": "13:30"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4589212?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/23?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/57/roster/4589212/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "punts",
+              "displayName": "Punts",
+              "shortDisplayName": "P",
+              "description": "The number of punts taken.",
+              "abbreviation": "PUNTS",
+              "value": 4.0,
+              "displayValue": "4"
+            },
+            {
+              "name": "longPunt",
+              "displayName": "Long Punt",
+              "shortDisplayName": "LP",
+              "description": "The distance of the longest punt.",
+              "abbreviation": "LNG",
+              "value": 45.0,
+              "displayValue": "45"
+            },
+            {
+              "name": "grossAvgPuntYards",
+              "displayName": "Gross Average Punt Yards",
+              "shortDisplayName": "GYDS/P",
+              "description": "The average gross number of yards per punt.",
+              "abbreviation": "AVG",
+              "value": 37.75,
+              "displayValue": "37.8"
+            },
+            {
+              "name": "puntsInside20",
+              "displayName": "Punts Inside 20",
+              "shortDisplayName": "P 20",
+              "description": "The number of times a punt is downed inside the 20.",
+              "abbreviation": "IN20",
+              "value": 4.0,
+              "displayValue": "4"
+            }
+          ],
+          "order": 1,
+          "type": "punter"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/4869748/statistics/0?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "returner"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102866901?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:30:21Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284206?lang=en&region=us"
+      },
+      "start": {
+        "down": 4,
+        "distance": 6,
+        "yardLine": 49,
+        "yardsToEndzone": 51,
+        "downDistanceText": "4th & 6 at FLA 49",
+        "shortDownDistanceText": "4th & 6",
+        "possessionText": "FLA 49",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/57?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 84,
+        "yardsToEndzone": 84,
+        "downDistanceText": "1st & 10 at LSU 16",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 16",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102867601?lang=en&region=us",
+      "id": "401628420102867601",
+      "sequenceNumber": "102867601",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 7 yds to the LSU 23",
+      "shortText": "C. Durham run for 7 yds",
+      "alternativeText": "Caden Durham run for 7 yds to the LSU 23",
+      "shortAlternativeText": "C. Durham run for 7 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 803.0,
+        "displayValue": "13:23"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102867601?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:30:46Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284207?lang=en&region=us"
+      },
+      "start": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 84,
+        "yardsToEndzone": 84,
+        "downDistanceText": "1st & 10 at LSU 16",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 16",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 3,
+        "yardLine": 77,
+        "yardsToEndzone": 77,
+        "downDistanceText": "2nd & 3 at LSU 23",
+        "shortDownDistanceText": "2nd & 3",
+        "possessionText": "LSU 23",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 7
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102874501?lang=en&region=us",
+      "id": "401628420102874501",
+      "sequenceNumber": "102874501",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 2 yds to the LSU 25",
+      "shortText": "C. Durham run for 2 yds",
+      "alternativeText": "Caden Durham run for 2 yds to the LSU 25",
+      "shortAlternativeText": "C. Durham run for 2 yds",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 774.0,
+        "displayValue": "12:54"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102874501?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:31:14Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284207?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 3,
+        "yardLine": 77,
+        "yardsToEndzone": 77,
+        "downDistanceText": "2nd & 3 at LSU 23",
+        "shortDownDistanceText": "2nd & 3",
+        "possessionText": "LSU 23",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 3,
+        "distance": 1,
+        "yardLine": 75,
+        "yardsToEndzone": 75,
+        "downDistanceText": "3rd & 1 at LSU 25",
+        "shortDownDistanceText": "3rd & 1",
+        "possessionText": "LSU 25",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 2
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102878501?lang=en&region=us",
+      "id": "401628420102878501",
+      "sequenceNumber": "102878501",
+      "type": {
+        "id": "5",
+        "text": "Rush",
+        "abbreviation": "RUSH"
+      },
+      "text": "Caden Durham run for 1 yd to the LSU 26 for a 1ST down",
+      "shortText": "C. Durham run for 1 yd for a 1ST down",
+      "alternativeText": "Caden Durham run for 1 yd to the LSU 26 for a 1ST down",
+      "shortAlternativeText": "C. Durham run for 1 yd for a 1ST down",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 734.0,
+        "displayValue": "12:14"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5079379?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+          },
+          "stats": [
+            {
+              "name": "rushingAttempts",
+              "displayName": "Rushing Attempts",
+              "shortDisplayName": "Rushing Attempts",
+              "description": "The total number of attempted rushes.",
+              "abbreviation": "ATT",
+              "value": 21.0,
+              "displayValue": "21"
+            },
+            {
+              "name": "rushingYards",
+              "displayName": "Rushing Yards",
+              "shortDisplayName": "Rush Yards",
+              "description": "The total rushing yards.",
+              "abbreviation": "YDS",
+              "value": 95.0,
+              "displayValue": "95"
+            },
+            {
+              "name": "rushingTouchdowns",
+              "displayName": "Rushing Touchdowns",
+              "shortDisplayName": "Rushing Touchdowns",
+              "description": "The total number of rushing touchdowns.",
+              "abbreviation": "TD",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ],
+          "order": 1,
+          "type": "rusher"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102878501?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:31:57Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284207?lang=en&region=us"
+      },
+      "start": {
+        "down": 3,
+        "distance": 1,
+        "yardLine": 75,
+        "yardsToEndzone": 75,
+        "downDistanceText": "3rd & 1 at LSU 25",
+        "shortDownDistanceText": "3rd & 1",
+        "possessionText": "LSU 25",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 1,
+        "distance": 10,
+        "yardLine": 74,
+        "yardsToEndzone": 74,
+        "downDistanceText": "1st & 10 at LSU 26",
+        "shortDownDistanceText": "1st & 10",
+        "possessionText": "LSU 26",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 1
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays/401628420102886302?lang=en&region=us",
+      "id": "401628420102886302",
+      "sequenceNumber": "102886302",
+      "type": {
+        "id": "21",
+        "text": "Timeout",
+        "abbreviation": "TO"
+      },
+      "text": "Timeout LSU, clock 11:36",
+      "shortText": "Timeout LSU, clock 11:36",
+      "alternativeText": "Timeout LSU, clock 11:36",
+      "shortAlternativeText": "Timeout LSU, clock 11:36",
+      "awayScore": 0,
+      "homeScore": 7,
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 696.0,
+        "displayValue": "11:36"
+      },
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2025-06-14T01:14Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+      },
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities/401628420102886302?lang=en&region=us"
+      },
+      "wallclock": "2024-11-16T21:32:45Z",
+      "drive": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives/4016284207?lang=en&region=us"
+      },
+      "start": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 74,
+        "yardsToEndzone": 74,
+        "downDistanceText": "2nd & 10 at LSU 26",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "LSU 26",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "end": {
+        "down": 2,
+        "distance": 10,
+        "yardLine": 74,
+        "yardsToEndzone": 74,
+        "downDistanceText": "2nd & 10 at LSU 26",
+        "shortDownDistanceText": "2nd & 10",
+        "possessionText": "LSU 26",
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+        }
+      },
+      "statYardage": 0
+    }
+  ]
+}

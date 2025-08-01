@@ -58,11 +58,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             var externalDto = command.Document.FromJson<EspnEventCompetitionDto>();
-            
+
             if (externalDto is null)
             {
-                _logger.LogError($"Error deserializing {command.DocumentType}");
-                throw new InvalidOperationException($"Deserialization returned null for {nameof(EspnEventCompetitionDto)}");
+                _logger.LogError("Failed to deserialize document to EspnEventCompetitionDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventCompetitionDto Ref is null. {@Command}", command);
+                return;
             }
 
             if (string.IsNullOrEmpty(command.ParentId))
@@ -175,7 +181,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var venueId = await _dataContext.TryResolveFromDtoRefAsync(
                 venue,
                 command.SourceDataProvider,
-                () => _dataContext.Venues.Include(x => x.ExternalIds),
+                () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (venueId != null)
@@ -188,7 +194,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 _logger.LogWarning("Venue not found for hash {VenueHash}, publishing sourcing request.", venueHash);
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: venueHash,
-                    ParentId: string.Empty,
+                    ParentId: null,
                     Uri: venue.Ref,
                     Sport: Sport.FootballNcaa,
                     SeasonYear: command.Season,
@@ -216,7 +222,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                     competitorDto.Team,
                     command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                    () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                     _logger);
 
                 if (franchiseSeasonId is null)
@@ -329,21 +335,39 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType.EventCompetitionBroadcast,
                     command.Season));
 
-            if (!string.IsNullOrEmpty(broadcastsResponse.Data))
-            {
-                var broadcastsDto = broadcastsResponse.Data.FromJson<EspnEventCompetitionBroadcastDto>();
-                if (broadcastsDto is null)
-                {
-                    _logger.LogError("Failed to deserialize broadcasts document for {@BroadcastRef}", externalDto.Broadcasts.Ref);
-                    throw new InvalidOperationException("Deserialization of EspnEventCompetitionBroadcastDto failed.");
-                }
-
-                var broadcasts = broadcastsDto.Items.Select(item => item.AsEntity(competition.Id)).ToList();
-                _dataContext.Broadcasts.AddRange(broadcasts);
-            }
-            else
+            if (string.IsNullOrEmpty(broadcastsResponse.Data))
             {
                 _logger.LogError("Broadcast unable to be sourced from Provider. {@BroadcastRef}", externalDto.Broadcasts?.Ref);
+                return;
+            }
+
+            var broadcastsDto = broadcastsResponse.Data.FromJson<EspnEventCompetitionBroadcastDto>();
+            if (broadcastsDto is null)
+            {
+                _logger.LogError("Failed to deserialize broadcasts document for {@BroadcastRef}", externalDto.Broadcasts.Ref);
+                throw new InvalidOperationException("Deserialization of EspnEventCompetitionBroadcastDto failed.");
+            }
+
+            var existing = await _dataContext.Broadcasts
+                .Where(b => b.CompetitionId == competition.Id)
+                .ToListAsync();
+
+            var existingKeys = new HashSet<string>(
+                existing.Select(x => $"{x.TypeId}|{x.Channel}|{x.Slug}".ToLowerInvariant())
+            );
+
+            var newBroadcasts = broadcastsDto.Items
+                .Where(item =>
+                {
+                    var key = $"{item.Type.Id}|{item.Channel}|{item.Slug}".ToLowerInvariant();
+                    return !existingKeys.Contains(key);
+                })
+                .Select(item => item.AsEntity(competition.Id))
+                .ToList();
+
+            if (newBroadcasts.Count > 0)
+            {
+                _dataContext.Broadcasts.AddRange(newBroadcasts);
             }
         }
 

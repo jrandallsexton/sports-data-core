@@ -3,6 +3,7 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
@@ -15,19 +16,15 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 {
     private readonly IProvideEspnApiData _espnApi;
     private readonly ILogger<DocumentRequestedHandler> _logger;
-    private readonly IPublishEndpoint _publisher;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
-        IPublishEndpoint publisher,
-        IProcessResourceIndexItems resourceIndexItemProcessor,
         IProvideBackgroundJobs backgroundJobProvider)
     {
         _espnApi = espnApi;
         _logger = logger;
-        _publisher = publisher;
         _backgroundJobProvider = backgroundJobProvider;
     }
 
@@ -36,86 +33,99 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         var msg = context.Message;
         _logger.LogInformation("Handling DocumentRequested: {Msg}", msg);
 
-        var json = await _espnApi.GetResource(msg.Uri);
+        var uri = msg.Uri;
+        var seenPages = new HashSet<string>();
+        var enqueuedAnyRefs = false;
 
-        // Guard against malformed JSON (e.g., truncated or HTML fallback)
-        var trimmed = json?.Trim();
-
-        if (string.IsNullOrWhiteSpace(trimmed) ||
-            (!trimmed.StartsWith("{") && !trimmed.StartsWith("[")) ||
-            (!trimmed.EndsWith("}") && !trimmed.EndsWith("]")) ||
-            trimmed.Contains("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Contains("503 Backend fetch failed", StringComparison.OrdinalIgnoreCase))
+        while (uri is not null && seenPages.Add(uri.ToString()))
         {
-            _logger.LogWarning("Skipping malformed or truncated response from {Uri}", msg.Uri);
-            return;
-        }
-
-        JsonDocument doc;
-        try
-        {
-            doc = JsonDocument.Parse(trimmed);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogWarning(ex, "Failed to parse JSON for URI {Uri}. Document may be corrupted or truncated.", msg.Uri);
-            return;
-        }
-
-        using (doc)
-        {
-            if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+            string json;
+            try
             {
-                _logger.LogInformation("Document is an index (or hybrid) with {Count} items. Processing $ref only.", items.GetArrayLength());
-
-                foreach (var item in items.EnumerateArray())
-                {
-                    if (!item.TryGetProperty("$ref", out var refProp)) continue;
-
-                    var href = refProp.GetString();
-                    if (string.IsNullOrWhiteSpace(href)) continue;
-
-                    if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
-                    {
-                        _logger.LogWarning("Skipping invalid $ref href: {Ref}", href);
-                        continue;
-                    }
-
-                    var id = uri.Segments.LastOrDefault()?.TrimEnd('/');
-                    if (string.IsNullOrWhiteSpace(id)) continue;
-
-                    var routingKey = HashProvider.GenerateHashFromUri(uri).Substring(0, 3).ToUpperInvariant();
-
-                    await _publisher.Publish(new DocumentRequested(
-                        id,
-                        msg.ParentId,
-                        uri,
-                        msg.Sport,
-                        msg.SeasonYear,
-                        msg.DocumentType,
-                        msg.SourceDataProvider,
-                        msg.CorrelationId,
-                        msg.CausationId));
-                }
-
-                return; // Never persist hybrid/index documents
+                json = await _espnApi.GetResource(uri, false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch resource at {Uri}. Aborting pagination at this point.", uri);
+                break; // Gracefully exit, do not retry whole job
             }
 
-            _logger.LogInformation("Document is a leaf (non-index). Forwarding to ResourceIndexItemProcessor.");
+            EspnResourceIndexDto? dto;
+            try
+            {
+                dto = json.FromJson<EspnResourceIndexDto>();
+            }
+            catch (JsonException)
+            {
+                _logger.LogDebug("Not a resource index. Will treat as a leaf document: {Uri}", uri);
+                break;
+            }
 
-            var urlHash = HashProvider.GenerateHashFromUri(msg.Uri);
+            if (dto?.Items is not { Count: > 0 })
+            {
+                _logger.LogInformation("No items found in resource index at {Uri}", uri);
+                break;
+            }
 
-            var cmd = new ProcessResourceIndexItemCommand(
-                ResourceIndexId: Guid.Empty,
-                Id: urlHash,
-                Uri: msg.Uri,
-                Sport: msg.Sport,
-                SourceDataProvider: msg.SourceDataProvider,
-                DocumentType: msg.DocumentType,
-                ParentId: msg.ParentId,
-                SeasonYear: msg.SeasonYear);
+            _logger.LogInformation("Found {Count} items in resource index at page {PageIndex}/{PageCount}", dto.Count, dto.PageIndex, dto.PageCount);
 
-            _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+            foreach (var item in dto.Items)
+            {
+                if (item.Ref is null)
+                {
+                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
+                    continue;
+                }
+
+                var refUri = item.Ref.ToCleanUri();
+                var refHash = HashProvider.GenerateHashFromUri(refUri);
+
+                var cmd = new ProcessResourceIndexItemCommand(
+                    ResourceIndexId: Guid.Empty,
+                    Id: refHash,
+                    Uri: refUri,
+                    Sport: msg.Sport,
+                    SourceDataProvider: msg.SourceDataProvider,
+                    DocumentType: msg.DocumentType,
+                    ParentId: msg.ParentId,
+                    SeasonYear: msg.SeasonYear);
+
+                _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                enqueuedAnyRefs = true;
+            }
+
+            if (dto.PageIndex >= dto.PageCount)
+            {
+                _logger.LogInformation("Last page reached ({PageIndex}/{PageCount})", dto.PageIndex, dto.PageCount);
+                break;
+            }
+
+            var nextPage = dto.PageIndex + 1;
+            var baseUri = msg.Uri.GetLeftPart(UriPartial.Path);
+            uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
         }
+
+        if (enqueuedAnyRefs)
+        {
+            _logger.LogInformation("All resource index items queued. No need to persist index document.");
+            return;
+        }
+
+        // Treat as a leaf document
+        _logger.LogInformation("No refs found. Treating {Uri} as a leaf document.", uri);
+
+        var urlHash = HashProvider.GenerateHashFromUri(uri!);
+
+        var leafCmd = new ProcessResourceIndexItemCommand(
+            ResourceIndexId: Guid.Empty,
+            Id: urlHash,
+            Uri: uri!,
+            Sport: msg.Sport,
+            SourceDataProvider: msg.SourceDataProvider,
+            DocumentType: msg.DocumentType,
+            ParentId: msg.ParentId,
+            SeasonYear: msg.SeasonYear);
+
+        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(leafCmd));
     }
 }

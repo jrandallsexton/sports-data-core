@@ -1,5 +1,5 @@
 ﻿using AutoFixture;
-
+using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
@@ -82,14 +82,14 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         var dtoRef = new EspnResourceIndexItem
         {
             Ref = refUrl,
-            Id = 456
+            Id = "456"
         };
 
         // Act
         var result = await FootballDataContext.TryResolveFromDtoRefAsync(
             dtoRef,
             SourceDataProvider.Espn,
-            () => FootballDataContext.Venues,
+            () => FootballDataContext.Venues.AsNoTracking(),
             null);
 
         // Assert

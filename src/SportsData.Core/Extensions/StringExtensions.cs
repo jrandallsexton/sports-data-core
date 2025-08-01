@@ -30,5 +30,14 @@ namespace SportsData.Core.Extensions
             var textInfo = CultureInfo.InvariantCulture.TextInfo;
             return textInfo.ToTitleCase(trimmed);
         }
+
+        public static int GetSizeInKilobytes(this string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return 0;
+
+            var byteCount = System.Text.Encoding.UTF8.GetByteCount(str);
+            return byteCount / 1024;
+        }
     }
 }

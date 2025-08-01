@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Athletes;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
@@ -18,18 +19,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 // TODO: Rename to FootballAthleteDocumentProcessor
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteBySeason)]
 public class AthleteDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<AthleteDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public AthleteDocumentProcessor(
         ILogger<AthleteDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -57,10 +57,14 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         if (externalProviderDto is null)
         {
-            _logger.LogError("Failed to deserialize document into EspnFootballAthleteDto. Sport: {Sport}, DocumentType: {DocumentType}, SourceDataProvider: {Provider}",
-                command.Sport, command.DocumentType, command.SourceDataProvider);
+            _logger.LogError("Failed to deserialize document to EspnFootballAthleteDto. {@Command}", command);
+            return;
+        }
 
-            throw new InvalidOperationException($"Deserialization failed for EspnFootballAthleteDto. CorrelationId: {command.CorrelationId}");
+        if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnFootballAthleteDto Ref is null. {@Command}", command);
+            return;
         }
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
@@ -112,7 +116,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         await ProcessCurrentPosition(
             externalProviderDto,
             newEntity,
-            command.SourceDataProvider);
+            command);
 
         // 3. Raise the integration event
         await _publishEndpoint.Publish(
@@ -128,22 +132,38 @@ public class AthleteDocumentProcessor : IProcessDocuments
     private async Task ProcessCurrentPosition(
         EspnFootballAthleteDto externalProviderDto,
         FootballAthlete newEntity,
-        SourceDataProvider provider)
+        ProcessDocumentCommand command)
     {
-        var positionRefHash = HashProvider.GenerateHashFromUri(externalProviderDto.Position.Ref);
+        var positionIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Position.Ref);
 
         var positionId = await _dataContext.AthletePositionExternalIds
-            .Where(x => x.Provider == provider && x.SourceUrlHash == positionRefHash)
+            .Where(x => x.Provider == command.SourceDataProvider
+                        && x.SourceUrlHash == positionIdentity.UrlHash)
             .Select(x => x.AthletePositionId)
             .FirstOrDefaultAsync();
 
         if (positionId == Guid.Empty)
         {
-            _logger.LogWarning("No AthletePosition found for Position ref {PositionRef}. AthleteId: {AthleteId}", externalProviderDto.Position.Ref, newEntity.Id);
-            return;
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: positionIdentity.CanonicalId.ToString(),
+                ParentId: null,
+                Uri: externalProviderDto.Position.Ref,
+                Sport: Sport.FootballNcaa,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.AthletePosition,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.AthleteDocumentProcessor
+            ));
+
+            _logger.LogWarning("No AthletePosition found. {@Identity}", positionIdentity);
+            throw new InvalidOperationException($"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
+                                                $"Please ensure the position document is processed before this athlete.");
+
         }
 
         newEntity.PositionId = positionId;
+
         _logger.LogInformation("Resolved CurrentPositionId: {PositionId} for AthleteId: {AthleteId}", positionId, newEntity.Id);
     }
 

@@ -16,7 +16,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<FranchiseSeasonExternalId> builder)
             {
                 builder.ToTable(nameof(FranchiseSeasonExternalId));
+
                 builder.HasKey(t => t.Id);
+
                 builder.HasOne( t => t.FranchiseSeason)
                     .WithMany(v => v.ExternalIds)
                     .HasForeignKey(x => x.FranchiseSeasonId);

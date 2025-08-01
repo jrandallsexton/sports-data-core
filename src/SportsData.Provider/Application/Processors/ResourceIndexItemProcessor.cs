@@ -167,11 +167,14 @@ namespace SportsData.Provider.Application.Processors
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
             var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
 
+            var jsonDoc = json.GetSizeInKilobytes() <= 200 ? json : null;
+
             var evt = new DocumentCreated(
                 urlHash,
                 command.ParentId,
                 collectionName,
                 providerRef,
+                jsonDoc,
                 urlHash,
                 command.Sport,
                 command.SeasonYear,
@@ -181,6 +184,7 @@ namespace SportsData.Provider.Application.Processors
                 CausationId.Provider.ResourceIndexItemProcessor);
 
             await _publisher.Publish(evt);
+
             _logger.LogInformation("DocumentCreated event published {@evt}", evt);
         }
 
@@ -205,11 +209,14 @@ namespace SportsData.Provider.Application.Processors
 
             await _documentStore.ReplaceOneAsync(collectionName, urlHash, document);
 
+            var jsonDoc = json.GetSizeInKilobytes() <= 200 ? json : null;
+
             var evt = new DocumentUpdated(
                 urlHash,
                 command.ParentId,
                 collectionName,
                 command.Uri,
+                jsonDoc,
                 urlHash,
                 command.Sport,
                 command.SeasonYear,

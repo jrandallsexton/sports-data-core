@@ -1,9 +1,9 @@
--- Active: 1751184123209@@127.0.0.1@5432@sdProducer.FootballNcaa
 DO
 $$
 DECLARE
     r RECORD;
     row_count BIGINT;
+    total_rows BIGINT := 0;
 BEGIN
     RAISE NOTICE 'Table Name | Row Count';
     FOR r IN
@@ -23,6 +23,10 @@ BEGIN
         IF row_count > 0 THEN
             RAISE NOTICE '% | %', r.table_name, row_count;
         END IF;
+
+        total_rows := total_rows + row_count;
     END LOOP;
+
+    RAISE NOTICE 'Total Row Count | %', total_rows;
 END;
 $$;

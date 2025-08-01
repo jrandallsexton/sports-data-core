@@ -25,7 +25,6 @@ namespace SportsData.Provider.Migrations
             modelBuilder.Entity("SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")

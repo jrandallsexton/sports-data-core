@@ -50,8 +50,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalProviderDto is null)
             {
-                _logger.LogError($"Error deserializing {command.DocumentType}");
-                throw new InvalidOperationException($"Deserialization returned null for EspnFootballSeasonDto. CorrelationId: {command.CorrelationId}");
+                _logger.LogError("Failed to deserialize document to EspnFootballSeasonDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnFootballSeasonDto Ref is null or empty. {@Command}", command);
+                return;
             }
 
             // Step 2: Map DTO -> Canonical Entity

@@ -1,0 +1,201 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/weeks/16/teams/99/ranks/21?lang=en",
+  "id": "21",
+  "name": "Playoff Committee Rankings",
+  "shortName": "CFP Rankings",
+  "type": "cfp",
+  "occurrence": {
+    "number": 16,
+    "type": "week",
+    "last": false,
+    "value": "16",
+    "displayValue": "Week 16"
+  },
+  "date": "2019-12-08T08:00Z",
+  "headline": "2019 NCAA Football Rankings - CFP Rankings Week 16",
+  "shortHeadline": "2019 CFP Rankings: Week 16",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019?lang=en",
+    "year": 2019,
+    "startDate": "2019-07-01T07:00Z",
+    "endDate": "2020-01-15T07:59Z",
+    "displayName": "2019",
+    "type": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2?lang=en",
+      "id": "2",
+      "type": 2,
+      "name": "Regular Season",
+      "abbreviation": "reg",
+      "year": 2019,
+      "startDate": "2019-07-25T07:00Z",
+      "endDate": "2019-12-16T07:59Z",
+      "hasGroups": false,
+      "hasStandings": true,
+      "hasLegs": false,
+      "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/groups?lang=en"
+      },
+      "weeks": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/weeks?lang=en"
+      },
+      "leaders": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/leaders?lang=en"
+      },
+      "slug": "regular-season"
+    },
+    "types": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types?lang=en",
+      "count": 4,
+      "pageIndex": 1,
+      "pageSize": 4,
+      "pageCount": 1,
+      "items": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/1?lang=en",
+          "id": "1",
+          "type": 1,
+          "name": "Preseason",
+          "abbreviation": "pre",
+          "year": 2019,
+          "startDate": "2019-07-01T07:00Z",
+          "endDate": "2019-07-25T06:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/1/groups?lang=en"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/1/weeks?lang=en"
+          },
+          "slug": "preseason"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2?lang=en",
+          "id": "2",
+          "type": 2,
+          "name": "Regular Season",
+          "abbreviation": "reg",
+          "year": 2019,
+          "startDate": "2019-07-25T07:00Z",
+          "endDate": "2019-12-16T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/groups?lang=en"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/weeks?lang=en"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/leaders?lang=en"
+          },
+          "slug": "regular-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/3?lang=en",
+          "id": "3",
+          "type": 3,
+          "name": "Postseason",
+          "abbreviation": "post",
+          "year": 2019,
+          "startDate": "2019-12-16T08:00Z",
+          "endDate": "2020-01-15T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/3/groups?lang=en"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/3/weeks?lang=en"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/3/leaders?lang=en"
+          },
+          "slug": "post-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/4?lang=en",
+          "id": "4",
+          "type": 4,
+          "name": "Off Season",
+          "abbreviation": "off",
+          "year": 2019,
+          "startDate": "2020-01-15T08:00Z",
+          "endDate": "2020-08-01T06:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/4/groups?lang=en"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/4/weeks?lang=en"
+          },
+          "slug": "off-season"
+        }
+      ]
+    },
+    "rankings": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/rankings?lang=en"
+    },
+    "athletes": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/athletes?lang=en"
+    },
+    "awards": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/awards?lang=en"
+    },
+    "futures": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/futures?lang=en"
+    },
+    "leaders": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/leaders?lang=en"
+    }
+  },
+  "defaultRanking": false,
+  "lastUpdated": "2019-12-29T08:19Z",
+  "notes": [
+    {
+      "text": "*: Receives First Round Bye"
+    }
+  ],
+  "rank": {
+    "current": 1,
+    "previous": 2,
+    "points": 0.0,
+    "firstPlaceVotes": 0,
+    "trend": "+1",
+    "record": {
+      "summary": "13-0",
+      "stats": [
+        {
+          "name": "wins",
+          "displayName": "Wins",
+          "shortDisplayName": "W",
+          "description": "Wins",
+          "abbreviation": "W",
+          "type": "wins",
+          "value": 13.0,
+          "displayValue": "13"
+        },
+        {
+          "name": "losses",
+          "displayName": "Losses",
+          "shortDisplayName": "L",
+          "description": "Losses",
+          "abbreviation": "L",
+          "type": "losses",
+          "value": 0.0,
+          "displayValue": "0"
+        }
+      ]
+    },
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/99?lang=en"
+    },
+    "date": "2019-12-08T08:00Z",
+    "lastUpdated": "2019-12-29T08:19Z"
+  }
+}

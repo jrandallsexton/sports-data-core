@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Hangfire.Tags.PostgreSql;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -136,15 +137,24 @@ namespace SportsData.Core.DependencyInjection
 
             Console.WriteLine($"Hangfire ConnStr: {connString}");
 
-            services.AddHangfire(x => x.UsePostgreSqlStorage(options =>
+            services.AddHangfire(x =>
             {
-                options.UseNpgsqlConnection(connString);
-            }));
+                x.UsePostgreSqlStorage(options =>
+                {
+                    options.UseNpgsqlConnection(connString);
+                });
+                x.UseTagsWithPostgreSql();
+            });
+
+            //services.AddHangfire(x => x.UsePostgreSqlStorage(options =>
+            //{
+            //    options.UseNpgsqlConnection(connString);
+            //}));
 
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = 5;
+                serverOptions.WorkerCount = 15;
             });
             return services;
         }

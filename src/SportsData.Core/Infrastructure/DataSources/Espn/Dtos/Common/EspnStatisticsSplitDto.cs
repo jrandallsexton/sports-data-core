@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿#pragma warning disable CS8618
+
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-#pragma warning disable CS8618
 public class EspnStatisticsSplitDto
 {
     [JsonPropertyName("id")]

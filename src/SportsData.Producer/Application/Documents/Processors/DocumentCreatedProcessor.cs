@@ -41,7 +41,7 @@ namespace SportsData.Producer.Application.Documents.Processors
         private async Task ProcessInternal(DocumentCreated evt)
         {
             // call Provider to obtain the new document
-            var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
+            var document = evt.DocumentJson ?? await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
 
             if (document is null or "null")
             {

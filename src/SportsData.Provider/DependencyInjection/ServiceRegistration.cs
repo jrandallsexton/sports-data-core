@@ -26,7 +26,6 @@ namespace SportsData.Provider.DependencyInjection
                 MaxResourceIndexItemsToProcess = null
             };
             services.AddSingleton<IProviderAppConfig>(appConfig);
-
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();

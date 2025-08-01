@@ -51,15 +51,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            // Deserialize the DTO
             var espnDto = command.Document.FromJson<EspnVenueDto>();
 
             if (espnDto is null)
             {
-                _logger.LogError("Failed to deserialize document into EspnVenueDto. DocumentType: {DocumentType}, SourceDataProvider: {Provider}, CorrelationId: {CorrelationId}",
-                    command.DocumentType, command.SourceDataProvider, command.CorrelationId);
+                _logger.LogError("Failed to deserialize document to EspnVenueDto. {@Command}", command);
+                return;
+            }
 
-                throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            if (string.IsNullOrEmpty(espnDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnVenueDto Ref is null for venue. {@Command}", command);
+                return;
             }
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!

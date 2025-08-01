@@ -55,8 +55,14 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalProviderDto is null)
         {
-            _logger.LogError($"Error deserializing {command.DocumentType}");
-            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnAthletePositionDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnAthletePositionDto Ref is null. {@Command}", command);
+            return;
         }
 
         var exists = await _dataContext.AthletePositions
@@ -119,7 +125,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
             parentId = await _dataContext.TryResolveFromDtoRefAsync(
                 dto.Parent,
                 command.SourceDataProvider,
-                () => _dataContext.AthletePositions.Include(x => x.ExternalIds),
+                () => _dataContext.AthletePositions.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (parentId is null)

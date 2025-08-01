@@ -50,13 +50,14 @@ namespace SportsData.Provider.Application.Processors
             var correlationId = Guid.NewGuid();
             var causationId = Guid.NewGuid();
 
-            var events = dbDocuments.Select(tmp =>
+            var events = dbDocuments.Select(doc =>
                     new DocumentCreated(
-                        tmp.Id.ToString(),
+                        doc.Id.ToString(),
                         null,
                         typeAndName.Type.Name,
-                        tmp.Uri,
-                        tmp.SourceUrlHash,
+                        doc.Uri,
+                        null,
+                        doc.SourceUrlHash,
                         command.Sport,
                         command.Season,
                         command.DocumentType,

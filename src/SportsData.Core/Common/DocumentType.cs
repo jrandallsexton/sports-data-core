@@ -3,7 +3,7 @@
     public enum DocumentType
     {
         Athlete = 0,
-        AthleteBySeason = 1,
+        AthleteSeason = 1,
         AthleteImage = 2,
         AthletePosition = 3,
         Award = 4,
@@ -51,6 +51,7 @@
         EventCompetitionLeaders = 46,
         EventCompetitionPrediction = 47,
         EventCompetitionPowerIndex = 48,
+        TeamSeasonRank = 49,
         Unknown = 9999
     }
 }

@@ -60,10 +60,17 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : IProcessDocum
         }
 
         var dto = command.Document.FromJson<EspnTeamSeasonProjectionDto>();
+
         if (dto is null)
         {
-            _logger.LogError($"Error deserializing {command.DocumentType}");
-            throw new InvalidOperationException($"Deserialization returned null for EspnTeamSeasonProjectionDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonProjectionDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnTeamSeasonProjectionDto Ref is null or empty. {@Command}", command);
+            return;
         }
 
         // Check if a projection already exists for this FranchiseSeason

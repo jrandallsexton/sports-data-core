@@ -52,8 +52,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalDto is null)
             {
-                _logger.LogError("Failed to deserialize document to EspnEventCompetitionDriveItemPlayDto for event ID {@UrlHash}", command.UrlHash);
-                throw new InvalidOperationException("EspnEventCompetitionDriveItemPlayDto deserialization failed.");
+                _logger.LogError("Failed to deserialize document to EspnEventCompetitionPlayDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventCompetitionPlayDto Ref is null. {@Command}", command);
+                return;
             }
 
             if (!command.Season.HasValue)
@@ -87,7 +93,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (franchiseSeasonId is null)
@@ -126,7 +132,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var startTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.Start.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             var play = externalDto.AsEntity(

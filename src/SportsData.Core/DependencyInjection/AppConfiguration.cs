@@ -45,18 +45,24 @@ namespace SportsData.Core.DependencyInjection
 
                     // Per-namespace overrides
                     .MinimumLevel.Override("SportsData", LogEventLevel.Warning)
+                    .MinimumLevel.Override("SportsData.Producer.Application.Documents.Processors.Providers.Espn", LogEventLevel.Debug)
+                    .MinimumLevel.Override("SportsData.Provider.Application", LogEventLevel.Debug)
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .MinimumLevel.Override("System", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
-                    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Fatal)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Fatal)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Update", LogEventLevel.Fatal)
+
                     //.ReadFrom.Configuration(context.Configuration)
 
                     // Enrich
                     .Enrich.FromLogContext()
-                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
+                    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName);
 
                     // Sinks
-                    .WriteTo.Console(); // Optional, for local debug
+                    //.WriteTo.Console(); // Optional, for local debug
 
                 if (!string.IsNullOrWhiteSpace(seqUri))
                 {

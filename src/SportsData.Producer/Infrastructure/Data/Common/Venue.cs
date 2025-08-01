@@ -32,7 +32,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public decimal Longitude { get; set; }
 
-        public ICollection<VenueExternalId> ExternalIds { get; set; } = new List<VenueExternalId>();
+        public ICollection<VenueExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

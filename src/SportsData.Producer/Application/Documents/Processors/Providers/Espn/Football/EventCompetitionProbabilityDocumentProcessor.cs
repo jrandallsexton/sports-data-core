@@ -1,10 +1,14 @@
 ﻿using MassTransit;
 
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
@@ -19,15 +23,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<EventCompetitionProbabilityDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public EventCompetitionProbabilityDocumentProcessor(
             ILogger<EventCompetitionProbabilityDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+            IPublishEndpoint publishEndpoint,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
+            _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -45,17 +52,53 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            var externalProviderDto = command.Document.FromJson<EspnEventCompetitionProbabilityDto>();
+            var dto = command.Document.FromJson<EspnEventCompetitionProbabilityDto>();
 
-            if (externalProviderDto is null)
+            if (dto is null)
             {
-                _logger.LogError($"Error deserializing {command.DocumentType}");
-                throw new InvalidOperationException($"Deserialization returned null for {command.DocumentType}");
+                _logger.LogError("Failed to deserialize document to EspnEventCompetitionProbabilityDto. {@Command}", command);
+                return;
             }
 
-            // TODO: Implement logic to process the event document
+            if (string.IsNullOrEmpty(dto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventCompetitionProbabilityDto Ref is null or empty. {@Command}", command);
+                return;
+            }
 
-            await Task.Delay(100); // Simulate processing delay
+            var competitionId = await _dataContext.TryResolveFromDtoRefAsync(
+                dto.Competition,
+                command.SourceDataProvider,
+                () => _dataContext.Competitions.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger);
+
+            if (competitionId is null || competitionId == Guid.Empty)
+            {
+                _logger.LogWarning("No matching competition found for ref: {ref}", dto.Competition.Ref);
+                return;
+            }
+
+            Guid? playId = null;
+
+            if (!string.IsNullOrEmpty(dto.Play?.Ref?.ToString()))
+            {
+                playId = await _dataContext.TryResolveFromDtoRefAsync(
+                    dto.Play,
+                    command.SourceDataProvider,
+                    () => _dataContext.Plays.Include(x => x.ExternalIds).AsNoTracking(),
+                    _logger);
+            }
+
+            var entity = dto.AsEntity(
+                _externalRefIdentityGenerator,
+                competitionId.Value,
+                playId,
+                command.CorrelationId);
+
+            await _dataContext.CompetitionProbabilities.AddAsync(entity);
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Persisted CompetitionProbability: {id}", entity.Id);
         }
     }
 }

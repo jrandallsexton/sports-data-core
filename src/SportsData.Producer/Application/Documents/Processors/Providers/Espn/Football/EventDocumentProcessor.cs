@@ -59,8 +59,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalDto is null)
             {
-                _logger.LogError("Failed to deserialize document to EspnEventDto for event ID {@UrlHash}", command.UrlHash);
-                throw new InvalidOperationException("EspnEventDto deserialization failed.");
+                _logger.LogError("Failed to deserialize document to EspnEventDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventDto Ref is null for event. {@Command}", command);
+                return;
             }
 
             if (!command.Season.HasValue)
@@ -217,7 +223,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 var venueId = await _dataContext.TryResolveFromDtoRefAsync(
                     venue,
                     command.SourceDataProvider,
-                    () => _dataContext.Venues.Include(x => x.ExternalIds),
+                    () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
                     _logger);
 
                 if (venueId != null)
@@ -256,7 +262,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var homeTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 homeTeam.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (homeTeamFranchiseSeasonId == null)
@@ -288,7 +294,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var awayTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 awayTeam.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (awayTeamFranchiseSeasonId == null)

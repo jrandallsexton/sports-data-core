@@ -37,7 +37,7 @@ namespace SportsData.Core.Common
                     return typeof(EspnGroupBySeasonDto);
                 case DocumentType.Position:
                     return typeof(EspnAthletePositionDto);
-                case DocumentType.AthleteBySeason:
+                case DocumentType.AthleteSeason:
                     return typeof(EspnAthleteDto);
                 case DocumentType.Award:
                 case DocumentType.Contest:
@@ -78,7 +78,7 @@ namespace SportsData.Core.Common
                     return (typeof(EspnGroupBySeasonDto), name);
                 case DocumentType.Position:
                     return (typeof(EspnAthletePositionDto), name);
-                case DocumentType.AthleteBySeason:
+                case DocumentType.AthleteSeason:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.Seasons:
                     return (typeof(EspnFootballSeasonDto), name);
@@ -125,7 +125,7 @@ namespace SportsData.Core.Common
             switch (documentType)
             {
                 case DocumentType.Athlete:
-                case DocumentType.AthleteBySeason:
+                case DocumentType.AthleteSeason:
                     return DocumentType.AthleteImage;
                 case DocumentType.Franchise:
                 case DocumentType.FranchiseLogo:

@@ -53,8 +53,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalDto is null)
             {
-                _logger.LogError($"Error deserializing {command.DocumentType}");
-                throw new InvalidOperationException($"Deserialization returned null for {command.DocumentType}");
+                _logger.LogError("Failed to deserialize document to EspnEventCompetitionDriveDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventCompetitionDriveDto Ref is null. {@Command}", command);
+                return;
             }
 
             var competitionId = await GetCompetitionId(command);
@@ -62,13 +68,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var startFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             var endFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                 externalDto.EndTeam,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds),
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!

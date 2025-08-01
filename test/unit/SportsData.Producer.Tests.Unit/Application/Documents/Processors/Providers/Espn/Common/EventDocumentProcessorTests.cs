@@ -5,7 +5,6 @@ using FluentAssertions;
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 using Moq;
 
@@ -13,7 +12,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Common;

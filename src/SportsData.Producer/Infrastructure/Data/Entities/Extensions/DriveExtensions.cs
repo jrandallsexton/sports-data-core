@@ -1,6 +1,5 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -26,7 +25,7 @@ public static class DriveExtensions
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId,
             CompetitionId = competitionId,
-            Description = dto.Description,
+            Description = string.IsNullOrEmpty(dto.Description) ? "UNKNOWN" : dto.Description, // TODO: Determine why this is empty sometimes
             DisplayResult = dto.DisplayResult,
             EndClockDisplayValue = dto.End?.Clock?.DisplayValue,
             EndClockValue = dto.End?.Clock?.Value,

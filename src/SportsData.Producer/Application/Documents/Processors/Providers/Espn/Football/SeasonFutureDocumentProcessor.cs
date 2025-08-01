@@ -48,10 +48,17 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnFootballSeasonFutureDto>();
+
         if (dto is null)
         {
-            _logger.LogError("Error deserializing {DocumentType}", command.DocumentType);
-            throw new InvalidOperationException($"Deserialization returned null for EspnFootballSeasonFutureDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnFootballSeasonFutureDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnFootballSeasonFutureDto Ref is null or empty. {@Command}", command);
+            return;
         }
 
         if (!command.Season.HasValue)
@@ -116,7 +123,7 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
                 var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                     bookDto.Team,
                     command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year),
+                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year).AsNoTracking(),
                     _logger);
 
                 if (!franchiseSeasonId.HasValue)

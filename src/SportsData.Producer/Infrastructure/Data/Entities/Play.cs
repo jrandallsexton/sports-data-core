@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Play : CanonicalEntityBase<Guid>
+    public class Play : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Competition Competition { get; set; } = null!;
 
@@ -73,6 +74,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int StatYardage { get; set; }
 
+        public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
+
         public ICollection<PlayExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -115,6 +118,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithOne()
                     .HasForeignKey(nameof(PlayExternalId.PlayId))
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Probabilities)
+                    .WithOne(x => x.Play)
+                    .HasForeignKey(x => x.PlayId)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
         }
     }

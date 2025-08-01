@@ -1,8 +1,9 @@
-﻿using System.Text.Json.Serialization;
+﻿#pragma warning disable CS8618
+
+using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-#pragma warning disable CS8618
 public class EspnStatisticsStatDto
 {
     [JsonPropertyName("name")]
@@ -30,5 +31,5 @@ public class EspnStatisticsStatDto
     public double? PerGameValue { get; set; }
 
     [JsonPropertyName("perGameDisplayValue")]
-    public string PerGameDisplayValue { get; set; }
+    public string? PerGameDisplayValue { get; set; }
 }

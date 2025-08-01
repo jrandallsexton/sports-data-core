@@ -1,22 +1,69 @@
-SELECT *
-FROM public."Athlete"
-WHERE "DoB" > '2000-01-01'
-  AND "WeightLb" > 350
-  AND "LastName" ~ '^[A-Za-z]+$'
-  AND "FirstName" ~ '^[A-Za-z]+$';
+DO $$
+DECLARE
+  lsuFranchiseId uuid;
+  lsuFranchiseSeasonId uuid;
+  contestRecord RECORD;
+BEGIN
+  -- Get FranchiseId by Slug
+  SELECT "Id" INTO lsuFranchiseId
+  FROM public."Franchise"
+  WHERE "Slug" = 'lsu-tigers';
 
- select * from public."AthletePosition" order by "Name"
- select * from public."AthletePositionExternalIds" where "AthletePositionId" = 'fadd0991-919d-4ab2-95a2-f0f1f205a25d'
-  select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
-  
-   select * from public."Franchise" order by "Name"
-   select * from public."Franchise" where "Abbreviation" is null
-   select * from public."Franchise" where "Slug" = 'ohio-dominican-panthers'
+  RAISE NOTICE 'LSU Franchise Id: %', lsuFranchiseId;
+
+  -- Get FranchiseSeasonId for 2024
+  SELECT "Id" INTO lsuFranchiseSeasonId
+  FROM public."FranchiseSeason"
+  WHERE "FranchiseId" = lsuFranchiseId AND "SeasonYear" = 2024;
+
+  RAISE NOTICE 'LSU FranchiseSeasonId: %', lsuFranchiseSeasonId;
+
+  -- Loop through filtered Contest rows with explicit columns
+  FOR contestRecord IN (
+    SELECT
+      "Name",
+      "ShortName",
+      "StartDateUtc",
+      "Status",
+      "Clock",
+      "DisplayClock",
+      "Period",
+      "Sport",
+      "SeasonYear",
+      "SeasonType",
+      "Week",
+      "VenueId"
+    FROM public."Contest"
+    WHERE "HomeTeamFranchiseSeasonId" = lsuFranchiseSeasonId
+       OR "AwayTeamFranchiseSeasonId" = lsuFranchiseSeasonId
+    ORDER BY "StartDateUtc"
+  )
+  LOOP
+    RAISE NOTICE 'Contest: %, %, %, %, %, %, %, %, %, %, %, %',
+      contestRecord."Name",
+      contestRecord."ShortName",
+      contestRecord."StartDateUtc",
+      contestRecord."Status",
+      contestRecord."Clock",
+      contestRecord."DisplayClock",
+      contestRecord."Period",
+      contestRecord."Sport",
+      contestRecord."SeasonYear",
+      contestRecord."SeasonType",
+      contestRecord."Week",
+      contestRecord."VenueId";
+  END LOOP;
+
+END $$;
+
+
+
    
-   select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'   
-   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
-
+   select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
+   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
    select * from public."FranchiseSeasonExternalId" where "SourceUrlHash" = 'bc2c92ab7abfa9f3ec15b451fe92b34f9c1963bcd047ee6786a51dfed1b97ed8'
+
+   select * from public."Contest" where "EventNote" != null
    
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
    select * from public."SeasonPhase" order by "Year"

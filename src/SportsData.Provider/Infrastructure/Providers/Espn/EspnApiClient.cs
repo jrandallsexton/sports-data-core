@@ -1,5 +1,4 @@
-﻿using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
@@ -18,10 +17,13 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         /// <summary>
         /// Generic raw JSON fetch for any ESPN resource URI.
         /// </summary>
-        public async Task<string> GetResource(Uri uri)
+        public async Task<string> GetResource(Uri uri, bool stripQuerystring = true)
         {
-            _logger.LogInformation("GetResource called for URI: {Uri}", uri);
-            return await _http.GetRawJsonAsync(uri);
+            _logger.LogDebug("GetResource called for URI: {Uri}", uri);
+
+            var bypassCache = !stripQuerystring;
+
+            return await _http.GetRawJsonAsync(uri, bypassCache, stripQuerystring);
         }
 
         /// <summary>
@@ -29,8 +31,8 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         /// </summary>
         public async Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask)
         {
-            _logger.LogInformation("GetResourceIndex called for URI: {Uri}", uri);
-            var dto = await _http.GetDeserializedAsync<EspnResourceIndexDto>(uri, true);
+            _logger.LogDebug("GetResourceIndex called for URI: {Uri}", uri);
+            var dto = await _http.GetDeserializedAsync<EspnResourceIndexDto>(uri, true, false);
 
             if (dto is not null)
                 return ExtractIds(dto, uriMask);
@@ -44,7 +46,6 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 PageIndex = 0,
                 PageSize = 0
             };
-
         }
 
         /// <summary>
@@ -70,11 +71,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                     var lastSlashIndex = tmpUrl.LastIndexOf('/');
                     if (lastSlashIndex >= 0)
                     {
-                        var idPart = tmpUrl.Substring(lastSlashIndex + 1);
-                        if (int.TryParse(idPart, out var id))
-                        {
-                            i.Id = id;
-                        }
+                        i.Id = tmpUrl.Substring(lastSlashIndex + 1);
                     }
                 }
             }
@@ -84,14 +81,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
                 foreach (var i in dto.Items)
                 {
-                    var url = i.Ref.AbsoluteUri
+                    i.Id = i.Ref.AbsoluteUri
                                   .Replace(uriMask, string.Empty)
                                   .Replace(mask1, string.Empty);
-
-                    if (int.TryParse(url, out var id))
-                    {
-                        i.Id = id;
-                    }
                 }
             }
 
@@ -105,7 +97,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         public async Task<EspnTeamSeasonDto?> GetTeamSeason(Uri uri)
         {
             _logger.LogInformation("GetTeamSeason called for URI: {Uri}", uri);
-            return await _http.GetDeserializedAsync<EspnTeamSeasonDto>(uri);
+            return await _http.GetDeserializedAsync<EspnTeamSeasonDto>(uri, false, false);
         }
 
         // You can add more typed methods here:

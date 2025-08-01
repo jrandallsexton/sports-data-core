@@ -48,8 +48,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalDto is null)
             {
-                _logger.LogError("Failed to deserialize document to EspnEventCompetitionOddsDto for event ID {@UrlHash}", command.UrlHash);
-                throw new InvalidOperationException("EspnEventCompetitionOddsDto deserialization failed.");
+                _logger.LogError("Failed to deserialize document to EspnEventCompetitionOddsDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnEventCompetitionOddsDto Ref is null. {@Command}", command);
+                return;
             }
 
             if (!command.Season.HasValue)

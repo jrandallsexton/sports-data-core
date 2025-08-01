@@ -89,6 +89,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public CompetitionSource? StatsSource { get; set; }
 
+        public CompetitionStatus? Status { get; set; }
+
         public Venue? Venue { get; set; }
 
         public Guid? VenueId { get; set; } // FK to Venue
@@ -119,6 +121,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionLink> Links { get; set; } = []; // Normalized set of rel/href for downstream use
         
+        public ICollection<CompetitionLeader> Leaders { get; set; } = [];
+
+        public ICollection<CompetitionPowerIndex> PowerIndexes { get; set; } = [];
+
+        public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
+
         public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -181,6 +189,26 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasMany(x => x.Plays)
                     .WithOne(x => x.Competition)
                     .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Leaders)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.PowerIndexes)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Probabilities)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.Status)
+                    .WithOne(x => x.Competition)
+                    .HasForeignKey<CompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }

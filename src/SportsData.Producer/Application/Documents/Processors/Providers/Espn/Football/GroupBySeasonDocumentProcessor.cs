@@ -53,8 +53,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (externalProviderDto is null)
             {
-                _logger.LogError($"Error deserializing {command.DocumentType}");
-                throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+                _logger.LogError("Failed to deserialize document to EspnGroupBySeasonDto. {@Command}", command);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+            {
+                _logger.LogError("EspnGroupBySeasonDto Ref is null or empty. {@Command}", command);
+                return;
             }
 
             if (!command.Season.HasValue)

@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Common
 {
-    public class Athlete : CanonicalEntityBase<Guid>
+    public class Athlete : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public string? LastName { get; set; }
 
@@ -52,6 +53,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public ICollection<AthleteExternalId> ExternalIds { get; set; } = new List<AthleteExternalId>();
 
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
+
         public class EntityConfiguration : IEntityTypeConfiguration<Athlete>
         {
             public void Configure(EntityTypeBuilder<Athlete> builder)
@@ -87,10 +90,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                 builder.Property(x => x.WeightDisplay)
                     .HasMaxLength(20);
 
-                builder.HasOne(a => a.BirthLocation)
-                    .WithMany()
-                    .HasForeignKey(a => a.BirthLocationId);
-
                 builder.Property(x => x.ExperienceAbbreviation)
                     .HasMaxLength(10);
 
@@ -100,10 +99,30 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                 builder.Property(x => x.Slug)
                     .HasMaxLength(64);
 
+                builder.HasOne(a => a.BirthLocation)
+                    .WithMany()
+                    .HasForeignKey(a => a.BirthLocationId);
+
                 builder.HasOne(a => a.Status)
                     .WithMany()
                     .HasForeignKey(a => a.StatusId);
+
+                builder.HasMany(x => x.Seasons)
+                    .WithOne(x => x.Athlete)
+                    .HasForeignKey(x => x.AthleteId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Images)
+                    .WithOne(x => x.Athlete)
+                    .HasForeignKey(x => x.AthleteId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.ExternalIds)
+                    .WithOne(x => x.Athlete)
+                    .HasForeignKey(x => x.AthleteId)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
+
     }
 }

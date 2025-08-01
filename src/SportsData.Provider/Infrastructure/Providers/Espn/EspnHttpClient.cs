@@ -18,23 +18,26 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             _logger = logger;
         }
 
-        public async Task<string> GetRawJsonAsync(Uri uri, bool bypassCache = false)
+        public async Task<string> GetRawJsonAsync(
+            Uri uri,
+            bool bypassCache,
+            bool stripQuerystring = true)
         {
             // Check cache first
             if (_config is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
             {
-                var cached = await TryLoadFromDiskAsync(uri);
+                var cached = await TryLoadFromDiskAsync(uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
                 {
-                    _logger.LogInformation("Cache HIT for {Uri}", uri);
+                    _logger.LogDebug("Cache HIT for {Uri}", uri);
                     return cached;
                 }
 
-                _logger.LogInformation("Cache MISS for {Uri}", uri);
+                _logger.LogDebug("Cache MISS for {Uri}", uri);
             }
 
             // Make HTTP call
-            _logger.LogInformation("Fetching LIVE from ESPN: {Uri}", uri);
+            _logger.LogDebug("Fetching LIVE from ESPN: {Uri}", uri);
 
             // TODO: Make this delay configurable via Azure App Settings
             // prevent banging on ESPN API too fast
@@ -53,16 +56,16 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             // Optionally persist
             if (_config.PersistLocally && !bypassCache)
             {
-                await SaveToDiskAsync(uri, json);
+                await SaveToDiskAsync(uri, json, stripQuerystring);
             }
 
             return json;
         }
 
 
-        public async Task<T?> GetDeserializedAsync<T>(Uri uri, bool bypassCache = false) where T : class
+        public async Task<T?> GetDeserializedAsync<T>(Uri uri, bool bypassCache, bool stripQuerystring = true) where T : class
         {
-            var json = await GetRawJsonAsync(uri, bypassCache);
+            var json = await GetRawJsonAsync(uri, bypassCache, stripQuerystring);
 
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -81,9 +84,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             }
         }
 
-        private async Task<string?> TryLoadFromDiskAsync(Uri uri)
+        private async Task<string?> TryLoadFromDiskAsync(Uri uri, bool stripQuerystring = true)
         {
-            var path = GetCacheFilePath(uri);
+            var path = GetCacheFilePath(uri, stripQuerystring);
             
             if (File.Exists(path))
             {
@@ -93,9 +96,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return null;
         }
 
-        private async Task SaveToDiskAsync(Uri uri, string json)
+        private async Task SaveToDiskAsync(Uri uri, string json, bool stripQuerystring = true)
         {
-            var path = GetCacheFilePath(uri);
+            var path = GetCacheFilePath(uri, stripQuerystring);
 
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -135,15 +138,15 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         }
 
 
-        private string GetCacheFilePath(Uri uri)
+        private string GetCacheFilePath(Uri uri, bool stripQuerystring = true)
         {
-            var filename = ConvertUriToFilename(uri) + ".json";
+            var filename = ConvertUriToFilename(uri, stripQuerystring) + ".json";
             return Path.Combine(_config.LocalCacheDirectory, filename);
         }
 
-        private static string ConvertUriToFilename(Uri uri)
+        private static string ConvertUriToFilename(Uri uri, bool stripQuerystring = true)
         {
-            return HashProvider.GenerateHashFromUri(uri);
+            return HashProvider.GenerateHashFromUri(uri, stripQuerystring);
         }
     }
 }

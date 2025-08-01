@@ -18,6 +18,6 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
         Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask);
 
-        Task<string> GetResource(Uri uri);
+        Task<string> GetResource(Uri uri, bool stripQuerystring = true);
     }
 }

@@ -49,10 +49,17 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnCoachDto>();
+
         if (dto is null)
         {
-            _logger.LogError($"Error deserializing {command.DocumentType}");
-            throw new InvalidOperationException($"Deserialization returned null for EspnCoachDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnCoachDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnCoachDto Ref is null or empty. {@Command}", command);
+            return;
         }
 
         var urlHash = HashProvider.GenerateHashFromUri(dto.Ref);

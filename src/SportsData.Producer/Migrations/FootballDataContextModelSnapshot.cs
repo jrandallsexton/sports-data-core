@@ -1302,6 +1302,350 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionExternalId", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LeaderCategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.HasIndex("LeaderCategoryId");
+
+                    b.ToTable("CompetitionLeader", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeaderCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ShortDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("lkLeaderCategory", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Abbreviation = "PYDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Passing Leader",
+                            Name = "passingLeader",
+                            ShortDisplayName = "PASS"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Abbreviation = "RYDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Rushing Leader",
+                            Name = "rushingLeader",
+                            ShortDisplayName = "RUSH"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Abbreviation = "RECYDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Receiving Leader",
+                            Name = "receivingLeader",
+                            ShortDisplayName = "REC"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Abbreviation = "YDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Passing Yards",
+                            Name = "passingYards",
+                            ShortDisplayName = "PYDS"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Abbreviation = "YDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Rushing Yards",
+                            Name = "rushingYards",
+                            ShortDisplayName = "RYDS"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Abbreviation = "YDS",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Receiving Yards",
+                            Name = "receivingYards",
+                            ShortDisplayName = "RECYDS"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Abbreviation = "TOT",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Tackles",
+                            Name = "totalTackles",
+                            ShortDisplayName = "TACK"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Abbreviation = "SACK",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Sacks",
+                            Name = "sacks",
+                            ShortDisplayName = "SACK"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Abbreviation = "INT",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Interceptions",
+                            Name = "interceptions",
+                            ShortDisplayName = "INT"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Abbreviation = "PR",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Punt Returns",
+                            Name = "puntReturns",
+                            ShortDisplayName = "PR"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Abbreviation = "KR",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Kick Returns",
+                            Name = "kickReturns",
+                            ShortDisplayName = "KR"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Abbreviation = "P",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Punts",
+                            Name = "punts",
+                            ShortDisplayName = "P"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Abbreviation = "TP",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Kicking Points",
+                            Name = "totalKickingPoints",
+                            ShortDisplayName = "TP"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Abbreviation = "F",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Fumbles",
+                            Name = "fumbles",
+                            ShortDisplayName = "F"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Abbreviation = "FL",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Fumbles Lost",
+                            Name = "fumblesLost",
+                            ShortDisplayName = "FL"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Abbreviation = "CMP",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Fumbles Recovered",
+                            Name = "fumblesRecovered",
+                            ShortDisplayName = "CMP"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Abbreviation = "ESPNRating",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "ESPN Rating Leader",
+                            Name = "espnRating",
+                            ShortDisplayName = "ESPNRating"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Abbreviation = "TD",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Passing Touchdowns",
+                            Name = "passingTouchdowns",
+                            ShortDisplayName = "TD"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Abbreviation = "RAT",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Quarterback Rating",
+                            Name = "quarterbackRating",
+                            ShortDisplayName = "RAT"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Abbreviation = "TD",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Rushing Touchdowns",
+                            Name = "rushingTouchdowns",
+                            ShortDisplayName = "TD"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Abbreviation = "REC",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Receptions",
+                            Name = "receptions",
+                            ShortDisplayName = "REC"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Abbreviation = "TD",
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Receiving Touchdowns",
+                            Name = "receivingTouchdowns",
+                            ShortDisplayName = "TD"
+                        });
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeaderStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionLeaderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("Value")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteId");
+
+                    b.HasIndex("CompetitionLeaderId");
+
+                    b.HasIndex("FranchiseSeasonId");
+
+                    b.ToTable("CompetitionLeaderStat", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1393,6 +1737,288 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionNote");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PowerIndexId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Value")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.HasIndex("FranchiseSeasonId");
+
+                    b.HasIndex("PowerIndexId");
+
+                    b.ToTable("CompetitionPowerIndex", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndexExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionPowerIndexId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionPowerIndexId");
+
+                    b.ToTable("CompetitionPowerIndexExternalId", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPrediction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsHome")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId", "FranchiseSeasonId", "IsHome")
+                        .IsUnique();
+
+                    b.ToTable("CompetitionPrediction", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPredictionValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionPredictionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PredictionMetricId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Value")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionPredictionId", "PredictionMetricId")
+                        .IsUnique();
+
+                    b.ToTable("CompetitionPredictionValue", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("AwayWinPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("HomeWinPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("LastModifiedRaw")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PlayId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SecondsLeft")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SequenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SourceDescription")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SourceState")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<double>("TiePercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.HasIndex("PlayId");
+
+                    b.ToTable("CompetitionProbability", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbabilityExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionProbabilityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionProbabilityId");
+
+                    b.ToTable("CompetitionProbabilityExternalId");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSource", b =>
                 {
                     b.Property<int>("Id")
@@ -1424,6 +2050,122 @@ namespace SportsData.Producer.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CompetitionSource");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Clock")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayClock")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StatusDescription")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StatusDetail")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StatusShortDetail")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StatusState")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StatusTypeId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("StatusTypeName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId")
+                        .IsUnique();
+
+                    b.ToTable("CompetitionStatus", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionStatusId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionStatusId");
+
+                    b.ToTable("CompetitionStatusExternalId", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Competitor", b =>
@@ -4047,6 +4789,95 @@ namespace SportsData.Producer.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.PowerIndex", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PowerIndex", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.PredictionMetric", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShortDisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PredictionMetric", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4625,6 +5456,52 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Competition");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithMany("Leaders")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeaderCategory", "LeaderCategory")
+                        .WithMany()
+                        .HasForeignKey("LeaderCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("LeaderCategory");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeaderStat", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", "Athlete")
+                        .WithMany()
+                        .HasForeignKey("AthleteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", "CompetitionLeader")
+                        .WithMany("Stats")
+                        .HasForeignKey("CompetitionLeaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
+                        .WithMany()
+                        .HasForeignKey("FranchiseSeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Athlete");
+
+                    b.Navigation("CompetitionLeader");
+
+                    b.Navigation("FranchiseSeason");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLink", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
@@ -4643,6 +5520,95 @@ namespace SportsData.Producer.Migrations
                         .HasForeignKey("CompetitionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithMany("PowerIndexes")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
+                        .WithMany()
+                        .HasForeignKey("FranchiseSeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.PowerIndex", "PowerIndex")
+                        .WithMany()
+                        .HasForeignKey("PowerIndexId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("FranchiseSeason");
+
+                    b.Navigation("PowerIndex");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndexExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", "CompetitionPowerIndex")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionPowerIndexId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionPowerIndex");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithMany("Probabilities")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Play", "Play")
+                        .WithMany("Probabilities")
+                        .HasForeignKey("PlayId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("Play");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbabilityExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", "CompetitionProbability")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionProbabilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionProbability");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithOne("Status")
+                        .HasForeignKey("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", "CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Competition");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", "CompetitionStatus")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionStatusId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionStatus");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Competitor", b =>
@@ -5116,11 +6082,39 @@ namespace SportsData.Producer.Migrations
 
                     b.Navigation("ExternalIds");
 
+                    b.Navigation("Leaders");
+
                     b.Navigation("Links");
 
                     b.Navigation("Notes");
 
                     b.Navigation("Plays");
+
+                    b.Navigation("PowerIndexes");
+
+                    b.Navigation("Probabilities");
+
+                    b.Navigation("Status");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", b =>
+                {
+                    b.Navigation("Stats");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
+                {
+                    b.Navigation("ExternalIds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", b =>
+                {
+                    b.Navigation("ExternalIds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", b =>
+                {
+                    b.Navigation("ExternalIds");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
@@ -5195,6 +6189,8 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Play", b =>
                 {
                     b.Navigation("ExternalIds");
+
+                    b.Navigation("Probabilities");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>

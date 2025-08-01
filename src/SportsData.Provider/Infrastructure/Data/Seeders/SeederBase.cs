@@ -121,7 +121,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
-                documentType: DocumentType.AthleteBySeason));
+                documentType: DocumentType.AthleteSeason));
 
             if (_teamSports.Contains(sport))
                 resources.AddRange(GenerateSeasonalResourcesForTeamSports(resources, sport, espnSportName, league, seasonYear));

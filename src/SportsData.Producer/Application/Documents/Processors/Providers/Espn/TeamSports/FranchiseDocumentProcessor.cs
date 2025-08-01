@@ -56,8 +56,14 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalDto is null)
         {
-            _logger.LogError($"Error deserializing {command.DocumentType}");
-            throw new InvalidOperationException($"Deserialization returned null for EspnVenueDto. CorrelationId: {command.CorrelationId}");
+            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@Command}", command);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@Command}", command);
+            return;
         }
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
@@ -91,7 +97,10 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         if (dto.Venue is not null && dto.Venue.Id > 0)
         {
             var venueId = await _dataContext.TryResolveFromDtoRefAsync(
-                dto.Venue, command.SourceDataProvider, () => _dataContext.Venues, _logger);
+                dto.Venue,
+                command.SourceDataProvider,
+                () => _dataContext.Venues.AsNoTracking(),
+                _logger);
 
             if (venueId != null)
             {
@@ -191,7 +200,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
                     z.Provider == command.SourceDataProvider &&
-                    z.Value == dto.Venue.Ref.ToString().UrlHash(false)));
+                    z.Value == dto.Venue.Ref.ToString().UrlHash(true)));
 
             if (venue != null)
             {

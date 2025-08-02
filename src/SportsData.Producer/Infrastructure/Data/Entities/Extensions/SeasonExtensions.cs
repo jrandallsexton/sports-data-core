@@ -44,7 +44,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             {
                 foreach (var type in dto.Types.Items)
                 {
-                    if (type.Ref == null)
+                    if (type?.Ref is null)
                         continue;
 
                     var phaseIdentity = externalRefIdentityGenerator.Generate(type.Ref);

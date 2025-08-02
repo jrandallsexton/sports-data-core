@@ -40,27 +40,38 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         while (uri is not null && seenPages.Add(uri.ToString()))
         {
             string json;
+
             try
             {
-                json = await _espnApi.GetResource(uri, false);
+                // Fetch the first version from cache
+                json = await _espnApi.GetResource(uri, bypassCache: false);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to fetch resource at {Uri}. Aborting pagination at this point.", uri);
-                break; // Gracefully exit, do not retry whole job
+                break;
             }
 
             EspnResourceIndexDto? dto;
             try
             {
                 dto = json.FromJson<EspnResourceIndexDto>();
+
+                // If it's a ResourceIndex, re-fetch uncached and re-parse
+                if (dto?.Items is { Count: > 0 })
+                {
+                    _logger.LogInformation("Detected ResourceIndex at {Uri}. Re-fetching without cache.", uri);
+                    json = await _espnApi.GetResource(uri, bypassCache: true);
+                    dto = json.FromJson<EspnResourceIndexDto>();
+                }
             }
             catch (JsonException)
             {
-                _logger.LogDebug("Not a resource index. Will treat as a leaf document: {Uri}", uri);
-                break;
+                _logger.LogDebug("Not a ResourceIndex. Will treat as a leaf document: {Uri}", uri);
+                dto = null;
             }
 
+            // If we didn’t get a valid ResourceIndex, treat as leaf and exit
             if (dto?.Items is not { Count: > 0 })
             {
                 _logger.LogInformation("No items found in resource index at {Uri}", uri);
@@ -104,6 +115,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             var baseUri = msg.Uri.GetLeftPart(UriPartial.Path);
             uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
         }
+
 
         if (enqueuedAnyRefs)
         {

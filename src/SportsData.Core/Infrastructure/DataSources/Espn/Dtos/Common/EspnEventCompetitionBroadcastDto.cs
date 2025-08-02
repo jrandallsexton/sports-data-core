@@ -26,7 +26,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public List<EspnEventCompetitionBroadcastItem> Items { get; set; }
     }
 
-    public class Group
+    public class EspnEventCompetitionBroadcastItemMediaGroup
     {
         [JsonPropertyName("id")]
         public string Id { get; set; }
@@ -66,7 +66,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public Market Market { get; set; }
 
         [JsonPropertyName("media")]
-        public Media Media { get; set; }
+        public EspnEventCompetitionBroadcastItemMedia EspnEventCompetitionBroadcastItemMedia { get; set; }
 
         [JsonPropertyName("lang")]
         public string Lang { get; set; }
@@ -117,7 +117,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string Type { get; set; }
     }
 
-    public class Media
+    public class EspnEventCompetitionBroadcastItemMedia
     {
         [JsonPropertyName("$ref")]
         public string Ref { get; set; }
@@ -141,7 +141,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public List<Logo> Logos { get; set; }
 
         [JsonPropertyName("group")]
-        public Group Group { get; set; }
+        public EspnEventCompetitionBroadcastItemMediaGroup Group { get; set; }
     }
 
     public class EspnEventCompetitionBroadcastItemType

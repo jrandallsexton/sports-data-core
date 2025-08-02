@@ -17,11 +17,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         /// <summary>
         /// Generic raw JSON fetch for any ESPN resource URI.
         /// </summary>
-        public async Task<string> GetResource(Uri uri, bool stripQuerystring = true)
+        public async Task<string> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true)
         {
             _logger.LogDebug("GetResource called for URI: {Uri}", uri);
-
-            var bypassCache = !stripQuerystring;
 
             return await _http.GetRawJsonAsync(uri, bypassCache, stripQuerystring);
         }

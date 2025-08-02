@@ -22,9 +22,9 @@ WHERE "DoB" > '2000-01-01'
    inner join public."Venue" V on V."Id" = C."VenueId"
    WHERE C."ShortName" LIKE '%LSU%' ORDER BY C."StartDateUtc"
 
-   select * from public."Contest"
+   select * from public."Contest" WHERE "ShortName" like '%LSU%'order by "StartDateUtc"
    select * from public."ContestExternalId" where "ContestId" = '8775fdbd-802a-1d25-735e-bbf702ac7e2d'
-   select * from public."Competition"
+   select * from public."Competition" where "ContestId" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
    select * from public."PowerIndex"
    select * from public."Play"
    
@@ -37,11 +37,30 @@ WHERE "DoB" > '2000-01-01'
    ORDER BY PI."DisplayName"
 
    select * from public."Play"
-   where "CompetitionId" = '3766bbff-bbdb-8529-e506-4945507c11ca'
+   where "CompetitionId" = '6fe167b3-01a4-ce7a-4caa-2d8ea922f983'
    order by "SequenceNumber"
-   
+
+	select * from public."CompetitionLeader"
+	select * from public."CompetitionProbability"
+	select * from public."lkLeaderCategory"
+	select * from public."CompetitionLeaderStat"
+select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c01465'
+   select * from public."Drive" where "CompetitionId" = 'b109f713-cddf-df99-529d-289d1b424f8d'
    select * from public."Competitor"
+   select * from public."Group"
+   select * from public."GroupSeason"
+   select * from public."Location" order by "State", "City"
    select * from public."lkPlayType"
+
+   -- CompetitionLeaderStats
+   select C."Id" AS "ContestId", C."Name" AS "ContestName", A1."LastName", A1."FirstName", *
+   from public."CompetitionLeaderStat" CLS
+   inner join public."CompetitionLeader" CL on CL."Id" = CLS."CompetitionLeaderId"
+   inner join public."Competition" COMP on COMP."Id" = CL."CompetitionId"
+   inner join public."Contest" C on C."Id" = COMP."ContestId"
+   inner join public."Athlete" A1 on A1."Id" = CLS."AthleteId"
+   WHERE C."Id" = '72a51437-f82b-2597-8842-fa5f6eaa9501'
+   ORDER BY A1."LastName", A1."FirstName"
    
    select con."Name" as "Contest", V."Name", V."City", V."State", pt."Description", p.* from public."Play" p
    inner join public."lkPlayType" pt on pt."Id" = p."Type"
@@ -49,3 +68,8 @@ WHERE "DoB" > '2000-01-01'
    inner join public."Contest" con on con."Id" = c."ContestId"
    inner join public."Venue" V on V."Id" = con."VenueId"
    order by p."SequenceNumber"
+
+   select S."Id", S."Year", S."Name", S."StartDate", S."EndDate", SP."Name" AS "CurrentPhase", SP."EndDate" AS "PhaseEnd"
+   from public."Season" S
+   inner join public."SeasonPhase" SP on SP."Id" = S."ActivePhaseId"
+   order by S."Year" DESC

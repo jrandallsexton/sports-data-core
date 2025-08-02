@@ -21,7 +21,7 @@
         GameSummary = 16,
         GolfCalendar = 17,
         Group = 18,
-        GroupBySeason = 19,
+        GroupSeason = 19,
         GroupBySeasonLogo = 20,
         GroupLogo = 21,
         Position = 22,

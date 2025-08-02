@@ -87,6 +87,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
+            var franchiseSeasonCache = new Dictionary<string, Guid>();
+            var athleteSeasonCache = new Dictionary<string, Guid>();
+
             foreach (var category in dto.Categories)
             {
                 var leaderCategory = await _dataContext.LeaderCategories
@@ -106,13 +109,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                 foreach (var leaderDto in category.Leaders)
                 {
-                    var athleteSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                        leaderDto.Athlete,
-                        command.SourceDataProvider,
-                        () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                        _logger);
+                    if (!athleteSeasonCache.TryGetValue(leaderDto.Athlete.Ref.ToString(), out var athleteSeasonId))
+                    {
+                        athleteSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+                            leaderDto.Athlete,
+                            command.SourceDataProvider,
+                            () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                            _logger) ?? Guid.Empty;
 
-                    if (athleteSeasonId is null)
+                        athleteSeasonCache[leaderDto.Athlete.Ref.ToString()] = athleteSeasonId;
+                    }
+
+                    if (athleteSeasonId == Guid.Empty)
                     {
                         var athleteHash = HashProvider.GenerateHashFromUri(leaderDto.Athlete.Ref);
                         _logger.LogWarning("Athlete not found for hash {AthleteHash}, publishing sourcing request.", athleteHash);
@@ -129,16 +137,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                             CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
                         ));
 
+                        // TODO: Continue processing and raise the document requested event at the end and throw a single exception
                         throw new InvalidOperationException($"Missing athlete for leader category '{category.Name}' - will retry later.");
                     }
 
-                    var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                        leaderDto.Team,
-                        command.SourceDataProvider,
-                        () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                        _logger);
+                    if (!franchiseSeasonCache.TryGetValue(leaderDto.Team.Ref.ToString(), out var franchiseSeasonId))
+                    {
+                        franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+                            leaderDto.Team,
+                            command.SourceDataProvider,
+                            () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                            _logger) ?? Guid.Empty;
 
-                    if (franchiseSeasonId is null)
+                        franchiseSeasonCache[leaderDto.Team.Ref.ToString()] = franchiseSeasonId;
+                    }
+
+                    if (franchiseSeasonId == Guid.Empty)
                     {
                         var teamHash = HashProvider.GenerateHashFromUri(leaderDto.Team.Ref);
                         _logger.LogWarning("FranchiseSeason not found for hash {TeamHash}, publishing sourcing request.", teamHash);
@@ -160,8 +174,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     var stat = leaderDto.AsEntity(
                         parentLeaderId: leaderEntity.Id,
-                        athleteSeasonId: athleteSeasonId.Value,
-                        franchiseSeasonId: franchiseSeasonId.Value,
+                        athleteSeasonId: athleteSeasonId,
+                        franchiseSeasonId: franchiseSeasonId,
                         correlationId: command.CorrelationId);
 
                     //leaderEntity.Stats.Add(stat);

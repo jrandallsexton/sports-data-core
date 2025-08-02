@@ -12,15 +12,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             int seasonYear,
             Guid correlationId)
         {
-            return new GroupSeason()
+            return new GroupSeason
             {
                 Id = groupSeasonId,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
                 Season = seasonYear,
-                GroupId = groupId
+                GroupId = groupId,
+                Name = dto.Name,
+                Abbreviation = dto.Abbreviation,
+                ShortName = dto.ShortName,
+                MidsizeName = dto.MidsizeName,
+                Slug = dto.Slug
             };
         }
+
 
         public static ConferenceSeasonDto ToCanonicalModel(this GroupSeason entity)
         {

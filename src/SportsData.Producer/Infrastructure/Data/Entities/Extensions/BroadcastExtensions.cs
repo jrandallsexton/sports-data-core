@@ -28,15 +28,15 @@ public static class BroadcastExtensions
             MarketId = dto.Market?.Id,
             MarketType = dto.Market?.Type,
 
-            MediaId = dto.Media?.Id,
-            MediaCallLetters = dto.Media?.CallLetters,
-            MediaName = dto.Media?.Name,
-            MediaShortName = dto.Media?.ShortName,
-            MediaSlug = dto.Media?.Slug,
+            MediaId = dto.EspnEventCompetitionBroadcastItemMedia?.Id,
+            MediaCallLetters = dto.EspnEventCompetitionBroadcastItemMedia?.CallLetters,
+            MediaName = dto.EspnEventCompetitionBroadcastItemMedia?.Name,
+            MediaShortName = dto.EspnEventCompetitionBroadcastItemMedia?.ShortName,
+            MediaSlug = dto.EspnEventCompetitionBroadcastItemMedia?.Slug,
 
-            MediaGroupId = dto.Media?.Group?.Id,
-            MediaGroupName = dto.Media?.Group?.Name,
-            MediaGroupSlug = dto.Media?.Group?.Slug,
+            MediaGroupId = dto.EspnEventCompetitionBroadcastItemMedia?.Group?.Id,
+            MediaGroupName = dto.EspnEventCompetitionBroadcastItemMedia?.Group?.Name,
+            MediaGroupSlug = dto.EspnEventCompetitionBroadcastItemMedia?.Group?.Slug,
 
             Language = dto.Lang,
             Region = dto.Region,

@@ -13,7 +13,7 @@ using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Footba
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
-
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using Xunit;
 using Xunit.Abstractions;
 using FootballLeaderCategory = SportsData.Core.Common.FootballLeaderCategory;
@@ -21,7 +21,7 @@ using FootballLeaderCategory = SportsData.Core.Common.FootballLeaderCategory;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
 public class EventCompetitionLeadersDocumentProcessorTests : 
-    ProducerTestBase<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>
+    ProducerTestBase<EventCompetitionLeadersDocumentProcessor<TeamSportDataContext>>
 {
     private EspnEventCompetitionLeadersDto _dto;
     private readonly ITestOutputHelper _output;
@@ -263,14 +263,14 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             .With(x => x.Leaders, new List<CompetitionLeader>())
             .Create();
 
-        await TeamSportDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.Competitions.AddAsync(competition);
 
         // Seed LeaderCategories
         var nextCategoryId = 1;
         var expectedRecordCount = 0;
         foreach (var category in leadersDto.Categories)
         {
-            TeamSportDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
             {
                 Id = nextCategoryId++,
                 Name = category.Name,
@@ -291,7 +291,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             var athleteHash = HashProvider.GenerateHashFromUri(leader.Athlete.Ref);
             var teamHash = HashProvider.GenerateHashFromUri(leader.Team.Ref);
 
-            var athlete = Fixture.Build<AthleteSeason>()
+            var athlete = Fixture.Build<FootballAthleteSeason>()
                 .WithAutoProperties()
                 .With(x => x.Id, athleteId)
                 .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
@@ -325,13 +325,13 @@ public class EventCompetitionLeadersDocumentProcessorTests :
                 })
                 .Create();
 
-            await TeamSportDataContext.AthleteSeasons.AddAsync(athlete);
-            await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await FootballDataContext.AthleteSeasons.AddAsync(athlete);
+            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
         }
 
-        await TeamSportDataContext.SaveChangesAsync();
+        await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<TeamSportDataContext>>();
+        var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
@@ -348,7 +348,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         await sut.ProcessAsync(command);
 
         // Assert
-        var leaders = await TeamSportDataContext.CompetitionLeaders
+        var leaders = await FootballDataContext.CompetitionLeaders
             .Include(x => x.Stats)
             .ToListAsync();
 
@@ -366,7 +366,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             _output.WriteLine($"Category: {cat.Name} => Count: {cat.Count}");
         }
 
-        var leaderCategories = await TeamSportDataContext.CompetitionLeaders.ToListAsync();
+        var leaderCategories = await FootballDataContext.CompetitionLeaders.ToListAsync();
         leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
     }
 }

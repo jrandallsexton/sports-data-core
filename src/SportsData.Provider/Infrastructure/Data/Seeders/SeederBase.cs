@@ -260,7 +260,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 cronExpression: null,
                 provider: SourceDataProvider.Espn,
                 sport: sport,
-                documentType: DocumentType.GroupBySeason));
+                documentType: DocumentType.GroupSeason));
 
             /* Teams By Season */
             resources.Add(GenerateResourceIndex(

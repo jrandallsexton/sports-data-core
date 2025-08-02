@@ -85,7 +85,7 @@ namespace SportsData.Producer.DependencyInjection
             var documentTypesBySeasonToLoad = new List<DocumentType>()
             {
                 //DocumentType.AthleteSeason,
-                //DocumentType.GroupBySeason,
+                //DocumentType.GroupSeason,
                 //DocumentType.TeamSeason,
                 //DocumentType.CoachSeason
             };

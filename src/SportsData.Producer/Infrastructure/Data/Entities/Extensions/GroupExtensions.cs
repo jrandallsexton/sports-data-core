@@ -33,11 +33,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 [
                     new GroupExternalId()
                     {
-                        Id = identity.CanonicalId,
-                        Value = identity.UrlHash,
+                        Id = Guid.NewGuid(), // Do not use CanonicalId from hashed identity
+                        Value = dto.Id.ToString(), // Use the raw group ID (e.g., "8")
                         Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = identity.UrlHash,
-                        SourceUrl = identity.CleanUrl
+                        SourceUrl = dto.Ref.ToString(),
+                        SourceUrlHash = identity.UrlHash
                     }
                 ]
             };

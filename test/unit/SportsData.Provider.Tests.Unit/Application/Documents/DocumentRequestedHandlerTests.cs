@@ -29,7 +29,7 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         var json = await LoadJsonTestData("EspnAwardsIndex.json"); // valid EspnResourceIndexDto
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false)).ReturnsAsync(json);
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
@@ -59,7 +59,7 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         var json = "{\"items\": []}";
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false)).ReturnsAsync(json);
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
@@ -89,7 +89,7 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         var json = await LoadJsonTestData("EspnTeamBySeason.json");
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false)).ReturnsAsync(json);
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
@@ -123,8 +123,12 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         var uriPage2 = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays?limit=25&page=2");
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(uriPage1, false)).ReturnsAsync(page1);
-        espnApi.Setup(x => x.GetResource(uriPage2, false)).ReturnsAsync(page2);
+
+        // Mock both cached and uncached fetches for both pages
+        espnApi.Setup(x => x.GetResource(uriPage1, false, true)).ReturnsAsync(page1);
+        espnApi.Setup(x => x.GetResource(uriPage1, true, true)).ReturnsAsync(page1);
+        espnApi.Setup(x => x.GetResource(uriPage2, false, true)).ReturnsAsync(page2);
+        espnApi.Setup(x => x.GetResource(uriPage2, true, true)).ReturnsAsync(page2);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
@@ -147,12 +151,13 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeast(50));
     }
 
+
     [Fact]
     public async Task WhenJsonInvalid_LogsAndReturns()
     {
         // arrange
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false)).ReturnsAsync("not json");
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync("not json");
 
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 

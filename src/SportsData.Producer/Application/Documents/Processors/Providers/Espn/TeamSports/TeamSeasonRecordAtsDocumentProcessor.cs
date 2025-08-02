@@ -102,7 +102,8 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : IProcessDocume
             }
 
             var entity = item.AsEntity(franchiseSeasonId, category.Id, command.CorrelationId);
-            franchiseSeason.RecordsAts.Add(entity);
+
+            await _dataContext.FranchiseSeasonRecordsAts.AddAsync(entity);
         }
 
         await _dataContext.SaveChangesAsync();

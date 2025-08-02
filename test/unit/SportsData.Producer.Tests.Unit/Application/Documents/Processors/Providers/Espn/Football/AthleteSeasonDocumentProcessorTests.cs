@@ -10,6 +10,8 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -32,23 +34,63 @@ public class AthleteSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor>();
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
 
-        var position = Fixture.Build<AthletePosition>()
+        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var dto = json.FromJson<EspnAthleteSeasonDto>();
+
+        // Generate identities from ESPN refs using the same generator as the processor
+        var franchiseSeasonIdentity = generator.Generate(dto.Team.Ref!);
+        var positionIdentity = generator.Generate(dto.Position.Ref!);
+
+        var franchise = Fixture.Build<Franchise>()
             .WithAutoProperties()
-            .With(x => x.Abbreviation, "QB")
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Seasons, new List<FranchiseSeason>())
             .Create();
 
         var franchiseSeason = Fixture.Build<FranchiseSeason>()
             .WithAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.FranchiseId, franchise.Id)
             .With(x => x.SeasonYear, 2024)
+            .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = franchiseSeasonIdentity.CleanUrl,
+                    SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+                    Value = franchiseSeasonIdentity.UrlHash
+                }
+            })
             .Create();
 
+        var position = Fixture.Build<AthletePosition>()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Abbreviation, "QB")
+            .With(x => x.ExternalIds, new List<AthletePositionExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = positionIdentity.CleanUrl,
+                    SourceUrlHash = positionIdentity.UrlHash,
+                    Value = positionIdentity.UrlHash
+                }
+            })
+            .Create();
+
+        var athleteId = Guid.NewGuid();
         var athlete = Fixture.Build<FootballAthlete>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, athleteId)
+            .With(x => x.LastName, dto.LastName)
+            .With(x => x.FirstName, dto.FirstName)
             .With(x => x.Seasons, new List<AthleteSeason>())
             .Create();
 
@@ -63,7 +105,7 @@ public class AthleteSeasonDocumentProcessorTests :
             .With(x => x.Season, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, athlete.Id.ToString())
+            .With(x => x.ParentId, athleteId.ToString)
             .With(x => x.UrlHash, _urlHash)
             .Create();
 

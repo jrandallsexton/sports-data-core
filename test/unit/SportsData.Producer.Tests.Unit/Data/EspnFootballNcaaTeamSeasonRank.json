@@ -1,5 +1,5 @@
 {
-  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/weeks/16/teams/99/ranks/21?lang=en",
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/types/2/weeks/16/teams/99/ranks/21",
   "id": "21",
   "name": "Playoff Committee Rankings",
   "shortName": "CFP Rankings",

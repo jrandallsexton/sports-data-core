@@ -148,14 +148,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         franchiseSeason.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Venue,
             command.SourceDataProvider,
-            () => _dataContext.Venues.AsNoTracking(),
+            () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
             _logger);
 
         // Resolve GroupId via SourceUrlHash
         franchiseSeason.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups,
             command.SourceDataProvider,
-            () => _dataContext.Groups.AsNoTracking(),
+            () => _dataContext.Groups.Include(x => x.ExternalIds).AsNoTracking(),
             _logger);
 
         // TODO: Extract Ranks from dto.Ranks (data not available when following link)

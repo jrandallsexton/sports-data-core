@@ -106,20 +106,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                 foreach (var leaderDto in category.Leaders)
                 {
-                    // TODO: This is AthleteSeason, not Athlete!
-                    var athleteId = await _dataContext.TryResolveFromDtoRefAsync(
+                    var athleteSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                         leaderDto.Athlete,
                         command.SourceDataProvider,
-                        () => _dataContext.Athletes.Include(x => x.ExternalIds).AsNoTracking(),
+                        () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
                         _logger);
 
-                    var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                        leaderDto.Team,
-                        command.SourceDataProvider,
-                        () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                        _logger);
-
-                    if (athleteId is null)
+                    if (athleteSeasonId is null)
                     {
                         var athleteHash = HashProvider.GenerateHashFromUri(leaderDto.Athlete.Ref);
                         _logger.LogWarning("Athlete not found for hash {AthleteHash}, publishing sourcing request.", athleteHash);
@@ -138,6 +131,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                         throw new InvalidOperationException($"Missing athlete for leader category '{category.Name}' - will retry later.");
                     }
+
+                    var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+                        leaderDto.Team,
+                        command.SourceDataProvider,
+                        () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                        _logger);
 
                     if (franchiseSeasonId is null)
                     {
@@ -161,11 +160,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     var stat = leaderDto.AsEntity(
                         parentLeaderId: leaderEntity.Id,
-                        athleteId: athleteId.Value,
+                        athleteSeasonId: athleteSeasonId.Value,
                         franchiseSeasonId: franchiseSeasonId.Value,
                         correlationId: command.CorrelationId);
 
-                    leaderEntity.Stats.Add(stat);
+                    //leaderEntity.Stats.Add(stat);
+                    await _dataContext.CompetitionLeaderStats.AddAsync(stat);
                 }
 
                 if (leaderEntity.Stats.Count > 0)

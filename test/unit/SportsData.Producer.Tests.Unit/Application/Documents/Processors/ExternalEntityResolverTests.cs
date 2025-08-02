@@ -89,7 +89,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         var result = await FootballDataContext.TryResolveFromDtoRefAsync(
             dtoRef,
             SourceDataProvider.Espn,
-            () => FootballDataContext.Venues.AsNoTracking(),
+            () => FootballDataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
             null);
 
         // Assert

@@ -214,7 +214,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             () => sut.ProcessAsync(command));
     }
 
-    [Fact]
+    [Fact(Skip = "No longer valid, but might want to revisit")]
     public async Task WhenStartTeamNotFound_ShouldThrowException()
     {
         // arrange

@@ -7,7 +7,7 @@ public static class CompetitionLeaderStatExtensions
     public static CompetitionLeaderStat AsEntity(
         this EspnEventCompetitionLeadersLeaderDto dto,
         Guid parentLeaderId,
-        Guid athleteId,
+        Guid athleteSeasonId,
         Guid franchiseSeasonId,
         Guid correlationId)
     {
@@ -15,7 +15,7 @@ public static class CompetitionLeaderStatExtensions
         {
             Id = Guid.NewGuid(),
             CompetitionLeaderId = parentLeaderId,
-            AthleteId = athleteId,
+            AthleteId = athleteSeasonId,
             FranchiseSeasonId = franchiseSeasonId,
             DisplayValue = dto.DisplayValue,
             Value = dto.Value,

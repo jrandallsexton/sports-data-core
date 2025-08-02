@@ -291,15 +291,15 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             var athleteHash = HashProvider.GenerateHashFromUri(leader.Athlete.Ref);
             var teamHash = HashProvider.GenerateHashFromUri(leader.Team.Ref);
 
-            var athlete = Fixture.Build<Athlete>()
+            var athlete = Fixture.Build<AthleteSeason>()
                 .WithAutoProperties()
                 .With(x => x.Id, athleteId)
-                .With(x => x.ExternalIds, new List<AthleteExternalId>
+                .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
                 {
                     new()
                     {
                         Id = Guid.NewGuid(),
-                        AthleteId = athleteId,
+                        AthleteSeasonId = athleteId,
                         Provider = SourceDataProvider.Espn,
                         SourceUrl = leader.Athlete.Ref.ToString(),
                         SourceUrlHash = athleteHash,
@@ -325,7 +325,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
                 })
                 .Create();
 
-            await TeamSportDataContext.Athletes.AddAsync(athlete);
+            await TeamSportDataContext.AthleteSeasons.AddAsync(athlete);
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
         }
 
@@ -341,6 +341,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.ParentId, competition.Id.ToString())
             .Create();
 
         // Act
@@ -365,10 +366,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             _output.WriteLine($"Category: {cat.Name} => Count: {cat.Count}");
         }
 
-        var statCount = leadersDto.Categories.SelectMany(x => x.Leaders).Count();
-
-        var categoryCount = leadersDto.Categories.Count;
-        leaders.Should().HaveCount(categoryCount);
+        var leaderCategories = await TeamSportDataContext.CompetitionLeaders.ToListAsync();
+        leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
     }
-
 }

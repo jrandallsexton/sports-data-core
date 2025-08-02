@@ -14,7 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
 
         public new DbSet<FootballAthleteSeason> AthleteSeasons { get; set; }
 
-        public DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; } = default!;
+        //public new DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -12,6 +12,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.Provider.Commands;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -28,6 +32,15 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityDoesNotExist_VenueExists_ShouldAddWithVenue()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        Mocker.GetMock<IProvideProviders>()
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>()))
+            .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
+                .OmitAutoProperties()
+                .Create());
+
         var bus = Mocker.GetMock<IBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
@@ -60,7 +73,53 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 
         await FootballDataContext.SaveChangesAsync();
 
-        // TODO: Load FranchiseSeason for both competitors
+        var dto = json.FromJson<EspnEventDto>();
+        Guid homeId = Guid.Empty;
+        Guid awayId = Guid.Empty;
+
+        foreach (var competitor in dto.Competitions.First().Competitors)
+        {
+            var identity = generator.Generate(competitor.Team.Ref);
+
+            if (competitor.HomeAway == "home")
+            {
+                homeId = identity.CanonicalId;
+            }
+            else
+            {
+                awayId = identity.CanonicalId;
+            }
+
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.Abbreviation, "Test")
+                .With(x => x.DisplayName, "Test Franchise Season")
+                .With(x => x.DisplayNameShort, "Test FS")
+                .With(x => x.Slug, identity.CanonicalId.ToString())
+                .With(x => x.Location, "Test Location")
+                .With(x => x.Name, "Test Franchise Season")
+                .With(x => x.ColorCodeHex, "#FFFFFF")
+                .With(x => x.ColorCodeAltHex, "#000000")
+                .With(x => x.IsActive, true)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+                {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = identity.CleanUrl,
+                            SourceUrlHash = identity.UrlHash,
+                            Value = identity.UrlHash
+                        }
+                })
+                .Create();
+
+            await base.FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        }
+        await base.FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -87,10 +146,65 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityDoesNotExist_VenueMissing_ShouldPublishDocumentRequested()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        Mocker.GetMock<IProvideProviders>()
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>()))
+            .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
+                .OmitAutoProperties()
+                .Create());
+
         var bus = Mocker.GetMock<IBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json"); var dto = json.FromJson<EspnEventDto>();
+        Guid homeId = Guid.Empty;
+        Guid awayId = Guid.Empty;
+
+        foreach (var competitor in dto.Competitions.First().Competitors)
+        {
+            var identity = generator.Generate(competitor.Team.Ref);
+
+            if (competitor.HomeAway == "home")
+            {
+                homeId = identity.CanonicalId;
+            }
+            else
+            {
+                awayId = identity.CanonicalId;
+            }
+
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.Abbreviation, "Test")
+                .With(x => x.DisplayName, "Test Franchise Season")
+                .With(x => x.DisplayNameShort, "Test FS")
+                .With(x => x.Slug, identity.CanonicalId.ToString())
+                .With(x => x.Location, "Test Location")
+                .With(x => x.Name, "Test Franchise Season")
+                .With(x => x.ColorCodeHex, "#FFFFFF")
+                .With(x => x.ColorCodeAltHex, "#000000")
+                .With(x => x.IsActive, true)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = identity.CleanUrl,
+                        SourceUrlHash = identity.UrlHash,
+                        Value = identity.UrlHash
+                    }
+                })
+                .Create();
+
+            await base.FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        }
+        await base.FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -121,10 +235,62 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityAlreadyExists_ShouldSkipCreation_AndNotPublishContestCreated()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+
+        var dto = json.FromJson<EspnEventDto>();
+        Guid homeId = Guid.Empty;
+        Guid awayId = Guid.Empty;
+
+        foreach (var competitor in dto.Competitions.First().Competitors)
+        {
+            var identity = generator.Generate(competitor.Team.Ref);
+
+            if (competitor.HomeAway == "home")
+            {
+                homeId = identity.CanonicalId;
+            }
+            else
+            {
+                awayId = identity.CanonicalId;
+            }
+
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.Abbreviation, "Test")
+                .With(x => x.DisplayName, "Test Franchise Season")
+                .With(x => x.DisplayNameShort, "Test FS")
+                .With(x => x.Slug, identity.CanonicalId.ToString())
+                .With(x => x.Location, "Test Location")
+                .With(x => x.Name, "Test Franchise Season")
+                .With(x => x.ColorCodeHex, "#FFFFFF")
+                .With(x => x.ColorCodeAltHex, "#000000")
+                .With(x => x.IsActive, true)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = identity.CleanUrl,
+                        SourceUrlHash = identity.UrlHash,
+                        Value = identity.UrlHash
+                    }
+                })
+                .Create();
+
+            await base.FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        }
+        await base.FootballDataContext.SaveChangesAsync();
+
         var externalId = "401583027";
 
         var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";

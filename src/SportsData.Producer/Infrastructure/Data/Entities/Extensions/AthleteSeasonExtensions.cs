@@ -1,12 +1,13 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 public static class AthleteSeasonExtensions
 {
-    public static AthleteSeason AsEntity(
+    public static FootballAthleteSeason AsEntity(
         this EspnAthleteSeasonDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid franchiseSeasonId,
@@ -19,7 +20,7 @@ public static class AthleteSeasonExtensions
 
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-        return new AthleteSeason
+        return new FootballAthleteSeason
         {
             Id = identity.CanonicalId,
             AthleteId = athleteId,

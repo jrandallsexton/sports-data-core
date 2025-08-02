@@ -28,6 +28,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
 
+        public DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; }
+
         public DbSet<CompetitionLeader> Leaders { get; set; }
 
         public DbSet<CompetitionLeaderCategory> LeaderCategories { get; set; }

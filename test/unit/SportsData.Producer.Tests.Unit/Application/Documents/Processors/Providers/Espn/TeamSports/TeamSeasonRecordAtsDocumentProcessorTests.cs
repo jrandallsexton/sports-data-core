@@ -7,6 +7,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,6 +24,9 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
     public async Task WhenValidDocument_ShouldPersistAtsRecords()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<TeamSeasonRecordAtsDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecordAts.json");

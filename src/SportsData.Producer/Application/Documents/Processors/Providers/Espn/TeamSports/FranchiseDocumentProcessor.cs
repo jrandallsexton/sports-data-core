@@ -99,7 +99,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             var venueId = await _dataContext.TryResolveFromDtoRefAsync(
                 dto.Venue,
                 command.SourceDataProvider,
-                () => _dataContext.Venues.AsNoTracking(),
+                () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
                 _logger);
 
             if (venueId != null)

@@ -22,6 +22,9 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
     public async Task WhenEntityDoesNotExist_IsAdded()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor>();
         var season = new Season
         {
@@ -64,6 +67,9 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
     public async Task WhenFranchiseSeasonsExist_BooksAreResolvedAndAdded()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor>();
 
         var season = Fixture.Build<Season>()

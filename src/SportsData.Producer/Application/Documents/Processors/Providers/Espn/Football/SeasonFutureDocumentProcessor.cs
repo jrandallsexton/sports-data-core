@@ -123,7 +123,7 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
                 var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
                     bookDto.Team,
                     command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year).AsNoTracking(),
+                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year).Include(x => x.ExternalIds).AsNoTracking(),
                     _logger);
 
                 if (!franchiseSeasonId.HasValue)

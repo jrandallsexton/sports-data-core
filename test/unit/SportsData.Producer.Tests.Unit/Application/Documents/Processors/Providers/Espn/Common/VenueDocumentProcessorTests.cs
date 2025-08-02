@@ -27,6 +27,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityDoesNotExist_IsAdded()
         {
             // arrange
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
             var bus = Mocker.GetMock<IPublishEndpoint>();
 
             var sut = Mocker.CreateInstance<VenueDocumentProcessor<FootballDataContext>>();

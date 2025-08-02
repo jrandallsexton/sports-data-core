@@ -23,7 +23,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class TeamSeasonDocumentProcessorTests :
     ProducerTestBase<TeamSeasonDocumentProcessor<FootballDataContext>>
 {
-    private const string SourceUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/ncaa/teams/2155";
+    private const string SourceUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99?lang=en";
     private readonly string _urlHash = SourceUrl.UrlHash();
 
     [Fact]
@@ -32,9 +32,11 @@ public class TeamSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
+
+        var franchiseIdentity = generator.Generate(SourceUrl);
 
         var franchise = Fixture.Build<Franchise>()
             .WithAutoProperties()
@@ -43,10 +45,11 @@ public class TeamSeasonDocumentProcessorTests :
             .With(x => x.ExternalIds, new List<FranchiseExternalId>
             {
                 Fixture.Build<FranchiseExternalId>()
+                    .WithAutoProperties()
                     .With(x => x.Provider, SourceDataProvider.Espn)
-                    .With(x => x.SourceUrl, SourceUrl)
-                    .With(x => x.SourceUrlHash, _urlHash)
-                    .With(x => x.Value, _urlHash)
+                    .With(x => x.SourceUrl, franchiseIdentity.CleanUrl)
+                    .With(x => x.SourceUrlHash, franchiseIdentity.UrlHash)
+                    .With(x => x.Value, franchiseIdentity.UrlHash)
                     .Create()
             })
             .With(x => x.Seasons, new List<FranchiseSeason>())
@@ -81,6 +84,9 @@ public class TeamSeasonDocumentProcessorTests :
     public async Task WhenFranchiseSeasonAlreadyExists_ShouldSkipCreationAndNotPublishCreatedEvent()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");

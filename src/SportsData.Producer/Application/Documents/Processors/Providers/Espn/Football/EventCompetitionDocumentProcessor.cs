@@ -215,7 +215,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 if (competitorDto?.Ref is null)
                 {
-                    _logger.LogWarning("Competitor reference is null, skipping competitor processing.");
+                    _logger.LogError("Competitor reference is null, skipping competitor processing.");
                     continue;
                 }
 
@@ -229,7 +229,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 {
                     _logger.LogError("could not find franchise season for competitor");
                     throw new InvalidOperationException(
-                        $"FranchiseSeason not found for competitor with ref {competitorDto.Ref}");
+                        $"FranchiseSeason not found for competitor with Team.Ref {competitorDto.Team.Ref.ToString()}");
                 }
 
                 // TODO: Determine if we want to persist other data from EspnEventCompetitionCompetitorDto

@@ -51,13 +51,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnAthleteSeasonDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonDto. {@Command}", command);
             return;
         }
 
-        if (dto.Ref is null)
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnAthleteSeasonDto.Ref is null. {@Command}", command);
+            _logger.LogError("EspnTeamSeasonDto Ref is null or empty. {@Command}", command);
             return;
         }
 
@@ -94,7 +94,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             athleteId,
             command.CorrelationId);
 
-        await _dataContext.AddAsync(entity);
+        //await _dataContext.AddAsync(entity);
+        await _dataContext.AthleteSeasons.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
         // TODO: Publish AthleteSeasonCreated event

@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -18,6 +19,9 @@ public class GroupBySeasonDocumentProcessorTests : ProducerTestBase<GroupBySeaso
     public async Task WhenNeitherGroupNorSeasonExist_BothAreCreated()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
         var documentJson = await LoadJsonTestData("GroupBySeason.json");
@@ -48,6 +52,9 @@ public class GroupBySeasonDocumentProcessorTests : ProducerTestBase<GroupBySeaso
     public async Task WhenGroupExistsButSeasonDoesNot_GroupSeasonIsCreated()
     {
         // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var sut = Mocker.CreateInstance<GroupBySeasonDocumentProcessor>();
 
         var documentJson = await LoadJsonTestData("GroupBySeason.json");

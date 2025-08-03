@@ -48,6 +48,7 @@ select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c
    select * from public."Drive" where "CompetitionId" = 'b109f713-cddf-df99-529d-289d1b424f8d'
    select * from public."Competitor"
    select * from public."Group"
+   select * from public."GroupExternalId"
    select * from public."GroupSeason"
    select * from public."Location" order by "State", "City"
    select * from public."lkPlayType"
@@ -69,6 +70,7 @@ select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c
    inner join public."Venue" V on V."Id" = con."VenueId"
    order by p."SequenceNumber"
 
+   -- Seasons with active phases
    select S."Id", S."Year", S."Name", S."StartDate", S."EndDate", SP."Name" AS "CurrentPhase", SP."EndDate" AS "PhaseEnd"
    from public."Season" S
    inner join public."SeasonPhase" SP on SP."Id" = S."ActivePhaseId"

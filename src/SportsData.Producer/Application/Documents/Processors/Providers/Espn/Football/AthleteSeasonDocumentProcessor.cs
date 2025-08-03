@@ -61,6 +61,19 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
+        // TODO: AthleteSeasonDto does not have a ref back to the athlete
+        // as a result, ParentId is also null.
+        // We will have to apply ESPN-specific logic to resolve the athlete
+        // which must be done before we can create the AthleteSeason entity.
+
+        var theAthleteIdInEspn = dto.Id;
+
+        // get need to call Provider to resolve the athlete
+        // persist it in the database
+
+        // OR we can raise a DocumentRequested event
+        // and allow this job to be retried later by throwing an exception
+
         if (!Guid.TryParse(command.ParentId, out var athleteId))
         {
             _logger.LogError("Invalid ParentId format: {ParentId}", command.ParentId);

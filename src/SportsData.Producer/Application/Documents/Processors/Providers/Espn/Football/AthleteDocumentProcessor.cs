@@ -53,80 +53,35 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalProviderDto = command.Document.FromJson<EspnFootballAthleteDto>();
+        var dto = command.Document.FromJson<EspnFootballAthleteDto>();
 
-        if (externalProviderDto is null)
+        if (dto is null)
         {
             _logger.LogError("Failed to deserialize document to EspnFootballAthleteDto. {@Command}", command);
             return;
         }
 
-        if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
             _logger.LogError("EspnFootballAthleteDto Ref is null. {@Command}", command);
             return;
         }
 
-        // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var exists = await _dataContext.Athletes
             .Include(x => x.ExternalIds)
             .AsNoTracking()
-            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
-                                                  z.Provider == command.SourceDataProvider));
+            .AnyAsync(x => x.ExternalIds.Any(z =>
+                z.Value == command.UrlHash &&
+                z.Provider == command.SourceDataProvider));
 
         if (exists)
         {
-            // TODO: Eventually we need to handle updates to existing entities.
-            _logger.LogWarning($"Athlete already exists for {command.SourceDataProvider}.");
-            return;
+            await ProcessExisting(command, dto);
         }
-
-        // 1. map to the entity add it
-        // TODO: Get the current franchise Id from the athleteDto?
-        var newEntity = externalProviderDto.AsFootballAthlete(_externalRefIdentityGenerator, null, command.CorrelationId);
-
-        // 2. any headshot (image) for the AthleteDto?
-        if (externalProviderDto.Headshot is not null)
+        else
         {
-            var newImgId = Guid.NewGuid();
-            var imgEvt = new ProcessImageRequest(
-                externalProviderDto.Headshot.Href,
-                newImgId,
-                newEntity.Id,
-                $"{newEntity.Id}-{newImgId}.png",
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                0,
-                0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.AthleteDocumentProcessor);
-            await _publishEndpoint.Publish(imgEvt);
+            await ProcessNew(command, dto);
         }
-
-        // birthplace
-        await ProcessBirthplace(externalProviderDto, newEntity);
-
-        // athlete status
-        await ProcessAthleteStatus(externalProviderDto, newEntity);
-
-        // current position
-        await ProcessCurrentPosition(
-            externalProviderDto,
-            newEntity,
-            command);
-
-        // 3. Raise the integration event
-        await _publishEndpoint.Publish(
-            new AthleteCreated(
-                newEntity.ToCanonicalModel(),
-                command.CorrelationId,
-                CausationId.Producer.AthleteDocumentProcessor));
-
-        await _dataContext.AddAsync(newEntity);
-        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessCurrentPosition(
@@ -285,4 +240,49 @@ public class AthleteDocumentProcessor : IProcessDocuments
         // 4️⃣ Safe to assign FK
         newEntity.BirthLocationId = location.Id;
     }
+
+    private async Task ProcessNew(ProcessDocumentCommand command, EspnFootballAthleteDto dto)
+    {
+        var entity = dto.AsFootballAthlete(_externalRefIdentityGenerator, null, command.CorrelationId);
+
+        if (dto.Headshot is not null)
+        {
+            var imgId = Guid.NewGuid();
+            await _publishEndpoint.Publish(new ProcessImageRequest(
+                dto.Headshot.Href,
+                imgId,
+                entity.Id,
+                $"{entity.Id}-{imgId}.png",
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                0, 0,
+                null,
+                command.CorrelationId,
+                CausationId.Producer.AthleteDocumentProcessor));
+        }
+
+        await ProcessBirthplace(dto, entity);
+        await ProcessAthleteStatus(dto, entity);
+        await ProcessCurrentPosition(dto, entity, command);
+
+        await _publishEndpoint.Publish(new AthleteCreated(
+            entity.ToCanonicalModel(),
+            command.CorrelationId,
+            CausationId.Producer.AthleteDocumentProcessor));
+
+        await _dataContext.Athletes.AddAsync(entity);
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Created new athlete entity: {AthleteId}", entity.Id);
+    }
+
+
+    private Task ProcessExisting(ProcessDocumentCommand command, EspnFootballAthleteDto dto)
+    {
+        _logger.LogWarning("Athlete already exists for {Provider}. Skipping for now.", command.SourceDataProvider);
+        return Task.CompletedTask;
+    }
+
 }

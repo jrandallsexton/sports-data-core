@@ -102,6 +102,18 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.Position));
+
+            /* Athlete catalog */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/athletes",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: null,
+                cronExpression: null,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.Athlete));
         }
 
         public void GenerateSeasonalResources(
@@ -197,6 +209,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 SourceUrlHash = HashProvider.GenerateHashFromUri(uri)
             };
 
+            // If this is a recurring resource, we also create a one-time version for initial data loading
             if (isRecurring)
             {
                 var oneTime = CloneResourceIndex(resourceIndex, isRecurring: false, cronExpression: null);

@@ -1,0 +1,167 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4567747?lang=en&region=us",
+  "id": "4567747",
+  "uid": "s:20~l:23~a:4567747",
+  "guid": "c3970aed-2e7b-34e0-bf3e-04af89ce8add",
+  "type": "football",
+  "alternateIds": {
+    "sdr": "4567747"
+  },
+  "firstName": "Garrett",
+  "lastName": "Nussmeier",
+  "fullName": "Garrett Nussmeier",
+  "displayName": "Garrett Nussmeier",
+  "shortName": "G. Nussmeier",
+  "weight": 205.0,
+  "displayWeight": "205 lbs",
+  "height": 73.0,
+  "displayHeight": "6' 1\"",
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "playercard",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4567747/garrett-nussmeier",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/stats/_/id/4567747/garrett-nussmeier",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "splits",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/splits/_/id/4567747/garrett-nussmeier",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "gamelog",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/gamelog/_/id/4567747/garrett-nussmeier",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "news",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/news/_/id/4567747/garrett-nussmeier",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "bio",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/bio/_/id/4567747/garrett-nussmeier",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "overview",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/college-football/player/_/id/4567747/garrett-nussmeier",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Lake Charles",
+    "state": "LA",
+    "country": "USA"
+  },
+  "birthCountry": {
+    "alternateId": "1",
+    "abbreviation": "USA"
+  },
+  "college": {
+    "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en&region=us"
+  },
+  "slug": "garrett-nussmeier",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4567747.png",
+    "alt": "Garrett Nussmeier"
+  },
+  "jersey": "13",
+  "flag": {
+    "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+    "alt": "USA",
+    "rel": [
+      "country-flag"
+    ]
+  },
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us",
+    "id": "8",
+    "name": "Quarterback",
+    "displayName": "Quarterback",
+    "abbreviation": "QB",
+    "leaf": true,
+    "parent": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us"
+    }
+  },
+  "linked": true,
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en&region=us"
+  },
+  "experience": {
+    "years": 4,
+    "displayValue": "Senior",
+    "abbreviation": "SR"
+  },
+  "active": true,
+  "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+  },
+  "statisticslog": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4567747/statisticslog?lang=en&region=us"
+  }
+}

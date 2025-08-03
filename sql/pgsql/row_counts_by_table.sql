@@ -10,7 +10,7 @@ WHERE "DoB" > '2000-01-01'
   select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
    select * from public."Franchise" order by "Name"
    select * from public."Franchise" where "Abbreviation" is null
-   select * from public."Franchise" where "Slug" = 'ohio-dominican-panthers'
+   select * from public."Franchise" where "Slug" = 'lsu-tigers'
    select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
@@ -27,6 +27,7 @@ WHERE "DoB" > '2000-01-01'
    select * from public."Competition" where "ContestId" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
    select * from public."PowerIndex"
    select * from public."Play"
+   select * from public."Competitor"
    
    select CON."Id" as "ConId", CON."Name" AS "Contest", CON."StartDateUtc", PI."DisplayName" AS "PowerIndex", CPI."Value", CPI."DisplayValue"
    from public."CompetitionPowerIndex" CPI

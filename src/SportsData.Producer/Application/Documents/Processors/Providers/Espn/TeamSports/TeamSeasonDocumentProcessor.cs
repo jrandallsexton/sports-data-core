@@ -122,37 +122,37 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var franchiseSeason = dto.AsEntity(
+        var canonicalEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
             franchise.Id,
             seasonYear,
             command.CorrelationId);
 
-        if (string.IsNullOrEmpty(franchiseSeason.ColorCodeHex))
+        if (string.IsNullOrEmpty(canonicalEntity.ColorCodeHex))
         {
-            franchiseSeason.ColorCodeHex = franchise.ColorCodeHex;
+            canonicalEntity.ColorCodeHex = franchise.ColorCodeHex;
         }
 
-        if (string.IsNullOrEmpty(franchiseSeason.Abbreviation))
+        if (string.IsNullOrEmpty(canonicalEntity.Abbreviation))
         {
-            franchiseSeason.Abbreviation = franchise.Abbreviation ?? "UNK";
+            canonicalEntity.Abbreviation = franchise.Abbreviation ?? "UNK";
         }
 
         // logos
-        await ProcessLogos(franchiseSeason.Id, dto, command);
+        await ProcessLogos(canonicalEntity.Id, dto, command);
 
         // Wins/Losses/PtsFor/PtsAgainst
-        await ProcessRecord(franchiseSeason.Id, dto, command);
+        await ProcessRecord(canonicalEntity.Id, dto, command);
 
         // Resolve VenueId via SourceUrlHash
-        franchiseSeason.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
+        canonicalEntity.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Venue,
             command.SourceDataProvider,
             () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
             _logger);
 
         // Resolve GroupId via SourceUrlHash
-        franchiseSeason.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
+        canonicalEntity.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups,
             command.SourceDataProvider,
             () => _dataContext.Groups.Include(x => x.ExternalIds).AsNoTracking(),
@@ -162,35 +162,35 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         // FranchiseSeasonRank entity to store weekly ranks per source
 
         // stats
-        await ProcessStatistics(franchiseSeason.Id, dto, command);
+        await ProcessStatistics(canonicalEntity.Id, dto, command);
 
         // leaders
-        await ProcessLeaders(franchiseSeason.Id, dto, command);
+        await ProcessLeaders(canonicalEntity.Id, dto, command);
 
         // injuries
-        await ProcessInjuries(franchiseSeason.Id, dto, command);
+        await ProcessInjuries(canonicalEntity.Id, dto, command);
 
         // TODO: Request sourcing of team season notes (data not available when following link)
 
         // Process record ATS (Against The Spread)
-        await ProcessRecordAts(franchiseSeason.Id, dto, command);
+        await ProcessRecordAts(canonicalEntity.Id, dto, command);
 
         // Process awards
-        await ProcessAwards(franchiseSeason.Id, dto, command);
+        await ProcessAwards(canonicalEntity.Id, dto, command);
 
         // Process projection
-        await ProcessProjection(franchiseSeason.Id, dto, command);
+        await ProcessProjection(canonicalEntity.Id, dto, command);
 
         // Process events (schedule)
-        await ProcessEvents(franchiseSeason.Id, dto, command);
+        await ProcessEvents(canonicalEntity.Id, dto, command);
 
         // Process coaches
-        await ProcessCoaches(franchiseSeason.Id, dto, command);
+        await ProcessCoaches(canonicalEntity.Id, dto, command);
 
-        await _dataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        await _dataContext.FranchiseSeasons.AddAsync(canonicalEntity);
 
         await _publishEndpoint.Publish(new FranchiseSeasonCreated(
-            franchiseSeason.ToCanonicalModel(),
+            canonicalEntity.ToCanonicalModel(),
             command.CorrelationId,
             CausationId.Producer.TeamSeasonDocumentProcessor));
 

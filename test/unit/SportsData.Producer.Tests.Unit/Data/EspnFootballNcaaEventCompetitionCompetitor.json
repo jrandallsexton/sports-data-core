@@ -1,0 +1,36 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99?lang=en&region=us",
+  "id": "99",
+  "uid": "s:20~l:23~t:99",
+  "type": "team",
+  "order": 0,
+  "homeAway": "home",
+  "winner": false,
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en&region=us"
+  },
+  "score": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/score?lang=en&region=us"
+  },
+  "linescores": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores?lang=en&region=us"
+  },
+  "roster": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/roster?lang=en&region=us"
+  },
+  "statistics": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/statistics?lang=en&region=us"
+  },
+  "leaders": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/leaders?lang=en&region=us"
+  },
+  "record": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/records?lang=en&region=us"
+  },
+  "ranks": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/weeks/1/teams/99/ranks?lang=en&region=us"
+  },
+  "curatedRank": {
+    "current": 13
+  }
+}

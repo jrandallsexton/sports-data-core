@@ -10,3 +10,6 @@ select * from public."ResourceIndexItem" where "SourceUrlHash" = '4619f7f84e26d8
 --"Provider", "DocumentType", "SportId", "CreatedUtc", "CreatedBy", "Uri", "SourceUrlHash", "IsSeasonSpecific")
 --values ('00000000-0000-0000-0000-000000000000', -1, 'Default', false, false, false,
 --0, 0, 0, '2025-07-22 15:07:53.960671-04', '00000000-0000-0000-0000-000000000000', 'http://domain.none', '', false)
+
+SHOW max_connections
+SHOW config_file

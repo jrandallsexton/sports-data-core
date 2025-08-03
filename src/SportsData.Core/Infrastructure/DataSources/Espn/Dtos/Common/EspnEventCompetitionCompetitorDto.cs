@@ -1,10 +1,11 @@
-﻿using System;
+﻿#pragma warning disable CS8618
+
+using System;
 using System.Text.Json.Serialization;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-#pragma warning disable CS8618
 public class EspnEventCompetitionCompetitorDto : IHasRef
 {
     [JsonPropertyName("$ref")]

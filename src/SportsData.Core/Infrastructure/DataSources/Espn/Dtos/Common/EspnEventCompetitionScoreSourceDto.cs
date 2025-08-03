@@ -1,17 +1,13 @@
-﻿#pragma warning disable CS8618
-
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-public class EspnEventCompetitionLinescoreSourceDto
+#pragma warning disable CS8618
+public class EspnEventCompetitionScoreSourceDto
 {
     [JsonPropertyName("id")]
     public string Id { get; set; }
 
     [JsonPropertyName("description")]
     public string Description { get; set; }
-
-    [JsonPropertyName("state")]
-    public string State { get; set; }
 }

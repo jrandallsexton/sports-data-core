@@ -219,31 +219,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     continue;
                 }
 
-                var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                    competitorDto.Team,
-                    command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                    _logger);
-
-                if (franchiseSeasonId is null)
-                {
-                    _logger.LogError("could not find franchise season for competitor");
-                    throw new InvalidOperationException(
-                        $"FranchiseSeason not found for competitor with Team.Ref {competitorDto.Team.Ref.ToString()}");
-                }
-
-                // TODO: Determine if we want to persist other data from EspnEventCompetitionCompetitorDto
-                var newCompetitor = new Competitor()
-                {
-                    FranchiseSeasonId = franchiseSeasonId.Value,
-                    Order = competitorDto.Order,
-                    Type = competitorDto.Type,
-                    HomeAway = competitorDto.HomeAway,
-                    Winner = competitorDto.Winner,
-                    CuratedRankCurrent = competitorDto.EspnCuratedRank?.Current
-                };
-
-                competition.Competitors.Add(newCompetitor);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
+                    ParentId: competition.Id.ToString(),
+                    Uri: competitorDto.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionCompetitor,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+                ));
             }
         }
 
@@ -283,6 +269,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
+            if (externalDto.Status?.Ref is null)
+            {
+                _logger.LogWarning("No status information provided in the competition document.");
+                return;
+            }
+
             // TODO: If a competition status is not final, we might want to launch a hangfire job to update it later
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Status.Ref),

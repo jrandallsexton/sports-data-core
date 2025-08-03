@@ -5,12 +5,14 @@ DECLARE
 BEGIN
     -- Drop foreign key constraints in hangfire schema
     FOR obj IN
-        SELECT conname, conrelid::regclass
-        FROM pg_constraint
-        WHERE contype = 'f'
-          AND connamespace = 'hangfire'::regnamespace
+        SELECT conname, c.relname
+        FROM pg_constraint p
+        JOIN pg_class c ON p.conrelid = c.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE p.contype = 'f'
+          AND n.nspname = 'hangfire'
     LOOP
-        EXECUTE format('ALTER TABLE hangfire.%s DROP CONSTRAINT %I', obj.conrelid::text, obj.conname);
+        EXECUTE format('ALTER TABLE hangfire.%I DROP CONSTRAINT %I', obj.relname, obj.conname);
     END LOOP;
 
     -- Drop all tables in hangfire schema

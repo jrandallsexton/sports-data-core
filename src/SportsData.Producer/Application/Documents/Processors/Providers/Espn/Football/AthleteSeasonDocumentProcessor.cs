@@ -40,7 +40,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             ["CorrelationId"] = command.CorrelationId
         }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("Processing AthleteSeason with {@Command}", command);
             await ProcessInternal(command);
         }
     }
@@ -51,52 +51,56 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnTeamSeasonDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnAthleteSeasonDto. {@Command}", command);
             return;
         }
 
-        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
+        if (string.IsNullOrWhiteSpace(dto.Id))
         {
-            _logger.LogError("EspnTeamSeasonDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("AthleteSeasonDto missing Id. {@Command}", command);
             return;
         }
 
-        // TODO: AthleteSeasonDto does not have a ref back to the athlete
-        // as a result, ParentId is also null.
-        // We will have to apply ESPN-specific logic to resolve the athlete
-        // which must be done before we can create the AthleteSeason entity.
+        // Construct the canonical athlete ref from the known pattern
+        var baseRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
+        var athleteIdentity = _externalRefIdentityGenerator.Generate(baseRef);
 
-        var theAthleteIdInEspn = dto.Id;
-
-        // get need to call Provider to resolve the athlete
-        // persist it in the database
-
-        // OR we can raise a DocumentRequested event
-        // and allow this job to be retried later by throwing an exception
-
-        if (!Guid.TryParse(command.ParentId, out var athleteId))
-        {
-            _logger.LogError("Invalid ParentId format: {ParentId}", command.ParentId);
-            return;
-        }
-
-        var athlete = await _dataContext.Athletes
+        var athleteId = await _dataContext.AthleteExternalIds
             .AsNoTracking()
-            .Include(a => a.Seasons)
-            .FirstOrDefaultAsync(a => a.Id == athleteId);
+            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == athleteIdentity.UrlHash)
+            .Select(x => x.AthleteId)
+            .FirstOrDefaultAsync();
 
-        if (athlete is null)
+        if (athleteId == Guid.Empty)
         {
-            _logger.LogError("Athlete not found: {AthleteId}", athleteId);
+            _logger.LogWarning("Athlete not found for hash: {Hash}. Raising DocumentRequested.", athleteIdentity.UrlHash);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: athleteIdentity.CanonicalId.ToString(),
+                ParentId: null,
+                Uri: new Uri(baseRef),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.Athlete,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
+            ));
+
             return;
         }
 
         var franchiseSeasonId = await TryResolveFranchiseSeasonIdAsync(dto, command);
-        var positionId = await TryResolvePositionIdAsync(dto, command);
-
-        if (franchiseSeasonId == Guid.Empty || positionId == Guid.Empty)
+        if (franchiseSeasonId == Guid.Empty)
         {
-            _logger.LogError("Could not resolve required FranchiseSeasonId or PositionId.");
+            _logger.LogError("Could not resolve FranchiseSeasonId for Team.Ref: {Ref}", dto.Team?.Ref?.ToString() ?? "null");
+            return;
+        }
+
+        var positionId = await TryResolvePositionIdAsync(dto, command);
+        if (positionId == Guid.Empty)
+        {
+            _logger.LogError("Could not resolve PositionId for Position.Ref: {Ref}", dto.Position?.Ref?.ToString() ?? "null");
             return;
         }
 
@@ -107,15 +111,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             athleteId,
             command.CorrelationId);
 
-        //await _dataContext.AddAsync(entity);
         await _dataContext.AthleteSeasons.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
-
-        // TODO: Publish AthleteSeasonCreated event
-        //await _publishEndpoint.Publish(new AthleteSeasonCreated(
-        //    entity.ToCanonicalModel(),
-        //    command.CorrelationId,
-        //    CausationId.Producer.AthleteSeasonDocumentProcessor));
 
         _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athleteId);
     }

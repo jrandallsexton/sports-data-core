@@ -24,6 +24,17 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CoachSeason> CoachSeasons { get; set; }
 
         public DbSet<Competition> Competitions { get; set; }
+
+        public DbSet<CompetitionCompetitor> CompetitionCompetitors { get; set; }
+
+        public DbSet<CompetitionCompetitorLineScore> CompetitionCompetitorLineScores { get; set; }
+
+        public DbSet<CompetitionCompetitorExternalId> CompetitionCompetitorExternalIds { get; set; }
+
+        public DbSet<CompetitionCompetitorScore> CompetitionCompetitorScores { get; set; }
+
+        public DbSet<CompetitionCompetitorScoreExternalId> CompetitionCompetitorScoreExternalIds { get; set; }
+
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
@@ -118,6 +129,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitor.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScore.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScoreExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());

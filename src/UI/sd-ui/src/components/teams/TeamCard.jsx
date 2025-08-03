@@ -1,3 +1,4 @@
+// src\components\teams\TeamCard.jsx
 import "./TeamCard.css";
 import { useParams } from "react-router-dom";
 import teams from "../../data/teams"; // or wherever your merged file lives
@@ -62,7 +63,7 @@ function TeamCard() {
       </div>
 
       <div className="team-schedule">
-        <h3>Current Schedule</h3>
+        <h3>Current Season</h3>
         <table>
           <thead>
             <tr>

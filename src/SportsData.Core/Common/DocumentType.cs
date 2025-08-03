@@ -52,6 +52,9 @@
         EventCompetitionPrediction = 47,
         EventCompetitionPowerIndex = 48,
         TeamSeasonRank = 49,
+        EventCompetitionCompetitor = 50,
+        EventCompetitionCompetitorScore = 51,
+        EventCompetitionCompetitorLineScore = 52,
         Unknown = 9999
     }
 }

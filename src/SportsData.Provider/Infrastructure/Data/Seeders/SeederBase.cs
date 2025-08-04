@@ -123,17 +123,20 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             string league,
             int seasonYear)
         {
-            /* Athletes By Season */
-            resources.Add(GenerateResourceIndex(
-                resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
-                isEnabled: true,
-                isRecurring: false,
-                seasonYear: seasonYear,
-                cronExpression: null,
-                provider: SourceDataProvider.Espn,
-                sport: sport,
-                documentType: DocumentType.AthleteSeason));
+            if (!_teamSports.Contains(sport))
+            {
+                /* Athletes By Season */
+                resources.Add(GenerateResourceIndex(
+                    resources: resources,
+                    endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
+                    isEnabled: true,
+                    isRecurring: false,
+                    seasonYear: seasonYear,
+                    cronExpression: null,
+                    provider: SourceDataProvider.Espn,
+                    sport: sport,
+                    documentType: DocumentType.AthleteSeason));
+            }
 
             if (_teamSports.Contains(sport))
                 resources.AddRange(GenerateSeasonalResourcesForTeamSports(resources, sport, espnSportName, league, seasonYear));
@@ -286,6 +289,18 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 provider: SourceDataProvider.Espn,
                 sport: sport,
                 documentType: DocumentType.TeamSeason));
+
+            /* Athletes By Season */
+            resources.Add(GenerateResourceIndex(
+                resources: resources,
+                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
+                isEnabled: true,
+                isRecurring: false,
+                seasonYear: seasonYear,
+                cronExpression: null,
+                provider: SourceDataProvider.Espn,
+                sport: sport,
+                documentType: DocumentType.AthleteSeason));
 
             /* Coaches By Season */
             resources.Add(GenerateResourceIndex(

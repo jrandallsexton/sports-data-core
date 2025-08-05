@@ -218,6 +218,9 @@ namespace SportsData.Core.DependencyInjection
                     });
             });
 
+            cfg["CommonConfig:AzureServiceBusConnectionString"] =
+                "Endpoint=sb://sb-debug-football-ncaa-sportdeets.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=7sZ8/mwzFGscHRz7yrspRqBNVOvz0WGLg+ASbNa8tss=";
+
             return cfg;
         }
 

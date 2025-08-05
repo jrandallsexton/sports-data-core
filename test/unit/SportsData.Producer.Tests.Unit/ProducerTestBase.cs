@@ -24,7 +24,7 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
     private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()
     {
         // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
-        var dbName = Guid.NewGuid().ToString().Substring(0, 5);
+        var dbName = Guid.NewGuid().ToString()[..5];
         return new DbContextOptionsBuilder<FootballDataContext>()
             .UseInMemoryDatabase(dbName)
             .Options;

@@ -1,25 +1,29 @@
 using FirebaseAdmin;
+
 using Google.Apis.Auth.OAuth2;
 
 using Hangfire;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
+using Npgsql;
+
 using SportsData.Api.Application;
+using SportsData.Api.Application.Auth;
+using SportsData.Api.DependencyInjection;
 using SportsData.Api.Infrastructure;
+using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Middleware.Health;
 
+using System.Data;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using SportsData.Api.Application.Auth;
-using SportsData.Api.Infrastructure.Data;
-using SportsData.Core.Config;
-using Microsoft.Extensions.Logging;
-using SportsData.Api.DependencyInjection;
-using SportsData.Core.Common;
 
 namespace SportsData.Api
 {
@@ -112,6 +116,15 @@ namespace SportsData.Api
             FirebaseApp.Create(new AppOptions
             {
                 Credential = GoogleCredential.FromJson(config["CommonConfig:FirebaseConfigJson"])
+            });
+
+            builder.Services.AddScoped<IDbConnection>(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                //var connectionString = config.GetConnectionString("CanonicalData");
+                var connectionString =
+                    "Host=localhost;Port=5432;Username=postgres;Password=sesame1?;Maximum Pool Size=200;Database=sdProducer.FootballNcaa";
+                return new NpgsqlConnection(connectionString);
             });
 
             services.AddCoreServices(config);

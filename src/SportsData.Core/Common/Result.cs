@@ -9,6 +9,8 @@ namespace SportsData.Core.Common
         public T Value { get; } = value;
 
         public ResultStatus Status { get; } = status;
+
+        public bool IsSuccess => this is Success<T>;
     }
 
     public class Failure<T>(T value, ResultStatus status, List<ValidationFailure> errors) :

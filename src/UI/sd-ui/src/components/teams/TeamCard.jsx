@@ -1,29 +1,35 @@
-// src\components\teams\TeamCard.jsx
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import apiClient from "../../api/apiClient";
 import "./TeamCard.css";
-import { useParams } from "react-router-dom";
-import teams from "../../data/teams"; // or wherever your merged file lives
-import { Link } from "react-router-dom";
+import { formatToEasternTime } from "../../utils/timeUtils";
 
 function TeamCard() {
-  //if (!team) return <div className="team-card">Loading team data…</div>;
+  const { slug, seasonYear } = useParams();
+  const [team, setTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const { slug } = useParams();
-  const team = teams[slug];
+  const resolvedSeason = seasonYear || new Date().getFullYear();
 
-//   const renderResult = (result) => {
-//     if (!result) return "";
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const response = await apiClient.get(
+          `/ui/teamcard/sport/football/league/ncaa/team/${slug}/${resolvedSeason}`
+        );
+        setTeam(response.data);
+      } catch (error) {
+        console.error("Failed to fetch team data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-//     const normalized = result.trim().toUpperCase();
-//     const isWin = normalized.startsWith("W");
-//     const emoji = isWin ? "✅" : "✖️";
+    fetchTeam();
+  }, [slug, resolvedSeason]);
 
-//     return (
-//       <span>
-//         <span className={isWin ? "result-win" : "result-loss"}>{emoji}</span>{" "}
-//         {result}
-//       </span>
-//     );
-//   };
+  if (loading) return <div className="team-card">Loading team data…</div>;
+  if (!team) return <div className="team-card">Team not found.</div>;
 
   return (
     <div
@@ -43,8 +49,7 @@ function TeamCard() {
           <h2 className="team-name">{team.name}</h2>
           <p className="team-location">{team.location}</p>
           <p className="team-stadium">
-            {team.stadiumName} – {team.stadiumCapacity.toLocaleString()}{" "}
-            capacity
+            {team.stadiumName} – {team.stadiumCapacity.toLocaleString()} capacity
           </p>
         </div>
       </div>
@@ -52,53 +57,57 @@ function TeamCard() {
       <div className="team-news">
         <h3>Latest News</h3>
         <ul>
-          {team.news?.map((item, idx) => (
-            <li key={idx}>
-              <a href={item.link} target="_blank" rel="noopener noreferrer">
-                {item.title}
-              </a>
-            </li>
-          )) || <p>No news available.</p>}
+          {team.news?.length ? (
+            team.news.map((item, idx) => (
+              <li key={idx}>
+                <a href={item.link} target="_blank" rel="noopener noreferrer">
+                  {item.title}
+                </a>
+              </li>
+            ))
+          ) : (
+            <div>No news available.</div>
+          )}
         </ul>
       </div>
 
       <div className="team-schedule">
-        <h3>Current Season</h3>
+        <h3>Schedule ({resolvedSeason})</h3>
         <table>
           <thead>
             <tr>
-              <th>Date</th>
+              <th>Kickoff (ET)</th>
               <th>Opponent</th>
+              <th>Location</th>
               <th>Result</th>
             </tr>
           </thead>
           <tbody>
-            {team.schedule?.map((game, idx) => (
-              <tr key={idx}>
-                <td>{game.date}</td>
-                <td>
-                  <Link
-                    to={`/app/sport/football/ncaa/team/${
-                      Object.values(teams).find((t) => t.name === game.opponent)
-                        ?.slug
-                    }`}
-                    className="team-link"
+            {team.schedule?.length ? (
+              team.schedule.map((game, idx) => (
+                <tr key={idx}>
+                  <td>{formatToEasternTime(game.date)}</td>
+                  <td>
+                    <Link
+                      to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${resolvedSeason}`}
+                      className="team-link"
+                    >
+                      {game.opponent}
+                    </Link>
+                  </td>
+                  <td>{game.location}</td>
+                  <td
+                    className={
+                      game.result.trim().toUpperCase().startsWith("W")
+                        ? "result-win"
+                        : "result-loss"
+                    }
                   >
-                    {game.opponent}
-                  </Link>
-                </td>
-
-                <td
-                  className={
-                    game.result.trim().toUpperCase().startsWith("W")
-                      ? "result-win"
-                      : "result-loss"
-                  }
-                >
-                  {game.result}
-                </td>
-              </tr>
-            )) || (
+                    {game.result}
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan="3">No games scheduled.</td>
               </tr>

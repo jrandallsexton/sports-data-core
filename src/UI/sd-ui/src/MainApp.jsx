@@ -83,6 +83,7 @@ function MainApp() {
           <Route path="messageboard" element={<MessageBoardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="sport/football/ncaa/team/:slug" element={<TeamCard />} />
+          <Route path="sport/football/ncaa/team/:slug/:seasonYear" element={<TeamCard />} />
           <Route path="sport/:sport/:league/venue/:slug" element={<VenuePage />} />
           <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
         </Routes>

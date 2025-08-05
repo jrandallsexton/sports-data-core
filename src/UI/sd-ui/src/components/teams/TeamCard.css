@@ -98,16 +98,6 @@
   background-color: #2a2d33;
 }
 
-.result-win {
-  color: #00e676 !important; /* Green for wins */
-  font-weight: 600;
-}
-
-.result-loss {
-  color: #f44336 !important; /* Red for losses */
-  font-weight: 600;
-}
-
 .team-schedule .result-loss {
   color: #f44336 !important;
   font-weight: 600;
@@ -117,3 +107,33 @@
   color: #00e676;
   font-weight: 600;
 }
+
+.team-link {
+  color: var(--highlight-color, #ffc107);
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.team-link:hover {
+  color: #0dcaf0;
+}
+
+@media (max-width: 600px) {
+  .team-logo {
+    width: 100px;
+    height: 100px;
+    flex: 0 0 100px;
+  }
+
+  .team-name {
+    font-size: 1.5rem;
+  }
+}
+
+.team-schedule tbody tr:hover {
+  background-color: #3a3f47;
+}
+
+
+

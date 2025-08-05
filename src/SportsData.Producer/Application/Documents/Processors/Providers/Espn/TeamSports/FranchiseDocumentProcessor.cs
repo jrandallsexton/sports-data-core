@@ -22,13 +22,13 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<FranchiseDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -94,7 +94,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         await _dataContext.AddAsync(newEntity);
 
-        if (dto.Venue is not null && dto.Venue.Id > 0)
+        if (dto.Venue?.Ref is not null)
         {
             var venueId = await _dataContext.TryResolveFromDtoRefAsync(
                 dto.Venue,

@@ -2,16 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
-
-using System;
-using SportsData.Core.Common.Hashing;
-using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Application.Jobs
 {
@@ -31,7 +29,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IProviderAppConfig _appConfig;
         private readonly EspnApiClientConfig _espnApiClientConfig;
 
-        private const int PageSize = 500;
+        private const int PageSize = 25;
 
         public ResourceIndexJob(
             ILogger<ResourceIndexJob> logger,

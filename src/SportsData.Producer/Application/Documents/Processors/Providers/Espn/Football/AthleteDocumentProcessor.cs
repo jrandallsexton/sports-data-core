@@ -245,7 +245,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
     {
         var entity = dto.AsFootballAthlete(_externalRefIdentityGenerator, null, command.CorrelationId);
 
-        if (dto.Headshot is not null)
+        if (dto.Headshot?.Href is not null)
         {
             var imgId = Guid.NewGuid();
             await _publishEndpoint.Publish(new ProcessImageRequest(

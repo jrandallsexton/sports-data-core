@@ -86,17 +86,17 @@ namespace SportsData.Provider
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
                     // TODO: Move years to config
-                    var footballValues = new FootballSeeder().Generate(mode, [2024]);
+                    var footballValues = new FootballSeeder().Generate(mode, [2025]);
                     await dbContext.ResourceIndexJobs.AddRangeAsync(footballValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.GolfPga:
-                    var golfValues = new GolfSeeder().Generate(mode, [2024]);
+                    var golfValues = new GolfSeeder().Generate(mode, [2025]);
                     await dbContext.ResourceIndexJobs.AddRangeAsync(golfValues);
                     await dbContext.SaveChangesAsync();
                     break;
                 case Sport.BasketballNba:
-                    var basketballValues = new BasketballSeeder().Generate(mode, [2024]);
+                    var basketballValues = new BasketballSeeder().Generate(mode, [2025]);
                     await dbContext.ResourceIndexJobs.AddRangeAsync(basketballValues);
                     await dbContext.SaveChangesAsync();
                     break;

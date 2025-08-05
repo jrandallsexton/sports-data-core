@@ -1,0 +1,9 @@
+{
+  "count": 2,
+  "pageIndex": 1,
+  "pageCount": 1,
+  "items": [
+    { "ref": "http://some.uri.com/athlete/1" },
+    { "ref": "http://some.uri.com/athlete/2" }
+  ]
+}

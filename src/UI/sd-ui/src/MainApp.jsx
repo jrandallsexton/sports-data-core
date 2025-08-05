@@ -16,6 +16,9 @@ import ConfirmationDialog from "./components/common/ConfirmationDialog";
 import VenuePage from "components/venues/VenuePage";
 import VenuesPage from "components/venues/VenuesPage";
 import apiWrapper from "./api/apiWrapper";
+import LeagueCreatePage from "./components/leagues/LeagueCreatePage";
+import LandingFooter from "./components/landing/LandingFooter";
+import LeagueDetail from "./components/leagues/LeagueDetail";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -86,8 +89,12 @@ function MainApp() {
           <Route path="sport/football/ncaa/team/:slug/:seasonYear" element={<TeamCard />} />
           <Route path="sport/:sport/:league/venue/:slug" element={<VenuePage />} />
           <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
+          <Route path="league/create" element={<LeagueCreatePage />} />
+          <Route path="league/:id" element={<LeagueDetail />} />
+          <Route path="*" element={<div className="not-found">Page Not Found</div>} />
         </Routes>
       </main>
+      <LandingFooter />
     </div>
   );
 }

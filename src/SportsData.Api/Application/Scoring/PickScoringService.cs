@@ -65,7 +65,6 @@ namespace SportsData.Api.Application.Scoring
 
             // Confidence Scoring (overrides point value if correct)
             if (league.UseConfidencePoints &&
-                leaguePickTypes.HasFlag(PickType.Confidence) &&
                 pick.ConfidencePoints.HasValue &&
                 isCorrect)
             {

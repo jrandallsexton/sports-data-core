@@ -8,7 +8,8 @@ WHERE "DoB" > '2000-01-01'
  select * from public."AthletePosition" order by "Name"
  select * from public."AthletePositionExternalIds" where "AthletePositionId" = 'fadd0991-919d-4ab2-95a2-f0f1f205a25d'
   select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
-   select * from public."Franchise" order by "Name"
+   select * from public."Franchise" order by "Slug"
+   select * from public."FranchiseLogo"
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'lsu-tigers'
    select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'
@@ -16,8 +17,8 @@ WHERE "DoB" > '2000-01-01'
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
    select * from public."SeasonPhase" order by "Year"
    select * from public."SeasonYear" order by "Year"
-   select * from public."Venue"
-   
+   select * from public."Venue" where "Name" = 'Tiger Stadium (LA)'
+   --update public."Franchise" set "VenueId" = '8121cd60-3244-363b-623c-41cbbbec5972' where "Id" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
    select V."Name", V."City", V."State", C.* from public."Contest" C
    inner join public."Venue" V on V."Id" = C."VenueId"
    WHERE C."ShortName" LIKE '%LSU%' ORDER BY C."StartDateUtc"
@@ -28,6 +29,7 @@ WHERE "DoB" > '2000-01-01'
    select * from public."PowerIndex"
    select * from public."Play"
    select * from public."Competitor"
+   select "ShortName", "Slug" from public."Group"
    
    select CON."Id" as "ConId", CON."Name" AS "Contest", CON."StartDateUtc", PI."DisplayName" AS "PowerIndex", CPI."Value", CPI."DisplayValue"
    from public."CompetitionPowerIndex" CPI
@@ -76,3 +78,5 @@ select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c
    from public."Season" S
    inner join public."SeasonPhase" SP on SP."Id" = S."ActivePhaseId"
    order by S."Year" DESC
+
+   select * from public."CompetitionExternalId" where "SourceUrl" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334'

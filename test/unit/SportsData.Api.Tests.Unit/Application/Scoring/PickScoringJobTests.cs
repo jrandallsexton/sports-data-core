@@ -53,8 +53,7 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring
                 UserId = Guid.NewGuid(),
                 PickemGroupId = league.Id,
                 ContestId = contestId,
-                FranchiseId = franchiseId,
-                PickType = PickType.StraightUp
+                FranchiseId = franchiseId
             };
 
             await db.PickemGroups.AddAsync(league);
@@ -124,8 +123,7 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring
                 UserId = Guid.NewGuid(),
                 PickemGroupId = league.Id,
                 ContestId = contestId,
-                FranchiseId = teamId,
-                PickType = PickType.StraightUp
+                FranchiseId = teamId
             };
 
             db.PickemGroups.Add(league);

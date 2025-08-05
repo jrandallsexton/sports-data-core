@@ -159,6 +159,9 @@ namespace SportsData.Api
 
             app.UseRouting();
 
+            app.UseAuthentication();   // <-- must be before UseAuthorization
+            app.UseAuthorization();
+
             //app.UseWhen(context =>
             //        !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) &&
             //        !context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase),

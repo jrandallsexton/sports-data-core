@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Api.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    partial class AppDataContextModelSnapshot : ModelSnapshot
+    [Migration("20250805191919_LatestV2")]
+    partial class LatestV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -343,7 +346,7 @@ namespace SportsData.Api.Migrations
                     b.ToTable("PickemGroupContest", (string)null);
                 });
 
-            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupMember", b =>
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -372,12 +375,10 @@ namespace SportsData.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("PickemGroupId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("PickemGroupMember", (string)null);
+                    b.ToTable("PickemGroupUser", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupUserPick", b =>
@@ -621,9 +622,6 @@ namespace SportsData.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FirebaseUid")
-                        .IsUnique();
-
                     b.ToTable("User", (string)null);
 
                     b.HasData(
@@ -631,12 +629,12 @@ namespace SportsData.Api.Migrations
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 8, 5, 21, 1, 40, 892, DateTimeKind.Utc).AddTicks(1840),
+                            CreatedUtc = new DateTime(2025, 8, 5, 19, 19, 18, 958, DateTimeKind.Utc).AddTicks(6923),
                             DisplayName = "Foo Bar",
                             Email = "foo@bar.com",
                             EmailVerified = true,
                             FirebaseUid = "ngovRAr5E8cjMVaZNvcqN1nPFPJ2",
-                            LastLoginUtc = new DateTime(2025, 8, 5, 21, 1, 40, 892, DateTimeKind.Utc).AddTicks(1967),
+                            LastLoginUtc = new DateTime(2025, 8, 5, 19, 19, 18, 958, DateTimeKind.Utc).AddTicks(7038),
                             SignInProvider = "password"
                         });
                 });
@@ -651,25 +649,6 @@ namespace SportsData.Api.Migrations
                         .HasConstraintName("FK_PickemGroupConference_PickemGroup");
 
                     b.Navigation("PickemGroup");
-                });
-
-            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupMember", b =>
-                {
-                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.PickemGroup", "Group")
-                        .WithMany("Members")
-                        .HasForeignKey("PickemGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.User", "User")
-                        .WithMany("GroupMemberships")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Group");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupUserPick", b =>
@@ -687,13 +666,6 @@ namespace SportsData.Api.Migrations
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroup", b =>
                 {
                     b.Navigation("Conferences");
-
-                    b.Navigation("Members");
-                });
-
-            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.User", b =>
-                {
-                    b.Navigation("GroupMemberships");
                 });
 #pragma warning restore 612, 618
         }

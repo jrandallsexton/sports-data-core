@@ -3,6 +3,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries;
 
 using System.Data;
 using Dapper;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
 {
@@ -10,6 +11,10 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
     {
         Task<TeamCardDto?> ExecuteAsync(
             GetTeamCardQuery query, CancellationToken cancellationToken = default);
+
+        Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(Sport sport, List<string> slugs);
+
+        Task<Dictionary<string, Guid>> GetConferenceIdsBySlugsAsync(Sport sport, List<string> slugs);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -65,5 +70,54 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
+        public async Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(
+            Sport sport,
+            List<string> slugs)
+        {
+            const string sql =
+                "SELECT \"Slug\", \"Id\" " +
+                "FROM public.\"Franchise\" " +
+                "WHERE \"Sport\" = @Sport AND \"Slug\" IN @Slugs;";
+
+            try
+            {
+                var results = await _connection.QueryAsync<(string Slug, Guid Id)>(
+                    sql,
+                    new { Sport = (int)sport, Slugs = slugs }
+                );
+
+                return results.ToDictionary(x => x.Slug, x => x.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs);
+                return new Dictionary<string, Guid>();
+            }
+        }
+
+        public async Task<Dictionary<string, Guid>> GetConferenceIdsBySlugsAsync(
+            Sport sport,
+            List<string> slugs)
+        {
+            const string sql =
+                "SELECT \"Slug\", \"Id\" " +
+                "FROM public.\"Group\" " +
+                "WHERE \"Slug\" = ANY(@Slugs);";
+
+            try
+            {
+                var results = await _connection.QueryAsync<(string Slug, Guid Id)>(
+                    sql,
+                    new { Sport = (int)sport, Slugs = slugs }
+                );
+
+                return results.ToDictionary(x => x.Slug, x => x.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs);
+                return new Dictionary<string, Guid>();
+            }
+        }
     }
 }

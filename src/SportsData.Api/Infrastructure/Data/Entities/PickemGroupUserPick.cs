@@ -20,8 +20,6 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public OverUnderPick? OverUnder { get; set; } // Enum: Over, Under
 
-        public PickType PickType { get; set; } // Still [Flags] enum
-
         public int? ConfidencePoints { get; set; }
 
         // === Scoring Fields ===

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using SportsData.Core.Infrastructure.Data.Entities;
 
 using System.ComponentModel.DataAnnotations;
@@ -24,16 +25,21 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? Timezone { get; set; }
 
+        public ICollection<PickemGroupMember> GroupMemberships { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<User>
         {
             public void Configure(EntityTypeBuilder<User> builder)
             {
-                builder.ToTable("User");
+                builder.ToTable(nameof(User));
+
                 builder.HasKey(u => u.Id);
 
                 builder.Property(u => u.FirebaseUid)
                     .IsRequired()
                     .HasMaxLength(128); // UID length limit from Firebase docs
+
+                builder.HasIndex(u => u.FirebaseUid).IsUnique();
 
                 builder.Property(u => u.Email)
                     .IsRequired()
@@ -48,6 +54,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(u => u.Timezone)
                     .HasMaxLength(100);
+
+                builder
+                    .HasMany(u => u.GroupMemberships)
+                    .WithOne(m => m.User)
+                    .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade); // or Restrict, depending on business rules
             }
         }
 

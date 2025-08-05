@@ -22,7 +22,7 @@ function HomePage() {
         { week: "5", accuracy: 60, correctPicks: 12, totalPicks: 20 },
         { week: "6", accuracy: 85, correctPicks: 17, totalPicks: 20 },
         { week: "7", accuracy: 72, correctPicks: 14, totalPicks: 19 },
-      ]
+      ],
     },
     group1: {
       name: "Fantasy Football League",
@@ -34,7 +34,7 @@ function HomePage() {
         { week: "5", accuracy: 68, correctPicks: 11, totalPicks: 16 },
         { week: "6", accuracy: 81, correctPicks: 13, totalPicks: 16 },
         { week: "7", accuracy: 75, correctPicks: 12, totalPicks: 16 },
-      ]
+      ],
     },
     group2: {
       name: "Office Pool",
@@ -46,8 +46,8 @@ function HomePage() {
         { week: "5", accuracy: 53, correctPicks: 8, totalPicks: 15 },
         { week: "6", accuracy: 86, correctPicks: 13, totalPicks: 15 },
         { week: "7", accuracy: 66, correctPicks: 10, totalPicks: 15 },
-      ]
-    }
+      ],
+    },
   };
 
   // AI Accuracy Data
@@ -78,11 +78,24 @@ function HomePage() {
       { week: "5", aiAccuracy: 73, correctPicks: 11, totalPicks: 15 },
       { week: "6", aiAccuracy: 86, correctPicks: 13, totalPicks: 15 },
       { week: "7", aiAccuracy: 80, correctPicks: 12, totalPicks: 15 },
-    ]
+    ],
   };
 
   return (
     <div className="home-page">
+      <div className="card">
+        <h2>Pick'em Leagues</h2>
+        <p>Create or join a private league to compete with friends.</p>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <Link to="/app/league/create" className="card-link">
+            Create a League
+          </Link>
+          <Link to="/app/join-league" className="card-link">
+            Join a League
+          </Link>
+        </div>
+      </div>
+
       {/* Leaderboard + Your Stats */}
       <section className="card-section">
         <div className="card">
@@ -125,13 +138,13 @@ function HomePage() {
       </section>
 
       <section className="chart-section">
-        <PickAccuracyChart 
+        <PickAccuracyChart
           selectedGroup={selectedGroup}
           onGroupChange={setSelectedGroup}
           groups={pickGroups}
         />
 
-        <AIAccuracyChart 
+        <AIAccuracyChart
           selectedGroup={selectedAIGroup}
           onGroupChange={setSelectedAIGroup}
           groups={pickGroups}

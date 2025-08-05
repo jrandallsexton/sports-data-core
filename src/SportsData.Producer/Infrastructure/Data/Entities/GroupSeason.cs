@@ -58,7 +58,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(t => t.MidsizeName)
                     .HasMaxLength(100);
 
-                builder.HasOne<Group>()
+                builder.HasOne(x => x.Group)
                     .WithMany(x => x.Seasons)
                     .HasForeignKey(x => x.GroupId)
                     .OnDelete(DeleteBehavior.Cascade);

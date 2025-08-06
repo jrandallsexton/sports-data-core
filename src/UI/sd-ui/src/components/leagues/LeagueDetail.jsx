@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import leaguesApi from "../../api/leagues/leaguesApi";
-import './LeagueDetail.css';
+import "./LeagueDetail.css";
+import LeagueInvitation from "./LeagueInvitation";
 
 const LeagueDetail = () => {
   const { id } = useParams();
@@ -29,19 +30,35 @@ const LeagueDetail = () => {
 
   return (
     <div className="page-container">
-      <h1>{league.name}</h1>
-      <p><strong>Description:</strong> {league.description || "None"}</p>
-
+      <h2>{league.name}</h2>
       <ul>
-        <li><strong>Pick Type:</strong> {league.pickType}</li>
-        <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
-        <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
-        <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
-        <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
-        <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
+        <li>
+          <strong>Description:</strong> {league.description}
+        </li>
+        <li>
+          <strong>Pick Type:</strong> {league.pickType}
+        </li>
+        <li>
+          <strong>Tiebreaker:</strong> {league.tiebreakerType}
+        </li>
+        <li>
+          <strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}
+        </li>
+        <li>
+          <strong>Confidence Points:</strong>{" "}
+          {league.useConfidencePoints ? "Yes" : "No"}
+        </li>
+        <li>
+          <strong>Ranking Filter:</strong> {league.rankingFilter || "None"}
+        </li>
+        <li>
+          <strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}
+        </li>
         <li>
           <strong>Conferences:</strong>{" "}
-          {league.conferenceSlugs?.length > 0 ? league.conferenceSlugs.join(", ") : "None"}
+          {league.conferenceSlugs?.length > 0
+            ? league.conferenceSlugs.join(", ")
+            : "None"}
         </li>
       </ul>
 
@@ -59,6 +76,9 @@ const LeagueDetail = () => {
           <p>No members yet.</p>
         )}
       </div>
+
+        <LeagueInvitation leagueId={league.id} leagueName={league.name} />
+
     </div>
   );
 };

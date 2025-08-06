@@ -1,5 +1,4 @@
-﻿using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Commands;
-using SportsData.Api.Infrastructure.Data;
+﻿using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage

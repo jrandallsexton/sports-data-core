@@ -3,7 +3,7 @@
 .home-page {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1px;
 }
 
 h1 {
@@ -107,7 +107,7 @@ h2 {
 .chart-section {
   display: flex;
   gap: 20px;
-  margin-top: 40px;
+  margin-top: 20px;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;

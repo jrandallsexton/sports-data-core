@@ -4,6 +4,8 @@ namespace SportsData.Api.Application.User
 {
     public class UserDto
     {
+        public Guid Id { get; set; }
+
         public string? FirebaseUid { get; set; }
 
         [Required]
@@ -16,5 +18,7 @@ namespace SportsData.Api.Application.User
         public string? Timezone { get; set; }
 
         public DateTime LastLoginUtc { get; set; }
+
+        public bool HasLeagues { get; set; }
     }
 }

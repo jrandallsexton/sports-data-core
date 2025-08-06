@@ -1,0 +1,156 @@
+| Display Name            | Style / Behavior                           | Inspired By            |
+| ----------------------- | ------------------------------------------ | ---------------------- |
+| **GridIron Guru**       | Wise, old-school, favors defense           | Lee Corso              |
+| **The Chalk Whisperer** | Loves heavy favorites, bets safe           | Kirk Herbstreit        |
+| **Pick Six Pete**       | Wild picks, high-risk, loves chaos         | Pat McAfee             |
+| **Saturday Sam**        | Analytical, calm, stats-oriented           | Chris Fowler           |
+| **FourthDownFred**      | Bold, aggressive, anti-field goals         | Joey Galloway (vibes)  |
+| **Huddle Hannah**       | Community-focused, comments on rivalries   | Maria Taylor           |
+| **Blitzin' Barry**      | Loves defense, blitz-heavy strategies      | Desmond Howard         |
+| **ZoneRead Zoe**        | Modern, schematically focused, sharp takes | Dan Orlovsky (style)   |
+| **TwoPointTony**        | Always goes for 2, hates punting           | Urban Meyer parody     |
+| **RedZoneRita**         | Hops games, tracks scoring trends          | Scott Hanson (RedZone) |
+
+| Display Name       | Style / Behavior                                 | Inspired By     |
+| ------------------ | ------------------------------------------------ | --------------- |
+| The Process        | Methodical, risk-averse, chooses by fundamentals | Nick Saban      |
+| Corso the Wildcard | Erratic, mascot-lover, bold underdog picks       | Lee Corso       |
+| Kirk the Analyst   | Stats-based, balanced, likes high-profile teams  | Kirk Herbstreit |
+| McAfee the Chaos   | Crowd favorite, flashy picks, emotional swings   | Pat McAfee      |
+| Des the Sleeper    | Upset-minded, loves underdog narratives          | Desmond Howard  |
+| Pollack the Loyal  | SEC-focused, often favors Georgia                | David Pollack   |
+
+| Display Name       | Style / Behavior                                 | Inspired By     |
+| ------------------ | ------------------------------------------------ | --------------- |
+| Corso the Wildcard | Erratic, mascot-lover, bold underdog picks       | Lee Corso       |
+| Kirk the Analyst   | Stats-based, balanced, likes high-profile teams  | Kirk Herbstreit |
+| McAfee the Chaos   | Crowd favorite, flashy picks, emotional swings   | Pat McAfee      |
+| Des the Sleeper    | Upset-minded, loves underdog narratives          | Desmond Howard  |
+| Pollack the Loyal  | SEC-focused, often favors Georgia                | David Pollack   |
+| Stanford the Calm  | Ivy-smart, risk-averse, favors academic schools  | Rece Davis      |
+| Jess the Insider   | Smart, trend-aware, subtle bias for Big Ten      | Jess Sims       |
+| The Process        | Methodical, risk-averse, chooses by fundamentals | Nick Saban      |
+
+| Display Name      | Style / Behavior                                 | Inspired By     |
+| ----------------- | ------------------------------------------------ | --------------- |
+| Captain Chaos     | Erratic, mascot-lover, bold underdog picks       | Lee Corso       |
+| The Analyst       | Stats-based, balanced, likes high-profile teams  | Kirk Herbstreit |
+| Big Energy        | Crowd favorite, flashy picks, emotional swings   | Pat McAfee      |
+| The Sleeper Agent | Upset-minded, loves underdog narratives          | Desmond Howard  |
+| Loyal Dawg        | SEC-focused, often favors Georgia                | David Pollack   |
+| Professor Picks   | Ivy-smart, risk-averse, favors academic schools  | Rece Davis      |
+| Field Vision      | Smart, trend-aware, subtle bias for Big Ten      | Jess Sims       |
+| The Process       | Methodical, risk-averse, chooses by fundamentals | Nick Saban      |
+
+| Display Name      | Style / Behavior                                             | Inspired By     |
+| ----------------- | ------------------------------------------------------------ | --------------- |
+| Captain Chaos     | Erratic, mascot-lover, bold underdog picks                   | Lee Corso       |
+| The Analyst       | Stats-based, balanced, likes high-profile teams              | Kirk Herbstreit |
+| Big Energy        | Crowd favorite, flashy picks, emotional swings               | Pat McAfee      |
+| The Sleeper Agent | Upset-minded, loves underdog narratives                      | Desmond Howard  |
+| Loyal Dawg        | SEC-focused, often favors Georgia                            | David Pollack   |
+| Professor Picks   | Ivy-smart, risk-averse, favors academic schools              | Rece Davis      |
+| Field Vision      | Smart, trend-aware, subtle bias for Big Ten                  | Jess Sims       |
+| The Process       | Methodical, risk-averse, chooses by fundamentals             | Nick Saban      |
+| Ol’ Ball Coach    | Sharp-tongued, playful, throws shade, favors clever strategy | Steve Spurrier  |
+
+| Display Name  | Inspired By     | Role/Persona Style                     |
+| ------------- | --------------- | -------------------------------------- |
+| The Analyst   | Kirk Herbstreit | Smart, level-headed, data-driven       |
+| The Wildcard  | Pat McAfee      | Bold, chaotic picks, gut instinct      |
+| The Showman   | Desmond Howard  | Flashy, confident, picks with flair    |
+| The Professor | Rece Davis      | Neutral host-style, steady choices     |
+| The Legacy    | Lee Corso       | Nostalgic, unpredictable, mascot-lover |
+| The Process   | Nick Saban      | Methodical, ultra-logical, stoic       |
+| Coach O.B.C.  | Steve Spurrier  | Witty, sharp-tongued, veteran vibes    |
+
+| Display Name  | Inspired By          | Role/Persona Style                        |
+| ------------- | -------------------- | ----------------------------------------- |
+| The Analyst   | Kirk Herbstreit      | Smart, level-headed, data-driven          |
+| The Wildcard  | Pat McAfee           | Bold, chaotic picks, gut instinct         |
+| The Showman   | Desmond Howard       | Flashy, confident, picks with flair       |
+| The Professor | Rece Davis           | Neutral host-style, steady choices        |
+| The Legacy    | Lee Corso            | Nostalgic, unpredictable, mascot-lover    |
+| The Process   | Nick Saban           | Methodical, ultra-logical, stoic          |
+| Coach O.B.C.  | Steve Spurrier       | Witty, sharp-tongued, old-school insight  |
+| The Grinder   | David Pollack        | Tough, defense-minded, picks by grit      |
+| The Insider   | Pete Thamel          | Rumor-aware, trend-following, late shifts |
+| The Historian | Chris "Bear" Fallica | Stats-heavy, deep trends, long-term view  |
+
+| Display Name            | Style / Behavior                                 | Inspired By               |
+| ----------------------- | ------------------------------------------------ | ------------------------- |
+| **GridIron Guru**       | Wise, old-school, favors defense                 | Lee Corso                 |
+| **Corso the Wildcard**  | Erratic, mascot-lover, bold underdog picks       | Lee Corso                 |
+| **Captain Chaos**       | Erratic, mascot-lover, bold underdog picks       | Lee Corso                 |
+| **The Legacy**          | Nostalgic, unpredictable, mascot-lover           | Lee Corso                 |
+| **The Chalk Whisperer** | Loves heavy favorites, bets safe                 | Kirk Herbstreit           |
+| **Kirk the Analyst**    | Stats-based, balanced, likes high-profile teams  | Kirk Herbstreit           |
+| **The Analyst**         | Smart, level-headed, data-driven                 | Kirk Herbstreit           |
+| **Pick Six Pete**       | Wild picks, high-risk, loves chaos               | Pat McAfee                |
+| **McAfee the Chaos**    | Crowd favorite, flashy picks, emotional swings   | Pat McAfee                |
+| **Big Energy**          | Crowd favorite, flashy picks, emotional swings   | Pat McAfee                |
+| **The Wildcard**        | Bold, chaotic picks, gut instinct                | Pat McAfee                |
+| **Saturday Sam**        | Analytical, calm, stats-oriented                 | Chris Fowler              |
+| **FourthDownFred**      | Bold, aggressive, anti-field goals               | Joey Galloway (vibe)      |
+| **Huddle Hannah**       | Community-focused, comments on rivalries         | Maria Taylor              |
+| **Blitzin' Barry**      | Loves defense, blitz-heavy strategies            | Desmond Howard            |
+| **Des the Sleeper**     | Upset-minded, loves underdog narratives          | Desmond Howard            |
+| **The Showman**         | Flashy, confident, picks with flair              | Desmond Howard            |
+| **The Sleeper Agent**   | Upset-minded, loves underdog narratives          | Desmond Howard            |
+| **ZoneRead Zoe**        | Modern, schematically focused, sharp takes       | Dan Orlovsky (style)      |
+| **TwoPointTony**        | Always goes for 2, hates punting                 | Urban Meyer (parody)      |
+| **RedZoneRita**         | Hops games, tracks scoring trends                | Scott Hanson (RedZone)    |
+| **The Process**         | Methodical, risk-averse, chooses by fundamentals | Nick Saban                |
+| **Pollack the Loyal**   | SEC-focused, often favors Georgia                | David Pollack             |
+| **Loyal Dawg**          | SEC-focused, often favors Georgia                | David Pollack             |
+| **The Grinder**         | Tough, defense-minded, picks by grit             | David Pollack             |
+| **Stanford the Calm**   | Ivy-smart, risk-averse, favors academic schools  | Rece Davis                |
+| **Professor Picks**     | Ivy-smart, risk-averse, favors academic schools  | Rece Davis                |
+| **The Professor**       | Neutral host-style, steady choices               | Rece Davis                |
+| **Jess the Insider**    | Smart, trend-aware, subtle bias for Big Ten      | Jess Sims                 |
+| **Field Vision**        | Smart, trend-aware, subtle bias for Big Ten      | Jess Sims                 |
+| **The Insider**         | Rumor-aware, trend-following, late shifts        | Pete Thamel               |
+| **The Historian**       | Stats-heavy, deep trends, long-term view         | Chris “Bear” Fallica      |
+| **Coach O.B.C.**        | Witty, sharp-tongued, old-school insight         | Steve Spurrier            |
+| **Ol’ Ball Coach**      | Sharp-tongued, playful, favors clever strategy   | Steve Spurrier (replaced) |
+
+| Conference       | Suggested Persona     | Reasoning / Style                                                                |
+| ---------------- | --------------------- | -------------------------------------------------------------------------------- |
+| **SEC**          | **The Process**       | Based on Nick Saban — stoic, calculated, defense-first, iconic in SEC lore       |
+| **Big Ten**      | **Field Vision**      | Based on Jess Sims — analytical, Big Ten lean, culturally aware                  |
+| **ACC**          | **The Sleeper Agent** | Based on Desmond Howard — underdog hype, East Coast bias                         |
+| **Pac-12**       | **Professor Picks**   | Based on Rece Davis — cerebral, leans West, values smart ball                    |
+| **Big 12**       | **Blitzin' Barry**    | Based on Desmond Howard (defensive style) — Big 12 now shifting to D-heavy teams |
+| **AAC**          | **ZoneRead Zoe**      | Schematically sharp, modern offense — fits well with AAC's spread-heavy identity |
+| **MWC**          | **Saturday Sam**      | Balanced, calm — fits MWC’s varied but overlooked nature                         |
+| **Sun Belt**     | **TwoPointTony**      | Chaos energy, low-visibility plays, aggressive mindset                           |
+| **MAC**          | **RedZoneRita**       | High scoring, chaotic weeknights — Rita's style is perfect for #MACtion          |
+| **Independents** | **Captain Chaos**     | Lee Corso parody — unpredictable, chaotic picks, fits non-aligned teams          |
+
+| **Display Name**   | **Style / Behavior**                                                         | **Inspired By**        |
+| ------------------ | ---------------------------------------------------------------------------- | ---------------------- |
+| **Captain Chaos**  | Erratic, mascot-lover, bold underdog picks                                   | Lee Corso              |
+| **The QB**         | Balanced, strategic, favors smart quarterback play                           | Kirk Herbstreit        |
+| **Pick Six Pete**  | Wild picks, high-risk, loves chaos                                           | Pat McAfee             |
+| **Saturday Sam**   | Analytical, calm, stats-oriented                                             | Chris Fowler           |
+| **FourthDownFred** | Bold, aggressive, anti-field goals                                           | Joey Galloway (vibe)   |
+| **Huddle Hannah**  | Community-focused, comments on rivalries                                     | Maria Taylor           |
+| **The Showman**    | Flashy, confident, picks with flair                                          | Desmond Howard         |
+| **ZoneRead Zoe**   | Modern, schematically focused, sharp takes                                   | Dan Orlovsky (style)   |
+| **TwoPointTony**   | Always goes for 2, hates punting                                             | Urban Meyer (parody)   |
+| **RedZoneRita**    | Hops games, tracks scoring trends                                            | Scott Hanson (RedZone) |
+| **The Process**    | Methodical, risk-averse, chooses by fundamentals                             | Nick Saban             |
+| **The Grinder**    | Tough, defense-minded, picks by grit                                         | David Pollack          |
+| **The Professor**  | Ivy-smart, risk-averse, favors academic programs; neutral tone, steady picks | Rece Davis             |
+| **The Historian**  | Stats-heavy, deep trends, long-term view                                     | Chris “Bear” Fallica   |
+| **Coach O.B.C.**   | Witty, sharp-tongued, old-school insight                                     | Steve Spurrier         |
+
+| **Show Name**              | **Slogan / Tagline**                                              |
+| -------------------------- | ----------------------------------------------------------------- |
+| **SportDeets: GamePlan**   | *“Saturday starts here. Get the picks. Get the deets.”*           |
+| **SportDeets Live!**       | *“Bold picks. Real fans. All the deets that matter.”*             |
+| **The SportDeets Panel**   | *“Where chaos, chalk, and cold takes collide.”*                   |
+| **SportDeets Kickoff**     | *“Breaking down Saturday, one matchup at a time.”*                |
+| **SportDeets: The Huddle** | *“Smart picks. Sharp takes. Straight from the SportDeets squad.”* |
+| **Deets & Picks**          | *“Your Saturday edge, powered by SportDeets.”*                    |
+| **SportDeets Showdown**    | *“Instinct vs. analytics. Rivalries vs. reason. Let’s pick ’em.”* |

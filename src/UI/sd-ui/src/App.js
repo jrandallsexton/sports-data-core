@@ -1,3 +1,4 @@
+// src/App.js
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import {
@@ -17,6 +18,7 @@ import PrivacyPage from "./components/legal/PrivacyPage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import PrivateRoute from "./routes/PrivateRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { UserProvider } from "./contexts/UserContext";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -59,9 +61,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <UserProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </UserProvider>
       </AuthProvider>
     </ThemeProvider>
   );

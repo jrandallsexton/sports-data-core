@@ -21,9 +21,19 @@ const getLeagueById = async (id) => {
   return response.data;
 };
 
+/**
+ * Fetches all leagues the current user belongs to.
+ * @returns {Promise<LeagueSummaryDto[]>} Array of leagues
+ */
+const getUserLeagues = async () => {
+  const response = await apiClient.get("/ui/league");
+  return response.data;
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
+  getUserLeagues,
 };
 
 export default LeaguesApi;

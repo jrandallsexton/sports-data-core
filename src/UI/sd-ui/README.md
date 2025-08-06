@@ -87,7 +87,7 @@ This document tracks planned feature work, technical debt cleanup, and future en
 - ThemeContext (for light/dark mode switching)
 
 ## Layout
-- MainApp.jsx
+- MainApp.js
 - Sidebar navigation
 - Responsive layout support
 

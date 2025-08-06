@@ -5,10 +5,12 @@ import AIAccuracyChart from "./AIAccuracyChart";
 import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
 import "./HomePage.css";
+import { useUserDto } from "../../contexts/UserContext";
 
 function HomePage() {
   const [selectedGroup, setSelectedGroup] = useState("all");
   const [selectedAIGroup, setSelectedAIGroup] = useState("all");
+  const { userDto, loading: userLoading } = useUserDto();
 
   // Sample data structure for multiple groups
   const pickGroups = {
@@ -81,6 +83,12 @@ function HomePage() {
     ],
   };
 
+  if (userLoading) {
+    return <div>Loading your dashboard...</div>;
+  }
+
+  console.log('userDto:', userDto);
+  
   return (
     <div className="home-page">
       <div className="card">
@@ -93,6 +101,11 @@ function HomePage() {
           <Link to="/app/join-league" className="card-link">
             Join a League
           </Link>
+          {userDto?.hasLeagues && (
+            <Link to="/app/league" className="card-link">
+              My Leagues
+            </Link>
+          )}
         </div>
       </div>
 

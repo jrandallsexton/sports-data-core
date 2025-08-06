@@ -19,6 +19,7 @@ import apiWrapper from "./api/apiWrapper";
 import LeagueCreatePage from "./components/leagues/LeagueCreatePage";
 import LandingFooter from "./components/landing/LandingFooter";
 import LeagueDetail from "./components/leagues/LeagueDetail";
+import Leagues from "./components/leagues/Leagues";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -91,6 +92,7 @@ function MainApp() {
           <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
           <Route path="league/create" element={<LeagueCreatePage />} />
           <Route path="league/:id" element={<LeagueDetail />} />
+          <Route path="league" element={<Leagues />} />
           <Route path="*" element={<div className="not-found">Page Not Found</div>} />
         </Routes>
       </main>

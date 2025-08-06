@@ -25,6 +25,10 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? Timezone { get; set; }
 
+        public bool IsSynthetic { get; set; }
+
+        public bool IsPanelPersona { get; set; } = false;
+
         public ICollection<PickemGroupMember> GroupMemberships { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<User>

@@ -1,6 +1,6 @@
 ﻿using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Commands
+namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
 {
     public class CreateLeagueCommand
     {

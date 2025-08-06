@@ -1,12 +1,8 @@
-﻿using AutoFixture;
-
-using FluentAssertions;
+﻿using FluentAssertions;
 
 using Moq;
 
-using SportsData.Api.Application;
-using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
-using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Commands;
+using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
@@ -15,7 +11,7 @@ using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.LeagueCreationPage;
 
-public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
+public class LeagueCreationServiceTests : ApiTestBase<LeagueService>
 {
     private CreateLeagueRequest BuildValidRequest() => new()
     {
@@ -80,7 +76,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
     [Fact]
     public async Task ShouldThrow_WhenNameIsNull()
     {
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
         request.Name = null!;
 
@@ -93,7 +89,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
     [Fact]
     public async Task ShouldThrow_WhenConferenceSlugsAreEmpty()
     {
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
         request.ConferenceSlugs = new List<string>();
 
@@ -106,7 +102,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
     [Fact]
     public async Task ShouldThrow_WhenPickTypeIsInvalid()
     {
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
         request.PickType = "Garbage";
 
@@ -119,7 +115,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
     [Fact]
     public async Task ShouldThrow_WhenTiebreakerTypeIsInvalid()
     {
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
         request.TiebreakerType = "Garbage";
 
@@ -132,7 +128,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
     [Fact]
     public async Task ShouldThrow_WhenTiebreakerTiePolicyIsInvalid()
     {
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
         request.TiebreakerTiePolicy = "Nope";
 
@@ -160,7 +156,7 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueCreationService>
             .Setup(x => x.GetFranchiseIdsBySlugsAsync(Sport.FootballNcaa, request.ConferenceSlugs))
             .ReturnsAsync(slugToGuid);
 
-        var sut = Mocker.CreateInstance<LeagueCreationService>();
+        var sut = Mocker.CreateInstance<LeagueService>();
 
         var act = () => sut.CreateAsync(request, currentUserId);
 

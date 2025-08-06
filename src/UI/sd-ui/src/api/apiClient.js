@@ -1,5 +1,5 @@
 import axios from "axios";
-//import toast from "react-hot-toast";
+import { getAuth } from "firebase/auth";
 
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL,
@@ -7,26 +7,32 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Enable sending cookies with requests
+  // No cookies needed
+  withCredentials: false,
 });
 
-// 🔥 Optional interceptors:
-apiClient.interceptors.request.use((config) => {
-  console.log("API Request URL:", config.url);
-  console.log("Request Headers:", config.headers);
-  // No need to manually add token as it will be sent via cookie
+apiClient.interceptors.request.use(async (config) => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.warn("No Firebase user found. Skipping Authorization header.");
+  }
+
   return config;
 });
 
 apiClient.interceptors.response.use(
-  response => {
+  (response) => {
     console.log("API Response:", response.status, response.config.url);
     return response;
   },
-  async error => {
+  async (error) => {
     console.log("API Error:", error.response?.status, error.config?.url);
     if (error.response?.status === 401) {
-      // Mark the error as unauthorized for components to handle
       error.isUnauthorized = true;
     }
     return Promise.reject(error);

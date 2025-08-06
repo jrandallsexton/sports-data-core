@@ -3,7 +3,7 @@
 ## Frontend Changes (Completed) ✅
 - Updated `apiClient.js` to use cookies instead of localStorage
 - Modified `AuthContext.jsx` for secure token management
-- Updated `MainApp.jsx` sign-out handling
+- Updated `MainApp.js` sign-out handling
 - Added `clearToken` method to `apiWrapper.js`
 - Added comprehensive tests for `AuthContext` in `AuthContext.test.jsx`
 

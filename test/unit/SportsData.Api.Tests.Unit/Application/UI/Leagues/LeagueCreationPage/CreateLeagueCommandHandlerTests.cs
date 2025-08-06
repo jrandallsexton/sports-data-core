@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
-using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Commands;
 using SportsData.Core.Common;
 
 using Xunit;

@@ -28,12 +28,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public bool UseConfidencePoints { get; set; }
 
         public bool IsPublic { get; set; }
+
+        public int? MaxUsers { get; set; }
         
         public Guid CommissionerUserId { get; set; }
 
         public ICollection<PickemGroupConference> Conferences { get; set; } = [];
 
         public ICollection<PickemGroupMember> Members { get; set; } = [];
+
+        public ICollection<PickemGroupInvitation> Invitations { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<PickemGroup>
         {

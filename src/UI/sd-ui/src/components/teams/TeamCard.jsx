@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import "./TeamCard.css";
-import { formatToEasternTime } from "../../utils/timeUtils";
+import TeamSchedule from "./TeamSchedule";
+import TeamNews from "./TeamNews";
 
 function TeamCard() {
   const { slug, seasonYear } = useParams();
@@ -49,72 +50,15 @@ function TeamCard() {
           <h2 className="team-name">{team.name}</h2>
           <p className="team-location">{team.location}</p>
           <p className="team-stadium">
-            {team.stadiumName} – {team.stadiumCapacity.toLocaleString()} capacity
+            {team.stadiumName} – {team.stadiumCapacity.toLocaleString()}{" "}
+            capacity
           </p>
         </div>
       </div>
 
-      <div className="team-news">
-        <h3>Latest News</h3>
-        <ul>
-          {team.news?.length ? (
-            team.news.map((item, idx) => (
-              <li key={idx}>
-                <a href={item.link} target="_blank" rel="noopener noreferrer">
-                  {item.title}
-                </a>
-              </li>
-            ))
-          ) : (
-            <div>No news available.</div>
-          )}
-        </ul>
-      </div>
+      <TeamNews news={team.news} />
 
-      <div className="team-schedule">
-        <h3>Schedule ({resolvedSeason})</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Kickoff (ET)</th>
-              <th>Opponent</th>
-              <th>Location</th>
-              <th>Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {team.schedule?.length ? (
-              team.schedule.map((game, idx) => (
-                <tr key={idx}>
-                  <td>{formatToEasternTime(game.date)}</td>
-                  <td>
-                    <Link
-                      to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${resolvedSeason}`}
-                      className="team-link"
-                    >
-                      {game.opponent}
-                    </Link>
-                  </td>
-                  <td>{game.location}</td>
-                  <td
-                    className={
-                      game.result.trim().toUpperCase().startsWith("W")
-                        ? "result-win"
-                        : "result-loss"
-                    }
-                  >
-                    {game.result}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="3">No games scheduled.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
     </div>
   );
 }

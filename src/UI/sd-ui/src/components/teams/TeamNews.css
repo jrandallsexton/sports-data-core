@@ -1,0 +1,29 @@
+.team-news {
+  margin-top: 2rem;
+}
+
+.team-news h3 {
+  font-size: 1.25rem;
+  color: var(--highlight-color, #ffc107);
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--highlight-color, #ffc107);
+  padding-bottom: 0.25rem;
+}
+
+.team-news ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+.team-news li {
+  margin-bottom: 0.4rem;
+}
+
+.team-news a {
+  color: #0dcaf0;
+  text-decoration: none;
+}
+
+.team-news a:hover {
+  text-decoration: underline;
+}

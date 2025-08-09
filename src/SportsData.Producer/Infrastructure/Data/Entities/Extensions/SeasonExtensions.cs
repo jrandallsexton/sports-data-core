@@ -30,7 +30,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 {
                     new SeasonExternalId
                     {
-                        Id = identity.CanonicalId,
+                        Id = Guid.NewGuid(),
                         Value = identity.UrlHash,
                         SourceUrl = identity.CleanUrl,
                         Provider = SourceDataProvider.Espn,

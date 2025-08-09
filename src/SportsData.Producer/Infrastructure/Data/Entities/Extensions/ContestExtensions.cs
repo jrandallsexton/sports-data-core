@@ -34,7 +34,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Value = identity.UrlHash,
                         Provider = SourceDataProvider.Espn,
                         SourceUrlHash = identity.UrlHash,
-                        SourceUrl = dto.Ref.ToCleanUrl()
+                        SourceUrl = identity.CleanUrl
                     }
                 ],
                 Sport = sport,

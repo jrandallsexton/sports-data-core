@@ -13,6 +13,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             string espnAwardId,
             string espnAwardSourceUrlHash)
         {
+            // TODO: Use Identity
             var award = new Award
             {
                 Id = Guid.NewGuid(),

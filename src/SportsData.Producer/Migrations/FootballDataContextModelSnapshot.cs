@@ -5160,9 +5160,6 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("GroupId1")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("MidsizeName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -5194,8 +5191,6 @@ namespace SportsData.Producer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GroupId");
-
-                    b.HasIndex("GroupId1");
 
                     b.ToTable("GroupSeason", (string)null);
                 });
@@ -6975,15 +6970,9 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", "Group")
                         .WithMany("Seasons")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", "Group")
-                        .WithMany()
-                        .HasForeignKey("GroupId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

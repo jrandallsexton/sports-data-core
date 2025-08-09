@@ -12,6 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             int seasonYear,
             Guid correlationId)
         {
+            // TODO: Use Identity
             return new GroupSeason
             {
                 Id = groupSeasonId,

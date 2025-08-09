@@ -140,38 +140,39 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             await _publishEndpoint.PublishBatch(events);
         }
 
+        // TODO: Figure out what to do with these
         // 3. Child entities to be sourced
-        if (dto.Team?.Ref is not null)
-        {
-            _logger.LogInformation("Requesting Team document: {Ref}", dto.Team.Ref);
+        //if (dto.Team?.Ref is not null)
+        //{
+        //    _logger.LogInformation("Requesting Team document: {Ref}", dto.Team.Ref);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                dto.Team.Ref.Segments.Last().TrimEnd('/'),
-                newEntity.Id.ToString(),
-                dto.Team.Ref,
-                command.Sport,
-                command.Season,
-                DocumentType.TeamSeason,
-                command.SourceDataProvider,
-                command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor));
-        }
+        //    await _publishEndpoint.Publish(new DocumentRequested(
+        //        dto.Team.Ref.Segments.Last().TrimEnd('/'),
+        //        newEntity.Id.ToString(),
+        //        dto.Team.Ref,
+        //        command.Sport,
+        //        command.Season,
+        //        DocumentType.TeamSeason,
+        //        command.SourceDataProvider,
+        //        command.CorrelationId,
+        //        CausationId.Producer.FranchiseDocumentProcessor));
+        //}
 
-        if (dto.Awards?.Ref is not null)
-        {
-            _logger.LogInformation("Requesting Franchise Awards document: {Ref}", dto.Awards.Ref);
+        //if (dto.Awards?.Ref is not null)
+        //{
+        //    _logger.LogInformation("Requesting Franchise Awards document: {Ref}", dto.Awards.Ref);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                dto.Awards.Ref.Segments.Last().TrimEnd('/'),
-                newEntity.Id.ToString(),
-                dto.Awards.Ref,
-                command.Sport,
-                command.Season,
-                DocumentType.Award,
-                command.SourceDataProvider,
-                command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor));
-        }
+        //    await _publishEndpoint.Publish(new DocumentRequested(
+        //        dto.Awards.Ref.Segments.Last().TrimEnd('/'),
+        //        newEntity.Id.ToString(),
+        //        dto.Awards.Ref,
+        //        command.Sport,
+        //        command.Season,
+        //        DocumentType.Award,
+        //        command.SourceDataProvider,
+        //        command.CorrelationId,
+        //        CausationId.Producer.FranchiseDocumentProcessor));
+        //}
 
         // 4. Raise the integration event
         await _publishEndpoint.Publish(

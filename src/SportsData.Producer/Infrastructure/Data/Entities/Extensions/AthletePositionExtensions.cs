@@ -11,14 +11,13 @@ public static class AthletePositionExtensions
     public static AthletePosition AsEntity(
         this EspnAthletePositionDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        Guid positionId,
         Guid? parentId = null)
     {
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
         return new AthletePosition
         {
-            Id = positionId,
+            Id = identity.CanonicalId,
             Name = dto.Name.ToCanonicalForm(),
             DisplayName = dto.DisplayName.ToCanonicalForm(),
             Abbreviation = dto.Abbreviation?.Trim().ToUpper() ?? string.Empty,
@@ -28,7 +27,7 @@ public static class AthletePositionExtensions
             {
                 new()
                 {
-                    Id = identity.CanonicalId,
+                    Id = Guid.NewGuid(),
                     Value = identity.UrlHash,
                     Provider = SourceDataProvider.Espn,
                     SourceUrlHash = identity.UrlHash,

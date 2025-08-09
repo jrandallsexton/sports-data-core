@@ -18,7 +18,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             return new Group()
             {
-                Id = groupId,
+                Id = identity.CanonicalId,
                 Abbreviation = dto.Abbreviation,
                 CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,

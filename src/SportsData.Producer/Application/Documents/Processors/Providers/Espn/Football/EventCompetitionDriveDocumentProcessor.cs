@@ -134,6 +134,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 startFranchiseSeasonId,
                 endFranchiseSeasonId);
 
+            // TODO: If sequence is "-1", log a warning with the URL
+
             await _dataContext.Drives.AddAsync(entity);
             await _dataContext.SaveChangesAsync();
         }

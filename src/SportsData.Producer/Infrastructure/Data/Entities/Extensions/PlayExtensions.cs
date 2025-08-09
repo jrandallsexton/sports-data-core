@@ -19,7 +19,7 @@ public static class PlayExtensions
 
         return new Play
         {
-            Id = Guid.NewGuid(),
+            Id = identity.CanonicalId,
             AlternativeText = dto.AlternativeText,
             AwayScore = dto.AwayScore,
             CreatedBy = correlationId,
@@ -56,7 +56,7 @@ public static class PlayExtensions
             {
                 new()
                 {
-                    Id = identity.CanonicalId,
+                    Id = Guid.NewGuid(),
                     Value = identity.UrlHash,
                     Provider = SourceDataProvider.Espn,
                     SourceUrlHash = identity.UrlHash,

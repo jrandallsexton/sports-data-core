@@ -43,7 +43,7 @@ public static class DriveExtensions
             OffensivePlays = dto.OffensivePlays,
             Ordinal = int.TryParse(dto.SequenceNumber, out var ordinal) ? ordinal : 0,
             Result = dto.Result,
-            SequenceNumber = dto.SequenceNumber,
+            SequenceNumber = dto.SequenceNumber ?? "-1", // TODO: Determine why this is null sometimes
             ShortDisplayResult = dto.ShortDisplayResult,
             SourceDescription = dto.Source?.Description,
             SourceId = dto.Source?.Id,

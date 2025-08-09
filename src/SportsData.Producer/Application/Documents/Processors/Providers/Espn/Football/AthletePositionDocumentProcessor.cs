@@ -115,9 +115,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
         // 3️ No match found — proceed to create brand new AthletePosition
         _logger.LogInformation("No existing AthletePosition found for Name '{Name}'. Creating new entity.", normalizedName);
-
-        var newPositionId = Guid.NewGuid();
-
+        
         Guid? parentId = null;
 
         if (dto.Parent is not null)
@@ -141,7 +139,6 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
         var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
-            newPositionId,
             parentId);
 
         _dataContext.AthletePositions.Add(entity);

@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20250729225715_Initial")]
+    [Migration("20250806191943_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -730,8 +730,51 @@ namespace SportsData.Producer.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("ExperienceAbbreviation")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("ExperienceDisplayValue")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("ExperienceYears")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<Guid>("FranchiseSeasonId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("HeightDisplay")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("HeightIn")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Jersey")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
@@ -742,11 +785,232 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("PositionId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ShortName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("StatusId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WeightDisplay")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("WeightLb")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteId");
 
-                    b.ToTable("AthleteSeason");
+                    b.HasIndex("PositionId");
+
+                    b.HasIndex("StatusId");
+
+                    b.ToTable("AthleteSeason", (string)null);
+
+                    b.HasDiscriminator().HasValue("AthleteSeason");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonId");
+
+                    b.ToTable("AthleteSeasonExternalId", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatistic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SplitAbbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SplitId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SplitName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SplitType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonId");
+
+                    b.ToTable("AthleteSeasonStatistic");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("AthleteSeasonStatisticId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShortDisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonStatisticId");
+
+                    b.ToTable("AthleteSeasonStatisticCategory");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("AthleteSeasonStatisticCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PerGameDisplayValue")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("PerGameValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ShortDisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Value")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonStatisticCategoryId");
+
+                    b.ToTable("AthleteSeasonStatisticStat");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Award", b =>
@@ -1260,6 +1524,282 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("VenueId");
 
                     b.ToTable("Competition", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CuratedRankCurrent")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HomeAway")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("Winner")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.ToTable("CompetitionCompetitor", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionCompetitorId");
+
+                    b.ToTable("CompetitionCompetitorExternalIds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceDescription")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("SourceState")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionCompetitorId");
+
+                    b.ToTable("CompetitionCompetitorLineScore", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScoreExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorLineScoreId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionCompetitorLineScoreId");
+
+                    b.ToTable("CompetitionCompetitorLineScoreExternalId", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SourceDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.Property<bool>("Winner")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionCompetitorId");
+
+                    b.ToTable("CompetitionCompetitorScores");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScoreExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorScoreId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionCompetitorScoreId");
+
+                    b.ToTable("CompetitionCompetitorScoreExternalIds");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionExternalId", b =>
@@ -2169,80 +2709,6 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("CompetitionStatusId");
 
                     b.ToTable("CompetitionStatusExternalId", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Competitor", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CompetitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("CuratedRankCurrent")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("FranchiseSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("HomeAway")
-                        .HasColumnType("text");
-
-                    b.Property<string>("LeadersRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("LinescoresRef")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RanksRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RecordRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RosterRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ScoreDisplayValue")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("ScoreValue")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("StatisticsRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("TeamRef")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Winner")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetitionId");
-
-                    b.ToTable("Competitor");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
@@ -3794,6 +4260,343 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("FranchiseSeasonProjection", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasMaxLength(40)
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DefaultRanking")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("FranchiseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Headline")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasMaxLength(40)
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SeasonYear")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ShortHeadline")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShortName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FranchiseId");
+
+                    b.HasIndex("FranchiseSeasonId");
+
+                    b.ToTable("FranchiseSeasonRanking", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Current")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FirstPlaceVotes")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FranchiseSeasonRankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("Points")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Previous")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Trend")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FranchiseSeasonRankingId")
+                        .IsUnique();
+
+                    b.ToTable("FranchiseSeasonRankingDetail");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FranchiseSeasonRankingDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FranchiseSeasonRankingDetailId")
+                        .IsUnique();
+
+                    b.ToTable("FranchiseSeasonRankingDetailRecord");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecordStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FranchiseSeasonRankingDetailRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShortDisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FranchiseSeasonRankingDetailRecordId");
+
+                    b.ToTable("FranchiseSeasonRankingDetailRecordStat");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RankingId");
+
+                    b.ToTable("FranchiseSeasonRankingExternalId");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RankingId");
+
+                    b.ToTable("FranchiseSeasonRankingNote");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingOccurrence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayValue")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Last")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RankingId")
+                        .IsUnique();
+
+                    b.ToTable("FranchiseSeasonRankingOccurrence");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4346,6 +5149,11 @@ namespace SportsData.Producer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -4355,20 +5163,87 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("MidsizeName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<int>("Season")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ShortName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("GroupId");
 
                     b.ToTable("GroupSeason", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GroupSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GroupSeasonId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupSeasonId");
+
+                    b.HasIndex("GroupSeasonId1");
+
+                    b.ToTable("GroupSeasonExternalId");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonLogo", b =>
@@ -5251,6 +6126,13 @@ namespace SportsData.Producer.Migrations
                     b.HasDiscriminator().HasValue("FootballAthlete");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballAthleteSeason", b =>
+                {
+                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason");
+
+                    b.HasDiscriminator().HasValue("FootballAthleteSeason");
+                });
+
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
                 {
                     b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)
@@ -5291,11 +6173,13 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.AthleteImage", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", "Athlete")
                         .WithMany("Images")
                         .HasForeignKey("AthleteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Athlete");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.VenueExternalId", b =>
@@ -5341,11 +6225,71 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", "Athlete")
                         .WithMany("Seasons")
                         .HasForeignKey("AthleteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthletePosition", "Position")
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.AthleteStatus", "Status")
+                        .WithMany()
+                        .HasForeignKey("StatusId");
+
+                    b.Navigation("Athlete");
+
+                    b.Navigation("Position");
+
+                    b.Navigation("Status");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("AthleteSeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AthleteSeason");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatistic", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                        .WithMany("Statistics")
+                        .HasForeignKey("AthleteSeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AthleteSeason");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticCategory", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatistic", "Statistic")
+                        .WithMany("Categories")
+                        .HasForeignKey("AthleteSeasonStatisticId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Statistic");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticStat", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticCategory", "Category")
+                        .WithMany("Stats")
+                        .HasForeignKey("AthleteSeasonStatisticCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AwardExternalId", b =>
@@ -5446,6 +6390,70 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("StatsSource");
 
                     b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", null)
+                        .WithMany("Competitors")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionCompetitorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionCompetitor");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScore", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                        .WithMany("LineScores")
+                        .HasForeignKey("CompetitionCompetitorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionCompetitor");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScoreExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScore", "CompetitionCompetitorLineScore")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionCompetitorLineScoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionCompetitorLineScore");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScore", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                        .WithMany("Scores")
+                        .HasForeignKey("CompetitionCompetitorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionCompetitor");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScoreExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScore", "CompetitionCompetitorScore")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionCompetitorScoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionCompetitorScore");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionExternalId", b =>
@@ -5612,15 +6620,6 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("CompetitionStatus");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Competitor", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", null)
-                        .WithMany("Competitors")
-                        .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
@@ -5804,6 +6803,91 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Season");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Franchise", "Franchise")
+                        .WithMany()
+                        .HasForeignKey("FranchiseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
+                        .WithMany("Rankings")
+                        .HasForeignKey("FranchiseSeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Franchise");
+
+                    b.Navigation("FranchiseSeason");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetail", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", "FranchiseSeasonRanking")
+                        .WithOne("Rank")
+                        .HasForeignKey("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetail", "FranchiseSeasonRankingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FranchiseSeasonRanking");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecord", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetail", "FranchiseSeasonRankingDetail")
+                        .WithOne("Record")
+                        .HasForeignKey("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecord", "FranchiseSeasonRankingDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FranchiseSeasonRankingDetail");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecordStat", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecord", "FranchiseSeasonRankingDetailRecord")
+                        .WithMany("Stats")
+                        .HasForeignKey("FranchiseSeasonRankingDetailRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FranchiseSeasonRankingDetailRecord");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", "Ranking")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("RankingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ranking");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingNote", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", "Ranking")
+                        .WithMany("Notes")
+                        .HasForeignKey("RankingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ranking");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingOccurrence", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", "Ranking")
+                        .WithOne("Occurrence")
+                        .HasForeignKey("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingOccurrence", "RankingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ranking");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecord", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "Season")
@@ -5889,11 +6973,30 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", "Group")
                         .WithMany("Seasons")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", null)
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("GroupSeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", "GroupSeason")
+                        .WithMany()
+                        .HasForeignKey("GroupSeasonId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GroupSeason");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonLogo", b =>
@@ -6061,6 +7164,23 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("ExternalIds");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", b =>
+                {
+                    b.Navigation("ExternalIds");
+
+                    b.Navigation("Statistics");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatistic", b =>
+                {
+                    b.Navigation("Categories");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatisticCategory", b =>
+                {
+                    b.Navigation("Stats");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Award", b =>
                 {
                     b.Navigation("ExternalIds");
@@ -6098,6 +7218,25 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Probabilities");
 
                     b.Navigation("Status");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+                {
+                    b.Navigation("ExternalIds");
+
+                    b.Navigation("LineScores");
+
+                    b.Navigation("Scores");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScore", b =>
+                {
+                    b.Navigation("ExternalIds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScore", b =>
+                {
+                    b.Navigation("ExternalIds");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", b =>
@@ -6153,6 +7292,8 @@ namespace SportsData.Producer.Migrations
 
                     b.Navigation("Logos");
 
+                    b.Navigation("Rankings");
+
                     b.Navigation("Records");
 
                     b.Navigation("RecordsAts");
@@ -6163,6 +7304,29 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonAward", b =>
                 {
                     b.Navigation("Winners");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRanking", b =>
+                {
+                    b.Navigation("ExternalIds");
+
+                    b.Navigation("Notes");
+
+                    b.Navigation("Occurrence")
+                        .IsRequired();
+
+                    b.Navigation("Rank")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetail", b =>
+                {
+                    b.Navigation("Record");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRankingDetailRecord", b =>
+                {
+                    b.Navigation("Stats");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonRecord", b =>
@@ -6186,6 +7350,8 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
+                    b.Navigation("ExternalIds");
+
                     b.Navigation("Logos");
                 });
 

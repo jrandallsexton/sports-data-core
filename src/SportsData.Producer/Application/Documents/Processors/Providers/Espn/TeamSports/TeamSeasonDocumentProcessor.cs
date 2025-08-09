@@ -66,7 +66,10 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         if (command.Season is null)
-            throw new InvalidOperationException("Season year must be provided.");
+        {
+            _logger.LogError("Season year must be provided.");
+            return;
+        }
 
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Franchise.Ref);
 

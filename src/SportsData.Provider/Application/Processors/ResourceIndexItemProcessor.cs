@@ -115,7 +115,10 @@ namespace SportsData.Provider.Application.Processors
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task HandleValid(ProcessResourceIndexItemCommand command, string urlHash, Guid correlationId)
+        private async Task HandleValid(
+            ProcessResourceIndexItemCommand command,
+            string urlHash,
+            Guid correlationId)
         {
             var collectionName = command.Sport.ToString();
 

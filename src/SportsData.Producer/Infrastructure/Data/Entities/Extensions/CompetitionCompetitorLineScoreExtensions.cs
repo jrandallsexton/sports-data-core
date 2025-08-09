@@ -35,7 +35,7 @@ public static class CompetitionCompetitorLineScoreExtensions
                     Id = Guid.NewGuid(),
                     Provider = provider,
                     Value = identity.UrlHash,
-                    SourceUrl = dto.Ref.ToCleanUrl(),
+                    SourceUrl = identity.CleanUrl,
                     SourceUrlHash = identity.UrlHash
                 }
             ]

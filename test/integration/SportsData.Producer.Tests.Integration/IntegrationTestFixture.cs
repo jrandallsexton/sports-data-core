@@ -188,14 +188,13 @@ namespace SportsData.Producer.Tests.Integration
 
         private class NoOpHostReceiveEndpointHandle : HostReceiveEndpointHandle
         {
-            private Task<ReceiveEndpointReady> _ready;
             public Task Ready => Task.CompletedTask;
             public Task Completed => Task.CompletedTask;
             public void Disconnect() { }
             public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
             public IReceiveEndpoint ReceiveEndpoint { get; }
 
-            Task<ReceiveEndpointReady> HostReceiveEndpointHandle.Ready => _ready;
+            Task<ReceiveEndpointReady> HostReceiveEndpointHandle.Ready { get; }
         }
 
         private class NoOpBusTopology : IBusTopology

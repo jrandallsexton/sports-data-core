@@ -3,114 +3,148 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
+public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocuments
+    where TDataContext : TeamSportDataContext
 {
-    [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
-    public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocuments
-        where TDataContext : FootballDataContext
+    private readonly ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> _logger;
+    private readonly TDataContext _db;
+    private readonly IPublishEndpoint _bus;
+    private readonly IGenerateExternalRefIdentities _idGen;
+    private readonly IJsonHashCalculator _jsonHashCalculator;
+
+    public EventCompetitionOddsDocumentProcessor(
+        ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> logger,
+        TDataContext db,
+        IPublishEndpoint bus,
+        IGenerateExternalRefIdentities idGen,
+        IJsonHashCalculator jsonHashCalculator)
     {
-        private readonly ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> _logger;
-        private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        _logger = logger;
+        _db = db;
+        _bus = bus;
+        _idGen = idGen;
+        _jsonHashCalculator = jsonHashCalculator;
+    }
 
-        public EventCompetitionOddsDocumentProcessor(
-            ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> logger,
-            TDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+    public async Task ProcessAsync(ProcessDocumentCommand command)
+    {
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId
+               }))
         {
-            _logger = logger;
-            _dataContext = dataContext;
-            _publishEndpoint = publishEndpoint;
+            _logger.LogInformation("Began with {@command}", command);
+
+            await ProcessInternal(command);
+        }
+    }
+
+    private async Task ProcessInternal(ProcessDocumentCommand command)
+    {
+        var externalDto = command.Document.FromJson<EspnEventCompetitionOddsDto>();
+
+        if (externalDto is null)
+        {
+            _logger.LogError("Failed to deserialize document to EspnEventCompetitionDto. {@Command}", command);
+            return;
         }
 
-        public async Task ProcessAsync(ProcessDocumentCommand command)
+        if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = command.CorrelationId
-                   }))
-            {
-                _logger.LogInformation("Processing EventDocument with {@Command}", command);
-                await ProcessInternal(command);
-            }
+            _logger.LogError("EspnEventCompetitionDto Ref is null. {@Command}", command);
+            return;
         }
 
-        private async Task ProcessInternal(ProcessDocumentCommand command)
+        if (string.IsNullOrEmpty(command.ParentId))
         {
-            var externalDto = command.Document.FromJson<EspnEventCompetitionOddsDto>();
-
-            if (externalDto is null)
-            {
-                _logger.LogError("Failed to deserialize document to EspnEventCompetitionOddsDto. {@Command}", command);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
-            {
-                _logger.LogError("EspnEventCompetitionOddsDto Ref is null. {@Command}", command);
-                return;
-            }
-
-            if (!command.Season.HasValue)
-            {
-                _logger.LogError("Command must have a SeasonYear defined");
-                throw new InvalidOperationException("SeasonYear must be defined in the command.");
-            }
-
-            if (!Guid.TryParse(command.ParentId, out var contestId))
-            {
-                _logger.LogError("ParentId must be a valid Guid for contest ID");
-                throw new InvalidOperationException("ParentId must be a valid Guid.");
-            }
-
-            var contest = await _dataContext.Contests
-                .AsNoTracking()
-                .Include(c => c.Odds)
-                .FirstOrDefaultAsync(c => c.Id == contestId);
-
-            if (contest is null)
-            {
-                _logger.LogError("Contest not found.  Cannot proceed.");
-                throw new InvalidOperationException($"Contest with ID {contestId} not found.");
-            }
-
-            var newOdds = externalDto.AsEntity(
-                contestId,
-                contest.HomeTeamFranchiseSeasonId,
-                contest.AwayTeamFranchiseSeasonId);
-
-            var existingOdds = contest.Odds
-                .FirstOrDefault(o => o.ProviderId == newOdds.ProviderId);
-
-            if (existingOdds == null)
-            {
-                _logger.LogInformation("No existing odds found. Adding new odds.");
-                await _dataContext.ContestOdds.AddAsync(newOdds);
-            }
-            else if (existingOdds.HasDifferences(newOdds))
-            {
-                _logger.LogInformation("Existing odds differ. Updating existing odds.");
-                await _dataContext.ContestOdds.AddAsync(newOdds);
-            }
-            else
-            {
-                _logger.LogInformation("No changes detected in odds. Skipping update.");
-                return;
-            }
-
-            await _publishEndpoint.Publish(new ContestOddsCreated(
-                contest.Id,
-                command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
-
-            await _dataContext.SaveChangesAsync();
+            _logger.LogError("ParentId not provided. Cannot process competition for null CompetitionId");
+            return;
         }
+
+        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        {
+            _logger.LogError("Invalid ParentId format for CompetitionId. Cannot parse to Guid.");
+            return;
+        }
+
+        if (!command.Season.HasValue)
+        {
+            _logger.LogError("Command must have a SeasonYear defined");
+            return;
+        }
+
+        var competition = await _db.Competitions
+            .Include(x => x.Contest)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == competitionId);
+
+        if (competition is null)
+        {
+            _logger.LogError("Competition not found");
+            throw new ArgumentException("competition not found");
+        }
+
+        var existing = await _db.CompetitionOdds
+            .AsNoTracking()
+            .Include(x => x.ExternalIds)
+            .Include(x => x.Teams).ThenInclude(t => t.Snapshots)
+            .Include(x => x.Totals)
+            .FirstOrDefaultAsync(x =>
+                x.ExternalIds.Any(e => e.SourceUrlHash == command.UrlHash &&
+                                       e.Provider == command.SourceDataProvider));
+
+        var contentHash = _jsonHashCalculator.NormalizeAndHash(command.Document);
+
+        if (existing is null)
+        {
+            await ProcessNew(command, externalDto, competition.Id, competition.Contest, contentHash);
+        }
+        else
+        {
+            await ProcessUpdate(command, externalDto, existing, competition.Id);
+        }
+    }
+
+    private async Task ProcessNew(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionOddsDto dto,
+        Guid competitionId,
+        Contest contest,
+        string contentHash)
+    {
+        var entity = dto.AsEntity(
+            externalRefIdentityGenerator: _idGen,
+            competitionId: competitionId,
+            homeFranchiseSeasonId: contest.HomeTeamFranchiseSeasonId,
+            awayFranchiseSeasonId: contest.AwayTeamFranchiseSeasonId,
+            correlationId: command.CorrelationId,
+            contentHash: contentHash);
+
+        await _db.CompetitionOdds.AddAsync(entity);
+        await _db.SaveChangesAsync();
+
+        //await _bus.Publish(new ContestOddsCreated(
+        //    contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+    }
+
+    private async Task ProcessUpdate(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionOddsDto dto,
+        CompetitionOdds existing,
+        Guid competitionId)
+    {
+        _logger.LogError("Update was detected. Not implemented");
+        await Task.Delay(100);
     }
 }

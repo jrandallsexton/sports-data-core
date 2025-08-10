@@ -1,4 +1,5 @@
-﻿using AutoFixture;
+﻿#nullable enable
+using AutoFixture;
 
 using FluentAssertions;
 

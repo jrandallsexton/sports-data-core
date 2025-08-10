@@ -74,19 +74,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (string.IsNullOrEmpty(command.ParentId))
             {
                 _logger.LogError("ParentId not provided. Cannot process competition for null ContestId");
-                throw new InvalidOperationException("ParentId must be provided for EventCompetition processing.");
+                return;
             }
 
             if (!Guid.TryParse(command.ParentId, out var contestId))
             {
                 _logger.LogError("Invalid ParentId format for ContestId. Cannot parse to Guid.");
-                throw new InvalidOperationException($"ParentId '{command.ParentId}' is not a valid Guid.");
+                return;
             }
 
             if (!command.Season.HasValue)
             {
                 _logger.LogError("Command must have a SeasonYear defined");
-                throw new InvalidOperationException("SeasonYear must be defined in the command.");
+                return;
             }
 
             var contest = await _dataContext.Contests
@@ -519,7 +519,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionDto externalDto,
             Competition entity)
         {
-            // TODO: Implement update logic if necessary
+            _logger.LogError("Update was detected. Not implemented");
             await Task.Delay(100);
         }
     }

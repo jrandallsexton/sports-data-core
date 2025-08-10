@@ -49,9 +49,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Guid? VenueId { get; set; }
 
         public ICollection<ContestLink> Links { get; set; } = new List<ContestLink>(); // Normalized set of rel/href for downstream use
-
-        public ICollection<ContestOdds> Odds { get; set; } = new List<ContestOdds>(); // Odds for the contest, if applicable
-
+        
         public ICollection<ContestExternalId> ExternalIds { get; set; } = new List<ContestExternalId>();
 
         public ICollection<Competition> Competitions { get; set; } = new List<Competition>();

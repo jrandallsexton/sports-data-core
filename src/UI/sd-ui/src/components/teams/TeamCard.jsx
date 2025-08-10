@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import "./TeamCard.css";
 import TeamSchedule from "./TeamSchedule";
+//import TeamScheduleMUI from "./TeamScheduleMUI";
 import TeamNews from "./TeamNews";
 
 function TeamCard() {
@@ -59,6 +60,7 @@ function TeamCard() {
       <TeamNews news={team.news} />
 
       <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
+      {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}
     </div>
   );
 }

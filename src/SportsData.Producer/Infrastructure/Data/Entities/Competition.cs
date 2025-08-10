@@ -127,6 +127,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
 
+        public ICollection<CompetitionOdds> Odds { get; set; } = [];
+
         public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;

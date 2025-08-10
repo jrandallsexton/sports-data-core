@@ -66,19 +66,19 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         if (!command.Season.HasValue)
         {
             _logger.LogError("Command must have a SeasonYear defined");
-            throw new InvalidOperationException("SeasonYear must be defined in the command.");
+            return;
         }
 
         if (string.IsNullOrWhiteSpace(command.ParentId))
         {
             _logger.LogError("Command must have a ParentId defined for the CompetitionId");
-            throw new InvalidOperationException("ParentId must be defined in the command.");
+            return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
             _logger.LogError("CompetitionId could not be parsed");
-            throw new InvalidOperationException("ParentId must be a valid Guid.");
+            return;
         }
 
         var competitionExists = await _dataContext.Competitions
@@ -87,6 +87,9 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 
         if (!competitionExists)
         {
+            // TODO: Publish a DocumentRequested event for the Competition
+            // Problem with this is that we do not know the parentId which is the ContestId. ugh.
+            // In the meantime, just throw an exception, allow Hangfire to retry and hopefully the Competition gets sourced prior to then
             _logger.LogError("Competition not found for {CompetitionId}", competitionId);
             throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
         }

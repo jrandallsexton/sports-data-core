@@ -138,7 +138,6 @@
 | **The Showman**    | Flashy, confident, picks with flair                                          | Desmond Howard         |
 | **ZoneRead Zoe**   | Modern, schematically focused, sharp takes                                   | Dan Orlovsky (style)   |
 | **TwoPointTony**   | Always goes for 2, hates punting                                             | Urban Meyer (parody)   |
-| **RedZoneRita**    | Hops games, tracks scoring trends                                            | Scott Hanson (RedZone) |
 | **The Process**    | Methodical, risk-averse, chooses by fundamentals                             | Nick Saban             |
 | **The Grinder**    | Tough, defense-minded, picks by grit                                         | David Pollack          |
 | **The Professor**  | Ivy-smart, risk-averse, favors academic programs; neutral tone, steady picks | Rece Davis             |

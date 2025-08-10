@@ -39,6 +39,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
 
+        public DbSet<CompetitionOdds> CompetitionOdds { get; set; }
+        public DbSet<CompetitionOddsExternalId> CompetitionOddsExternalIds { get; set; }
+
         public DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; }
 
         public DbSet<CompetitionLeader> Leaders { get; set; }
@@ -61,8 +64,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Contest> Contests { get; set; }
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
-
-        public DbSet<ContestOdds> ContestOdds { get; set; }
+        
 
         public DbSet<Drive> Drives { get; set; }
         public DbSet<DriveExternalId> DriveExternalIds { get; set; }
@@ -136,6 +138,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderStat.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionOddsExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndex.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndexExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPrediction.EntityConfiguration());
@@ -146,7 +150,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new ContestOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new DriveExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());

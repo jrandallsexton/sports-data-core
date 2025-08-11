@@ -34,7 +34,7 @@ public class AthleteDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var publishEndpoint = Mocker.GetMock<IBus>();
+        var publishEndpoint = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<AthleteDocumentProcessor>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Active.json");

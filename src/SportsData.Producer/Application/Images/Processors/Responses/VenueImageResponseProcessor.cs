@@ -28,6 +28,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
             _logger.LogInformation("ImageProcessedProcessor Began handler with {@response}", response);
 
             var venue = await _dataContext.Venues
+                .AsNoTracking()
                 .Include(x => x.Images)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();

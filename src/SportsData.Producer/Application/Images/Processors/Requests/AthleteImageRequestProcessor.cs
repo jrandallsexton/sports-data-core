@@ -51,6 +51,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
         private async Task ProcessRequestInternal(ProcessImageRequest request)
         {
             var entity = await _dataContext.Athletes
+                .AsNoTracking()
                 .Include(v => v.Images)
                 .Where(x => x.Id == request.ParentEntityId)
                 .FirstOrDefaultAsync();
@@ -89,6 +90,12 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             _logger.LogInformation("Requesting new image");
 
             var response = await _providerClient.GetExternalImage(query);
+
+            if (!response.IsSuccess)
+            {
+                _logger.LogError("Failed to obtain image from Provider");
+                throw new Exception("Failed to obtain image from Provider");
+            }
 
             _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 

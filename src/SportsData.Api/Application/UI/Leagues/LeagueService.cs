@@ -91,6 +91,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 TiebreakerTiePolicy = tiebreakerTiePolicy,
                 TiebreakerType = tiebreakerType,
                 UseConfidencePoints = request.UseConfidencePoints,
+                DropLowWeeksCount = request.DropLowWeeksCount
             };
 
             return await _handler.ExecuteAsync(command, cancellationToken);

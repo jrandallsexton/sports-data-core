@@ -125,6 +125,7 @@ namespace SportsData.Core.Common
             switch (documentType)
             {
                 case DocumentType.Athlete:
+                case DocumentType.AthleteImage:
                 case DocumentType.AthleteSeason:
                     return DocumentType.AthleteImage;
                 case DocumentType.Franchise:
@@ -149,7 +150,6 @@ namespace SportsData.Core.Common
                 case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.Position:
-                case DocumentType.AthleteImage:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             }

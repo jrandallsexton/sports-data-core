@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -22,13 +21,13 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<FranchiseDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IBus _publishEndpoint;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IBus publishEndpoint,
+        IPublishEndpoint publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;

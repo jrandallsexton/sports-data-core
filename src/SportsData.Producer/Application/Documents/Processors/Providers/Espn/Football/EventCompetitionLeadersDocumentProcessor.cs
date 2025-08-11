@@ -22,12 +22,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IBus _publishEndpoint;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public EventCompetitionLeadersDocumentProcessor(
             ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IBus publishEndpoint)
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;

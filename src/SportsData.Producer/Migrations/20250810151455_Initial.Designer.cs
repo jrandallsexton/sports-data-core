@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20250806191943_Initial")]
+    [Migration("20250810151455_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -2280,6 +2280,126 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionNote");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("MoneylineWinner")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("OverOdds")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<decimal?>("OverUnder")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<string>("ProviderId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("ProviderPriority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProviderRef")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal?>("Spread")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<bool?>("SpreadWinner")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("UnderOdds")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId", "ProviderId")
+                        .IsUnique();
+
+                    b.ToTable("CompetitionOdds", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOddsExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionOddsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionOddsId");
+
+                    b.ToTable("CompetitionOddsExternalId", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2711,6 +2831,228 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionStatusExternalId", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOdds", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionOddsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("HeadlineMoneyLine")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("HeadlineSpreadOdds")
+                        .HasColumnType("numeric");
+
+                    b.Property<bool?>("IsFavorite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsUnderdog")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Side")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionOddsId");
+
+                    b.ToTable("CompetitionTeamOdds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOddsSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CompetitionTeamOddsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MoneylineAlt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MoneylineAmerican")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("MoneylineDecimal")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("MoneylineDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MoneylineFraction")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MoneylineOutcome")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("MoneylineValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("PointSpreadNum")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("PointSpreadRaw")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpreadAlt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpreadAmerican")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("SpreadDecimal")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("SpreadDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpreadFraction")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpreadOutcome")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("SpreadValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("TeamOddsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionTeamOddsId");
+
+                    b.ToTable("CompetitionTeamOddsSnapshot");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTotalsSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionOddsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OverAlt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OverAmerican")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("OverDecimal")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("OverDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OverFraction")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OverOutcome")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("OverValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TotalAlt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TotalAmerican")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("TotalDecimal")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("TotalDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TotalFraction")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("TotalValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("UnderAlt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnderAmerican")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("UnderDecimal")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("UnderDisplay")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnderFraction")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnderOutcome")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("UnderValue")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionOddsId");
+
+                    b.ToTable("CompetitionTotalsSnapshot");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2891,705 +3233,6 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("ContestId");
 
                     b.ToTable("ContestLink");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.ContestOdds", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AwayTeamCloseMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCloseMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCloseMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCloseMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCloseMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCloseMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamClosePointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamClosePointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCloseSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCloseSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCloseSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCloseSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCloseSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCloseSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCurrentMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCurrentMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCurrentMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentMoneyLineOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCurrentMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCurrentPointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentPointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCurrentSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamCurrentSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamCurrentSpreadOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamCurrentSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<bool>("AwayTeamFavorite")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("AwayTeamFranchiseSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("AwayTeamMoneyLine")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("AwayTeamOpenFavorite")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("AwayTeamOpenMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamOpenMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamOpenMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamOpenMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamOpenPointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenPointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamOpenSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("AwayTeamOpenSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("AwayTeamOpenSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("AwayTeamOpenSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<decimal?>("AwayTeamSpreadOdds")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<bool>("AwayTeamUnderdog")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("CloseOverAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CloseOverAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CloseOverDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CloseOverDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CloseOverFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CloseOverValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CloseTotalAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CloseTotalAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CloseTotalDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CloseTotalDisplayValue")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CloseTotalFraction")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("CloseTotalValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CloseUnderAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CloseUnderAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CloseUnderDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CloseUnderDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CloseUnderFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CloseUnderValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<Guid>("ContestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CurrentOverAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentOverAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CurrentOverDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CurrentOverDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentOverFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentOverOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CurrentOverValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CurrentTotalAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentTotalAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CurrentTotalDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CurrentTotalDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentTotalFraction")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("CurrentTotalValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CurrentUnderAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentUnderAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CurrentUnderDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("CurrentUnderDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentUnderFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("CurrentUnderOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("CurrentUnderValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("Details")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCloseMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCloseMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCloseMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamClosePointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamClosePointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCloseSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCloseSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCloseSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCloseSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCurrentMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCurrentMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCurrentMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentMoneyLineOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCurrentMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCurrentPointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentPointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCurrentSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamCurrentSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamCurrentSpreadOutcomeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamCurrentSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<bool>("HomeTeamFavorite")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("HomeTeamFranchiseSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("HomeTeamMoneyLine")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("HomeTeamOpenFavorite")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("HomeTeamOpenMoneyLineAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenMoneyLineAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenMoneyLineDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamOpenMoneyLineDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenMoneyLineFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenMoneyLineValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamOpenPointSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenPointSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenPointSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamOpenPointSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenPointSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenPointSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamOpenSpreadAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenSpreadAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenSpreadDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("HomeTeamOpenSpreadDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("HomeTeamOpenSpreadFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("HomeTeamOpenSpreadValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<decimal?>("HomeTeamSpreadOdds")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<bool>("HomeTeamUnderdog")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("MoneylineWinner")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("OpenOverAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenOverAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenOverDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OpenOverDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenOverFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenOverValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OpenTotalAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenTotalAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenTotalDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OpenTotalDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenTotalFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenTotalValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OpenUnderAlternateDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenUnderAmerican")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenUnderDecimal")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OpenUnderDisplayValue")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("OpenUnderFraction")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("OpenUnderValue")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<decimal?>("OverOdds")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<decimal?>("OverUnder")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("ProviderName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<int>("ProviderPriority")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ProviderRef")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<decimal?>("Spread")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<bool>("SpreadWinner")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal?>("UnderOdds")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContestId");
-
-                    b.ToTable("ContestOdds", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>
@@ -6533,6 +6176,26 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", null)
+                        .WithMany("Odds")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOddsExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", "CompetitionOdds")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("CompetitionOddsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionOdds");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
@@ -6622,6 +6285,33 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("CompetitionStatus");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOdds", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", "CompetitionOdds")
+                        .WithMany("Teams")
+                        .HasForeignKey("CompetitionOddsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompetitionOdds");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOddsSnapshot", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOdds", null)
+                        .WithMany("Snapshots")
+                        .HasForeignKey("CompetitionTeamOddsId");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTotalsSnapshot", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", null)
+                        .WithMany("Totals")
+                        .HasForeignKey("CompetitionOddsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "AwayTeamFranchiseSeason")
@@ -6668,15 +6358,6 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("Contest");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.ContestOdds", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Contest", null)
-                        .WithMany("Odds")
-                        .HasForeignKey("ContestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>
@@ -7211,6 +6892,8 @@ namespace SportsData.Producer.Migrations
 
                     b.Navigation("Notes");
 
+                    b.Navigation("Odds");
+
                     b.Navigation("Plays");
 
                     b.Navigation("PowerIndexes");
@@ -7244,6 +6927,15 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Stats");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionOdds", b =>
+                {
+                    b.Navigation("ExternalIds");
+
+                    b.Navigation("Teams");
+
+                    b.Navigation("Totals");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
                 {
                     b.Navigation("ExternalIds");
@@ -7259,6 +6951,11 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("ExternalIds");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionTeamOdds", b =>
+                {
+                    b.Navigation("Snapshots");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Contest", b =>
                 {
                     b.Navigation("Competitions");
@@ -7266,8 +6963,6 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("ExternalIds");
 
                     b.Navigation("Links");
-
-                    b.Navigation("Odds");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>

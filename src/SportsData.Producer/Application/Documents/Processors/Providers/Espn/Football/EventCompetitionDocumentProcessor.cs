@@ -23,14 +23,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IBus _publishEndpoint;
+        private readonly IPublishEndpoint _publishEndpoint;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideProviders _provider;
 
         public EventCompetitionDocumentProcessor(
             ILogger<EventDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IBus publishEndpoint,
+            IPublishEndpoint publishEndpoint,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideProviders provider
             )

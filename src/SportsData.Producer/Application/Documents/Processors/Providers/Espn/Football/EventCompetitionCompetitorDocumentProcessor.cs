@@ -20,13 +20,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 {
     private readonly ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IBus _publishEndpoint;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public EventCompetitionCompetitorDocumentProcessor(
         ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IBus publishEndpoint,
+        IPublishEndpoint publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;

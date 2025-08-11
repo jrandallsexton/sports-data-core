@@ -39,6 +39,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
         public async Task ProcessRequest(ProcessImageRequest request)
         {
             var franchise = await _dataContext.Franchises
+                .AsNoTracking()
                 .Include(v => v.Logos)
                 .Where(x => x.Id == request.ParentEntityId)
                 .FirstOrDefaultAsync();

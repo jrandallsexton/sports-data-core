@@ -26,6 +26,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
         public async Task ProcessResponse(ProcessImageResponse response)
         {
             var franchise = await _dataContext.Franchises
+                .AsNoTracking()
                 .Include(x => x.Logos)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();

@@ -1,6 +1,4 @@
-﻿using Azure;
-
-using MassTransit;
+﻿using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -53,6 +51,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
         private async Task ProcessRequestInternal(ProcessImageRequest request)
         {
             var entity = await _dataContext.Venues
+                .AsNoTracking()
                 .Include(v => v.Images)
                 .Where(x => x.Id == request.ParentEntityId)
                 .FirstOrDefaultAsync();

@@ -76,8 +76,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             {
                 cfg.ToTable(nameof(OutboxMessage));
             });
-
-            //modelBuilder.Entity<Venue>().UseTpcMappingStrategy();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

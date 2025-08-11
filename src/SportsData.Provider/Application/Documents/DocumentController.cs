@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
@@ -11,6 +12,8 @@ using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
+
+using System.Net.Http;
 
 namespace SportsData.Provider.Application.Documents
 {
@@ -26,6 +29,7 @@ namespace SportsData.Provider.Application.Documents
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
         private readonly IBus _bus;
+        private readonly IHttpClientFactory _clientFactory;
 
         public DocumentController(
             IDocumentStore documentStore,
@@ -34,7 +38,8 @@ namespace SportsData.Provider.Application.Documents
             IProvideBlobStorage blobStorage,
             IProvideBackgroundJobs backgroundJobProvider,
             IGenerateRoutingKeys routingKeyGenerator,
-            IBus bus)
+            IBus bus,
+            IHttpClientFactory clientFactory)
         {
             _documentStore = documentStore;
             _decoder = decoder;
@@ -43,6 +48,7 @@ namespace SportsData.Provider.Application.Documents
             _backgroundJobProvider = backgroundJobProvider;
             _routingKeyGenerator = routingKeyGenerator;
             _bus = bus;
+            _clientFactory = clientFactory;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -207,7 +213,7 @@ namespace SportsData.Provider.Application.Documents
         /// <returns></returns>
         [HttpPost("external/image", Name = "GetExternalImage")]
         public async Task<ActionResult<GetExternalImageResponse>> GetExternalImage(
-            [FromBody] GetExternalImageQuery query)
+            [FromBody] GetExternalImageQuery query, CancellationToken ct)
         {
             _logger.LogInformation("Began with {@Query}", query);
 
@@ -221,12 +227,13 @@ namespace SportsData.Provider.Application.Documents
 
             // generate a hash for the collection retrieval
             var hash = HashProvider.GenerateHashFromUri(query.Uri);
+            var host = query.Uri.Host;
 
             _logger.LogInformation("Hash generated {@Hash}", hash);
 
             // Look for the item in the database first to see if we already have a link to it in blob storage
             var dbItem = await _documentStore
-                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash.ToString());
+                .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == hash);
 
             if (dbItem is not null)
             {
@@ -240,9 +247,14 @@ namespace SportsData.Provider.Application.Documents
             }
 
             // get the item via the url
-            using var client = new HttpClient();
-            using var response = await client.GetAsync(query.Uri);
-            await using var stream = await response.Content.ReadAsStreamAsync();
+            var client = _clientFactory.CreateClient("images");
+            using var req = new HttpRequestMessage(HttpMethod.Get, query.Uri);
+            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Image fetch failed {Host} {Hash} {Status}", host, hash, (int)resp.StatusCode);
+                return StatusCode((int)resp.StatusCode, "Failed to fetch image.");
+            }
 
             // upload it to blob storage
             var containerName = query.SeasonYear.HasValue
@@ -251,6 +263,7 @@ namespace SportsData.Provider.Application.Documents
 
             _logger.LogInformation("Container name {@ContainerName}", containerName);
 
+            await using var stream = await resp.Content.ReadAsStreamAsync(ct);
             var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{hash}.png");
 
             _logger.LogInformation("External URL {@ExternalUrl}", externalUrl);

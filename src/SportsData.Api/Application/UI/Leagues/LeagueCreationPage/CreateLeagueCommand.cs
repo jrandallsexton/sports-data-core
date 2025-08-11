@@ -32,5 +32,7 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
 
         public required Guid CreatedBy { get; set; }
 
+        public int? DropLowWeeksCount { get; set; }
+
     }
 }

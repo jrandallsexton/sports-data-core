@@ -16,6 +16,7 @@ const LeagueCreatePage = () => {
   const [rankingFilter, setRankingFilter] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
+  const [dropLowWeeksCount, setDropLowWeeksCount] = useState(0); // NEW
   const navigate = useNavigate();
 
   const CONFERENCES = [
@@ -62,14 +63,11 @@ const LeagueCreatePage = () => {
       rankingFilter,
       teamFilter,
       isPublic,
+      dropLowWeeksCount, // NEW
     });
-
-    console.log("Sending payload:", payload);
 
     try {
       const response = await LeaguesApi.createLeague(payload);
-      console.log("League created!", response);
-
       navigate(`/app/league/${response.id}`);
     } catch (error) {
       console.error("Failed to create league:", error);
@@ -82,9 +80,9 @@ const LeagueCreatePage = () => {
   return (
     <div className="page-container">
       <h1>Create a New Pick’em League</h1>
-      <p>Let’s set up your custom league so you can compete with friends.</p>
+      <p>Let’s set up your custom league so you can compete with friends - or publish it for others to join!</p>
 
-      <div className="card">
+      {/* <div className="card">
         <h2>How It Works</h2>
         <p>
           Pick’em leagues are public or private groups where players compete by
@@ -99,7 +97,7 @@ const LeagueCreatePage = () => {
           You’re in control — whether you want casual fun or competitive trash
           talk, we’ve got you covered.
         </p>
-      </div>
+      </div> */}
 
       <div className="card">
         <form className="league-form" onSubmit={handleFormSubmit}>
@@ -214,6 +212,22 @@ const LeagueCreatePage = () => {
             </div>
           </div>
 
+          {/* NEW: Drop Low Weeks */}
+          <div className="form-group">
+            <label htmlFor="dropLowWeeksCount">Drop Low Weeks</label>
+            <select
+              id="dropLowWeeksCount"
+              name="dropLowWeeksCount"
+              value={dropLowWeeksCount}
+              onChange={(e) => setDropLowWeeksCount(Number(e.target.value))}
+            >
+              <option value={0}>None. Use All Weeks</option>
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+            </select>
+          </div>
+
           <div className="form-group">
             <label htmlFor="tiebreaker">Tiebreaker Method</label>
             <select
@@ -272,6 +286,10 @@ const LeagueCreatePage = () => {
               </li>
               <li>
                 <strong>Tiebreaker:</strong> {tiebreaker || "Not selected"}
+              </li>
+              <li>
+                <strong>Drop Low Weeks:</strong>{" "}
+                {dropLowWeeksCount === 0 ? "None. Use All Weeks" : dropLowWeeksCount}
               </li>
               <li>
                 <strong>Visibility:</strong> {isPublic ? "Public" : "Private"}

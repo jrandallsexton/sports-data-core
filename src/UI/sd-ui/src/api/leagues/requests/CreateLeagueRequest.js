@@ -9,6 +9,7 @@ export const buildCreateLeagueRequest = ({
   rankingFilter,
   teamFilter,
   isPublic,
+  dropLowWeeksCount
 }) => {
   return {
     name: leagueName,
@@ -20,5 +21,6 @@ export const buildCreateLeagueRequest = ({
     conferenceSlugs: teamFilter,
     useConfidencePoints,
     isPublic,
+    dropLowWeeksCount: dropLowWeeksCount || 0
   };
 };

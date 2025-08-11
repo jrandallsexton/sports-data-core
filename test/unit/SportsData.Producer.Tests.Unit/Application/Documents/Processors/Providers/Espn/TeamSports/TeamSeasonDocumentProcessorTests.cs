@@ -32,7 +32,7 @@ public class TeamSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
-        var bus = Mocker.GetMock<IBus>();
+        var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
 

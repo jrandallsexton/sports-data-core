@@ -22,13 +22,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IBus _publishEndpoint;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IBus publishEndpoint,
+        IPublishEndpoint publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -161,8 +161,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             () => _dataContext.Groups.Include(x => x.ExternalIds).AsNoTracking(),
             _logger);
 
-        // TODO: Extract Ranks from dto.Ranks (data not available when following link)
-        // FranchiseSeasonRank entity to store weekly ranks per source
+        // rankings
+        await ProcessRanks(canonicalEntity.Id, dto, command);
 
         // stats
         await ProcessStatistics(canonicalEntity.Id, dto, command);
@@ -198,6 +198,30 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             CausationId.Producer.TeamSeasonDocumentProcessor));
 
         await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessRanks(
+        Guid franchiseSeasonId,
+        EspnTeamSeasonDto dto,
+        ProcessDocumentCommand command)
+    {
+        if (dto.Ranks?.Ref is null)
+        {
+            _logger.LogInformation("No ranking reference found in the DTO for TeamSeason {Season}", command.Season);
+            return;
+        }
+
+        // Request sourcing of team season ranks
+        await _publishEndpoint.Publish(new DocumentRequested(
+            Guid.NewGuid().ToString(),
+            franchiseSeasonId.ToString(),
+            dto.Ranks.Ref.ToCleanUri(),
+            command.Sport,
+            command.Season,
+            DocumentType.TeamSeasonRank,
+            command.SourceDataProvider,
+            command.CorrelationId,
+            CausationId.Producer.TeamSeasonDocumentProcessor));
     }
 
     private async Task ProcessProjection(

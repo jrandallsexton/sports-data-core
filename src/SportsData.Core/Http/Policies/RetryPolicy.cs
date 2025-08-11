@@ -1,28 +1,55 @@
-﻿using Polly;
+﻿using Microsoft.Extensions.Logging;
+
+using Polly;
 
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace SportsData.Core.Http.Policies
 {
     public static class RetryPolicy
     {
-        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+        /// <summary>
+        /// Reusable HTTP retry policy with exponential backoff + jitter and structured logging.
+        /// </summary>
+        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(ILogger? logger = null)
         {
             // TODO: Extract the retry count and delay from a config file
+            const int retryCount = 3;
+            var baseDelay = TimeSpan.FromMilliseconds(200);
+            var rng = new Random();
+
             return Policy<HttpResponseMessage>
                 .Handle<HttpRequestException>()
-                .OrResult(response =>
-                    (int)response.StatusCode >= 500 ||
-                    response.StatusCode == HttpStatusCode.RequestTimeout)
+                .Or<IOException>()
+                .Or<TaskCanceledException>() // includes timeouts
+                .OrResult(r =>
+                    (int)r.StatusCode >= 500 ||
+                    r.StatusCode == HttpStatusCode.RequestTimeout)
                 .WaitAndRetryAsync(
-                    3,
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                    (outcome, timespan, retryAttempt, context) =>
+                    retryCount,
+                    attempt =>
                     {
-                        Console.WriteLine(
-                            $"Polly retry {retryAttempt} after {timespan}. Status: {outcome?.Result?.StatusCode}");
+                        var exp = Math.Pow(2, attempt - 1); // 1,2,4
+                        var jitterMs = rng.Next(25, 125);
+                        return TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * exp + jitterMs);
+                    },
+                    (outcome, delay, attempt, context) =>
+                    {
+                        var status = outcome.Result?.StatusCode;
+                        var ex = outcome.Exception;
+                        logger?.LogWarning(
+                            ex,
+                            "HTTP retry {Attempt} in {Delay}. Status={Status} Reason={ReasonPhrase} PolicyKey={PolicyKey} OperationKey={OperationKey}",
+                            attempt,
+                            delay,
+                            status.HasValue ? (int)status.Value : 0,
+                            outcome.Result?.ReasonPhrase,
+                            context.PolicyKey,
+                            context.OperationKey);
                     });
         }
     }

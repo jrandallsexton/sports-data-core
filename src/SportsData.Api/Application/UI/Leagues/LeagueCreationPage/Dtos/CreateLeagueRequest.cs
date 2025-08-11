@@ -18,4 +18,6 @@ public class CreateLeagueRequest
     public List<string> ConferenceSlugs { get; set; } = new(); // slugs from UI
 
     public bool IsPublic { get; set; }
+
+    public int? DropLowWeeksCount { get; set; }
 }

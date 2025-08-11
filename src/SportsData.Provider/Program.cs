@@ -70,7 +70,7 @@ namespace SportsData.Provider
             app.UseCommonFeatures();
             app.MapControllers();
 
-            //app.Services.ConfigureHangfireJobs(mode);
+            app.Services.ConfigureHangfireJobs(mode);
 
             await app.RunAsync();
         }

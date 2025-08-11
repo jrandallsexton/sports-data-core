@@ -25,9 +25,12 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Hangfire.Tags.PostgreSql;
+using SportsData.Core.Http.Policies;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -264,19 +267,29 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
+            var registry = services.AddPolicyRegistry();
+            registry.Add("HttpRetry", RetryPolicy.GetRetryPolicy());
+
             // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
 
             // Register single-mode services
             services
-                //.AddClient<IProvideContests, ContestClient>(configuration, HttpClients.ContestClient, CommonConfigKeys.GetContestProviderUri)
-                //.AddClient<IProvideFranchises, FranchiseClient>(configuration, HttpClients.FranchiseClient, CommonConfigKeys.GetFranchiseProviderUri)
-                //.AddClient<IProvideNotifications, NotificationClient>(configuration, HttpClients.NotificationClient, CommonConfigKeys.GetNotificationProviderUri)
-                //.AddClient<IProvidePlayers, PlayerClient>(configuration, HttpClients.PlayerClient, CommonConfigKeys.GetPlayerProviderUri)
-                .AddClient<IProvideProducers, ProducerClient>(configuration, HttpClients.ProducerClient, CommonConfigKeys.GetProducerProviderUri())
-                .AddClient<IProvideProviders, ProviderClient>(configuration, HttpClients.ProviderClient, CommonConfigKeys.GetProviderProviderUri());
-                //.AddClient<IProvideSeasons, SeasonClient>(configuration, HttpClients.SeasonClient, CommonConfigKeys.GetSeasonProviderUri);
-                //.AddClient<IProvideVenues, VenueClient>(configuration, HttpClients.VenueClient, CommonConfigKeys.GetVenueProviderUri);
+                .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
+                {
+                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProviderProviderUri()]!);
+                    c.Timeout = TimeSpan.FromSeconds(15);
+                    c.DefaultRequestVersion = HttpVersion.Version20;
+                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                })
+                .AddPolicyHandlerFromRegistry("HttpRetry");
+
+            services
+                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
+                {
+                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
+                })
+                .AddPolicyHandlerFromRegistry("HttpRetry");
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

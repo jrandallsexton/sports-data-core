@@ -38,6 +38,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
         public async Task ProcessResponse(ProcessImageResponse response)
         {
             var groupSeason = await _dataContext.GroupSeasons
+                .AsNoTracking()
                 .Include(x => x.Logos)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();

@@ -80,7 +80,7 @@ public class Program
                     break;
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    x.AddEntityFrameworkOutbox<FootballDataContext>(o =>
+                    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);

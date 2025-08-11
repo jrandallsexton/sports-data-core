@@ -28,7 +28,8 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
                 Sport = command.Sport,
                 TiebreakerTiePolicy = command.TiebreakerTiePolicy,
                 TiebreakerType = command.TiebreakerType,
-                UseConfidencePoints = command.UseConfidencePoints
+                UseConfidencePoints = command.UseConfidencePoints,
+                DropLowWeeksCount = command.DropLowWeeksCount
             };
 
             foreach (var kvp in command.Conferences)

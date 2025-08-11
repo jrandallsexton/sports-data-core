@@ -108,7 +108,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             }
 
             // 2. raise an integration event with the canonical model
-            var evt = new VenueCreated(newEntity.AsCanonical(), command.CorrelationId,
+            var evt = new VenueCreated(
+                newEntity.AsCanonical(),
+                command.CorrelationId,
                 CausationId.Producer.VenueCreatedDocumentProcessor);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);

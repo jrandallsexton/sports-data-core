@@ -1489,199 +1489,6 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ContestOdds",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProviderRef = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    ProviderId = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    ProviderName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    ProviderPriority = table.Column<int>(type: "integer", nullable: false),
-                    Details = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OverUnder = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    Spread = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OverOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    UnderOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    MoneylineWinner = table.Column<bool>(type: "boolean", nullable: false),
-                    SpreadWinner = table.Column<bool>(type: "boolean", nullable: false),
-                    AwayTeamFavorite = table.Column<bool>(type: "boolean", nullable: false),
-                    AwayTeamUnderdog = table.Column<bool>(type: "boolean", nullable: false),
-                    AwayTeamMoneyLine = table.Column<int>(type: "integer", nullable: true),
-                    AwayTeamSpreadOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamOpenFavorite = table.Column<bool>(type: "boolean", nullable: false),
-                    AwayTeamOpenPointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenPointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamOpenSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamOpenSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamOpenMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamOpenMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamOpenMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamClosePointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamClosePointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCloseSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCloseSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCloseMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCloseMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCloseMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentPointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentPointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCurrentSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCurrentSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentSpreadOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCurrentMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    AwayTeamCurrentMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamCurrentMoneyLineOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    AwayTeamFranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    HomeTeamFavorite = table.Column<bool>(type: "boolean", nullable: false),
-                    HomeTeamUnderdog = table.Column<bool>(type: "boolean", nullable: false),
-                    HomeTeamMoneyLine = table.Column<int>(type: "integer", nullable: true),
-                    HomeTeamSpreadOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenFavorite = table.Column<bool>(type: "boolean", nullable: false),
-                    HomeTeamOpenPointSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenPointSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenPointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenPointSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenPointSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenPointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamOpenMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamOpenMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamClosePointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamClosePointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCloseSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCloseSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCloseMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCloseMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCloseMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentPointSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentPointSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentSpreadValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCurrentSpreadDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentSpreadAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentSpreadDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCurrentSpreadFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentSpreadAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentSpreadOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentMoneyLineValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCurrentMoneyLineDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentMoneyLineAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentMoneyLineDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    HomeTeamCurrentMoneyLineFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentMoneyLineAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamCurrentMoneyLineOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    HomeTeamFranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OpenOverValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenOverDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenOverAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenOverDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenOverFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenOverAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenUnderValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenUnderDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenUnderAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenUnderDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenUnderFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenUnderAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenTotalValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenTotalDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenTotalAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenTotalDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    OpenTotalFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    OpenTotalAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseOverValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseOverDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseOverAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseOverDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseOverFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseOverAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseUnderValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseUnderDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseUnderAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseUnderDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseUnderFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseUnderAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseTotalAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseTotalAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CloseTotalValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseTotalDisplayValue = table.Column<string>(type: "text", nullable: true),
-                    CloseTotalDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CloseTotalFraction = table.Column<string>(type: "text", nullable: true),
-                    CurrentOverValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentOverDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentOverAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentOverDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentOverFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentOverAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentOverOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentUnderValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentUnderDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentUnderAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentUnderDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentUnderFraction = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentUnderAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentUnderOutcomeType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentTotalAlternateDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentTotalAmerican = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentTotalValue = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentTotalDisplayValue = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    CurrentTotalDecimal = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
-                    CurrentTotalFraction = table.Column<string>(type: "text", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ContestOdds", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ContestOdds_Contest_ContestId",
-                        column: x => x.ContestId,
-                        principalTable: "Contest",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "FranchiseSeasonAwardWinner",
                 columns: table => new
                 {
@@ -2079,6 +1886,40 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CompetitionOdds",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompetitionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProviderRef = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    ProviderId = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    ProviderName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    ProviderPriority = table.Column<int>(type: "integer", nullable: false),
+                    Details = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    OverUnder = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
+                    Spread = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
+                    OverOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
+                    UnderOdds = table.Column<decimal>(type: "numeric(18,6)", precision: 18, scale: 6, nullable: true),
+                    MoneylineWinner = table.Column<bool>(type: "boolean", nullable: true),
+                    SpreadWinner = table.Column<bool>(type: "boolean", nullable: true),
+                    ContentHash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompetitionOdds", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompetitionOdds_Competition_CompetitionId",
+                        column: x => x.CompetitionId,
+                        principalTable: "Competition",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CompetitionPowerIndex",
                 columns: table => new
                 {
@@ -2381,6 +2222,103 @@ namespace SportsData.Producer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CompetitionOddsExternalId",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompetitionOddsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true),
+                    Value = table.Column<string>(type: "text", nullable: false),
+                    Provider = table.Column<int>(type: "integer", nullable: false),
+                    SourceUrl = table.Column<string>(type: "text", nullable: false),
+                    SourceUrlHash = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompetitionOddsExternalId", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompetitionOddsExternalId_CompetitionOdds_CompetitionOddsId",
+                        column: x => x.CompetitionOddsId,
+                        principalTable: "CompetitionOdds",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CompetitionTeamOdds",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompetitionOddsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Side = table.Column<string>(type: "text", nullable: false),
+                    IsFavorite = table.Column<bool>(type: "boolean", nullable: true),
+                    IsUnderdog = table.Column<bool>(type: "boolean", nullable: true),
+                    HeadlineMoneyLine = table.Column<int>(type: "integer", nullable: true),
+                    HeadlineSpreadOdds = table.Column<decimal>(type: "numeric", nullable: true),
+                    FranchiseSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompetitionTeamOdds", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompetitionTeamOdds_CompetitionOdds_CompetitionOddsId",
+                        column: x => x.CompetitionOddsId,
+                        principalTable: "CompetitionOdds",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CompetitionTotalsSnapshot",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompetitionOddsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Phase = table.Column<string>(type: "text", nullable: false),
+                    OverValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    OverDisplay = table.Column<string>(type: "text", nullable: true),
+                    OverAlt = table.Column<string>(type: "text", nullable: true),
+                    OverDecimal = table.Column<decimal>(type: "numeric", nullable: true),
+                    OverFraction = table.Column<string>(type: "text", nullable: true),
+                    OverAmerican = table.Column<string>(type: "text", nullable: true),
+                    OverOutcome = table.Column<string>(type: "text", nullable: true),
+                    UnderValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    UnderDisplay = table.Column<string>(type: "text", nullable: true),
+                    UnderAlt = table.Column<string>(type: "text", nullable: true),
+                    UnderDecimal = table.Column<decimal>(type: "numeric", nullable: true),
+                    UnderFraction = table.Column<string>(type: "text", nullable: true),
+                    UnderAmerican = table.Column<string>(type: "text", nullable: true),
+                    UnderOutcome = table.Column<string>(type: "text", nullable: true),
+                    TotalValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    TotalDisplay = table.Column<string>(type: "text", nullable: true),
+                    TotalAlt = table.Column<string>(type: "text", nullable: true),
+                    TotalDecimal = table.Column<decimal>(type: "numeric", nullable: true),
+                    TotalFraction = table.Column<string>(type: "text", nullable: true),
+                    TotalAmerican = table.Column<string>(type: "text", nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompetitionTotalsSnapshot", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompetitionTotalsSnapshot_CompetitionOdds_CompetitionOddsId",
+                        column: x => x.CompetitionOddsId,
+                        principalTable: "CompetitionOdds",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CompetitionPowerIndexExternalId",
                 columns: table => new
                 {
@@ -2595,6 +2533,45 @@ namespace SportsData.Producer.Migrations
                         principalTable: "CompetitionCompetitorScores",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CompetitionTeamOddsSnapshot",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeamOddsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Phase = table.Column<string>(type: "text", nullable: false),
+                    PointSpreadRaw = table.Column<string>(type: "text", nullable: true),
+                    PointSpreadNum = table.Column<decimal>(type: "numeric", nullable: true),
+                    SpreadValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    SpreadDisplay = table.Column<string>(type: "text", nullable: true),
+                    SpreadAlt = table.Column<string>(type: "text", nullable: true),
+                    SpreadDecimal = table.Column<decimal>(type: "numeric", nullable: true),
+                    SpreadFraction = table.Column<string>(type: "text", nullable: true),
+                    SpreadAmerican = table.Column<string>(type: "text", nullable: true),
+                    SpreadOutcome = table.Column<string>(type: "text", nullable: true),
+                    MoneylineValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    MoneylineDisplay = table.Column<string>(type: "text", nullable: true),
+                    MoneylineAlt = table.Column<string>(type: "text", nullable: true),
+                    MoneylineDecimal = table.Column<decimal>(type: "numeric", nullable: true),
+                    MoneylineFraction = table.Column<string>(type: "text", nullable: true),
+                    MoneylineAmerican = table.Column<string>(type: "text", nullable: true),
+                    MoneylineOutcome = table.Column<string>(type: "text", nullable: true),
+                    CompetitionTeamOddsId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompetitionTeamOddsSnapshot", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompetitionTeamOddsSnapshot_CompetitionTeamOdds_Competition~",
+                        column: x => x.CompetitionTeamOddsId,
+                        principalTable: "CompetitionTeamOdds",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -3174,6 +3151,17 @@ namespace SportsData.Producer.Migrations
                 column: "CompetitionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CompetitionOdds_CompetitionId_ProviderId",
+                table: "CompetitionOdds",
+                columns: new[] { "CompetitionId", "ProviderId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CompetitionOddsExternalId_CompetitionOddsId",
+                table: "CompetitionOddsExternalId",
+                column: "CompetitionOddsId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CompetitionPowerIndex_CompetitionId",
                 table: "CompetitionPowerIndex",
                 column: "CompetitionId");
@@ -3232,6 +3220,21 @@ namespace SportsData.Producer.Migrations
                 column: "CompetitionStatusId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CompetitionTeamOdds_CompetitionOddsId",
+                table: "CompetitionTeamOdds",
+                column: "CompetitionOddsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CompetitionTeamOddsSnapshot_CompetitionTeamOddsId",
+                table: "CompetitionTeamOddsSnapshot",
+                column: "CompetitionTeamOddsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CompetitionTotalsSnapshot_CompetitionOddsId",
+                table: "CompetitionTotalsSnapshot",
+                column: "CompetitionOddsId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Contest_AwayTeamFranchiseSeasonId",
                 table: "Contest",
                 column: "AwayTeamFranchiseSeasonId");
@@ -3254,11 +3257,6 @@ namespace SportsData.Producer.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ContestLink_ContestId",
                 table: "ContestLink",
-                column: "ContestId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ContestOdds_ContestId",
-                table: "ContestOdds",
                 column: "ContestId");
 
             migrationBuilder.CreateIndex(
@@ -3621,6 +3619,9 @@ namespace SportsData.Producer.Migrations
                 name: "CompetitionNote");
 
             migrationBuilder.DropTable(
+                name: "CompetitionOddsExternalId");
+
+            migrationBuilder.DropTable(
                 name: "CompetitionPowerIndexExternalId");
 
             migrationBuilder.DropTable(
@@ -3636,13 +3637,16 @@ namespace SportsData.Producer.Migrations
                 name: "CompetitionStatusExternalId");
 
             migrationBuilder.DropTable(
+                name: "CompetitionTeamOddsSnapshot");
+
+            migrationBuilder.DropTable(
+                name: "CompetitionTotalsSnapshot");
+
+            migrationBuilder.DropTable(
                 name: "ContestExternalId");
 
             migrationBuilder.DropTable(
                 name: "ContestLink");
-
-            migrationBuilder.DropTable(
-                name: "ContestOdds");
 
             migrationBuilder.DropTable(
                 name: "DriveExternalId");
@@ -3756,6 +3760,9 @@ namespace SportsData.Producer.Migrations
                 name: "CompetitionStatus");
 
             migrationBuilder.DropTable(
+                name: "CompetitionTeamOdds");
+
+            migrationBuilder.DropTable(
                 name: "FranchiseSeasonAward");
 
             migrationBuilder.DropTable(
@@ -3796,6 +3803,9 @@ namespace SportsData.Producer.Migrations
 
             migrationBuilder.DropTable(
                 name: "Play");
+
+            migrationBuilder.DropTable(
+                name: "CompetitionOdds");
 
             migrationBuilder.DropTable(
                 name: "Award");

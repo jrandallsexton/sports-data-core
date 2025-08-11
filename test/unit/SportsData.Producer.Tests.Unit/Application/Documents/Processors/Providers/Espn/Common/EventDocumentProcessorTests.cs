@@ -41,7 +41,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .OmitAutoProperties()
                 .Create());
 
-        var bus = Mocker.GetMock<IBus>();
+        var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
@@ -155,7 +155,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .OmitAutoProperties()
                 .Create());
 
-        var bus = Mocker.GetMock<IBus>();
+        var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json"); var dto = json.FromJson<EspnEventDto>();
@@ -238,7 +238,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IBus>();
+        var bus = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");

@@ -1,5 +1,8 @@
-﻿using Hangfire;
-
+﻿using System.Net;
+using System.Net.Security;
+using System.Security.Authentication;
+using Hangfire;
+using Polly;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.DependencyInjection;
@@ -25,17 +28,41 @@ namespace SportsData.Provider.DependencyInjection
                 IsDryRun = false,
                 MaxResourceIndexItemsToProcess = null
             };
+
             services.AddSingleton<IProviderAppConfig>(appConfig);
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+
+            var imageClient = services.AddHttpClient("images", c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(15);
+                c.DefaultRequestVersion = HttpVersion.Version20;
+                c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd("SportDeets-Provider/1.0");
+                c.DefaultRequestHeaders.Accept.ParseAdd("image/*");
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                MaxConnectionsPerServer = 64,
+                AutomaticDecompression = DecompressionMethods.All,
+                SslOptions = new SslClientAuthenticationOptions
+                {
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
+                }
+            });
+            imageClient.AddPolicyHandler(Policy<HttpResponseMessage>
+                .Handle<HttpRequestException>().Or<IOException>()
+                .OrResult(r => (int)r.StatusCode >= 500 || r.StatusCode == HttpStatusCode.RequestTimeout)
+                .WaitAndRetryAsync(3, i => TimeSpan.FromMilliseconds(200 * Math.Pow(2, i))));
+
             services.AddHttpClient<EspnHttpClient>()
                 .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
-            //services.AddScoped<ISeedResourceIndex, ResourceIndexSeederJob>();
 
             if (useMongo)
             {

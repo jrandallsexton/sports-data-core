@@ -39,6 +39,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
         private async Task ProcessResponseInternal(ProcessImageResponse response)
         {
             var parentEntity = await _dataContext.Athletes
+                .AsNoTracking()
                 .Include(x => x.Images)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();

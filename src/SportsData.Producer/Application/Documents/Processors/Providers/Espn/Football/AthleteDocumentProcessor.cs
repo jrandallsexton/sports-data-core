@@ -23,13 +23,13 @@ public class AthleteDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<AthleteDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
-    private readonly IBus _publishEndpoint;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public AthleteDocumentProcessor(
         ILogger<AthleteDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IBus publishEndpoint,
+        IPublishEndpoint publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;

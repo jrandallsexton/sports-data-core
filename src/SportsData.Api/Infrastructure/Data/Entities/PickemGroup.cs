@@ -30,6 +30,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public bool IsPublic { get; set; }
 
         public int? MaxUsers { get; set; }
+
+        public int? DropLowWeeksCount { get; set; }
         
         public Guid CommissionerUserId { get; set; }
 

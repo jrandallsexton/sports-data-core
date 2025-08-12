@@ -72,7 +72,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.CorrelationId,
                 evt.ParentId,
                 evt.Ref,
-                evt.SourceUrlHash));
+                evt.SourceUrlHash,
+                evt.SourceRef));
         }
     }
 }

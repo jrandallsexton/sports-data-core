@@ -11,7 +11,8 @@ public class ProcessDocumentCommand(
     Guid correlationId,
     string? parentId,
     Uri sourceUri,
-    string urlHash)
+    string urlHash,
+    Uri? originalUri = null)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -30,4 +31,6 @@ public class ProcessDocumentCommand(
     public Uri SourceUri { get; init; } = sourceUri;
 
     public string UrlHash { get; init; } = urlHash;
+
+    public Uri? OriginalUri { get; init; } = originalUri;
 }

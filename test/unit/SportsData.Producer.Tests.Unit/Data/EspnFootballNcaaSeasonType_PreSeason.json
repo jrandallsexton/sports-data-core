@@ -1,0 +1,30 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us",
+  "id": "1",
+  "type": 1,
+  "name": "Preseason",
+  "abbreviation": "pre",
+  "year": 2025,
+  "startDate": "2025-02-01T08:00Z",
+  "endDate": "2025-08-23T06:59Z",
+  "hasGroups": false,
+  "hasStandings": false,
+  "hasLegs": false,
+  "groups": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/groups?lang=en&region=us"
+  },
+  "week": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1?lang=en&region=us",
+    "number": 1,
+    "startDate": "2025-02-01T08:00Z",
+    "endDate": "2025-08-23T06:59Z",
+    "text": "Week 1",
+    "rankings": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings?lang=en&region=us"
+    }
+  },
+  "weeks": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks?lang=en&region=us"
+  },
+  "slug": "preseason"
+}

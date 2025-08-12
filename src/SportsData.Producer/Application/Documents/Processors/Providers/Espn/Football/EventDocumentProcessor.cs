@@ -97,10 +97,38 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto externalDto,
             int seasonYear)
         {
+            var seasonPhaseId = await _dataContext.TryResolveFromDtoRefAsync(
+                externalDto.SeasonType,
+                command.SourceDataProvider,
+                () => _dataContext.SeasonPhases.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger);
+
+            if (seasonPhaseId is null)
+            {
+                // request sourcing?
+                _logger.LogWarning("SeasonPhase not found for SeasonType {SeasonType}.", externalDto.SeasonType);
+                throw new Exception("SeasonPhase not found");
+            }
+
+            var seasonWeekId = await _dataContext.TryResolveFromDtoRefAsync(
+                externalDto.Week,
+                command.SourceDataProvider,
+                () => _dataContext.SeasonWeeks.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger);
+
+            if (seasonWeekId is null)
+            {
+                // request sourcing?
+                _logger.LogWarning("SeasonWeek not found for Week {Week}.", externalDto.Week);
+                throw new Exception("SeasonPhase not found");
+            }
+
             var contest = externalDto.AsEntity(
                 _externalRefIdentityGenerator,
                 command.Sport,
                 seasonYear,
+                seasonWeekId.Value,
+                seasonPhaseId.Value,
                 command.CorrelationId);
 
             // Add contest links from dto.Links

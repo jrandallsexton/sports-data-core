@@ -7,52 +7,43 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace SportsData.Core.Infrastructure.Clients
+public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
 {
-    public abstract class ClientBase(
-        string providerName,
-        IHttpClientFactory clientFactory)
-        : IProvideHealthChecks
+    protected readonly HttpClient HttpClient = httpClient;
+
+    public string GetProviderName() =>
+        HttpClient?.BaseAddress?.Host ?? "Unknown";
+
+    public async Task<Dictionary<string, object>> GetHealthStatus()
     {
-        protected readonly HttpClient HttpClient = clientFactory.CreateClient(providerName);
+        var hostName = string.Empty;
 
-        public string GetProviderName()
+        try
         {
-            return providerName;
+            var response = await HttpClient.GetAsync("health");
+            response.EnsureSuccessStatusCode();
+
+            if (response.Headers.TryGetValues("host", out var values))
+            {
+                hostName = values.First();
+            }
+
+            return new Dictionary<string, object>
+            {
+                { "status", response.StatusCode },
+                { "uri", $"{HttpClient.BaseAddress}health" },
+                { "host", hostName }
+            };
         }
-
-        public async Task<Dictionary<string, object>> GetHealthStatus()
+        catch (Exception ex)
         {
-
-            var hostName = string.Empty;
-
-            try
+            return new Dictionary<string, object>
             {
-                var response = await HttpClient.GetAsync("health");
-                response.EnsureSuccessStatusCode();
-
-                if (response.Headers.TryGetValues("host", out var values))
-                {
-                    hostName = values.First();
-                }
-
-                return new Dictionary<string, object>()
-                {
-                    { "status", response.StatusCode },
-                    { "uri",  $"{HttpClient.BaseAddress}health" },
-                    { "host", hostName }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new Dictionary<string, object>()
-                {
-                    { "status", HttpStatusCode.ServiceUnavailable },
-                    { "uri",  $"{HttpClient.BaseAddress}health" },
-                    { "host", hostName },
-                    { "ex", ex.Message }
-                };
-            }
+                { "status", HttpStatusCode.ServiceUnavailable },
+                { "uri", $"{HttpClient.BaseAddress}health" },
+                { "host", hostName },
+                { "ex", ex.Message }
+            };
         }
     }
 }

@@ -55,6 +55,8 @@
         EventCompetitionCompetitor = 50,
         EventCompetitionCompetitorScore = 51,
         EventCompetitionCompetitorLineScore = 52,
+        SeasonTypeWeek = 53,
+        SeasonTypeWeekRankings = 54,
         Unknown = 9999
     }
 }

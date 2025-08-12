@@ -25,9 +25,8 @@ public class VenueClient : ClientBase, IProvideVenues
 
     public VenueClient(
         ILogger<VenueClient> logger,
-        string clientName,
-        IHttpClientFactory clientFactory) :
-        base(clientName, clientFactory)
+        HttpClient httpClient) :
+        base(httpClient)
     {
         _logger = logger;
     }
@@ -35,7 +34,6 @@ public class VenueClient : ClientBase, IProvideVenues
     public async Task<Result<GetVenuesResponse>> GetVenues()
     {
         var response = await HttpClient.GetAsync("venues");
-
         var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
@@ -83,6 +81,4 @@ public class VenueClient : ClientBase, IProvideVenues
 
         return new Failure<GetVenueByIdResponse>(new GetVenueByIdResponse(null), status, errors);
     }
-
-
 }

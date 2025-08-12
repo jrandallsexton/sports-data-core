@@ -188,7 +188,7 @@ namespace SportsData.Core.DependencyInjection
                 //.AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
                 //.AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
                 //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
-                .AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
+                //.AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
                 .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient);
                 //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
                 //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
@@ -284,12 +284,12 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            services
-                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-                {
-                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
-                })
-                .AddPolicyHandlerFromRegistry("HttpRetry");
+            //services
+            //    .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
+            //    {
+            //        c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
+            //    })
+            //    .AddPolicyHandlerFromRegistry("HttpRetry");
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

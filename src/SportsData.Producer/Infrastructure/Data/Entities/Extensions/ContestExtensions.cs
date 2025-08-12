@@ -1,7 +1,6 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -13,6 +12,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Sport sport,
             int seasonYear,
+            Guid seasonWeekId,
+            Guid seasonPhaseId,
             Guid correlationId)
         {
 
@@ -39,7 +40,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 ],
                 Sport = sport,
                 SeasonYear = seasonYear,
-                Status = ContestStatus.Undefined
+                Status = ContestStatus.Undefined,
+                SeasonWeekId = seasonWeekId,
+                SeasonPhaseId = seasonPhaseId
             };
         }
 

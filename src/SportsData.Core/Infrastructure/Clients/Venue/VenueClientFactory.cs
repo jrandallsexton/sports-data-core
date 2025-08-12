@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Venue;
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
 
 public interface IVenueClientFactory
 {
@@ -55,8 +57,9 @@ public class VenueClientFactory : IVenueClientFactory
 
             var logger = _loggerFactory.CreateLogger<VenueClient>();
             var clientName = $"{HttpClients.VenueClient}";
+            var httpClient = _httpClientFactory.CreateClient(clientName); // ✅ Correct usage
 
-            client = new VenueClient(logger, clientName, _httpClientFactory);
+            client = new VenueClient(logger, httpClient);
             _clientCache[mode] = client;
         }
 

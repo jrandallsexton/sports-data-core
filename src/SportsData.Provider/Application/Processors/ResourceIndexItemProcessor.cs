@@ -177,6 +177,7 @@ namespace SportsData.Provider.Application.Processors
                 command.ParentId,
                 collectionName,
                 providerRef,
+                command.Uri,
                 jsonDoc,
                 urlHash,
                 command.Sport,
@@ -218,6 +219,7 @@ namespace SportsData.Provider.Application.Processors
                 urlHash,
                 command.ParentId,
                 collectionName,
+                command.Uri, // TODO: This should be the provider ref, not the command.Uri
                 command.Uri,
                 jsonDoc,
                 urlHash,

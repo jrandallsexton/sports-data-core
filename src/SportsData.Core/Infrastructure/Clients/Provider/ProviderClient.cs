@@ -31,8 +31,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 
         public ProviderClient(
             ILogger<ProviderClient> logger,
-            IHttpClientFactory clientFactory) :
-            base(HttpClients.ProviderClient, clientFactory)
+            HttpClient httpClient) : base(httpClient)
         {
             _logger = logger;
         }
@@ -69,17 +68,17 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             long documentId,
             int? seasonId)
         {
-            var url = seasonId.HasValue ?
-                $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}" :
-                $"document/{providerId}/{sportId}/{typeId}/{documentId}";
+            var url = seasonId.HasValue
+                ? $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}"
+                : $"document/{providerId}/{sportId}/{typeId}/{documentId}";
+
             _logger.LogInformation("Using {@BaseAddress} with {@Uri}", HttpClient.BaseAddress, url);
 
             try
             {
                 var response = await HttpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
-                var tmp = await response.Content.ReadAsStringAsync();
-                return tmp;
+                return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
@@ -91,19 +90,17 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         public async Task PublishDocumentEvents(PublishDocumentEventsCommand command)
         {
             var content = new StringContent(command.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"document/publish/", content);
+            var response = await HttpClient.PostAsync("document/publish/", content);
             response.EnsureSuccessStatusCode();
         }
 
         public async Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query)
         {
             var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"document/external/document/", content);
+            var response = await HttpClient.PostAsync("document/external/document/", content);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
-            var json = tmp.FromJson<GetExternalDocumentResponse>();
-
-            return json ?? new GetExternalDocumentResponse()
+            return tmp.FromJson<GetExternalDocumentResponse>() ?? new GetExternalDocumentResponse
             {
                 CanonicalId = string.Empty,
                 Uri = new Uri(string.Empty),
@@ -116,12 +113,10 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         public async Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query)
         {
             var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"document/external/image/", content);
+            var response = await HttpClient.PostAsync("document/external/image/", content);
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
-            var json = tmp.FromJson<GetExternalImageResponse>();
-
-            return json ?? new GetExternalImageResponse()
+            return tmp.FromJson<GetExternalImageResponse>() ?? new GetExternalImageResponse
             {
                 CanonicalId = string.Empty,
                 Uri = new Uri(string.Empty),

@@ -19,8 +19,10 @@ public class SeasonDocumentProcessorTests
     public SeasonDocumentProcessorTests()
     {
         var logger = Mocker.Get<ILogger<SeasonDocumentProcessor<FootballDataContext>>>();
+
         var generator = new ExternalRefIdentityGenerator();
-        _processor = new SeasonDocumentProcessor<FootballDataContext>(logger, FootballDataContext, generator);
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        _processor = Mocker.CreateInstance<SeasonDocumentProcessor<FootballDataContext>>();
     }
 
     [Fact]
@@ -53,10 +55,7 @@ public class SeasonDocumentProcessorTests
 
         Assert.NotNull(season);
         Assert.Equal(2025, season.Year);
-        Assert.NotEmpty(season.Phases);
-        Assert.All(season.Phases, p => Assert.Equal(2025, p.Year));
-        Assert.Contains(season.Phases, p => p.Id == season.ActivePhaseId);
-
+        Assert.Empty(season.Phases);
         Assert.NotEmpty(season.ExternalIds);
         Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
     }
@@ -91,10 +90,7 @@ public class SeasonDocumentProcessorTests
 
         Assert.NotNull(season);
         Assert.Equal(2024, season.Year);
-        Assert.NotEmpty(season.Phases);
-        Assert.All(season.Phases, p => Assert.Equal(2024, p.Year));
-        Assert.Contains(season.Phases, p => p.Id == season.ActivePhaseId);
-
+        Assert.Empty(season.Phases);
         Assert.NotEmpty(season.ExternalIds);
         Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
     }

@@ -24,11 +24,15 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Season> Seasons { get; set; }
 
+        public DbSet<SeasonWeek> SeasonWeeks { get; set; }
+
         public DbSet<SeasonExternalId> SeasonExternalIds { get; set; }
 
         public DbSet<SeasonPhase> SeasonPhases { get; set; }
 
         public DbSet<SeasonPhaseExternalId> SeasonPhaseExternalIds { get; set; }
+
+        public DbSet<SeasonRanking> SeasonRankings { get; set; }
 
         public DbSet<Venue> Venues { get; set; }
 
@@ -41,9 +45,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<OutboxState> OutboxStates => Set<OutboxState>();
 
         public DbSet<InboxState> InboxStates => Set<InboxState>();
-
-        public DbSet<OutboxPing> OutboxPings => Set<OutboxPing>();
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +60,12 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new SeasonExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPhase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPhaseExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonRanking.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonRankingExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonRankingEntry.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonRankingEntryStat.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonWeek.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonWeekExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Venue.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueImage.EntityConfiguration());

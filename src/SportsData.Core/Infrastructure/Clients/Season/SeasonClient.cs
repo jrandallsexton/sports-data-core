@@ -1,26 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿//using Microsoft.Extensions.Logging;
 
-using SportsData.Core.Middleware.Health;
+//using SportsData.Core.Middleware.Health;
 
-using System.Net.Http;
+//using System.Net.Http;
 
-namespace SportsData.Core.Infrastructure.Clients.Season
-{
-    public interface IProvideSeasons : IProvideHealthChecks
-    {
+//namespace SportsData.Core.Infrastructure.Clients.Season
+//{
+//    public interface IProvideSeasons : IProvideHealthChecks
+//    {
 
-    }
+//    }
 
-    public class SeasonClient : ClientBase, IProvideSeasons
-    {
-        private readonly ILogger<SeasonClient> _logger;
+//    public class SeasonClient : ClientBase, IProvideSeasons
+//    {
+//        private readonly ILogger<SeasonClient> _logger;
 
-        public SeasonClient(
-            ILogger<SeasonClient> logger,
-            IHttpClientFactory clientFactory) :
-            base(HttpClients.SeasonClient, clientFactory)
-        {
-            _logger = logger;
-        }
-    }
-}
+//        public SeasonClient(
+//            ILogger<SeasonClient> logger,
+//            IHttpClientFactory clientFactory) :
+//            base(HttpClients.SeasonClient, clientFactory)
+//        {
+//            _logger = logger;
+//        }
+//    }
+//}

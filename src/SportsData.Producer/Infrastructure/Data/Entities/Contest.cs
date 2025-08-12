@@ -38,9 +38,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required int SeasonYear { get; set; }
 
-        public int? SeasonType { get; set; }         // ESPN exposes this via seasonType ref
-
         public int? Week { get; set; }               // From `week` ref, parsed from URL or hydrated from companion doc
+
+        public Guid SeasonWeekId { get; set; }
+
+        public SeasonWeek SeasonWeek { get; set; } = null!;
+
+        public Guid SeasonPhaseId { get; set; }
 
         public string? EventNote { get; set; }       // e.g., "Modelo Vegas Kickoff Classic"
 
@@ -86,7 +90,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.SeasonYear)
                     .IsRequired();
 
-                builder.Property(x => x.SeasonType);
+                builder.Property(x => x.SeasonPhaseId);
 
                 builder.Property(x => x.Week);
 
@@ -110,6 +114,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasOne(x => x.AwayTeamFranchiseSeason)
                     .WithMany()
                     .HasForeignKey(x => x.AwayTeamFranchiseSeasonId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder
+                    .HasOne(x => x.SeasonWeek)
+                    .WithMany()
+                    .HasForeignKey(x => x.SeasonWeekId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 builder.Property(x => x.DisplayClock)

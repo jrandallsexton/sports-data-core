@@ -37,13 +37,16 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             }
 
             // Make HTTP call
-            _logger.LogDebug("Fetching LIVE from ESPN: {Uri}", uri);
+            // Request-only HTTPS upgrade
+            var requestUri = EspnRequestUri.ForFetch(uri);
+
+            _logger.LogDebug("Fetching LIVE from ESPN: {RequestUri} (identity: {IdentityUri})", requestUri, uri);
 
             // TODO: Make this delay configurable via Azure App Settings
             // prevent banging on ESPN API too fast
             await Task.Delay(250);
 
-            var response = await _httpClient.GetAsync(uri);
+            using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -56,6 +59,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             // Optionally persist
             if (_config.PersistLocally && !bypassCache)
             {
+                // Persist under the ORIGINAL identity URI key
                 await SaveToDiskAsync(uri, json, stripQuerystring);
             }
 
@@ -136,8 +140,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             throw new IOException($"Failed to write file after {maxRetries} attempts: {path}");
         }
-
-
+        
         private string GetCacheFilePath(Uri uri, bool stripQuerystring = true)
         {
             var filename = ConvertUriToFilename(uri, stripQuerystring) + ".json";

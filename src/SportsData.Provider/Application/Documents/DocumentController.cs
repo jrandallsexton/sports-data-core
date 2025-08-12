@@ -12,7 +12,9 @@ using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System;
 using System.Net.Http;
 
 namespace SportsData.Provider.Application.Documents
@@ -153,10 +155,12 @@ namespace SportsData.Provider.Application.Documents
                 query.DocumentType,
                 query.SeasonYear);
 
+            var uriToUse = EspnRequestUri.ForFetch(query.Uri);
+
             _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 
             // generate a hash for the collection retrieval
-            var hash = HashProvider.GenerateHashFromUri(query.Uri);
+            var hash = HashProvider.GenerateHashFromUri(uriToUse);
 
             _logger.LogInformation("Hash generated {@Hash}", hash);
 
@@ -178,7 +182,7 @@ namespace SportsData.Provider.Application.Documents
 
             // get the item via the url
             using var client = new HttpClient();
-            using var response = await client.GetAsync(query.Uri);
+            using var response = await client.GetAsync(uriToUse);
             var json = await response.Content.ReadAsStringAsync();
 
             // save a record for the hash and blob url
@@ -187,8 +191,8 @@ namespace SportsData.Provider.Application.Documents
                 Id = hash,
                 Data = json,
                 DocumentType = query.DocumentType,
-                RoutingKey = _routingKeyGenerator.Generate(query.SourceDataProvider, query.Uri),
-                Uri = query.Uri,
+                RoutingKey = _routingKeyGenerator.Generate(query.SourceDataProvider, uriToUse),
+                Uri = uriToUse,
                 SourceUrlHash = hash,
                 SourceDataProvider = query.SourceDataProvider,
                 Sport = query.Sport
@@ -201,7 +205,7 @@ namespace SportsData.Provider.Application.Documents
             {
                 Id = hash,
                 CanonicalId = query.CanonicalId ?? string.Empty,
-                Uri = query.Uri,
+                Uri = uriToUse,
                 Data = json
             });
         }

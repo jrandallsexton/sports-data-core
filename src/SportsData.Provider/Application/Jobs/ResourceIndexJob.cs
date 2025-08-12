@@ -1,4 +1,5 @@
-﻿
+﻿using Hangfire;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -13,11 +14,7 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Jobs
 {
-    public interface IProcessResourceIndexes
-    {
-        Task ExecuteAsync(DocumentJobDefinition jobDefinition);
-    }
-
+    [DisableConcurrentExecution(300)] // 5 minutes (outer gate)
     public class ResourceIndexJob : IProcessResourceIndexes
     {
         private readonly ILogger<ResourceIndexJob> _logger;
@@ -29,7 +26,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IProviderAppConfig _appConfig;
         private readonly EspnApiClientConfig _espnApiClientConfig;
 
-        private const int PageSize = 25;
+        private const int PageSize = 250;
 
         public ResourceIndexJob(
             ILogger<ResourceIndexJob> logger,
@@ -61,91 +58,77 @@ namespace SportsData.Provider.Application.Jobs
         {
             _logger.LogInformation("Begin processing {@JobDefinition}", jobDefinition);
 
-            // Get the resource index
-            var url = jobDefinition.StartPage.HasValue
-                ? $"{jobDefinition.Endpoint}?limit={PageSize}&page={jobDefinition.StartPage.Value}"
-                : $"{jobDefinition.Endpoint}?limit={PageSize}";
+            var me = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+            var id = jobDefinition.ResourceIndexId;
 
-            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+            // ---- Atomic claim -------------------------------------------------
+            var claimed = await _dataContext.ResourceIndexJobs
+                .Where(x => x.Id == id && x.ProcessingInstanceId == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.ProcessingInstanceId, _ => me)
+                    .SetProperty(x => x.ProcessingStartedUtc, _ => now)
+                    .SetProperty(x => x.IsQueued, _ => true)) == 1;
+
+            if (!claimed)
             {
-                _logger.LogError("Could not created URI from {@Url}", url);
-                throw new InvalidOperationException($"Invalid URI: {url}");
-            }
-
-            var resourceIndexDto = await _espnApi.GetResourceIndex(uri, jobDefinition.EndpointMask);
-
-            _logger.LogInformation("Obtained Resource Index Definition {@resourceIndex}", resourceIndexDto);
-
-            // Log this access to AppDataContext
-            var resourceIndexEntity = await _dataContext.ResourceIndexJobs
-                .Include(x => x.Items)
-                .Where(x => x.Id == jobDefinition.ResourceIndexId)
-                .FirstOrDefaultAsync();
-
-            if (resourceIndexEntity == null)
-            {
-                // log an error, but do not stop processing
-                _logger.LogError($"ResourceIndex could not be loaded from the database for item: {jobDefinition.ResourceIndexId}");
-                // TODO: Throw and retry?
+                _logger.LogWarning("ResourceIndex {ResourceIndexId} already owned; skipping.", id);
                 return;
             }
 
-            _logger.LogInformation("Updating access to ResourceIndex in the database");
-            resourceIndexEntity.LastAccessedUtc = DateTime.UtcNow;
-            resourceIndexEntity.IsQueued = true;
-            resourceIndexEntity.TotalPageCount = resourceIndexDto.PageCount;
-
-            await _dataContext.SaveChangesAsync();
-
-            // TODO: Remove this code after testing.
-            // For now, I do not want to load each resource if I already have them in Mongo
-            // Otherwise ESPN might blacklist my IP.  Not sure.
-            var collectionName = _decoder.GetCollectionName(jobDefinition.SourceDataProvider, jobDefinition.Sport, jobDefinition.DocumentType, jobDefinition.SeasonYear);
-
-            _logger.LogInformation("Getting collection {@CollectionName}", collectionName);
-
             try
             {
-                var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(collectionName);
+                // ---- Initial page fetch ---------------------------------------
+                var url = jobDefinition.StartPage.HasValue
+                    ? $"{jobDefinition.Endpoint}?limit={PageSize}&page={jobDefinition.StartPage.Value}"
+                    : $"{jobDefinition.Endpoint}?limit={PageSize}";
 
-                _logger.LogInformation("Obtained {@CollectionObjectCount}", dbDocuments.Count);
-
-                if (dbDocuments.Count == resourceIndexDto.Count)
+                if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var firstUri))
                 {
-                    _logger.LogInformation($"Number of counts matched for {jobDefinition.SourceDataProvider}.{jobDefinition.Sport}.{jobDefinition.DocumentType}");
-                    return;
+                    _logger.LogError("Invalid URI: {Url}", url);
+                    throw new InvalidOperationException($"Invalid URI: {url}");
                 }
 
-                // TODO: raise an event that document sourcing is about to start
+                var resourceIndexDto = await _espnApi.GetResourceIndex(firstUri, jobDefinition.EndpointMask);
 
-                var itemsProcessed = 0;
+                // Owner-gated state: last access + total page count
+                await _dataContext.ResourceIndexJobs
+                    .Where(x => x.Id == id && x.ProcessingInstanceId == me)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.LastAccessedUtc, _ => DateTime.UtcNow)
+                        .SetProperty(x => x.TotalPageCount, _ => resourceIndexDto.PageCount));
 
+                _logger.LogInformation("Index has {Count} items across {Pages} pages starting at {Page}",
+                    resourceIndexDto.Count, resourceIndexDto.PageCount, resourceIndexDto.PageIndex);
+
+                // (Optional sanity) existing docs count – harmless read
+                var collectionName = _decoder.GetCollectionName(
+                    jobDefinition.SourceDataProvider,
+                    jobDefinition.Sport,
+                    jobDefinition.DocumentType,
+                    jobDefinition.SeasonYear);
+
+                _logger.LogInformation("Target collection {Collection}", collectionName);
+                // NOTE: left in place in case you want to observe coverage; no short-circuiting
+
+                // ---- Page loop -------------------------------------------------
                 while (true)
                 {
+                    // Stop criteria 1: overshoot guard
                     if (resourceIndexDto.PageIndex > resourceIndexDto.PageCount)
                     {
-                        _logger.LogInformation("Completed all pages for {DocumentType}", jobDefinition.DocumentType);
+                        _logger.LogInformation("PageIndex {Idx} > PageCount {Cnt}. Finishing.", resourceIndexDto.PageIndex, resourceIndexDto.PageCount);
                         break;
                     }
 
-                    _logger.LogInformation("Processing page {CurrentPage} of {TotalPages} for {DocumentType}",
+                    _logger.LogInformation("Processing page {Current}/{Total} for {DocType}",
                         resourceIndexDto.PageIndex, resourceIndexDto.PageCount, jobDefinition.DocumentType);
 
+                    // Enqueue items for processing
                     foreach (var item in resourceIndexDto.Items)
                     {
-                        if (_appConfig.MaxResourceIndexItemsToProcess.HasValue &&
-                            itemsProcessed >= _appConfig.MaxResourceIndexItemsToProcess.Value)
-                        {
-                            _logger.LogInformation("Reached processing cap of {Max}. Exiting early.",
-                                _appConfig.MaxResourceIndexItemsToProcess.Value);
-                            resourceIndexEntity.IsQueued = false;
-                            resourceIndexEntity.LastCompletedUtc = DateTime.UtcNow;
-                            await _dataContext.SaveChangesAsync();
-                            return;
-                        }
-
                         var cmd = new ProcessResourceIndexItemCommand(
-                            resourceIndexEntity.Id,
+                            id,
                             HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()),
                             item.Ref,
                             jobDefinition.Sport,
@@ -154,47 +137,53 @@ namespace SportsData.Provider.Application.Jobs
                             null,
                             jobDefinition.SeasonYear);
 
-                        // TODO: Enable this logging if needed
-                        //_logger.LogInformation("Preparing job for resourceIndexItem: {Id}", cmd.Id);
-
-                        if (_appConfig.IsDryRun)
-                        {
-                            _logger.LogInformation("DryRun enabled: skipping enqueue for {Ref}", item.Ref);
-                        }
-                        else
-                        {
-                            _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
-                        }
-
-                        itemsProcessed++;
-
-                        resourceIndexEntity.LastPageIndex = resourceIndexDto.PageIndex;
-                        await _dataContext.SaveChangesAsync();
+                        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                     }
 
-                    if (resourceIndexDto.PageIndex == resourceIndexDto.PageCount)
+                    // Page-scoped, owner-gated, monotonic progress
+                    var currentPage = resourceIndexDto.PageIndex;
+                    await _dataContext.ResourceIndexJobs
+                        .Where(x => x.Id == id
+                                    && x.ProcessingInstanceId == me
+                                    && (x.LastPageIndex == null || x.LastPageIndex < currentPage))
+                        .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastPageIndex, _ => currentPage));
+
+                    // Stop criteria 2: last page reached
+                    if (resourceIndexDto.PageIndex >= resourceIndexDto.PageCount)
                     {
-                        _logger.LogInformation("Final page {PageIndex} reached. Job complete.", resourceIndexDto.PageIndex);
+                        _logger.LogInformation("Final page {Page} reached.", resourceIndexDto.PageIndex);
                         break;
                     }
 
+                    // Next page
                     var nextPage = resourceIndexDto.PageIndex + 1;
-                    url = $"{jobDefinition.Endpoint}?limit={PageSize}&page={nextPage}";
-                    resourceIndexDto = await _espnApi.GetResourceIndex(new Uri(url), jobDefinition.EndpointMask);
+                    var nextUrl = $"{jobDefinition.Endpoint}?limit={PageSize}&page={nextPage}";
+                    resourceIndexDto = await _espnApi.GetResourceIndex(new Uri(nextUrl, UriKind.RelativeOrAbsolute), jobDefinition.EndpointMask);
                 }
 
-                resourceIndexEntity.IsQueued = false;
-                resourceIndexEntity.LastCompletedUtc = DateTime.UtcNow;
-                await _dataContext.SaveChangesAsync();
+                // ---- Mark complete (owner-gated) ------------------------------
+                await _dataContext.ResourceIndexJobs
+                    .Where(x => x.Id == id && x.ProcessingInstanceId == me)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.IsQueued, _ => false)
+                        .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
 
-                _logger.LogInformation($"Completed {nameof(jobDefinition)} with {resourceIndexDto.Items.Count} jobs spawned.");
+                _logger.LogInformation("Completed ResourceIndex {Id}.", id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled exception during ResourceIndexJob execution for {JobId}", jobDefinition.ResourceIndexId);
-                throw; // ensure Hangfire retries
+                _logger.LogError(ex, "Unhandled exception during ResourceIndexJob execution for {Id}", id);
+                throw; // Hangfire will retry
             }
-
+            finally
+            {
+                // Always release ownership (owner-gated)
+                await _dataContext.ResourceIndexJobs
+                    .Where(x => x.Id == id && x.ProcessingInstanceId == me)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.ProcessingInstanceId, _ => (Guid?)null)
+                        .SetProperty(x => x.ProcessingStartedUtc, _ => (DateTime?)null));
+            }
         }
     }
 }

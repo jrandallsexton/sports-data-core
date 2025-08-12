@@ -1,26 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿//using Microsoft.Extensions.Logging;
 
-using SportsData.Core.Middleware.Health;
+//using SportsData.Core.Middleware.Health;
 
-using System.Net.Http;
+//using System.Net.Http;
 
-namespace SportsData.Core.Infrastructure.Clients.Player
-{
-    public interface IProvidePlayers : IProvideHealthChecks
-    {
+//namespace SportsData.Core.Infrastructure.Clients.Player
+//{
+//    public interface IProvidePlayers : IProvideHealthChecks
+//    {
 
-    }
+//    }
 
-    public class PlayerClient : ClientBase, IProvidePlayers
-    {
-        private readonly ILogger<PlayerClient> _logger;
+//    public class PlayerClient : ClientBase, IProvidePlayers
+//    {
+//        private readonly ILogger<PlayerClient> _logger;
 
-        public PlayerClient(
-            ILogger<PlayerClient> logger,
-            IHttpClientFactory clientFactory) :
-            base(HttpClients.PlayerClient, clientFactory)
-        {
-            _logger = logger;
-        }
-    }
-}
+//        public PlayerClient(
+//            ILogger<PlayerClient> logger,
+//            IHttpClientFactory clientFactory) :
+//            base(HttpClients.PlayerClient, clientFactory)
+//        {
+//            _logger = logger;
+//        }
+//    }
+//}

@@ -98,9 +98,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 DocumentType: DocumentType.Franchise,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: command.CorrelationId // or command.CanonicalId if preferred
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
             ));
-            _dataContext.Add(new OutboxPing { Id = Guid.NewGuid(), Timestamp = DateTime.UtcNow });
+            
             await _dataContext.SaveChangesAsync();
 
             throw new InvalidOperationException($"Franchise {externalProviderDto.Franchise.Ref} not found.");

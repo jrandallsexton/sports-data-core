@@ -71,7 +71,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 dto = null;
             }
 
-            // If we didn’t get a valid ResourceIndex, treat as leaf and exit
+            // If we did not get a valid ResourceIndex, treat as leaf and exit
             if (dto?.Items is not { Count: > 0 })
             {
                 _logger.LogInformation("No items found in resource index at {Uri}", uri);

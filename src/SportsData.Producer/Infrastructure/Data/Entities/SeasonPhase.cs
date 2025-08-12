@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class SeasonPhase : CanonicalEntityBase<Guid>
+    public class SeasonPhase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Guid SeasonId { get; set; }
 
@@ -31,8 +33,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool HasLegs { get; set; }
 
-        // External IDs for deduplication/traversal
-        public ICollection<SeasonPhaseExternalId> ExternalIds { get; set; } = new List<SeasonPhaseExternalId>();
+        public ICollection<SeasonWeek> Weeks { get; set; } = [];
+
+        public ICollection<SeasonPhaseExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public class EntityConfiguration : IEntityTypeConfiguration<SeasonPhase>
         {
@@ -63,6 +68,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasMany(e => e.ExternalIds)
                     .WithOne(eid => eid.SeasonPhase)
                     .HasForeignKey(eid => eid.SeasonPhaseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(e => e.Weeks)
+                    .WithOne(w => w.SeasonPhase)
+                    .HasForeignKey(w => w.SeasonPhaseId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }

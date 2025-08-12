@@ -56,6 +56,7 @@ namespace SportsData.Provider.Application.Processors
                         null,
                         typeAndName.Type.Name,
                         doc.Uri,
+                        doc.Uri, //TODO: This should be the source URL, not the URI
                         null,
                         doc.SourceUrlHash,
                         command.Sport,

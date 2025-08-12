@@ -20,6 +20,10 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         /// </summary>
         public bool IsQueued { get; set; }
 
+        public Guid? ProcessingInstanceId { get; set; }
+
+        public DateTime? ProcessingStartedUtc { get; set; }
+
         public string? CronExpression { get; set; }
 
         public bool IsEnabled { get; set; }

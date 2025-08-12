@@ -1,17 +1,13 @@
 ﻿using Azure.Identity;
 
-using Google.Protobuf.WellKnownTypes;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 using Serilog;
 using Serilog.Events;
-using Serilog.Sinks.OpenTelemetry;
 
 using SportsData.Core.Common;
 using SportsData.Core.Config;
@@ -45,8 +41,8 @@ namespace SportsData.Core.DependencyInjection
 
                     // Per-namespace overrides
                     .MinimumLevel.Override("SportsData", LogEventLevel.Warning)
-                    .MinimumLevel.Override("SportsData.Producer.Application.Documents.Processors.Providers.Espn", LogEventLevel.Debug)
-                    .MinimumLevel.Override("SportsData.Provider.Application", LogEventLevel.Debug)
+                    .MinimumLevel.Override("SportsData.Producer.Application.Documents.Processors.Providers.Espn", LogEventLevel.Warning)
+                    .MinimumLevel.Override("SportsData.Provider.Application", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .MinimumLevel.Override("System", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)

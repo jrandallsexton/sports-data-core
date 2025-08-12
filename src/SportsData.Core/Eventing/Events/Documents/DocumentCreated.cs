@@ -10,6 +10,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         string? ParentId,
         string Name,
         Uri Ref,
+        Uri SourceRef,
         string? DocumentJson,
         string SourceUrlHash,
         Sport Sport,

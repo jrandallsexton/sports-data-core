@@ -9,23 +9,67 @@ WHERE "DoB" > '2000-01-01'
  select * from public."AthletePositionExternalIds" where "AthletePositionId" = 'fadd0991-919d-4ab2-95a2-f0f1f205a25d'
   select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
    select * from public."Franchise" order by "Slug"
+   select * from public."Group" order by "Slug"
    select * from public."FranchiseLogo"
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'lsu-tigers'
    select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
+   
+   select * from public."FranchiseSeasonRanking"
+   select * from public."FranchiseSeasonRankingDetail"
+
+   select *
+   from public."Franchise" f
+   inner join public."FranchiseSeason" fson on fson."FranchiseId" = f."Id"
+   inner join public."FranchiseSeasonRanking" fsr on fsr."FranchiseSeasonId" = fson."Id"
+   inner join public."FranchiseSeasonRankingDetail" fsrd on fsrd."FranchiseSeasonRankingId" = fsr."Id"
+   where fsr."Type" = 'ap'
+   order by fsrd."Current"
+   
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
    select * from public."SeasonPhase" order by "Year"
-   select * from public."SeasonYear" order by "Year"
+   
+   select * from public."SeasonWeek" sw
+   inner join public."Season" s on s."Id" = sw."SeasonId"
+   where s."Year" = 2025
+   order by sw."StartDate" DESC
+   
+   select * from public."SeasonRanking"
+   select * from public."SeasonRankingEntry"
+
+   
+   select sre.* from public."Season" s
+   inner join public."SeasonPhase" sp on sp."SeasonId" = s."Id"
+   inner join public."SeasonWeek" sw on sw."SeasonId" = s."Id" and sw."SeasonPhaseId" = sp."Id"
+   inner join public."SeasonRanking" sr on sr."SeasonWeekId" = sw."Id"
+   inner join public."SeasonRankingEntry" sre on sre."SeasonRankingId" = sr."Id"
+   where s."Year" = 2024 and sp."Abbreviation" = 'reg' and sw."Number" = 2 and sr."ProviderPollId" = '1' and sre."Current" > 0
+   order by sw."Number", sre."Current"
+   
    select * from public."Venue" where "Name" = 'Tiger Stadium (LA)'
    --update public."Franchise" set "VenueId" = '8121cd60-3244-363b-623c-41cbbbec5972' where "Id" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
+   
    select V."Name", V."City", V."State", C.* from public."Contest" C
    inner join public."Venue" V on V."Id" = C."VenueId"
    WHERE C."ShortName" LIKE '%LSU%' ORDER BY C."StartDateUtc"
 
    select * from public."Contest" WHERE "ShortName" like '%LSU%'order by "StartDateUtc"
    select * from public."ContestExternalId" where "ContestId" = '8775fdbd-802a-1d25-735e-bbf702ac7e2d'
-   select * from public."Competition" where "ContestId" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
+   select * from public."Competition" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
+select * from public."CompetitionCompetitor"
+select * from public."CompetitionCompetitorScores"
+select * from public."CompetitionStatus" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+select * from public."CompetitionLink" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+select * from public."CompetitionNote" --where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+
+   select * from public."Competition" comp
+   inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
+   where comp."ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
+
+select * from public."ContestOdds" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
+select * from public."ContestOdds" where "ContestId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+   
    select * from public."PowerIndex"
    select * from public."Play"
    select * from public."Competitor"

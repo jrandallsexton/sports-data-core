@@ -24,7 +24,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
             Sport.BasketballNba
         ];
 
-        private const string EspnApiBaseUrl = "http://sports.core.api.espn.com/v2/sports";
+        private const string EspnApiBaseUrl = "https://sports.core.api.espn.com/v2/sports";
 
         public List<ResourceIndex> GenerateNonSeasonalResources(
             List<ResourceIndex> resources,

@@ -1,7 +1,11 @@
+using MassTransit;
+using MassTransit.Transports;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -19,15 +23,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<SeasonDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public SeasonDocumentProcessor(
             ILogger<SeasonDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            IPublishEndpoint publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -90,52 +97,57 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         {
             var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
-            // capture the ActiveSeasonPhaseId if it exists (avoid circular reference)
-            // EF Core cannot save circular reference Season ↔ ActivePhaseId in same SaveChanges call
-            var currentSeasonPhaseId = newEntity.ActivePhaseId;
+            if (dto.Types?.Ref is not null)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: newEntity.Id.ToString(),
+                    Uri: dto.Types.Ref,
+                    Sport: Sport.FootballNcaa,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.SeasonType,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.SeasonDocumentProcessor
+                ));
+            }
 
-            newEntity.ActivePhaseId = null;
             await _dataContext.Seasons.AddAsync(newEntity);
             await _dataContext.SaveChangesAsync();
-
-            // Re-attach the ActiveSeasonPhaseId after saving
-            if (currentSeasonPhaseId.HasValue)
-            {
-                newEntity.ActivePhaseId = currentSeasonPhaseId.Value;
-                await _dataContext.SaveChangesAsync();
-            }
 
             _logger.LogInformation("Created new Season entity: {SeasonId}", newEntity.Id);
         }
 
-        private Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
+        private async Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
         {
-            // Update scalar properties
-            existingSeason.Year = mappedSeason.Year;
-            existingSeason.Name = mappedSeason.Name;
-            existingSeason.StartDate = mappedSeason.StartDate;
-            existingSeason.EndDate = mappedSeason.EndDate;
-            existingSeason.ActivePhaseId = mappedSeason.ActivePhaseId;
+            _logger.LogError("Season update detected. Not implemented");
+            await Task.Delay(100);
+            //// Update scalar properties
+            //existingSeason.Year = mappedSeason.Year;
+            //existingSeason.Name = mappedSeason.Name;
+            //existingSeason.StartDate = mappedSeason.StartDate;
+            //existingSeason.EndDate = mappedSeason.EndDate;
+            //existingSeason.ActivePhaseId = mappedSeason.ActivePhaseId;
 
-            // Replace Phases wholesale
-            _dataContext.SeasonPhases.RemoveRange(existingSeason.Phases);
-            existingSeason.Phases.Clear();
-            foreach (var phase in mappedSeason.Phases)
-            {
-                existingSeason.Phases.Add(phase);
-            }
+            //// Replace Phases wholesale
+            //_dataContext.SeasonPhases.RemoveRange(existingSeason.Phases);
+            //existingSeason.Phases.Clear();
+            //foreach (var phase in mappedSeason.Phases)
+            //{
+            //    existingSeason.Phases.Add(phase);
+            //}
 
-            // Replace ExternalIds wholesale
-            _dataContext.SeasonExternalIds.RemoveRange(existingSeason.ExternalIds);
-            existingSeason.ExternalIds.Clear();
-            foreach (var extId in mappedSeason.ExternalIds)
-            {
-                existingSeason.ExternalIds.Add(extId);
-            }
+            //// Replace ExternalIds wholesale
+            //_dataContext.SeasonExternalIds.RemoveRange(existingSeason.ExternalIds);
+            //existingSeason.ExternalIds.Clear();
+            //foreach (var extId in mappedSeason.ExternalIds)
+            //{
+            //    existingSeason.ExternalIds.Add(extId);
+            //}
 
-            _logger.LogInformation("Updated existing Season with Id {SeasonId}", existingSeason.Id);
+            //_logger.LogInformation("Updated existing Season with Id {SeasonId}", existingSeason.Id);
 
-            return Task.CompletedTask;
+            //return Task.CompletedTask;
         }
     }
 }

@@ -22,11 +22,17 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents;
 
 public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandler>
 {
-    [Fact]
-    public async Task WhenResourceIndexHasItems_EnqueuesEachItem()
+    [Theory]
+    [InlineData("EspnAwardsIndex.json", "https://sports.core.api.espn.com/v2/awards/index", DocumentType.Award)]
+    [InlineData("EspnSeasonTypeWeeks.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks?lang=en&region=us", DocumentType.SeasonTypeWeek)]
+    public async Task WhenResourceIndexHasItems_EnqueuesEachItem(
+        string fileName,
+        string srcUrl,
+        DocumentType documentType
+        )
     {
         // arrange
-        var json = await LoadJsonTestData("EspnAwardsIndex.json"); // valid EspnResourceIndexDto
+        var json = await LoadJsonTestData(fileName); // valid EspnResourceIndexDto
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
         espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
@@ -36,8 +42,8 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
         var msg = Fixture.Build<DocumentRequested>()
-            .With(x => x.Uri, new Uri("https://sports.core.api.espn.com/v2/awards/index"))
-            .With(x => x.DocumentType, DocumentType.Award)
+            .With(x => x.Uri, new Uri(srcUrl))
+            .With(x => x.DocumentType, documentType)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .OmitAutoProperties()
             .Create();
@@ -150,8 +156,7 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
         background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeast(50));
     }
-
-
+    
     [Fact]
     public async Task WhenJsonInvalid_LogsAndReturns()
     {

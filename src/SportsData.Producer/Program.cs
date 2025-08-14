@@ -1,6 +1,7 @@
 using Hangfire;
 
 using MassTransit;
+using MassTransit.Configuration;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -68,31 +69,16 @@ public class Program
         {
             x.SetKebabCaseEndpointNameFormatter();
 
-            switch (mode)
+            x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
             {
-                case Sport.GolfPga:
-                    x.AddEntityFrameworkOutbox<GolfDataContext>(o =>
+                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
+                o.QueryDelay = TimeSpan.FromSeconds(1);
+                o.UsePostgres()
+                    .UseBusOutbox(busOutbox =>
                     {
-                        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
-                        o.QueryDelay = TimeSpan.FromSeconds(1);
-                        o.UsePostgres().UseBusOutbox();
+                        busOutbox.MessageDeliveryLimit = int.MaxValue;
                     });
-                    break;
-                case Sport.FootballNcaa:
-                case Sport.FootballNfl:
-                    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
-                    {
-                        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
-                        o.QueryDelay = TimeSpan.FromSeconds(1);
-                        o.UsePostgres().UseBusOutbox();
-                    });
-                    break;
-                case Sport.All:
-                case Sport.BaseballMlb:
-                case Sport.BasketballNba:
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            });
 
             x.AddConsumer<DocumentCreatedHandler>();
             x.AddConsumer<ProcessImageRequestedHandler>();
@@ -101,7 +87,7 @@ public class Program
             x.UsingAzureServiceBus((context, cfg) =>
             {
                 cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-                cfg.UseConcurrencyLimit(10); // Global cap on concurrent message handling
+                //cfg.UseConcurrencyLimit(10);
                 cfg.ConfigureEndpoints(context);
             });
         });

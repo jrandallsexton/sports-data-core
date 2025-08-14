@@ -15,6 +15,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
     public class SeederBase
     {
         private readonly IGenerateRoutingKeys _routingKeyGenerator = new RoutingKeyGenerator();
+        private readonly IGenerateExternalRefIdentities _identityGenerator = new ExternalRefIdentityGenerator();
 
         private readonly List<Sport> _teamSports =
         [
@@ -290,17 +291,17 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
                 sport: sport,
                 documentType: DocumentType.TeamSeason));
 
-            /* Athletes By Season */
-            resources.Add(GenerateResourceIndex(
-                resources: resources,
-                endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
-                isEnabled: true,
-                isRecurring: false,
-                seasonYear: seasonYear,
-                cronExpression: null,
-                provider: SourceDataProvider.Espn,
-                sport: sport,
-                documentType: DocumentType.AthleteSeason));
+            ///* Athletes By Season */
+            //resources.Add(GenerateResourceIndex(
+            //    resources: resources,
+            //    endpoint: $"{EspnApiBaseUrl}/{espnSportName}/leagues/{league}/seasons/{seasonYear}/athletes",
+            //    isEnabled: true,
+            //    isRecurring: false,
+            //    seasonYear: seasonYear,
+            //    cronExpression: null,
+            //    provider: SourceDataProvider.Espn,
+            //    sport: sport,
+            //    documentType: DocumentType.AthleteSeason));
 
             /* Coaches By Season */
             resources.Add(GenerateResourceIndex(

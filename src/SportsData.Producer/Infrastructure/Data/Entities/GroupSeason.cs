@@ -27,6 +27,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<GroupSeasonLogo> Logos { get; set; } = [];
 
+        public ICollection<FranchiseSeason> FranchiseSeasons { get; set; } = [];
+
         public ICollection<GroupSeasonExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -72,6 +74,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithOne()
                     .HasForeignKey(x => x.GroupSeasonId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.FranchiseSeasons)
+                    .WithOne(x => x.GroupSeason)
+                    .HasForeignKey(x => x.GroupSeasonId)
+                    .OnDelete(DeleteBehavior.Restrict); // or Cascade, depending on your intent
+
             }
         }
 

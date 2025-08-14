@@ -1,4 +1,4 @@
-﻿SELECT
+﻿SELECT DISTINCT ON (F."Id")
 	F."Slug" AS "Slug",
 	F."DisplayName" AS "Name",
 	F."DisplayNameShort" AS "ShortName",
@@ -18,3 +18,6 @@ FROM
 	LEFT JOIN PUBLIC."Venue" V ON V."Id" = F."VenueId"
 WHERE
 	F."Slug" = @Slug
+ORDER BY
+    F."Id",
+    FL."CreatedUtc" ASC NULLS LAST;

@@ -9,7 +9,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     public static class GroupExtensions
     {
         public static Group AsEntity(
-            this EspnGroupBySeasonDto dto,
+            this EspnGroupSeasonDto dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid groupId,
             Guid correlationId)

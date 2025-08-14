@@ -35,29 +35,28 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync()
         {
-            // 1. Handle one-off scheduled jobs
+            // 1) Handle one-off scheduled jobs (placeholder hooks)
             await ProcessScheduledJobs();
 
-            // 2. Refresh recurring jobs based on ResourceIndex
+            // 2) Register recurring jobs
             await RefreshRecurringSourcingJobs();
 
-            // 3. Add one-time jobs for any ResourceIndexes that are non-recurring and need to be processed
+            // 3) Kick a single one-time ResourceIndex if needed
             await RefreshOneTimeResourceIndexJobs();
         }
 
         private async Task ProcessScheduledJobs()
         {
+            // (Intentionally left minimal; no ownership/claiming here)
             var singleExecutionJobs = await _dbContext.ScheduledJobs
                 .Where(x => x.IsActive &&
                             x.ExecutionMode == SourcingExecutionMode.OneTime &&
                             !x.LastCompletedUtc.HasValue)
                 .ToListAsync();
 
-            foreach (var task in singleExecutionJobs)
+            foreach (var _ in singleExecutionJobs)
             {
-                // do what?
-                //var def = new DocumentJobDefinition(resource);
-                //backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
+                // TODO: wire scheduled jobs if/when you define them
             }
 
             var pollingJobs = await _dbContext.ScheduledJobs
@@ -66,9 +65,9 @@ namespace SportsData.Provider.Application.Jobs
                             !x.LastCompletedUtc.HasValue)
                 .ToListAsync();
 
-            foreach (var task in pollingJobs)
+            foreach (var _ in pollingJobs)
             {
-                // do what?
+                // TODO: wire polling jobs if/when you define them
             }
         }
 
@@ -79,6 +78,7 @@ namespace SportsData.Provider.Application.Jobs
                 .OrderBy(x => x.Ordinal)
                 .ToListAsync();
 
+            // Register enabled
             foreach (var resource in allResources.Where(x => x.IsEnabled))
             {
                 if (string.IsNullOrEmpty(resource.CronExpression) || !resource.CronExpression.IsValidCron())
@@ -88,7 +88,8 @@ namespace SportsData.Provider.Application.Jobs
                     continue;
                 }
 
-                var jobId = $"Resource_{resource.Name}";
+                // Use a stable, unique ID per resource
+                var jobId = $"Resource:{resource.Id}";
                 var def = new DocumentJobDefinition(resource);
 
                 _recurringJobManager.AddOrUpdate<IProcessResourceIndexes>(
@@ -100,9 +101,10 @@ namespace SportsData.Provider.Application.Jobs
                     jobId, resource.Name, resource.CronExpression);
             }
 
+            // Remove disabled
             foreach (var resource in allResources.Where(x => !x.IsEnabled))
             {
-                var jobId = $"Resource_{resource.Name}";
+                var jobId = $"Resource:{resource.Id}";
                 _recurringJobManager.RemoveIfExists(jobId);
                 _logger.LogInformation("Removed disabled recurring job {JobId} for {Name}", jobId, resource.Name);
             }
@@ -110,56 +112,42 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task RefreshOneTimeResourceIndexJobs()
         {
-            // Pick the next eligible row
+            // If a non-recurring job is currently in-flight (worker will set IsQueued at claim time),
+            // skip scheduling another. This is a soft check; ownership is enforced by the worker.
+            var anyInFlight = await _dbContext.ResourceIndexJobs
+                .AnyAsync(x => x.SportId == _mode.CurrentSport &&
+                               !x.IsRecurring &&
+                               x.IsEnabled &&
+                               x.IsQueued &&
+                               x.LastCompletedUtc == null);
+
+            if (anyInFlight)
+            {
+                _logger.LogInformation("One-time ResourceIndex job is in-flight. Skipping scheduling.");
+                return;
+            }
+
+            // Find the next eligible non-recurring job that isn't completed or currently queued.
             var next = await _dbContext.ResourceIndexJobs
                 .Where(x => x.SportId == _mode.CurrentSport &&
                             !x.IsRecurring &&
                             x.IsEnabled &&
+                            !x.IsQueued &&
                             !x.LastCompletedUtc.HasValue)
                 .OrderBy(x => x.Ordinal)
-                .Select(x => new { x.Id })
                 .FirstOrDefaultAsync();
 
             if (next is null)
             {
-                _logger.LogInformation("No non-recurring jobs to schedule");
+                _logger.LogInformation("No non-recurring ResourceIndex jobs to schedule.");
                 return;
             }
 
-            var me = Guid.NewGuid();
-            var now = DateTime.UtcNow;
+            // Do NOT set ProcessingInstanceId here; the worker owns the claim.
+            // We also avoid toggling IsQueued here—let the worker flip it atomically when it claims.
+            _logger.LogInformation("Scheduling one-time ResourceIndex job for {Name} (Id: {Id})", next.Name, next.Id);
 
-            // Atomically claim (only if not already owned)
-            var claimed = await _dbContext.ResourceIndexJobs
-                .Where(x => x.Id == next.Id && x.ProcessingInstanceId == null)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.ProcessingInstanceId, _ => me)
-                    .SetProperty(x => x.ProcessingStartedUtc, _ => now)
-                    .SetProperty(x => x.IsQueued, _ => true)) == 1;
-
-            if (!claimed)
-            {
-                _logger.LogInformation("Skipped scheduling ResourceIndex {Id}: already owned/queued.", next.Id);
-                return;
-            }
-
-            // Enqueue the worker; it will own execution and release claim in finally
-            var resource = await _dbContext.ResourceIndexJobs.FindAsync(next.Id);
-            if (resource is null)
-            {
-                _logger.LogWarning("Claimed ResourceIndex {Id} not found; releasing claim.", next.Id);
-                await _dbContext.ResourceIndexJobs
-                    .Where(x => x.Id == next.Id && x.ProcessingInstanceId == me)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.ProcessingInstanceId, _ => (Guid?)null)
-                        .SetProperty(x => x.ProcessingStartedUtc, _ => (DateTime?)null)
-                        .SetProperty(x => x.IsQueued, _ => false));
-                return;
-            }
-
-            _logger.LogInformation("Scheduling one-time ResourceIndex job for {Name} (Id: {Id})", resource.Name, resource.Id);
-
-            var def = new DocumentJobDefinition(resource);
+            var def = new DocumentJobDefinition(next);
             _backgroundJobProvider.Enqueue<IProcessResourceIndexes>(job => job.ExecuteAsync(def));
         }
     }

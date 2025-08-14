@@ -43,7 +43,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 

@@ -49,7 +49,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }))
             {
                 _logger.LogInformation("Processing EventDocument with {@Command}", command);
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -120,7 +128,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 // request sourcing?
                 _logger.LogWarning("SeasonWeek not found for Week {Week}.", externalDto.Week);
-                throw new Exception("SeasonPhase not found");
+                throw new Exception("SeasonWeek not found");
             }
 
             var contest = externalDto.AsEntity(
@@ -195,22 +203,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                         // TODO: update contest status based on competition status
                     }
-                }
-
-                // raise an event to source the odds
-                if (competition.Odds?.Ref is not null)
-                {
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: HashProvider.GenerateHashFromUri(competition.Ref),
-                        ParentId: contest.Id.ToString(),
-                        Uri: competition.Odds.Ref,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.EventCompetitionOdds,
-                        SourceDataProvider: command.SourceDataProvider,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor
-                    ));
                 }
             }
         }
@@ -306,12 +298,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     command.SourceDataProvider,
                     command.CorrelationId,
                     CausationId.Producer.TeamSeasonDocumentProcessor));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
                 throw new InvalidOperationException(
                     $"Home team franchise season not found for {homeTeam.Ref} in command {command.CorrelationId}");
             }
-
             contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId.Value;
 
             /* Away Team */
@@ -338,6 +330,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     command.SourceDataProvider,
                     command.CorrelationId,
                     CausationId.Producer.TeamSeasonDocumentProcessor));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
                 throw new InvalidOperationException(

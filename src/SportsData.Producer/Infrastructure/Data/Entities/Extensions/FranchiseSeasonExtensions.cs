@@ -14,7 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             int seasonYear,
             Guid correlationId,
             Guid? venueId = null,
-            Guid? groupId = null)
+            Guid? groupSeasonId = null)
         {
             if (dto.Ref == null)
                 throw new ArgumentException($"{nameof(EspnTeamSeasonDto)} is missing its $ref property.");
@@ -26,7 +26,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Id = identity.CanonicalId,
                 FranchiseId = franchiseId,
                 VenueId = venueId,
-                GroupId = groupId,
+                GroupSeasonId = groupSeasonId,
                 SeasonYear = seasonYear,
                 Slug = dto.Slug,
                 Location = dto.Location,

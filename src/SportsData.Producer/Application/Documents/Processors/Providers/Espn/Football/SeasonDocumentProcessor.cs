@@ -46,7 +46,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -103,13 +111,43 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     Id: Guid.NewGuid().ToString(),
                     ParentId: newEntity.Id.ToString(),
                     Uri: dto.Types.Ref,
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: command.Season,
+                    Sport: command.Sport,
+                    SeasonYear: dto.Year,
                     DocumentType: DocumentType.SeasonType,
                     SourceDataProvider: SourceDataProvider.Espn,
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.SeasonDocumentProcessor
                 ));
+            }
+
+            if (dto.Athletes?.Ref is not null)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: null,  // we do not have it; AthleteSeasonDocumentProcessor will need to find the parent Athlete
+                    Uri: dto.Athletes.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: dto.Year,
+                    DocumentType: DocumentType.AthleteSeason,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.SeasonDocumentProcessor
+                ));
+            }
+
+            if (dto.Futures?.Ref is not null)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: newEntity.Id.ToString(),
+                    Uri: dto.Futures.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: dto.Year,
+                    DocumentType: DocumentType.SeasonFuture,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.SeasonDocumentProcessor
+                    ));
             }
 
             await _dataContext.Seasons.AddAsync(newEntity);
@@ -120,7 +158,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
         {
-            _logger.LogError("Season update detected. Not implemented");
+            _logger.LogWarning("Season update detected. Not implemented");
             await Task.Delay(100);
             //// Update scalar properties
             //existingSeason.Year = mappedSeason.Year;

@@ -9,6 +9,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
@@ -42,7 +43,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }))
             {
                 _logger.LogInformation("Processing EventCompetitionLeadersDocument with {@Command}", command);
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -136,6 +145,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                             CorrelationId: command.CorrelationId,
                             CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
                         ));
+                        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                        await _dataContext.SaveChangesAsync();
 
                         // TODO: Continue processing and raise the document requested event at the end and throw a single exception
                         throw new InvalidOperationException($"Missing athlete for leader category '{category.Name}' - will retry later.");
@@ -168,6 +179,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                             CorrelationId: command.CorrelationId,
                             CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
                         ));
+                        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                        await _dataContext.SaveChangesAsync();
 
                         throw new InvalidOperationException($"Missing franchise season for leader category '{category.Name}' - will retry later.");
                     }

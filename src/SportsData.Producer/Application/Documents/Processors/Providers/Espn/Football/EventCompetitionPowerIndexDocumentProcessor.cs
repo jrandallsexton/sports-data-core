@@ -43,7 +43,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }))
             {
                 _logger.LogInformation("Processing PowerIndexDocument with {@Command}", command);
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -105,6 +113,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.EventCompetitionPowerIndexDocumentProcessor
                 ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
 
                 throw new InvalidOperationException("FranchiseSeason not found.");
             }

@@ -63,6 +63,7 @@ select * from public."CompetitionStatus" where "CompetitionId" = 'f5cfd727-3b4a-
 select * from public."CompetitionLink" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 select * from public."CompetitionNote" --where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 
+select * from public."Contest" where "Id" = '4670f890-e947-fb5e-1a11-52c11b7087e3'
    select * from public."Competition" comp
    inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
    where comp."ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'

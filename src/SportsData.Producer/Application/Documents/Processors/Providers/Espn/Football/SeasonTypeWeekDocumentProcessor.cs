@@ -44,12 +44,26 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
+            if (command.Season is null) 
+            {
+                _logger.LogError("Command does not contain a valid Season. {@Command}", command);
+                return;
+            }
+
             if (!Guid.TryParse(command.ParentId, out var seasonPhaseId))
             {
                 _logger.LogError("SeasonPhaseId could not be parsed");
@@ -117,7 +131,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     ParentId: seasonWeek.Id.ToString(),
                     Uri: dto.Rankings.Ref,
                     Sport: command.Sport,
-                    SeasonYear: command.Season,
+                    SeasonYear: command.Season!.Value,
                     DocumentType: DocumentType.SeasonTypeWeekRankings,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,

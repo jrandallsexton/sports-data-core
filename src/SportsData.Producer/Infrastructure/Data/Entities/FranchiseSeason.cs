@@ -15,7 +15,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid? VenueId { get; set; }
 
-        public Guid? GroupId { get; set; }
+        public Guid? GroupSeasonId { get; set; }
+
+        public GroupSeason? GroupSeason { get; set; }
 
         public int SeasonYear { get; set; }
 
@@ -53,7 +55,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<FranchiseSeasonRanking> Rankings { get; set; } = [];
 
-
         public ICollection<FranchiseSeasonRecord> Records { get; set; } = [];
 
         public ICollection<FranchiseSeasonRecordAts> RecordsAts { get; set; } = [];
@@ -87,9 +88,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.VenueId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                builder.HasOne<Group>()
-                    .WithMany()
-                    .HasForeignKey(x => x.GroupId)
+                builder.HasOne(x => x.GroupSeason)
+                    .WithMany(x => x.FranchiseSeasons)
+                    .HasForeignKey(x => x.GroupSeasonId)
                     .OnDelete(DeleteBehavior.SetNull);
 
                 builder.HasMany(x => x.Records)

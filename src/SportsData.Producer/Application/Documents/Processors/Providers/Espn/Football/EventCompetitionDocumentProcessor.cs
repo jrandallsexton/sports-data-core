@@ -51,7 +51,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -318,49 +326,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (externalDto.Broadcasts?.Ref is null)
                 return;
 
-            var broadcastsResponse = await _provider.GetExternalDocument(
-                new GetExternalDocumentQuery(
-                    "",
-                    externalDto.Broadcasts.Ref,
-                    command.SourceDataProvider,
-                    command.Sport,
-                    DocumentType.EventCompetitionBroadcast,
-                    command.Season));
-
-            if (string.IsNullOrEmpty(broadcastsResponse.Data))
-            {
-                _logger.LogError("Broadcast unable to be sourced from Provider. {@BroadcastRef}", externalDto.Broadcasts?.Ref);
-                return;
-            }
-
-            var broadcastsDto = broadcastsResponse.Data.FromJson<EspnEventCompetitionBroadcastDto>();
-            if (broadcastsDto is null)
-            {
-                _logger.LogError("Failed to deserialize broadcasts document for {@BroadcastRef}", externalDto.Broadcasts.Ref);
-                throw new InvalidOperationException("Deserialization of EspnEventCompetitionBroadcastDto failed.");
-            }
-
-            var existing = await _dataContext.Broadcasts
-                .Where(b => b.CompetitionId == competition.Id)
-                .ToListAsync();
-
-            var existingKeys = new HashSet<string>(
-                existing.Select(x => $"{x.TypeId}|{x.Channel}|{x.Slug}".ToLowerInvariant())
-            );
-
-            var newBroadcasts = broadcastsDto.Items
-                .Where(item =>
-                {
-                    var key = $"{item.Type.Id}|{item.Channel}|{item.Slug}".ToLowerInvariant();
-                    return !existingKeys.Contains(key);
-                })
-                .Select(item => item.AsEntity(competition.Id))
-                .ToList();
-
-            if (newBroadcasts.Count > 0)
-            {
-                _dataContext.Broadcasts.AddRange(newBroadcasts);
-            }
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: HashProvider.GenerateHashFromUri(externalDto.Broadcasts.Ref),
+                ParentId: competition.Id.ToString(),
+                Uri: externalDto.Broadcasts.Ref,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.EventCompetitionBroadcast,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+            ));
         }
 
         private async Task ProcessPlays(

@@ -84,7 +84,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 if (item.Ref is null)
                 {
-                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
+                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex); // TODO: THUR - investigate
                     continue;
                 }
 

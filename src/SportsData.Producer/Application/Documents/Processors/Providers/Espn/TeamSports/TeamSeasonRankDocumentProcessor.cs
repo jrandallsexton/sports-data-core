@@ -41,7 +41,15 @@ public class TeamSeasonRankDocumentProcessor<TDataContext> : IProcessDocuments
         }))
         {
             _logger.LogInformation("Processing TeamSeasonRankDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -86,7 +94,7 @@ public class TeamSeasonRankDocumentProcessor<TDataContext> : IProcessDocuments
 
         await _dataContext.FranchiseSeasonRankings.AddAsync(entity);
 
-        // TODO: Broadcast domain event
+        // TODO: CompetitionBroadcast domain event
 
         await _dataContext.SaveChangesAsync();
 

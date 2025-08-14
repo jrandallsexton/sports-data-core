@@ -32,7 +32,15 @@ public class TeamRankDocumentProcessor<TDataContext> : IProcessDocuments
         }))
         {
             _logger.LogInformation("Processing TeamRankDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -55,7 +63,7 @@ public class TeamRankDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // TODO: Implement deserialization and processing logic for TeamRank
-        _logger.LogInformation("TODO: Implement TeamRankDocument processing");
+        _logger.LogError("TODO: Implement TeamRankDocument processing");
         await Task.Delay(100);
     }
 }

@@ -40,7 +40,15 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
                }))
         {
             _logger.LogInformation("Began with {@command}", command);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 

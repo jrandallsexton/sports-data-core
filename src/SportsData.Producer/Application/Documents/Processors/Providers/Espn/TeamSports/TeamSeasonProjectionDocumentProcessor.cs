@@ -37,7 +37,15 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : IProcessDocum
         }))
         {
             _logger.LogInformation("Processing TeamSeasonProjectionDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 

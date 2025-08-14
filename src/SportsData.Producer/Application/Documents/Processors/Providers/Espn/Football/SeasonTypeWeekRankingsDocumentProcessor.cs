@@ -4,10 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
@@ -42,12 +45,26 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
+            if (command.Season is null)
+            {
+                _logger.LogError("Command does not contain a valid Season. {@Command}", command);
+                return;
+            }
+
             if (!Guid.TryParse(command.ParentId, out var seasonWeekId))
             {
                 _logger.LogError("SeasonWeekId could not be parsed");
@@ -98,27 +115,40 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             ProcessDocumentCommand command)
         {
             // We need to create a mapping of the Team's season ref to the FranchiseSeasonId
-            Dictionary<string, Guid> franchiseDictionary = new();
+            var (franchiseDictionary, missingFranchiseSeasons) = await ResolveFranchiseSeasonIdsAsync(
+                dto,
+                _externalRefIdentityGenerator,
+                _dataContext,
+                command,
+                _logger);
 
-            foreach (var entry in dto.Ranks)
+            if (missingFranchiseSeasons.Any())
             {
-                var teamIdentity = _externalRefIdentityGenerator.Generate(entry.Team.Ref);
-
-                var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                    entry.Team,
-                    command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                    _logger);
-
-                if (franchiseSeasonId.HasValue)
+                foreach (var missing in missingFranchiseSeasons)
                 {
-                    franchiseDictionary.Add(entry.Team.Ref.ToCleanUrl(), franchiseSeasonId.Value);
+                    _logger.LogError("Missing FranchiseSeason for Team Ref {TeamRef} with expected URI {Uri}",
+                        missing.Key, missing.Value);
+
+                    var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
+                    var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
+
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: missing.Key.ToString(),
+                        ParentId: franchiseId.ToString(),
+                        Uri: missing.Value,
+                        Sport: Sport.FootballNcaa,
+                        SeasonYear: command.Season!.Value,
+                        DocumentType: DocumentType.TeamSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
+                    ));
                 }
-                else
-                {
-                    _logger.LogError("Could not resolve FranchiseSeasonId for team ref: {TeamRef}", entry.Team.Ref);
-                    throw new Exception($"Could not resolve FranchiseSeasonId for team ref: {entry.Team.Ref}");
-                }
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new Exception($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
             }
 
             // Create the entity from the DTO
@@ -133,6 +163,68 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Created SeasonRanking entity {@SeasonRankingId}", entity.Id);
+        }
+
+        private static async Task<(Dictionary<string, Guid> franchiseDictionary, Dictionary<Guid, Uri> missingFranchiseSeasons)>
+            ResolveFranchiseSeasonIdsAsync(
+                EspnFootballSeasonTypeWeekRankingsDto dto,
+                IGenerateExternalRefIdentities externalRefIdentityGenerator,
+                TDataContext dataContext,
+                ProcessDocumentCommand command,
+                ILogger logger)
+        {
+            var franchiseDictionary = new Dictionary<string, Guid>();
+            var missingFranchiseSeasons = new Dictionary<Guid, Uri>();
+
+            foreach (var entry in dto.Ranks)
+            {
+                var teamRef = entry.Team?.Ref;
+                if (teamRef is null)
+                    continue;
+
+                var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
+
+                var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                    entry.Team!,
+                    command.SourceDataProvider,
+                    () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                    logger);
+
+                if (franchiseSeasonId.HasValue)
+                {
+                    franchiseDictionary.TryAdd(teamRef.ToCleanUrl(), franchiseSeasonId.Value);
+                }
+                else
+                {
+                    missingFranchiseSeasons.TryAdd(teamIdentity.CanonicalId, teamRef);
+                }
+            }
+
+            foreach (var entry in dto.Others)
+            {
+                var teamRef = entry.Team?.Ref;
+                if (teamRef is null)
+                    continue;
+
+                var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
+
+                var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                    entry.Team!,
+                    command.SourceDataProvider,
+                    () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                    logger);
+
+                if (franchiseSeasonId.HasValue)
+                {
+                    franchiseDictionary.TryAdd(teamRef.ToCleanUrl(), franchiseSeasonId.Value);
+                }
+                else
+                {
+                    missingFranchiseSeasons.TryAdd(teamIdentity.CanonicalId, teamRef);
+                }
+            }
+
+            return (franchiseDictionary, missingFranchiseSeasons);
         }
 
 

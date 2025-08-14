@@ -35,6 +35,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly IJsonHashCalculator _jsonHashCalculator;
         private readonly IConfiguration _commonConfig;
         private readonly IAppMode _appMode;
+        private readonly IGenerateExternalRefIdentities _identityGenerator;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
@@ -48,7 +49,8 @@ namespace SportsData.Provider.Application.Processors
             IGenerateRoutingKeys routingKeyGenerator,
             IJsonHashCalculator jsonHashCalculator,
             IConfiguration commonConfig,
-            IAppMode appMode)
+            IAppMode appMode,
+            IGenerateExternalRefIdentities identityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -62,6 +64,7 @@ namespace SportsData.Provider.Application.Processors
             _jsonHashCalculator = jsonHashCalculator;
             _commonConfig = commonConfig;
             _appMode = appMode;
+            _identityGenerator = identityGenerator;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -81,13 +84,12 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             Guid correlationId)
         {
-            var urlHash = HashProvider.GenerateHashFromUri(command.Uri);
-            var resourceIndexItemId = DeterministicGuid.Combine(urlHash);
+            var identity = _identityGenerator.Generate(command.Uri);
 
             var now = DateTime.UtcNow;
 
             var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
-                .Where(x => x.Id == resourceIndexItemId)
+                .Where(x => x.Id == identity.CanonicalId)
                 .FirstOrDefaultAsync();
 
             if (resourceIndexItemEntity is not null)
@@ -100,18 +102,19 @@ namespace SportsData.Provider.Application.Processors
             {
                 resourceIndexItemEntity = new ResourceIndexItem
                 {
-                    Id = resourceIndexItemId,
+                    Id = identity.CanonicalId,
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty,
                     Uri = command.Uri,
-                    SourceUrlHash = urlHash,
+                    SourceUrlHash = identity.UrlHash,
                     ResourceIndexId = command.ResourceIndexId,
                     LastAccessed = now
                 };
                 await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
             }
 
-            await HandleValid(command, urlHash, correlationId);
+            await HandleValid(command, identity.UrlHash, correlationId);
+
             await _dataContext.SaveChangesAsync();
         }
 

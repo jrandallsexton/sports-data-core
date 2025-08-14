@@ -103,7 +103,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<Drive> Drives { get; set; } = [];
 
-        public ICollection<Broadcast> Broadcasts { get; set; } = [];
+        public ICollection<CompetitionBroadcast> Broadcasts { get; set; } = [];
 
         public string? FormatRegulationDisplayName { get; set; }
 

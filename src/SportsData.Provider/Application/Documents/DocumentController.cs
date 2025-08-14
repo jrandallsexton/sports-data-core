@@ -32,6 +32,7 @@ namespace SportsData.Provider.Application.Documents
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
         private readonly IBus _bus;
         private readonly IHttpClientFactory _clientFactory;
+        private readonly EspnHttpClient _espnHttpClient;
 
         public DocumentController(
             IDocumentStore documentStore,
@@ -41,7 +42,8 @@ namespace SportsData.Provider.Application.Documents
             IProvideBackgroundJobs backgroundJobProvider,
             IGenerateRoutingKeys routingKeyGenerator,
             IBus bus,
-            IHttpClientFactory clientFactory)
+            IHttpClientFactory clientFactory,
+            EspnHttpClient espnHttpClient)
         {
             _documentStore = documentStore;
             _decoder = decoder;
@@ -51,6 +53,7 @@ namespace SportsData.Provider.Application.Documents
             _routingKeyGenerator = routingKeyGenerator;
             _bus = bus;
             _clientFactory = clientFactory;
+            _espnHttpClient = espnHttpClient;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -250,14 +253,17 @@ namespace SportsData.Provider.Application.Documents
                 });
             }
 
-            // get the item via the url
-            var client = _clientFactory.CreateClient("images");
-            using var req = new HttpRequestMessage(HttpMethod.Get, query.Uri);
-            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-            if (!resp.IsSuccessStatusCode)
+            // get the image (from cache or ESPN)
+            await using var stream = await _espnHttpClient.GetCachedImageStreamAsync(
+                query.Uri,
+                bypassCache: false,
+                stripQuerystring: true,
+                extension: "png", ct);
+
+            if (stream is null)
             {
-                _logger.LogWarning("Image fetch failed {Host} {Hash} {Status}", host, hash, (int)resp.StatusCode);
-                return StatusCode((int)resp.StatusCode, "Failed to fetch image.");
+                _logger.LogWarning("Image fetch failed {Host} {Hash}", host, hash);
+                return StatusCode(502, "Failed to fetch image.");
             }
 
             // upload it to blob storage
@@ -267,7 +273,6 @@ namespace SportsData.Provider.Application.Documents
 
             _logger.LogInformation("Container name {@ContainerName}", containerName);
 
-            await using var stream = await resp.Content.ReadAsStreamAsync(ct);
             var externalUrl = await _blobStorage.UploadImageAsync(stream, containerName, $"{hash}.png");
 
             _logger.LogInformation("External URL {@ExternalUrl}", externalUrl);
@@ -294,6 +299,7 @@ namespace SportsData.Provider.Application.Documents
                 CanonicalId = query.CanonicalId,
                 Uri = externalUrl
             });
+
         }
 
         [HttpPost("documentRequest", Name = "ProcessDocumentRequested")]

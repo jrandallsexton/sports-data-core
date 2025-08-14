@@ -34,7 +34,7 @@ namespace SportsData.Core.Common
                 case DocumentType.Athlete:
                     return typeof(EspnAthleteDto);
                 case DocumentType.GroupSeason:
-                    return typeof(EspnGroupBySeasonDto);
+                    return typeof(EspnGroupSeasonDto);
                 case DocumentType.Position:
                     return typeof(EspnAthletePositionDto);
                 case DocumentType.AthleteSeason:
@@ -75,7 +75,7 @@ namespace SportsData.Core.Common
                 case DocumentType.Athlete:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.GroupSeason:
-                    return (typeof(EspnGroupBySeasonDto), name);
+                    return (typeof(EspnGroupSeasonDto), name);
                 case DocumentType.Position:
                     return (typeof(EspnAthletePositionDto), name);
                 case DocumentType.AthleteSeason:
@@ -89,7 +89,7 @@ namespace SportsData.Core.Common
                     return (typeof(EspnAwardDto), name);
                 case DocumentType.Group:
                     // TODO: This is a placeholder; should be EspnGroupDto when implemented
-                    return (typeof(EspnGroupBySeasonDto), name); 
+                    return (typeof(EspnGroupSeasonDto), name); 
                 case DocumentType.Contest:
                     return (typeof(EspnFootballContestDto), name);
                 case DocumentType.GameSummary:

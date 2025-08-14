@@ -52,6 +52,4 @@ public static class ExternalEntityResolver
             entity => entity.GetExternalIds(),
             logger);
     }
-
-
 }

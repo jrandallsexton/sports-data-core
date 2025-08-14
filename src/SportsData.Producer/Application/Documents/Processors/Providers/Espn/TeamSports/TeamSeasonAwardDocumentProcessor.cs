@@ -39,7 +39,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // TODO: Implement deserialization and processing logic for TeamSeasonAward
-            _logger.LogInformation("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
+            _logger.LogError("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
             await Task.Delay(100);
         }
     }

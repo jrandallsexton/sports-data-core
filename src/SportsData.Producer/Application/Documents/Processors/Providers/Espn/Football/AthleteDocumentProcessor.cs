@@ -11,6 +11,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -110,6 +111,9 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteDocumentProcessor
             ));
+
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
 
             _logger.LogWarning("No AthletePosition found. {@Identity}", positionIdentity);
             throw new InvalidOperationException($"No AthletePosition found for {externalProviderDto.Position.Ref}. " +

@@ -35,9 +35,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             CancellationToken cancellationToken = default)
         {
             var cardSqlPath = Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\", "GetTeamCard.sql");
+            var seasonsSqlPath = Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\", "GetTeamSeasons.sql");
             var scheduleSqlPath = Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\", "GetTeamCardSchedule.sql");
 
             var cardSql = await File.ReadAllTextAsync(cardSqlPath, cancellationToken);
+            var seasonsSql = await File.ReadAllTextAsync(seasonsSqlPath, cancellationToken);
             var scheduleSql = await File.ReadAllTextAsync(scheduleSqlPath, cancellationToken);
 
             var parameters = new
@@ -54,6 +56,9 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
                 if (teamCard is null)
                     return null;
+
+                var seasons = (await _connection.QueryAsync<int>(seasonsSql, new { Slug = query.Slug })).ToList();
+                teamCard.SeasonYears = seasons;
 
                 var schedule = (await _connection.QueryAsync<TeamCardScheduleItemDto>(
                     scheduleSql,

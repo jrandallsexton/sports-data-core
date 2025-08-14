@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Dtos.Canonical;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -6,16 +8,18 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     public static class GroupSeasonExtensions
     {
         public static GroupSeason AsEntity(
-            this EspnGroupBySeasonDto dto,
+            this EspnGroupSeasonDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid groupId,
             Guid groupSeasonId,
             int seasonYear,
             Guid correlationId)
         {
-            // TODO: Use Identity
+            var identity = externalRefIdentityGenerator.Generate(dto.Ref);
+
             return new GroupSeason
             {
-                Id = groupSeasonId,
+                Id = identity.CanonicalId,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId,
                 Season = seasonYear,
@@ -24,7 +28,18 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Abbreviation = dto.Abbreviation,
                 ShortName = dto.ShortName,
                 MidsizeName = dto.MidsizeName,
-                Slug = dto.Slug
+                Slug = dto.Slug,
+                ExternalIds = new List<GroupSeasonExternalId>()
+                {
+                    new GroupSeasonExternalId()
+                    {
+                        Id = Guid.NewGuid(),
+                        Value = dto.Id.ToString(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = identity.CleanUrl,
+                        SourceUrlHash = identity.UrlHash
+                    }
+                }
             };
         }
 

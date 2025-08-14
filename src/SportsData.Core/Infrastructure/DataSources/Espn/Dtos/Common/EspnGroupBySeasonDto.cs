@@ -17,7 +17,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 /// <remarks>This class is used to encapsulate information about a specific grouping of data in the ESPN API, 
 /// such as conferences, teams, standings, and associated metadata. It includes properties for identifying  the group,
 /// linking to related resources, and providing additional descriptive information.</remarks>
-public class EspnGroupBySeasonDto : IHasRef
+public class EspnGroupSeasonDto : IHasRef
 {
     [JsonPropertyName("$ref")]
     public Uri Ref { get; set; }
@@ -43,6 +43,9 @@ public class EspnGroupBySeasonDto : IHasRef
 
     [JsonPropertyName("season")]
     public EspnLinkDto Season { get; set; }
+
+    [JsonPropertyName("parent")]
+    public EspnLinkDto Children { get; set; }
 
     [JsonPropertyName("parent")]
     public EspnLinkDto Parent { get; set; }

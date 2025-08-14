@@ -5,7 +5,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
 
-public class Broadcast : CanonicalEntityBase<Guid>
+public class CompetitionBroadcast : CanonicalEntityBase<Guid>
 {
     public Competition Competition { get; set; } = null!;
     public Guid CompetitionId { get; set; }
@@ -42,11 +42,11 @@ public class Broadcast : CanonicalEntityBase<Guid>
 
     public bool Partnered { get; set; }
 
-    public class EntityConfiguration : IEntityTypeConfiguration<Broadcast>
+    public class EntityConfiguration : IEntityTypeConfiguration<CompetitionBroadcast>
     {
-        public void Configure(EntityTypeBuilder<Broadcast> builder)
+        public void Configure(EntityTypeBuilder<CompetitionBroadcast> builder)
         {
-            builder.ToTable(nameof(Broadcast));
+            builder.ToTable(nameof(CompetitionBroadcast));
             builder.HasKey(x => x.Id);
 
             builder.Property(x => x.TypeId).HasMaxLength(10).IsRequired();

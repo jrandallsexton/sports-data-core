@@ -45,7 +45,15 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }))
         {
             _logger.LogInformation("Began processing TeamSeason with {@Command}", command);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -100,10 +108,10 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
             ));
-            
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
-            throw new InvalidOperationException($"Franchise {externalProviderDto.Franchise.Ref} not found.");
+            throw new InvalidOperationException($"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
         }
 
         var franchiseSeasonId = DeterministicGuid.Combine(franchise.Id, command.Season.Value);
@@ -155,10 +163,10 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             _logger);
 
         // Resolve GroupId via SourceUrlHash
-        canonicalEntity.GroupId = await _dataContext.TryResolveFromDtoRefAsync(
+        canonicalEntity.GroupSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
             dto.Groups,
             command.SourceDataProvider,
-            () => _dataContext.Groups.Include(x => x.ExternalIds).AsNoTracking(),
+            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
             _logger);
 
         // rankings
@@ -476,6 +484,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         // TODO: Compare and update if necessary
         // For now, log and skip
-        _logger.LogInformation("FranchiseSeason {Id} already exists. Skipping update.", existing.Id);
+        _logger.LogWarning("FranchiseSeason {Id} already exists. Skipping update.", existing.Id);
     }
 }

@@ -88,6 +88,53 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             }
         }
 
+        public async Task<Stream?> GetCachedImageStreamAsync(
+            Uri uri,
+            bool bypassCache = false,
+            bool stripQuerystring = true,
+            string extension = "png",
+            CancellationToken ct = default)
+        {
+            var path = GetCacheFilePath(uri, stripQuerystring, extension);
+
+            if (!bypassCache && _config.ReadFromCache && !_config.ForceLiveFetch)
+            {
+                if (File.Exists(path))
+                {
+                    _logger.LogDebug("Cache HIT for image {Uri}", uri);
+                    return File.OpenRead(path);
+                }
+
+                _logger.LogDebug("Cache MISS for image {Uri}", uri);
+            }
+
+            _logger.LogInformation("Fetching image from {Uri}", uri);
+            await Task.Delay(250); // Optional: throttle
+
+            using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to fetch image from {Uri}, status {StatusCode}", uri, (int)response.StatusCode);
+                return null;
+            }
+
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            await using var networkStream = await response.Content.ReadAsStreamAsync(ct);
+            await using var fs = File.Create(path);
+            await networkStream.CopyToAsync(fs, ct);
+
+            _logger.LogInformation("Persisted image to {Path}", path);
+
+            return File.OpenRead(path);
+        }
+
+
         private async Task<string?> TryLoadFromDiskAsync(Uri uri, bool stripQuerystring = true)
         {
             var path = GetCacheFilePath(uri, stripQuerystring);
@@ -140,10 +187,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
 
             throw new IOException($"Failed to write file after {maxRetries} attempts: {path}");
         }
-        
-        private string GetCacheFilePath(Uri uri, bool stripQuerystring = true)
+
+        private string GetCacheFilePath(Uri uri, bool stripQuerystring = true, string extension = "json")
         {
-            var filename = ConvertUriToFilename(uri, stripQuerystring) + ".json";
+            var filename = ConvertUriToFilename(uri, stripQuerystring) + $".{extension}";
             return Path.Combine(_config.LocalCacheDirectory, filename);
         }
 

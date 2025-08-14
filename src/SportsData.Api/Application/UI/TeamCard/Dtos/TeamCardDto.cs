@@ -31,4 +31,6 @@ public class TeamCardDto
     public List<TeamCardNewsItemDto> News { get; set; } = [];
 
     public List<TeamCardScheduleItemDto> Schedule { get; set; } = [];
+
+    public List<int> SeasonYears { get; set; } = [];
 }

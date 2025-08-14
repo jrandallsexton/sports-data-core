@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import "./TeamCard.css";
 import TeamSchedule from "./TeamSchedule";
@@ -8,6 +8,7 @@ import TeamNews from "./TeamNews";
 
 function TeamCard() {
   const { slug, seasonYear } = useParams();
+  const navigate = useNavigate();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,6 +55,26 @@ function TeamCard() {
             {team.stadiumName} – {team.stadiumCapacity.toLocaleString()}{" "}
             capacity
           </p>
+        </div>
+
+        {/* Season selector */}
+        <div style={{ marginLeft: "auto" }}>
+          <label htmlFor="seasonYear" style={{ marginRight: 8 }}>
+            Season:
+          </label>
+          <select
+            id="seasonYear"
+            value={String(resolvedSeason)}
+            onChange={(e) =>
+              navigate(`/app/sport/football/ncaa/team/${slug}/${e.target.value}`)
+            }
+          >
+            {team.seasonYears?.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

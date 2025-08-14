@@ -29,6 +29,7 @@ namespace SportsData.Core.Common
             public static Guid SeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000015");
             public static Guid SeasonTypeDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000016");
             public static Guid SeasonTypeWeekDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000110");
+            public static Guid SeasonTypeWeekRankingsDocumentProcessor = new Guid("10000010-0000-0000-0000-000000000110");
         }
 
         public static class Provider

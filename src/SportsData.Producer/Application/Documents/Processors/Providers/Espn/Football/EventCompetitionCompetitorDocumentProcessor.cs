@@ -43,7 +43,15 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         }))
         {
             _logger.LogInformation("Processing EventCompetitionCompetitorDocument with {@Command}", command);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -172,7 +180,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             DocumentType: DocumentType.EventCompetitionCompetitorScore,
             SourceDataProvider: SourceDataProvider.Espn,
             CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.AthleteDocumentProcessor
+            CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
         ));
     }
 
@@ -195,7 +203,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             DocumentType: DocumentType.EventCompetitionCompetitorLineScore,
             SourceDataProvider: SourceDataProvider.Espn,
             CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.AthleteDocumentProcessor
+            CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
         ));
     }
 

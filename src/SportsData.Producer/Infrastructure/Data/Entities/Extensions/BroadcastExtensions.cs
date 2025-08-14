@@ -4,11 +4,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 public static class BroadcastExtensions
 {
-    public static Broadcast AsEntity(
+    public static CompetitionBroadcast AsEntity(
         this EspnEventCompetitionBroadcastItem dto,
         Guid competitionId)
     {
-        return new Broadcast
+        return new CompetitionBroadcast
         {
             Id = Guid.NewGuid(),
             CompetitionId = competitionId,

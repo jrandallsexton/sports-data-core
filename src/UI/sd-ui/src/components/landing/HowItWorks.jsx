@@ -46,12 +46,12 @@ function HowItWorks() {
         <div className="step-card">
           <FaFootballBall className="step-icon icon-football" />
           <h3>Make Your Picks</h3>
-          <p>Pick winners straight up or against the spread each week.</p>
+          <p>Pick winners straight up or against the spread each week - or both. Want O/U?  We've got that too.</p>
         </div>
 
         <div className="step-card">
           <FaBullseye className="step-icon icon-bullseye" />
-          <h3>Dominate the Leaderboard</h3>
+          <h3>Dominate</h3>
           <p>Crush the competition and earn ultimate bragging rights.</p>
         </div>
       </div>

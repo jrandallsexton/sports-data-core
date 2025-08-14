@@ -9,7 +9,6 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -44,13 +43,21 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
             ["CorrelationId"] = command.CorrelationId
         }))
         {
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnGroupBySeasonDto>();
+        var dto = command.Document.FromJson<EspnGroupSeasonDto>();
         if (dto == null || dto.Ref == null || !command.Season.HasValue)
         {
             _logger.LogError("Invalid GroupSeason document. {@Command}", command);
@@ -76,16 +83,18 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
     }
 
     private async Task HandleNewGroupAndSeasonAsync(
-        EspnGroupBySeasonDto dto,
+        EspnGroupSeasonDto dto,
         ProcessDocumentCommand command)
     {
         var groupId = Guid.NewGuid();
         var seasonId = Guid.NewGuid();
 
         var group = dto.AsEntity(_externalRefIdentityGenerator, groupId, command.CorrelationId);
-        var season = dto.AsEntity(groupId, seasonId, command.Season!.Value, command.CorrelationId);
+        var season = dto.AsEntity(_externalRefIdentityGenerator, groupId, seasonId, command.Season!.Value, command.CorrelationId);
 
         await _dataContext.Groups.AddAsync(group);
+        await _dataContext.SaveChangesAsync();
+
         await _dataContext.GroupSeasons.AddAsync(season);
 
         if (dto.Logos is { Count: > 0 })
@@ -125,7 +134,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
 
     private async Task AddSeasonIfMissingAsync(
         Group group,
-        EspnGroupBySeasonDto dto,
+        EspnGroupSeasonDto dto,
         ProcessDocumentCommand command)
     {
         var seasonYear = command.Season!.Value;
@@ -136,7 +145,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
-        var newSeason = dto.AsEntity(group.Id, Guid.NewGuid(), seasonYear, command.CorrelationId);
+        var newSeason = dto.AsEntity(_externalRefIdentityGenerator, group.Id, Guid.NewGuid(), seasonYear, command.CorrelationId);
         group.Seasons.Add(newSeason);
         await _dataContext.GroupSeasons.AddAsync(newSeason);
 

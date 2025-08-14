@@ -43,7 +43,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                    throw;
+                }
             }
         }
 
@@ -101,6 +109,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 existingSeasonType.Phases.Add(seasonPhase);
 
                 // Source Groups
+                if (externalProviderDto.Groups?.Ref is not null)
+                {
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: Guid.NewGuid().ToString(),
+                        ParentId: seasonPhase.Id.ToString(),
+                        Uri: externalProviderDto.Groups.Ref,
+                        Sport: Sport.FootballNcaa,
+                        SeasonYear: externalProviderDto.Year,
+                        DocumentType: DocumentType.GroupSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.SeasonTypeDocumentProcessor
+                    ));
+                }
 
                 // Source Weeks
                 if (externalProviderDto.Weeks?.Ref is not null)
@@ -110,7 +132,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         ParentId: seasonPhase.Id.ToString(),
                         Uri: externalProviderDto.Weeks.Ref,
                         Sport: Sport.FootballNcaa,
-                        SeasonYear: command.Season,
+                        SeasonYear: externalProviderDto.Year,
                         DocumentType: DocumentType.SeasonTypeWeek,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,

@@ -74,6 +74,61 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         await FootballDataContext.SaveChangesAsync();
 
         var dto = json.FromJson<EspnEventDto>();
+
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto.SeasonType.Ref);
+
+        var season = Fixture.Build<Season>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonId)
+            .With(x => x.Name, "2024")
+            .With(x => x.Phases, [])
+            .Create();
+        await FootballDataContext.Seasons.AddAsync(season);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonPhase = Fixture.Build<SeasonPhase>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonTypeIdentity.CanonicalId)
+            .With(x => x.Name, "Regular Season")
+            .With(x => x.Abbreviation, "reg")
+            .With(x => x.Slug, "reg-season")
+            .With(x => x.SeasonId, seasonId)
+            .With(x => x.ExternalIds, new List<SeasonPhaseExternalId>()
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash,
+                    Value = seasonTypeIdentity.UrlHash
+                }
+            })
+            .Create();
+        await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonWeekIdentity = generator.Generate(dto.Week.Ref);
+        var seasonWeek = Fixture.Build<SeasonWeek>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonWeekIdentity.CanonicalId)
+            .With(x => x.SeasonPhaseId, seasonPhase.Id)
+            .With(x => x.ExternalIds, new List<SeasonWeekExternalId>()
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonWeekIdentity.CleanUrl,
+                    SourceUrlHash = seasonWeekIdentity.UrlHash,
+                    Value = seasonWeekIdentity.UrlHash
+                }
+            })
+            .Create();
+        await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+        await FootballDataContext.SaveChangesAsync();
+
         Guid homeId = Guid.Empty;
         Guid awayId = Guid.Empty;
 

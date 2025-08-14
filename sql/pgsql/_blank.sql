@@ -1,6 +1,0 @@
-select * from public."PickemGroup"
---delete from public."PickemGroup"
-select * from public."PickemGroupConference"
---delete from public."PickemGroupConference"
-select * from public."PickemGroupMember"
-select * from public."User"

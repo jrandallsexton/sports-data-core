@@ -18,7 +18,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<AthleteStatus> AthleteStatuses { get; set; }
 
-        public DbSet<Broadcast> Broadcasts { get; set; }
+        public DbSet<CompetitionBroadcast> Broadcasts { get; set; }
 
         public DbSet<Location> Locations { get; set; }
 
@@ -46,6 +46,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<InboxState> InboxStates => Set<InboxState>();
 
+        public DbSet<OutboxPing> OutboxPings => Set<OutboxPing>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -54,7 +56,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteImage.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteStatus.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new Broadcast.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionBroadcast.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Location.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Season.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonExternalId.EntityConfiguration());

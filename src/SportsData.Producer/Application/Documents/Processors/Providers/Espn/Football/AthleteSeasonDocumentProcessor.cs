@@ -8,6 +8,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -61,6 +62,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
+        // TODO: We should not be hardcoding the ESPN athlete URL pattern here. Need a better way to manage this.
         // Construct the canonical athlete ref from the known pattern
         var baseRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = _externalRefIdentityGenerator.Generate(baseRef);
@@ -86,6 +88,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
 
             return;
         }
@@ -143,6 +147,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
         }
 
         return id;
@@ -174,6 +180,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
         }
 
         return id;

@@ -4,12 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Common.Parsing;
-using SportsData.Core.Common.Routing;
-using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Processing;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;
@@ -28,13 +24,8 @@ namespace SportsData.Provider.Application.Processors
         private readonly IProvideEspnApiData _espnApi;
         private readonly IDocumentStore _documentStore;
         private readonly IPublishEndpoint _publisher;
-        private readonly IDecodeDocumentProvidersAndTypes _decoder;
-        private readonly IResourceIndexItemParser _resourceIndexItemParser;
-        private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IGenerateRoutingKeys _routingKeyGenerator;
         private readonly IJsonHashCalculator _jsonHashCalculator;
         private readonly IConfiguration _commonConfig;
-        private readonly IAppMode _appMode;
         private readonly IGenerateExternalRefIdentities _identityGenerator;
 
         public ResourceIndexItemProcessor(
@@ -43,13 +34,8 @@ namespace SportsData.Provider.Application.Processors
             IProvideEspnApiData espnApi,
             IDocumentStore documentStore,
             IPublishEndpoint publisher,
-            IDecodeDocumentProvidersAndTypes decoder,
-            IResourceIndexItemParser resourceIndexItemParser,
-            IProvideBackgroundJobs backgroundJobProvider,
-            IGenerateRoutingKeys routingKeyGenerator,
             IJsonHashCalculator jsonHashCalculator,
             IConfiguration commonConfig,
-            IAppMode appMode,
             IGenerateExternalRefIdentities identityGenerator)
         {
             _logger = logger;
@@ -57,13 +43,8 @@ namespace SportsData.Provider.Application.Processors
             _espnApi = espnApi;
             _documentStore = documentStore;
             _publisher = publisher;
-            _decoder = decoder;
-            _resourceIndexItemParser = resourceIndexItemParser;
-            _backgroundJobProvider = backgroundJobProvider;
-            _routingKeyGenerator = routingKeyGenerator;
             _jsonHashCalculator = jsonHashCalculator;
             _commonConfig = commonConfig;
-            _appMode = appMode;
             _identityGenerator = identityGenerator;
         }
 

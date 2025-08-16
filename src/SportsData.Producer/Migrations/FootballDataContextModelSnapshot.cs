@@ -4642,7 +4642,7 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("FranchiseSeasonStatisticCategory", (string)null);
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Group", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4663,152 +4663,6 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("MidsizeName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<Guid?>("ParentGroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ShortName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Group", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupExternalId", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Provider")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SourceUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SourceUrlHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.ToTable("GroupExternalId", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupLogo", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long?>("Height")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("OriginalUrlHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.PrimitiveCollection<List<string>>("Rel")
-                        .HasColumnType("text[]");
-
-                    b.Property<string>("Uri")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<long?>("Width")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("OriginalUrlHash");
-
-                    b.ToTable("GroupLogo", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Abbreviation")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("MidsizeName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -4823,7 +4677,13 @@ namespace SportsData.Producer.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<int>("Season")
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SeasonYear")
                         .HasColumnType("integer");
 
                     b.Property<string>("ShortName")
@@ -4838,7 +4698,11 @@ namespace SportsData.Producer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("SeasonId");
+
+                    b.HasIndex("SeasonYear", "Slug");
 
                     b.ToTable("GroupSeason", (string)null);
                 });
@@ -4856,9 +4720,6 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("GroupSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("GroupSeasonId1")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ModifiedBy")
@@ -4886,9 +4747,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("GroupSeasonId");
 
-                    b.HasIndex("GroupSeasonId1");
-
-                    b.ToTable("GroupSeasonExternalId");
+                    b.ToTable("GroupSeasonExternalId", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonLogo", b =>
@@ -7001,48 +6860,28 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("FranchiseSeason");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupExternalId", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", "Group")
-                        .WithMany("ExternalIds")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Group");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupLogo", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", null)
-                        .WithMany("Logos")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Group", "Group")
-                        .WithMany("Seasons")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("Group");
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("Season");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeasonExternalId", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", null)
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", "GroupSeason")
                         .WithMany("ExternalIds")
                         .HasForeignKey("GroupSeasonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", "GroupSeason")
-                        .WithMany()
-                        .HasForeignKey("GroupSeasonId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -7477,17 +7316,10 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Stats");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Group", b =>
-                {
-                    b.Navigation("ExternalIds");
-
-                    b.Navigation("Logos");
-
-                    b.Navigation("Seasons");
-                });
-
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.GroupSeason", b =>
                 {
+                    b.Navigation("Children");
+
                     b.Navigation("ExternalIds");
 
                     b.Navigation("FranchiseSeasons");

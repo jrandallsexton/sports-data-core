@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Season : CanonicalEntityBase<Guid>
+    public class Season : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public int Year { get; set; }
 
@@ -22,6 +24,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public SeasonPhase? ActivePhase { get; set; }
 
         public List<SeasonExternalId> ExternalIds { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
         public class EntityConfiguration : IEntityTypeConfiguration<Season>
         {

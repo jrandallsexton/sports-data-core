@@ -25,8 +25,6 @@ namespace SportsData.Provider.Application.Jobs
         private readonly ILogger<ResourceIndexSeederJob> _logger;
         private readonly AppDataContext _db;
         private readonly IProvideEspnApiData _espnApi;
-        private readonly IDocumentStore _documentStore;
-        private readonly JsonHashCalculator _hashCalculator;
         private readonly IProvideBackgroundJobs _jobQueue;
 
         private readonly ConcurrentDictionary<string, bool> _visited = new();
@@ -41,15 +39,11 @@ namespace SportsData.Provider.Application.Jobs
             ILogger<ResourceIndexSeederJob> logger,
             AppDataContext db,
             IProvideEspnApiData espnApi,
-            IDocumentStore documentStore,
-            JsonHashCalculator hashCalculator,
             IProvideBackgroundJobs jobQueue)
         {
             _logger = logger;
             _db = db;
             _espnApi = espnApi;
-            _documentStore = documentStore;
-            _hashCalculator = hashCalculator;
             _jobQueue = jobQueue;
         }
 

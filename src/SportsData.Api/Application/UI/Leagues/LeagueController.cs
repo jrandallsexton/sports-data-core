@@ -125,4 +125,13 @@ public class LeagueController : ApiControllerBase
         return StatusCode(500); // fallback safety
     }
 
+    [HttpGet("{id}/matchups/{week}")]
+    //[Authorize]
+    public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(Guid id, int week)
+    {
+        var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(id, week);
+        return Ok(result);
+    }
+
+
 }

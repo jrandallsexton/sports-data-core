@@ -4,6 +4,8 @@ using FluentAssertions;
 
 using MassTransit;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Moq;
 
 using SportsData.Core.Common;
@@ -20,7 +22,7 @@ using Xunit;
 
 namespace SportsData.Provider.Tests.Unit.Application.Documents;
 
-public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandler>
+public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedHandler>
 {
     [Theory]
     [InlineData("EspnAwardsIndex.json", "https://sports.core.api.espn.com/v2/awards/index", DocumentType.Award)]
@@ -180,5 +182,89 @@ public class DocumentRequestedHandlerTests : UnitTestBase<DocumentRequestedHandl
 
         // assert
         ex.Should().BeNull();
+    }
+
+    
+    [Theory]
+    [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2021/teams/2551/ranks", DocumentType.TeamSeasonRank, 0)]
+    [InlineData("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues", DocumentType.Venue, 900)]
+    public async Task WhenDocumentRequested_IsResourceIndex_ProcessesAllPagesAndItems(
+        string targetUrl, DocumentType documentType, int expectedCount)
+    {
+        // arrange
+
+        // Setup real ESPN client with default config (no cache, no persistence)
+        var apiConfig = new EspnApiClientConfig
+        {
+            ReadFromCache = false,
+            ForceLiveFetch = true,
+            PersistLocally = false,
+            LocalCacheDirectory = Path.Combine(Path.GetTempPath(), "espn-test-cache") // unused in this config
+        };
+
+        var httpClient = new HttpClient();
+        var httpWrapper = new EspnHttpClient(httpClient, apiConfig, NullLogger<EspnHttpClient>.Instance);
+        var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
+        // Inject the real client
+        Mocker.Use<IProvideEspnApiData>(realEspnApiClient);
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        var evt = new DocumentRequested(Guid.NewGuid().ToString(),
+            null,
+            new Uri(targetUrl),
+            Sport.FootballNcaa, 2025, documentType, SourceDataProvider.Espn, Guid.NewGuid(),
+            Guid.NewGuid());
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == evt);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+            It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Exactly(expectedCount));
+    }
+
+    [Fact]
+    public async Task WhenDocumentRequested_IsResourceIndexItem_ProcessesItem()
+    {
+        // arrange
+
+        // Setup real ESPN client with default config (no cache, no persistence)
+        var apiConfig = new EspnApiClientConfig
+        {
+            ReadFromCache = false,
+            ForceLiveFetch = true,
+            PersistLocally = false,
+            LocalCacheDirectory = Path.Combine(Path.GetTempPath(), "espn-test-cache") // unused in this config
+        };
+
+        var httpClient = new HttpClient();
+        var httpWrapper = new EspnHttpClient(httpClient, apiConfig, NullLogger<EspnHttpClient>.Instance);
+        var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
+        // Inject the real client
+        Mocker.Use<IProvideEspnApiData>(realEspnApiClient);
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        var evt = new DocumentRequested(Guid.NewGuid().ToString(),
+            null,
+            new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/36?lang=en"),
+            Sport.FootballNcaa, 2025, DocumentType.Venue, SourceDataProvider.Espn, Guid.NewGuid(),
+            Guid.NewGuid());
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == evt);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+            It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Exactly(1));
     }
 }

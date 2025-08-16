@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
@@ -10,12 +11,16 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
+using static SportsData.Api.Application.UI.Leagues.Dtos.LeagueWeekMatchupsDto;
+
 namespace SportsData.Api.Application.UI.Leagues
 {
     public interface ILeagueService
     {
         Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId, CancellationToken cancellationToken = default);
         Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId, CancellationToken cancellationToken = default);
+        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid leagueId, int week, CancellationToken cancellationToken = default);
+
     }
 
     public class LeagueService : ILeagueService
@@ -137,7 +142,84 @@ namespace SportsData.Api.Application.UI.Leagues
                     [new ValidationFailure(nameof(leagueId), "Could not join league due to an unknown error")]
                 );
         }
+
+        public Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid leagueId, int week, CancellationToken cancellationToken = default)
+        {
+            // NOTE: These values are mocked and will be replaced once sourcing is live.
+            var dto = new LeagueWeekMatchupsDto
+            {
+                SeasonYear = 2025,
+                WeekNumber = week,
+                Matchups =
+                [
+                    new MatchupForPickDto
+            {
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = DateTime.UtcNow.AddDays(2),
+
+                Away = "LSU",
+                AwaySlug = "lsu-tigers",
+                AwayRank = 12,
+                AwayWins = 5,
+                AwayLosses = 2,
+                AwayConferenceWins = 3,
+                AwayConferenceLosses = 1,
+                AwayLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/99.png"),
+
+                Home = "Alabama",
+                HomeSlug = "alabama-crimson-tide",
+                HomeRank = 5,
+                HomeWins = 6,
+                HomeLosses = 1,
+                HomeConferenceWins = 4,
+                HomeConferenceLosses = 0,
+                HomeLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/333.png"),
+
+                AwaySpread = 7.5m,
+                HomeSpread = -7.5m,
+                OverUnder = 56.5m,
+
+                Venue = "Bryant–Denny Stadium",
+                VenueCity = "Tuscaloosa",
+                VenueState = "AL"
+            },
+            new MatchupForPickDto
+            {
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = DateTime.UtcNow.AddDays(3),
+
+                Away = "Texas",
+                AwaySlug = "texas-longhorns",
+                AwayRank = 7,
+                AwayWins = 5,
+                AwayLosses = 2,
+                AwayConferenceWins = 2,
+                AwayConferenceLosses = 2,
+                AwayLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"),
+
+                Home = "Oklahoma",
+                HomeSlug = "oklahoma-sooners",
+                HomeRank = 8,
+                HomeWins = 6,
+                HomeLosses = 1,
+                HomeConferenceWins = 3,
+                HomeConferenceLosses = 1,
+                HomeLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/201.png"),
+
+                AwaySpread = 2.5m,
+                HomeSpread = -2.5m,
+                OverUnder = 61.0m,
+
+                Venue = "Cotton Bowl",
+                VenueCity = "Dallas",
+                VenueState = "TX"
+            }
+                ]
+            };
+
+            return Task.FromResult(dto);
+        }
+
+
     }
-
-
 }

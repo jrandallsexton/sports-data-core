@@ -1,6 +1,7 @@
 import "./MatchupGrid.css";
 import { FaChartLine, FaLock, FaSpinner } from "react-icons/fa";
-import teams from "../../data/teams"; // ✅ Import teams lookup!
+import { Link } from "react-router-dom";
+import HelmetLogo from "./HelmetLogo";
 
 function MatchupGrid({
   matchups,
@@ -34,59 +35,77 @@ function MatchupGrid({
       </div>
 
       {matchups.map((matchup, index) => {
-        const awayShortName =
-          teams[matchup.awayTeam]?.shortName || matchup.awayTeam;
-        const homeShortName =
-          teams[matchup.homeTeam]?.shortName || matchup.homeTeam;
+        const gameTime = new Date(matchup.startDateUtc).toLocaleString();
+        const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
+        const spread = matchup.awaySpread > 0 ? `+${matchup.awaySpread}` : matchup.awaySpread;
+        const overUnder = matchup.overUnder ?? "TBD";
 
         return (
           <div
             key={matchup.id}
-            className={`grid-row ${
-              userPicks[matchup.id] ? "pick-selected" : ""
-            }`}
+            className={`grid-row ${userPicks[matchup.id] ? "pick-selected" : ""}`}
           >
             {/* Game */}
-            <div className="grid-cell">
-              <div className="team">{matchup.awayTeam}</div>
+            <div className="grid-cell game-cell">
+              <div className="team-entry">
+                <HelmetLogo logoUrl={matchup.awayLogoUri} flip />
+                <div className="team">
+                  {matchup.awayRank && (
+                    <span className="team-ranking">#{matchup.awayRank} </span>
+                  )}
+                  <Link
+                    to={`/app/sport/football/ncaa/team/${matchup.awayTeamSlug}/${matchup.seasonYear}`}
+                    className="team-link"
+                  >
+                    {matchup.away}
+                  </Link>
+                </div>
+              </div>
               <div style={{ fontSize: "0.8rem", opacity: 0.7 }}>at</div>
-              <div className="team">{matchup.homeTeam}</div>
+              <div className="team-entry">
+                <HelmetLogo logoUrl={matchup.homeLogoUri} />
+                <div className="team">
+                  {matchup.homeRank && (
+                    <span className="team-ranking">#{matchup.homeRank} </span>
+                  )}
+                  <Link
+                    to={`/app/sport/football/ncaa/team/${matchup.homeTeamSlug}/${matchup.seasonYear}`}
+                    className="team-link"
+                  >
+                    {matchup.home}
+                  </Link>
+                </div>
+              </div>
             </div>
 
             {/* Time */}
             <div className="grid-cell">
               <div className="game-time" style={{ fontSize: "0.9rem" }}>
-                {matchup.gameTime}
+                {gameTime}
               </div>
             </div>
 
             {/* Location */}
             <div className="grid-cell">
-              <div
-                className="location"
-                style={{ fontSize: "0.8rem", opacity: 0.8 }}
-              >
-                {matchup.stadium}
+              <div className="location" style={{ fontSize: "0.8rem", opacity: 0.8 }}>
+                {matchup.venue}
               </div>
-              <div
-                className="location-city"
-                style={{ fontSize: "0.7rem", opacity: 0.6 }}
-              >
-                {matchup.location}
+              <div className="location-city" style={{ fontSize: "0.7rem", opacity: 0.6 }}>
+                {location}
               </div>
             </div>
 
             {/* Spread */}
             <div className="grid-cell">
               <div className="spread" style={{ fontSize: "0.9rem" }}>
-                {matchup.spread}
+                {spread}
               </div>
             </div>
 
             {/* Over/Under */}
             <div className="grid-cell">
               <div className="over-under" style={{ fontSize: "0.9rem" }}>
-                {matchup.overUnder}
+                {overUnder}
               </div>
             </div>
 
@@ -97,32 +116,29 @@ function MatchupGrid({
                   <input
                     type="radio"
                     name={`pick-${matchup.id}`}
-                    value={matchup.awayTeam}
-                    checked={userPicks[matchup.id] === matchup.awayTeam}
-                    onChange={() => onPick(matchup.id, matchup.awayTeam)}
+                    value={matchup.away}
+                    checked={userPicks[matchup.id] === matchup.away}
+                    onChange={() => onPick(matchup.id, matchup.away)}
                   />
-                  <span className="team">{awayShortName}</span>
+                  <span className="team">{matchup.away}</span>
                 </label>
                 <label>
                   <input
                     type="radio"
                     name={`pick-${matchup.id}`}
-                    value={matchup.homeTeam}
-                    checked={userPicks[matchup.id] === matchup.homeTeam}
-                    onChange={() => onPick(matchup.id, matchup.homeTeam)}
+                    value={matchup.home}
+                    checked={userPicks[matchup.id] === matchup.home}
+                    onChange={() => onPick(matchup.id, matchup.home)}
                   />
-                  <span className="team">{homeShortName}</span>
+                  <span className="team">{matchup.home}</span>
                 </label>
               </div>
             </div>
 
             {/* Consensus */}
             <div className="grid-cell">
-              <div
-                className="consensus"
-                style={{ fontSize: "0.9rem", color: "#bbb" }}
-              >
-                {matchup.awayPickPercent}% / {matchup.homePickPercent}%
+              <div className="consensus" style={{ fontSize: "0.9rem", color: "#bbb" }}>
+                {matchup.awayPickPercent ?? 0}% / {matchup.homePickPercent ?? 0}%
               </div>
             </div>
 
@@ -140,8 +156,7 @@ function MatchupGrid({
                   background: "none",
                   border: "none",
                   color: "#61dafb",
-                  cursor:
-                    isSubscribed || index === 0 ? "pointer" : "not-allowed",
+                  cursor: isSubscribed || index === 0 ? "pointer" : "not-allowed",
                   fontSize: "1.4rem",
                 }}
               >

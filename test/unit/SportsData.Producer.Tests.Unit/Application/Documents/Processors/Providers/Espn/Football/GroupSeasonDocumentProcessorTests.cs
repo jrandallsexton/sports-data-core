@@ -38,9 +38,9 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         await sut.ProcessAsync(command);
 
         // assert
-        var group = await FootballDataContext.Groups.Include(g => g.Seasons).FirstOrDefaultAsync();
+        var group = await FootballDataContext.GroupSeasons.FirstOrDefaultAsync();
         group.Should().NotBeNull();
-        group!.Seasons.Should().ContainSingle(s => s.Season == 2024);
+        group.SeasonYear.Should().Be(2024);
     }
 
     [Fact]
@@ -77,15 +77,12 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         await sut.ProcessAsync(cmd2025);
 
         // assert (fresh load!)
-        var group = await FootballDataContext.Groups
-            .Include(g => g.Seasons)
+        var group = await FootballDataContext.GroupSeasons
             .Include(g => g.ExternalIds)
             .FirstOrDefaultAsync(g =>
                 g.ExternalIds.Any(x => x.Provider == SourceDataProvider.Espn && x.Value == "8"));
 
         group.Should().NotBeNull("group with external ID '8' should have been created");
-        group!.Seasons.Should().Contain(s => s.Season == 2024);
-        group.Seasons.Should().Contain(s => s.Season == 2025);
     }
 
 }

@@ -1,6 +1,5 @@
 import "./MatchupCard.css";
 import { FaChartLine, FaLock } from "react-icons/fa";
-import teams from "../../data/teams";
 import { Link } from "react-router-dom";
 
 function MatchupCard({
@@ -10,44 +9,50 @@ function MatchupCard({
   onViewInsight,
   isInsightUnlocked,
 }) {
-  const awayTeamInfo = Object.values(teams).find(
-    (t) => t.name?.toLowerCase() === matchup.awayTeam.toLowerCase()
-  );
-  const homeTeamInfo = Object.values(teams).find(
-    (t) => t.name?.toLowerCase() === matchup.homeTeam.toLowerCase()
-  );
+  const awaySpread = matchup.awaySpread ?? 0;
+  const homeSpread = matchup.homeSpread ?? 0;
+  const overUnder = matchup.overUnder ?? "TBD";
+  const gameTime = new Date(matchup.startDateUtc).toLocaleString();
+  const venue = matchup.venue ?? "TBD";
+  const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
+  const seasonYear = matchup.seasonYear; // required for deep links
 
   return (
     <div className="matchup-card">
       {/* Away Team Row */}
       <div className="team-row">
         <div className="team-info">
-          {awayTeamInfo && (
+          {matchup.awayLogoUri && (
             <img
-              src={awayTeamInfo.logoUrl}
-              alt={`${matchup.awayTeam} logo`}
+              src={matchup.awayLogoUri}
+              alt={`${matchup.away} logo`}
               className="matchup-logo"
             />
           )}
           <div className="team-details">
             <div className="team-name-row">
-              {awayTeamInfo?.ranking && (
-                <span className="team-ranking">#{awayTeamInfo.ranking}</span>
+              {matchup.awayRank && (
+                <span className="team-ranking">#{matchup.awayRank}</span>
               )}
-              <Link to={`/app/sport/football/ncaa/team/${awayTeamInfo?.slug}`} className="team-link">
-                {matchup.awayTeam}
+              <Link
+                to={`/app/sport/football/ncaa/team/${matchup.awaySlug}/${seasonYear}`}
+                className="team-link"
+              >
+                {matchup.away}
               </Link>
             </div>
             <div className="team-record">
-              <span>Overall: {awayTeamInfo?.overallRecord || "TBD"}</span>
-              <span>Conference: {awayTeamInfo?.conferenceRecord || "TBD"}</span>
+              <span>
+                Overall: {matchup.awayWins}-{matchup.awayLosses}
+              </span>
+              <span>
+                Conference: {matchup.awayConferenceWins}-{matchup.awayConferenceLosses}
+              </span>
             </div>
           </div>
         </div>
         <div className="team-spread">
-          {matchup.spread.startsWith("-")
-            ? `+${Math.abs(parseFloat(matchup.spread))}`
-            : `+${matchup.spread}`}
+          {awaySpread > 0 ? `+${awaySpread}` : awaySpread}
         </div>
       </div>
 
@@ -56,62 +61,54 @@ function MatchupCard({
       {/* Home Team Row */}
       <div className="team-row">
         <div className="team-info">
-          {homeTeamInfo && (
+          {matchup.homeLogoUri && (
             <img
-              src={homeTeamInfo.logoUrl}
-              alt={`${matchup.homeTeam} logo`}
+              src={matchup.homeLogoUri}
+              alt={`${matchup.home} logo`}
               className="matchup-logo"
             />
           )}
           <div className="team-details">
             <div className="team-name-row">
-              {homeTeamInfo?.ranking && (
-                <span className="team-ranking">#{homeTeamInfo.ranking}</span>
+              {matchup.homeRank && (
+                <span className="team-ranking">#{matchup.homeRank}</span>
               )}
-              <Link to={`/app/sport/football/ncaa/team/${homeTeamInfo?.slug}`} className="team-link">
-                {matchup.homeTeam}
+              <Link
+                to={`/app/sport/football/ncaa/team/${matchup.homeSlug}/${seasonYear}`}
+                className="team-link"
+              >
+                {matchup.home}
               </Link>
             </div>
             <div className="team-record">
-              <span>Overall: {homeTeamInfo?.overallRecord || "TBD"}</span>
-              <span>Conference: {homeTeamInfo?.conferenceRecord || "TBD"}</span>
+              <span>
+                Overall: {matchup.homeWins}-{matchup.homeLosses}
+              </span>
+              <span>
+                Conference: {matchup.homeConferenceWins}-{matchup.homeConferenceLosses}
+              </span>
             </div>
           </div>
         </div>
-        <div className="team-spread">{matchup.spread}</div>
+        <div className="team-spread">
+          {homeSpread > 0 ? `+${homeSpread}` : homeSpread}
+        </div>
       </div>
 
       <div className="game-time-location">
-        {matchup.gameTime} | {matchup.stadium} | {matchup.location}
+        {gameTime} | {venue} | {location}
       </div>
 
-      <div className="pick-distribution">
-        <div className="distribution-bar">
-          <div
-            className="distribution-fill away"
-            style={{ width: `${matchup.awayPickPercent}%` }}
-          />
-          <div
-            className="distribution-fill home"
-            style={{ width: `${matchup.homePickPercent}%` }}
-          />
-        </div>
-        <div className="distribution-text">
-          {matchup.awayPickPercent}% {matchup.awayTeam} |{" "}
-          {matchup.homePickPercent}% {matchup.homeTeam}
-        </div>
-      </div>
-
-      <div className="spread-ou">O/U: {matchup.overUnder}</div>
+      <div className="spread-ou">O/U: {overUnder}</div>
 
       <div className="pick-buttons">
         <button
           className={`pick-button ${
-            userPick === matchup.awayTeam ? "selected" : ""
+            userPick === matchup.away ? "selected" : ""
           }`}
-          onClick={() => onPick(matchup.id, matchup.awayTeam)}
+          onClick={() => onPick(matchup.contestId, matchup.away)}
         >
-          {matchup.awayTeam}
+          {matchup.away}
         </button>
 
         <button
@@ -129,11 +126,11 @@ function MatchupCard({
 
         <button
           className={`pick-button ${
-            userPick === matchup.homeTeam ? "selected" : ""
+            userPick === matchup.home ? "selected" : ""
           }`}
-          onClick={() => onPick(matchup.id, matchup.homeTeam)}
+          onClick={() => onPick(matchup.contestId, matchup.home)}
         >
-          {matchup.homeTeam}
+          {matchup.home}
         </button>
       </div>
     </div>

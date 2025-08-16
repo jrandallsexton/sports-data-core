@@ -87,8 +87,20 @@ function HomePage() {
     return <div>Loading your dashboard...</div>;
   }
 
-  console.log('userDto:', userDto);
-  
+  // // HomePage (or a tiny container near the chart)
+  // const groupOptions = [
+  //   { id: "all", name: "All Groups" },
+  //   ...(userDto?.leagues ?? []).map((l) => ({ id: l.id, name: l.name })),
+  // ];
+
+  // // Provide a loader the chart can call when selection changes
+  // const loadPickAccuracy = (groupId, season) =>
+  //   api.get(`/api/users/${userDto.id}/picks/accuracy`, {
+  //     params: { groupId, season },
+  //   });
+
+  console.log("userDto:", userDto);
+
   return (
     <div className="home-page">
       <div className="card">
@@ -101,7 +113,7 @@ function HomePage() {
           <Link to="/app/join-league" className="card-link">
             Join a League
           </Link>
-          {userDto?.hasLeagues && (
+          {userDto?.leagues?.length > 0 && (
             <Link to="/app/league" className="card-link">
               My Leagues
             </Link>
@@ -113,6 +125,7 @@ function HomePage() {
       <section className="card-section">
         <div className="card">
           <h2>Current Leaderboard</h2>
+          <em>(simulated until after Week 1)</em>
           <p className="highlight-text">
             You are ranked <span className="highlight-number">12th</span>
           </p>
@@ -123,6 +136,7 @@ function HomePage() {
 
         <div className="card">
           <h2>Your Pick Record</h2>
+          <em>(simulated until after Week 1)</em>
           <ul className="pick-record">
             <li>
               Wins: <strong>55</strong>
@@ -141,6 +155,7 @@ function HomePage() {
 
         <div className="card">
           <h2>sportDeets AI Accuracy</h2>
+          <em>(simulated until after Week 1)</em>
           <p>
             Overall Correct Picks: <strong>74%</strong>
           </p>

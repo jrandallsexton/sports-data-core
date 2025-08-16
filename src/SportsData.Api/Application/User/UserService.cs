@@ -46,6 +46,7 @@ public class UserService : IUserService
     {
         var user = await _db.Users
             .Include(x => x.GroupMemberships)
+            .ThenInclude(m => m.Group)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (user is null)
@@ -58,7 +59,13 @@ public class UserService : IUserService
             Email = user.Email,
             DisplayName = user.DisplayName,
             LastLoginUtc = user.LastLoginUtc,
-            HasLeagues = user.GroupMemberships.Any()
+            Leagues = user.GroupMemberships
+                .Select(m => new UserDto.UserLeagueMembership
+                {
+                    Id = m.Group.Id,
+                    Name = m.Group.Name
+                })
+                .ToList()
         };
     }
 

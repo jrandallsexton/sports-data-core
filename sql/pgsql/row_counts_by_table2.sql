@@ -24,9 +24,12 @@ BEGIN
             RAISE NOTICE '% | %', r.table_name, row_count;
         END IF;
 
-        total_rows := total_rows + row_count;
+        -- Exclude OutboxMessage from total row count
+        IF (r.table_name <> 'OutboxMessage' and r.table_name <> 'OutboxState' and r.table_name <> 'OutboxPings') THEN
+            total_rows := total_rows + row_count;
+        END IF;
     END LOOP;
 
-    RAISE NOTICE 'Total Row Count | %', total_rows;
+    RAISE NOTICE 'Total Row Count (Excluding OutboxMessage) | %', total_rows;
 END;
 $$;

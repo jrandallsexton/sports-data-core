@@ -13,7 +13,7 @@ WHERE "DoB" > '2000-01-01'
    select * from public."FranchiseLogo"
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'lsu-tigers'
-   select * from public."FranchiseSeason" where "FranchiseId" = '7520a598-6399-05ae-df21-386929c53e55'
+   select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
    
    select * from public."FranchiseSeasonRanking"
@@ -98,6 +98,7 @@ select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c
    select * from public."Group"
    select * from public."GroupExternalId"
    select * from public."GroupSeason"
+   select * from public."GroupSeasonExternalId"
    select * from public."Location" order by "State", "City"
    select * from public."lkPlayType"
 

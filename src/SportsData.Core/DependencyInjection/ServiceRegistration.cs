@@ -132,7 +132,8 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration,
             string applicationName,
-            Sport mode)
+            Sport mode,
+            int? maxWorkers)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
@@ -157,7 +158,8 @@ namespace SportsData.Core.DependencyInjection
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = Environment.ProcessorCount * 5;
+                serverOptions.WorkerCount = maxWorkers ?? Environment.ProcessorCount * 3;
+                
             });
             return services;
         }

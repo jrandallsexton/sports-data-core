@@ -29,6 +29,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionCompetitorLineScore> CompetitionCompetitorLineScores { get; set; }
 
+        public DbSet<CompetitionCompetitorLineScoreExternalId> CompetitionCompetitorLineScoreExternalIds { get; set; }
+
         public DbSet<CompetitionCompetitorExternalId> CompetitionCompetitorExternalIds { get; set; }
 
         public DbSet<CompetitionCompetitorScore> CompetitionCompetitorScores { get; set; }
@@ -40,11 +42,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
 
         public DbSet<CompetitionOdds> CompetitionOdds { get; set; }
+
         public DbSet<CompetitionOddsExternalId> CompetitionOddsExternalIds { get; set; }
 
         public DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; }
-
-        public DbSet<CompetitionLeader> Leaders { get; set; }
 
         public DbSet<CompetitionLeaderCategory> LeaderCategories { get; set; }
 
@@ -96,11 +97,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseSeasonStatisticCategory> FranchiseSeasonStatistics { get; set; }
 
-        public DbSet<Group> Groups { get; set; }
-        public DbSet<GroupExternalId> GroupExternalIds { get; set; }
-
-        public DbSet<GroupLogo> GroupLogos { get; set; }
-
         public DbSet<GroupSeason> GroupSeasons { get; set; }
 
         public DbSet<GroupSeasonLogo> GroupSeasonLogos { get; set; }
@@ -149,7 +145,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionStatusExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new DriveExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
@@ -168,10 +163,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordStat.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatisticCategory.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new Group.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new GroupExternalId.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new GroupLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new GroupSeasonExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupSeasonLogo.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new Play.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new PlayExternalId.EntityConfiguration());

@@ -2,8 +2,8 @@
 import apiClient from "./apiClient";
 
 const MatchupsApi = {
-  getByGroupAndWeek: (groupId, week) =>
-    apiClient.get(`/matchups?groupId=${encodeURIComponent(groupId)}&week=${week}`),
+  getByLeagueAndWeek: (leagueId, weekNumber) =>
+    apiClient.get(`/ui/league/${encodeURIComponent(leagueId)}/matchups/${weekNumber}`)
 };
 
 export default MatchupsApi;

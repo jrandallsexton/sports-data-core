@@ -4,7 +4,14 @@ import "./MatchupList.css";
 import MatchupCard from "./MatchupCard";
 import { FaSpinner } from "react-icons/fa";
 
-function MatchupList({ matchups, loading, userPicks, onPick, onViewInsight, isSubscribed }) {
+function MatchupList({
+  matchups,
+  loading,
+  userPicks,
+  onPick,
+  onViewInsight,
+  isSubscribed,
+}) {
   if (loading) {
     return (
       <div style={{ textAlign: "center", marginTop: "40px" }}>
@@ -18,9 +25,9 @@ function MatchupList({ matchups, loading, userPicks, onPick, onViewInsight, isSu
     <div className="matchup-list">
       {matchups.map((matchup, index) => (
         <MatchupCard
-          key={matchup.id}
+          key={matchup.ContestId}
           matchup={matchup}
-          userPick={userPicks[matchup.id]}
+          userPick={userPicks[matchup.ContestId]}
           onPick={onPick}
           onViewInsight={onViewInsight}
           isInsightUnlocked={index === 0 || isSubscribed}

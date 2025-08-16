@@ -64,7 +64,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+        services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();

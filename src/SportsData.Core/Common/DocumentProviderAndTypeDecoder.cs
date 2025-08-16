@@ -49,7 +49,7 @@ namespace SportsData.Core.Common
                 case DocumentType.Weeks:
                 case DocumentType.GroupLogo:
                 case DocumentType.FranchiseLogo:
-                case DocumentType.GroupBySeasonLogo:
+                case DocumentType.GroupSeasonLogo:
                 case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
                 case DocumentType.AthleteImage:
@@ -98,7 +98,7 @@ namespace SportsData.Core.Common
                 case DocumentType.Weeks:
                 case DocumentType.GroupLogo:
                 case DocumentType.FranchiseLogo:
-                case DocumentType.GroupBySeasonLogo:
+                case DocumentType.GroupSeasonLogo:
                 case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
                 case DocumentType.AthleteImage:
@@ -133,8 +133,8 @@ namespace SportsData.Core.Common
                     return DocumentType.FranchiseLogo;
                 case DocumentType.GroupLogo:
                 case DocumentType.GroupSeason:
-                case DocumentType.GroupBySeasonLogo:
-                    return DocumentType.GroupBySeasonLogo;
+                case DocumentType.GroupSeasonLogo:
+                    return DocumentType.GroupSeasonLogo;
                 case DocumentType.TeamSeason:
                 case DocumentType.TeamBySeasonLogo:
                     return DocumentType.TeamBySeasonLogo;

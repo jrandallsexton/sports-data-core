@@ -9,11 +9,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class GroupSeason : CanonicalEntityBase<Guid>, IHasExternalIds
     {
-        public Guid GroupId { get; set; }
+        public Guid? ParentId { get; set; }
 
-        public Group Group { get; set; } = default!;
+        public GroupSeason? Parent { get; set; }
 
-        public int Season { get; set; }
+        public Guid? SeasonId { get; set; }
+
+        public Season? Season { get; set; }
+
+        public int SeasonYear { get; set; }
 
         public required string Name { get; set; }
 
@@ -25,7 +29,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? MidsizeName { get; set; }
 
+        public bool IsConference { get; set; } = false;
+
         public List<GroupSeasonLogo> Logos { get; set; } = [];
+
+        public ICollection<GroupSeason> Children { get; set; } = [];
 
         public ICollection<FranchiseSeason> FranchiseSeasons { get; set; } = [];
 
@@ -60,11 +68,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(t => t.MidsizeName)
                     .HasMaxLength(100);
 
-                builder.HasOne(x => x.Group)
-                    .WithMany(x => x.Seasons)
-                    .HasForeignKey(x => x.GroupId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 builder.HasMany(x => x.Logos)
                     .WithOne()
                     .HasForeignKey(x => x.GroupSeasonId)
@@ -80,6 +83,22 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.GroupSeasonId)
                     .OnDelete(DeleteBehavior.Restrict); // or Cascade, depending on your intent
 
+                builder
+                    .HasOne(x => x.Parent)
+                    .WithMany(x => x.Children)
+                    .HasForeignKey(x => x.ParentId)
+                    .OnDelete(DeleteBehavior.Restrict); // avoid cascade cycles
+
+                // (optional but recommended)
+                builder.HasIndex(x => x.ParentId);
+                builder.HasIndex(x => new { x.SeasonYear, x.Slug }).IsUnique(false);
+
+                // --- NEW: Season relation (no back-collection on Season) ---
+                builder
+                    .HasOne(x => x.Season)
+                    .WithMany()                         // no navigation on Season
+                    .HasForeignKey(x => x.SeasonId)
+                    .OnDelete(DeleteBehavior.Restrict); // keep history / avoid cascades
             }
         }
 

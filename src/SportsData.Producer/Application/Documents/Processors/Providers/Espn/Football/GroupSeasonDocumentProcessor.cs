@@ -1,18 +1,13 @@
 ﻿using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
-
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Eventing.Events.Conferences;
-using SportsData.Core.Eventing.Events.Images;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
-
-using Group = SportsData.Producer.Infrastructure.Data.Entities.Group;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -58,105 +53,97 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnGroupSeasonDto>();
-        if (dto == null || dto.Ref == null || !command.Season.HasValue)
+        if (dto is null)
         {
             _logger.LogError("Invalid GroupSeason document. {@Command}", command);
             return;
         }
 
-        var group = await _dataContext.Groups
-            .Include(g => g.Seasons)
-            .Include(g => g.ExternalIds)
-            .FirstOrDefaultAsync(g =>
-                g.ExternalIds.Any(x => x.Provider == command.SourceDataProvider &&
-                                       x.Value == dto.Id.ToString()));
+        var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-        if (group is null)
+        var groupSeason = await _dataContext.GroupSeasons
+            .Include(gs => gs.ExternalIds)
+            .FirstOrDefaultAsync(gs => gs.Id == identity.CanonicalId);
+
+        if (groupSeason is null)
         {
-            await HandleNewGroupAndSeasonAsync(dto, command);
+            await HandleNew(dto, command);
         }
         else
         {
-            _logger.LogInformation("Group already exists. Checking for missing season.");
-            await AddSeasonIfMissingAsync(group, dto, command);
+            await HandleExisting();
         }
     }
 
-    private async Task HandleNewGroupAndSeasonAsync(
+    private async Task HandleNew(
         EspnGroupSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var groupId = Guid.NewGuid();
-        var seasonId = Guid.NewGuid();
+        var entity = dto.AsEntity(
+            _externalRefIdentityGenerator,
+            command.Season!.Value,
+            command.CorrelationId);
 
-        var group = dto.AsEntity(_externalRefIdentityGenerator, groupId, command.CorrelationId);
-        var season = dto.AsEntity(_externalRefIdentityGenerator, groupId, seasonId, command.Season!.Value, command.CorrelationId);
+        // seasonRef
+        var seasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            dto.Season,
+            command.SourceDataProvider,
+            () => _dataContext.Seasons.Include(x => x.ExternalIds).AsNoTracking(),
+            _logger);
+        entity.SeasonId = seasonId;
 
-        await _dataContext.Groups.AddAsync(group);
-        await _dataContext.SaveChangesAsync();
+        // handle parent?
+        var parentId = await _dataContext.TryResolveFromDtoRefAsync(
+            dto.Parent,
+            command.SourceDataProvider,
+            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+            _logger);
+        entity.ParentId = parentId;
 
-        await _dataContext.GroupSeasons.AddAsync(season);
-
-        if (dto.Logos is { Count: > 0 })
+        // spawn child documents?
+        if (dto.Children?.Ref is not null)
         {
-            var logoEvents = dto.Logos.Select(logo => new ProcessImageRequest(
-                logo.Href,
-                Guid.NewGuid(),
-                seasonId,
-                $"{seasonId}.png",
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                0,
-                0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.GroupBySeasonDocumentProcessor));
-
-            await _publishEndpoint.PublishBatch(logoEvents);
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: Guid.NewGuid().ToString(),
+                ParentId: entity.Id.ToString(),
+                Uri: dto.Children.Ref,
+                Sport: command.Sport,
+                SeasonYear: command.Season!.Value,
+                DocumentType: DocumentType.GroupSeason,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+            ));
         }
 
-        await _publishEndpoint.Publish(new ConferenceCreated(
-            group.ToCanonicalModel(),
-            command.CorrelationId,
-            CausationId.Producer.GroupBySeasonDocumentProcessor));
+        // TODO: standings?
 
-        await _publishEndpoint.Publish(new ConferenceSeasonCreated(
-            season.ToCanonicalModel(),
-            command.CorrelationId,
-            CausationId.Producer.GroupBySeasonDocumentProcessor));
+        // teams?
+        if (dto.Teams?.Ref is not null)
+        {
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: Guid.NewGuid().ToString(),
+                ParentId: entity.Id.ToString(),
+                Uri: dto.Teams.Ref,
+                Sport: command.Sport,
+                SeasonYear: command.Season!.Value,
+                DocumentType: DocumentType.TeamSeason,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+            ));
+        }
 
+        // TODO: links?
+
+        await _dataContext.GroupSeasons.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
-
-        _logger.LogInformation("Created new group and season. GroupId={GroupId}, SeasonId={SeasonId}", groupId, seasonId);
     }
 
-    private async Task AddSeasonIfMissingAsync(
-        Group group,
-        EspnGroupSeasonDto dto,
-        ProcessDocumentCommand command)
+    private async Task HandleExisting()
     {
-        var seasonYear = command.Season!.Value;
-
-        if (group.Seasons.Any(s => s.Season == seasonYear))
-        {
-            _logger.LogInformation("GroupSeason already exists. Skipping creation.");
-            return;
-        }
-
-        var newSeason = dto.AsEntity(_externalRefIdentityGenerator, group.Id, Guid.NewGuid(), seasonYear, command.CorrelationId);
-        group.Seasons.Add(newSeason);
-        await _dataContext.GroupSeasons.AddAsync(newSeason);
-
-        await _dataContext.SaveChangesAsync();
-
-        await _publishEndpoint.Publish(new ConferenceSeasonCreated(
-            newSeason.ToCanonicalModel(),
-            command.CorrelationId,
-            CausationId.Producer.GroupBySeasonDocumentProcessor));
-
-        _logger.LogInformation("Added missing GroupSeason for existing Group. GroupId={GroupId}, Season={Season}",
-            group.Id, seasonYear);
+        _logger.LogWarning("Updated detected. Not Implemented");
+        await Task.Delay(100);
+        throw new NotImplementedException();
     }
 }

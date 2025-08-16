@@ -44,7 +44,7 @@ public class EspnGroupSeasonDto : IHasRef
     [JsonPropertyName("season")]
     public EspnLinkDto Season { get; set; }
 
-    [JsonPropertyName("parent")]
+    [JsonPropertyName("children")]
     public EspnLinkDto Children { get; set; }
 
     [JsonPropertyName("parent")]

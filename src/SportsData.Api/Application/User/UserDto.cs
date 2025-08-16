@@ -19,6 +19,13 @@ namespace SportsData.Api.Application.User
 
         public DateTime LastLoginUtc { get; set; }
 
-        public bool HasLeagues { get; set; }
+        public IList<UserLeagueMembership> Leagues { get; set; } = [];
+
+        public class UserLeagueMembership
+        {
+            public Guid Id { get; set; }
+
+            public required string Name { get; set; }
+        }
     }
 }

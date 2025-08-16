@@ -1,16 +1,20 @@
+// src/components/picks/PicksPage.jsx
 import "./PicksPage.css";
 
 import { useState, useEffect } from "react";
+import { useUserDto } from "../../contexts/UserContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
-import GroupWeekSelector from "./GroupWeekSelector.jsx";
+import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import SubmitButton from "./SubmitButton.jsx";
 import mockMatchups from "../../data/matchups.js";
 
 function PicksPage() {
+  const { userDto, loading: userLoading } = useUserDto();
+
   const [userPicks, setUserPicks] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,30 +25,40 @@ function PicksPage() {
 
   const [matchups, setMatchups] = useState([]);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
-  const [selectedGroup, setSelectedGroup] = useState("Friends League");
-  const [selectedWeek, setSelectedWeek] = useState(7);
 
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState(7);
   const [viewMode, setViewMode] = useState("card");
+
+  const leagues = Object.values(userDto?.leagues || {});
+
+  // Auto-select first available league if not already selected
+  useEffect(() => {
+    if (!selectedLeagueId && leagues.length > 0) {
+      setSelectedLeagueId(leagues[0].id);
+    }
+  }, [leagues, selectedLeagueId]);
 
   useEffect(() => {
     async function fetchMatchups() {
+      if (!selectedLeagueId) return;
       setLoadingMatchups(true);
       try {
-        const response = await apiWrapper.Matchups.getByGroupAndWeek(
-          selectedGroup,
+        const response = await apiWrapper.Matchups.getByLeagueAndWeek(
+          selectedLeagueId,
           selectedWeek
         );
-        setMatchups(response.data);
+        setMatchups(response.data.matchups || []);
       } catch (error) {
-        const fallbackData = mockMatchups[selectedGroup]?.[selectedWeek] || [];
-        setMatchups(fallbackData);
+        console.error("Failed to fetch matchups:", error);
+        setMatchups([]);
       } finally {
         setLoadingMatchups(false);
       }
     }
 
     fetchMatchups();
-  }, [selectedGroup, selectedWeek]);
+  }, [selectedLeagueId, selectedWeek]);
 
   function handlePick(matchupId, teamPicked) {
     setUserPicks((prev) => ({
@@ -87,13 +101,20 @@ function PicksPage() {
     setViewMode((prev) => (prev === "card" ? "grid" : "card"));
   }
 
+  if (userLoading) return <div>Loading user info...</div>;
+
+  if (!leagues.length) {
+    return <p>You are not part of any leagues yet.</p>;
+  }
+
   return (
     <div className="picks-page-container">
       <div className="picks-content-wrapper">
         <div className="picks-page-header">
-          <GroupWeekSelector
-            selectedGroup={selectedGroup}
-            setSelectedGroup={setSelectedGroup}
+          <LeagueWeekSelector
+            leagues={leagues}
+            selectedLeagueId={selectedLeagueId}
+            setSelectedLeagueId={setSelectedLeagueId}
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
           />

@@ -10,8 +10,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         public static GroupSeason AsEntity(
             this EspnGroupSeasonDto dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            Guid groupId,
-            Guid groupSeasonId,
             int seasonYear,
             Guid correlationId)
         {
@@ -20,24 +18,26 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             return new GroupSeason
             {
                 Id = identity.CanonicalId,
-                CreatedUtc = DateTime.UtcNow,
+                Abbreviation = dto.Abbreviation ?? "UNK",
                 CreatedBy = correlationId,
-                Season = seasonYear,
-                GroupId = groupId,
-                Name = dto.Name,
-                Abbreviation = dto.Abbreviation,
-                ShortName = dto.ShortName,
+                CreatedUtc = DateTime.UtcNow,
+                IsConference = dto.IsConference,
                 MidsizeName = dto.MidsizeName,
+                Name = dto.Name,
+                SeasonYear = seasonYear,
+                ShortName = dto.ShortName,
                 Slug = dto.Slug,
                 ExternalIds = new List<GroupSeasonExternalId>()
                 {
-                    new GroupSeasonExternalId()
+                    new()
                     {
                         Id = Guid.NewGuid(),
-                        Value = dto.Id.ToString(),
+                        Value = identity.UrlHash,
                         Provider = SourceDataProvider.Espn,
                         SourceUrl = identity.CleanUrl,
-                        SourceUrlHash = identity.UrlHash
+                        SourceUrlHash = identity.UrlHash,
+                        CreatedBy = correlationId,
+                        CreatedUtc = DateTime.UtcNow
                     }
                 }
             };

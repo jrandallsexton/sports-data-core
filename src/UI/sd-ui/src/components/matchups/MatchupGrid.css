@@ -145,3 +145,17 @@
     display: none; /* Hide header on mobile */
   }
 }
+
+.game-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.team-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+

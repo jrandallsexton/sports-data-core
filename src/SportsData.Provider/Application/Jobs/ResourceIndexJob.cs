@@ -8,7 +8,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
-using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
@@ -20,11 +19,8 @@ namespace SportsData.Provider.Application.Jobs
         private readonly ILogger<ResourceIndexJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
-        private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IProviderAppConfig _appConfig;
-        private readonly EspnApiClientConfig _espnApiClientConfig;
 
         private const int PageSize = 250;
 
@@ -32,20 +28,14 @@ namespace SportsData.Provider.Application.Jobs
             ILogger<ResourceIndexJob> logger,
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
-            IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
-            IProvideBackgroundJobs backgroundJobProvider,
-            IProviderAppConfig appConfig,
-            EspnApiClientConfig espnApiClientConfig)
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _espnApi = espnApi;
-            _documentStore = documentStore;
             _decoder = decoder;
             _backgroundJobProvider = backgroundJobProvider;
-            _appConfig = appConfig;
-            _espnApiClientConfig = espnApiClientConfig;
         }
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)

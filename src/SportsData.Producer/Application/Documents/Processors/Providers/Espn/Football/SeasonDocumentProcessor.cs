@@ -1,5 +1,4 @@
 using MassTransit;
-using MassTransit.Transports;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -120,20 +119,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 ));
             }
 
-            if (dto.Athletes?.Ref is not null)
-            {
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: Guid.NewGuid().ToString(),
-                    ParentId: null,  // we do not have it; AthleteSeasonDocumentProcessor will need to find the parent Athlete
-                    Uri: dto.Athletes.Ref,
-                    Sport: command.Sport,
-                    SeasonYear: dto.Year,
-                    DocumentType: DocumentType.AthleteSeason,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonDocumentProcessor
-                ));
-            }
+            // TODO: Rankings?
+
+            // Had to remove this for now as it creates a circular dependency between SeasonDocumentProcessor and AthleteSeasonDocumentProcessor
+            //if (dto.Athletes?.Ref is not null)
+            //{
+            //    await _publishEndpoint.Publish(new DocumentRequested(
+            //        Id: Guid.NewGuid().ToString(),
+            //        ParentId: null,  // we do not have it; AthleteSeasonDocumentProcessor will need to find the parent Athlete
+            //        Uri: dto.Athletes.Ref,
+            //        Sport: command.Sport,
+            //        SeasonYear: dto.Year,
+            //        DocumentType: DocumentType.AthleteSeason,
+            //        SourceDataProvider: SourceDataProvider.Espn,
+            //        CorrelationId: command.CorrelationId,
+            //        CausationId: CausationId.Producer.SeasonDocumentProcessor
+            //    ));
+            //}
 
             if (dto.Futures?.Ref is not null)
             {

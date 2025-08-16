@@ -1,4 +1,4 @@
-.group-week-selector {
+.league-week-selector {
     display: flex;
     gap: 20px;
     margin-bottom: 0;
@@ -9,21 +9,21 @@
     flex: 0 1 auto;
 }
   
-.group-week-selector > div {
+.league-week-selector > div {
     display: flex;
     align-items: center;
     gap: 8px;
     height: 32px;
 }
   
-.group-week-selector label {
+.league-week-selector label {
     font-size: 1rem;
     color: #ccc;
     white-space: nowrap;
     line-height: 32px;
 }
   
-.group-week-selector select {
+.league-week-selector select {
     padding: 6px 10px;
     font-size: 1rem;
     background-color: #222;
@@ -36,11 +36,11 @@
     margin-top: 2px;
 }
   
-.group-week-selector select:hover {
+.league-week-selector select:hover {
     background-color: #333;
 }
   
-.group-week-selector select:focus {
+.league-week-selector select:focus {
     outline: none;
     border-color: #61dafb;
 }

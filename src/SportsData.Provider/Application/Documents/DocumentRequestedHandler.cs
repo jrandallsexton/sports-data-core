@@ -61,7 +61,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 if (dto?.Items is { Count: > 0 })
                 {
                     _logger.LogInformation("Detected ResourceIndex at {Uri}. Re-fetching without cache.", uri);
-                    json = await _espnApi.GetResource(uri, bypassCache: true);
+                    json = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
                     dto = json.FromJson<EspnResourceIndexDto>();
                 }
             }
@@ -140,4 +140,15 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(leafCmd));
     }
+
+    private static bool IsResourceIndex(Uri uri)
+    {
+        // Strip trailing slash if present
+        var last = uri.Segments.Last().TrimEnd('/');
+
+        // If the last segment parses to a number → it's an item (leaf).
+        // Otherwise → it's an index.
+        return !long.TryParse(last, out _);
+    }
+
 }

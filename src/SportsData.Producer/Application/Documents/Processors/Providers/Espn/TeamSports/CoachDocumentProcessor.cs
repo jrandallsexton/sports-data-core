@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -88,8 +89,31 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
     private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnCoachDto dto)
     {
         var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+
+        // CareerRecords
+        if (dto.CareerRecords?.Count > 0)
+        {
+            foreach (var recordDto in dto.CareerRecords)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: HashProvider.GenerateHashFromUri(recordDto.Ref),
+                    ParentId: newEntity.Id.ToString(),
+                    Uri: recordDto.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.CoachRecord,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.CoachDocumentProcessor
+                ));
+            }
+        }
+
+        // CoachSeasons
+
         await _dataContext.Coaches.AddAsync(newEntity);
         await _dataContext.SaveChangesAsync();
+
         _logger.LogInformation("Created new Coach entity: {CoachId}", newEntity.Id);
     }
 

@@ -200,27 +200,30 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 }
             }
 
-            foreach (var entry in dto.Others)
+            if (dto.Others is not null)
             {
-                var teamRef = entry.Team?.Ref;
-                if (teamRef is null)
-                    continue;
-
-                var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
-
-                var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
-                    entry.Team!,
-                    command.SourceDataProvider,
-                    () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                    logger);
-
-                if (franchiseSeasonId.HasValue)
+                foreach (var entry in dto.Others)
                 {
-                    franchiseDictionary.TryAdd(teamRef.ToCleanUrl(), franchiseSeasonId.Value);
-                }
-                else
-                {
-                    missingFranchiseSeasons.TryAdd(teamIdentity.CanonicalId, teamRef);
+                    var teamRef = entry.Team?.Ref;
+                    if (teamRef is null)
+                        continue;
+
+                    var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
+
+                    var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                        entry.Team!,
+                        command.SourceDataProvider,
+                        () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                        logger);
+
+                    if (franchiseSeasonId.HasValue)
+                    {
+                        franchiseDictionary.TryAdd(teamRef.ToCleanUrl(), franchiseSeasonId.Value);
+                    }
+                    else
+                    {
+                        missingFranchiseSeasons.TryAdd(teamIdentity.CanonicalId, teamRef);
+                    }
                 }
             }
 

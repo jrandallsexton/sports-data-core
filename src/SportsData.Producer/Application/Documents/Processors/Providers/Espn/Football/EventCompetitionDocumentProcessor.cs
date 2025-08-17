@@ -282,8 +282,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 _logger.LogWarning("No status information provided in the competition document.");
                 return;
             }
-
-            // TODO: If a competition status is not final, we might want to launch a hangfire job to update it later
+            
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Status.Ref),
                 ParentId: competition.Id.ToString(),

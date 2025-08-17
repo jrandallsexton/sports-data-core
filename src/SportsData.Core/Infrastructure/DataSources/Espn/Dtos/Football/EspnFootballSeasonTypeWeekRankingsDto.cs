@@ -48,7 +48,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public List<EspnFootballSeasonTypeWeekRankingsRank> Ranks { get; set; }
 
         [JsonPropertyName("others")]
-        public List<Other> Others { get; set; }
+        public List<Other>? Others { get; set; }
 
         [JsonPropertyName("availability")]
         public Availability Availability { get; set; }
@@ -265,7 +265,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public string Type { get; set; }
 
         [JsonPropertyName("value")]
-        public double Value { get; set; }
+        public double? Value { get; set; }
 
         [JsonPropertyName("displayValue")]
         public string DisplayValue { get; set; }

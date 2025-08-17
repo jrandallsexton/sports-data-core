@@ -1,0 +1,192 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/weeks/1/teams/251/ranks/2?lang=en&region=us",
+  "id": "2",
+  "name": "AFCA Coaches Poll",
+  "shortName": "AFCA Coaches Poll",
+  "type": "usa",
+  "occurrence": {
+    "number": 1,
+    "type": "week",
+    "last": true,
+    "value": "1",
+    "displayValue": "Final Rankings"
+  },
+  "headline": "2005 NCAA Football Rankings - AFCA Coaches Poll Final Rankings",
+  "shortHeadline": "2005 AFCA Coaches Poll: Final Rankings",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005?lang=en&region=us",
+    "year": 2005,
+    "startDate": "2005-08-01T07:00Z",
+    "endDate": "2006-01-11T07:59Z",
+    "displayName": "2005",
+    "type": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3?lang=en&region=us",
+      "id": "3",
+      "type": 3,
+      "name": "Postseason",
+      "abbreviation": "post",
+      "year": 2005,
+      "startDate": "2005-12-14T08:00Z",
+      "endDate": "2006-01-11T07:59Z",
+      "hasGroups": false,
+      "hasStandings": true,
+      "hasLegs": false,
+      "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/groups?lang=en&region=us"
+      },
+      "weeks": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/weeks?lang=en&region=us"
+      },
+      "leaders": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/leaders?lang=en&region=us"
+      },
+      "slug": "post-season"
+    },
+    "types": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types?lang=en&region=us",
+      "count": 4,
+      "pageIndex": 1,
+      "pageSize": 4,
+      "pageCount": 1,
+      "items": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/1?lang=en&region=us",
+          "id": "1",
+          "type": 1,
+          "name": "Preseason",
+          "abbreviation": "pre",
+          "year": 2005,
+          "startDate": "2005-08-01T07:00Z",
+          "endDate": "2005-08-30T06:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/1/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/1/weeks?lang=en&region=us"
+          },
+          "slug": "preseason"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/2?lang=en&region=us",
+          "id": "2",
+          "type": 2,
+          "name": "Regular Season",
+          "abbreviation": "reg",
+          "year": 2005,
+          "startDate": "2005-07-31T07:00Z",
+          "endDate": "2005-12-14T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/2/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/2/weeks?lang=en&region=us"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/2/leaders?lang=en&region=us"
+          },
+          "slug": "regular-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3?lang=en&region=us",
+          "id": "3",
+          "type": 3,
+          "name": "Postseason",
+          "abbreviation": "post",
+          "year": 2005,
+          "startDate": "2005-12-14T08:00Z",
+          "endDate": "2006-01-11T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/weeks?lang=en&region=us"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/leaders?lang=en&region=us"
+          },
+          "slug": "post-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/4?lang=en&region=us",
+          "id": "4",
+          "type": 4,
+          "name": "Off Season",
+          "abbreviation": "off",
+          "year": 2005,
+          "startDate": "2006-01-11T08:00Z",
+          "endDate": "2006-08-01T06:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/4/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/4/weeks?lang=en&region=us"
+          },
+          "slug": "off-season"
+        }
+      ]
+    },
+    "rankings": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/rankings?lang=en&region=us"
+    },
+    "athletes": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/athletes?lang=en&region=us"
+    },
+    "awards": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/awards?lang=en&region=us"
+    },
+    "futures": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/futures?lang=en&region=us"
+    },
+    "leaders": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/types/3/leaders?lang=en&region=us"
+    }
+  },
+  "defaultRanking": false,
+  "rank": {
+    "current": 1,
+    "previous": 2,
+    "points": 1550.0,
+    "firstPlaceVotes": 62,
+    "trend": "-",
+    "record": {
+      "summary": "13-0",
+      "stats": [
+        {
+          "name": "wins",
+          "displayName": "Wins",
+          "shortDisplayName": "W",
+          "description": "Wins",
+          "abbreviation": "W",
+          "type": "wins",
+          "value": 13.0,
+          "displayValue": "13"
+        },
+        {
+          "name": "losses",
+          "displayName": "Losses",
+          "shortDisplayName": "L",
+          "description": "Losses",
+          "abbreviation": "L",
+          "type": "losses",
+          "value": 0.0,
+          "displayValue": "0"
+        }
+      ]
+    },
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2005/teams/251?lang=en&region=us"
+    }
+  }
+}

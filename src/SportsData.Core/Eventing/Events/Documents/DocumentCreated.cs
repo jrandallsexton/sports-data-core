@@ -18,6 +18,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         DocumentType DocumentType,
         SourceDataProvider SourceDataProvider,
         Guid CorrelationId,
-        Guid CausationId
+        Guid CausationId,
+        int AttemptCount = 0
     ) : EventBase(CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
 }

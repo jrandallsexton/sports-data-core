@@ -37,7 +37,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var json = await LoadJsonTestData(fileName); // valid EspnResourceIndexDto
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
-        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), true, false)).ReturnsAsync(json);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
@@ -61,10 +61,11 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     }
 
     [Fact]
-    public async Task WhenResourceIndexHasNoItems_EnqueuesLeafDocument()
+    public async Task WhenResourceIndexHasNoItems_NothingHappens()
     {
         // arrange
-        var json = "{\"items\": []}";
+        var json =
+            "{\r\n    \"count\": 0,\r\n    \"pageIndex\": 0,\r\n    \"pageSize\": 25,\r\n    \"pageCount\": 0,\r\n    \"items\": []\r\n}";
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
         espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), false, true)).ReturnsAsync(json);
@@ -87,7 +88,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         // assert
         background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
-            It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Once);
+            It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Never);
     }
 
     [Fact]
@@ -133,10 +134,13 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
 
         // Mock both cached and uncached fetches for both pages
-        espnApi.Setup(x => x.GetResource(uriPage1, false, true)).ReturnsAsync(page1);
         espnApi.Setup(x => x.GetResource(uriPage1, true, true)).ReturnsAsync(page1);
-        espnApi.Setup(x => x.GetResource(uriPage2, false, true)).ReturnsAsync(page2);
+        espnApi.Setup(x => x.GetResource(uriPage1, true, false)).ReturnsAsync(page1);
+        espnApi.Setup(x => x.GetResource(uriPage1, false, true)).ReturnsAsync(page1);
+
         espnApi.Setup(x => x.GetResource(uriPage2, true, true)).ReturnsAsync(page2);
+        espnApi.Setup(x => x.GetResource(uriPage2, true, false)).ReturnsAsync(page2);
+        espnApi.Setup(x => x.GetResource(uriPage2, false, true)).ReturnsAsync(page2);
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 

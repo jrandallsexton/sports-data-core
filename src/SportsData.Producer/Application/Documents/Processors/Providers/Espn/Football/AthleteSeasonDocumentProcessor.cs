@@ -6,8 +6,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -37,12 +39,28 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId
+               }))
         {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Processing AthleteSeason with {@Command}", command);
-            await ProcessInternal(command);
+            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -62,25 +80,22 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
-        // TODO: We should not be hardcoding the ESPN athlete URL pattern here. Need a better way to manage this.
-        // Construct the canonical athlete ref from the known pattern
-        var baseRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
-        var athleteIdentity = _externalRefIdentityGenerator.Generate(baseRef);
+        var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(dto.Ref);
+        var athleteIdentity = _externalRefIdentityGenerator.Generate(athleteRef);
 
-        var athleteId = await _dataContext.AthleteExternalIds
-            .AsNoTracking()
-            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == athleteIdentity.UrlHash)
-            .Select(x => x.AthleteId)
+        var athlete = await _dataContext.Athletes
+            .Include(x => x.Seasons)
+            .Where(x => x.Id == athleteIdentity.CanonicalId)
             .FirstOrDefaultAsync();
 
-        if (athleteId == Guid.Empty)
+        if (athlete is null)
         {
             _logger.LogWarning("Athlete not found for hash: {Hash}. Raising DocumentRequested.", athleteIdentity.UrlHash);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: athleteIdentity.CanonicalId.ToString(),
                 ParentId: null,
-                Uri: new Uri(baseRef),
+                Uri: athleteRef,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.Athlete,
@@ -91,7 +106,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
-            return;
+            throw new ExternalDocumentNotSourcedException(
+                $"Athlete not found for {dto.Ref} in command {command.CorrelationId}");
         }
 
         var franchiseSeasonId = await TryResolveFranchiseSeasonIdAsync(dto, command);
@@ -112,13 +128,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             _externalRefIdentityGenerator,
             franchiseSeasonId,
             positionId,
-            athleteId,
+            athlete.Id,
             command.CorrelationId);
 
         await _dataContext.AthleteSeasons.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athleteId);
+        _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athlete.Id);
     }
 
     private async Task<Guid> TryResolveFranchiseSeasonIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
@@ -126,32 +142,30 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         if (dto.Team?.Ref is null)
             return Guid.Empty;
 
-        var identity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
+        var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
 
-        var id = await _dataContext.FranchiseSeasonExternalIds
-            .AsNoTracking()
-            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == identity.UrlHash)
-            .Select(x => x.FranchiseSeasonId)
-            .FirstOrDefaultAsync();
+        var franchise = await _dataContext.Franchises
+            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonIdentity.CanonicalId);
 
-        if (id == Guid.Empty)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.CanonicalId.ToString(),
-                ParentId: null,
-                Uri: dto.Team.Ref,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-            ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
-        }
+        if (franchise is not null)
+            return franchise.Id;
 
-        return id;
+        await _publishEndpoint.Publish(new DocumentRequested(
+            Id: franchiseSeasonIdentity.CanonicalId.ToString(),
+            ParentId: null,
+            Uri: dto.Team.Ref,
+            Sport: command.Sport,
+            SeasonYear: command.Season,
+            DocumentType: DocumentType.TeamSeason,
+            SourceDataProvider: command.SourceDataProvider,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
+        ));
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
+
+        throw new ExternalDocumentNotSourcedException(
+            $"Franchise season not found for {dto.Team.Ref} in command {command.CorrelationId}");
     }
 
     private async Task<Guid> TryResolvePositionIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
@@ -159,31 +173,29 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         if (dto.Position?.Ref is null)
             return Guid.Empty;
 
-        var identity = _externalRefIdentityGenerator.Generate(dto.Position.Ref);
+        var positionIdentity = _externalRefIdentityGenerator.Generate(dto.Position.Ref);
 
-        var id = await _dataContext.AthletePositionExternalIds
-            .AsNoTracking()
-            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == identity.UrlHash)
-            .Select(x => x.AthletePositionId)
-            .FirstOrDefaultAsync();
+        var position = await _dataContext.AthletePositions
+            .FirstOrDefaultAsync(x => x.Id == positionIdentity.CanonicalId);
 
-        if (id == Guid.Empty)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.CanonicalId.ToString(),
-                ParentId: null,
-                Uri: dto.Position.Ref,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.AthletePosition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-            ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
-        }
+        if (position is not null)
+            return position.Id;
 
-        return id;
+        await _publishEndpoint.Publish(new DocumentRequested(
+            Id: positionIdentity.CanonicalId.ToString(),
+            ParentId: null,
+            Uri: dto.Position.Ref,
+            Sport: command.Sport,
+            SeasonYear: command.Season,
+            DocumentType: DocumentType.AthletePosition,
+            SourceDataProvider: command.SourceDataProvider,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
+        ));
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
+
+        throw new ExternalDocumentNotSourcedException(
+            $"Position not found for {dto.Position.Ref} in command {command.CorrelationId}");
     }
 }

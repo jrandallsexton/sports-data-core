@@ -28,12 +28,23 @@ namespace SportsData.Producer.Application.Documents
                        ["CorrelationId"] = context.Message.CorrelationId
                    }))
             {
-                _logger.LogInformation("New document event received: {@message}", context.Message);
+                const int maxAttempts = 10;
+
+                if (context.Message.AttemptCount >= maxAttempts)
+                {
+                    _logger.LogError("Maximum retry attempts ({Max}) reached for document {Id}. Dropping message.",
+                        maxAttempts, context.Message.Id);
+                    return;
+                }
+
+                _logger.LogInformation("New document event received (Attempt {Attempt}): {@Message}",
+                    context.Message.AttemptCount, context.Message);
 
                 _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(context.Message));
             }
 
             await Task.CompletedTask;
         }
+
     }
 }

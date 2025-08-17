@@ -38,8 +38,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 OccurrenceDisplay = dto.Occurrence?.DisplayValue ?? string.Empty,
 
                 // timestamps/headlines
-                DateUtc = DateTime.Parse(dto.Date).ToUniversalTime(),
-                LastUpdatedUtc = DateTime.Parse(dto.LastUpdated).ToUniversalTime(),
+                DateUtc = dto.Date.TryParseUtcNullable(),
+                LastUpdatedUtc = dto.LastUpdated.TryParseUtcNullable(),
                 Headline = dto.Headline,
                 ShortHeadline = dto.ShortHeadline,
 
@@ -63,7 +63,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             // Helper local to map a single row (from ranks or others)
             SeasonRankingEntry MapEntry(
                 int current, int previous, double points, int fpVotes, string trend,
-                string? teamRef, string rowDate, string rowLastUpdated, string? recordSummary,
+                string teamRef, string rowDate, string rowLastUpdated, string? recordSummary,
                 IEnumerable<EspnFootballSeasonTypeWeekRankingsRankRecordStat>? stats,
                 bool isOther)
             {
@@ -76,37 +76,32 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 {
                     foreach (var s in stats)
                     {
-                        if (string.Equals(s.Type, "wins", StringComparison.OrdinalIgnoreCase))
-                            wins = (int)s.Value;
-                        else if (string.Equals(s.Type, "losses", StringComparison.OrdinalIgnoreCase))
-                            losses = (int)s.Value;
+                        if (string.Equals(s.Type, "wins", StringComparison.OrdinalIgnoreCase) && s.Value is not null)
+                            wins = (int)s.Value.Value;
+                        else if (string.Equals(s.Type, "losses", StringComparison.OrdinalIgnoreCase) && s.Value is not null)
+                            losses = (int)s.Value.Value;
                     }
                 }
 
                 var entry = new SeasonRankingEntry
                 {
                     Id = Guid.NewGuid(),
-                    SeasonRankingId = ranking.Id,
-
-                    Current = current,
-                    Previous = previous,
-                    Points = (decimal)points,
-                    FirstPlaceVotes = fpVotes,
-                    Trend = trend ?? "-",
-                    IsOtherReceivingVotes = isOther,
-
-                    TeamRefUrlHash = teamHash,
-                    FranchiseSeasonId = teamRef is not null ? franchiseDictionary[teamRef] : null,
-
-                    RecordSummary = recordSummary,
-                    Wins = wins,
-                    Losses = losses,
-
-                    RowDateUtc = DateTime.Parse(rowDate).ToUniversalTime(),
-                    RowLastUpdatedUtc = DateTime.Parse(rowLastUpdated).ToUniversalTime(),
-
                     CreatedBy = correlationId,
-                    CreatedUtc = DateTime.UtcNow
+                    CreatedUtc = DateTime.UtcNow,
+                    Current = current,
+                    FirstPlaceVotes = fpVotes,
+                    FranchiseSeasonId = franchiseDictionary[teamRef],
+                    IsOtherReceivingVotes = isOther,
+                    Losses = losses,
+                    Points = (decimal)points,
+                    Previous = previous,
+                    RecordSummary = recordSummary,
+                    RowDateUtc = rowDate.TryParseUtcNullable(),
+                    RowLastUpdatedUtc = rowLastUpdated.TryParseUtcNullable(),
+                    SeasonRankingId = ranking.Id,
+                    SourceList = isOther ? "others" : "ranks",
+                    Trend = trend ?? "-",
+                    Wins = wins,
                 };
 
                 // Preserve arbitrary stats (optional but keeps fidelity)
@@ -127,7 +122,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                             SeasonRankingEntryId = entry.Id,
                             ShortDisplayName = s.ShortDisplayName,
                             Type = s.Type,
-                            Value = (decimal)s.Value
+                            Value = (decimal?)s.Value
                         });
                     }
                 }
@@ -144,7 +139,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     ranking.Entries.Add(
                         MapEntry(
                             r.Current, r.Previous, r.Points, r.FirstPlaceVotes, r.Trend,
-                            r.Team?.Ref?.ToCleanUrl(), r.Date, r.LastUpdated,
+                            r.Team.Ref.ToCleanUrl(), r.Date, r.LastUpdated,
                             r.Record?.Summary, recordStats, isOther: false));
                 }
             }
@@ -157,7 +152,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     ranking.Entries.Add(
                         MapEntry(
                             0, o.Previous, o.Points, o.FirstPlaceVotes, o.Trend,
-                            o.Team?.Ref?.ToCleanUrl(), o.Date, o.LastUpdated,
+                            o.Team.Ref.ToCleanUrl(), o.Date, o.LastUpdated,
                             o.Record?.Ref?.ToString(),            // summary not expanded here; keep raw if needed later
                             null,                     // no expanded stats in "others" payload
                             isOther: true));

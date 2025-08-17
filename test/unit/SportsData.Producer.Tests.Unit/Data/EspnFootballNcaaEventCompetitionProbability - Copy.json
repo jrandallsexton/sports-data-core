@@ -1,0 +1,18 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401415224/competitions/401415224/probabilities/401415224102894106?lang=en&region=us",
+  "competition": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401415224/competitions/401415224?lang=en&region=us" },
+  "play": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401415224/competitions/401415224/plays/401415224102894106?lang=en&region=us" },
+  "homeTeam": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/teams/21?lang=en&region=us" },
+  "awayTeam": { "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/teams/2649?lang=en&region=us" },
+  "tiePercentage": 0.0,
+  "homeWinPercentage": 0.7148,
+  "awayWinPercentage": 0.2852,
+  "lastModified": "2022-09-24T23:31Z",
+  "sequenceNumber": "102894106",
+  "source": {
+    "id": "2",
+    "description": "feed",
+    "state": "full"
+  },
+  "secondsLeft": 0
+}

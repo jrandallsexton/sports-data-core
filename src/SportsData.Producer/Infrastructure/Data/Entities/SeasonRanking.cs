@@ -27,8 +27,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string OccurrenceDisplay { get; set; } = null!;// "Preseason"
 
         // Timestamps / headlines
-        public DateTime DateUtc { get; set; }                 // dto.date
-        public DateTime LastUpdatedUtc { get; set; }          // dto.lastUpdated
+        public DateTime? DateUtc { get; set; }                 // dto.date
+        public DateTime? LastUpdatedUtc { get; set; }          // dto.lastUpdated
         public string? Headline { get; set; }
         public string? ShortHeadline { get; set; }
 
@@ -63,8 +63,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(e => e.OccurrenceValue).IsRequired().HasMaxLength(32);
                 builder.Property(e => e.OccurrenceDisplay).IsRequired().HasMaxLength(64);
 
-                builder.Property(e => e.DateUtc).IsRequired();
-                builder.Property(e => e.LastUpdatedUtc).IsRequired();
+                builder.Property(e => e.DateUtc);
+                builder.Property(e => e.LastUpdatedUtc);
 
                 // Relationships
                 builder.HasOne(e => e.SeasonWeek)

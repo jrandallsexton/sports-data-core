@@ -12,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Sport sport,
             int seasonYear,
-            Guid seasonWeekId,
+            Guid? seasonWeekId,
             Guid seasonPhaseId,
             Guid correlationId)
         {
@@ -40,7 +40,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 ],
                 Sport = sport,
                 SeasonYear = seasonYear,
-                Status = ContestStatus.Undefined,
                 SeasonWeekId = seasonWeekId,
                 SeasonPhaseId = seasonPhaseId
             };
@@ -55,7 +54,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 ShortName = entity.ShortName,
                 StartDateUtc = entity.StartDateUtc,
                 EndDateUtc = entity.EndDateUtc,
-                Status = entity.Status,
                 Sport = entity.Sport,
                 SeasonYear = entity.SeasonYear,
                 Week = entity.Week,

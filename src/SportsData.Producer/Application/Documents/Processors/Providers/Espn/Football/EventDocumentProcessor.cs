@@ -7,10 +7,10 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Provider.Commands;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -24,20 +24,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IPublishEndpoint _publishEndpoint;
-        private readonly IProvideProviders _providerClient;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public EventDocumentProcessor(
             ILogger<EventDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IPublishEndpoint publishEndpoint,
-            IProvideProviders providerClient,
             IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
-            _providerClient = providerClient;
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
@@ -52,6 +49,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 try
                 {
                     await ProcessInternal(command);
+                }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -115,27 +120,68 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 // request sourcing?
                 _logger.LogWarning("SeasonPhase not found for SeasonType {SeasonType}.", externalDto.SeasonType);
-                throw new Exception("SeasonPhase not found");
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: null,
+                    Uri: externalDto.SeasonType.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.SeasonType,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventDocumentProcessor
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
             }
 
-            var seasonWeekId = await _dataContext.TryResolveFromDtoRefAsync(
-                externalDto.Week,
-                command.SourceDataProvider,
-                () => _dataContext.SeasonWeeks.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+            Guid? seasonWeekId = null;
 
-            if (seasonWeekId is null)
+            if (externalDto.Week is null)
             {
-                // request sourcing?
-                _logger.LogWarning("SeasonWeek not found for Week {Week}.", externalDto.Week);
-                throw new Exception("SeasonWeek not found");
+                _logger.LogError("Event DTO missing Week information. Requires enrichment to determine. {@ExternalDto}", externalDto);
+            }
+            else
+            {
+                var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
+
+                var seasonWeek = await _dataContext.SeasonWeeks
+                    .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
+
+                if (seasonWeek is null)
+                {
+                    // request sourcing
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: Guid.NewGuid().ToString(),
+                        ParentId: null, // TODO: could be seasonPhaseId? FML.
+                        Uri: externalDto.Week.Ref,
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.SeasonTypeWeek,
+                        SourceDataProvider: command.SourceDataProvider,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventDocumentProcessor
+                    ));
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
+
+                    throw new ExternalDocumentNotSourcedException(
+                        $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+                }
+                else
+                {
+                    seasonWeekId = seasonWeek.Id;
+                }
             }
 
             var contest = externalDto.AsEntity(
                 _externalRefIdentityGenerator,
                 command.Sport,
                 seasonYear,
-                seasonWeekId.Value,
+                seasonWeekId,
                 seasonPhaseId.Value,
                 command.CorrelationId);
 
@@ -180,30 +226,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.EventDocumentProcessor
                 ));
-
-                // TODO: Determine what to do with Situation
-
-                // Get the status of the competition
-                var statusResponse = await _providerClient.GetExternalDocument(
-                    new GetExternalDocumentQuery(
-                        contest.Id.ToString(),
-                        competition.Status.Ref,
-                        command.SourceDataProvider,
-                        command.Sport,
-                        DocumentType.EventCompetitionStatus,
-                        command.Season));
-                if (statusResponse.IsSuccess)
-                {
-                    var status = statusResponse.Data.FromJson<EspnEventCompetitionStatusDto>();
-                    if (status is not null)
-                    {
-                        contest.Clock = status.Clock;
-                        contest.DisplayClock = status.DisplayClock;
-                        contest.Period = status.Period;
-
-                        // TODO: update contest status based on competition status
-                    }
-                }
             }
         }
 
@@ -287,10 +309,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (homeTeamFranchiseSeasonId == null)
             {
+                var homeFranchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(homeTeam.Team.Ref);
+                var homeFranchiseIdentity = _externalRefIdentityGenerator.Generate(homeFranchiseUri);
+
                 // request sourcing
                 await _publishEndpoint.Publish(new DocumentRequested(
                     homeTeam.Team.Ref.ToCleanUrl(),
-                    null,
+                    homeFranchiseIdentity.CanonicalId.ToString(),
                     homeTeam.Team.Ref,
                     command.Sport,
                     command.Season,
@@ -301,7 +326,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
-                throw new InvalidOperationException(
+                throw new ExternalDocumentNotSourcedException(
                     $"Home team franchise season not found for {homeTeam.Ref} in command {command.CorrelationId}");
             }
             contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId.Value;
@@ -319,10 +344,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (awayTeamFranchiseSeasonId == null)
             {
+                var awayFranchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(awayTeam.Team.Ref);
+                var awayFranchiseIdentity = _externalRefIdentityGenerator.Generate(awayFranchiseUri);
+
                 // request sourcing
                 await _publishEndpoint.Publish(new DocumentRequested(
                     awayTeam.Team.Ref.ToCleanUrl(),
-                    null,
+                    awayFranchiseIdentity.CanonicalId.ToString(),
                     awayTeam.Team.Ref,
                     command.Sport,
                     command.Season,
@@ -333,7 +361,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
-                throw new InvalidOperationException(
+                throw new ExternalDocumentNotSourcedException(
                     $"Away team franchise season not found for {awayTeam.Ref} in command {command.CorrelationId}");
             }
             contest.AwayTeamFranchiseSeasonId = awayTeamFranchiseSeasonId.Value;

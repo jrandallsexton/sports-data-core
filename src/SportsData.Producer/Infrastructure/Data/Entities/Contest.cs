@@ -26,12 +26,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime? EndDateUtc { get; set; }
 
-        public required ContestStatus Status { get; set; }
-
-        public double Clock { get; set; } = -1; // In seconds, -1 means no clock (e.g., final)
-
-        public string DisplayClock { get; set; } = "00:00";
-
         public int Period { get; set; } = -1;
 
         public required Sport Sport { get; set; }
@@ -40,9 +34,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? Week { get; set; }               // From `week` ref, parsed from URL or hydrated from companion doc
 
-        public Guid SeasonWeekId { get; set; }
+        public Guid? SeasonWeekId { get; set; }
 
-        public SeasonWeek SeasonWeek { get; set; } = null!;
+        public SeasonWeek? SeasonWeek { get; set; }
 
         public Guid SeasonPhaseId { get; set; }
 
@@ -81,9 +75,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.Property(x => x.EndDateUtc);
 
-                builder.Property(x => x.Status)
-                    .IsRequired();
-
                 builder.Property(x => x.Sport)
                     .IsRequired();
 
@@ -117,13 +108,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .OnDelete(DeleteBehavior.Restrict);
 
                 builder
+                    .Property(x => x.SeasonWeekId)
+                    .IsRequired(false);
+
+                builder
                     .HasOne(x => x.SeasonWeek)
                     .WithMany()
                     .HasForeignKey(x => x.SeasonWeekId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                builder.Property(x => x.DisplayClock)
-                    .HasMaxLength(20);
 
                 builder
                     .HasMany(x => x.Links)

@@ -57,6 +57,7 @@
         Venue = 52,
         VenueImage = 53,
         Weeks = 54,
+        CoachRecord = 55,
         Unknown = 9999
     }
 }

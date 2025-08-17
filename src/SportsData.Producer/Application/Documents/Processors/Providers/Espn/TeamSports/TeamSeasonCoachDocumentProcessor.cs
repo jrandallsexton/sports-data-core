@@ -57,7 +57,7 @@ public class TeamSeasonCoachDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // TODO: Implement deserialization and processing logic for TeamSeasonCoach
-        _logger.LogError("TODO: Implement TeamSeasonCoachDocument processing");
+        _logger.LogWarning("TODO: Implement TeamSeasonCoachDocument processing");
         await Task.Delay(100);
     }
 }

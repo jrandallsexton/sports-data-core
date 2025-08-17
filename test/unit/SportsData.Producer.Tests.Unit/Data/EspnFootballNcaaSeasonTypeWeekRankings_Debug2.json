@@ -1,0 +1,4188 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2/weeks/1/rankings/4?lang=en&region=us",
+  "id": "4",
+  "name": "NCAA College Football Power Rankings",
+  "shortName": "Power Rankings",
+  "type": "power",
+  "occurrence": {
+    "number": 1,
+    "type": "week",
+    "last": false,
+    "value": "1",
+    "displayValue": ""
+  },
+  "headline": "2003 College Football Power Rankings - ",
+  "shortHeadline": "2003 Power Rankings - ",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003?lang=en&region=us",
+    "year": 2003,
+    "startDate": "2003-07-29T07:00Z",
+    "endDate": "2004-01-06T07:59Z",
+    "displayName": "2003",
+    "type": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2?lang=en&region=us",
+      "id": "2",
+      "type": 2,
+      "name": "Regular Season",
+      "abbreviation": "reg",
+      "year": 2003,
+      "startDate": "2003-08-19T07:00Z",
+      "endDate": "2003-12-09T07:59Z",
+      "hasGroups": false,
+      "hasStandings": true,
+      "hasLegs": false,
+      "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2/groups?lang=en&region=us"
+      },
+      "weeks": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2/weeks?lang=en&region=us"
+      },
+      "slug": "regular-season"
+    },
+    "types": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types?lang=en&region=us",
+      "count": 4,
+      "pageIndex": 1,
+      "pageSize": 4,
+      "pageCount": 1,
+      "items": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/1?lang=en&region=us",
+          "id": "1",
+          "type": 1,
+          "name": "Preseason",
+          "abbreviation": "pre",
+          "year": 2003,
+          "startDate": "2003-07-29T07:00Z",
+          "endDate": "2003-08-19T06:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/1/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/1/weeks?lang=en&region=us"
+          },
+          "slug": "preseason"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2?lang=en&region=us",
+          "id": "2",
+          "type": 2,
+          "name": "Regular Season",
+          "abbreviation": "reg",
+          "year": 2003,
+          "startDate": "2003-08-19T07:00Z",
+          "endDate": "2003-12-09T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/2/weeks?lang=en&region=us"
+          },
+          "slug": "regular-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/3?lang=en&region=us",
+          "id": "3",
+          "type": 3,
+          "name": "Postseason",
+          "abbreviation": "post",
+          "year": 2003,
+          "startDate": "2003-12-09T08:00Z",
+          "endDate": "2004-01-06T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/3/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/3/weeks?lang=en&region=us"
+          },
+          "slug": "post-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/4?lang=en&region=us",
+          "id": "4",
+          "type": 4,
+          "name": "Off Season",
+          "abbreviation": "off",
+          "year": 2003,
+          "startDate": "2004-01-06T08:00Z",
+          "endDate": "2004-08-03T06:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/4/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/types/4/weeks?lang=en&region=us"
+          },
+          "slug": "off-season"
+        }
+      ]
+    },
+    "rankings": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/rankings?lang=en&region=us"
+    },
+    "athletes": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/athletes?lang=en&region=us"
+    },
+    "awards": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/awards?lang=en&region=us"
+    }
+  },
+  "ranks": [
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-4",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 4.0,
+            "displayValue": "4"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/13?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-7",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 7.0,
+            "displayValue": "7"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/16?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-8",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 8.0,
+            "displayValue": "8"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/47?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-142",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 142.0,
+            "displayValue": "142"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/50?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-6",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 6.0,
+            "displayValue": "6"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/55?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-33",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 33.0,
+            "displayValue": "33"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/79?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-176",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 176.0,
+            "displayValue": "176"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/93?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-46",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 46.0,
+            "displayValue": "46"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/108?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/159?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-8",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 8.0,
+            "displayValue": "8"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/227?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-6",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 6.0,
+            "displayValue": "6"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/257?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-8",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 8.0,
+            "displayValue": "8"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/322?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-25",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 25.0,
+            "displayValue": "25"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/331?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-75",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 75.0,
+            "displayValue": "75"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2010?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-11",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 11.0,
+            "displayValue": "11"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2011?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-10",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 10.0,
+            "displayValue": "10"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2016?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-173",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 173.0,
+            "displayValue": "173"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2142?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2168?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-14",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 14.0,
+            "displayValue": "14"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2184?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-14",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 14.0,
+            "displayValue": "14"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2193?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-17",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 17.0,
+            "displayValue": "17"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2261?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-75",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 75.0,
+            "displayValue": "75"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2275?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-84",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 84.0,
+            "displayValue": "84"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2287?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-51",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 51.0,
+            "displayValue": "51"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2296?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-143",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 143.0,
+            "displayValue": "143"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2329?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-80",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 80.0,
+            "displayValue": "80"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2460?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-42",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 42.0,
+            "displayValue": "42"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2464?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-77",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 77.0,
+            "displayValue": "77"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2502?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-48",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 48.0,
+            "displayValue": "48"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2569?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-4",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 4.0,
+            "displayValue": "4"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2582?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-6",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 6.0,
+            "displayValue": "6"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2608?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-181",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 181.0,
+            "displayValue": "181"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2617?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-19",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 19.0,
+            "displayValue": "19"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2623?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-6",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 6.0,
+            "displayValue": "6"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2635?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-3",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 3.0,
+            "displayValue": "3"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2643?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-7",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 7.0,
+            "displayValue": "7"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2717?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-13",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 13.0,
+            "displayValue": "13"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2729?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-147",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 147.0,
+            "displayValue": "147"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2754?lang=en&region=us"
+      }
+    },
+    {
+      "current": 1,
+      "previous": 0,
+      "summary": "Armed with a dominating defense and a big-game coach, Sooner Magic is alive in 2003.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "10-247",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 247.0,
+            "displayValue": "247"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/201?lang=en&region=us"
+      }
+    },
+    {
+      "current": 1,
+      "previous": 9,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-138",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 138.0,
+            "displayValue": "138"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2377?lang=en&region=us"
+      }
+    },
+    {
+      "current": 2,
+      "previous": 1,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-131",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 131.0,
+            "displayValue": "131"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/290?lang=en&region=us"
+      }
+    },
+    {
+      "current": 2,
+      "previous": 0,
+      "summary": "The 'Canes won the title in 2001 and played for it last year.  No reason Kellen Winslow and Co. should falter in 2003.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "2-226",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 2.0,
+            "displayValue": "2"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 226.0,
+            "displayValue": "226"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2390?lang=en&region=us"
+      }
+    },
+    {
+      "current": 3,
+      "previous": 8,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-128",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 128.0,
+            "displayValue": "128"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/149?lang=en&region=us"
+      }
+    },
+    {
+      "current": 3,
+      "previous": 0,
+      "summary": "The defending champs will be in the mix with or without Maurice Clarett.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "3-307",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 3.0,
+            "displayValue": "3"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 307.0,
+            "displayValue": "307"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/194?lang=en&region=us"
+      }
+    },
+    {
+      "current": 4,
+      "previous": 0,
+      "summary": "With Roy Williams and crew back, talent is not the issue for the 'Horns.  Beating OU Oct. 11 is.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "1-170",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 1.0,
+            "displayValue": "1"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 170.0,
+            "displayValue": "170"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/251?lang=en&region=us"
+      }
+    },
+    {
+      "current": 4,
+      "previous": 8,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-125",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 125.0,
+            "displayValue": "125"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2710?lang=en&region=us"
+      }
+    },
+    {
+      "current": 5,
+      "previous": 5,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-116",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 116.0,
+            "displayValue": "116"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/98?lang=en&region=us"
+      }
+    },
+    {
+      "current": 5,
+      "previous": 0,
+      "summary": "John Navarre will direct a potent offense and the Buckeyes come to the Big House this year.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-168",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 168.0,
+            "displayValue": "168"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/130?lang=en&region=us"
+      }
+    },
+    {
+      "current": 6,
+      "previous": 0,
+      "summary": "With depth at running back and a host of talented linebackers, the Tigers are thinking Sugar Bowl.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-164",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 164.0,
+            "displayValue": "164"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2?lang=en&region=us"
+      }
+    },
+    {
+      "current": 6,
+      "previous": 2,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-94",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 94.0,
+            "displayValue": "94"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/111?lang=en&region=us"
+      }
+    },
+    {
+      "current": 7,
+      "previous": 0,
+      "summary": "If the Wildcats survive road tests in Austin, Stillwater and Lincoln, the rest of the schedule is friendly.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-159-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 159.0,
+            "displayValue": "159"
+          },
+          {
+            "name": "ties",
+            "displayName": "Ties",
+            "shortDisplayName": "T",
+            "description": "Ties",
+            "abbreviation": "T",
+            "type": "ties",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2306?lang=en&region=us"
+      }
+    },
+    {
+      "current": 7,
+      "previous": 4,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-86",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 86.0,
+            "displayValue": "86"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2755?lang=en&region=us"
+      }
+    },
+    {
+      "current": 8,
+      "previous": 0,
+      "summary": "The Hokies are Jonesing for the 'Canes visit to Blacksburg.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-151",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 151.0,
+            "displayValue": "151"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/259?lang=en&region=us"
+      }
+    },
+    {
+      "current": 8,
+      "previous": 1,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-86",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 86.0,
+            "displayValue": "86"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2026?lang=en&region=us"
+      }
+    },
+    {
+      "current": 9,
+      "previous": 0,
+      "summary": "Will life after Carson Palmer be as sweet for the Trojans?",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-144",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 144.0,
+            "displayValue": "144"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/30?lang=en&region=us"
+      }
+    },
+    {
+      "current": 9,
+      "previous": 7,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-84",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 84.0,
+            "displayValue": "84"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/231?lang=en&region=us"
+      }
+    },
+    {
+      "current": 10,
+      "previous": 0,
+      "summary": "Is this the year Amato's 'Pack earns an ACC title?",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-80",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 80.0,
+            "displayValue": "80"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/152?lang=en&region=us"
+      }
+    },
+    {
+      "current": 10,
+      "previous": 9,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-68",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 68.0,
+            "displayValue": "68"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/304?lang=en&region=us"
+      }
+    },
+    {
+      "current": 11,
+      "previous": 8,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-68",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 68.0,
+            "displayValue": "68"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/222?lang=en&region=us"
+      }
+    },
+    {
+      "current": 11,
+      "previous": 0,
+      "summary": "Yes, Virgina, Al Groh has the Cavs back in the ACC hunt.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-72",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 72.0,
+            "displayValue": "72"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/258?lang=en&region=us"
+      }
+    },
+    {
+      "current": 12,
+      "previous": 0,
+      "summary": "The Fridge has people in ACC country fearing the turtle.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-69",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 69.0,
+            "displayValue": "69"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/120?lang=en&region=us"
+      }
+    },
+    {
+      "current": 12,
+      "previous": 2,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-62",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 62.0,
+            "displayValue": "62"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2065?lang=en&region=us"
+      }
+    },
+    {
+      "current": 13,
+      "previous": 0,
+      "summary": "A return trip to the Sugar Bowl would be even sweeter for the Dawgs.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-67",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 67.0,
+            "displayValue": "67"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/61?lang=en&region=us"
+      }
+    },
+    {
+      "current": 13,
+      "previous": 3,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-60",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 60.0,
+            "displayValue": "60"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2230?lang=en&region=us"
+      }
+    },
+    {
+      "current": 14,
+      "previous": 0,
+      "summary": "Larry Fitzgerald and Co. have special plans for Virginia Tech and Miami's last Big East visits.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-56",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 56.0,
+            "displayValue": "56"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/221?lang=en&region=us"
+      }
+    },
+    {
+      "current": 14,
+      "previous": 3,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-57",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 57.0,
+            "displayValue": "57"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/311?lang=en&region=us"
+      }
+    },
+    {
+      "current": 15,
+      "previous": 0,
+      "summary": "The grumblings in Tallahassee has Bowden and the 'Noles fighting mad.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-43",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 43.0,
+            "displayValue": "43"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/52?lang=en&region=us"
+      }
+    },
+    {
+      "current": 15,
+      "previous": 2,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-57",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 57.0,
+            "displayValue": "57"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/147?lang=en&region=us"
+      }
+    },
+    {
+      "current": 16,
+      "previous": 0,
+      "summary": "Tiller's offense gets the pub, but its the Boilermakers' overlooked defense that wins games.",
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-38",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 38.0,
+            "displayValue": "38"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2509?lang=en&region=us"
+      }
+    },
+    {
+      "current": 16,
+      "previous": 6,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-56",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 56.0,
+            "displayValue": "56"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2747?lang=en&region=us"
+      }
+    },
+    {
+      "current": 17,
+      "previous": 5,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-50",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 50.0,
+            "displayValue": "50"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/113?lang=en&region=us"
+      }
+    },
+    {
+      "current": 18,
+      "previous": 4,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-47",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 47.0,
+            "displayValue": "47"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/48?lang=en&region=us"
+      }
+    },
+    {
+      "current": 19,
+      "previous": 2,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-42",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 42.0,
+            "displayValue": "42"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2197?lang=en&region=us"
+      }
+    },
+    {
+      "current": 20,
+      "previous": 6,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-39",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 39.0,
+            "displayValue": "39"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/219?lang=en&region=us"
+      }
+    },
+    {
+      "current": 21,
+      "previous": 5,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-34",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 34.0,
+            "displayValue": "34"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2546?lang=en&region=us"
+      }
+    },
+    {
+      "current": 22,
+      "previous": 1,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-30",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 30.0,
+            "displayValue": "30"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2447?lang=en&region=us"
+      }
+    },
+    {
+      "current": 23,
+      "previous": 5,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-28",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 28.0,
+            "displayValue": "28"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2466?lang=en&region=us"
+      }
+    },
+    {
+      "current": 24,
+      "previous": 3,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-23",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 23.0,
+            "displayValue": "23"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2198?lang=en&region=us"
+      }
+    },
+    {
+      "current": 25,
+      "previous": 5,
+      "points": 0.0,
+      "trend": "-",
+      "record": {
+        "summary": "0-20",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 20.0,
+            "displayValue": "20"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2241?lang=en&region=us"
+      }
+    }
+  ],
+  "others": [
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 181.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2617?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 176.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/93?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 173.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2142?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 147.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2754?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 143.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2329?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 142.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/50?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 84.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2287?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 80.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2460?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 77.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2502?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 75.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2275?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 75.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2010?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 51.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2296?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 48.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2569?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 46.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/108?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 42.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2464?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 33.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/79?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 25.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/331?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 19.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2623?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 17.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2261?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 14.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2193?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 14.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2184?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 13.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2729?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 11.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2011?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 10.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2016?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 8.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/322?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 8.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/227?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 8.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/47?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 7.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2717?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 7.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/16?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 6.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2635?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 6.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2608?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 6.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/257?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 6.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/55?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 4.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2582?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 4.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/13?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 3.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2643?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 1.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/2168?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 1.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2003/teams/159?lang=en&region=us"
+      }
+    }
+  ],
+  "droppedOut": []
+}

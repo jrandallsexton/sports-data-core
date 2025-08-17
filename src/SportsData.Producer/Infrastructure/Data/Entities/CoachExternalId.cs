@@ -8,6 +8,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 public class CoachExternalId : ExternalId
 {
     public Guid CoachId { get; set; }
+
     public Coach Coach { get; set; } = null!;
 
     public class EntityConfiguration : IEntityTypeConfiguration<CoachExternalId>

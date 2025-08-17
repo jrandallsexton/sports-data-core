@@ -77,11 +77,9 @@ public class FranchiseSeasonRanking : CanonicalEntityBase<Guid>, IHasExternalIds
                 .HasMaxLength(100);
 
             builder.Property(e => e.Date)
-                .IsRequired()
                 .HasMaxLength(40);
 
             builder.Property(e => e.LastUpdated)
-                .IsRequired()
                 .HasMaxLength(40);
 
             builder.Property(e => e.DefaultRanking)

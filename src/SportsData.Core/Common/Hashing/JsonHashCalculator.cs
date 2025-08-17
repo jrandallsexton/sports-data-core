@@ -9,34 +9,53 @@ namespace SportsData.Core.Common.Hashing
 {
     public interface IJsonHashCalculator
     {
-        string NormalizeAndHash(string json);
+        string NormalizeAndHash(string? json);
     }
 
     public class JsonHashCalculator : IJsonHashCalculator
     {
-        public string NormalizeAndHash(string json)
+        // SHA256 of empty string: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        private static readonly string EmptyHash = Convert.ToHexString(SHA256.HashData(Array.Empty<byte>()));
+
+        public string NormalizeAndHash(string? json)
         {
-            using var doc = JsonDocument.Parse(json);
-            var normalized = Normalize(doc.RootElement);
-            var serialized = JsonSerializer.Serialize(normalized, new JsonSerializerOptions
+            if (json is null)
+                return EmptyHash;
+
+            // Trim whitespace and handle optional UTF-8 BOM
+            json = json.Trim();
+            if (json.Length > 0 && json[0] == '\uFEFF') // BOM
+                json = json[1..].Trim();
+
+            if (json.Length == 0)
+                return EmptyHash;
+
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions
             {
-                WriteIndented = false,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip
             });
 
-            using var sha = SHA256.Create();
+            var normalized = Normalize(doc.RootElement);
+            var serialized = JsonSerializer.Serialize(
+                normalized,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = false,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                });
+
             var bytes = Encoding.UTF8.GetBytes(serialized);
-            return Convert.ToHexString(sha.ComputeHash(bytes));
+            return Convert.ToHexString(SHA256.HashData(bytes));
         }
 
-        private static object? Normalize(JsonElement element)
-        {
-            return element.ValueKind switch
+        private static object? Normalize(JsonElement element) =>
+            element.ValueKind switch
             {
                 JsonValueKind.Object => element.EnumerateObject()
-                    .OrderBy(p => p.Name)
-                    .ToDictionary(p => p.Name, p => Normalize(p.Value)),
+                    .OrderBy(p => p.Name, StringComparer.Ordinal) // make ordering explicit
+                    .ToDictionary(p => p.Name, p => Normalize(p.Value), StringComparer.Ordinal),
                 JsonValueKind.Array => element.EnumerateArray().Select(Normalize).ToList(),
                 JsonValueKind.String => (string?)element.GetString(),
                 JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l : element.GetDouble(),
@@ -45,8 +64,5 @@ namespace SportsData.Core.Common.Hashing
                 JsonValueKind.Null => null,
                 _ => throw new NotSupportedException($"Unsupported JSON value kind: {element.ValueKind}")
             };
-        }
-
     }
-
 }

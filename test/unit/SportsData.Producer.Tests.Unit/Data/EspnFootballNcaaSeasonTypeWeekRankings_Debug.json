@@ -1,0 +1,1665 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/weeks/14/rankings/1?lang=en&region=us",
+  "id": "1",
+  "name": "AP Top 25",
+  "shortName": "AP Poll",
+  "type": "ap",
+  "occurrence": {
+    "number": 14,
+    "type": "week",
+    "last": false,
+    "value": "14",
+    "displayValue": "Week 14"
+  },
+  "headline": "2012 NCAA Football Rankings - AP Poll Week 14",
+  "shortHeadline": "2012 AP Poll: Week 14",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012?lang=en&region=us",
+    "year": 2012,
+    "startDate": "2012-07-01T07:00Z",
+    "endDate": "2013-01-18T07:59Z",
+    "displayName": "2012",
+    "type": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2?lang=en&region=us",
+      "id": "2",
+      "type": 2,
+      "name": "Regular Season",
+      "abbreviation": "reg",
+      "year": 2012,
+      "startDate": "2012-07-29T07:00Z",
+      "endDate": "2012-12-11T07:59Z",
+      "hasGroups": false,
+      "hasStandings": true,
+      "hasLegs": false,
+      "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/groups?lang=en&region=us"
+      },
+      "weeks": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/weeks?lang=en&region=us"
+      },
+      "leaders": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/leaders?lang=en&region=us"
+      },
+      "slug": "regular-season"
+    },
+    "types": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types?lang=en&region=us",
+      "count": 4,
+      "pageIndex": 1,
+      "pageSize": 4,
+      "pageCount": 1,
+      "items": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/1?lang=en&region=us",
+          "id": "1",
+          "type": 1,
+          "name": "Preseason",
+          "abbreviation": "pre",
+          "year": 2012,
+          "startDate": "2012-07-01T07:00Z",
+          "endDate": "2012-08-28T06:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/1/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/1/weeks?lang=en&region=us"
+          },
+          "slug": "preseason"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2?lang=en&region=us",
+          "id": "2",
+          "type": 2,
+          "name": "Regular Season",
+          "abbreviation": "reg",
+          "year": 2012,
+          "startDate": "2012-07-29T07:00Z",
+          "endDate": "2012-12-11T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/weeks?lang=en&region=us"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/leaders?lang=en&region=us"
+          },
+          "slug": "regular-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/3?lang=en&region=us",
+          "id": "3",
+          "type": 3,
+          "name": "Postseason",
+          "abbreviation": "post",
+          "year": 2012,
+          "startDate": "2012-12-11T08:00Z",
+          "endDate": "2013-01-18T07:59Z",
+          "hasGroups": false,
+          "hasStandings": true,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/3/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/3/weeks?lang=en&region=us"
+          },
+          "leaders": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/3/leaders?lang=en&region=us"
+          },
+          "slug": "post-season"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/4?lang=en&region=us",
+          "id": "4",
+          "type": 4,
+          "name": "Off Season",
+          "abbreviation": "off",
+          "year": 2012,
+          "startDate": "2013-01-18T08:00Z",
+          "endDate": "2013-07-01T06:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLegs": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/4/groups?lang=en&region=us"
+          },
+          "weeks": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/4/weeks?lang=en&region=us"
+          },
+          "slug": "off-season"
+        }
+      ]
+    },
+    "rankings": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/rankings?lang=en&region=us"
+    },
+    "athletes": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/athletes?lang=en&region=us"
+    },
+    "awards": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/awards?lang=en&region=us"
+    },
+    "leaders": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/types/2/leaders?lang=en&region=us"
+    }
+  },
+  "ranks": [
+    {
+      "current": 1,
+      "previous": 1,
+      "points": 0.0,
+      "firstPlaceVotes": 60,
+      "trend": "-",
+      "record": {
+        "summary": "12-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 12.0,
+            "displayValue": "12"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/87?lang=en&region=us"
+      }
+    },
+    {
+      "current": 2,
+      "previous": 2,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/333?lang=en&region=us"
+      }
+    },
+    {
+      "current": 3,
+      "previous": 3,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/61?lang=en&region=us"
+      }
+    },
+    {
+      "current": 4,
+      "previous": 4,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "12-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 12.0,
+            "displayValue": "12"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/194?lang=en&region=us"
+      }
+    },
+    {
+      "current": 5,
+      "previous": 6,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+1",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/57?lang=en&region=us"
+      }
+    },
+    {
+      "current": 6,
+      "previous": 5,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-1",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2483?lang=en&region=us"
+      }
+    },
+    {
+      "current": 7,
+      "previous": 7,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "10-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2306?lang=en&region=us"
+      }
+    },
+    {
+      "current": 8,
+      "previous": 11,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+3",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/24?lang=en&region=us"
+      }
+    },
+    {
+      "current": 9,
+      "previous": 8,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-1",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/99?lang=en&region=us"
+      }
+    },
+    {
+      "current": 10,
+      "previous": 9,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-1",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/245?lang=en&region=us"
+      }
+    },
+    {
+      "current": 11,
+      "previous": 13,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+2",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2579?lang=en&region=us"
+      }
+    },
+    {
+      "current": 12,
+      "previous": 14,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+2",
+      "record": {
+        "summary": "9-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 9.0,
+            "displayValue": "9"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/201?lang=en&region=us"
+      }
+    },
+    {
+      "current": 13,
+      "previous": 10,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-3",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/52?lang=en&region=us"
+      }
+    },
+    {
+      "current": 14,
+      "previous": 17,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+3",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/158?lang=en&region=us"
+      }
+    },
+    {
+      "current": 15,
+      "previous": 12,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-3",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/228?lang=en&region=us"
+      }
+    },
+    {
+      "current": 16,
+      "previous": 16,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-",
+      "record": {
+        "summary": "8-3",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 8.0,
+            "displayValue": "8"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 3.0,
+            "displayValue": "3"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/204?lang=en&region=us"
+      }
+    },
+    {
+      "current": 17,
+      "previous": 15,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-2",
+      "record": {
+        "summary": "9-3",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 9.0,
+            "displayValue": "9"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 3.0,
+            "displayValue": "3"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/26?lang=en&region=us"
+      }
+    },
+    {
+      "current": 18,
+      "previous": 23,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+5",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2309?lang=en&region=us"
+      }
+    },
+    {
+      "current": 19,
+      "previous": 24,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+5",
+      "record": {
+        "summary": "11-1",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 11.0,
+            "displayValue": "11"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 1.0,
+            "displayValue": "1"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2459?lang=en&region=us"
+      }
+    },
+    {
+      "current": 20,
+      "previous": 25,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+5",
+      "record": {
+        "summary": "10-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 10.0,
+            "displayValue": "10"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/328?lang=en&region=us"
+      }
+    },
+    {
+      "current": 21,
+      "previous": 20,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-1",
+      "record": {
+        "summary": "8-4",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 8.0,
+            "displayValue": "8"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 4.0,
+            "displayValue": "4"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/130?lang=en&region=us"
+      }
+    },
+    {
+      "current": 22,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+4",
+      "record": {
+        "summary": "9-3",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 9.0,
+            "displayValue": "9"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 3.0,
+            "displayValue": "3"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/77?lang=en&region=us"
+      }
+    },
+    {
+      "current": 23,
+      "previous": 18,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-5",
+      "record": {
+        "summary": "8-3",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 8.0,
+            "displayValue": "8"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 3.0,
+            "displayValue": "3"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/251?lang=en&region=us"
+      }
+    },
+    {
+      "current": 24,
+      "previous": 22,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "-2",
+      "record": {
+        "summary": "7-4",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 7.0,
+            "displayValue": "7"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 4.0,
+            "displayValue": "4"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/197?lang=en&region=us"
+      }
+    },
+    {
+      "current": 25,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+1",
+      "record": {
+        "summary": "9-2",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 9.0,
+            "displayValue": "9"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 2.0,
+            "displayValue": "2"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/68?lang=en&region=us"
+      }
+    }
+  ],
+  "others": [
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/23?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 19,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+19",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/97?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2628?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/213?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 21,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+21",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/164?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/238?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/21?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/278?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/30?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2032?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/12?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2132?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/2050?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 25,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+25",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/344?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 0,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+26",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/153?lang=en&region=us"
+      }
+    }
+  ],
+  "droppedOut": [
+    {
+      "current": 0,
+      "previous": 19,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+19",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/97?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 21,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+21",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/164?lang=en&region=us"
+      }
+    },
+    {
+      "current": 0,
+      "previous": 25,
+      "points": 0.0,
+      "firstPlaceVotes": 0,
+      "trend": "+25",
+      "record": {
+        "summary": "0-0",
+        "stats": [
+          {
+            "name": "wins",
+            "displayName": "Wins",
+            "shortDisplayName": "W",
+            "description": "Wins",
+            "abbreviation": "W",
+            "type": "wins",
+            "value": 0.0,
+            "displayValue": "0"
+          },
+          {
+            "name": "losses",
+            "displayName": "Losses",
+            "shortDisplayName": "L",
+            "description": "Losses",
+            "abbreviation": "L",
+            "type": "losses",
+            "value": 0.0,
+            "displayValue": "0"
+          }
+        ]
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2012/teams/344?lang=en&region=us"
+      }
+    }
+  ],
+  "availability": {}
+}

@@ -13,28 +13,29 @@ public class SeasonRankingEntry : CanonicalEntityBase<Guid>
     public Guid SeasonRankingId { get; set; }
     public SeasonRanking SeasonRanking { get; set; } = null!;
 
+    // "ranks" | "others"
+    public required string SourceList { get; set; } = "ranks";
+
     // Rank row
-    public int Current { get; set; }                      // 1..25 or 0 for “others”
+    public int Current { get; set; }                  // 1..25 or 0 for “others”
     public int Previous { get; set; }
-    public decimal Points { get; set; }                   // votes/points
+    public decimal Points { get; set; }               // votes/points
     public int FirstPlaceVotes { get; set; }
-    public string Trend { get; set; } = "-";              // "-" or up/down indicator
-    public bool IsOtherReceivingVotes { get; set; }       // true for the “others” list
+    public string Trend { get; set; } = "-";          // "-" or up/down indicator
+    public bool IsOtherReceivingVotes { get; set; }   // consider deriving from SourceList
 
-    // Team linkage — resolve to Franchise (or FranchiseSeason) when available
-    public Guid? FranchiseId { get; set; }                // nullable until resolved
-    public Guid? FranchiseSeasonId { get; set; }
-    public string TeamRefUrlHash { get; set; } = null!;   // stable key from ESPN $ref
+    // Team linkage — now required to enforce uniqueness correctly
+    public Guid FranchiseSeasonId { get; set; }
+    public FranchiseSeason FranchiseSeason { get; set; } = null!;
 
-    // Record snapshot (kept flexible)
-    public string? RecordSummary { get; set; }            // "0-0"
+    // Record snapshot
+    public string? RecordSummary { get; set; }        // "0-0"
     public int? Wins { get; set; }
     public int? Losses { get; set; }
 
-    public DateTime RowDateUtc { get; set; }              // dto.date
-    public DateTime RowLastUpdatedUtc { get; set; }       // dto.lastUpdated
+    public DateTime? RowDateUtc { get; set; }         // dto.date (UTC)
+    public DateTime? RowLastUpdatedUtc { get; set; }  // dto.lastUpdated (UTC)
 
-    // Optional: keep arbitrary stats (if you want full fidelity)
     public ICollection<SeasonRankingEntryStat> Stats { get; set; } = [];
 
     public class EntityConfiguration : IEntityTypeConfiguration<SeasonRankingEntry>
@@ -47,29 +48,35 @@ public class SeasonRankingEntry : CanonicalEntityBase<Guid>
             builder.Property(e => e.Id).ValueGeneratedNever();
 
             // Requireds / lengths
-            builder.Property(e => e.TeamRefUrlHash).IsRequired().HasMaxLength(128);
+            builder.Property(e => e.SourceList)
+                   .IsRequired()
+                   .HasMaxLength(16);
+
             builder.Property(e => e.Trend).HasMaxLength(8);
             builder.Property(e => e.RecordSummary).HasMaxLength(32);
 
-            builder.Property(e => e.Points).HasColumnType("decimal(10,2)");
-
-            builder.Property(e => e.RowDateUtc).IsRequired();
-            builder.Property(e => e.RowLastUpdatedUtc).IsRequired();
+            // Provider-agnostic decimal precision
+            builder.Property(e => e.Points).HasPrecision(18, 6);
 
             // Relationships
             builder.HasOne(e => e.SeasonRanking)
-                .WithMany(r => r.Entries)
-                .HasForeignKey(e => e.SeasonRankingId)
-                .OnDelete(DeleteBehavior.Cascade);
+                   .WithMany(r => r.Entries)
+                   .HasForeignKey(e => e.SeasonRankingId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(e => e.FranchiseSeason)
+                   .WithMany() // or .WithMany(fs => fs.SeasonRankingEntries)
+                   .HasForeignKey(e => e.FranchiseSeasonId)
+                   .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(e => e.Stats)
-                .WithOne(s => s.Entry)
-                .HasForeignKey(s => s.SeasonRankingEntryId)
-                .OnDelete(DeleteBehavior.Cascade);
+                   .WithOne(s => s.Entry)
+                   .HasForeignKey(s => s.SeasonRankingEntryId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Indexes / uniqueness
-            builder.HasIndex(e => new { e.SeasonRankingId, e.TeamRefUrlHash }).IsUnique();
-            builder.HasIndex(e => new { e.SeasonRankingId, e.Current }); // optional query aid
+            // Strict uniqueness per poll occurrence, team-season, and source list
+            builder.HasIndex(e => new { e.SeasonRankingId, e.FranchiseSeasonId, e.SourceList })
+                   .IsUnique();
         }
     }
 }

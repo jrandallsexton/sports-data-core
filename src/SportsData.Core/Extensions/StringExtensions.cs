@@ -39,5 +39,12 @@ namespace SportsData.Core.Extensions
             var byteCount = System.Text.Encoding.UTF8.GetByteCount(str);
             return byteCount / 1024;
         }
+
+        public static DateTime? TryParseUtcNullable(this string? dateStr)
+        {
+            return DateTime.TryParse(dateStr, out var dt)
+                ? dt.ToUniversalTime()
+                : null;
+        }
     }
 }

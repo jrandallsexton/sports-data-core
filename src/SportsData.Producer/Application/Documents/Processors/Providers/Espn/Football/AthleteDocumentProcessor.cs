@@ -10,6 +10,7 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -42,13 +43,28 @@ public class AthleteDocumentProcessor : IProcessDocuments
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId
+               }))
         {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Began with {@command}", command);
-
-            await ProcessInternal(command);
+            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                throw;
+            }
         }
     }
 
@@ -116,8 +132,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
             await _dataContext.SaveChangesAsync();
 
             _logger.LogWarning("No AthletePosition found. {@Identity}", positionIdentity);
-            throw new InvalidOperationException($"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
-                                                $"Please ensure the position document is processed before this athlete.");
+            throw new ExternalDocumentNotSourcedException($"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
+                                                          $"Please ensure the position document is processed before this athlete.");
 
         }
 

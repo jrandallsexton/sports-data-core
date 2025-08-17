@@ -44,7 +44,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public EspnLinkDto SeasonType { get; set; }
 
         [JsonPropertyName("week")]
-        public EspnLinkDto Week { get; set; }
+        public EspnLinkDto? Week { get; set; }
 
         [JsonPropertyName("timeValid")]
         public bool TimeValid { get; set; }

@@ -10,6 +10,7 @@ using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -40,14 +41,22 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId
+               }))
         {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Began processing TeamSeason with {@Command}", command);
+            _logger.LogInformation("Processing EventDocument with {@Command}", command);
             try
             {
                 await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -88,14 +97,12 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         var franchise = await _dataContext.Franchises
-            .Include(f => f.ExternalIds)
             .Include(f => f.Seasons)
-            .FirstOrDefaultAsync(f => f.ExternalIds.Any(id => id.SourceUrlHash == franchiseIdentity.UrlHash &&
-                                                              id.Provider == command.SourceDataProvider));
+            .FirstOrDefaultAsync(x => x.Id == franchiseIdentity.CanonicalId);
 
         if (franchise is null)
         {
-            _logger.LogError("Franchise not found. {@Identity}", franchiseIdentity);
+            _logger.LogWarning("Franchise not found. {@Identity}", franchiseIdentity);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: franchiseIdentity.UrlHash,
@@ -111,7 +118,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
-            throw new InvalidOperationException($"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
+            throw new ExternalDocumentNotSourcedException($"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
         }
 
         var franchiseSeasonId = DeterministicGuid.Combine(franchise.Id, command.Season.Value);

@@ -20,7 +20,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             return new CompetitionProbability
             {
-                Id = identity.CanonicalId,
+                Id = Guid.NewGuid(),
                 CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,
 

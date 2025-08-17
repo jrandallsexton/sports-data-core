@@ -55,5 +55,20 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             Action act = () => EspnUriMapper.TeamSeasonToFranchiseRef(null!);
             act.Should().Throw<ArgumentNullException>();
         }
+
+        // 5) Happy path: AthleteSeason to Athlete with querystring and HTTPS preserved
+        [Theory]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333?lang=en&region=us")]
+        public void AthleteSeasonToAthleteRef_Should_Map_To_Athlete_And_Preserve_Query_Https(
+            string athleteSeasonRef,
+            string expectedAthleteRef)
+        {
+            var input = new Uri(athleteSeasonRef);
+            var result = EspnUriMapper.AthleteSeasonToAthleteRef(input);
+            result.Should().Be(new Uri(expectedAthleteRef));
+        }
+
     }
 }

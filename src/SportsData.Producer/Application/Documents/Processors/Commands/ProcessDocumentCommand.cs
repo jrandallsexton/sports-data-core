@@ -12,7 +12,8 @@ public class ProcessDocumentCommand(
     string? parentId,
     Uri sourceUri,
     string urlHash,
-    Uri? originalUri = null)
+    Uri? originalUri = null,
+    int attemptCount = 0)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -33,4 +34,6 @@ public class ProcessDocumentCommand(
     public string UrlHash { get; init; } = urlHash;
 
     public Uri? OriginalUri { get; init; } = originalUri;
+
+    public int AttemptCount { get; init; } = attemptCount;
 }

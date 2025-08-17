@@ -49,7 +49,7 @@ public static class PlayExtensions
             StartYardsToEndzone = dto.Start?.YardsToEndzone,
             StatYardage = dto.StatYardage,
             TeamFranchiseSeasonId = teamFranchiseSeasonId,
-            Text = dto.Text,
+            Text = dto.Text ?? "UNK", // TODO: This popped up as null in some data; need to investigate
             Type = dto.Type?.Id is null ? PlayType.Unknown: Enum.Parse<PlayType>(dto.Type.Id),
             TypeId = dto.Type?.Id is null ? "9999" : dto.Type.Id,
             ExternalIds = new List<PlayExternalId>

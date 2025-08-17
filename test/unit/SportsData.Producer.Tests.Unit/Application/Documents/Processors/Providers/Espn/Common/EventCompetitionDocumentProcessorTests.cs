@@ -5,12 +5,13 @@ using FluentAssertions;
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
+
 using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -47,12 +48,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
-
-            Mocker.GetMock<IProvideProviders>()
-                .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>()))
-                .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
-                    .OmitAutoProperties()
-                    .Create());
 
             var bus = Mocker.GetMock<IPublishEndpoint>();
 
@@ -140,6 +135,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .FirstOrDefaultAsync(c => c.Id == contest.Id);
 
             contest.Should().NotBeNull();
+
+            bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.EventCompetitionStatus), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

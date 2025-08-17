@@ -16,7 +16,7 @@ public class SeasonRankingEntryStat : CanonicalEntityBase<Guid>
     public string Description { get; set; } = null!;
     public string Abbreviation { get; set; } = null!;     // "W"
     public string Type { get; set; } = null!;             // "wins"
-    public decimal Value { get; set; }                    // 0
+    public decimal? Value { get; set; }                    // 0
     public string DisplayValue { get; set; } = null!;     // "0"
 
     public class EntityConfiguration : IEntityTypeConfiguration<SeasonRankingEntryStat>

@@ -8,8 +8,6 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
-using System.Text.Json;
-
 namespace SportsData.Provider.Application.Documents;
 
 public class DocumentRequestedHandler : IConsumer<DocumentRequested>
@@ -17,6 +15,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideEspnApiData _espnApi;
     private readonly ILogger<DocumentRequestedHandler> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
+
+    private DocumentRequested _msg = null!;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
@@ -30,10 +30,41 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
     {
-        var msg = context.Message;
-        _logger.LogInformation("Handling DocumentRequested: {Msg}", msg);
+        _msg = context.Message;
+        _logger.LogInformation("Handling DocumentRequested: {Msg}", _msg);
 
-        var uri = msg.Uri;
+        var uri = _msg.Uri;
+
+        if (IsResourceIndex(uri))
+        {
+            await ProcessResourceIndex(uri);
+        }
+        else
+        {
+            ProcessResourceIndexItem(uri);
+        }
+    }
+
+    private void ProcessResourceIndexItem(Uri uri)
+    {
+        var urlHash = HashProvider.GenerateHashFromUri(uri);
+
+        var cmd = new ProcessResourceIndexItemCommand(
+            ResourceIndexId: Guid.Empty,
+            Id: urlHash,
+            Uri: uri,
+            Sport: _msg.Sport,
+            SourceDataProvider: _msg.SourceDataProvider,
+            DocumentType: _msg.DocumentType,
+            ParentId: _msg.ParentId,
+            SeasonYear: _msg.SeasonYear);
+
+        _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
+        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+    }
+
+    private async Task ProcessResourceIndex(Uri uri)
+    {
         var seenPages = new HashSet<string>();
         var enqueuedAnyRefs = false;
 
@@ -43,12 +74,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             try
             {
-                // Fetch the first version from cache
-                json = await _espnApi.GetResource(uri, bypassCache: false);
+                json = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to fetch resource at {Uri}. Aborting pagination at this point.", uri);
+                _logger.LogWarning(ex, "Failed to fetch resource index at {Uri}. Aborting.", uri);
                 break;
             }
 
@@ -56,25 +86,16 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             try
             {
                 dto = json.FromJson<EspnResourceIndexDto>();
-
-                // If it's a ResourceIndex, re-fetch uncached and re-parse
-                if (dto?.Items is { Count: > 0 })
-                {
-                    _logger.LogInformation("Detected ResourceIndex at {Uri}. Re-fetching without cache.", uri);
-                    json = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
-                    dto = json.FromJson<EspnResourceIndexDto>();
-                }
             }
-            catch (JsonException)
+            catch (Exception ex)
             {
-                _logger.LogDebug("Not a ResourceIndex. Will treat as a leaf document: {Uri}", uri);
-                dto = null;
+                _logger.LogWarning(ex, "Failed to parse ResourceIndex JSON at {Uri}. Aborting.", uri);
+                break;
             }
 
-            // If we did not get a valid ResourceIndex, treat as leaf and exit
-            if (dto?.Items is not { Count: > 0 })
+            if (dto == null || dto.Items == null || dto.Items.Count == 0)
             {
-                _logger.LogInformation("No items found in resource index at {Uri}", uri);
+                _logger.LogInformation("Empty ResourceIndex at {Uri}. Nothing to enqueue.", uri);
                 break;
             }
 
@@ -84,7 +105,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 if (item.Ref is null)
                 {
-                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex); // TODO: THUR - investigate
+                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
                     continue;
                 }
 
@@ -95,11 +116,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     ResourceIndexId: Guid.Empty,
                     Id: refHash,
                     Uri: refUri,
-                    Sport: msg.Sport,
-                    SourceDataProvider: msg.SourceDataProvider,
-                    DocumentType: msg.DocumentType,
-                    ParentId: msg.ParentId,
-                    SeasonYear: msg.SeasonYear);
+                    Sport: _msg.Sport,
+                    SourceDataProvider: _msg.SourceDataProvider,
+                    DocumentType: _msg.DocumentType,
+                    ParentId: _msg.ParentId,
+                    SeasonYear: _msg.SeasonYear);
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;
@@ -112,43 +133,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             }
 
             var nextPage = dto.PageIndex + 1;
-            var baseUri = msg.Uri.GetLeftPart(UriPartial.Path);
+            var baseUri = uri.GetLeftPart(UriPartial.Path);
             uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
         }
 
-
         if (enqueuedAnyRefs)
         {
-            _logger.LogInformation("All resource index items queued. No need to persist index document.");
-            return;
+            _logger.LogInformation("All resource index items queued.");
         }
-
-        // Treat as a leaf document
-        _logger.LogInformation("No refs found. Treating {Uri} as a leaf document.", uri);
-
-        var urlHash = HashProvider.GenerateHashFromUri(uri!);
-
-        var leafCmd = new ProcessResourceIndexItemCommand(
-            ResourceIndexId: Guid.Empty,
-            Id: urlHash,
-            Uri: uri!,
-            Sport: msg.Sport,
-            SourceDataProvider: msg.SourceDataProvider,
-            DocumentType: msg.DocumentType,
-            ParentId: msg.ParentId,
-            SeasonYear: msg.SeasonYear);
-
-        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(leafCmd));
     }
 
     private static bool IsResourceIndex(Uri uri)
     {
-        // Strip trailing slash if present
         var last = uri.Segments.Last().TrimEnd('/');
-
-        // If the last segment parses to a number → it's an item (leaf).
-        // Otherwise → it's an index.
         return !long.TryParse(last, out _);
     }
-
 }

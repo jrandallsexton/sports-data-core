@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -12,10 +13,6 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
-    /// <summary>
-    /// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/probabilities?lang=en
-    /// </summary>
-    /// <typeparam name="TDataContext"></typeparam>
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionProbability)]
     public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProcessDocuments
         where TDataContext : TeamSportDataContext
@@ -40,9 +37,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = command.CorrelationId
-                   }))
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
             {
                 _logger.LogInformation("Began with {@command}", command);
 
@@ -97,16 +94,49 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     _logger);
             }
 
-            var entity = dto.AsEntity(
+            var newEntity = dto.AsEntity(
                 _externalRefIdentityGenerator,
                 competitionId.Value,
                 playId,
                 command.CorrelationId);
 
-            await _dataContext.CompetitionProbabilities.AddAsync(entity);
+            var lastSaved = await _dataContext.CompetitionProbabilities
+                .Where(x => x.CompetitionId == competitionId.Value)
+                .OrderByDescending(x => x.CreatedUtc)
+                .FirstOrDefaultAsync();
+
+            bool hasChanged = lastSaved is null ||
+                              lastSaved.HomeWinPercentage != newEntity.HomeWinPercentage ||
+                              lastSaved.AwayWinPercentage != newEntity.AwayWinPercentage ||
+                              lastSaved.TiePercentage != newEntity.TiePercentage ||
+                              lastSaved.SecondsLeft != newEntity.SecondsLeft;
+
+            if (!hasChanged)
+            {
+                _logger.LogInformation("No probability change detected for competition {competitionId}; skipping persistence.", competitionId);
+                return;
+            }
+
+            await _publishEndpoint.Publish(new CompetitionWinProbabilityChanged(
+                newEntity.CompetitionId,
+                newEntity.PlayId,
+                newEntity.HomeWinPercentage,
+                newEntity.AwayWinPercentage,
+                newEntity.TiePercentage,
+                newEntity.SecondsLeft,
+                DateTime.Parse(dto.LastModified).ToUniversalTime(),
+                command.SourceDataProvider.ToString().ToLowerInvariant(),
+                dto.Ref?.ToString() ?? string.Empty,
+                dto.SequenceNumber,
+                command.CorrelationId,
+                CausationId.Producer.EventCompetitionProbabilityDocumentProcessor
+            ));
+
+            await _dataContext.CompetitionProbabilities.AddAsync(newEntity);
             await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation("Persisted CompetitionProbability: {id}", entity.Id);
+            _logger.LogInformation("Persisted new CompetitionProbability snapshot: {id}", newEntity.Id);
+
         }
     }
 }

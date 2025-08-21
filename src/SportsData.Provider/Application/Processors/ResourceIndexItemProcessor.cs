@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Provider.Infrastructure.Data;
@@ -23,7 +22,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly AppDataContext _dataContext;
         private readonly IProvideEspnApiData _espnApi;
         private readonly IDocumentStore _documentStore;
-        private readonly IPublishEndpoint _publisher;
+        private readonly IEventBus _publisher;
         private readonly IJsonHashCalculator _jsonHashCalculator;
         private readonly IConfiguration _commonConfig;
         private readonly IGenerateExternalRefIdentities _identityGenerator;
@@ -33,7 +32,7 @@ namespace SportsData.Provider.Application.Processors
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             IDocumentStore documentStore,
-            IPublishEndpoint publisher,
+            IEventBus publisher,
             IJsonHashCalculator jsonHashCalculator,
             IConfiguration commonConfig,
             IGenerateExternalRefIdentities identityGenerator)
@@ -221,6 +220,7 @@ namespace SportsData.Provider.Application.Processors
     }
 
     public record ProcessResourceIndexItemCommand(
+        Guid CorrelationId,
         Guid ResourceIndexId,
         string Id,
         Uri Uri,

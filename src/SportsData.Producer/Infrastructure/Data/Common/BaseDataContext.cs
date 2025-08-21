@@ -24,6 +24,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<Season> Seasons { get; set; }
 
+        public DbSet<SeasonPoll> SeasonPolls { get; set; }
+
         public DbSet<SeasonWeek> SeasonWeeks { get; set; }
 
         public DbSet<SeasonExternalId> SeasonExternalIds { get; set; }
@@ -62,6 +64,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new SeasonExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPhase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPhaseExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonPoll.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonRanking.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonRankingExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonRankingEntry.EntityConfiguration());

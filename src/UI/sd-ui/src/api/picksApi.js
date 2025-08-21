@@ -1,10 +1,8 @@
 import apiClient from "./apiClient";
 
-export async function submitPicks(groupId, week, picks) {
-  const response = await apiClient.post(`/picks`, {
-    groupId,
-    week,
-    picks,
-  });
-  return response.data;
-}
+const PicksApi = {
+  submitPick: (pick) => apiClient.post("/ui/picks", pick),
+  getUserPicksByWeek: (groupId, week) =>  apiClient.get(`/ui/picks/${groupId}/week/${week}`)
+};
+
+export default PicksApi;

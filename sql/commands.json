@@ -1,0 +1,64 @@
+// EventCompetitionPlay
+{
+  "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "causationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "createdUtc": "2025-07-30T10:58:45.412Z",
+  "id": "0",
+  "parentId": null,
+  "uri": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays",
+  "sport": 2,
+  "seasonYear": 2024,
+  "documentType": 44,
+  "sourceDataProvider": 0
+}
+
+// EventCompetitionCompetitor
+{
+  "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "causationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "createdUtc": "2025-08-03T10:58:45.412Z",
+  "id": "0",
+  "parentId": "6fe167b3-01a4-ce7a-4caa-2d8ea922f983",
+  "uri": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99?lang=en&region=us",
+  "sport": 2,
+  "seasonYear": 2024,
+  "documentType": 50,
+  "sourceDataProvider": 0
+}
+
+// EventCompetitionOdds
+{
+  "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "causationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "createdUtc": "2025-08-10T08:34:45.412Z",
+  "id": "0",
+  "parentId": "f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652",
+  "uri": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/odds/58?lang=en",
+  "sport": 2,
+  "seasonYear": 2025,
+  "documentType": 11,
+  "sourceDataProvider": 0
+}
+
+// External Image (AthleteImage)
+{
+  "canonicalId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "uri": "https://a.espncdn.com/i/headshots/college-football/players/full/4426333.png",
+  "sourceDataProvider": 0,
+  "sport": 2,
+  "documentType": 2,
+  "seasonYear": 0
+}
+
+// POST /resourceIndex (new season sourcing)
+{
+  "sport": 2,
+  "sourceDataProvider": 0,
+  "documentType": 32,
+  "seasonYear": 2024
+  "ref": "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024",
+  "isRecurring": false,
+  "cronExpression": null,
+  "isEnabled": true,
+  "shape": 2  
+}

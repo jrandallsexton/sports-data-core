@@ -90,6 +90,9 @@ namespace SportsData.Provider.Migrations
                     b.Property<int?>("SeasonYear")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Shape")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SourceUrlHash")
                         .IsRequired()
                         .HasMaxLength(64)

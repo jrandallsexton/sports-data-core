@@ -28,7 +28,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(e => e.SeasonId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
-
         }
     }
 }

@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -18,13 +17,13 @@ public class CoachRecordDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<CoachRecordDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public CoachRecordDocumentProcessor(
         ILogger<CoachRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;

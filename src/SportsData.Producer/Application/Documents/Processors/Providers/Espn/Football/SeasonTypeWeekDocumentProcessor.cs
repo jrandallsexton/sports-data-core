@@ -1,13 +1,14 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -21,13 +22,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<SeasonTypeWeekDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
 
         public SeasonTypeWeekDocumentProcessor(
             ILogger<SeasonTypeWeekDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IPublishEndpoint publishEndpoint)
+            IEventBus publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -47,6 +48,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 try
                 {
                     await ProcessInternal(command);
+                }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -70,18 +79,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
-            var seasonPhase = await _dataContext.SeasonPhases
-                .Include(x => x.Weeks)
-                .ThenInclude(w => w.ExternalIds)
-                .Where(x => x.Id == seasonPhaseId)
-                .FirstOrDefaultAsync();
-
-            if (seasonPhase == null)
-            {
-                _logger.LogError("Could not find SeasonPhase with Id {SeasonPhaseId}", seasonPhaseId);
-                return;
-            }
-            
             var externalProviderDto = command.Document.FromJson<EspnFootballSeasonTypeWeekDto>();
 
             if (externalProviderDto is null)
@@ -94,6 +91,35 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogError("EspnFootballSeasonTypeWeekDto Ref is null or empty. {@Command}", command);
                 return;
+            }
+
+            var seasonPhase = await _dataContext.SeasonPhases
+                .Include(x => x.Weeks)
+                .ThenInclude(w => w.ExternalIds)
+                .Where(x => x.Id == seasonPhaseId)
+                .FirstOrDefaultAsync();
+
+            if (seasonPhase == null)
+            {
+                var seasonPhaseRef = EspnUriMapper.SeasonTypeWeekToSeasonType(externalProviderDto.Ref);
+                var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(seasonPhaseRef);
+
+                _logger.LogWarning("Could not find SeasonPhase with Id {SeasonPhaseId}", seasonPhaseId);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: seasonPhaseIdentity.UrlHash,
+                    ParentId: null,
+                    Uri: seasonPhaseRef,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.Franchise,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
             }
 
             var dtoIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);
@@ -124,20 +150,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 _externalRefIdentityGenerator,
                 command.CorrelationId);
 
-            if (dto.Rankings?.Ref is not null)
-            {
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: dtoIdentity.UrlHash,
-                    ParentId: seasonWeek.Id.ToString(),
-                    Uri: dto.Rankings.Ref,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season!.Value,
-                    DocumentType: DocumentType.SeasonTypeWeekRankings,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekDocumentProcessor
-                ));
-            }
+            // Note: Rankings are available here, but we skip processing them for now
 
             await _dataContext.SeasonWeeks.AddAsync(seasonWeek);
             await _dataContext.SaveChangesAsync();

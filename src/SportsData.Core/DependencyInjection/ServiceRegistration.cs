@@ -1,7 +1,6 @@
 ﻿using Hangfire;
 using Hangfire.PostgreSql;
-
-using MassTransit;
+using Hangfire.Tags.PostgreSql;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,21 +15,18 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
 using SportsData.Core.Config;
+using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Middleware.Health;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using Hangfire.Tags.PostgreSql;
-using SportsData.Core.Http.Policies;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -237,35 +233,35 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddMessaging(
-            this IServiceCollection services,
-            IConfiguration config,
-            List<Type>? consumers)
-        {
-            services.AddMassTransit(x =>
-            {
-                x.SetKebabCaseEndpointNameFormatter();
+        //internal static IServiceCollection AddMessaging(
+        //    this IServiceCollection services,
+        //    IConfiguration config,
+        //    List<Type>? consumers)
+        //{
+        //    services.AddMassTransit(x =>
+        //    {
+        //        x.SetKebabCaseEndpointNameFormatter();
 
-                consumers?.ForEach(z =>
-                {
-                    x.AddConsumer(z);
-                });
+        //        consumers?.ForEach(z =>
+        //        {
+        //            x.AddConsumer(z);
+        //        });
 
-                x.UsingAzureServiceBus((context, cfg) =>
-                {
-                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
-                    cfg.Host(sbConnString);
-                    //cfg.ClearSerialization();
-                    cfg.ConfigureJsonSerializerOptions(o =>
-                    {
-                        o.IncludeFields = true;
-                        return o;
-                    });
-                    cfg.ConfigureEndpoints(context);
-                });
-            });
-            return services;
-        }
+        //        x.UsingAzureServiceBus((context, cfg) =>
+        //        {
+        //            var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+        //            cfg.Host(sbConnString);
+        //            //cfg.ClearSerialization();
+        //            cfg.ConfigureJsonSerializerOptions(o =>
+        //            {
+        //                o.IncludeFields = true;
+        //                return o;
+        //            });
+        //            cfg.ConfigureEndpoints(context);
+        //        });
+        //    });
+        //    return services;
+        //}
 
         public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
@@ -313,7 +309,6 @@ namespace SportsData.Core.DependencyInjection
 
             return services;
         }
-
 
         private static IServiceCollection AddClient<TService, TImplementation>(
             this IServiceCollection services,

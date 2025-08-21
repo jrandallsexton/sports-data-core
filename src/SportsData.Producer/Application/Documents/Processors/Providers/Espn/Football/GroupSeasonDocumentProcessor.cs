@@ -1,11 +1,14 @@
-﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -16,13 +19,13 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<GroupSeasonDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public GroupSeasonDocumentProcessor(
         ILogger<GroupSeasonDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -41,6 +44,14 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
             try
             {
                 await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -79,33 +90,89 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
         EspnGroupSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var entity = dto.AsEntity(
+        var groupSeasonEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
             command.Season!.Value,
             command.CorrelationId);
 
         // seasonRef
-        var seasonId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Season,
-            command.SourceDataProvider,
-            () => _dataContext.Seasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
-        entity.SeasonId = seasonId;
+        if (dto.Season?.Ref is not null)
+        {
+            var seasonId = await _dataContext.TryResolveFromDtoRefAsync(
+                dto.Season,
+                command.SourceDataProvider,
+                () => _dataContext.Seasons.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger);
 
-        // handle parent?
-        var parentId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Parent,
-            command.SourceDataProvider,
-            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
-        entity.ParentId = parentId;
+            if (seasonId is null)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: null,
+                    Uri: dto.Season.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season!.Value,
+                    DocumentType: DocumentType.Season,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+                ));
 
-        // spawn child documents?
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Will retry.");
+            }
+            groupSeasonEntity.SeasonId = seasonId;
+        }
+
+        // handle parent
+        if (dto.Parent?.Ref is not null)
+        {
+            var parentId = await _dataContext.TryResolveFromDtoRefAsync(
+                dto.Parent,
+                command.SourceDataProvider,
+                () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger);
+
+            if (parentId is null)
+            {
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: Guid.NewGuid().ToString(),
+                    ParentId: null,
+                    Uri: dto.Parent.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season!.Value,
+                    DocumentType: DocumentType.GroupSeason,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+                ));
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Will retry.");
+            }
+            groupSeasonEntity.ParentId = parentId;
+        }
+
+        await ProcessChildren(dto, groupSeasonEntity, command);
+
+        await _dataContext.GroupSeasons.AddAsync(groupSeasonEntity);
+        await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessChildren(
+        EspnGroupSeasonDto dto,
+        GroupSeason groupSeasonEntity,
+        ProcessDocumentCommand command)
+    {
         if (dto.Children?.Ref is not null)
         {
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: Guid.NewGuid().ToString(),
-                ParentId: entity.Id.ToString(),
+                ParentId: groupSeasonEntity.Id.ToString(),
                 Uri: dto.Children.Ref,
                 Sport: command.Sport,
                 SeasonYear: command.Season!.Value,
@@ -119,31 +186,27 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
         // TODO: standings?
 
         // teams?
-        if (dto.Teams?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: entity.Id.ToString(),
-                Uri: dto.Teams.Ref,
-                Sport: command.Sport,
-                SeasonYear: command.Season!.Value,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-            ));
-        }
+        //if (dto.Teams?.Ref is not null)
+        //{
+        //    await _publishEndpoint.Publish(new DocumentRequested(
+        //        Id: Guid.NewGuid().ToString(),
+        //        ParentId: null,
+        //        Uri: dto.Teams.Ref,
+        //        Sport: command.Sport,
+        //        SeasonYear: command.Season!.Value,
+        //        DocumentType: DocumentType.TeamSeason,
+        //        SourceDataProvider: SourceDataProvider.Espn,
+        //        CorrelationId: command.CorrelationId,
+        //        CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+        //    ));
+        //}
 
         // TODO: links?
-
-        await _dataContext.GroupSeasons.AddAsync(entity);
-        await _dataContext.SaveChangesAsync();
     }
 
     private async Task HandleExisting()
     {
-        _logger.LogWarning("Updated detected. Not Implemented");
+        _logger.LogError("Updated detected. Not Implemented");
         await Task.Delay(100);
-        throw new NotImplementedException();
     }
 }

@@ -21,11 +21,11 @@ SELECT
   fsAway."Id" as "AwayFranchiseSeasonId",
   fAway."Slug" as "AwaySlug",
   fAway."DisplayName" as "Away",
-  null as "AwayRank",
+  fsrdAway."Current" as "AwayRank",
   fsHome."Id" as "HomeFranchiseSeasonId",
   fHome."Slug" as "HomeSlug",
   fHome."DisplayName" as "Home",
-  null as "HomeRank",
+  fsrdHome."Current" as "HomeRank",
   0 as "AwayWins",
   0 as "AwayLosses",
   0 as "AwayConferenceWins",
@@ -47,7 +47,11 @@ inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchise
 inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
 inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
+left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap'
+left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
+left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 WHERE c."Sport" = 2
-ORDER BY "StartDateUtc"
+ORDER BY "StartDateUtc", "Home"
 
---select * from public."Venue"
+-- TODO: 18 Aug: Make this work by passing in a list of ContestIds

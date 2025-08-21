@@ -27,7 +27,7 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateAsync([FromBody] CreateLeagueRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateLeagueRequest request)
     {
         var userId = HttpContext.GetCurrentUserId();
 
@@ -129,9 +129,8 @@ public class LeagueController : ApiControllerBase
     //[Authorize]
     public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(Guid id, int week)
     {
-        var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(id, week);
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
         return Ok(result);
     }
-
-
 }

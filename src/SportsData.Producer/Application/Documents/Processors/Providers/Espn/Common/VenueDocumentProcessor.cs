@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Eventing.Events;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
@@ -21,13 +21,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
     {
         private readonly ILogger<VenueDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public VenueDocumentProcessor(
             ILogger<VenueDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
+            IEventBus publishEndpoint,
             IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
@@ -72,7 +72,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
             if (exists)
             {
-                await ProcessUpdate(command, espnDto);
+                _logger.LogInformation("Update detected; not implemented");
+                //await ProcessUpdate(command, espnDto);
             }
             else
             {
@@ -91,21 +92,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             _dataContext.Add(newEntity);
 
             // 2. Any images?
-            var events = EventFactory.CreateProcessImageRequests(
-                dto.Images,
-                newEntity.Id,
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                command.CorrelationId,
-                CausationId.Producer.VenueDocumentProcessor);
+            //var events = EventFactory.CreateProcessImageRequests(
+            //    dto.Images,
+            //    newEntity.Id,
+            //    command.Sport,
+            //    command.Season,
+            //    command.DocumentType,
+            //    command.SourceDataProvider,
+            //    command.CorrelationId,
+            //    CausationId.Producer.VenueDocumentProcessor);
 
-            if (events.Count > 0)
-            {
-                _logger.LogInformation("Requesting {Count} venue images.", events.Count);
-                await _publishEndpoint.PublishBatch(events);
-            }
+            //if (events.Count > 0)
+            //{
+            //    _logger.LogInformation("Requesting {Count} venue images.", events.Count);
+            //    await _publishEndpoint.PublishBatch(events);
+            //}
 
             // 2. raise an integration event with the canonical model
             var evt = new VenueCreated(

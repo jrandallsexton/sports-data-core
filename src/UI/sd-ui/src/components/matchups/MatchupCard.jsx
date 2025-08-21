@@ -1,10 +1,12 @@
 import "./MatchupCard.css";
-import { FaChartLine, FaLock } from "react-icons/fa";
+import { FaChartLine, FaLock, FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { formatToEasternTime } from "../../utils/timeUtils";
+import { useState, useEffect } from "react";
 
 function MatchupCard({
   matchup,
-  userPick,
+  userPickFranchiseSeasonId,
   onPick,
   onViewInsight,
   isInsightUnlocked,
@@ -12,10 +14,29 @@ function MatchupCard({
   const awaySpread = matchup.awaySpread ?? 0;
   const homeSpread = matchup.homeSpread ?? 0;
   const overUnder = matchup.overUnder ?? "TBD";
-  const gameTime = new Date(matchup.startDateUtc).toLocaleString();
+  const gameTime = formatToEasternTime(matchup.startDateUtc);
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
-  const seasonYear = matchup.seasonYear; // required for deep links
+  const seasonYear = matchup.seasonYear ?? 2025;
+
+  const isAwaySelected =
+    userPickFranchiseSeasonId === matchup.awayFranchiseSeasonId;
+  const isHomeSelected =
+    userPickFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 15000); // check every 15 seconds
+
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
+
+  const startTime = new Date(matchup.startDateUtc);
+  const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
+  const isLocked = now > lockTime;  
 
   return (
     <div className="matchup-card">
@@ -46,7 +67,8 @@ function MatchupCard({
                 Overall: {matchup.awayWins}-{matchup.awayLosses}
               </span>
               <span>
-                Conference: {matchup.awayConferenceWins}-{matchup.awayConferenceLosses}
+                Conference: {matchup.awayConferenceWins}-
+                {matchup.awayConferenceLosses}
               </span>
             </div>
           </div>
@@ -85,7 +107,8 @@ function MatchupCard({
                 Overall: {matchup.homeWins}-{matchup.homeLosses}
               </span>
               <span>
-                Conference: {matchup.homeConferenceWins}-{matchup.homeConferenceLosses}
+                Conference: {matchup.homeConferenceWins}-
+                {matchup.homeConferenceLosses}
               </span>
             </div>
           </div>
@@ -103,21 +126,24 @@ function MatchupCard({
 
       <div className="pick-buttons">
         <button
-          className={`pick-button ${
-            userPick === matchup.away ? "selected" : ""
-          }`}
-          onClick={() => onPick(matchup.contestId, matchup.away)}
+          className={`pick-button ${isAwaySelected ? "selected" : ""}`}
+          onClick={() => onPick(matchup, matchup.awayFranchiseSeasonId)}
+          disabled={isLocked}
         >
-          {matchup.away}
+          {isAwaySelected && <FaCheckCircle className="pick-check-icon" />}
+          {!isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {matchup.awayShort}
         </button>
 
         <button
           className="insight-button"
           onClick={() => onViewInsight(matchup)}
-          disabled={!isInsightUnlocked}
+          disabled={!isInsightUnlocked || isLocked}
           title={
             isInsightUnlocked
-              ? "View Insight"
+              ? isLocked
+                ? "Locked – game has started"
+                : "View Insight"
               : "Unlock Insights with Subscription"
           }
         >
@@ -125,12 +151,13 @@ function MatchupCard({
         </button>
 
         <button
-          className={`pick-button ${
-            userPick === matchup.home ? "selected" : ""
-          }`}
-          onClick={() => onPick(matchup.contestId, matchup.home)}
+          className={`pick-button ${isHomeSelected ? "selected" : ""}`}
+          onClick={() => onPick(matchup, matchup.homeFranchiseSeasonId)}
+          disabled={isLocked}
         >
-          {matchup.home}
+          {isHomeSelected && <FaCheckCircle className="pick-check-icon" />}
+          {!isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {matchup.homeShort}
         </button>
       </div>
     </div>

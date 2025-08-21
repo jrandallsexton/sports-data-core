@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
@@ -23,13 +22,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -134,6 +133,63 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
+    private async Task ProcessDependencies(
+        Franchise franchise,
+        FranchiseSeason canonicalEntity,
+        EspnTeamSeasonDto dto,
+        ProcessDocumentCommand command)
+    {
+        if (string.IsNullOrEmpty(canonicalEntity.ColorCodeHex))
+        {
+            canonicalEntity.ColorCodeHex = franchise.ColorCodeHex;
+        }
+
+        if (string.IsNullOrEmpty(canonicalEntity.Abbreviation))
+        {
+            canonicalEntity.Abbreviation = franchise.Abbreviation ?? "UNK";
+        }
+
+        // Resolve VenueId via SourceUrlHash
+        canonicalEntity.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
+            dto.Venue,
+            command.SourceDataProvider,
+            () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
+            _logger);
+
+        if (dto.Groups?.Ref is null)
+        {
+            _logger.LogInformation("No group reference found in the DTO for TeamSeason {Season}", command.Season);
+            return;
+        }
+
+        // Resolve GroupId via SourceUrlHash
+        canonicalEntity.GroupSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            dto.Groups,
+            command.SourceDataProvider,
+            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+            _logger);
+
+        if (canonicalEntity.GroupSeasonId is null)
+        {
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: Guid.NewGuid().ToString(),
+                ParentId: null,
+                Uri: dto.Groups.Ref,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.GroupSeason,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+            ));
+
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
+
+            throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Groups.Ref} not found. Will retry.");
+        }
+    }
+
     private async Task ProcessNewEntity(
         Franchise franchise,
         int seasonYear,
@@ -146,35 +202,30 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             seasonYear,
             command.CorrelationId);
 
-        if (string.IsNullOrEmpty(canonicalEntity.ColorCodeHex))
-        {
-            canonicalEntity.ColorCodeHex = franchise.ColorCodeHex;
-        }
+        await ProcessDependencies(franchise, canonicalEntity, dto, command);
 
-        if (string.IsNullOrEmpty(canonicalEntity.Abbreviation))
-        {
-            canonicalEntity.Abbreviation = franchise.Abbreviation ?? "UNK";
-        }
+        await ProcessDependents(canonicalEntity, dto, command);
 
+        await _dataContext.FranchiseSeasons.AddAsync(canonicalEntity);
+
+        await _publishEndpoint.Publish(new FranchiseSeasonCreated(
+            canonicalEntity.ToCanonicalModel(),
+            command.CorrelationId,
+            CausationId.Producer.TeamSeasonDocumentProcessor));
+
+        await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessDependents(
+        FranchiseSeason canonicalEntity,
+        EspnTeamSeasonDto dto,
+        ProcessDocumentCommand command)
+    {
         // logos
         await ProcessLogos(canonicalEntity.Id, dto, command);
 
         // Wins/Losses/PtsFor/PtsAgainst
         await ProcessRecord(canonicalEntity.Id, dto, command);
-
-        // Resolve VenueId via SourceUrlHash
-        canonicalEntity.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Venue,
-            command.SourceDataProvider,
-            () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
-
-        // Resolve GroupId via SourceUrlHash
-        canonicalEntity.GroupSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-            dto.Groups,
-            command.SourceDataProvider,
-            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
 
         // rankings
         await ProcessRanks(canonicalEntity.Id, dto, command);
@@ -204,15 +255,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         // Process coaches
         await ProcessCoaches(canonicalEntity.Id, dto, command);
-
-        await _dataContext.FranchiseSeasons.AddAsync(canonicalEntity);
-
-        await _publishEndpoint.Publish(new FranchiseSeasonCreated(
-            canonicalEntity.ToCanonicalModel(),
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-
-        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessRanks(
@@ -491,6 +533,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         // TODO: Compare and update if necessary
         // For now, log and skip
-        _logger.LogWarning("FranchiseSeason {Id} already exists. Skipping update.", existing.Id);
+        _logger.LogWarning("Update detected; not implemented");
     }
 }

@@ -1,8 +1,7 @@
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -14,12 +13,12 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : IProcessDocumen
 {
     private readonly TDataContext _dataContext;
     private readonly ILogger<TeamSeasonInjuriesDocumentProcessor<TDataContext>> _logger;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
 
     public TeamSeasonInjuriesDocumentProcessor(
         TDataContext dataContext,
         ILogger<TeamSeasonInjuriesDocumentProcessor<TDataContext>> logger,
-        IPublishEndpoint publishEndpoint)
+        IEventBus publishEndpoint)
     {
         _dataContext = dataContext;
         _logger = logger;

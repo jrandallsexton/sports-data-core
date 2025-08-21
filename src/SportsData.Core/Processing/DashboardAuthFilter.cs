@@ -1,6 +1,6 @@
 ﻿using Hangfire.Dashboard;
 
-namespace SportsData.Producer
+namespace SportsData.Core.Processing
 {
     public class DashboardAuthFilter : IDashboardAuthorizationFilter
     {

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -20,13 +21,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
         private readonly IGenerateExternalRefIdentities _identityGenerator;
 
         public EventCompetitionPowerIndexDocumentProcessor(
             ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
+            IEventBus publishEndpoint,
             IGenerateExternalRefIdentities identityGenerator)
         {
             _logger = logger;

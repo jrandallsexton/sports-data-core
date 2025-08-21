@@ -23,14 +23,15 @@ function MatchupList({
 
   return (
     <div className="matchup-list">
-      {matchups.map((matchup, index) => (
+      {matchups.map((matchup) => (
         <MatchupCard
-          key={matchup.ContestId}
+          key={matchup.contestId}
           matchup={matchup}
-          userPick={userPicks[matchup.ContestId]}
+          userPickFranchiseSeasonId={userPicks[matchup.contestId]}
           onPick={onPick}
           onViewInsight={onViewInsight}
-          isInsightUnlocked={index === 0 || isSubscribed}
+          isInsightUnlocked={true}
+          isSubscribed={isSubscribed}
         />
       ))}
     </div>

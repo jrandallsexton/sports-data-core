@@ -6,19 +6,27 @@ WHERE "DoB" > '2000-01-01'
   AND "FirstName" ~ '^[A-Za-z]+$';
 
  select * from public."AthletePosition" order by "Name"
- select * from public."AthletePositionExternalIds" where "AthletePositionId" = 'fadd0991-919d-4ab2-95a2-f0f1f205a25d'
+ select * from public."AthleteStatus" order by "Name"
+ select * from public."AthletePositionExternalId" where "AthletePositionId" = 'dc7e2d37-f4de-b44e-3b26-c3a65957f646'
   select * from public."AthletePositionExternalIds" where "SourceUrlHash" = '68bec6ae410c0b37bf0e4008de777012401b41cadf393b250c922fbdbed55313'
    select * from public."Franchise" order by "Slug"
    select * from public."Group" order by "Slug"
    select * from public."FranchiseLogo"
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'lsu-tigers'
-   select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
-   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '5a7ccba4-a844-ffd8-264b-5f5ba639983c'
+   select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc
+   select * from public."FranchiseSeason" where "Id" = '486bada5-3d1b-722c-d839-244618863cbb'
    
-   select * from public."FranchiseSeasonRanking"
-   select * from public."FranchiseSeasonRankingDetail"
+   
+   select * from public."FranchiseSeason" fs where fs."SeasonYear" = 2025 and fs."Slug" = 'san-jose-state-spartans'
+   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '254ef4ef-a953-a914-9943-fe648368a0b3'
+   
+   select * from public."FranchiseSeasonRanking" fsr
+   inner join public."FranchiseSeasonRankingDetail" fsrd on fsrd."FranchiseSeasonRankingId" = fsr."Id"
+   where fsr."SeasonYear" = 2025 and fsr."FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 
+   select * from public."FranchiseSeasonRankingDetail"
+   select * from public."FranchiseSeasonRankingNote"
    select *
    from public."Franchise" f
    inner join public."FranchiseSeason" fson on fson."FranchiseId" = f."Id"
@@ -68,6 +76,8 @@ select * from public."Contest" where "Id" = '4670f890-e947-fb5e-1a11-52c11b7087e
    inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
    where comp."ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
 
+   select * from public."SeasonRankingEntry"
+
 select * from public."ContestOdds" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
 select * from public."ContestOdds" where "ContestId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
    
@@ -88,6 +98,12 @@ select * from public."ContestOdds" where "ContestId" = 'f5cfd727-3b4a-f464-1ce1-
    where "CompetitionId" = '6fe167b3-01a4-ce7a-4caa-2d8ea922f983'
    order by "SequenceNumber"
 
+/* Competition Odds */
+select co.* from public."CompetitionOdds" co
+inner join public."Competition" comp on comp."Id" = co."CompetitionId"
+inner join public."Contest" c on c."Id" = comp."ContestId"
+where c."SeasonWeekId" = '5edb7b2b-d153-abc9-a965-c4c56a9bac04'
+
 	select * from public."CompetitionLeader"
 	select * from public."CompetitionProbability"
 	select * from public."lkLeaderCategory"
@@ -95,9 +111,31 @@ select * from public."ContestOdds" where "ContestId" = 'f5cfd727-3b4a-f464-1ce1-
 select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c01465'
    select * from public."Drive" where "CompetitionId" = 'b109f713-cddf-df99-529d-289d1b424f8d'
    select * from public."Competitor"
-   select * from public."Group"
-   select * from public."GroupExternalId"
-   select * from public."GroupSeason"
+
+   /* Conferences */
+   select * from public."GroupSeason" gs
+   inner join public."GroupSeasonExternalId" gse on gse."GroupSeasonId" = gs."Id"
+   where "Name" = 'Southeastern Conference' and gs."SeasonYear" = 2025
+   order by gs."SeasonYear" desc
+
+	SELECT child."Id"   AS ChildId,
+	       child."Name" AS ChildName,
+	       parent."Id"  AS ParentId,
+	       parent."Name" AS ParentName,
+	       parent."SeasonYear"
+	FROM public."GroupSeason" AS child
+	JOIN public."GroupSeasonExternalId" AS gse
+	  ON gse."GroupSeasonId" = child."Id"
+	JOIN public."GroupSeason" AS parent
+	  ON parent."Id" = child."ParentId"
+	WHERE child."Name" = 'Southeastern Conference'
+	  AND child."SeasonYear" = 2025;
+
+   select * from public."GroupSeason" gs
+   where gs."Id" in (select "ParentId" from public."GroupSeason" gs
+   inner join public."GroupSeasonExternalId" gse on gse."GroupSeasonId" = gs."Id"
+   where "Name" = 'Southeastern Conference' and gs."SeasonYear" = 2025)
+   
    select * from public."GroupSeasonExternalId"
    select * from public."Location" order by "State", "City"
    select * from public."lkPlayType"

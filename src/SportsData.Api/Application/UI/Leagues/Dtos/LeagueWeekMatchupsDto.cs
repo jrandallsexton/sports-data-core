@@ -14,7 +14,9 @@
 
             // Teams
             public string Away { get; set; } = default!;
-            public Uri AwayLogoUri { get; set; } = null!;
+            public string AwayShort { get; set; } = default!;
+            public Guid AwayFranchiseSeasonId { get; set; }
+            public string AwayLogoUri { get; set; } = null!;
             public string AwaySlug { get; set; } = default!;
             public int? AwayRank { get; set; }
             public int AwayWins { get; set; }
@@ -23,7 +25,9 @@
             public int AwayConferenceLosses { get; set; }
 
             public string Home { get; set; } = default!;
-            public Uri HomeLogoUri { get; set; } = null!;
+            public string HomeShort { get; set; } = default!;
+            public Guid HomeFranchiseSeasonId { get; set; }
+            public string HomeLogoUri { get; set; } = null!;
             public string HomeSlug { get; set; } = default!;
             public int? HomeRank { get; set; }
             public int HomeWins { get; set; }

@@ -139,7 +139,7 @@
 
 .pick-button {
   flex: 1;
-  max-width: 200px;
+  max-width: 225px;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
@@ -156,9 +156,30 @@
 }
 
 .pick-button.selected {
-  background-color: var(--accent-color, #6c63ff);
+  background-color: var(--accent-color, #4caf50);
   color: #fff;
 }
+
+.pick-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6; /* optional for visual clarity */
+}
+
+.pick-check-icon {
+  margin-right: 6px;
+  color: green;
+  vertical-align: middle;
+}
+
+.pick-lock-icon {
+  margin-right: 0.5rem;
+  color: #888;
+}
+
+/* .pick-button.selected {
+  background-color: #e0ffe0;
+  border: 2px solid #4caf50;
+} */
 
 .insight-button {
   flex: 0 0 auto;

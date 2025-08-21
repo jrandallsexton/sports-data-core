@@ -1,14 +1,14 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -22,13 +22,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
 
         public SeasonTypeWeekRankingsDocumentProcessor(
             ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IPublishEndpoint publishEndpoint)
+            IEventBus publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -49,6 +49,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 {
                     await ProcessInternal(command);
                 }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
@@ -59,6 +67,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
+            var dto = command.Document.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+
+            if (dto is null)
+            {
+                _logger.LogError("Failed to deserialize document to EspnFootballSeasonTypeWeekRankingsDto. {@Command}", command);
+                return;
+            }
+
             if (command.Season is null)
             {
                 _logger.LogError("Command does not contain a valid Season. {@Command}", command);
@@ -67,8 +83,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (!Guid.TryParse(command.ParentId, out var seasonWeekId))
             {
-                _logger.LogError("SeasonWeekId could not be parsed");
-                return;
+                _logger.LogWarning("SeasonWeekId not on command.ParentId. Attempting to get from dto.");
+                // can we get it from the DTO?
+                var seasonTypeWeekRef = dto.Season.Type.Week.Ref;
+                var seasonTypeWeekIdentity = _externalRefIdentityGenerator.Generate(seasonTypeWeekRef);
+
+                seasonWeekId = seasonTypeWeekIdentity.CanonicalId;
             }
 
             var seasonWeek = await _dataContext.SeasonWeeks
@@ -80,19 +100,28 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (seasonWeek == null)
             {
-                _logger.LogError("SeasonWeek not found.");
-                throw new Exception("SeasonWeek not found");
+                var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
+                    ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
+                    Uri: dto.Season.Type.Week.Ref,
+                    Sport: Sport.FootballNcaa,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.SeasonTypeWeek,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
+                ));
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
+                throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
             }
 
-            var externalProviderDto = command.Document.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
-
-            if (externalProviderDto is null)
-            {
-                _logger.LogError("Failed to deserialize document to EspnFootballSeasonTypeWeekRankingsDto. {@Command}", command);
-                return;
-            }
-
-            var dtoIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);
+            var dtoIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
             var ranking = seasonWeek.Rankings
                 .FirstOrDefault(r => r.ExternalIds.Any(id => id.SourceUrlHash == dtoIdentity.UrlHash &&
@@ -100,7 +129,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (ranking is null)
             {
-                await ProcessNewEntity(externalProviderDto, dtoIdentity, seasonWeekId, command);
+                await ProcessNewEntity(dto, dtoIdentity, seasonWeekId, command);
             }
             else 
             {

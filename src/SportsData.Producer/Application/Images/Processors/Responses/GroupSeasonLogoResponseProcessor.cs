@@ -1,8 +1,7 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -17,14 +16,14 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
         private readonly ILogger<GroupSeasonLogoResponseProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
-        private readonly IPublishEndpoint _bus;
+        private readonly IEventBus _bus;
         private readonly IProvideProviders _providerClient;
 
         public GroupSeasonLogoResponseProcessor(
             ILogger<GroupSeasonLogoResponseProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
-            IPublishEndpoint bus,
+            IEventBus bus,
             IProvideProviders providerClient)
         {
             _logger = logger;

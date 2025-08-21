@@ -61,6 +61,9 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [InlineData(
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us",
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333?lang=en&region=us")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/-6952?lang=en&region=us",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/-6952?lang=en&region=us")]
         public void AthleteSeasonToAthleteRef_Should_Map_To_Athlete_And_Preserve_Query_Https(
             string athleteSeasonRef,
             string expectedAthleteRef)
@@ -68,6 +71,32 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             var input = new Uri(athleteSeasonRef);
             var result = EspnUriMapper.AthleteSeasonToAthleteRef(input);
             result.Should().Be(new Uri(expectedAthleteRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/1?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2?lang=en&region=us")]
+        public void SeasonTypeWeekToSeasonType_Should_Map_To_SeasonType_And_Preserve_Query(
+            string weekRef,
+            string expectedSeasonTypeRef)
+        {
+            var input = new Uri(weekRef);
+            var result = EspnUriMapper.SeasonTypeWeekToSeasonType(input);
+            result.Should().Be(new Uri(expectedSeasonTypeRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en&region=us")]
+        public void SeasonTypeToSeason_Should_Map_To_Season_And_Preserve_Query(
+            string seasonTypeRef,
+            string expectedSeasonRef)
+        {
+            var input = new Uri(seasonTypeRef);
+            var result = EspnUriMapper.SeasonTypeToSeason(input);
+            result.Should().Be(new Uri(expectedSeasonRef));
         }
 
     }

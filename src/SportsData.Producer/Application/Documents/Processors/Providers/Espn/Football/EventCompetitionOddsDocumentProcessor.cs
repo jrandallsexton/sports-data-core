@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -19,14 +20,14 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
 {
     private readonly ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _db;
-    private readonly IPublishEndpoint _bus;
+    private readonly IEventBus _bus;
     private readonly IGenerateExternalRefIdentities _idGen;
     private readonly IJsonHashCalculator _jsonHashCalculator;
 
     public EventCompetitionOddsDocumentProcessor(
         ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> logger,
         TDataContext db,
-        IPublishEndpoint bus,
+        IEventBus bus,
         IGenerateExternalRefIdentities idGen,
         IJsonHashCalculator jsonHashCalculator)
     {

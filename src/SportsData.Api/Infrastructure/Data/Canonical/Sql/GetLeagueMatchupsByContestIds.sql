@@ -1,0 +1,77 @@
+﻿SELECT
+  c."SeasonWeekId" as "SeasonWeekId",
+  c."Id" AS "ContestId",
+  c."StartDateUtc" as "StartDateUtc",
+
+  v."Name" as "Venue",
+  v."City" as "VenueCity",
+  v."State" as "VenueState",
+  
+  fAway."DisplayName" as "Away",
+  fAway."DisplayNameShort" as "AwayShort",
+  fsAway."Id" as "AwayFranchiseSeasonId",
+  flAway."Uri" as "AwayLogoUri",
+  fAway."Slug" as "AwaySlug",
+  fsrdAway."Current" as "AwayRank",
+  gsAway."Slug" as "AwayConferenceSlug",
+  0 as "AwayWins",
+  0 as "AwayLosses",
+  0 as "AwayConferenceWins",
+  0 as "AwayConferenceLosses",
+  
+  fHome."DisplayName" as "Home",
+  fHome."DisplayNameShort" as "HomeShort",
+  fsHome."Id" as "HomeFranchiseSeasonId",
+  flHome."Uri" as "HomeLogoUri",  
+  fHome."Slug" as "HomeSlug",
+  fsrdHome."Current" as "HomeRank",
+  gsHome."Slug" as "HomeConferenceSlug",
+  0 as "HomeWins",
+  0 as "HomeLosses",
+  0 as "HomeConferenceWins",
+  0 as "HomeConferenceLosses",
+  
+  co."Details" as "Spread",
+  (co."Spread" * -1) as "AwaySpread",
+  co."Spread" as "HomeSpread",
+  co."OverUnder" as "OverUnder",
+  co."OverOdds" as "OverOdds",
+  co."UnderOdds" as "UnderOdds"
+
+FROM public."Contest" c
+INNER JOIN public."Venue" v on v."Id" = c."VenueId"
+INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
+LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id"
+
+INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
+INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
+
+LEFT JOIN LATERAL (
+  SELECT fl.*
+  FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fAway."Id"
+  ORDER BY fl."CreatedUtc" ASC -- or ORDER BY fl."Id" ASC
+  LIMIT 1
+) flAway ON TRUE
+
+INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
+LEFT  JOIN public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap'
+LEFT  JOIN public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+
+INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
+
+LEFT JOIN LATERAL (
+  SELECT fl.*
+  FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fHome."Id"
+  ORDER BY fl."CreatedUtc" ASC -- or ORDER BY fl."Id" ASC
+  LIMIT 1
+) flHome ON TRUE
+
+INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
+LEFT  JOIN public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
+LEFT  JOIN public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+
+WHERE c."Id" = ANY(@ContestIds)
+ORDER BY c."StartDateUtc", fHome."Slug";

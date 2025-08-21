@@ -16,8 +16,6 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly ILogger<DocumentRequestedHandler> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-    private DocumentRequested _msg = null!;
-
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
@@ -30,40 +28,53 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
     {
-        _msg = context.Message;
-        _logger.LogInformation("Handling DocumentRequested: {Msg}", _msg);
+        var evt = context.Message;
 
-        var uri = _msg.Uri;
-
-        if (IsResourceIndex(uri))
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = evt.CorrelationId
+               }))
         {
-            await ProcessResourceIndex(uri);
-        }
-        else
-        {
-            ProcessResourceIndexItem(uri);
+            await ConsumeInternal(evt);
         }
     }
 
-    private void ProcessResourceIndexItem(Uri uri)
+    private async Task ConsumeInternal(DocumentRequested evt)
+    {
+        _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
+
+        var uri = evt.Uri;
+
+        if (IsResourceIndex(uri))
+        {
+            await ProcessResourceIndex(uri, evt);
+        }
+        else
+        {
+            ProcessResourceIndexItem(uri, evt);
+        }
+    }
+
+    private void ProcessResourceIndexItem(Uri uri, DocumentRequested evt)
     {
         var urlHash = HashProvider.GenerateHashFromUri(uri);
 
         var cmd = new ProcessResourceIndexItemCommand(
+            CorrelationId: evt.CorrelationId,
             ResourceIndexId: Guid.Empty,
             Id: urlHash,
             Uri: uri,
-            Sport: _msg.Sport,
-            SourceDataProvider: _msg.SourceDataProvider,
-            DocumentType: _msg.DocumentType,
-            ParentId: _msg.ParentId,
-            SeasonYear: _msg.SeasonYear);
+            Sport: evt.Sport,
+            SourceDataProvider: evt.SourceDataProvider,
+            DocumentType: evt.DocumentType,
+            ParentId: evt.ParentId,
+            SeasonYear: evt.SeasonYear);
 
         _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 
-    private async Task ProcessResourceIndex(Uri uri)
+    private async Task ProcessResourceIndex(Uri uri, DocumentRequested evt)
     {
         var seenPages = new HashSet<string>();
         var enqueuedAnyRefs = false;
@@ -105,7 +116,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 if (item.Ref is null)
                 {
-                    _logger.LogWarning("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
+                    _logger.LogInformation("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
                     continue;
                 }
 
@@ -113,14 +124,15 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 var refHash = HashProvider.GenerateHashFromUri(refUri);
 
                 var cmd = new ProcessResourceIndexItemCommand(
+                    CorrelationId: evt.CorrelationId,
                     ResourceIndexId: Guid.Empty,
                     Id: refHash,
                     Uri: refUri,
-                    Sport: _msg.Sport,
-                    SourceDataProvider: _msg.SourceDataProvider,
-                    DocumentType: _msg.DocumentType,
-                    ParentId: _msg.ParentId,
-                    SeasonYear: _msg.SeasonYear);
+                    Sport: evt.Sport,
+                    SourceDataProvider: evt.SourceDataProvider,
+                    DocumentType: evt.DocumentType,
+                    ParentId: evt.ParentId,
+                    SeasonYear: evt.SeasonYear);
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;

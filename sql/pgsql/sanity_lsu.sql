@@ -60,7 +60,7 @@ END $$;
 
    
    select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
-   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
+   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
    select * from public."FranchiseSeasonExternalId" where "SourceUrlHash" = 'bc2c92ab7abfa9f3ec15b451fe92b34f9c1963bcd047ee6786a51dfed1b97ed8'
 
    select * from public."Contest" where "EventNote" != null

@@ -1,17 +1,15 @@
-using System.Xml;
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
@@ -21,13 +19,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<CoachBySeasonDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
         public CoachBySeasonDocumentProcessor(
             ILogger<CoachBySeasonDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint,
+            IEventBus publishEndpoint,
             IGenerateExternalRefIdentities externalRefIdentityGenerator)
         {
             _logger = logger;
@@ -47,6 +45,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 try
                 {
                     await ProcessInternal(command);
+                }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -112,7 +118,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
                 ));
-                throw new Exception("Coach not found. Will request sourcing and retry.");
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogWarning("Coach not found. Will request sourcing and retry. {@Identity}", coachIdentity);
+
+                throw new ExternalDocumentNotSourcedException("Coach not found. Will request sourcing and retry.");
             }
 
             var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
@@ -134,7 +145,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
                 ));
-                throw new Exception("FranchiseSeason not found. Will request sourcing and retry.");
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogWarning("FranchiseSeason not found. Will request sourcing and retry. {@Identity}", franchiseSeasonIdentity);
+
+                throw new ExternalDocumentNotSourcedException("FranchiseSeason not found. Will request sourcing and retry.");
             }
 
             var newEntity = new CoachSeason()

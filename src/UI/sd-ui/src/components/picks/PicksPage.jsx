@@ -10,7 +10,6 @@ import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import SubmitButton from "./SubmitButton.jsx";
-import mockMatchups from "../../data/matchups.js";
 
 function PicksPage() {
   const { userDto, loading: userLoading } = useUserDto();
@@ -27,7 +26,7 @@ function PicksPage() {
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
-  const [selectedWeek, setSelectedWeek] = useState(7);
+  const [selectedWeek, setSelectedWeek] = useState(1); // TODO: Dynamically set current week as default
   const [viewMode, setViewMode] = useState("card");
 
   const leagues = Object.values(userDto?.leagues || {});
@@ -48,10 +47,13 @@ function PicksPage() {
           selectedLeagueId,
           selectedWeek
         );
-        setMatchups(response.data.matchups || []);
+
+        const newMatchups = response.data.matchups || [];
+
+        // Only update after full fetch
+        setMatchups(newMatchups);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
-        setMatchups([]);
       } finally {
         setLoadingMatchups(false);
       }
@@ -60,11 +62,51 @@ function PicksPage() {
     fetchMatchups();
   }, [selectedLeagueId, selectedWeek]);
 
-  function handlePick(matchupId, teamPicked) {
-    setUserPicks((prev) => ({
-      ...prev,
-      [matchupId]: teamPicked,
-    }));
+  useEffect(() => {
+    async function fetchPicks() {
+      if (!selectedLeagueId) return;
+
+      try {
+        const response = await apiWrapper.Picks.getUserPicksByWeek(
+          selectedLeagueId,
+          selectedWeek
+        );
+
+        const picksByContest = {};
+        for (const pick of response.data) {
+          picksByContest[pick.contestId] = pick.franchiseId;
+        }
+
+        // Update only once all picks are ready
+        setUserPicks(picksByContest);
+      } catch (error) {
+        console.error("Failed to fetch user picks:", error);
+      }
+    }
+
+    fetchPicks();
+  }, [selectedLeagueId, selectedWeek]);
+
+  async function handlePick(matchup, selectedFranchiseSeasonId) {
+    try {
+      await apiWrapper.Picks.submitPick({
+        pickemGroupId: selectedLeagueId,
+        contestId: matchup.contestId,
+        pickType: "StraightUp", // hardcoded for MVP
+        franchiseSeasonId: selectedFranchiseSeasonId,
+        week: selectedWeek,
+      });
+
+      setUserPicks((prev) => ({
+        ...prev,
+        [matchup.contestId]: selectedFranchiseSeasonId,
+      }));
+
+      toast.success("Pick saved!");
+    } catch (error) {
+      console.error("Error submitting pick:", error);
+      toast.error("Failed to save pick.");
+    }
   }
 
   function handleSubmit() {
@@ -79,22 +121,35 @@ function PicksPage() {
     }, 1500);
   }
 
-  function handleViewInsight(matchup) {
+  async function handleViewInsight(matchup) {
     setSelectedMatchup({
       ...matchup,
       insightText: "",
+      bullets: [],
+      prediction: "",
     });
+
     setIsInsightDialogOpen(true);
     setLoadingInsight(true);
 
-    setTimeout(() => {
+    try {
+      const response = await apiWrapper.Matchups.getPreviewByContestId(
+        matchup.contestId
+      );
+      const preview = response.data;
+
       setSelectedMatchup((prev) => ({
         ...prev,
-        bullets: ["Mock bullet 1", "Mock bullet 2"],
-        prediction: "Mock prediction",
+        insightText: preview.overview,
+        analysis: preview.analysis,
+        prediction: preview.prediction,
       }));
+    } catch (error) {
+      console.error("Error fetching insight preview:", error);
+      toast.error("Failed to load insight preview.");
+    } finally {
       setLoadingInsight(false);
-    }, 500);
+    }
   }
 
   function toggleViewMode() {
@@ -118,9 +173,9 @@ function PicksPage() {
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
           />
-          <button onClick={toggleViewMode} className="view-mode-toggle">
+          {/* <button onClick={toggleViewMode} className="view-mode-toggle">
             {viewMode === "card" ? "Grid View" : "Card View"}
-          </button>
+          </button> */}
         </div>
 
         {loadingMatchups ? (
@@ -154,8 +209,12 @@ function PicksPage() {
 
         {isInsightDialogOpen && (
           <InsightDialog
+            isOpen={isInsightDialogOpen}
             matchup={selectedMatchup}
             onClose={() => setIsInsightDialogOpen(false)}
+            overview={selectedMatchup?.insightText ?? ""}
+            analysis={selectedMatchup?.analysis ?? ""}
+            prediction={selectedMatchup?.prediction ?? ""}
             loading={loadingInsight}
           />
         )}

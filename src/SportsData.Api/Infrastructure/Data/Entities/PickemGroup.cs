@@ -41,6 +41,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public ICollection<PickemGroupInvitation> Invitations { get; set; } = [];
 
+        public ICollection<PickemGroupWeek> Weeks { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<PickemGroup>
         {
             public void Configure(EntityTypeBuilder<PickemGroup> builder)
@@ -75,6 +77,19 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .WithOne(x => x.Group)
                     .HasForeignKey(x => x.PickemGroupId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder
+                    .HasMany(x => x.Invitations)
+                    .WithOne(x => x.Group)
+                    .HasForeignKey(x => x.PickemGroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder
+                    .HasMany(x => x.Weeks)
+                    .WithOne(x => x.Group)
+                    .HasForeignKey(x => x.GroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
     }

@@ -1,19 +1,13 @@
 import "./InsightDialog.css";
-import { FaExternalLinkAlt } from "react-icons/fa";
 import teams from "../../data/teams";
 
-function InsightDialog({
-  isOpen,
-  onClose,
-  matchup,
-  bullets,
-  prediction,
-  loading,
-}) {
+function InsightDialog({ isOpen, onClose, matchup, loading }) {
+  console.log("InsightDialog visible:", isOpen, matchup);
+
   if (!isOpen || !matchup) return null;
 
-  const awayTeamInfo = teams[matchup.awayTeam];
-  const homeTeamInfo = teams[matchup.homeTeam];
+  const awayTeamInfo = teams[matchup.away];
+  const homeTeamInfo = teams[matchup.home];
 
   return (
     <div className="insight-dialog-overlay">
@@ -23,58 +17,53 @@ function InsightDialog({
         </button>
 
         <div className="helmet-row">
-          {awayTeamInfo && (
+          {matchup.awayLogoUri && (
             <img
-              src={awayTeamInfo.logoUrl}
-              alt={`${matchup.awayTeam} logo`}
-              className="helmet-logo away-logo"
+              src={matchup.awayLogoUri}
+              alt={`${matchup.away} logo`}
+              className="matchup-logo"
             />
           )}
           <h2>
-            {matchup.awayTeam} vs {matchup.homeTeam}
+            {matchup.away}
+            <br />@<br />
+            {matchup.home}
           </h2>
-          {homeTeamInfo && (
+          {matchup.homeLogoUri && (
             <img
-              src={homeTeamInfo.logoUrl}
+              src={matchup.homeLogoUri}
               alt={`${matchup.homeTeam} logo`}
-              className="helmet-logo home-logo"
+              className="matchup-logo"
             />
           )}
         </div>
+        <hr className="divider" />
 
         <div className="insight-text">
           {loading ? (
             <div className="spinner"></div>
           ) : (
             <div className="insight-text-loaded">
+              <div className="overview-section">
+                <h3>Overview</h3>
+                <p>{matchup.insightText || "Overview not available."}</p>
+              </div>
+
+              <hr className="divider" />
+
               <div className="analysis-section">
                 <h3>Analysis</h3>
-                <ul>
-                  {bullets.map((bullet, idx) => (
-                    <li key={idx}>
-                      {bullet.text}
-                      {bullet.link && (
-                        <a
-                          href={bullet.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bullet-link-icon"
-                          title="View Evidence"
-                        >
-                          <FaExternalLinkAlt />
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <p>{matchup.analysis || "Analysis not available."}</p>
               </div>
 
               <hr className="divider" />
 
               <div className="prediction-section">
-                <h3>sportDeets Prediction</h3>
+                <h3>
+                  sportDeets<span className="tm-symbol">™</span> Prediction
+                </h3>
                 <p className="prediction-animated">
-                  {prediction || "Prediction not available."}
+                  {matchup.prediction || "Prediction not available."}
                 </p>
               </div>
             </div>

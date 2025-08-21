@@ -39,6 +39,9 @@ public static class AthleteSeasonExtensions
             IsActive = dto.Active,
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId,
+            ExperienceAbbreviation = dto.Experience?.Abbreviation,
+            ExperienceDisplayValue = dto.Experience?.DisplayValue,
+            ExperienceYears = dto.Experience?.Years ?? 0,
             ExternalIds =
             [
                 new AthleteSeasonExternalId

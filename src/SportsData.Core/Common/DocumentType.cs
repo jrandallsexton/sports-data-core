@@ -28,7 +28,7 @@
         FranchiseLogo = 23,
         GameSummary = 24,
         GolfCalendar = 25,
-        Group = 26,
+        //Group = 26,
         GroupLogo = 27,
         GroupSeason = 28,
         GroupSeasonLogo = 29,
@@ -58,6 +58,7 @@
         VenueImage = 53,
         Weeks = 54,
         CoachRecord = 55,
+        SeasonRanking = 56,
         Unknown = 9999
     }
 }

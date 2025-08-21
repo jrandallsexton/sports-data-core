@@ -6,7 +6,6 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
-using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
@@ -19,7 +18,7 @@ namespace SportsData.Api.Application.UI.Leagues
     {
         Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId, CancellationToken cancellationToken = default);
         Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId, CancellationToken cancellationToken = default);
-        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid leagueId, int week, CancellationToken cancellationToken = default);
+        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week, CancellationToken cancellationToken = default);
 
     }
 
@@ -143,83 +142,77 @@ namespace SportsData.Api.Application.UI.Leagues
                 );
         }
 
-        public Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid leagueId, int week, CancellationToken cancellationToken = default)
+        public async Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(
+            Guid userId,
+            Guid leagueId,
+            int week,
+            CancellationToken cancellationToken = default)
         {
-            // NOTE: These values are mocked and will be replaced once sourcing is live.
-            var dto = new LeagueWeekMatchupsDto
+            var matchups = await _dbContext.PickemGroupMatchups
+                .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
+                .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
+                {
+                    ContestId = x.ContestId,
+                    AwaySpread = (decimal?)x.AwaySpread,
+                    AwayRank = x.AwayRank,
+                    HomeSpread = (decimal?)x.HomeSpread,
+                    HomeRank = x.HomeRank,
+                    OverUnder = (decimal?)x.OverUnder
+                })
+                .ToListAsync(cancellationToken);
+
+            var contestIds = matchups.Select(x => x.ContestId).ToList();
+
+            var canonicalMatchups = await _canonicalDataProvider.GetMatchupsByContestIds(contestIds);
+
+            // Create dictionary for fast lookup of canonical values
+            var canonicalMap = canonicalMatchups.ToDictionary(x => x.ContestId);
+
+            // Fill in canonical fields for each league matchup
+            foreach (var matchup in matchups)
             {
-                SeasonYear = 2025,
-                WeekNumber = week,
-                Matchups =
-                [
-                    new MatchupForPickDto
-            {
-                ContestId = Guid.NewGuid(),
-                StartDateUtc = DateTime.UtcNow.AddDays(2),
+                if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
+                {
+                    matchup.StartDateUtc = canonical.StartDateUtc;
 
-                Away = "LSU",
-                AwaySlug = "lsu-tigers",
-                AwayRank = 12,
-                AwayWins = 5,
-                AwayLosses = 2,
-                AwayConferenceWins = 3,
-                AwayConferenceLosses = 1,
-                AwayLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/99.png"),
+                    // Away team
+                    matchup.Away = canonical.Away;
+                    matchup.AwayShort = canonical.AwayShort;
+                    matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
+                    matchup.AwayLogoUri = canonical.AwayLogoUri;
+                    matchup.AwaySlug = canonical.AwaySlug;
+                    matchup.AwayWins = canonical.AwayWins;
+                    matchup.AwayLosses = canonical.AwayLosses;
+                    matchup.AwayConferenceWins = canonical.AwayConferenceWins;
+                    matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
+                    matchup.AwayRank = canonical.AwayRank;
 
-                Home = "Alabama",
-                HomeSlug = "alabama-crimson-tide",
-                HomeRank = 5,
-                HomeWins = 6,
-                HomeLosses = 1,
-                HomeConferenceWins = 4,
-                HomeConferenceLosses = 0,
-                HomeLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/333.png"),
+                    // Home team
+                    matchup.Home = canonical.Home;
+                    matchup.HomeShort = canonical.HomeShort;
+                    matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
+                    matchup.HomeLogoUri = canonical.HomeLogoUri;
+                    matchup.HomeSlug = canonical.HomeSlug;
+                    matchup.HomeWins = canonical.HomeWins;
+                    matchup.HomeLosses = canonical.HomeLosses;
+                    matchup.HomeConferenceWins = canonical.HomeConferenceWins;
+                    matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
+                    matchup.HomeRank = canonical.HomeRank;
 
-                AwaySpread = 7.5m,
-                HomeSpread = -7.5m,
-                OverUnder = 56.5m,
-
-                Venue = "Bryant–Denny Stadium",
-                VenueCity = "Tuscaloosa",
-                VenueState = "AL"
-            },
-            new MatchupForPickDto
-            {
-                ContestId = Guid.NewGuid(),
-                StartDateUtc = DateTime.UtcNow.AddDays(3),
-
-                Away = "Texas",
-                AwaySlug = "texas-longhorns",
-                AwayRank = 7,
-                AwayWins = 5,
-                AwayLosses = 2,
-                AwayConferenceWins = 2,
-                AwayConferenceLosses = 2,
-                AwayLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"),
-
-                Home = "Oklahoma",
-                HomeSlug = "oklahoma-sooners",
-                HomeRank = 8,
-                HomeWins = 6,
-                HomeLosses = 1,
-                HomeConferenceWins = 3,
-                HomeConferenceLosses = 1,
-                HomeLogoUri = new Uri("https://a.espncdn.com/i/teamlogos/ncaa/500/201.png"),
-
-                AwaySpread = 2.5m,
-                HomeSpread = -2.5m,
-                OverUnder = 61.0m,
-
-                Venue = "Cotton Bowl",
-                VenueCity = "Dallas",
-                VenueState = "TX"
+                    // Venue
+                    matchup.Venue = canonical.Venue;
+                    matchup.VenueCity = canonical.VenueCity;
+                    matchup.VenueState = canonical.VenueState;
+                }
             }
-                ]
+
+            return new LeagueWeekMatchupsDto
+            {
+                SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
+                WeekNumber = week,
+                Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
-
-            return Task.FromResult(dto);
         }
-
 
     }
 }

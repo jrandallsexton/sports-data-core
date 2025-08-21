@@ -87,9 +87,6 @@ namespace SportsData.Core.Common
                 case DocumentType.Season:
                 case DocumentType.Award:
                     return (typeof(EspnAwardDto), name);
-                case DocumentType.Group:
-                    // TODO: This is a placeholder; should be EspnGroupDto when implemented
-                    return (typeof(EspnGroupSeasonDto), name); 
                 case DocumentType.Contest:
                     return (typeof(EspnFootballContestDto), name);
                 case DocumentType.GameSummary:

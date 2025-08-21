@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -13,6 +12,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Franchise)]
@@ -21,13 +22,13 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly ILogger<FranchiseDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -89,6 +90,38 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
     }
 
+    private async Task ProcessLogos(
+        Franchise franchise,
+        ProcessDocumentCommand command,
+        EspnFranchiseDto dto)
+    {
+        var events = new List<ProcessImageRequest>();
+        dto.Logos?.ForEach(logo =>
+        {
+            var imgId = Guid.NewGuid();
+            events.Add(new ProcessImageRequest(
+                logo.Href,
+                imgId,
+                franchise.Id,
+                $"{franchise.Id}.png",
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                0,
+                0,
+                null,
+                command.CorrelationId,
+                CausationId.Producer.FranchiseDocumentProcessor));
+        });
+
+        if (events.Count > 0)
+        {
+            _logger.LogInformation($"Requesting {events.Count} images for {command.DocumentType} {command.Season}");
+            await _publishEndpoint.PublishBatch(events);
+        }
+    }
+
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
         EspnFranchiseDto dto)
@@ -121,31 +154,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // 2. any logos on the dto?
-        var events = new List<ProcessImageRequest>();
-        dto.Logos?.ForEach(logo =>
-        {
-            var imgId = Guid.NewGuid();
-            events.Add(new ProcessImageRequest(
-                logo.Href,
-                imgId,
-                newEntity.Id,
-                $"{newEntity.Id}.png",
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                0,
-                0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor));
-        });
-
-        if (events.Count > 0)
-        {
-            _logger.LogInformation($"Requesting {events.Count} images for {command.DocumentType} {command.Season}");
-            await _publishEndpoint.PublishBatch(events);
-        }
+        await ProcessLogos(newEntity, command, dto);
 
         // TODO: Figure out what to do with these
         // 3. Child entities to be sourced
@@ -198,103 +207,110 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)
+            .Include(x => x.Logos)
             .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                     z.Provider == command.SourceDataProvider));
-
-        if (dto.Venue is not null)
+        if (!franchise.Logos.Any())
         {
-            var venue = await _dataContext.Venues
-                .Include(x => x.ExternalIds)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
-                    z.Provider == command.SourceDataProvider &&
-                    z.Value == dto.Venue.Ref.ToString().UrlHash(true)));
-
-            if (venue != null)
-            {
-                if (venue.Id != franchise.VenueId)
-                {
-                    _logger.LogInformation("Updating Venue from {Old} to {New}", franchise.VenueId, venue.Id);
-                    franchise.VenueId = venue.Id;
-                }
-            }
+            await ProcessLogos(franchise, command, dto);
         }
 
-        var updated = false;
+        return;
 
-        if (franchise.Name != dto.Name)
-        {
-            _logger.LogInformation("Updating Name from {Old} to {New}", franchise.Name, dto.Name);
-            franchise.Name = dto.Name;
-            updated = true;
-        }
+        //if (dto.Venue is not null)
+        //{
+        //    var venue = await _dataContext.Venues
+        //        .Include(x => x.ExternalIds)
+        //        .AsNoTracking()
+        //        .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
+        //            z.Provider == command.SourceDataProvider &&
+        //            z.Value == dto.Venue.Ref.ToString().UrlHash(true)));
 
-        if (franchise.Location != dto.Location)
-        {
-            _logger.LogInformation("Updating Location from {Old} to {New}", franchise.Location, dto.Location);
-            franchise.Location = dto.Location;
-            updated = true;
-        }
+        //    if (venue != null)
+        //    {
+        //        if (venue.Id != franchise.VenueId)
+        //        {
+        //            _logger.LogInformation("Updating Venue from {Old} to {New}", franchise.VenueId, venue.Id);
+        //            franchise.VenueId = venue.Id;
+        //        }
+        //    }
+        //}
 
-        if (franchise.Slug != dto.Slug)
-        {
-            _logger.LogInformation("Updating Slug from {Old} to {New}", franchise.Slug, dto.Slug);
-            franchise.Slug = dto.Slug;
-            updated = true;
-        }
+        //var updated = false;
 
-        if (franchise.Abbreviation != dto.Abbreviation)
-        {
-            _logger.LogInformation("Updating Abbreviation from {Old} to {New}", franchise.Abbreviation, dto.Abbreviation);
-            franchise.Abbreviation = dto.Abbreviation;
-            updated = true;
-        }
+        //if (franchise.Name != dto.Name)
+        //{
+        //    _logger.LogInformation("Updating Name from {Old} to {New}", franchise.Name, dto.Name);
+        //    franchise.Name = dto.Name;
+        //    updated = true;
+        //}
 
-        if (franchise.DisplayNameShort != dto.ShortDisplayName)
-        {
-            _logger.LogInformation("Updating ShortDisplayName from {Old} to {New}", franchise.DisplayNameShort, dto.ShortDisplayName);
-            franchise.DisplayNameShort = dto.ShortDisplayName;
-            updated = true;
-        }
+        //if (franchise.Location != dto.Location)
+        //{
+        //    _logger.LogInformation("Updating Location from {Old} to {New}", franchise.Location, dto.Location);
+        //    franchise.Location = dto.Location;
+        //    updated = true;
+        //}
 
-        if (franchise.DisplayName != dto.DisplayName)
-        {
-            _logger.LogInformation("Updating DisplayName from {Old} to {New}", franchise.DisplayName, dto.DisplayName);
-            franchise.DisplayName = dto.DisplayName;
-            updated = true;
-        }
+        //if (franchise.Slug != dto.Slug)
+        //{
+        //    _logger.LogInformation("Updating Slug from {Old} to {New}", franchise.Slug, dto.Slug);
+        //    franchise.Slug = dto.Slug;
+        //    updated = true;
+        //}
 
-        if (franchise.ColorCodeHex != dto.Color)
-        {
-            _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, dto.Color);
-            franchise.ColorCodeHex = dto.Color;
-            updated = true;
-        }
+        //if (franchise.Abbreviation != dto.Abbreviation)
+        //{
+        //    _logger.LogInformation("Updating Abbreviation from {Old} to {New}", franchise.Abbreviation, dto.Abbreviation);
+        //    franchise.Abbreviation = dto.Abbreviation;
+        //    updated = true;
+        //}
 
-        if (franchise.IsActive != dto.IsActive)
-        {
-            _logger.LogInformation("Updating IsActive from {Old} to {New}", franchise.IsActive, dto.IsActive);
-            franchise.IsActive = dto.IsActive;
-            updated = true;
-        }
+        //if (franchise.DisplayNameShort != dto.ShortDisplayName)
+        //{
+        //    _logger.LogInformation("Updating ShortDisplayName from {Old} to {New}", franchise.DisplayNameShort, dto.ShortDisplayName);
+        //    franchise.DisplayNameShort = dto.ShortDisplayName;
+        //    updated = true;
+        //}
 
-        if (updated)
-        {
-            await _dataContext.SaveChangesAsync();
+        //if (franchise.DisplayName != dto.DisplayName)
+        //{
+        //    _logger.LogInformation("Updating DisplayName from {Old} to {New}", franchise.DisplayName, dto.DisplayName);
+        //    franchise.DisplayName = dto.DisplayName;
+        //    updated = true;
+        //}
 
-            var evt = new FranchiseUpdated(
-                franchise.ToCanonicalModel(),
-                command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor);
+        //if (franchise.ColorCodeHex != dto.Color)
+        //{
+        //    _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, dto.Color);
+        //    franchise.ColorCodeHex = dto.Color;
+        //    updated = true;
+        //}
 
-            await _publishEndpoint.Publish(evt, CancellationToken.None);
+        //if (franchise.IsActive != dto.IsActive)
+        //{
+        //    _logger.LogInformation("Updating IsActive from {Old} to {New}", franchise.IsActive, dto.IsActive);
+        //    franchise.IsActive = dto.IsActive;
+        //    updated = true;
+        //}
 
-            _logger.LogInformation("Published update for Franchise {Id}", franchise.Id);
-        }
-        else
-        {
-            _logger.LogInformation("No changes detected for Franchise {Id}", franchise.Id);
-        }
+        //if (updated)
+        //{
+        //    await _dataContext.SaveChangesAsync();
+
+        //    var evt = new FranchiseUpdated(
+        //        franchise.ToCanonicalModel(),
+        //        command.CorrelationId,
+        //        CausationId.Producer.FranchiseDocumentProcessor);
+
+        //    await _publishEndpoint.Publish(evt, CancellationToken.None);
+
+        //    _logger.LogInformation("Published update for Franchise {Id}", franchise.Id);
+        //}
+        //else
+        //{
+        //    _logger.LogInformation("No changes detected for Franchise {Id}", franchise.Id);
+        //}
     }
 
 }

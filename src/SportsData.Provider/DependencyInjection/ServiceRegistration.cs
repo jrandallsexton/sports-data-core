@@ -79,7 +79,7 @@ namespace SportsData.Provider.DependencyInjection
                 ForceLiveFetch = false,
                 PersistLocally = true,
                 ReadFromCache = true,
-                LocalCacheDirectory = "D:\\Dropbox\\Code\\sports-data\\data"
+                LocalCacheDirectory = "C:\\temp\\sports-data"
             });
 
             return services;
@@ -91,7 +91,9 @@ namespace SportsData.Provider.DependencyInjection
         {
             var serviceScope = services.CreateScope();
 
-            var recurringJobManager = serviceScope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+            var recurringJobManager = serviceScope.ServiceProvider
+                .GetRequiredService<IRecurringJobManager>();
+
             recurringJobManager.AddOrUpdate<SourcingJobOrchestrator>(
                 nameof(SourcingJobOrchestrator),
                 job => job.ExecuteAsync(),

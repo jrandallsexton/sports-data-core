@@ -99,7 +99,7 @@ namespace SportsData.ProcessorGen
                 var routingKey = generator.Generate(SourceDataProvider.Espn, uri);
                 if (!string.IsNullOrWhiteSpace(routingKey))
                 {
-                    await fetcher.SaveJsonAsync(json, uri, "D:\\Dropbox\\Code\\sports-data\\data", SourceDataProvider.Espn);
+                    await fetcher.SaveJsonAsync(json, uri, "C:\\temp\\sports-data", SourceDataProvider.Espn);
 
                     results.Add(new Result
                     {

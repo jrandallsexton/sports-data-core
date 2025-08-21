@@ -25,7 +25,7 @@ BEGIN
         END IF;
 
         -- Exclude OutboxMessage from total row count
-        IF (r.table_name <> 'OutboxMessage' and r.table_name <> 'OutboxState' and r.table_name <> 'OutboxPings') THEN
+        IF (r.table_name <> 'OutboxMessage' and r.table_name <> 'OutboxState' and r.table_name <> 'OutboxPings' and r.table_name <> 'InboxState') THEN
             total_rows := total_rows + row_count;
         END IF;
     END LOOP;

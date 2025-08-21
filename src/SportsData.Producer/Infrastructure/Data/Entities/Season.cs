@@ -23,7 +23,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public SeasonPhase? ActivePhase { get; set; }
 
-        public List<SeasonExternalId> ExternalIds { get; set; } = [];
+        public ICollection<SeasonExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

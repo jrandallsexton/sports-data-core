@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -21,13 +20,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 {
     private readonly ILogger<AthleteSeasonDocumentProcessor> _logger;
     private readonly FootballDataContext _dataContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public AthleteSeasonDocumentProcessor(
         ILogger<AthleteSeasonDocumentProcessor> logger,
         FootballDataContext dataContext,
-        IPublishEndpoint publishEndpoint,
+        IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {
         _logger = logger;
@@ -117,6 +116,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
+        var athleteSeason = athlete.Seasons.FirstOrDefault(s => s.FranchiseSeasonId == franchiseSeasonId);
+        if (athleteSeason is not null)
+        {
+            _logger.LogWarning("AthleteSeason already exists. Updating not implemented");
+            return;
+        }
+
         var positionId = await TryResolvePositionIdAsync(dto, command);
         if (positionId == Guid.Empty)
         {
@@ -144,11 +150,12 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
 
-        var franchise = await _dataContext.Franchises
-            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonIdentity.CanonicalId);
+        var franchiseSeason = await _dataContext.FranchiseSeasons
+            .Where(x => x.Id == franchiseSeasonIdentity.CanonicalId)
+            .FirstOrDefaultAsync();
 
-        if (franchise is not null)
-            return franchise.Id;
+        if (franchiseSeason is not null) 
+            return franchiseSeason.Id;
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: franchiseSeasonIdentity.CanonicalId.ToString(),
@@ -164,6 +171,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
 
+        _logger.LogWarning("FranchiseSeason not found. {Ref} {@Identity}", dto.Team.Ref, franchiseSeasonIdentity);
+
         throw new ExternalDocumentNotSourcedException(
             $"Franchise season not found for {dto.Team.Ref} in command {command.CorrelationId}");
     }
@@ -175,11 +184,14 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         var positionIdentity = _externalRefIdentityGenerator.Generate(dto.Position.Ref);
 
-        var position = await _dataContext.AthletePositions
-            .FirstOrDefaultAsync(x => x.Id == positionIdentity.CanonicalId);
+        var positionId = await _dataContext.TryResolveFromDtoRefAsync(
+            dto.Position,
+            command.SourceDataProvider,
+            () => _dataContext.AthletePositions.Include(x => x.ExternalIds).AsNoTracking(),
+            _logger);
 
-        if (position is not null)
-            return position.Id;
+        if (positionId.HasValue)
+            return positionId.Value;
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: positionIdentity.CanonicalId.ToString(),

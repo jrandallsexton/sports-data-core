@@ -41,7 +41,8 @@ public static class EspnUriMapper
 
     public static Uri AthleteSeasonToAthleteRef(Uri athleteSeasonRef)
     {
-        if (athleteSeasonRef == null) throw new ArgumentNullException(nameof(athleteSeasonRef));
+        if (athleteSeasonRef == null)
+            throw new ArgumentNullException(nameof(athleteSeasonRef));
 
         var s = athleteSeasonRef.ToString();
         var parts = s.Split('/');
@@ -53,21 +54,83 @@ public static class EspnUriMapper
         if (seasonsIndex < 0 || athletesIndex < 0 || athletesIndex + 1 >= parts.Length)
             throw new InvalidOperationException($"Unexpected ESPN AthleteSeason ref format: {athleteSeasonRef}");
 
-        // Extract athleteId (strip query if present on the last segment)
         var athleteIdPart = parts[athletesIndex + 1];
         var q = athleteIdPart.IndexOf('?');
         var athleteId = q >= 0 ? athleteIdPart[..q] : athleteIdPart;
 
-        if (string.IsNullOrWhiteSpace(athleteId) || !athleteId.All(char.IsDigit))
+        // NEW: Use TryParse to allow negative IDs (like -6952)
+        if (!int.TryParse(athleteId, out _))
             throw new InvalidOperationException($"Missing or invalid athlete id in ref: {athleteSeasonRef}");
 
-        // Build base up to *before* "seasons"
+        // Build base path to athlete root
         var baseParts = parts.Take(seasonsIndex)
             .Append("athletes")
             .Append(athleteId);
 
         var path = string.Join('/', baseParts);
         var query = athleteSeasonRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
+    public static Uri SeasonTypeWeekToSeasonType(Uri weekRef)
+    {
+        if (weekRef == null) throw new ArgumentNullException(nameof(weekRef));
+
+        var s = weekRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / types / {typeId} / weeks / {weekId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var typesIndex = Array.IndexOf(parts, "types");
+        var weeksIndex = Array.IndexOf(parts, "weeks");
+
+        if (seasonsIndex < 0 || typesIndex < 0 || weeksIndex < 0 || weeksIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonTypeWeek ref format: {weekRef}");
+
+        var seasonYearPart = parts[seasonsIndex + 1];
+        var typeIdPart = parts[typesIndex + 1];
+
+        if (!seasonYearPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid season year in ref: {weekRef}");
+
+        if (!typeIdPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid type id in ref: {weekRef}");
+
+        // FIXED: include the {typeId} segment
+        var baseParts = parts.Take(weeksIndex); // stop before "weeks"
+        var path = string.Join('/', baseParts);
+        var query = weekRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
+    public static Uri SeasonTypeToSeason(Uri seasonTypeRef)
+    {
+        if (seasonTypeRef == null)
+            throw new ArgumentNullException(nameof(seasonTypeRef));
+
+        var s = seasonTypeRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / types / {typeId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var typesIndex = Array.IndexOf(parts, "types");
+
+        if (seasonsIndex < 0 || typesIndex < 0 || seasonsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonType ref format: {seasonTypeRef}");
+
+        var yearPart = parts[seasonsIndex + 1];
+        var q = yearPart.IndexOf('?');
+        var seasonYear = q >= 0 ? yearPart[..q] : yearPart;
+
+        if (!int.TryParse(seasonYear, out _))
+            throw new InvalidOperationException($"Missing or invalid season year in ref: {seasonTypeRef}");
+
+        // Build base path to season root
+        var baseParts = parts.Take(seasonsIndex + 2); // includes "seasons/{year}"
+        var path = string.Join('/', baseParts);
+        var query = seasonTypeRef.Query;
 
         return new Uri(path + query, UriKind.Absolute);
     }

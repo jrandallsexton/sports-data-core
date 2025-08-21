@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Provider.Application.Jobs;
 
 namespace SportsData.Provider.Infrastructure.Data.Entities
 {
@@ -31,6 +32,8 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
         public SourceDataProvider Provider { get; set; }
 
         public DocumentType DocumentType { get; set; }
+
+        public ResourceShape Shape { get; set; } = ResourceShape.Auto;
 
         public Sport SportId { get; set; }
 

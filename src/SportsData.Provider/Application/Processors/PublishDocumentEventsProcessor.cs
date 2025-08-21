@@ -1,7 +1,6 @@
-﻿using MassTransit;
-
-using SportsData.Core.Common;
+﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Provider.Infrastructure.Data;
@@ -18,14 +17,14 @@ namespace SportsData.Provider.Application.Processors
         private readonly ILogger<PublishDocumentEventsProcessor> _logger;
         private readonly IDocumentStore _documentStore;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
-        private readonly IPublishEndpoint _bus;
+        private readonly IEventBus _bus;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
 
         public PublishDocumentEventsProcessor(
             ILogger<PublishDocumentEventsProcessor> logger,
             IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
-            IPublishEndpoint bus,
+            IEventBus bus,
             IGenerateRoutingKeys routingKeyGenerator)
         {
             _logger = logger;

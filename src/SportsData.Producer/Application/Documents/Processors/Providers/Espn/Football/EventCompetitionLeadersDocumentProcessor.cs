@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -23,12 +22,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
     {
         private readonly ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
 
         public EventCompetitionLeadersDocumentProcessor(
             ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IPublishEndpoint publishEndpoint)
+            IEventBus publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;

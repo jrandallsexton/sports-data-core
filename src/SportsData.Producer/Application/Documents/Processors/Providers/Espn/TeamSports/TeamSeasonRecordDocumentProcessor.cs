@@ -1,10 +1,9 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Extensions;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -18,12 +17,12 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : IProcessDocuments
 {
     private readonly TDataContext _dataContext;
     private readonly ILogger<TeamSeasonRecordDocumentProcessor<TDataContext>> _logger;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IEventBus _publishEndpoint;
 
     public TeamSeasonRecordDocumentProcessor(
         TDataContext dataContext,
         ILogger<TeamSeasonRecordDocumentProcessor<TDataContext>> logger,
-        IPublishEndpoint publishEndpoint)
+        IEventBus publishEndpoint)
     {
         _dataContext = dataContext;
         _logger = logger;

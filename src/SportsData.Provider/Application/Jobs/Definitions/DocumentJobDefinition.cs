@@ -13,6 +13,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public DocumentJobDefinition(Infrastructure.Data.Entities.ResourceIndex resourceIndex)
         {
             DocumentType = resourceIndex.DocumentType;
+            Shape = resourceIndex.Shape;
             Endpoint = resourceIndex.Uri;
             EndpointMask = resourceIndex.EndpointMask;
             ResourceIndexId = resourceIndex.Id;
@@ -34,6 +35,8 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         }
 
         public Guid ResourceIndexId { get; set; }
+
+        public ResourceShape Shape { get; set; } = ResourceShape.Auto;
 
         public Sport Sport { get; init; }
 

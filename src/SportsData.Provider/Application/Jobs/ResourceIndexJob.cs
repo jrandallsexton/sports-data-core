@@ -40,8 +40,67 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
         {
-            using (_logger.BeginScope(nameof(ResourceIndexJob)))
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = jobDefinition.ResourceIndexId
+                   }))
                 await ExecuteInternal(jobDefinition);
+        }
+
+        private async Task ProcessLeaf(
+            DocumentJobDefinition jobDefinition,
+            Guid id,
+            Guid me)
+        {
+            try
+            {
+                // Treat the endpoint itself as the single item in this "index"
+                var href = jobDefinition.Endpoint;
+                var hrefHash = HashProvider.GenerateHashFromUri(href!.ToCleanUri());
+
+                var cmd = new ProcessResourceIndexItemCommand(
+                    jobDefinition.ResourceIndexId,            // correlation
+                    id,                                       // parent RI job id (same as your loop)
+                    hrefHash,                                 // UrlHash
+                    href!,                                     // $ref
+                    jobDefinition.Sport,
+                    jobDefinition.SourceDataProvider,
+                    jobDefinition.DocumentType,
+                    null,                                     // parentId
+                    jobDefinition.SeasonYear
+                );
+
+                _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+
+                // Mark complete (owner-gated), consistent with index path
+                await _dataContext.ResourceIndexJobs
+                    .Where(x => x.Id == id && x.ProcessingInstanceId == me)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.IsQueued, _ => false)
+                        .SetProperty(x => x.LastAccessedUtc, _ => DateTime.UtcNow)
+                        .SetProperty(x => x.TotalPageCount, _ => 1)   // single "page"
+                        .SetProperty(x => x.LastPageIndex, _ => 1)
+                        .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
+
+                _logger.LogInformation("Leaf RI enqueued as item: {Endpoint} ({DocumentType})",
+                    href, jobDefinition.DocumentType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled exception during Leaf handling for ResourceIndex {Id}", id);
+                throw; // Hangfire will retry
+            }
+            finally
+            {
+                // Release ownership
+                await _dataContext.ResourceIndexJobs
+                    .Where(x => x.Id == id && x.ProcessingInstanceId == me)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.ProcessingInstanceId, _ => (Guid?)null)
+                        .SetProperty(x => x.ProcessingStartedUtc, _ => (DateTime?)null));
+            }
+
+            return; // don't fall through to index traversal
         }
 
         private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
@@ -63,6 +122,12 @@ namespace SportsData.Provider.Application.Jobs
             if (!claimed)
             {
                 _logger.LogWarning("ResourceIndex {ResourceIndexId} already owned; skipping.", id);
+                return;
+            }
+
+            if (jobDefinition.Shape == ResourceShape.Leaf)
+            {
+                await ProcessLeaf(jobDefinition, id, me);
                 return;
             }
 
@@ -118,6 +183,7 @@ namespace SportsData.Provider.Application.Jobs
                     foreach (var item in resourceIndexDto.Items)
                     {
                         var cmd = new ProcessResourceIndexItemCommand(
+                            jobDefinition.ResourceIndexId,
                             id,
                             HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()),
                             item.Ref,
@@ -141,13 +207,14 @@ namespace SportsData.Provider.Application.Jobs
                     // Stop criteria 2: last page reached
                     if (resourceIndexDto.PageIndex >= resourceIndexDto.PageCount)
                     {
-                        _logger.LogInformation("Final page {Page} reached.", resourceIndexDto.PageIndex);
+                        _logger.LogInformation("Final page {Page} reached. {@Dto}", resourceIndexDto.PageIndex, resourceIndexDto);
                         break;
                     }
 
                     // Next page
                     var nextPage = resourceIndexDto.PageIndex + 1;
                     var nextUrl = $"{jobDefinition.Endpoint}?limit={PageSize}&page={nextPage}";
+                    _logger.LogInformation("Fetching next page. {NextUrl}", nextUrl);
                     resourceIndexDto = await _espnApi.GetResourceIndex(new Uri(nextUrl, UriKind.RelativeOrAbsolute), jobDefinition.EndpointMask);
                 }
 

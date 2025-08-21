@@ -113,8 +113,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public List<EspnLeagueSeasonType> Items { get; set; }
     }
 
-    public class Week
+    public class Week : IHasRef
     {
+        [JsonPropertyName("$ref")]
+        public Uri Ref { get; set; }
+
         [JsonPropertyName("number")]
         public int Number { get; set; }
 

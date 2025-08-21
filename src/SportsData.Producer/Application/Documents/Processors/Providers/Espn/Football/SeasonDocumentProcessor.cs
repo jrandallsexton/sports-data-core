@@ -1,13 +1,13 @@
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -22,13 +22,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<SeasonDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
 
         public SeasonDocumentProcessor(
             ILogger<SeasonDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IPublishEndpoint publishEndpoint)
+            IEventBus publishEndpoint)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -49,6 +49,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 {
                     await ProcessInternal(command);
                 }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
@@ -60,22 +68,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             // Step 1: Deserialize
-            var externalProviderDto = command.Document.FromJson<EspnFootballSeasonDto>();
+            var dto = command.Document.FromJson<EspnFootballSeasonDto>();
 
-            if (externalProviderDto is null)
+            if (dto is null)
             {
                 _logger.LogError("Failed to deserialize document to EspnFootballSeasonDto. {@Command}", command);
                 return;
             }
 
-            if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+            if (string.IsNullOrEmpty(dto.Ref?.ToString()))
             {
                 _logger.LogError("EspnFootballSeasonDto Ref is null or empty. {@Command}", command);
                 return;
             }
 
             // Step 2: Map DTO -> Canonical Entity
-            var mappedSeason = externalProviderDto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+            var mappedSeason = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
             _logger.LogInformation("Mapped season: {@mappedSeason}", mappedSeason);
 
@@ -91,7 +99,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
             else
             {
-                await ProcessNewEntity(command, externalProviderDto);
+                await ProcessNewEntity(command, dto);
             }
 
             // Step 4: Save changes
@@ -102,13 +110,29 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnFootballSeasonDto dto)
         {
-            var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+            var season = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
+
+            var seasonType = dto.Type;
+            var seasonPhase = seasonType.AsEntity(season.Id, _externalRefIdentityGenerator, command.CorrelationId);
+
+            await _dataContext.Seasons.AddAsync(season);
+            await _dataContext.SeasonPhases.AddAsync(seasonPhase);
+            await _dataContext.SaveChangesAsync();
+
+            await _dataContext.Seasons
+                .Where(s => s.Id == season.Id && s.ActivePhaseId == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.ActivePhaseId, _ => seasonPhase.Id));
+
+            _logger.LogInformation("Linked ActivePhaseId for Season {SeasonId} -> Phase {PhaseId}",
+                season.Id, seasonPhase.Id);
+
+            var publishEvents = false;
 
             if (dto.Types?.Ref is not null)
             {
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: Guid.NewGuid().ToString(),
-                    ParentId: newEntity.Id.ToString(),
+                    ParentId: season.Id.ToString(),
                     Uri: dto.Types.Ref,
                     Sport: command.Sport,
                     SeasonYear: dto.Year,
@@ -117,9 +141,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.SeasonDocumentProcessor
                 ));
+                _logger.LogInformation("Found {Count} season phases", dto.Types.Count);
+                publishEvents = true;
             }
 
-            // TODO: Rankings?
+            // Rankings are here, but cannot be processed until we have FranchiseSeason entities created
 
             // Had to remove this for now as it creates a circular dependency between SeasonDocumentProcessor and AthleteSeasonDocumentProcessor
             //if (dto.Athletes?.Ref is not null)
@@ -141,7 +167,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: Guid.NewGuid().ToString(),
-                    ParentId: newEntity.Id.ToString(),
+                    ParentId: season.Id.ToString(),
                     Uri: dto.Futures.Ref,
                     Sport: command.Sport,
                     SeasonYear: dto.Year,
@@ -150,17 +176,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.SeasonDocumentProcessor
                     ));
+                publishEvents = true;
             }
 
-            await _dataContext.Seasons.AddAsync(newEntity);
-            await _dataContext.SaveChangesAsync();
+            if (publishEvents)
+            {
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+            }
 
-            _logger.LogInformation("Created new Season entity: {SeasonId}", newEntity.Id);
+            _logger.LogInformation("Created new Season entity: {SeasonId}", season.Id);
         }
 
         private async Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
         {
-            _logger.LogWarning("Season update detected. Not implemented");
+            _logger.LogError("Season update detected. Not implemented");
             await Task.Delay(100);
             //// Update scalar properties
             //existingSeason.Year = mappedSeason.Year;

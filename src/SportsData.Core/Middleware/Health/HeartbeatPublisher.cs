@@ -1,9 +1,8 @@
-﻿using MassTransit;
-
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 
 using System;
@@ -25,7 +24,7 @@ namespace SportsData.Core.Middleware.Health
                 try
                 {
                     using var scope = scopeFactory.CreateScope();
-                    var publisher = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+                    var publisher = scope.ServiceProvider.GetRequiredService<IEventBus>();
 
                     await publisher.Publish(new Heartbeat
                     {

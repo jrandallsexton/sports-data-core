@@ -1,6 +1,5 @@
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -12,12 +11,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
     {
         private readonly TDataContext _dataContext;
         private readonly ILogger<TeamSeasonAwardDocumentProcessor<TDataContext>> _logger;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IEventBus _publishEndpoint;
 
         public TeamSeasonAwardDocumentProcessor(
             TDataContext dataContext,
             ILogger<TeamSeasonAwardDocumentProcessor<TDataContext>> logger,
-            IPublishEndpoint publishEndpoint)
+            IEventBus publishEndpoint)
         {
             _dataContext = dataContext;
             _logger = logger;

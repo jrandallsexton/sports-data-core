@@ -14,13 +14,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public Guid ContestId { get; set; } // From Producer
 
-        public Contest Contest { get; set; } = null!;
+        public int Week { get; set; }
+
+        //public Contest Contest { get; set; } = null!;
 
         public Guid? FranchiseId { get; set; } // Used for SU or ATS
 
         public OverUnderPick? OverUnder { get; set; } // Enum: Over, Under
 
         public int? ConfidencePoints { get; set; }
+
+        public UserPickType PickType { get; set; } = UserPickType.StraightUp;
 
         // === Scoring Fields ===
         public bool? IsCorrect { get; set; }
@@ -61,16 +65,20 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.TiebreakerType)
                     .HasConversion<int?>(); // Nullable enum stored as int
 
-                builder.HasOne(p => p.Contest)
-                    .WithMany() // Contest doesn't track back to picks
-                    .HasForeignKey(p => p.ContestId)
-                    .HasPrincipalKey(c => c.ContestId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                //builder.HasOne(p => p.Contest)
+                //    .WithMany() // Contest doesn't track back to picks
+                //    .HasForeignKey(p => p.ContestId)
+                //    .HasPrincipalKey(c => c.ContestId)
+                //    .OnDelete(DeleteBehavior.Restrict);
 
                 builder.HasIndex(c => c.ContestId).IsUnique();
 
                 builder.Property(x => x.TiebreakerType)
                     .HasConversion<int>() // store as int
+                    .IsRequired();
+
+                builder.Property(x => x.PickType)
+                    .HasConversion<int>()
                     .IsRequired();
             }
         }

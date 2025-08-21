@@ -1,13 +1,13 @@
 using Hangfire;
 
 using MassTransit;
-using MassTransit.Configuration;
 
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
@@ -65,32 +65,45 @@ public class Program
         }
 
         services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
-        services.AddMassTransit(x =>
-        {
-            x.SetKebabCaseEndpointNameFormatter();
 
-            x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
-            {
-                o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
-                o.QueryDelay = TimeSpan.FromSeconds(1);
-                o.UsePostgres()
-                    .UseBusOutbox(busOutbox =>
-                    {
-                        busOutbox.MessageDeliveryLimit = int.MaxValue;
-                    });
-            });
+        //services.AddMessaging<BaseDataContext>(config, [
+        //    typeof(DocumentCreatedHandler),
+        //    typeof(ProcessImageRequestedHandler),
+        //    typeof(ProcessImageResponseHandler)
+        //]);
 
-            x.AddConsumer<DocumentCreatedHandler>();
-            x.AddConsumer<ProcessImageRequestedHandler>();
-            x.AddConsumer<ProcessImageResponseHandler>();
+        services.AddMessaging(config, [
+            typeof(DocumentCreatedHandler),
+            typeof(ProcessImageRequestedHandler),
+            typeof(ProcessImageResponseHandler)
+        ]);
 
-            x.UsingAzureServiceBus((context, cfg) =>
-            {
-                cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-                //cfg.UseConcurrencyLimit(10);
-                cfg.ConfigureEndpoints(context);
-            });
-        });
+        //services.AddMassTransit(x =>
+        //{
+        //    x.SetKebabCaseEndpointNameFormatter();
+
+        //    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
+        //    {
+        //        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
+        //        o.QueryDelay = TimeSpan.FromSeconds(1);
+        //        o.UsePostgres()
+        //            .UseBusOutbox(busOutbox =>
+        //            {
+        //                busOutbox.MessageDeliveryLimit = int.MaxValue;
+        //            });
+        //    });
+
+        //    x.AddConsumer<DocumentCreatedHandler>();
+        //    x.AddConsumer<ProcessImageRequestedHandler>();
+        //    x.AddConsumer<ProcessImageResponseHandler>();
+
+        //    x.UsingAzureServiceBus((context, cfg) =>
+        //    {
+        //        cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
+        //        //cfg.UseConcurrencyLimit(10);
+        //        cfg.ConfigureEndpoints(context);
+        //    });
+        //});
 
         services.AddInstrumentation(builder.Environment.ApplicationName);
 

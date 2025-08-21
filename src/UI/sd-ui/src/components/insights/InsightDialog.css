@@ -1,5 +1,5 @@
 .insight-dialog-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -149,6 +149,7 @@
   color: #61dafb;
 }
 
+.overview-section h3,
 .analysis-section h3,
 .prediction-section h3 {
   font-size: 1.2rem;

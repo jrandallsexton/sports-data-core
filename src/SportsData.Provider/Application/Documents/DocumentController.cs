@@ -14,9 +14,6 @@ using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
-using System;
-using System.Net.Http;
-
 namespace SportsData.Provider.Application.Documents
 {
     // TODO: Move everything here into cqrs. this should be clean.

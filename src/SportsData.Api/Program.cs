@@ -7,24 +7,25 @@ using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 using Npgsql;
 
-using SportsData.Api.Application;
 using SportsData.Api.Application.Auth;
 using SportsData.Api.DependencyInjection;
-using SportsData.Api.Infrastructure;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Middleware;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Middleware.Health;
+using SportsData.Core.Processing;
 
 using System.Data;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Api
 {
@@ -32,6 +33,10 @@ namespace SportsData.Api
     {
         public static async Task Main(string[] args)
         {
+            var mode = (args.Length > 0 && args[0] == "-mode") ?
+                Enum.Parse<Sport>(args[1]) :
+                Sport.All;
+
             var builder = WebApplication.CreateBuilder(args);
 
             // configure JWT Authentication
@@ -129,16 +134,35 @@ namespace SportsData.Api
             });
 
             services.AddCoreServices(config);
-            services.AddControllers();
+
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
             services.AddClients(config);
 
+            services.AddSingleton(new OllamaClientConfig
+            {
+                Model = "mistral",
+                BaseUrl = "http://localhost:11434"
+            });
+
+            services.AddHttpClient<IProvideAiCommunication, OllamaClient>((sp, client) =>
+            {
+                var config = sp.GetRequiredService<OllamaClientConfig>();
+                client.BaseAddress = new Uri(config.BaseUrl);
+            });
+
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             //services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
-            //services.AddHangfire(x => x.UseSqlServerStorage(config[$"{builder.Environment.ApplicationName}:ConnectionStrings:Hangfire"]));
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
             //services.AddCaching(config);
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
@@ -177,6 +201,11 @@ namespace SportsData.Api
                 ResponseWriter = HealthCheckWriter.WriteResponse
             });
 
+            app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            {
+                Authorization = [new DashboardAuthFilter()]
+            });
+
             app.MapControllers();
 
             var assemblyConfigurationAttribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
@@ -184,7 +213,9 @@ namespace SportsData.Api
 
             app.UseCommonFeatures(buildConfigurationName);
 
-            app.Run();
+            app.Services.ConfigureHangfireJobs(mode);
+
+            await app.RunAsync();
         }
     }
 }

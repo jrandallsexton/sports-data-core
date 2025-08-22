@@ -18,7 +18,7 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
 
         public required TeamRankingFilter RankingFilter { get; set; } = TeamRankingFilter.AP_TOP_25;
 
-        public Dictionary<string, Guid> Conferences { get; set; } = new();
+        public Dictionary<Guid, string> Conferences { get; set; } = new();
 
         public required bool IsPublic { get; set; }
 
@@ -33,6 +33,8 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
         public required Guid CreatedBy { get; set; }
 
         public int? DropLowWeeksCount { get; set; }
+
+        public Guid CorrelationId { get; set; } = Guid.NewGuid();
 
     }
 }

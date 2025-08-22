@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -30,6 +33,14 @@ namespace SportsData.Api.Infrastructure.Data
 
         public DbSet<ContestPreview> ContestPreviews { get; set; }
 
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+        public DbSet<OutboxState> OutboxStates => Set<OutboxState>();
+
+        public DbSet<InboxState> InboxStates => Set<InboxState>();
+
+        public DbSet<OutboxPing> OutboxPings => Set<OutboxPing>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -37,6 +48,8 @@ namespace SportsData.Api.Infrastructure.Data
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(Entities.User.EntityConfiguration).Assembly);
 
             // Seed the Firebase test user
+            var seedTime = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             modelBuilder.Entity<User>().HasData(new User
             {
                 Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
@@ -44,9 +57,24 @@ namespace SportsData.Api.Infrastructure.Data
                 Email = "foo@bar.com",
                 EmailVerified = true,
                 SignInProvider = "password",
-                CreatedUtc = DateTime.UtcNow,
-                LastLoginUtc = DateTime.UtcNow,
+                CreatedUtc = seedTime,
+                LastLoginUtc = seedTime,
                 DisplayName = "Foo Bar"
+            });
+
+            modelBuilder.AddInboxStateEntity(cfg =>
+            {
+                cfg.ToTable(nameof(InboxState));
+            });
+
+            modelBuilder.AddOutboxStateEntity(cfg =>
+            {
+                cfg.ToTable(nameof(OutboxState));
+            });
+
+            modelBuilder.AddOutboxMessageEntity(cfg =>
+            {
+                cfg.ToTable(nameof(OutboxMessage));
             });
         }
 

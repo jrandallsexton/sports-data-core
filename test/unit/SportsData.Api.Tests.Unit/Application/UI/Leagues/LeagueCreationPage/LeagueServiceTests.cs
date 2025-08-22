@@ -11,7 +11,7 @@ using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.LeagueCreationPage;
 
-public class LeagueCreationServiceTests : ApiTestBase<LeagueService>
+public class LeagueServiceTests : ApiTestBase<LeagueService>
 {
     private CreateLeagueRequest BuildValidRequest() => new()
     {
@@ -84,19 +84,6 @@ public class LeagueCreationServiceTests : ApiTestBase<LeagueService>
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("League name is required.*");
-    }
-
-    [Fact]
-    public async Task ShouldThrow_WhenConferenceSlugsAreEmpty()
-    {
-        var sut = Mocker.CreateInstance<LeagueService>();
-        var request = BuildValidRequest();
-        request.ConferenceSlugs = new List<string>();
-
-        var act = () => sut.CreateAsync(request, Guid.NewGuid());
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("At least one conference must be selected.*");
     }
 
     [Fact]

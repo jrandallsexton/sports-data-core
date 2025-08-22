@@ -3,6 +3,8 @@
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.PickemGroups;
 
 namespace SportsData.Api.Application.Processors
 {
@@ -16,15 +18,18 @@ namespace SportsData.Api.Application.Processors
         private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupScheduleProcessor> _logger;
         private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IEventBus _eventBus;
 
         public MatchupScheduleProcessor(
             AppDataContext dataContext,
             ILogger<MatchupScheduleProcessor> logger,
-            IProvideCanonicalData canonicalDataProvider)
+            IProvideCanonicalData canonicalDataProvider,
+            IEventBus eventBus)
         {
             _dataContext = dataContext;
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
+            _eventBus = eventBus;
         }
 
         public async Task Process(ScheduleGroupWeekMatchupsCommand command)
@@ -111,6 +116,14 @@ namespace SportsData.Api.Application.Processors
             }
 
             groupWeek.AreMatchupsGenerated = true;
+
+            await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
+                    group.Id,
+                    command.SeasonYear,
+                    command.SeasonWeek,
+                    command.CorrelationId,
+                    Guid.NewGuid()),
+                CancellationToken.None);
 
             await _dataContext.SaveChangesAsync();
 

@@ -10,6 +10,10 @@
 
         public string LeagueType { get; set; } = null!;
 
+        public bool UseConfidencePoints { get; set; } = false;
+
+        public int MemberCount { get; set; }
+
         public string? AvatarUrl { get; set; } // optional for visuals
     }
 }

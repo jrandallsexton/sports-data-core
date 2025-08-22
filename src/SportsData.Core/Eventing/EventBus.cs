@@ -117,7 +117,7 @@ namespace SportsData.Core.Eventing
     {
         private readonly TDb _db;
         public EfOutboxAmbientState(TDb db) => _db = db;
-        public bool IsActive => _db.Database.CurrentTransaction != null || _db.ChangeTracker.HasChanges();
+        public bool IsActive => true;
     }
 
 }

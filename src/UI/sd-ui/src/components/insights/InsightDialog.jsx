@@ -1,13 +1,13 @@
 import "./InsightDialog.css";
-import teams from "../../data/teams";
+// import teams from "../../data/teams";
 
 function InsightDialog({ isOpen, onClose, matchup, loading }) {
   console.log("InsightDialog visible:", isOpen, matchup);
 
   if (!isOpen || !matchup) return null;
 
-  const awayTeamInfo = teams[matchup.away];
-  const homeTeamInfo = teams[matchup.home];
+  // const awayTeamInfo = teams[matchup.away];
+  // const homeTeamInfo = teams[matchup.home];
 
   return (
     <div className="insight-dialog-overlay">

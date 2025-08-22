@@ -159,3 +159,9 @@
   gap: 6px;
 }
 
+/* Smooth fade-out animation for grid rows */
+.grid-row.fade-out {
+  opacity: 0;
+  transition: opacity 500ms ease-in-out;
+}
+

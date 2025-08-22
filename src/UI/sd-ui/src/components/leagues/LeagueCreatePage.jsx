@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import apiWrapper from "../../api/apiWrapper.js";
 
 import "./LeagueCreatePage.css";
 
@@ -16,22 +17,25 @@ const LeagueCreatePage = () => {
   const [rankingFilter, setRankingFilter] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
-  const [dropLowWeeksCount, setDropLowWeeksCount] = useState(0); // NEW
+  const [dropLowWeeksCount, setDropLowWeeksCount] = useState(0);
+    const [allConferences, setAllConferences] = useState([]);
+  const [fbsOnly, setFbsOnly] = useState(true);
+
   const navigate = useNavigate();
 
-  const CONFERENCES = [
-    { shortName: "American", slug: "american" },
-    { shortName: "ACC", slug: "acc" },
-    { shortName: "Big 12", slug: "big-12" },
-    { shortName: "CUSA", slug: "cusa" },
-    { shortName: "Big Ten", slug: "big-ten" },
-    { shortName: "MAC", slug: "mac" },
-    { shortName: "FBS Indep.", slug: "fbs-indep" },
-    { shortName: "Mountain West", slug: "mountain-west" },
-    { shortName: "Pac-12", slug: "pac-12" },
-    { shortName: "SEC", slug: "sec" },
-    { shortName: "Sun Belt", slug: "sun-belt" },
-  ];
+  useEffect(() => {
+    const fetchConferences = async () => {
+      try {
+        const result =
+          await apiWrapper.Conferences.getConferenceNamesAndSlugs();
+        setAllConferences(result.data); // raw data
+      } catch (error) {
+        console.error("Failed to load conferences", error);
+      }
+    };
+
+    fetchConferences();
+  }, []);
 
   const chunk = (array, size) => {
     const result = [];
@@ -77,27 +81,17 @@ const LeagueCreatePage = () => {
     setShowConfirmDialog(false);
   };
 
+  const conferences = fbsOnly
+    ? allConferences.filter((c) => c.division === "FBS (I-A)")
+    : allConferences;
+
   return (
     <div className="page-container">
       <h1>Create a New Pick’em League</h1>
-      <p>Let’s set up your custom league so you can compete with friends - or publish it for others to join!</p>
-
-      {/* <div className="card">
-        <h2>How It Works</h2>
-        <p>
-          Pick’em leagues are public or private groups where players compete by
-          making weekly picks for college football games.
-        </p>
-        <ul>
-          <li>Choose your league name and rules</li>
-          <li>Invite friends with a shareable code</li>
-          <li>Track wins, streaks, and weekly leaders</li>
-        </ul>
-        <p>
-          You’re in control — whether you want casual fun or competitive trash
-          talk, we’ve got you covered.
-        </p>
-      </div> */}
+      <p>
+        Let’s set up your custom league so you can compete with friends - or
+        publish it for others to join!
+      </p>
 
       <div className="card">
         <form className="league-form" onSubmit={handleFormSubmit}>
@@ -168,9 +162,20 @@ const LeagueCreatePage = () => {
               </div>
 
               <h4>🏈 Conferences</h4>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={fbsOnly}
+                    onChange={(e) => setFbsOnly(e.target.checked)}
+                  />{" "}
+                  FBS Only (I-A)
+                </label>
+              </div>
+
               <table className="checkbox-table">
                 <tbody>
-                  {chunk(CONFERENCES, 3).map((row, rowIndex) => (
+                  {chunk(conferences, 3).map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {row.map((conf) => (
                         <td key={conf.slug}>
@@ -261,7 +266,7 @@ const LeagueCreatePage = () => {
                 {teamFilter.length
                   ? teamFilter
                       .map((slug) => {
-                        const conf = CONFERENCES.find((c) => c.slug === slug);
+                        const conf = conferences.find((c) => c.slug === slug);
                         return conf?.shortName || slug;
                       })
                       .join(", ")
@@ -289,7 +294,9 @@ const LeagueCreatePage = () => {
               </li>
               <li>
                 <strong>Drop Low Weeks:</strong>{" "}
-                {dropLowWeeksCount === 0 ? "None. Use All Weeks" : dropLowWeeksCount}
+                {dropLowWeeksCount === 0
+                  ? "None. Use All Weeks"
+                  : dropLowWeeksCount}
               </li>
               <li>
                 <strong>Visibility:</strong> {isPublic ? "Public" : "Private"}

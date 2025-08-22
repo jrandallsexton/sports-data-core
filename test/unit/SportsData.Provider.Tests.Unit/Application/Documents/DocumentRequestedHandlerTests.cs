@@ -187,7 +187,6 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // assert
         ex.Should().BeNull();
     }
-
     
     [Theory]
     [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2021/teams/2551/ranks", DocumentType.TeamSeasonRank, 0)]

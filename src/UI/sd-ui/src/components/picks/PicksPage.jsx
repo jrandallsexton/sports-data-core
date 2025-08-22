@@ -1,7 +1,7 @@
-// src/components/picks/PicksPage.jsx
 import "./PicksPage.css";
 
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
 import toast from "react-hot-toast";
@@ -12,9 +12,10 @@ import MatchupGrid from "../matchups/MatchupGrid.jsx";
 
 function PicksPage() {
   const { userDto, loading: userLoading } = useUserDto();
+  const { leagueId: routeLeagueId } = useParams(); // optional route param
+  const navigate = useNavigate();
 
   const [userPicks, setUserPicks] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed] = useState(false);
   const [selectedMatchup, setSelectedMatchup] = useState(null);
   const [isInsightDialogOpen, setIsInsightDialogOpen] = useState(false);
@@ -24,20 +25,32 @@ function PicksPage() {
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
-  const [selectedWeek, setSelectedWeek] = useState(1); // TODO: Dynamically set current week as default
-  const [viewMode, setViewMode] = useState("card");
+  const [selectedWeek, setSelectedWeek] = useState(1);
+  const viewMode = "card";
 
   const [hidePicked, setHidePicked] = useState(false);
   const [fadingOut, setFadingOut] = useState([]);
 
   const leagues = Object.values(userDto?.leagues || {});
 
-  // Auto-select first available league if not already selected
+  // Select default league on load or when leagues change
   useEffect(() => {
-    if (!selectedLeagueId && leagues.length > 0) {
-      setSelectedLeagueId(leagues[0].id);
+    if (!userLoading && leagues.length > 0) {
+      const isRouteValid = routeLeagueId && leagues.some(l => l.id === routeLeagueId);
+      if (isRouteValid) {
+        setSelectedLeagueId(routeLeagueId);
+      } else if (!selectedLeagueId) {
+        setSelectedLeagueId(leagues[0].id);
+      }
     }
-  }, [leagues, selectedLeagueId]);
+  }, [userLoading, leagues, routeLeagueId]);
+
+  // Keep URL in sync with selectedLeagueId
+  useEffect(() => {
+    if (selectedLeagueId && selectedLeagueId !== routeLeagueId) {
+      navigate(`/app/picks/${selectedLeagueId}`, { replace: true });
+    }
+  }, [selectedLeagueId]);
 
   useEffect(() => {
     async function fetchMatchups() {
@@ -48,11 +61,7 @@ function PicksPage() {
           selectedLeagueId,
           selectedWeek
         );
-
-        const newMatchups = response.data.matchups || [];
-
-        // Only update after full fetch
-        setMatchups(newMatchups);
+        setMatchups(response.data.matchups || []);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
       } finally {
@@ -78,7 +87,6 @@ function PicksPage() {
           picksByContest[pick.contestId] = pick.franchiseId;
         }
 
-        // Update only once all picks are ready
         setUserPicks(picksByContest);
       } catch (error) {
         console.error("Failed to fetch user picks:", error);
@@ -93,33 +101,41 @@ function PicksPage() {
       await apiWrapper.Picks.submitPick({
         pickemGroupId: selectedLeagueId,
         contestId: matchup.contestId,
-        pickType: "StraightUp", // hardcoded for MVP
+        pickType: "StraightUp",
         franchiseSeasonId: selectedFranchiseSeasonId,
         week: selectedWeek,
       });
 
-      setUserPicks((prev) => ({
-        ...prev,
-        [matchup.contestId]: selectedFranchiseSeasonId,
-      }));
+      if (hidePicked) {
+        setFadingOut(prev => [...prev, matchup.contestId]);
+
+        setTimeout(() => {
+          setUserPicks(prev => ({
+            ...prev,
+            [matchup.contestId]: selectedFranchiseSeasonId,
+          }));
+          setFadingOut(prev => prev.filter(id => id !== matchup.contestId));
+        }, 500);
+      } else {
+        setUserPicks(prev => ({
+          ...prev,
+          [matchup.contestId]: selectedFranchiseSeasonId,
+        }));
+      }
 
       toast.success("Pick saved!");
     } catch (error) {
       console.error("Error submitting pick:", error);
-      toast.error("Failed to save pick.");
+
+      if (
+        error.response?.status === 500 &&
+        error.response?.data?.includes?.("duplicate key value violates unique constraint")
+      ) {
+        toast.error("You already picked this game. Refresh to view.");
+      } else {
+        toast.error("Failed to save pick. Please try again.");
+      }
     }
-  }
-
-  function handleSubmit() {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    setTimeout(() => {
-      console.log("User Picks:", userPicks);
-      toast.success("Your picks have been submitted!");
-      setIsSubmitting(false);
-      setSubmitted(true);
-    }, 1500);
   }
 
   async function handleViewInsight(matchup) {
@@ -134,12 +150,10 @@ function PicksPage() {
     setLoadingInsight(true);
 
     try {
-      const response = await apiWrapper.Matchups.getPreviewByContestId(
-        matchup.contestId
-      );
+      const response = await apiWrapper.Matchups.getPreviewByContestId(matchup.contestId);
       const preview = response.data;
 
-      setSelectedMatchup((prev) => ({
+      setSelectedMatchup(prev => ({
         ...prev,
         insightText: preview.overview,
         analysis: preview.analysis,
@@ -153,10 +167,6 @@ function PicksPage() {
     }
   }
 
-  function toggleViewMode() {
-    setViewMode((prev) => (prev === "card" ? "grid" : "card"));
-  }
-
   if (userLoading) return <div>Loading user info...</div>;
 
   if (!leagues.length) {
@@ -164,16 +174,13 @@ function PicksPage() {
   }
 
   const totalGames = matchups.length;
-
   const picksMade = Object.keys(userPicks).filter(
-    (contestId) =>
-      userPicks[contestId] !== null && userPicks[contestId] !== undefined
+    id => userPicks[id] !== null && userPicks[id] !== undefined
   ).length;
-
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
   const visibleMatchups = hidePicked
-    ? matchups.filter((m) => !userPicks[m.contestId])
+    ? matchups.filter(m => !userPicks[m.contestId] || fadingOut.includes(m.contestId))
     : matchups;
 
   return (
@@ -202,10 +209,6 @@ function PicksPage() {
               Hide Picked Games
             </label>
           </div>
-
-          {/* <button onClick={toggleViewMode} className="view-mode-toggle">
-            {viewMode === "card" ? "Grid View" : "Card View"}
-          </button> */}
         </div>
 
         {loadingMatchups ? (
@@ -219,6 +222,7 @@ function PicksPage() {
                 onPick={handlePick}
                 onViewInsight={handleViewInsight}
                 isSubscribed={isSubscribed}
+                fadingOut={fadingOut}
               />
             ) : (
               <MatchupGrid
@@ -227,6 +231,7 @@ function PicksPage() {
                 onPick={handlePick}
                 onViewInsight={handleViewInsight}
                 isSubscribed={isSubscribed}
+                fadingOut={fadingOut}
               />
             )}
           </>

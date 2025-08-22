@@ -2,6 +2,7 @@
 
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.UI.Conferences;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
@@ -40,6 +41,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
 
             services.AddScoped<IMessageboardService, MessageboardService>();
+
+            services.AddScoped<IConferenceService, ConferenceService>();
 
             //services.AddScoped<IProvideAiCommunication, OllamaClient>();
             //services.AddSingleton<OllamaClientConfig>();

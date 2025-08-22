@@ -87,7 +87,9 @@ public class LeagueController : ApiControllerBase
                 Id = m.Group.Id,
                 Name = m.Group.Name,
                 Sport = m.Group.Sport.ToString(),
-                LeagueType = m.Group.PickType.ToString()
+                LeagueType = m.Group.PickType.ToString(),
+                UseConfidencePoints = m.Group.UseConfidencePoints,
+                MemberCount = m.Group.Members.Count
             })
             .ToListAsync();
 
@@ -126,11 +128,37 @@ public class LeagueController : ApiControllerBase
     }
 
     [HttpGet("{id}/matchups/{week}")]
-    //[Authorize]
+    [Authorize]
     public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(Guid id, int week)
     {
         var userId = HttpContext.GetCurrentUserId();
         var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
         return Ok(result);
     }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        try
+        {
+            await _iLeagueService.DeleteLeague(userId, id, cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
 }

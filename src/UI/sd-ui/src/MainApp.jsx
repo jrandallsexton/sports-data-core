@@ -83,7 +83,7 @@ function MainApp() {
       <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
         <Routes>
           <Route index element={<HomePage />} />
-          <Route path="picks" element={<PicksPage />} />
+          <Route path="picks/:leagueId?" element={<PicksPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="messageboard" element={<MessageBoardPage />} />
           <Route path="settings" element={<SettingsPage />} />

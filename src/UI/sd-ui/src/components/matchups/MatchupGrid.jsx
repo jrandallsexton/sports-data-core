@@ -10,6 +10,7 @@ function MatchupGrid({
   onPick,
   onViewInsight,
   isSubscribed,
+  fadingOut = [],
 }) {
   if (loading) {
     return (
@@ -42,8 +43,8 @@ function MatchupGrid({
 
         return (
           <div
-            key={matchup.id}
-            className={`grid-row ${userPicks[matchup.id] ? "pick-selected" : ""}`}
+            key={matchup.contestId}
+            className={`grid-row ${userPicks[matchup.contestId] ? "pick-selected" : ""} ${fadingOut.includes(matchup.contestId) ? 'fade-out' : ''}`}
           >
             {/* Game */}
             <div className="grid-cell game-cell">
@@ -115,20 +116,20 @@ function MatchupGrid({
                 <label>
                   <input
                     type="radio"
-                    name={`pick-${matchup.id}`}
-                    value={matchup.away}
-                    checked={userPicks[matchup.id] === matchup.away}
-                    onChange={() => onPick(matchup.id, matchup.away)}
+                    name={`pick-${matchup.contestId}`}
+                    value={matchup.awayFranchiseSeasonId}
+                    checked={userPicks[matchup.contestId] === matchup.awayFranchiseSeasonId}
+                    onChange={() => onPick(matchup, matchup.awayFranchiseSeasonId)}
                   />
                   <span className="team">{matchup.away}</span>
                 </label>
                 <label>
                   <input
                     type="radio"
-                    name={`pick-${matchup.id}`}
-                    value={matchup.home}
-                    checked={userPicks[matchup.id] === matchup.home}
-                    onChange={() => onPick(matchup.id, matchup.home)}
+                    name={`pick-${matchup.contestId}`}
+                    value={matchup.homeFranchiseSeasonId}
+                    checked={userPicks[matchup.contestId] === matchup.homeFranchiseSeasonId}
+                    onChange={() => onPick(matchup, matchup.homeFranchiseSeasonId)}
                   />
                   <span className="team">{matchup.home}</span>
                 </label>

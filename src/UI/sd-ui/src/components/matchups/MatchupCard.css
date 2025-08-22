@@ -207,5 +207,5 @@
 /* Smooth fade-out animation */
 .matchup-card.fade-out {
   opacity: 0;
-  transition: opacity 200ms ease-in-out;
+  transition: opacity 500ms ease-in-out;
 }

@@ -62,18 +62,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.ToTable("UserPick");
                 builder.HasKey(x => x.Id);
 
+                // Correct composite unique index: one pick per user, per group, per contest
                 builder.HasIndex(x => new { PickemGroupId = x.PickemGroupId, x.UserId, x.ContestId }).IsUnique();
 
-                builder.Property(x => x.TiebreakerType)
-                    .HasConversion<int?>(); // Nullable enum stored as int
-
-                //builder.HasOne(p => p.Contest)
-                //    .WithMany() // Contest doesn't track back to picks
-                //    .HasForeignKey(p => p.ContestId)
-                //    .HasPrincipalKey(c => c.ContestId)
-                //    .OnDelete(DeleteBehavior.Restrict);
-
-                builder.HasIndex(c => c.ContestId).IsUnique();
+                // Optional performance index (non-unique) if querying by contest
+                builder.HasIndex(c => c.ContestId);
 
                 builder.Property(x => x.TiebreakerType)
                     .HasConversion<int>() // store as int

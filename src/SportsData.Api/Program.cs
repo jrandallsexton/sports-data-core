@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 using SportsData.Api.Application.Auth;
+using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.DependencyInjection;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Middleware;
@@ -160,7 +161,10 @@ namespace SportsData.Api
             });
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
-            //services.AddMessaging(config, [typeof(HeartbeatConsumer)]);
+            services.AddMessaging<AppDataContext>(config, [
+                typeof(PickemGroupCreatedHandler),
+                typeof(PickemGroupWeekMatchupsGeneratedHandler)
+            ]);
             //services.AddInstrumentation(builder.Environment.ApplicationName);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
             //services.AddCaching(config);

@@ -1,3 +1,5 @@
+// src/api/leagues/leaguesApi.js
+
 import apiClient from "../apiClient";
 
 /**
@@ -38,11 +40,22 @@ const joinLeague = async (id) => {
   await apiClient.post(`/ui/league/${id}/join`);
 };
 
+/**
+ * Deletes a league by ID.
+ * Only the league owner is authorized.
+ * @param {string} id - League GUID
+ * @returns {Promise<void>} No response body expected
+ */
+const deleteLeague = async (id) => {
+  await apiClient.delete(`/ui/league/${id}`);
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
   getUserLeagues,
-  joinLeague, // ✅ added here
+  joinLeague,
+  deleteLeague
 };
 
 export default LeaguesApi;

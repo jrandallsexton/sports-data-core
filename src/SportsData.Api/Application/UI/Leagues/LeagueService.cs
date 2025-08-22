@@ -10,16 +10,23 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
-using static SportsData.Api.Application.UI.Leagues.Dtos.LeagueWeekMatchupsDto;
-
 namespace SportsData.Api.Application.UI.Leagues
 {
     public interface ILeagueService
     {
-        Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId, CancellationToken cancellationToken = default);
-        Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId, CancellationToken cancellationToken = default);
-        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week, CancellationToken cancellationToken = default);
+        Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId,
+            CancellationToken cancellationToken = default);
 
+        Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId,
+            CancellationToken cancellationToken = default);
+
+        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week,
+            CancellationToken cancellationToken = default);
+
+        Task<Guid> DeleteLeague(
+            Guid userId,
+            Guid leagueId,
+            CancellationToken cancellationToken = default);
     }
 
     public class LeagueService : ILeagueService
@@ -50,9 +57,6 @@ namespace SportsData.Api.Application.UI.Leagues
             if (string.IsNullOrWhiteSpace(request.Name))
                 throw new ArgumentException("League name is required.");
 
-            if (request.ConferenceSlugs is null || !request.ConferenceSlugs.Any())
-                throw new ArgumentException("At least one conference must be selected.");
-
             // === Enum Resolution ===
             if (!Enum.TryParse<PickType>(request.PickType, ignoreCase: true, out var pickType))
                 throw new ArgumentException($"Invalid pick type: {request.PickType}");
@@ -68,12 +72,15 @@ namespace SportsData.Api.Application.UI.Leagues
             //    throw new ArgumentException($"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}");
 
             // === Canonical Resolution ===
-            var franchiseIds = await _canonicalDataProvider.GetConferenceIdsBySlugsAsync(
-                Sport.FootballNcaa,
-                request.ConferenceSlugs);
+            var conferenceIds = request.ConferenceSlugs.Count > 0
+                ? await _canonicalDataProvider.GetConferenceIdsBySlugsAsync(
+                    Sport.FootballNcaa,
+                    2025, // TODO: Replace with dynamic year
+                    request.ConferenceSlugs)
+                : new Dictionary<Guid, string>();
 
             var unresolved = request.ConferenceSlugs
-                .Except(franchiseIds.Keys, StringComparer.OrdinalIgnoreCase)
+                .Except(conferenceIds.Values, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             if (unresolved.Any())
@@ -84,7 +91,7 @@ namespace SportsData.Api.Application.UI.Leagues
             {
                 Name = request.Name.Trim(),
                 CommissionerUserId = currentUserId,
-                Conferences = franchiseIds,
+                Conferences = conferenceIds,
                 CreatedBy = currentUserId,
                 Description = request.Description?.Trim(),
                 IsPublic = request.IsPublic,
@@ -214,5 +221,40 @@ namespace SportsData.Api.Application.UI.Leagues
             };
         }
 
+        public async Task<Guid> DeleteLeague(
+            Guid userId,
+            Guid leagueId,
+            CancellationToken cancellationToken = default)
+        {
+            // ensure the user is the commissioner of the league
+
+            var league = await _dbContext.PickemGroups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.Id == leagueId, cancellationToken: cancellationToken);
+
+            if (league is null)
+                throw new InvalidOperationException($"League with ID {leagueId} not found.");
+
+            if (league.CommissionerUserId != userId)
+                throw new InvalidOperationException($"User {userId} is not the commissioner of league {leagueId}.");
+
+            // Remove all members
+            _dbContext.PickemGroupMembers.RemoveRange(league.Members);
+
+            // Remove all picks
+            _dbContext.UserPicks.RemoveRange(
+                _dbContext.UserPicks.Where(p => p.PickemGroupId == leagueId));
+
+            // Remove all matchups
+            _dbContext.PickemGroupMatchups.RemoveRange(
+                _dbContext.PickemGroupMatchups.Where(m => m.GroupId == leagueId));
+
+            // Remove the league itself
+            _dbContext.PickemGroups.Remove(league);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return leagueId;
+        }
     }
 }

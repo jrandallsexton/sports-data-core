@@ -9,19 +9,19 @@ namespace SportsData.Api.Application.Jobs
 {
     public class MatchupScheduler
     {
-        private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupScheduler> _logger;
+        private readonly AppDataContext _dataContext;
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public MatchupScheduler(
-            AppDataContext dataContext,
             ILogger<MatchupScheduler> logger,
+            AppDataContext dataContext,
             IProvideCanonicalData canonicalDataProvider,
             IProvideBackgroundJobs backgroundJobProvider)
         {
-            _dataContext = dataContext;
             _logger = logger;
+            _dataContext = dataContext;
             _canonicalDataProvider = canonicalDataProvider;
             _backgroundJobProvider = backgroundJobProvider;
         }
@@ -68,7 +68,8 @@ namespace SportsData.Api.Application.Jobs
                         group.Id,
                         currentWeek.Id,
                         currentWeek.SeasonYear,
-                        currentWeek.WeekNumber);
+                        currentWeek.WeekNumber,
+                        Guid.NewGuid());
                     _backgroundJobProvider.Enqueue<IScheduleGroupWeekMatchups>(p => p.Process(cmd));
                 }
             }
@@ -80,4 +81,5 @@ public record ScheduleGroupWeekMatchupsCommand(
     Guid GroupId,
     Guid SeasonWeekId,
     int SeasonYear,
-    int SeasonWeek);
+    int SeasonWeek,
+    Guid CorrelationId);

@@ -1,13 +1,15 @@
+// src/components/leagues/Leagues.jsx
 import React, { useEffect, useState } from "react";
 import LeaguesApi from "api/leagues/leaguesApi";
-import { Link } from "react-router-dom";
+import LeagueOverviewCard from "./LeagueOverviewCard";
+import "./Leagues.css"; // for grid styling
 
 const Leagues = () => {
   const [leagues, setLeagues] = useState([]);
 
   useEffect(() => {
     const fetchLeagues = async () => {
-      const result = await LeaguesApi.getUserLeagues(); // renamed to match the new function
+      const result = await LeaguesApi.getUserLeagues();
       setLeagues(result);
     };
     fetchLeagues();
@@ -19,27 +21,9 @@ const Leagues = () => {
       {leagues.length === 0 ? (
         <p>You’re not part of any leagues yet.</p>
       ) : (
-        <div className="card-grid">
+        <div className="league-grid">
           {leagues.map((league) => (
-            <div key={league.id} className="card">
-              {league.avatarUrl && (
-                <img
-                  src={league.avatarUrl}
-                  alt={`${league.name} avatar`}
-                  style={{ maxWidth: "100px", marginBottom: "0.5rem" }}
-                />
-              )}
-              <h2>{league.name}</h2>
-              <p>
-                <strong>Sport:</strong> {league.sport}
-              </p>
-              <p>
-                <strong>Type:</strong> {league.leagueType}
-              </p>
-              <Link to={`/app/league/${league.id}`} className="submit-button">
-                View League
-              </Link>
-            </div>
+            <LeagueOverviewCard key={league.id} league={league} />
           ))}
         </div>
       )}

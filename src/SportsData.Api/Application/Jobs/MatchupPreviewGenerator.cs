@@ -7,19 +7,19 @@ namespace SportsData.Api.Application.Jobs
 {
     public class MatchupPreviewGenerator
     {
-        private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupPreviewGenerator> _logger;
+        private readonly AppDataContext _dataContext;
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public MatchupPreviewGenerator(
-            AppDataContext dataContext,
             ILogger<MatchupPreviewGenerator> logger,
+            AppDataContext dataContext,
             IProvideCanonicalData canonicalDataProvider,
             IProvideBackgroundJobs backgroundJobProvider)
         {
-            _dataContext = dataContext;
             _logger = logger;
+            _dataContext = dataContext;
             _canonicalDataProvider = canonicalDataProvider;
             _backgroundJobProvider = backgroundJobProvider;
         }
@@ -28,6 +28,8 @@ namespace SportsData.Api.Application.Jobs
         {
             // get all matchups for the current week
             var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+
+            // do we want to overwrite existing previews?
 
             // enqueue a MatchupPreviewGenerationProcessor for each
             foreach (var matchup in matchups)

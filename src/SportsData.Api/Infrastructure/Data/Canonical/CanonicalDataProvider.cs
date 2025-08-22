@@ -12,12 +12,13 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 {
     public interface IProvideCanonicalData
     {
-        Task<TeamCardDto?> ExecuteAsync(
-            GetTeamCardQuery query, CancellationToken cancellationToken = default);
+        Task<TeamCardDto?> ExecuteAsync(GetTeamCardQuery query, CancellationToken cancellationToken = default);
 
         Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(Sport sport, List<string> slugs);
 
-        Task<Dictionary<string, Guid>> GetConferenceIdsBySlugsAsync(Sport sport, List<string> slugs);
+        Task<Dictionary<Guid, string>> GetConferenceIdsBySlugsAsync(Sport sport, int seasonYear, List<string> slugs);
+
+        Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear);
 
         Task<SeasonWeek?> GetCurrentSeasonWeek();
 
@@ -117,30 +118,62 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
-        public async Task<Dictionary<string, Guid>> GetConferenceIdsBySlugsAsync(
+        public async Task<Dictionary<Guid, string>> GetConferenceIdsBySlugsAsync(
             Sport sport,
+            int seasonYear,
             List<string> slugs)
         {
             const string sql =
-                "SELECT \"Slug\", \"Id\" " +
-                "FROM public.\"Group\" " +
-                "WHERE \"Slug\" = ANY(@Slugs);";
+                "SELECT \"Id\", \"Slug\" " +
+                "FROM public.\"GroupSeason\" " +
+                "WHERE \"Slug\" = ANY(@Slugs) AND \"SeasonYear\" = @SeasonYear;";
 
             try
             {
-                var results = await _connection.QueryAsync<(string Slug, Guid Id)>(
+                var results = await _connection.QueryAsync<(Guid Id, string Slug) >(
                     sql,
-                    new { Sport = (int)sport, Slugs = slugs }
+                    new { Sport = (int)sport, Slugs = slugs, SeasonYear = seasonYear }
                 );
 
-                return results.ToDictionary(x => x.Slug, x => x.Id);
+                return results.ToDictionary(x => x.Id, x => x.Slug );
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs);
-                return new Dictionary<string, Guid>();
+                return new Dictionary<Guid, string>();
             }
         }
+
+        public async Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear)
+        {
+            const string sql = @"
+        SELECT DISTINCT 
+            gsParent.""Name"" as ""Division"", 
+            gs.""ShortName"", 
+            gs.""Slug"" 
+        FROM public.""GroupSeason"" gs
+        INNER JOIN public.""GroupSeason"" gsParent 
+            ON gsParent.""Id"" = gs.""ParentId""
+        WHERE gs.""IsConference"" = true 
+          AND gs.""SeasonYear"" = @SeasonYear
+        ORDER BY gs.""ShortName"";";
+
+            try
+            {
+                var results = await _connection.QueryAsync<ConferenceDivisionNameAndSlugDto>(
+                    sql,
+                    new { SeasonYear = seasonYear }
+                );
+
+                return results.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to retrieve conference divisions, names, and slugs for SeasonYear: {SeasonYear}", seasonYear);
+                return new List<ConferenceDivisionNameAndSlugDto>();
+            }
+        }
+
 
         public async Task<SeasonWeek?> GetCurrentSeasonWeek()
         {

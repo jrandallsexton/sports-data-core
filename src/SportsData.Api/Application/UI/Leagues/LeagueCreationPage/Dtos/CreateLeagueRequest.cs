@@ -15,7 +15,7 @@ public class CreateLeagueRequest
 
     public string? RankingFilter { get; set; } // "AP_TOP_25", etc.
 
-    public List<string> ConferenceSlugs { get; set; } = new(); // slugs from UI
+    public List<string> ConferenceSlugs { get; set; } = []; // slugs from UI
 
     public bool IsPublic { get; set; }
 

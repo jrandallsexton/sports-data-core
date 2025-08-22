@@ -10,6 +10,7 @@ function MatchupCard({
   onPick,
   onViewInsight,
   isInsightUnlocked,
+  isFadingOut = false,
 }) {
   const awaySpread = matchup.awaySpread ?? 0;
   const homeSpread = matchup.homeSpread ?? 0;
@@ -39,7 +40,7 @@ function MatchupCard({
   const isLocked = now > lockTime;  
 
   return (
-    <div className="matchup-card">
+    <div className={`matchup-card ${isFadingOut ? 'fade-out' : ''}`}>
       {/* Away Team Row */}
       <div className="team-row">
         <div className="team-info">

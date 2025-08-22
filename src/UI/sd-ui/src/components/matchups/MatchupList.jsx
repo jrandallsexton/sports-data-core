@@ -11,6 +11,7 @@ function MatchupList({
   onPick,
   onViewInsight,
   isSubscribed,
+  fadingOut = [],
 }) {
   if (loading) {
     return (
@@ -32,6 +33,7 @@ function MatchupList({
           onViewInsight={onViewInsight}
           isInsightUnlocked={true}
           isSubscribed={isSubscribed}
+          isFadingOut={fadingOut.includes(matchup.contestId)}
         />
       ))}
     </div>

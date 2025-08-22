@@ -9,13 +9,11 @@ import apiWrapper from "../../api/apiWrapper.js";
 import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
-import SubmitButton from "./SubmitButton.jsx";
 
 function PicksPage() {
   const { userDto, loading: userLoading } = useUserDto();
 
   const [userPicks, setUserPicks] = useState({});
-  const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed] = useState(false);
   const [selectedMatchup, setSelectedMatchup] = useState(null);
@@ -28,6 +26,9 @@ function PicksPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const [selectedWeek, setSelectedWeek] = useState(1); // TODO: Dynamically set current week as default
   const [viewMode, setViewMode] = useState("card");
+
+  const [hidePicked, setHidePicked] = useState(false);
+  const [fadingOut, setFadingOut] = useState([]);
 
   const leagues = Object.values(userDto?.leagues || {});
 
@@ -162,6 +163,19 @@ function PicksPage() {
     return <p>You are not part of any leagues yet.</p>;
   }
 
+  const totalGames = matchups.length;
+
+  const picksMade = Object.keys(userPicks).filter(
+    (contestId) =>
+      userPicks[contestId] !== null && userPicks[contestId] !== undefined
+  ).length;
+
+  const allPicked = totalGames > 0 && picksMade === totalGames;
+
+  const visibleMatchups = hidePicked
+    ? matchups.filter((m) => !userPicks[m.contestId])
+    : matchups;
+
   return (
     <div className="picks-page-container">
       <div className="picks-content-wrapper">
@@ -173,6 +187,22 @@ function PicksPage() {
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
           />
+          <div className="pick-status-toggle-row">
+            <span className="pick-status">
+              {allPicked
+                ? "All Picks Made"
+                : `${picksMade} / ${totalGames} Picks Made`}
+            </span>
+            <label className="hide-picked-toggle">
+              <input
+                type="checkbox"
+                checked={hidePicked}
+                onChange={() => setHidePicked(!hidePicked)}
+              />
+              Hide Picked Games
+            </label>
+          </div>
+
           {/* <button onClick={toggleViewMode} className="view-mode-toggle">
             {viewMode === "card" ? "Grid View" : "Card View"}
           </button> */}
@@ -184,7 +214,7 @@ function PicksPage() {
           <>
             {viewMode === "card" ? (
               <MatchupList
-                matchups={matchups}
+                matchups={visibleMatchups}
                 userPicks={userPicks}
                 onPick={handlePick}
                 onViewInsight={handleViewInsight}
@@ -192,18 +222,13 @@ function PicksPage() {
               />
             ) : (
               <MatchupGrid
-                matchups={matchups}
+                matchups={visibleMatchups}
                 userPicks={userPicks}
                 onPick={handlePick}
                 onViewInsight={handleViewInsight}
                 isSubscribed={isSubscribed}
               />
             )}
-            <SubmitButton
-              onSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-              submitted={submitted}
-            />
           </>
         )}
 

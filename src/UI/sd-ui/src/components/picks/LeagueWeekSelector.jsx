@@ -1,5 +1,6 @@
 // src/components/picks/LeagueWeekSelector.jsx
 import "./LeagueWeekSelector.css";
+import LeagueSelector from "../shared/LeagueSelector";
 
 function LeagueWeekSelector({
   leagues = [],
@@ -11,20 +12,11 @@ function LeagueWeekSelector({
   return (
     <div className="league-week-selector">
       {/* League Select */}
-      <div>
-        <label htmlFor="leagueSelect">League:</label>
-        <select
-          id="leagueSelect"
-          value={selectedLeagueId || ""}
-          onChange={(e) => setSelectedLeagueId(e.target.value)}
-        >
-          {leagues.map((league) => (
-            <option key={league.id} value={league.id}>
-              {league.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <LeagueSelector
+        leagues={leagues}
+        selectedLeagueId={selectedLeagueId}
+        setSelectedLeagueId={setSelectedLeagueId}
+      />
 
       {/* Week Select */}
       <div>

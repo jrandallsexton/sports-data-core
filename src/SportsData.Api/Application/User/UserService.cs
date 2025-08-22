@@ -69,7 +69,13 @@ public class UserService : IUserService
         };
     }
 
-    public async Task<Infrastructure.Data.Entities.User> GetOrCreateUserAsync(string firebaseUid, string email, string? displayName, string? photoUrl, string? signInProvider, bool emailVerified)
+    public async Task<Infrastructure.Data.Entities.User> GetOrCreateUserAsync(
+        string firebaseUid,
+        string email,
+        string? displayName,
+        string? photoUrl,
+        string? signInProvider,
+        bool emailVerified)
     {
         if (string.IsNullOrWhiteSpace(firebaseUid) || string.IsNullOrWhiteSpace(email))
         {
@@ -90,7 +96,7 @@ public class UserService : IUserService
                 Email = email,
                 EmailVerified = emailVerified,
                 SignInProvider = signInProvider ?? "unknown",
-                DisplayName = displayName,
+                DisplayName = displayName ?? DisplayNameGenerator.Generate(),
                 LastLoginUtc = DateTime.UtcNow,
                 CreatedUtc = DateTime.UtcNow
             };

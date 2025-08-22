@@ -92,3 +92,25 @@
   transform: translateY(0);
 } */
 
+.pick-status-toggle-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.pick-status {
+  font-size: 1rem;
+  color: #ccc;
+}
+
+.hide-picked-toggle {
+  font-size: 0.95rem;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

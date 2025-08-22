@@ -1,4 +1,3 @@
-// src/api/leaguesApi.js
 import apiClient from "../apiClient";
 
 /**
@@ -30,10 +29,20 @@ const getUserLeagues = async () => {
   return response.data;
 };
 
+/**
+ * Joins a league by ID.
+ * @param {string} id - League GUID
+ * @returns {Promise<void>} No response body expected
+ */
+const joinLeague = async (id) => {
+  await apiClient.post(`/ui/league/${id}/join`);
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
   getUserLeagues,
+  joinLeague, // ✅ added here
 };
 
 export default LeaguesApi;

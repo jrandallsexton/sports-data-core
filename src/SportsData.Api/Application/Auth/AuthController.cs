@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
+using SportsData.Api.Application.User;
 
 namespace SportsData.Api.Application.Auth
 {
@@ -152,6 +153,7 @@ namespace SportsData.Api.Application.Auth
                     CreatedUtc = DateTime.UtcNow,
                     SignInProvider = provider,
                     LastLoginUtc = DateTime.UtcNow,
+                    DisplayName = DisplayNameGenerator.Generate()
                 };
 
                 _dbContext.Users.Add(user);

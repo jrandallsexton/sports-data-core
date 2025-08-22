@@ -20,8 +20,8 @@ function MessageBoardPage() {
     author: p.createdByUserId?.slice(0, 8) || "User",
     timestamp: p.createdUtc,
     content: p.content,
-    likes: p.likeCount || 0,
-    dislikes: p.dislikeCount || 0,
+    likes: p.likeCount,
+    dislikes: p.dislikeCount,
     userReaction: p.userReaction ?? null,
     replies: [],
   });

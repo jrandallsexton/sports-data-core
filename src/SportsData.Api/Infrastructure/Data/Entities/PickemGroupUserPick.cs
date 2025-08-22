@@ -12,6 +12,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public Guid UserId { get; set; }
 
+        public User User { get; set; } = null!; // Navigation property to User
+
         public Guid ContestId { get; set; } // From Producer
 
         public int Week { get; set; }

@@ -1,96 +1,152 @@
-import { useState } from "react";
-import leaderboard from "../../data/leaderboard";
-import "./LeaderboardPage.css";
+import { useEffect, useState } from "react";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { useUserDto } from "../../contexts/UserContext";
+import LeagueSelector from "../shared/LeagueSelector";
+import apiWrapper from "../../api/apiWrapper";
+import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
+  const { userDto, loading: userLoading } = useUserDto();
+  const leagues = Object.values(userDto?.leagues || []);
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [sortBy, setSortBy] = useState("totalPoints");
-  const [sortOrder, setSortOrder] = useState("desc"); // 'asc' or 'desc'
-  const currentUserId = 3; // Fake current user (Mike Brown)
-  const currentWeek = 7; // You can mock this for now
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [loading, setLoading] = useState(false);
+
+  const currentUserId = userDto?.id ?? null;
+  const currentWeek = 1; // 🔧 You can dynamically fetch this later
+
+  useEffect(() => {
+    if (leagues.length > 0 && !selectedLeagueId) {
+      setSelectedLeagueId(leagues[0].id);
+    }
+  }, [leagues, selectedLeagueId]);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      if (!selectedLeagueId) return;
+      setLoading(true);
+      try {
+        const data = await apiWrapper.Leaderboard.getByGroupAndWeek(
+          selectedLeagueId,
+          currentWeek
+        );
+
+        setLeaderboard(data);
+      } catch (err) {
+        console.error("Failed to load leaderboard", err);
+        setLeaderboard([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [selectedLeagueId]);
 
   function handleSort(column) {
     if (sortBy === column) {
-      // Same column clicked: toggle sort order
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
-      // New column clicked: set column, default to descending
       setSortBy(column);
       setSortOrder("desc");
     }
   }
 
   const sortedLeaderboard = [...leaderboard].sort((a, b) => {
-    if (sortOrder === "asc") {
-      return a[sortBy] - b[sortBy];
-    } else {
-      return b[sortBy] - a[sortBy];
-    }
+    const valA = a[sortBy];
+    const valB = b[sortBy];
+    return sortOrder === "asc" ? valA - valB : valB - valA;
   });
 
-  const trueRanks = leaderboard
-    .slice()
-    .sort((a, b) => b.totalPoints - a.totalPoints)
-    .map((player, index) => ({ id: player.id, rank: index + 1 }));
+  if (userLoading) {
+    return <div className="leaderboard-container">Loading user data...</div>;
+  }
 
   return (
     <div className="leaderboard-container">
       <h2>Group Leaderboard Through Week {currentWeek}</h2>
+      <LeagueSelector
+        leagues={leagues}
+        selectedLeagueId={selectedLeagueId}
+        setSelectedLeagueId={setSelectedLeagueId}
+      />
       <p>🏆 See how you stack up against your friends!</p>
-      <table className="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th className="sortable" onClick={() => handleSort("totalPoints")}>
-              Total Points{" "}
-              {sortBy === "totalPoints" &&
-                (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
-            </th>
-            <th className="sortable" onClick={() => handleSort("weeklyPoints")}>
-              Weekly Points{" "}
-              {sortBy === "weeklyPoints" &&
-                (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedLeaderboard.map((user) => {
-            const userTrueRank =
-              trueRanks.find((u) => u.id === user.id)?.rank ?? "-";
-            const movement = user.lastWeekRank
-              ? user.lastWeekRank - userTrueRank
-              : 0;
 
-            return (
-              <tr
-                key={user.id}
-                className={user.id === currentUserId ? "current-user-row" : ""}
+      {loading ? (
+        <div className="loading">Loading leaderboard...</div>
+      ) : (
+        <table className="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th
+                className="sortable"
+                onClick={() => handleSort("totalPoints")}
               >
-                <td className="rank-cell">
-                  <div className="rank-number">{userTrueRank}</div>
-                  {movement > 0 && (
-                    <div className="movement-up">+{movement} 🔺</div>
-                  )}
-                  {movement < 0 && (
-                    <div className="movement-down">{movement} 🔻</div>
-                  )}
-                  {movement === 0 && <div className="movement-same">➡️</div>}
-                </td>
+                Total Points{" "}
+                {sortBy === "totalPoints" &&
+                  (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
+              </th>
+              <th
+                className="sortable"
+                onClick={() => handleSort("currentWeekPoints")}
+              >
+                Current Week{" "}
+                {sortBy === "currentWeekPoints" &&
+                  (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
+              </th>
+              <th
+                className="sortable"
+                onClick={() => handleSort("weeklyAverage")}
+              >
+                Weekly Avg{" "}
+                {sortBy === "weeklyAverage" &&
+                  (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedLeaderboard.map((user) => {
+              const movement = user.lastWeekRank
+                ? user.lastWeekRank - user.rank
+                : 0;
 
-                <td>
-                  {user.name}{" "}
-                  {user.id === currentUserId && (
-                    <span className="you-label">(You)</span>
-                  )}
-                </td>
-                <td>{user.totalPoints}</td>
-                <td>{user.weeklyPoints}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              return (
+                <tr
+                  key={user.userId}
+                  className={
+                    user.userId === currentUserId ? "current-user-row" : ""
+                  }
+                >
+                  <td className="rank-cell">
+                    <div className="rank-number">{user.rank}</div>
+                    {movement > 0 && (
+                      <div className="movement-up">+{movement} 🔺</div>
+                    )}
+                    {movement < 0 && (
+                      <div className="movement-down">{movement} 🔻</div>
+                    )}
+                    {movement === 0 && <div className="movement-same">➡️</div>}
+                  </td>
+
+                  <td>
+                    {user.name}{" "}
+                    {user.userId === currentUserId && (
+                      <span className="you-label">(You)</span>
+                    )}
+                  </td>
+                  <td>{user.totalPoints}</td>
+                  <td>{user.currentWeekPoints}</td>
+                  <td>{user.weeklyAverage.toFixed(1)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

@@ -21,7 +21,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public DateTime LastLoginUtc { get; set; }
 
-        public string? DisplayName { get; set; }
+        public required string DisplayName { get; set; }
 
         public string? Timezone { get; set; }
 

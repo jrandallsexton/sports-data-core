@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Login from "../login/Login.jsx";
@@ -8,9 +8,9 @@ import "./SignupPage.css";
 import apiWrapper from "../../api/apiWrapper";
 
 function SignupPage() {
-  
   const [firebaseUser, setFirebaseUser] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   async function handleThirdPartySignIn(providerName) {
     const auth = getAuth();
@@ -31,19 +31,20 @@ function SignupPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const token = await result.user.getIdToken();
-      
+
       // Send token to backend to set HttpOnly cookie
       await apiWrapper.Auth.setToken(token);
 
       // 🔍 Check if backend has this user
       const response = await fetch("/api/user/me", {
-        credentials: 'include' // Include cookies in the request
+        credentials: "include", // Include cookies in the request
       });
 
       if (response.status === 404) {
         setFirebaseUser(result.user); // Show onboarding
       } else if (response.ok) {
-        navigate("/app"); // Skip onboarding
+        const redirectPath = location.state?.from?.pathname || "/app";
+        navigate(redirectPath);
       } else {
         throw new Error(`Unexpected status ${response.status}`);
       }

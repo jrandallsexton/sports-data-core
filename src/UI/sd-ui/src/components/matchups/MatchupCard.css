@@ -203,3 +203,9 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Smooth fade-out animation */
+.matchup-card.fade-out {
+  opacity: 0;
+  transition: opacity 200ms ease-in-out;
+}

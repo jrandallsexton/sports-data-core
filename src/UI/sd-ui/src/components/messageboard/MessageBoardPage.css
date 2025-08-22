@@ -21,15 +21,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-left: 15px;
   margin-top: 8px;
   margin-bottom: 8px;
 }
-
-/* .new-post-form button:hover,
-.reply-form button:hover,
-.post-actions button:hover {
-  background-color: #4ea0d9;
-} */
 
 .new-post-form button,
 .reply-form button,
@@ -64,6 +59,7 @@
 
 .post-content,
 .reply-content {
+  padding-left: 15px;
   font-size: 1rem;
   margin-bottom: 5px;
 }
@@ -156,7 +152,6 @@
   gap: 5px;
 }
 
-
 .reaction-button:hover {
   color: #61dafb;
 }
@@ -165,12 +160,21 @@
   font-size: 0.9rem;
 }
 
-
 .liked {
   color: #00c853;
 }
 
 .disliked {
+  color: #ff1744;
+}
+
+.reaction-button.liked,
+.reaction-button.liked:hover {
+  color: #00c853;
+}
+
+.reaction-button.disliked,
+.reaction-button.disliked:hover {
   color: #ff1744;
 }
 
@@ -197,4 +201,3 @@
 .reaction-count.pop {
   animation: pop 0.3s ease;
 }
-

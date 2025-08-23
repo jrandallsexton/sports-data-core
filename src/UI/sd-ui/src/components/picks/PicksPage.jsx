@@ -36,21 +36,26 @@ function PicksPage() {
   // Select default league on load or when leagues change
   useEffect(() => {
     if (!userLoading && leagues.length > 0) {
-      const isRouteValid = routeLeagueId && leagues.some(l => l.id === routeLeagueId);
+      const isRouteValid =
+        routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
       if (isRouteValid) {
         setSelectedLeagueId(routeLeagueId);
       } else if (!selectedLeagueId) {
         setSelectedLeagueId(leagues[0].id);
       }
     }
-  }, [userLoading, leagues, routeLeagueId]);
+  }, [userLoading, leagues, routeLeagueId, selectedLeagueId]);
 
   // Keep URL in sync with selectedLeagueId
-  useEffect(() => {
-    if (selectedLeagueId && selectedLeagueId !== routeLeagueId) {
-      navigate(`/app/picks/${selectedLeagueId}`, { replace: true });
-    }
-  }, [selectedLeagueId]);
+  useEffect(
+    () => {
+      if (selectedLeagueId && selectedLeagueId !== routeLeagueId) {
+        navigate(`/app/picks/${selectedLeagueId}`, { replace: true });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedLeagueId] // Intentionally omitting routeLeagueId and navigate
+  );
 
   useEffect(() => {
     async function fetchMatchups() {
@@ -107,17 +112,17 @@ function PicksPage() {
       });
 
       if (hidePicked) {
-        setFadingOut(prev => [...prev, matchup.contestId]);
+        setFadingOut((prev) => [...prev, matchup.contestId]);
 
         setTimeout(() => {
-          setUserPicks(prev => ({
+          setUserPicks((prev) => ({
             ...prev,
             [matchup.contestId]: selectedFranchiseSeasonId,
           }));
-          setFadingOut(prev => prev.filter(id => id !== matchup.contestId));
+          setFadingOut((prev) => prev.filter((id) => id !== matchup.contestId));
         }, 500);
       } else {
-        setUserPicks(prev => ({
+        setUserPicks((prev) => ({
           ...prev,
           [matchup.contestId]: selectedFranchiseSeasonId,
         }));
@@ -129,7 +134,9 @@ function PicksPage() {
 
       if (
         error.response?.status === 500 &&
-        error.response?.data?.includes?.("duplicate key value violates unique constraint")
+        error.response?.data?.includes?.(
+          "duplicate key value violates unique constraint"
+        )
       ) {
         toast.error("You already picked this game. Refresh to view.");
       } else {
@@ -150,10 +157,12 @@ function PicksPage() {
     setLoadingInsight(true);
 
     try {
-      const response = await apiWrapper.Matchups.getPreviewByContestId(matchup.contestId);
+      const response = await apiWrapper.Matchups.getPreviewByContestId(
+        matchup.contestId
+      );
       const preview = response.data;
 
-      setSelectedMatchup(prev => ({
+      setSelectedMatchup((prev) => ({
         ...prev,
         insightText: preview.overview,
         analysis: preview.analysis,
@@ -175,12 +184,14 @@ function PicksPage() {
 
   const totalGames = matchups.length;
   const picksMade = Object.keys(userPicks).filter(
-    id => userPicks[id] !== null && userPicks[id] !== undefined
+    (id) => userPicks[id] !== null && userPicks[id] !== undefined
   ).length;
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
   const visibleMatchups = hidePicked
-    ? matchups.filter(m => !userPicks[m.contestId] || fadingOut.includes(m.contestId))
+    ? matchups.filter(
+        (m) => !userPicks[m.contestId] || fadingOut.includes(m.contestId)
+      )
     : matchups;
 
   return (

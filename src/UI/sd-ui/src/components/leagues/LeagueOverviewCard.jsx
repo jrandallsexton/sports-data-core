@@ -17,7 +17,7 @@ const LeagueOverviewCard = ({ league }) => {
         <strong>Type:</strong> {league.leagueType}
       </p>
       <p>
-        <strong>Confidence Points:</strong> {league.useConfidencePoints == true ? "Yes" : "No"}
+        <strong>Confidence Points:</strong> {league.useConfidencePoints === true ? "Yes" : "No"}
       </p>
       <p>
         <strong>Members:</strong> {league.memberCount}

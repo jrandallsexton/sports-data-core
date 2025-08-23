@@ -239,7 +239,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         // injuries
         await ProcessInjuries(canonicalEntity.Id, dto, command);
 
-        // TODO: Request sourcing of team season notes (data not available when following link)
+        // TODO: MED: Request sourcing of team season notes (data not available when following link)
 
         // Process record ATS (Against The Spread)
         await ProcessRecordAts(canonicalEntity.Id, dto, command);

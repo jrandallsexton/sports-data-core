@@ -41,10 +41,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             var requestUri = EspnRequestUri.ForFetch(uri);
 
             _logger.LogDebug("Fetching LIVE from ESPN: {RequestUri} (identity: {IdentityUri})", requestUri, uri);
-
-            // TODO: Make this delay configurable via Azure App Settings
+            
             // prevent banging on ESPN API too fast
-            await Task.Delay(250);
+            await Task.Delay(_config.RequestDelayMs);
 
             using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
 
@@ -109,7 +108,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             }
 
             _logger.LogInformation("Fetching image from {Uri}", uri);
-            await Task.Delay(250); // Optional: throttle
+            await Task.Delay(_config.RequestDelayMs, ct);
 
             using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
 

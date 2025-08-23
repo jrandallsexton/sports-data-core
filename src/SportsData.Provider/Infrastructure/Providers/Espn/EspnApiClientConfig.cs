@@ -21,5 +21,10 @@
         /// folder for disk persistence.
         /// </summary>
         public string LocalCacheDirectory { get; set; } = "./cache";
+
+        /// <summary>
+        /// Amount of delay between requests to ESPN API, in milliseconds.
+        /// </summary>
+        public int RequestDelayMs { get; set; } = 250;
     }
 }

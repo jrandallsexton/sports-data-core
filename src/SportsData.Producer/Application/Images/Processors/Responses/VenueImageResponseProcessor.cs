@@ -48,8 +48,6 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 return;
             }
 
-            // TODO: Prefer to add this to venue, but kept getting the following error:
-            // The database operation was expected to affect 1 row(s), but actually affected 0 row(s)
             await _dataContext.VenueImages.AddAsync(new VenueImage()
             {
                 Id = Guid.NewGuid(),

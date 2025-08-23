@@ -233,36 +233,6 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        //internal static IServiceCollection AddMessaging(
-        //    this IServiceCollection services,
-        //    IConfiguration config,
-        //    List<Type>? consumers)
-        //{
-        //    services.AddMassTransit(x =>
-        //    {
-        //        x.SetKebabCaseEndpointNameFormatter();
-
-        //        consumers?.ForEach(z =>
-        //        {
-        //            x.AddConsumer(z);
-        //        });
-
-        //        x.UsingAzureServiceBus((context, cfg) =>
-        //        {
-        //            var sbConnString = config[CommonConfigKeys.AzureServiceBus];
-        //            cfg.Host(sbConnString);
-        //            //cfg.ClearSerialization();
-        //            cfg.ConfigureJsonSerializerOptions(o =>
-        //            {
-        //                o.IncludeFields = true;
-        //                return o;
-        //            });
-        //            cfg.ConfigureEndpoints(context);
-        //        });
-        //    });
-        //    return services;
-        //}
-
         public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
             var registry = services.AddPolicyRegistry();

@@ -14,7 +14,6 @@ using SportsData.Core.Config;
 using SportsData.Core.Middleware.Health;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -177,32 +176,9 @@ namespace SportsData.Core.DependencyInjection
                     .Select("CommonConfig", label)
                     .Select("CommonConfig:*", label);
 
-                if (mode == Sport.All)
-                {
-                    // Load SupportedModes from AppConfig under CommonConfig:Api
-                    var localTempConfig = new ConfigurationBuilder()
-                        .AddAzureAppConfiguration(options =>
-                            options.Connect(appConfigConnectionString)
-                                   .Select("CommonConfig:Api:SupportedModes", $"{label}.{mode}"))
-                        .Build();
-
-                    var supportedModes = localTempConfig
-                        .GetSection("CommonConfig:Api:SupportedModes")
-                        .Get<List<string>>() ?? new();
-
-                    foreach (var supportedMode in supportedModes)
-                    {
-                        azAppConfig
-                            .Select("CommonConfig:*", $"{label}.{supportedMode}")
-                            .Select($"{applicationName}:*", $"{label}.{supportedMode}");
-                    }
-                }
-                else
-                {
-                    azAppConfig
-                        .Select("CommonConfig:*", $"{label}.{mode}")
-                        .Select($"{applicationName}:*", $"{label}.{mode}");
-                }
+                azAppConfig
+                    .Select("CommonConfig:*", $"{label}.{mode}")
+                    .Select($"{applicationName}:*", $"{label}.{mode}");
 
                 azAppConfig
                     .Select($"{applicationName}:*", label)
@@ -213,8 +189,8 @@ namespace SportsData.Core.DependencyInjection
                     });
             });
 
-            cfg["CommonConfig:AzureServiceBusConnectionString"] =
-                "Endpoint=sb://sb-debug-football-ncaa-sportdeets.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=7sZ8/mwzFGscHRz7yrspRqBNVOvz0WGLg+ASbNa8tss=";
+            //cfg["CommonConfig:AzureServiceBusConnectionString"] =
+            //    "Endpoint=sb://sb-debug-football-ncaa-sportdeets.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=7sZ8/mwzFGscHRz7yrspRqBNVOvz0WGLg+ASbNa8tss=";
 
             return cfg;
         }

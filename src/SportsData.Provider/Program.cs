@@ -50,10 +50,10 @@ namespace SportsData.Provider
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
-
+            
             var docDbProviderValue = config["SportsData.Provider:ProviderDocDatabaseConfig:Provider"];
             var useMongo = docDbProviderValue == "Mongo";
-            services.AddLocalServices(mode, useMongo);
+            services.AddLocalServices(builder.Configuration, mode, useMongo);
 
             var app = builder.Build();
 
@@ -86,7 +86,6 @@ namespace SportsData.Provider
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    // TODO: Move years to config
                     var footballValues = new FootballSeeder().Generate(mode, [2025]);
                     await dbContext.ResourceIndexJobs.AddRangeAsync(footballValues);
                     await dbContext.SaveChangesAsync();

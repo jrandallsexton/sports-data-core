@@ -1,8 +1,7 @@
-﻿using System.Net;
-using System.Net.Security;
-using System.Security.Authentication;
-using Hangfire;
+﻿using Hangfire;
+
 using Polly;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.DependencyInjection;
@@ -14,22 +13,26 @@ using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System.Net;
+using System.Net.Security;
+using System.Security.Authentication;
+
 namespace SportsData.Provider.DependencyInjection
 {
     public static class ServiceRegistration
     {
-        public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode, bool useMongo)
+        public static IServiceCollection AddLocalServices(
+            this IServiceCollection services,
+            ConfigurationManager configuration,
+            Sport mode,
+            bool useMongo)
         {
             services.AddDataPersistenceExternal();
 
-            // TODO: Get this wired to az app config
-            var appConfig = new ProviderAppConfig()
-            {
-                IsDryRun = false,
-                MaxResourceIndexItemsToProcess = null
-            };
+            services.Configure<EspnApiClientConfig>(
+                configuration.GetSection("CommonConfig:EspnApiClientConfig")
+            );
 
-            services.AddSingleton<IProviderAppConfig>(appConfig);
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
@@ -72,15 +75,6 @@ namespace SportsData.Provider.DependencyInjection
             {
                 services.AddSingleton<IDocumentStore, CosmosDocumentService>();
             }
-
-            // TODO: Move this to a config file
-            services.AddSingleton(new EspnApiClientConfig()
-            {
-                ForceLiveFetch = false,
-                PersistLocally = true,
-                ReadFromCache = true,
-                LocalCacheDirectory = "C:\\temp\\sports-data"
-            });
 
             return services;
         }

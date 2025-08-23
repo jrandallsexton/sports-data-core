@@ -24,7 +24,7 @@ namespace SportsData.Api.Application.UI.TeamCard.Handlers
             GetTeamCardQuery query,
             CancellationToken cancellationToken = default)
         {
-            return await _canonicalDataProvider.ExecuteAsync(query, cancellationToken);
+            return await _canonicalDataProvider.GetTeamCard(query, cancellationToken);
         }
     }
 }

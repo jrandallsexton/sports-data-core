@@ -108,10 +108,6 @@ public class ResourceIndexJobTests : ProviderTestBase<ResourceIndexJob>
             .Setup(x => x.GetAllDocumentsAsync<DocumentBase>(It.IsAny<string>()))
             .ReturnsAsync(new List<DocumentBase>());
 
-        Mocker.GetMock<IProviderAppConfig>()
-            .Setup(x => x.IsDryRun)
-            .Returns(false);
-
         var job = Mocker.CreateInstance<ResourceIndexJob>();
 
         // Act

@@ -1,18 +1,18 @@
 ﻿using Dapper;
 
+using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 
 using System.Data;
-using SportsData.Api.Application.UI.Leagues.Dtos;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
 {
     public interface IProvideCanonicalData
     {
-        Task<TeamCardDto?> ExecuteAsync(GetTeamCardQuery query, CancellationToken cancellationToken = default);
+        Task<TeamCardDto?> GetTeamCard(GetTeamCardQuery query, CancellationToken cancellationToken = default);
 
         Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(Sport sport, List<string> slugs);
 
@@ -33,32 +33,26 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
     {
         private readonly IDbConnection _connection;
         private readonly ILogger<CanonicalDataProvider> _logger;
+        private readonly CanonicalDataQueryProvider _queryProvider;
 
         public CanonicalDataProvider(
+            ILogger<CanonicalDataProvider> logger,
             IDbConnection connection,
-            ILogger<CanonicalDataProvider> logger)
+            CanonicalDataQueryProvider queryProvider)
         {
-            _connection = connection;
             _logger = logger;
+            _connection = connection;
+            _queryProvider = queryProvider;
         }
 
-        public async Task<TeamCardDto?> ExecuteAsync(
+        public async Task<TeamCardDto?> GetTeamCard(
             GetTeamCardQuery query,
             CancellationToken cancellationToken = default)
         {
-            var cardSqlPath =
-                Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                    "GetTeamCard.sql");
-            var seasonsSqlPath =
-                Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                    "GetTeamSeasons.sql");
-            var scheduleSqlPath =
-                Path.Combine("C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                    "GetTeamCardSchedule.sql");
 
-            var cardSql = await File.ReadAllTextAsync(cardSqlPath, cancellationToken);
-            var seasonsSql = await File.ReadAllTextAsync(seasonsSqlPath, cancellationToken);
-            var scheduleSql = await File.ReadAllTextAsync(scheduleSqlPath, cancellationToken);
+            var cardSql = _queryProvider.GetTeamCard();
+            var seasonsSql = _queryProvider.GetTeamSeasons();
+            var scheduleSql = _queryProvider.GetTeamCardSchedule();
 
             var parameters = new
             {
@@ -174,7 +168,6 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
-
         public async Task<SeasonWeek?> GetCurrentSeasonWeek()
         {
             const string sql = @"
@@ -204,11 +197,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<List<Matchup>> GetMatchupsForCurrentWeek()
         {
-            var sqlPath = Path.Combine(
-                "C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                "GetMatchupsForCurrentWeek.sql");
-
-            var sql = await File.ReadAllTextAsync(sqlPath);
+            var sql = _queryProvider.GetMatchupsForCurrentWeek();
 
             try
             {
@@ -227,11 +216,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds)
         {
-            var sqlPath = Path.Combine(
-                "C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                "GetLeagueMatchupsByContestIds.sql");
-
-            var sql = await File.ReadAllTextAsync(sqlPath);
+            var sql = _queryProvider.GetLeagueMatchupsByContestIds();
 
             var results = await _connection.QueryAsync<LeagueWeekMatchupsDto.MatchupForPickDto>(
                 sql,
@@ -244,11 +229,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId)
         {
-            var sqlPath = Path.Combine(
-                "C:\\Projects\\sports-data\\src\\SportsData.Api\\Infrastructure\\Data\\Canonical\\Sql\\",
-                "GetMatchupForPreviewGeneration.sql");
-
-            var sql = await File.ReadAllTextAsync(sqlPath);
+            var sql = _queryProvider.GetMatchupForPreviewGeneration();
 
             var result = await _connection.QuerySingleOrDefaultAsync<MatchupForPreviewDto>(
                 sql,

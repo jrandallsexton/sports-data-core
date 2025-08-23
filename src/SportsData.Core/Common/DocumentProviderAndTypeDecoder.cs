@@ -101,7 +101,6 @@ namespace SportsData.Core.Common
                 case DocumentType.AthleteImage:
                 case DocumentType.GolfCalendar:
                 case DocumentType.Standings:
-                case DocumentType.TeamRank:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }

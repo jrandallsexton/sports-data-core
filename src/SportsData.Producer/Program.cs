@@ -1,11 +1,8 @@
 using Hangfire;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents;
@@ -66,44 +63,12 @@ public class Program
 
         services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
 
-        //services.AddMessaging<BaseDataContext>(config, [
-        //    typeof(DocumentCreatedHandler),
-        //    typeof(ProcessImageRequestedHandler),
-        //    typeof(ProcessImageResponseHandler)
-        //]);
-
-        services.AddMessaging(config, [
+        // Add messaging via MassTransit using Outbox pattern
+        services.AddMessaging<BaseDataContext>(config, [
             typeof(DocumentCreatedHandler),
             typeof(ProcessImageRequestedHandler),
             typeof(ProcessImageResponseHandler)
         ]);
-
-        //services.AddMassTransit(x =>
-        //{
-        //    x.SetKebabCaseEndpointNameFormatter();
-
-        //    x.AddEntityFrameworkOutbox<BaseDataContext>(o =>
-        //    {
-        //        o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
-        //        o.QueryDelay = TimeSpan.FromSeconds(1);
-        //        o.UsePostgres()
-        //            .UseBusOutbox(busOutbox =>
-        //            {
-        //                busOutbox.MessageDeliveryLimit = int.MaxValue;
-        //            });
-        //    });
-
-        //    x.AddConsumer<DocumentCreatedHandler>();
-        //    x.AddConsumer<ProcessImageRequestedHandler>();
-        //    x.AddConsumer<ProcessImageResponseHandler>();
-
-        //    x.UsingAzureServiceBus((context, cfg) =>
-        //    {
-        //        cfg.Host(config[CommonConfigKeys.AzureServiceBus]);
-        //        //cfg.UseConcurrencyLimit(10);
-        //        cfg.ConfigureEndpoints(context);
-        //    });
-        //});
 
         services.AddInstrumentation(builder.Environment.ApplicationName);
 
@@ -130,8 +95,7 @@ public class Program
         services.AddMediatR(hostAssembly);
 
         var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
+        
         app.UseHttpsRedirection();
 
         using (var scope = app.Services.CreateScope())

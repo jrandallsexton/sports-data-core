@@ -43,7 +43,6 @@
         Standings = 38,
         TeamBySeasonLogo = 39,
         TeamInformation = 40,
-        TeamRank = 41,
         TeamSeason = 42,
         TeamSeasonAward = 43,
         TeamSeasonCoach = 44,

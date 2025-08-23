@@ -73,6 +73,7 @@ namespace SportsData.Core.DependencyInjection
                     });
                     cfg.ConfigureEndpoints(context);
                 });
+                
             });
 
             // --- NEW: wire the abstraction + delivery policy + outbox ambient state ---

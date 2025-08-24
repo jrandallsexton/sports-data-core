@@ -26,6 +26,7 @@ namespace SportsData.Provider.Migrations
                     IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     Provider = table.Column<int>(type: "integer", nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
+                    Shape = table.Column<int>(type: "integer", nullable: false),
                     SportId = table.Column<int>(type: "integer", nullable: false),
                     Uri = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     SourceUrlHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),

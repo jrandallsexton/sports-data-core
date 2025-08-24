@@ -18,6 +18,7 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Linq.Expressions;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using Xunit;
@@ -97,7 +98,8 @@ public class ResourceIndexJobTests : ProviderTestBase<ResourceIndexJob>
         };
 
         var httpClient = new HttpClient();
-        var httpWrapper = new EspnHttpClient(httpClient, apiConfig, NullLogger<EspnHttpClient>.Instance);
+        var options = Options.Create(apiConfig);
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
 
         // Inject the real client

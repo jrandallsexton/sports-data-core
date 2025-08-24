@@ -12,8 +12,8 @@ using SportsData.Provider.Infrastructure.Data;
 namespace SportsData.Provider.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250819103734_19Aug")]
-    partial class _19Aug
+    [Migration("20250824093435_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

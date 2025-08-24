@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Common.Hashing;
+﻿using Microsoft.Extensions.Options;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
@@ -10,11 +11,11 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         private readonly ILogger<EspnHttpClient> _logger;
 
         public EspnHttpClient(HttpClient httpClient,
-                              EspnApiClientConfig config,
+                              IOptions<EspnApiClientConfig> config,
                               ILogger<EspnHttpClient> logger)
         {
             _httpClient = httpClient;
-            _config = config;
+            _config = config.Value;
             _logger = logger;
         }
 

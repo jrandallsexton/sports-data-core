@@ -30,7 +30,7 @@ namespace SportsData.Provider.DependencyInjection
             services.AddDataPersistenceExternal();
 
             services.Configure<EspnApiClientConfig>(
-                configuration.GetSection("CommonConfig:EspnApiClientConfig")
+                configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
             );
 
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();

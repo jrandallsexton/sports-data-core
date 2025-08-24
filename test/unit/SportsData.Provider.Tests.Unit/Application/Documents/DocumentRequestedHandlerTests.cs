@@ -17,7 +17,7 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 using SportsData.Tests.Shared;
 
 using System.Linq.Expressions;
-
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace SportsData.Provider.Tests.Unit.Application.Documents;
@@ -206,7 +206,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         };
 
         var httpClient = new HttpClient();
-        var httpWrapper = new EspnHttpClient(httpClient, apiConfig, NullLogger<EspnHttpClient>.Instance);
+        var options = Options.Create(apiConfig);
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);
@@ -246,7 +247,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         };
 
         var httpClient = new HttpClient();
-        var httpWrapper = new EspnHttpClient(httpClient, apiConfig, NullLogger<EspnHttpClient>.Instance);
+        var options = Options.Create(apiConfig);
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);

@@ -12,8 +12,8 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250818001732_LatestV8")]
-    partial class LatestV8
+    [Migration("20250824093553_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,174 @@ namespace SportsData.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("Consumed")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ConsumerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ReceiveCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Received")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Delivered");
+
+                    b.ToTable("InboxState", (string)null);
+                });
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
+                {
+                    b.Property<long>("SequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("SequenceNumber"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DestinationAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime?>("EnqueueTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FaultAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Headers")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("InboxConsumerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InboxMessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InitiatorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("OutboxId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Properties")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResponseAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("SentTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SourceAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("SequenceNumber");
+
+                    b.HasIndex("EnqueueTime");
+
+                    b.HasIndex("ExpirationTime");
+
+                    b.HasIndex("OutboxId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("InboxMessageId", "InboxConsumerId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.ToTable("OutboxMessage", (string)null);
+                });
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxState", b =>
+                {
+                    b.Property<Guid>("OutboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("OutboxId");
+
+                    b.HasIndex("Created");
+
+                    b.ToTable("OutboxState", (string)null);
+                });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.Contest", b =>
                 {
@@ -101,6 +269,56 @@ namespace SportsData.Api.Migrations
                     b.ToTable("Contest", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ContestPreview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Analysis")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<Guid>("ContestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OverUnderPrediction")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Overview")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid?>("PredictedSpreadWinner")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PredictedStraightUpWinner")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Prediction")
+                        .HasMaxLength(768)
+                        .HasColumnType("character varying(768)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContestId")
+                        .IsUnique();
+
+                    b.ToTable("ContestPreview", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ContestResult", b =>
                 {
                     b.Property<Guid>("Id")
@@ -169,6 +387,168 @@ namespace SportsData.Api.Migrations
                     b.HasIndex("Sport", "SeasonYear");
 
                     b.ToTable("ContestResult", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessagePost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Depth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DislikeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EditedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<int>("ReplyCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ThreadId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("ThreadId", "ParentId");
+
+                    b.HasIndex("ThreadId", "Path");
+
+                    b.ToTable("MessagePost", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessageReaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short>("Type")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "Type");
+
+                    b.HasIndex("PostId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("MessageReaction", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessageThread", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PostCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId", "LastActivityAt");
+
+                    b.ToTable("MessageThread", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.OutboxPing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PingedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OutboxPings");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickResult", b =>
@@ -355,16 +735,21 @@ namespace SportsData.Api.Migrations
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupMatchup", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid>("SeasonWeekId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AwayRank")
+                        .HasColumnType("integer");
 
                     b.Property<double?>("AwaySpread")
                         .HasPrecision(10, 2)
                         .HasColumnType("double precision");
-
-                    b.Property<Guid>("ContestId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -372,18 +757,24 @@ namespace SportsData.Api.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
+                    b.Property<int?>("HomeRank")
+                        .HasColumnType("integer");
 
                     b.Property<double?>("HomeSpread")
                         .HasPrecision(10, 2)
                         .HasColumnType("double precision");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("OverOdds")
+                        .HasColumnType("double precision");
 
                     b.Property<double?>("OverUnder")
                         .HasPrecision(10, 2)
@@ -392,18 +783,22 @@ namespace SportsData.Api.Migrations
                     b.Property<int>("SeasonWeek")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("SeasonWeekId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("SeasonYear")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id");
+                    b.Property<string>("Spread")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDateUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("UnderOdds")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("GroupId", "SeasonWeekId", "ContestId");
 
                     b.HasIndex("GroupId", "ContestId")
                         .IsUnique();
-
-                    b.HasIndex("GroupId", "SeasonWeekId");
 
                     b.HasIndex("GroupId", "SeasonYear", "SeasonWeek");
 
@@ -483,6 +878,9 @@ namespace SportsData.Api.Migrations
                     b.Property<int?>("OverUnder")
                         .HasColumnType("integer");
 
+                    b.Property<int>("PickType")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("PickemGroupId")
                         .HasColumnType("uuid");
 
@@ -519,10 +917,14 @@ namespace SportsData.Api.Migrations
                     b.Property<bool?>("WasAgainstSpread")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Week")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ContestId")
-                        .IsUnique();
+                    b.HasIndex("ContestId");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("PickemGroupId", "UserId", "ContestId")
                         .IsUnique();
@@ -596,6 +998,21 @@ namespace SportsData.Api.Migrations
 
                     b.Property<bool>("AreMatchupsGenerated")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("SeasonWeek")
                         .HasColumnType("integer");
@@ -676,6 +1093,7 @@ namespace SportsData.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DisplayName")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -728,16 +1146,56 @@ namespace SportsData.Api.Migrations
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
-                            CreatedUtc = new DateTime(2025, 8, 18, 0, 17, 31, 718, DateTimeKind.Utc).AddTicks(1441),
+                            CreatedUtc = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DisplayName = "Foo Bar",
                             Email = "foo@bar.com",
                             EmailVerified = true,
                             FirebaseUid = "ngovRAr5E8cjMVaZNvcqN1nPFPJ2",
                             IsPanelPersona = false,
                             IsSynthetic = false,
-                            LastLoginUtc = new DateTime(2025, 8, 18, 0, 17, 31, 718, DateTimeKind.Utc).AddTicks(1559),
+                            LastLoginUtc = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             SignInProvider = "password"
                         });
+                });
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
+                {
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)
+                        .WithMany()
+                        .HasForeignKey("OutboxId");
+
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.InboxState", null)
+                        .WithMany()
+                        .HasForeignKey("InboxMessageId", "InboxConsumerId")
+                        .HasPrincipalKey("MessageId", "ConsumerId");
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessagePost", b =>
+                {
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.MessagePost", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId");
+
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.MessageThread", "Thread")
+                        .WithMany("Posts")
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("Thread");
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessageReaction", b =>
+                {
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.MessagePost", "Post")
+                        .WithMany("Reactions")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupConference", b =>
@@ -807,14 +1265,13 @@ namespace SportsData.Api.Migrations
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupUserPick", b =>
                 {
-                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.Contest", "Contest")
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("ContestId")
-                        .HasPrincipalKey("ContestId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Contest");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroupWeek", b =>
@@ -826,6 +1283,18 @@ namespace SportsData.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessagePost", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("Reactions");
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessageThread", b =>
+                {
+                    b.Navigation("Posts");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.PickemGroup", b =>

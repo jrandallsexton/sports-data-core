@@ -190,56 +190,6 @@ namespace SportsData.Api.Migrations
                     b.ToTable("OutboxState", (string)null);
                 });
 
-            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ContestPreview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Analysis")
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
-
-                    b.Property<Guid>("ContestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("OverUnderPrediction")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Overview")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<Guid?>("PredictedSpreadWinner")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("PredictedStraightUpWinner")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Prediction")
-                        .HasMaxLength(768)
-                        .HasColumnType("character varying(768)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContestId")
-                        .IsUnique();
-
-                    b.ToTable("ContestPreview", (string)null);
-                });
-
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ContestResult", b =>
                 {
                     b.Property<Guid>("Id")
@@ -308,6 +258,56 @@ namespace SportsData.Api.Migrations
                     b.HasIndex("Sport", "SeasonYear");
 
                     b.ToTable("ContestResult", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MatchupPreview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Analysis")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<Guid>("ContestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OverUnderPrediction")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Overview")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid?>("PredictedSpreadWinner")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PredictedStraightUpWinner")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Prediction")
+                        .HasMaxLength(768)
+                        .HasColumnType("character varying(768)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContestId")
+                        .IsUnique();
+
+                    b.ToTable("MatchupPreview", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessagePost", b =>

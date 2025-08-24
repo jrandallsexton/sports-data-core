@@ -29,7 +29,7 @@ namespace SportsData.Api.Infrastructure.Data
 
         public DbSet<PickemGroupWeekResult> PickemGroupWeekResults { get; set; }
 
-        public DbSet<ContestPreview> ContestPreviews { get; set; }
+        public DbSet<MatchupPreview> MatchupPreviews { get; set; }
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

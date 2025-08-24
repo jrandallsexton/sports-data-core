@@ -176,13 +176,6 @@ namespace SportsData.Api
 
             // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
-            
-            using (var scope = app.Services.CreateScope())
-            {
-                var appServices = scope.ServiceProvider;
-                var dbContext = appServices.GetRequiredService<AppDataContext>();
-                await dbContext.Database.MigrateAsync();
-            }
 
             app.UseCors("AllowFrontend");
 
@@ -191,14 +184,7 @@ namespace SportsData.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            //app.UseWhen(context =>
-            //        !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) &&
-            //        !context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase),
-            //    appBuilder =>
-            //    {
-            //        appBuilder.UseAuthentication();
-            //        appBuilder.UseAuthorization();
-            //    });
+            await app.Services.ApplyMigrations<AppDataContext>();
 
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {

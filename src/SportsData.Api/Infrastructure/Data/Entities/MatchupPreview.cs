@@ -4,7 +4,7 @@ using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Infrastructure.Data.Entities
 {
-    public class ContestPreview : CanonicalEntityBase<Guid>
+    public class MatchupPreview : CanonicalEntityBase<Guid>
     {
         public Guid ContestId { get; set; } // from Producer
 
@@ -20,11 +20,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public OverUnderPrediction OverUnderPrediction { get; set; } = OverUnderPrediction.None;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<ContestPreview>
+        public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {
-            public void Configure(EntityTypeBuilder<ContestPreview> builder)
+            public void Configure(EntityTypeBuilder<MatchupPreview> builder)
             {
-                builder.ToTable(nameof(ContestPreview));
+                builder.ToTable(nameof(MatchupPreview));
                 builder.HasKey(x => x.Id);
                 builder.HasIndex(x => x.ContestId).IsUnique();
 

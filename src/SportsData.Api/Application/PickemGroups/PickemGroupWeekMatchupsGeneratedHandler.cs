@@ -55,7 +55,7 @@ namespace SportsData.Api.Application.PickemGroups
 
             var groupWeekMatchupsContestIds = groupWeekMatchups.Select(x => x.ContestId).ToList();
 
-            var existingPreviews = await _dataContext.ContestPreviews
+            var existingPreviews = await _dataContext.MatchupPreviews
                 .Where(p => groupWeekMatchupsContestIds.Contains(p.ContestId))
                 .ToListAsync();
 

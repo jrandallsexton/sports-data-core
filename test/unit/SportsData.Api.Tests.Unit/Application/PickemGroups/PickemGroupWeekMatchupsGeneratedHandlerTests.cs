@@ -32,7 +32,7 @@ namespace SportsData.Api.Tests.Unit.Application.PickemGroups
                 new PickemGroupMatchup { GroupId = groupId, SeasonYear = 2025, SeasonWeek = 1, ContestId = contestId3 }
             });
 
-            await DataContext.ContestPreviews.AddAsync(new ContestPreview { ContestId = contestId3 });
+            await DataContext.MatchupPreviews.AddAsync(new MatchupPreview { ContestId = contestId3 });
 
             await DataContext.SaveChangesAsync();
 

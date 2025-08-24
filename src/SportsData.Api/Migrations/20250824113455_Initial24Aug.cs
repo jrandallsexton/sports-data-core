@@ -7,33 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SportsData.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class Initial24Aug : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "ContestPreview",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Overview = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
-                    Analysis = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
-                    Prediction = table.Column<string>(type: "character varying(768)", maxLength: 768, nullable: true),
-                    PredictedStraightUpWinner = table.Column<Guid>(type: "uuid", nullable: true),
-                    PredictedSpreadWinner = table.Column<Guid>(type: "uuid", nullable: true),
-                    OverUnderPrediction = table.Column<int>(type: "integer", nullable: false),
-                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ContestPreview", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "ContestResult",
                 columns: table => new
@@ -133,6 +111,28 @@ namespace SportsData.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LeagueWeekResult", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MatchupPreview",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ContestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Overview = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    Analysis = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
+                    Prediction = table.Column<string>(type: "character varying(768)", maxLength: 768, nullable: true),
+                    PredictedStraightUpWinner = table.Column<Guid>(type: "uuid", nullable: true),
+                    PredictedSpreadWinner = table.Column<Guid>(type: "uuid", nullable: true),
+                    OverUnderPrediction = table.Column<int>(type: "integer", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MatchupPreview", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -556,12 +556,6 @@ namespace SportsData.Api.Migrations
                 values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), new Guid("00000000-0000-0000-0000-000000000000"), new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Foo Bar", "foo@bar.com", true, "ngovRAr5E8cjMVaZNvcqN1nPFPJ2", false, false, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, "password", null });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ContestPreview_ContestId",
-                table: "ContestPreview",
-                column: "ContestId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ContestResult_ContestId",
                 table: "ContestResult",
                 column: "ContestId",
@@ -587,6 +581,12 @@ namespace SportsData.Api.Migrations
                 name: "IX_LeagueWeekResult_PickemGroupId_SeasonYear_SeasonWeek_UserId",
                 table: "LeagueWeekResult",
                 columns: new[] { "PickemGroupId", "SeasonYear", "SeasonWeek", "UserId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MatchupPreview_ContestId",
+                table: "MatchupPreview",
+                column: "ContestId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -737,9 +737,6 @@ namespace SportsData.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ContestPreview");
-
-            migrationBuilder.DropTable(
                 name: "ContestResult");
 
             migrationBuilder.DropTable(
@@ -747,6 +744,9 @@ namespace SportsData.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "LeagueWeekResult");
+
+            migrationBuilder.DropTable(
+                name: "MatchupPreview");
 
             migrationBuilder.DropTable(
                 name: "MessageReaction");

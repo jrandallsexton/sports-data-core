@@ -22,7 +22,7 @@ namespace SportsData.Api.Application.UI.NewFolder
         [Authorize]
         public async Task<IActionResult> GetPreviewById(Guid id)
         {
-            var preview = await _dbContext.ContestPreviews.FirstOrDefaultAsync(x => x.ContestId == id);
+            var preview = await _dbContext.MatchupPreviews.FirstOrDefaultAsync(x => x.ContestId == id);
 
             if (preview is null)
                 return NotFound();

@@ -88,12 +88,12 @@ namespace SportsData.Api.Application.Processors
             _logger.LogInformation("AI generated the following preview. {@Preview}", parsed);
 
             // TODO: Save parsed to the database here
-            var preview = await _dataContext.ContestPreviews
+            var preview = await _dataContext.MatchupPreviews
                 .FirstOrDefaultAsync(x => x.Id == command.ContestId);
 
             if (preview == null)
             {
-                await _dataContext.ContestPreviews.AddAsync(new ContestPreview
+                await _dataContext.MatchupPreviews.AddAsync(new MatchupPreview
                 {
                     Id = Guid.NewGuid(),
                     ContestId = command.ContestId,

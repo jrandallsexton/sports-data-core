@@ -25,7 +25,7 @@ namespace SportsData.Provider.Infrastructure.Data
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
-            _defaultContainer = _client.GetContainer(_databaseName, "provider-dev");
+            _defaultContainer = _client.GetContainer(_databaseName, "FootballNcaa"); // TODO: Get from AzAppConfig
         }
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string containerName)

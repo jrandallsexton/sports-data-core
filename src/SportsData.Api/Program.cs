@@ -161,13 +161,12 @@ namespace SportsData.Api
             });
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
             services.AddMessaging<AppDataContext>(config, [
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler)
             ]);
-            //services.AddInstrumentation(builder.Environment.ApplicationName);
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
-            //services.AddCaching(config);
+
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             services.AddLocalServices(Sport.All);

@@ -29,7 +29,7 @@ namespace SportsData.Provider.Infrastructure.Data
         [JsonPropertyName("_etag")]
         public string? ETag { get; set; }  // Required for concurrency
 
-        // 🔥 NEW — REQUIRED FOR COSMOS PARTITIONING
+        [JsonPropertyName("routingKey")]
         public required string RoutingKey { get; set; }
     }
 }

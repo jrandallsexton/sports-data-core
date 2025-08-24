@@ -89,7 +89,7 @@ namespace SportsData.Provider.Infrastructure.Data
                 baseDoc.RoutingKey = routingKey;
             }
 
-            _logger.LogInformation("Cosmos inserting {@Document}", document);
+            _logger.LogInformation("Cosmos inserting");
             var container = _client.GetContainer(_databaseName, collectionName);
 
             await container.CreateItemAsync(document, new PartitionKey(routingKey));

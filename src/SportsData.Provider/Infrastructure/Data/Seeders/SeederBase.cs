@@ -27,7 +27,7 @@ namespace SportsData.Provider.Infrastructure.Data.Seeders
         ];
 
         private const string EspnApiBaseUrl = "https://sports.core.api.espn.com/v2/sports";
-        private const bool IsPartialRun = true;
+        private const bool IsPartialRun = false;
 
         public List<ResourceIndex> GenerateNonSeasonalResources(
             List<ResourceIndex> resources,

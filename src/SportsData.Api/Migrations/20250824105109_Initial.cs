@@ -13,37 +13,6 @@ namespace SportsData.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Contest",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Sport = table.Column<int>(type: "integer", nullable: false),
-                    SeasonYear = table.Column<int>(type: "integer", nullable: false),
-                    SeasonWeek = table.Column<int>(type: "integer", nullable: false),
-                    StartUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    HomeFranchiseId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AwayFranchiseId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Spread = table.Column<double>(type: "double precision", nullable: true),
-                    OverUnder = table.Column<double>(type: "double precision", nullable: true),
-                    IsVisible = table.Column<bool>(type: "boolean", nullable: false),
-                    LastSyncedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    HomeScore = table.Column<int>(type: "integer", nullable: true),
-                    AwayScore = table.Column<int>(type: "integer", nullable: true),
-                    WinnerFranchiseId = table.Column<Guid>(type: "uuid", nullable: true),
-                    SpreadWinnerFranchiseId = table.Column<Guid>(type: "uuid", nullable: true),
-                    FinalizedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Contest", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ContestPreview",
                 columns: table => new
                 {
@@ -587,17 +556,6 @@ namespace SportsData.Api.Migrations
                 values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), new Guid("00000000-0000-0000-0000-000000000000"), new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Foo Bar", "foo@bar.com", true, "ngovRAr5E8cjMVaZNvcqN1nPFPJ2", false, false, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, "password", null });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Contest_ContestId",
-                table: "Contest",
-                column: "ContestId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Contest_Sport_SeasonYear_StartUtc",
-                table: "Contest",
-                columns: new[] { "Sport", "SeasonYear", "StartUtc" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ContestPreview_ContestId",
                 table: "ContestPreview",
                 column: "ContestId",
@@ -778,9 +736,6 @@ namespace SportsData.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Contest");
-
             migrationBuilder.DropTable(
                 name: "ContestPreview");
 

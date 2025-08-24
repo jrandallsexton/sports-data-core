@@ -53,15 +53,15 @@ public class Contest : CanonicalEntityBase<Guid>
             ? HomeScore + AwayScore
             : null;
 
-    public class EntityConfiguration : IEntityTypeConfiguration<Contest>
-    {
-        public void Configure(EntityTypeBuilder<Contest> builder)
-        {
-            builder.ToTable(nameof(Contest));
-            builder.HasKey(x => x.Id);
+    //public class EntityConfiguration : IEntityTypeConfiguration<Contest>
+    //{
+    //    public void Configure(EntityTypeBuilder<Contest> builder)
+    //    {
+    //        builder.ToTable(nameof(Contest));
+    //        builder.HasKey(x => x.Id);
 
-            builder.HasIndex(x => x.ContestId).IsUnique();
-            builder.HasIndex(x => new { x.Sport, x.SeasonYear, x.StartUtc });
-        }
-    }
+    //        builder.HasIndex(x => x.ContestId).IsUnique();
+    //        builder.HasIndex(x => new { x.Sport, x.SeasonYear, x.StartUtc });
+    //    }
+    //}
 }

@@ -15,8 +15,6 @@ namespace SportsData.Api.Infrastructure.Data
 
         public DbSet<User> Users { get; set; }
 
-        public DbSet<Contest> Contests { get; set; }
-
         public DbSet<PickemGroup> PickemGroups { get; set; }
 
         public DbSet<PickemGroupWeek> PickemGroupWeeks { get; set; }

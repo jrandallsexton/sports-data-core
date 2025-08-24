@@ -1,17 +1,25 @@
-select * from public."ContestPreview"
+select * from public."ContestPreview" where "ContestId" = '0e27c391-408c-90af-c810-cd006ffbc10e'
 select * from public."PickemGroup"
-select * from public."PickemGroupConference"
-select * from public."PickemGroupWeek"
-select * from public."PickemGroupMatchup"
+
+select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
+select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
+select * from public."PickemGroupWeek" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
+select * from public."PickemGroupMatchup" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
 select * from public."UserPick"
 select * from public."User"
+select * from public."OutboxMessage"
+select * from public."OutboxState"
 select *
 from public."PickemGroupMatchup" m
 where m."GroupId" = '96d4771f-43e5-470b-aba4-7401452ee1be' and "SeasonWeek" = 1
 order by "Spread"
+
+select * from public."MessageThread"
+select * from public."MessagePost" where "ThreadId" = '00000000-0000-0000-0000-000000000000'
 --delete from public."PickemGroupWeek"
 --delete from public."PickemGroupMatchup"
 --delete from public."UserPick"
+--update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true, "SignInProvider" = 'password' where "Id" = 'e972f550-acab-4162-a4ee-e76170a4c9e1'
 
 /*
 INSERT INTO "ContestPreview" (
@@ -40,3 +48,7 @@ VALUES (
   "prediction": ""
 }
 */
+
+
+
+

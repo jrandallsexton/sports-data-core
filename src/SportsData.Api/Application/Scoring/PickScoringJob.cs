@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 
 namespace SportsData.Api.Application.Scoring
@@ -26,54 +27,56 @@ namespace SportsData.Api.Application.Scoring
 
         public async Task ScoreAllAsync(CancellationToken cancellationToken = default)
         {
-            var unscored = await _db.UserPicks
-                .Where(p => p.IsCorrect == null)
-                .ToListAsync(cancellationToken);
+            await Task.Delay(100);
+            throw new NotImplementedByDesignException();
+            //var unscored = await _db.UserPicks
+            //    .Where(p => p.IsCorrect == null)
+            //    .ToListAsync(cancellationToken);
 
-            if (unscored.Count == 0)
-            {
-                _logger.LogInformation("No unscored picks found.");
-                return;
-            }
+            //if (unscored.Count == 0)
+            //{
+            //    _logger.LogInformation("No unscored picks found.");
+            //    return;
+            //}
 
-            var contestIds = unscored.Select(p => p.ContestId).Distinct().ToList();
-            var leagueIds = unscored.Select(p => p.PickemGroupId).Distinct().ToList();
+            //var contestIds = unscored.Select(p => p.ContestId).Distinct().ToList();
+            //var leagueIds = unscored.Select(p => p.PickemGroupId).Distinct().ToList();
 
-            var contestList = await _db.Contests
-                .Where(c => contestIds.Contains(c.ContestId))
-                .ToListAsync(cancellationToken);
+            //var contestList = await _db.Contests
+            //    .Where(c => contestIds.Contains(c.ContestId))
+            //    .ToListAsync(cancellationToken);
 
-            var contests = contestList
-                .Where(c => c.IsFinal)
-                .ToDictionary(c => c.ContestId);
+            //var contests = contestList
+            //    .Where(c => c.IsFinal)
+            //    .ToDictionary(c => c.ContestId);
 
-            var leagues = await _db.PickemGroups
-                .Where(l => leagueIds.Contains(l.Id))
-                .ToDictionaryAsync(l => l.Id, cancellationToken);
+            //var leagues = await _db.PickemGroups
+            //    .Where(l => leagueIds.Contains(l.Id))
+            //    .ToDictionaryAsync(l => l.Id, cancellationToken);
 
-            var count = 0;
+            //var count = 0;
 
-            foreach (var pick in unscored)
-            {
-                if (!contests.TryGetValue(pick.ContestId, out var contest) || !contest.IsFinal)
-                    continue;
+            //foreach (var pick in unscored)
+            //{
+            //    if (!contests.TryGetValue(pick.ContestId, out var contest) || !contest.IsFinal)
+            //        continue;
 
-                if (!leagues.TryGetValue(pick.PickemGroupId, out var league))
-                    continue;
+            //    if (!leagues.TryGetValue(pick.PickemGroupId, out var league))
+            //        continue;
 
-                try
-                {
-                    _scoringService.ScorePick(pick, contest, league);
-                    count++;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to score pick {PickId}", pick.Id);
-                }
-            }
+            //    try
+            //    {
+            //        _scoringService.ScorePick(pick, contest, league);
+            //        count++;
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        _logger.LogWarning(ex, "Failed to score pick {PickId}", pick.Id);
+            //    }
+            //}
 
-            await _db.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Scored {Count} picks", count);
+            //await _db.SaveChangesAsync(cancellationToken);
+            //_logger.LogInformation("Scored {Count} picks", count);
         }
     }
 }

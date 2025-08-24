@@ -12,7 +12,7 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20250824093553_Initial")]
+    [Migration("20250824105109_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -191,82 +191,6 @@ namespace SportsData.Api.Migrations
                     b.HasIndex("Created");
 
                     b.ToTable("OutboxState", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.Contest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AwayFranchiseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("AwayScore")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ContestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("FinalizedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("HomeFranchiseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("HomeScore")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsVisible")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("LastSyncedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double?>("OverUnder")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("SeasonWeek")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SeasonYear")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Sport")
-                        .HasColumnType("integer");
-
-                    b.Property<double?>("Spread")
-                        .HasColumnType("double precision");
-
-                    b.Property<Guid?>("SpreadWinnerFranchiseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("StartUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("WinnerFranchiseId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContestId")
-                        .IsUnique();
-
-                    b.HasIndex("Sport", "SeasonYear", "StartUtc");
-
-                    b.ToTable("Contest", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ContestPreview", b =>

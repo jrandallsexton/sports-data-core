@@ -57,6 +57,8 @@ namespace SportsData.Core.DependencyInjection
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
 
+            Console.WriteLine($"using: {connString}");
+
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();

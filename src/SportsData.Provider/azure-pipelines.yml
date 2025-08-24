@@ -84,7 +84,7 @@ stages:
     displayName: 'Build and Push Image'
     steps:
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: 'Build & Push'
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
@@ -94,7 +94,7 @@ stages:
           $(tag)
 
 - stage: DeployToAppService
-  displayName: 'Deploy: API to Azure App Service'
+  displayName: 'Deploy: Provider to Azure App Service'
   dependsOn: BuildImagePushACR
   condition: succeeded()
   jobs:

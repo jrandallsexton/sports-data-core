@@ -160,7 +160,7 @@ namespace SportsData.Api
                 client.BaseAddress = new Uri(config.BaseUrl);
             });
 
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging<AppDataContext>(config, [
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler)

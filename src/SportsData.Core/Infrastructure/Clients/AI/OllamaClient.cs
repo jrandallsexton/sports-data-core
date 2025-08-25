@@ -35,12 +35,12 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 stream = false
             };
 
-            _logger.LogError("OllamaClient began. {@Config} {@Request}", _config, request);
+            _logger.LogDebug("OllamaClient began. {@Config} {@Request}", _config, request);
 
             try
             {
                 _httpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
-
+                
                 using var response = await _httpClient.PostAsJsonAsync("/api/generate", request, ct);
 
                 if (!response.IsSuccessStatusCode)

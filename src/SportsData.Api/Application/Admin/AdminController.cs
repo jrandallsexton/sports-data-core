@@ -38,7 +38,6 @@ namespace SportsData.Api.Application.Admin
         [Route("ai-test")]
         public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
         {
-            
             var response = await _ai.GetResponseAsync(command.Text);
             return Ok(response);
         }

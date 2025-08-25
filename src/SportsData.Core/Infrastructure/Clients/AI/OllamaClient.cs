@@ -39,6 +39,8 @@ namespace SportsData.Core.Infrastructure.Clients.AI
 
             try
             {
+                _httpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
+
                 using var response = await _httpClient.PostAsJsonAsync("/api/generate", request, ct);
 
                 if (!response.IsSuccessStatusCode)

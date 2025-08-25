@@ -77,7 +77,7 @@ function SignupPage() {
   return (
     <div className="signup-page">
       <div className="signup-card">
-        <h2>Join sportDeets!</h2>
+        <h2>Join sportDeets<span className="tm-symbol">™</span>!</h2>
         <p>Sign up free to start making your picks and saving insights.</p>
 
         <div className="third-party-buttons">
@@ -88,22 +88,16 @@ function SignupPage() {
             <FaGoogle className="icon" /> Continue with Google
           </button>
           <button
-            className="third-party-button facebook"
+            className="third-party-button facebook disabled"
             onClick={() => handleThirdPartySignIn("Facebook")}
           >
-            <FaFacebook className="icon" /> Continue with Facebook
+            <FaFacebook className="icon" /> Continue with Facebook (coming soon)
           </button>
           <button
-            className="third-party-button github"
-            onClick={() => handleThirdPartySignIn("GitHub")}
-          >
-            <FaGithub className="icon" /> Continue with GitHub
-          </button>
-          <button
-            className="third-party-button apple"
+            className="third-party-button apple disabled"
             onClick={() => handleThirdPartySignIn("Apple")}
           >
-            <FaApple className="icon" /> Continue with Apple
+            <FaApple className="icon" /> Continue with Apple (coming soon)
           </button>
         </div>
 

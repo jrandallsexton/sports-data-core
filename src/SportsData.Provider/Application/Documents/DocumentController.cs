@@ -253,7 +253,12 @@ namespace SportsData.Provider.Application.Documents
                 });
             }
 
-            var bypassCache = true; // TODO: Set from config _environment.IsDevelopment();
+            var bypassCache = !_environment.IsDevelopment();
+
+            if (!bypassCache)
+            {
+                _logger.LogError("!!! bypassCache FOR IMAGES IS FALSE IN DEV!!!");
+            }
 
             // get the image (from cache or ESPN)
             await using var stream = await _espnHttpClient.GetCachedImageStreamAsync(

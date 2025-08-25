@@ -127,11 +127,8 @@ namespace SportsData.Api
 
             builder.Services.AddScoped<IDbConnection>(sp =>
             {
-                var config = sp.GetRequiredService<IConfiguration>();
-                //var connectionString = config.GetConnectionString("CanonicalData");
-                var connectionString =
-                    "Host=localhost;Port=5432;Username=postgres;Password=sesame1?;Maximum Pool Size=200;Database=sdProducer.FootballNcaa";
-                return new NpgsqlConnection(connectionString);
+                var connString = config["SportsData.Api:CanonicalDataProvider:ConnectionString"];
+                return new NpgsqlConnection(connString);
             });
 
             services.AddCoreServices(config);

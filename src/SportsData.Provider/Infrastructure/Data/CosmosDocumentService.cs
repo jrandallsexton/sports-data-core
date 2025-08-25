@@ -49,9 +49,9 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> predicate)
         {
-            _logger.LogInformation("Cosmos querying {@Predicate}", predicate);
-            _logger.LogInformation("Cosmos querying {@CollectionName}", collectionName);
-            _logger.LogInformation("Cosmos querying {@DatabaseName}", _databaseName);
+            _logger.LogDebug("Cosmos querying {@Predicate}", predicate);
+            _logger.LogDebug("Cosmos querying {@CollectionName}", collectionName);
+            _logger.LogDebug("Cosmos querying {@DatabaseName}", _databaseName);
 
             var container = _client.GetContainer(_databaseName, collectionName);
 
@@ -89,7 +89,7 @@ namespace SportsData.Provider.Infrastructure.Data
                 baseDoc.RoutingKey = routingKey;
             }
 
-            _logger.LogInformation("Cosmos inserting");
+            _logger.LogDebug("Cosmos inserting");
             var container = _client.GetContainer(_databaseName, collectionName);
 
             await container.CreateItemAsync(document, new PartitionKey(routingKey));

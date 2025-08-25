@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
+import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Login from "../login/Login.jsx";
 import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";

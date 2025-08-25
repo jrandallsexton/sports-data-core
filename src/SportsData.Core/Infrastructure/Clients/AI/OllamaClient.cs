@@ -35,6 +35,8 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 stream = false
             };
 
+            _logger.LogError("OllamaClient began. {@Config} {@Request}", _config, request);
+
             try
             {
                 using var response = await _httpClient.PostAsJsonAsync("/api/generate", request, ct);

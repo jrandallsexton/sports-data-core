@@ -90,12 +90,14 @@ function SignupPage() {
           <button
             className="third-party-button facebook disabled"
             onClick={() => handleThirdPartySignIn("Facebook")}
+            disabled
           >
             <FaFacebook className="icon" /> Continue with Facebook (coming soon)
           </button>
           <button
             className="third-party-button apple disabled"
             onClick={() => handleThirdPartySignIn("Apple")}
+            disabled
           >
             <FaApple className="icon" /> Continue with Apple (coming soon)
           </button>

@@ -30,6 +30,7 @@ namespace SportsData.Provider.Application.Documents
         private readonly IBus _bus;
         private readonly IHttpClientFactory _clientFactory;
         private readonly EspnHttpClient _espnHttpClient;
+        private readonly IHostEnvironment _environment;
 
         public DocumentController(
             IDocumentStore documentStore,
@@ -40,7 +41,8 @@ namespace SportsData.Provider.Application.Documents
             IGenerateRoutingKeys routingKeyGenerator,
             IBus bus,
             IHttpClientFactory clientFactory,
-            EspnHttpClient espnHttpClient)
+            EspnHttpClient espnHttpClient,
+            IHostEnvironment environment)
         {
             _documentStore = documentStore;
             _decoder = decoder;
@@ -51,6 +53,7 @@ namespace SportsData.Provider.Application.Documents
             _bus = bus;
             _clientFactory = clientFactory;
             _espnHttpClient = espnHttpClient;
+            _environment = environment;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -250,10 +253,12 @@ namespace SportsData.Provider.Application.Documents
                 });
             }
 
+            var bypassCache = true; // TODO: Set from config _environment.IsDevelopment();
+
             // get the image (from cache or ESPN)
             await using var stream = await _espnHttpClient.GetCachedImageStreamAsync(
                 query.Uri,
-                bypassCache: false,
+                bypassCache: bypassCache,
                 stripQuerystring: true,
                 extension: "png", ct);
 

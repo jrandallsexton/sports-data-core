@@ -1,10 +1,9 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
@@ -92,21 +91,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             _dataContext.Add(newEntity);
 
             // 2. Any images?
-            //var events = EventFactory.CreateProcessImageRequests(
-            //    dto.Images,
-            //    newEntity.Id,
-            //    command.Sport,
-            //    command.Season,
-            //    command.DocumentType,
-            //    command.SourceDataProvider,
-            //    command.CorrelationId,
-            //    CausationId.Producer.VenueDocumentProcessor);
+            var events = EventFactory.CreateProcessImageRequests(
+                dto.Images,
+                newEntity.Id,
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.VenueDocumentProcessor);
 
-            //if (events.Count > 0)
-            //{
-            //    _logger.LogInformation("Requesting {Count} venue images.", events.Count);
-            //    await _publishEndpoint.PublishBatch(events);
-            //}
+            if (events.Count > 0)
+            {
+                _logger.LogInformation("Requesting {Count} venue images.", events.Count);
+                await _publishEndpoint.PublishBatch(events);
+            }
 
             // 2. raise an integration event with the canonical model
             var evt = new VenueCreated(

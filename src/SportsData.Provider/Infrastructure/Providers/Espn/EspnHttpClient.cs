@@ -119,21 +119,34 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 return null;
             }
 
+            await using var networkStream = await response.Content.ReadAsStreamAsync(ct);
+
+            if (bypassCache)
+            {
+                _logger.LogDebug("Bypassing cache, returning raw stream for {Uri}", uri);
+                return await CopyToMemoryStreamAsync(networkStream, ct);
+            }
+
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
 
-            await using var networkStream = await response.Content.ReadAsStreamAsync(ct);
             await using var fs = File.Create(path);
             await networkStream.CopyToAsync(fs, ct);
 
             _logger.LogInformation("Persisted image to {Path}", path);
-
             return File.OpenRead(path);
         }
 
+        private static async Task<Stream> CopyToMemoryStreamAsync(Stream input, CancellationToken ct)
+        {
+            var ms = new MemoryStream();
+            await input.CopyToAsync(ms, ct);
+            ms.Position = 0;
+            return ms;
+        }
 
         private async Task<string?> TryLoadFromDiskAsync(Uri uri, bool stripQuerystring = true)
         {

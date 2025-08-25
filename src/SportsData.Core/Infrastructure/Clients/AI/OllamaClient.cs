@@ -94,7 +94,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
 
     public class OllamaClientConfig
     {
-        public string Model { get; set; } = "mistral";
-        public string BaseUrl { get; set; } = "http://localhost:11434";
+        public required string Model { get; set; }
+        public required string BaseUrl { get; set; }
     }
 }

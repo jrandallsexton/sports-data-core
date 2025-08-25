@@ -145,17 +145,19 @@ namespace SportsData.Api
 
             services.AddClients(config);
 
-            services.AddSingleton(new OllamaClientConfig
+            /* AI */
+            var ollamaConfig = new OllamaClientConfig
             {
-                Model = "mistral",
-                BaseUrl = "http://localhost:11434"
-            });
+                Model = config["CommonConfig:OllamaClientConfig:Model"]!,
+                BaseUrl = config["CommonConfig:OllamaClientConfig:BaseUrl"]!
+            };
+            services.AddSingleton(ollamaConfig);
 
             services.AddHttpClient<IProvideAiCommunication, OllamaClient>((sp, client) =>
             {
-                var config = sp.GetRequiredService<OllamaClientConfig>();
-                client.BaseAddress = new Uri(config.BaseUrl);
+                client.BaseAddress = new Uri(ollamaConfig.BaseUrl);
             });
+            /* End AI */
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);

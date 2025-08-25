@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Infrastructure.Clients.AI;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -8,10 +9,14 @@ namespace SportsData.Api.Application.Admin
     public class AdminController : ControllerBase
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+        private readonly IProvideAiCommunication _ai;
 
-        public AdminController(IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        public AdminController(
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            IProvideAiCommunication ai)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
+            _ai = ai;
         }
 
         [HttpPost]
@@ -28,10 +33,24 @@ namespace SportsData.Api.Application.Admin
 
             return Ok(identity);
         }
+
+        [HttpPost]
+        [Route("ai-test")]
+        public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
+        {
+            var response = await _ai.GetResponseAsync(command.Text);
+            return Ok(response);
+        }
     }
 
     public class GenerateUrlIdentityCommand
     {
         public string Url { get; set; } = string.Empty;
+    }
+
+    public class AiChatCommand
+    {
+        public required string Name { get; set; }
+        public required string Text { get; set; }
     }
 }

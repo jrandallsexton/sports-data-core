@@ -42,6 +42,7 @@ left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+where fHome."Slug" = 'lsu-tigers'
 ORDER BY "StartDateUtc", fHome."Slug"
 
 

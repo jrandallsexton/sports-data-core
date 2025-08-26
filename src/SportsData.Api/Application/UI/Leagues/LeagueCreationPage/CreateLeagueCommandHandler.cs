@@ -1,4 +1,5 @@
-﻿using SportsData.Api.Application.Events;
+﻿using System.Security.Cryptography;
+using SportsData.Api.Application.Events;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
@@ -67,11 +68,13 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
                 UserId = command.CommissionerUserId,
             });
 
-            await _eventBus.Publish(new PickemGroupCreated(
+            var evt = new PickemGroupCreated(
                 group.Id,
                 Guid.NewGuid(),
-                Guid.NewGuid()),
-                cancellationToken);
+                Guid.NewGuid());
+                
+            _logger.LogInformation("Raising PickemGroupCreated{@Evt}", evt);
+            await _eventBus.Publish(evt, cancellationToken);
 
             await _dbContext.PickemGroups.AddAsync(group, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);

@@ -1,6 +1,6 @@
-select * from public."ResourceIndex" where "IsRecurring" is false order by "Ordinal"
+select "LastPageIndex", "TotalPageCount", * from public."ResourceIndex" where "IsRecurring" is false order by "Ordinal"
 select * from public."ResourceIndex" where "IsRecurring" is false and "LastCompletedUtc" is null order by "Ordinal"
---update public."ResourceIndex" set "LastCompletedUtc" = null where "Id" = 'e9299a38-d58a-4aa9-82f0-56150646718f'
+--update public."ResourceIndex" set "LastCompletedUtc" = null where "Id" = '8683b877-ca76-4c17-97ab-0fe3e8eec350'
 select * from public."ResourceIndex" where "LastCompletedUtc" is null order by "Ordinal"
 select * from public."ResourceIndexItem" where "SourceUrlHash" = '4619f7f84e26d8324bdd49fb011961a0b1a9a2bfc29b6da412166d3d4350bc3e'
 

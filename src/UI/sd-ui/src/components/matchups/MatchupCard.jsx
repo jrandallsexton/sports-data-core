@@ -37,10 +37,10 @@ function MatchupCard({
 
   const startTime = new Date(matchup.startDateUtc);
   const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
-  const isLocked = now > lockTime;  
+  const isLocked = now > lockTime;
 
   return (
-    <div className={`matchup-card ${isFadingOut ? 'fade-out' : ''}`}>
+    <div className={`matchup-card ${isFadingOut ? "fade-out" : ""}`}>
       {/* Away Team Row */}
       <div className="team-row">
         <div className="team-info">
@@ -139,9 +139,13 @@ function MatchupCard({
         <button
           className="insight-button"
           onClick={() => onViewInsight(matchup)}
-          disabled={!isInsightUnlocked || isLocked}
+          disabled={
+            !matchup.isPreviewAvailable || !isInsightUnlocked || isLocked
+          }
           title={
-            isInsightUnlocked
+            !matchup.isPreviewAvailable
+              ? "Preview not available"
+              : isInsightUnlocked
               ? isLocked
                 ? "Locked – game has started"
                 : "View Insight"

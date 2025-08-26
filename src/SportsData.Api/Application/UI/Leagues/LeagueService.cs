@@ -170,6 +170,11 @@ namespace SportsData.Api.Application.UI.Leagues
 
             var contestIds = matchups.Select(x => x.ContestId).ToList();
 
+            var previews = await _dbContext.MatchupPreviews
+                .Where(x => contestIds.Contains(x.ContestId))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
             var canonicalMatchups = await _canonicalDataProvider.GetMatchupsByContestIds(contestIds);
 
             // Create dictionary for fast lookup of canonical values
@@ -210,6 +215,8 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.Venue = canonical.Venue;
                     matchup.VenueCity = canonical.VenueCity;
                     matchup.VenueState = canonical.VenueState;
+
+                    matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId);
                 }
             }
 

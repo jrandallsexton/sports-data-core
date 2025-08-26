@@ -44,6 +44,8 @@
             public string Venue { get; set; } = default!;
             public string VenueCity { get; set; } = default!;
             public string VenueState { get; set; } = default!;
+
+            public bool IsPreviewAvailable { get; set; }
         }
 
     }

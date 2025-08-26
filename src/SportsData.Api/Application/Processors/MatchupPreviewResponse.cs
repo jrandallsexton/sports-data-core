@@ -15,8 +15,7 @@ public class MatchupPreviewResponse
 
     public Guid PredictedSpreadWinner { get; set; }
 
-    [JsonConverter(typeof(FlexibleStringConverter))]
-    public required string OverUnderPrediction { get; set; }
+    public int OverUnderPrediction { get; set; }
 
     public int AwayScore { get; set; }
 

@@ -127,7 +127,7 @@ namespace SportsData.Api.Application.Processors
                     Prediction = parsed.Prediction,
                     PredictedStraightUpWinner = parsed.PredictedStraightUpWinner,
                     PredictedSpreadWinner = parsed.PredictedSpreadWinner,
-                    OverUnderPrediction = parsed.OverUnderPrediction == "1" ? OverUnderPrediction.Over : OverUnderPrediction.Under,
+                    OverUnderPrediction = parsed.OverUnderPrediction == 1 ? OverUnderPrediction.Over : OverUnderPrediction.Under,
                     AwayScore = parsed.AwayScore,
                     HomeScore = parsed.HomeScore,
                     Model = _aiCommunication.GetModelName(),
@@ -141,7 +141,7 @@ namespace SportsData.Api.Application.Processors
                 preview.Prediction = parsed.Prediction;
                 preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
                 preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
-                preview.OverUnderPrediction = parsed.OverUnderPrediction == "1" ? OverUnderPrediction.Over : OverUnderPrediction.Under;
+                preview.OverUnderPrediction = parsed.OverUnderPrediction == 1 ? OverUnderPrediction.Over : OverUnderPrediction.Under;
                 preview.AwayScore = parsed.AwayScore;
                 preview.HomeScore = parsed.HomeScore;
                 preview.Model = _aiCommunication.GetModelName();

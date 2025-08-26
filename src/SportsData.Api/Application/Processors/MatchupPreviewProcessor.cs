@@ -11,16 +11,6 @@ using System.Text.Json;
 
 namespace SportsData.Api.Application.Processors
 {
-    public interface IGenerateMatchupPreviews
-    {
-        Task Process(GenerateMatchupPreviewsCommand command);
-    }
-
-    public class GenerateMatchupPreviewsCommand
-    {
-        public Guid ContestId { get; set; }
-    }
-
     public class MatchupPreviewProcessor : IGenerateMatchupPreviews
     {
         private readonly AppDataContext _dataContext;
@@ -159,26 +149,6 @@ namespace SportsData.Api.Application.Processors
             }
 
             await _dataContext.SaveChangesAsync();
-        }
-
-
-        public class MatchupPreviewResponse
-        {
-            public required string Overview { get; set; }
-
-            public required string Analysis { get; set; }
-
-            public required string Prediction { get; set; }
-
-            public Guid PredictedStraightUpWinner { get; set; }
-
-            public Guid PredictedSpreadWinner { get; set; }
-
-            public required string OverUnderPrediction { get; set; }
-
-            public int AwayScore { get; set; }
-
-            public int HomeScore { get; set; }
         }
     }
 }

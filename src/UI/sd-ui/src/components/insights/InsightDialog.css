@@ -38,6 +38,7 @@
   max-height: 90vh; /* ✅ prevent overflow offscreen */
   overflow-y: auto; /* ✅ allow scroll inside the dialog */
   -webkit-overflow-scrolling: touch; /* ✅ smooth iOS scrolling */
+  margin-top: 8px; /* Prevent collision with nav on older Androids */
 }
 
 body.modal-open {

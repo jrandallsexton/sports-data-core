@@ -7,9 +7,11 @@
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* ✅ from center → top alignment */
-  padding-top: 20px; /* ✅ creates breathing room below nav */
-  overflow-y: auto; /* ✅ allow scrolling if content is taller */
+  align-items: flex-start;
+  padding-top: env(safe-area-inset-top, 40px); /* ✅ Updated here */
+  overflow-y: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
   z-index: 999;
   animation: fadeOverlay 0.4s ease;
 }
@@ -296,13 +298,12 @@ body.modal-open {
 
 /* Prevent scroll propagation when touching outside the modal on mobile */
 .insight-dialog-overlay {
-  touch-action: none;                /* Prevent swipe gestures from escaping */
-  overscroll-behavior: contain;     /* Block scroll chaining (background bounce) */
+  touch-action: none; /* Prevent swipe gestures from escaping */
+  overscroll-behavior: contain; /* Block scroll chaining (background bounce) */
 }
 
 /* Prevent tap-through or accidental body scroll */
 body.modal-open {
   overflow: hidden;
-  height: 100vh;                     /* Locks layout in place */
+  height: 100vh; /* Locks layout in place */
 }
-

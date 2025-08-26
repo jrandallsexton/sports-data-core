@@ -1,11 +1,12 @@
-﻿using SportsData.Api.Infrastructure.Data;
+﻿using Microsoft.EntityFrameworkCore;
+
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Infrastructure.Clients.AI;
 
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using SportsData.Api.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Application.Processors
 {

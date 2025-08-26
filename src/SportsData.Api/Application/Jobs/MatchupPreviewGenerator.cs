@@ -1,4 +1,5 @@
-﻿using SportsData.Api.Application.Processors;
+﻿using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Processing;
@@ -29,11 +30,21 @@ namespace SportsData.Api.Application.Jobs
             // get all matchups for the current week
             var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
 
+            var contestIds = matchups.Select(x => x.ContestId);
+
             // do we want to overwrite existing previews?
+            var existingPreviews = await _dataContext.MatchupPreviews
+                .Where(x => contestIds.Contains(x.ContestId))
+                .AsNoTracking()
+                .Select(x => x.ContestId)
+                .ToListAsync();
 
             // enqueue a MatchupPreviewGenerationProcessor for each
             foreach (var matchup in matchups)
             {
+                if (existingPreviews.Contains(matchup.ContestId))
+                    continue;
+                
                 var cmd = new GenerateMatchupPreviewsCommand()
                 {
                     ContestId = matchup.ContestId

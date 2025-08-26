@@ -40,7 +40,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                     stream = false
                 };
 
-                _logger.LogDebug("OllamaClient began. {@Config} {@Request}", _config, request);
+                _logger.LogInformation("OllamaClient began. {@Config} {@Request}", _config, request);
 
                 _httpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
 

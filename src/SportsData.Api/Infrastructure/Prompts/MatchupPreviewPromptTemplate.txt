@@ -67,6 +67,8 @@ Output Rules:
 
 14. Does the math for "awayScore" + "homeScore" agree with your "overUnderPrediction"?
 
-If any of these 14 questions are not satisfied, continue thinking until all 14 rules are satisfied.
+15. Your JSON response should not deviate from what is show in Rule #1.  All values should be at the root with no nested elements.
+
+If any of these 15 questions are not satisfied, continue thinking until all 15 rules are satisfied.
 
 Now generate a single preview within 150 seconds for the following:

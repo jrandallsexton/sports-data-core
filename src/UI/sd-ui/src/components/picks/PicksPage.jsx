@@ -167,6 +167,11 @@ function PicksPage() {
         insightText: preview.overview,
         analysis: preview.analysis,
         prediction: preview.prediction,
+        straightUpWinner: preview.straightUpWinner,
+        atsWinner: preview.atsWinner,
+        awayScore: preview.awayScore,
+        homeScore: preview.homeScore,
+        vegasImpliedScore: preview.vegasImpliedScore,
       }));
     } catch (error) {
       console.error("Error fetching insight preview:", error);

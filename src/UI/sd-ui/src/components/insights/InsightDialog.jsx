@@ -66,13 +66,27 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
 
               <hr className="divider" />
 
+              <div className="vegas-section">
+                <h3>Vegas Implied</h3>
+                <p>{matchup.vegasImpliedScore || "Vegas implied score not available."}</p>
+              </div>
+
+              <hr className="divider" />
+
               <div className="prediction-section">
                 <h3>
                   sportDeets<span className="tm-symbol">™</span> Prediction
                 </h3>
-                <p className="prediction-animated">
+                <p>
                   {matchup.prediction || "Prediction not available."}
                 </p>
+                
+                {/* Additional prediction details */}
+                <div className="prediction-details">
+                  <p>Straight Up Winner: {matchup.straightUpWinner || "Not available"}</p>
+                  <p>ATS Winner: {matchup.atsWinner || "Not available"}</p>
+                  <p>Score: {matchup.awayScore || "N/A"} - {matchup.homeScore || "N/A"}</p>
+                </div>
               </div>
             </div>
           )}

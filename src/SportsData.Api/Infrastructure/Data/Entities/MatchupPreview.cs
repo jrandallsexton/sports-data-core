@@ -27,6 +27,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? Model { get; set; }
 
+        public string? ValidationErrors { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {
             public void Configure(EntityTypeBuilder<MatchupPreview> builder)
@@ -39,6 +41,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.Analysis).HasMaxLength(1024);
                 builder.Property(x => x.Prediction).HasMaxLength(768);
                 builder.Property(x => x.Model).HasMaxLength(50);
+                builder.Property(x => x.ValidationErrors).HasMaxLength(1024);
 
                 builder.Property(l => l.OverUnderPrediction)
                     .HasConversion<int>()

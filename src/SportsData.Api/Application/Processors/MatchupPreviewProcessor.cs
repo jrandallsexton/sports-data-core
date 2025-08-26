@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -44,25 +45,24 @@ namespace SportsData.Api.Application.Processors
 
         public async Task Process(GenerateMatchupPreviewsCommand command)
         {
-            var previewExists = await _dataContext.MatchupPreviews.AnyAsync(x => x.ContestId == command.ContestId);
-            if (previewExists)
-            {
-                _logger.LogInformation("Preview already exists. Skipping");
-                return;
-            }
-
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
             var basePrompt = _promptProvider.PromptTemplate;
             var jsonInput = JsonSerializer.Serialize(matchup);
-            var fullPrompt = $"{basePrompt}\n\n{jsonInput}";
 
-            const int maxAttempts = 3;
+            const int maxAttempts = 5;
             MatchupPreviewResponse? parsed = null;
             string? rawResponse = null;
+            List<string>? validationErrors = null;
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                var feedbackSection = validationErrors is { Count: > 0 }
+                    ? $"\n\nNote: The last attempt produced invalid results for the following reasons:\n- {string.Join("\n- ", validationErrors)}"
+                    : string.Empty;
+
+                var fullPrompt = $"{basePrompt}\n\n{jsonInput}{feedbackSection}";
+
                 rawResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
 
                 if (string.IsNullOrWhiteSpace(rawResponse))
@@ -78,25 +78,52 @@ namespace SportsData.Api.Application.Processors
                         PropertyNameCaseInsensitive = true
                     });
 
-                    if (parsed is not null)
-                        break;
+                    if (parsed is null)
+                    {
+                        _logger.LogWarning("Attempt {Attempt} produced null after deserialization. Raw response: {Raw}", attempt, rawResponse);
+                        continue;
+                    }
+
+                    if (matchup.HomeSpread.HasValue)
+                    {
+                        // Run semantic validation
+                        var validation = MatchupPreviewValidator.Validate(
+                            homeScore: parsed.HomeScore,
+                            awayScore: parsed.AwayScore,
+                            homeSpread: matchup.HomeSpread.Value,
+                            predictedStraightUpWinner: parsed.PredictedStraightUpWinner,
+                            predictedSpreadWinner: parsed.PredictedSpreadWinner,
+                            homeFranchiseSeasonId: matchup.HomeFranchiseSeasonId,
+                            awayFranchiseSeasonId: matchup.AwayFranchiseSeasonId
+                        );
+
+                        validationErrors = validation.IsValid ? null : validation.Errors;
+
+                        if (validation.IsValid)
+                            break; // We're good to proceed
+
+                        _logger.LogWarning("Validation failed on attempt {Attempt}. Errors: {Errors}", attempt, validation.Errors);
+                    }
+
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, "Attempt {Attempt} failed to deserialize AI response. {@Response}", attempt, rawResponse);
+                    _logger.LogWarning(ex, "Attempt {Attempt} failed to deserialize AI response. Raw: {Raw}", attempt, rawResponse);
                 }
             }
 
-            if (parsed == null)
+            // If parsing or validation never succeeded
+            if (parsed == null || validationErrors is { Count: > 0 })
             {
-                _logger.LogError("Failed to deserialize a valid MatchupPreviewResponse after {MaxAttempts} attempts. Last raw response: {Raw}", maxAttempts, rawResponse);
+                _logger.LogError("Failed to generate valid preview after {MaxAttempts} attempts. Last response: {Raw}", maxAttempts, rawResponse);
                 return;
             }
 
-            _logger.LogInformation("AI generated the following preview. {@Preview}", parsed);
+            // We have a valid response (parsed + valid)
+            _logger.LogInformation("AI generated preview. {@Parsed}", parsed);
 
             var preview = await _dataContext.MatchupPreviews
-                .FirstOrDefaultAsync(x => x.Id == command.ContestId);
+                .FirstOrDefaultAsync(x => x.ContestId == command.ContestId);
 
             if (preview == null)
             {
@@ -112,7 +139,8 @@ namespace SportsData.Api.Application.Processors
                     OverUnderPrediction = parsed.OverUnderPrediction == "1" ? OverUnderPrediction.Over : OverUnderPrediction.Under,
                     AwayScore = parsed.AwayScore,
                     HomeScore = parsed.HomeScore,
-                    Model = _aiCommunication.GetModelName()
+                    Model = _aiCommunication.GetModelName(),
+                    ValidationErrors = null
                 });
             }
             else
@@ -122,12 +150,11 @@ namespace SportsData.Api.Application.Processors
                 preview.Prediction = parsed.Prediction;
                 preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
                 preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
-                preview.OverUnderPrediction = parsed.OverUnderPrediction == "1"
-                    ? OverUnderPrediction.Over
-                    : OverUnderPrediction.Under;
+                preview.OverUnderPrediction = parsed.OverUnderPrediction == "1" ? OverUnderPrediction.Over : OverUnderPrediction.Under;
                 preview.AwayScore = parsed.AwayScore;
                 preview.HomeScore = parsed.HomeScore;
                 preview.Model = _aiCommunication.GetModelName();
+                preview.ValidationErrors = null;
             }
 
             await _dataContext.SaveChangesAsync();

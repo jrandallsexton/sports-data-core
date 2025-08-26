@@ -12,6 +12,7 @@
         public required string VenueCity { get; set; }
         public string? VenueState { get; set; }
 
+        public Guid AwayFranchiseSeasonId { get; set; }
         public required string Away { get; set; }
         public required string AwaySlug { get; set; }
         public int? AwayRank { get; set; }
@@ -21,6 +22,7 @@
         public int AwayConferenceWins { get; set; }
         public int AwayConferenceLosses { get; set; }
 
+        public Guid HomeFranchiseSeasonId { get; set; }
         public required string Home { get; set; }
         public required string HomeSlug { get; set; }
         public int? HomeRank { get; set; }
@@ -31,11 +33,11 @@
         public int HomeConferenceLosses { get; set; }
 
         public string? Spread { get; set; }             // co."Details"
-        public decimal? AwaySpread { get; set; }
-        public decimal? HomeSpread { get; set; }
-        public decimal? OverUnder { get; set; }
-        public decimal? OverOdds { get; set; }
-        public decimal? UnderOdds { get; set; }
+        public double? AwaySpread { get; set; }
+        public double? HomeSpread { get; set; }
+        public double? OverUnder { get; set; }
+        public double? OverOdds { get; set; }
+        public double? UnderOdds { get; set; }
     }
 
 }

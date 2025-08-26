@@ -134,7 +134,8 @@ body.modal-open {
 
 .overview-section h3,
 .analysis-section h3,
-.prediction-section h3 {
+.prediction-section h3,
+.vegas-section h3 {
   font-size: 1.2rem;
   margin-bottom: 8px;
   color: #61dafb;
@@ -153,8 +154,8 @@ body.modal-open {
 }
 
 .prediction-section p {
-  font-size: 1.1rem;
-  font-weight: bold;
+  font-size: 1rem;
+  font-weight: normal;
   color: #ddd;
 }
 

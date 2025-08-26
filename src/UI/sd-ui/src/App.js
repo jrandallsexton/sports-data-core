@@ -32,6 +32,16 @@ function AppRoutes() {
     }
   }, [location, navigate, user, loading]);
 
+  useEffect(() => {
+    if (!loading && user) {
+      if (location.pathname === "/") {
+        navigate("/app", { replace: true });
+      } else if (location.pathname === "/signup") {
+        navigate("/app", { replace: true });
+      }
+    }
+  }, [location, navigate, user, loading]);
+
   if (loading) {
     return <div className="app-loading">Loading...</div>;
   }

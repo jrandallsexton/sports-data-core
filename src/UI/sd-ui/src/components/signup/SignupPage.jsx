@@ -6,9 +6,12 @@ import Login from "../login/Login.jsx";
 import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";
 import "./SignupPage.css";
 import apiWrapper from "../../api/apiWrapper";
+import EmailSignupForm from "./EmailSignupForm.jsx";
 
 function SignupPage() {
   const [firebaseUser, setFirebaseUser] = useState(null);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -74,10 +77,16 @@ function SignupPage() {
     );
   }
 
+  function handleEmailSignupSuccess(firebaseUser) {
+    setFirebaseUser(firebaseUser);
+  }
+
   return (
     <div className="signup-page">
       <div className="signup-card">
-        <h2>Join sportDeets<span className="tm-symbol">™</span>!</h2>
+        <h2>
+          Join sportDeets<span className="tm-symbol">™</span>!
+        </h2>
         <p>Sign up free to start making your picks and saving insights.</p>
 
         <div className="third-party-buttons">
@@ -105,8 +114,22 @@ function SignupPage() {
 
         <hr className="divider" />
 
-        <p>Prefer using your email?</p>
-        <button className="email-signup-button">Sign up with Email</button>
+        {!showEmailForm ? (
+          <>
+            <p>Prefer using your email?</p>
+            <button
+              className="email-signup-button"
+              onClick={() => setShowEmailForm(true)}
+            >
+              Sign up with Email
+            </button>
+          </>
+        ) : (
+          <EmailSignupForm
+            onSuccess={handleEmailSignupSuccess}
+            onCancel={() => setShowEmailForm(false)}
+          />
+        )}
 
         <hr className="divider" />
         <p className="switch-to-login">Already have an account?</p>

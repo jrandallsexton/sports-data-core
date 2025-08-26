@@ -1,0 +1,37 @@
+.email-signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.email-signup-form input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.email-signup-form button {
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: #234e70;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.email-signup-form .error-message {
+  color: red;
+  font-size: 0.9rem;
+}
+
+.cancel-button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cancel-button:hover {
+  color: #000;
+}

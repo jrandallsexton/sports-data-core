@@ -21,10 +21,10 @@
   gap: 20px;
 }
 
-/* Center the LeagueWeekSelector in the middle column */
+/* Left-align the LeagueWeekSelector on desktop */
 .picks-page-header > :first-child {
-  grid-column: 2;
-  justify-self: center;
+  grid-column: 1;
+  justify-self: start;
 }
 
 .matchup-list {

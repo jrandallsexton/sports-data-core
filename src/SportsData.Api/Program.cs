@@ -157,7 +157,7 @@ namespace SportsData.Api
             {
                 var cfg = sp.GetRequiredService<OllamaClientConfig>();
                 client.BaseAddress = new Uri(cfg.BaseUrl);
-                client.Timeout = TimeSpan.FromMinutes(3);
+                client.Timeout = TimeSpan.FromMinutes(5);
             });
 
             services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<OllamaClient>());

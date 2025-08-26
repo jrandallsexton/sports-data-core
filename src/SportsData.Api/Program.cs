@@ -156,6 +156,7 @@ namespace SportsData.Api
             services.AddHttpClient<IProvideAiCommunication, OllamaClient>((sp, client) =>
             {
                 client.BaseAddress = new Uri(ollamaConfig.BaseUrl);
+                client.Timeout = TimeSpan.FromMinutes(3);
             });
             /* End AI */
 

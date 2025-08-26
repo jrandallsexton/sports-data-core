@@ -43,6 +43,13 @@ namespace SportsData.Api.Application.Processors
 
         public async Task Process(GenerateMatchupPreviewsCommand command)
         {
+            var previewExists = await _dataContext.MatchupPreviews.AnyAsync(x => x.ContestId == command.ContestId);
+            if (previewExists)
+            {
+                _logger.LogInformation("Preview already exists. Skipping");
+                return;
+            }
+
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
             var basePrompt = _promptProvider.PromptTemplate;

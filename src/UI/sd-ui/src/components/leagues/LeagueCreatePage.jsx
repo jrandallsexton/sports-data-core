@@ -280,7 +280,7 @@ const LeagueCreatePage = () => {
                 <strong>Description:</strong> {description || "None"}
               </li>
               <li>
-                <strong>Pick Deadline:</strong> 15 minutes before kickoff
+                <strong>Pick Deadline:</strong> 5 minutes before kickoff
                 (not-configurable)
               </li>
               <li>

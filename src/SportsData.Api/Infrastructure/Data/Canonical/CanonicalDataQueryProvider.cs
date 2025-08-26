@@ -3,6 +3,7 @@
 public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
+        "GetCurrentSeasonWeek",
         "GetLeagueMatchupsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
         "GetMatchupsForCurrentWeek.sql",
@@ -42,10 +43,17 @@ public class CanonicalDataQueryProvider
         return sql;
     }
 
+    public string GetCurrentSeasonWeek() => Get("GetCurrentSeasonWeek.sql");
+
     public string GetLeagueMatchupsByContestIds() => Get("GetLeagueMatchupsByContestIds.sql");
+
     public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
+
     public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
+
     public string GetTeamCard() => Get("GetTeamCard.sql");
+
     public string GetTeamCardSchedule() => Get("GetTeamCardSchedule.sql");
+
     public string GetTeamSeasons() => Get("GetTeamSeasons.sql");
 }

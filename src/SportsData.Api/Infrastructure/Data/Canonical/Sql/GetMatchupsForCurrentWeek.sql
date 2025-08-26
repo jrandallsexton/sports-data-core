@@ -7,7 +7,7 @@
   JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
   JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
   WHERE sp."Name" = 'Regular Season'
-    AND sw."StartDate" >= CURRENT_DATE
+    AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
   ORDER BY sw."StartDate"
   LIMIT 1
 )
@@ -42,4 +42,5 @@ left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+WHERE c."StartDateUtc" >= CURRENT_DATE
 ORDER BY "StartDateUtc", fHome."Slug"

@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-using SportsData.Api.Application.Events;
-using SportsData.Api.Infrastructure.Data;
+﻿using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;

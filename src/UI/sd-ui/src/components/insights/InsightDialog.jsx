@@ -1,11 +1,8 @@
+import React, { useEffect } from "react";
 import "./InsightDialog.css";
 // import teams from "../../data/teams";
 
 function InsightDialog({ isOpen, onClose, matchup, loading }) {
-  console.log("InsightDialog visible:", isOpen, matchup);
-
-  if (!isOpen || !matchup) return null;
-
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add("modal-open");
@@ -15,6 +12,8 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
 
     return () => document.body.classList.remove("modal-open");
   }, [isOpen]);
+
+  if (!isOpen || !matchup) return null;
 
   return (
     <div className="insight-dialog-overlay">
@@ -39,7 +38,7 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
           {matchup.homeLogoUri && (
             <img
               src={matchup.homeLogoUri}
-              alt={`${matchup.homeTeam} logo`}
+              alt={`${matchup.home} logo`}
               className="matchup-logo"
             />
           )}

@@ -153,11 +153,14 @@ namespace SportsData.Api
             };
             services.AddSingleton(ollamaConfig);
 
-            services.AddHttpClient<IProvideAiCommunication, OllamaClient>((sp, client) =>
+            services.AddHttpClient<OllamaClient>((sp, client) =>
             {
-                client.BaseAddress = new Uri(ollamaConfig.BaseUrl);
+                var cfg = sp.GetRequiredService<OllamaClientConfig>();
+                client.BaseAddress = new Uri(cfg.BaseUrl);
                 client.Timeout = TimeSpan.FromMinutes(3);
             });
+
+            services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<OllamaClient>());
             /* End AI */
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);

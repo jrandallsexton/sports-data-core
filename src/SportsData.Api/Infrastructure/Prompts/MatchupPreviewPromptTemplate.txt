@@ -31,14 +31,26 @@ LSU maintains control of the line of scrimmage, keeping Clemson's run game at ba
 Output Rules:
 1. IMPORTANT: Your output should be in JSON format only.  No additional text or formatting is needed.
 {
-  "overview": "YOUR OVERVIEW HERE",
-  "analysis": "YOUR ANALYSIS HERE",
-  "prediction": "YOUR PREDICTION HERE",
+  "overview": "YOUR OVERVIEW TEXT HERE",
+  "analysis": "YOUR ANALYSIS TEXT HERE",
+  "prediction": "YOUR PREDICTION TEXT HERE",
   "predictedStraightUpWinner": "Guid FranchiseSeasonId of the predicted straight up winner",
   "predictedSpreadWinner": "Guid FranchiseSeasonId of the predicted ATS winner",
   "overUnderPrediction": "1 if Over; 2 if Under",
   "awayScore": int,
   "homeScore": int
+}
+
+Populated example JSON:
+{
+  "overview": "In a top-5 matchup, LSU faces Clemson at Memorial Stadium (Clemson, SC), etc. etc.",
+  "analysis": "LSU relies on its formidable ground game against Clemson's stout defense, etc. etc.",
+  "prediction": "The Tigers edge out a close win that covers the spread (LSU +4). Final score: 27-24",
+  "predictedStraightUpWinner": "c13b7c74-6892-3efa-2492-36ebf5220464",
+  "predictedSpreadWinner": "c13b7c74-6892-3efa-2492-36ebf5220464",
+  "overUnderPrediction": 2,
+  "awayScore": 27,
+  "homeScore": 24
 }
 
 2. Your entire response must be a valid JSON object. Do not include Markdown, bullet points, or any explanation.
@@ -71,4 +83,4 @@ Output Rules:
 
 If any of these 15 questions are not satisfied, continue thinking until all 15 rules are satisfied.
 
-Now generate a single preview within 150 seconds for the following:
+Now generate a single preview within 180 seconds for the following:

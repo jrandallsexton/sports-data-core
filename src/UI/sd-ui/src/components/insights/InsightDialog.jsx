@@ -6,8 +6,15 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
 
   if (!isOpen || !matchup) return null;
 
-  // const awayTeamInfo = teams[matchup.away];
-  // const homeTeamInfo = teams[matchup.home];
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+
+    return () => document.body.classList.remove("modal-open");
+  }, [isOpen]);
 
   return (
     <div className="insight-dialog-overlay">

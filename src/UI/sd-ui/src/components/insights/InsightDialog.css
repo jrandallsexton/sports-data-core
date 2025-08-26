@@ -31,6 +31,13 @@
   text-align: center;
   position: relative;
   animation: fadeDialog 0.4s ease;
+  max-height: 90vh; /* ✅ prevent overflow offscreen */
+  overflow-y: auto; /* ✅ allow scroll inside the dialog */
+  -webkit-overflow-scrolling: touch; /* ✅ smooth iOS scrolling */
+}
+
+body.modal-open {
+  overflow: hidden; /* ✅ prevent background scroll */
 }
 
 /* .insight-dialog {
@@ -284,5 +291,3 @@
     font-size: 1rem;
   }
 }
-
-

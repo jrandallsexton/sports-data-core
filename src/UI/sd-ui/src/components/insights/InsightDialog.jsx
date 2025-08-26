@@ -10,13 +10,15 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
       document.body.classList.remove("modal-open");
     }
 
-    return () => document.body.classList.remove("modal-open");
+    return () => {
+      document.body.classList.remove("modal-open");
+    };
   }, [isOpen]);
 
   if (!isOpen || !matchup) return null;
 
   return (
-    <div className="insight-dialog-overlay">
+    <div className="insight-dialog-overlay" onClick={onClose}>
       <div className="insight-dialog" onClick={(e) => e.stopPropagation()}>
         <button className="close-x-button" onClick={onClose}>
           &times;

@@ -9,8 +9,8 @@
   justify-content: center;
   align-items: flex-start;
   overflow-y: auto;
-  touch-action: none;
-  overscroll-behavior: contain;
+  touch-action: none; /* Prevent touch scrolling on the overlay */
+  overscroll-behavior: contain; /* Prevent scroll chaining */
   z-index: 2000; /* ⬅️ Must be above nav (which is 1000) */
   animation: fadeOverlay 0.4s ease;
   padding: 20px 0;
@@ -38,42 +38,13 @@
   max-height: 90vh; /* ✅ prevent overflow offscreen */
   overflow-y: auto; /* ✅ allow scroll inside the dialog */
   -webkit-overflow-scrolling: touch; /* ✅ smooth iOS scrolling */
+  touch-action: auto; /* Allow scrolling within the dialog */
   padding-top: 32px; /* allows spacing inside dialog without nudging the box */
 }
 
 body.modal-open {
   overflow: hidden; /* ✅ prevent background scroll */
 }
-
-/* .insight-dialog {
-  background: #222;
-  padding: 20px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  color: #fff;
-  text-align: center;
-  position: relative;
-  animation: popBounceDialog 0.5s ease;
-} */
-
-/* ✨ NEW bounce animation */
-/* @keyframes popBounceDialog {
-  0% {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  80% {
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
-} */
 
 @keyframes fadeDialog {
   from {
@@ -301,10 +272,4 @@ body.modal-open {
 .insight-dialog-overlay {
   touch-action: none; /* Prevent swipe gestures from escaping */
   overscroll-behavior: contain; /* Block scroll chaining (background bounce) */
-}
-
-/* Prevent tap-through or accidental body scroll */
-body.modal-open {
-  overflow: hidden;
-  height: 100vh; /* Locks layout in place */
 }

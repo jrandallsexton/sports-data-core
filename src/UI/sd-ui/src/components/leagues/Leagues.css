@@ -1,32 +1,134 @@
 /* Leagues.css */
-.league-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.league-avatar {
-  max-width: 80px;
-  margin-bottom: 0.5rem;
-  border-radius: 4px;
-}
-
 .page-container {
   max-width: none !important;
   width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.league-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Desktop layout - switch to grid for larger screens */
+@media (min-width: 768px) {
+  .league-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Large desktop - allow more columns */
+@media (min-width: 1200px) {
+  .league-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 15px;
+  }
+
+  .league-grid {
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 15px;
+  }
+
+  .card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    margin: 0.4rem 0;
+  }
+
+  .league-avatar {
+    max-width: 60px;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .page-container {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card h2 {
+    font-size: 1rem;
+  }
+
+  .card p {
+    font-size: 0.8rem;
+  }
+
+  .league-avatar {
+    max-width: 50px;
+  }
 }
 
 .card {
-  background-color: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 1rem;
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s ease;
+  background-color: #1c1e22;
+  color: #f8f9fa;
+  border: 2px solid #61dafb;
+  border-radius: 16px;
+  padding: 20px 20px 16px 20px; /* Reduced bottom padding to prevent button overflow */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  word-wrap: break-word; /* Allow long words to break */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.league-avatar {
+  max-width: 80px;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background-color: #fff;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.card h2 {
+  margin: 0 0 1rem 0;
+  color: #61dafb;
+  font-size: 1.25rem;
+  word-break: break-word;
+}
+
+.card p {
+  margin: 0.5rem 0;
+  color: #adb5bd;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.card p strong {
+  color: #f8f9fa;
 }

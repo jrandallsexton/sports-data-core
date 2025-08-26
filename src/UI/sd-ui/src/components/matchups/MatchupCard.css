@@ -7,6 +7,8 @@
   margin: 0 0 20px 0;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  word-wrap: break-word; /* Allow long words to break */
 }
 
 .team-row {
@@ -208,4 +210,78 @@
 .matchup-card.fade-out {
   opacity: 0;
   transition: opacity 500ms ease-in-out;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .team-row {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .team-info {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    gap: 0.75rem;
+  }
+
+  .matchup-logo {
+    width: 45px;
+    height: 45px;
+    flex-shrink: 0; /* Prevent logo from shrinking */
+  }
+
+  .team-details {
+    flex: 1;
+    min-width: 0; /* Allow text to shrink/wrap */
+  }
+
+  .team-link {
+    font-size: 1rem;
+    word-break: break-word; /* Allow long team names to wrap */
+  }
+
+  .team-record {
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .team-spread {
+    font-size: 1rem;
+    flex-shrink: 0; /* Keep spread visible */
+    min-width: fit-content;
+    text-align: right;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-row {
+    padding: 0.5rem;
+    flex-wrap: wrap; /* Allow wrapping on very small screens */
+  }
+
+  .team-info {
+    flex: 1 1 70%;
+    min-width: 0;
+  }
+
+  .team-spread {
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+    padding-left: 0.5rem;
+  }
+
+  .matchup-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .team-link {
+    font-size: 0.9rem;
+  }
+
+  .team-record span {
+    display: block; /* Stack records vertically on very small screens */
+    font-size: 0.75rem;
+  }
 }

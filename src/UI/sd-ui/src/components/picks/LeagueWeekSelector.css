@@ -27,6 +27,17 @@
   gap: 8px;
 }
 
+/* Override nested LeagueSelector styling for consistency */
+.league-week-selector .league-selector {
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  flex: 1;
+}
+
 @media (min-width: 600px) {
   .league-week-selector {
     flex-wrap: nowrap; /* ✅ desktop: horizontal layout restored */
@@ -40,23 +51,82 @@
     height: 32px;
     flex: 0 1 auto;
   }
+
+  .league-week-selector > .selector-block:first-child {
+    flex: 0 1 auto; /* Reset flex on desktop */
+  }
+
+  /* Desktop-specific label alignment */
+  .league-week-selector label,
+  .league-week-selector .league-selector label {
+    text-align: right; /* Right-align labels on desktop for consistency */
+    margin-right: 8px;
+  }
+}
+
+/* Mobile-specific styling */
+@media (max-width: 599px) {
+  .league-week-selector {
+    gap: 8px;
+  }
+
+  .league-week-selector > .selector-block {
+    width: 100%;
+  }
+
+  .league-week-selector > .selector-block:first-child {
+    margin-bottom: 8px;
+  }
+
+  .league-week-selector select,
+  .league-week-selector .league-selector select {
+    min-width: 120px;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .league-week-selector label,
+  .league-week-selector .league-selector label {
+    min-width: 50px;
+    text-align: left; /* Changed from right to left for mobile */
+    margin-bottom: 0; /* Remove bottom margin to keep inline */
+    margin-right: 8px; /* Add right margin for spacing */
+  }
+
+  /* Keep league selector horizontal (inline) on mobile */
+  .league-week-selector .league-selector {
+    flex-direction: row; /* Keep horizontal instead of column */
+    align-items: center; /* Center align items */
+    gap: 8px;
+  }
+
+  .league-week-selector > .selector-block:last-child {
+    flex-direction: row; /* Keep horizontal instead of column */
+    align-items: center; /* Center align items */
+    gap: 8px;
+  }
 }
 
 .league-week-selector label {
   font-size: 1rem;
-  text-align: right;
   color: #ccc;
   white-space: nowrap;
   line-height: 1.2;
-  min-width: 60px;  /* 👈 forces both labels to same width */
+  min-width: 60px;  /* 👈 forces both labels to same width on desktop */
 }
 
 .league-week-selector .selector-block label {
   min-width: 60px;
 }
 
+/* Override nested LeagueSelector label styling */
+.league-week-selector .league-selector label {
+  min-width: 60px;
+  line-height: 1.2;
+}
 
-.league-week-selector select {
+.league-week-selector select,
+.league-week-selector .league-selector select {
   padding: 6px 10px;
   font-size: 1rem;
   background-color: #222;
@@ -67,13 +137,16 @@
   min-width: 150px;
   height: 32px;
   margin-top: 0; /* ✅ prevent margin issues on mobile */
+  box-sizing: border-box; /* ✅ ensure consistent sizing */
 }
 
-.league-week-selector select:hover {
+.league-week-selector select:hover,
+.league-week-selector .league-selector select:hover {
   background-color: #333;
 }
 
-.league-week-selector select:focus {
+.league-week-selector select:focus,
+.league-week-selector .league-selector select:focus {
   outline: none;
   border-color: #61dafb;
 }

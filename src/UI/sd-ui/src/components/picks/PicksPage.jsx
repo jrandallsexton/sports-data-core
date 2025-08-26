@@ -99,7 +99,7 @@ function PicksPage() {
     }
 
     fetchPicks();
-  }, [selectedLeagueId, selectedWeek]);
+  }, [selectedLeagueId, selectedWeek]);  
 
   async function handlePick(matchup, selectedFranchiseSeasonId) {
     try {

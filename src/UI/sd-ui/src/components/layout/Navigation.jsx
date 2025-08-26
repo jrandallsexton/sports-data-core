@@ -13,6 +13,14 @@ import {
 import './Navigation.css';
 
 function Navigation({ isSideNav, onToggle, onSignOut }) {
+  // Auto-close menu on mobile when navigation link is clicked
+  const handleNavLinkClick = () => {
+    // Only auto-close on mobile/small screens when in side nav mode
+    if (isSideNav && window.innerWidth <= 768) {
+      onToggle();
+    }
+  };
+
   if (isSideNav) {
     return (
       <>
@@ -21,23 +29,23 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
             <NavLink to="/app/" className="logo" end>sportDeets</NavLink>
           </div>
           <div className="nav-links">
-            <NavLink to="/app/" className="nav-link" end>
+            <NavLink to="/app/" className="nav-link" end onClick={handleNavLinkClick}>
               <FaHome className="nav-icon" />
               <span>Home</span>
             </NavLink>
-            <NavLink to="/app/picks" className="nav-link">
+            <NavLink to="/app/picks" className="nav-link" onClick={handleNavLinkClick}>
               <FaFootballBall className="nav-icon" />
               <span>Picks</span>
             </NavLink>
-            <NavLink to="/app/leaderboard" className="nav-link">
+            <NavLink to="/app/leaderboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaTrophy className="nav-icon" />
               <span>Leaderboard</span>
             </NavLink>
-            <NavLink to="/app/messageboard" className="nav-link">
+            <NavLink to="/app/messageboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaComments className="nav-icon" />
               <span>Message Board</span>
             </NavLink>
-            <NavLink to="/app/settings" className="nav-link">
+            <NavLink to="/app/settings" className="nav-link" onClick={handleNavLinkClick}>
               <FaCog className="nav-icon" />
               <span>Settings</span>
             </NavLink>

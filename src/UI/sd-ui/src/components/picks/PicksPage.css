@@ -14,10 +14,17 @@
 
 .picks-page-header {
   width: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-bottom: 20px;
+  gap: 20px;
+}
+
+/* Center the LeagueWeekSelector in the middle column */
+.picks-page-header > :first-child {
+  grid-column: 2;
+  justify-self: center;
 }
 
 .matchup-list {
@@ -76,9 +83,8 @@
   gap: 20px;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 8px;
-  margin-left: auto;
   flex-wrap: wrap;
+  grid-column: 3; /* Position in the third column */
 }
 
 .pick-status {
@@ -96,13 +102,20 @@
 
 @media (max-width: 600px) {
   .picks-page-header {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
     gap: 12px;
+    text-align: center;
+  }
+
+  .picks-page-header > :first-child {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .pick-status-toggle-row {
+    grid-column: 1;
+    grid-row: 2;
     justify-content: space-between;
-    margin-left: 0;
   }
 }

@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: 20px;
+  margin-left: auto; /* Push to far right */
   padding-right: 10px;
   flex-shrink: 0;
 }
@@ -106,6 +106,13 @@
 
 .nav-toggle:hover {
   color: #fff;
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 /* Side Navigation */

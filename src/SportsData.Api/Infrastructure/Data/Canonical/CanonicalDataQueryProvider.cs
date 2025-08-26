@@ -3,7 +3,7 @@
 public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
-        "GetCurrentSeasonWeek",
+        "GetCurrentSeasonWeek.sql",
         "GetLeagueMatchupsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
         "GetMatchupsForCurrentWeek.sql",

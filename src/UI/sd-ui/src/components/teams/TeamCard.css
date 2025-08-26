@@ -44,6 +44,47 @@
 }
 
 /* Responsive tweaks */
+@media (max-width: 768px) {
+  .team-card {
+    padding: 1rem;
+    margin: 1rem;
+  }
+
+  .team-header {
+    flex-direction: column;
+    align-items: center; /* Center all items */
+    gap: 1rem;
+    text-align: center;
+  }
+
+  /* Center the team info text specifically */
+  .team-header > div:nth-child(2) {
+    text-align: center;
+  }
+
+  .team-logo {
+    width: 80px;
+    height: 80px;
+    flex: 0 0 80px;
+    align-self: center;
+  }
+
+  .team-name {
+    font-size: 1.3rem;
+  }
+
+  .team-location,
+  .team-stadium {
+    font-size: 0.9rem;
+  }
+
+  /* Move season selector to its own row */
+  .team-header > div:last-child {
+    align-self: center;
+    margin-left: 0 !important;
+  }
+}
+
 @media (max-width: 600px) {
   .team-logo {
     width: 100px;

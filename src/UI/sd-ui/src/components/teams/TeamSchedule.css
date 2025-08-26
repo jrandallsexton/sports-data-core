@@ -57,3 +57,72 @@
 .team-schedule tbody tr:hover {
   background-color: #3a3f47;
 }
+
+/* Mobile responsive table */
+@media (max-width: 768px) {
+  .team-schedule table {
+    font-size: 0.8rem;
+  }
+
+  .team-schedule th,
+  .team-schedule td {
+    padding: 0.4rem 0.2rem;
+    word-break: break-word;
+  }
+
+  /* Hide location column on mobile to save space */
+  .team-schedule th:nth-child(3),
+  .team-schedule td:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stack table data vertically on very small screens */
+  .team-schedule table,
+  .team-schedule thead,
+  .team-schedule tbody,
+  .team-schedule th,
+  .team-schedule td,
+  .team-schedule tr {
+    display: block;
+  }
+
+  .team-schedule thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .team-schedule tr {
+    background-color: #2a2d33;
+    border: 1px solid #444;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+
+  .team-schedule tr:nth-child(even) {
+    background-color: #343a40;
+  }
+
+  .team-schedule td {
+    border: none;
+    padding: 0.25rem 0;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .team-schedule td:before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: var(--highlight-color, #ffc107);
+    flex: 0 0 30%;
+  }
+
+  /* Add labels for mobile stacked view */
+  .team-schedule td:nth-child(1):before { content: "Kickoff: "; }
+  .team-schedule td:nth-child(2):before { content: "Opponent: "; }
+  .team-schedule td:nth-child(4):before { content: "Result: "; }
+}

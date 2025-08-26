@@ -1,7 +1,6 @@
 .leaderboard-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 10px;
 }
 
 .leaderboard-table {
@@ -29,7 +28,6 @@
 .leaderboard-table td:not(.rank-cell) {
   text-align: center;
 }
-
 
 .leaderboard-table tr:nth-child(even) {
   background-color: #2c2c2c;
@@ -94,6 +92,3 @@
   font-size: 0.8rem;
   margin-top: 2px;
 }
-
-
-

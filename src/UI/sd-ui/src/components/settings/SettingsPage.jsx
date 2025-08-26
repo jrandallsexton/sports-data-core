@@ -49,7 +49,7 @@ function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <h1>Settings</h1>
+      <h2>Settings</h2>
 
       {error && <p className="error">{error}</p>}
 

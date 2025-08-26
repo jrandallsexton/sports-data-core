@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Infrastructure.Data.Entities
@@ -20,6 +21,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public OverUnderPrediction OverUnderPrediction { get; set; } = OverUnderPrediction.None;
 
+        public int? AwayScore { get; set; }
+
+        public int? HomeScore { get; set; }
+
+        public string? Model { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {
             public void Configure(EntityTypeBuilder<MatchupPreview> builder)
@@ -31,6 +38,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.Overview).HasMaxLength(512);
                 builder.Property(x => x.Analysis).HasMaxLength(1024);
                 builder.Property(x => x.Prediction).HasMaxLength(768);
+                builder.Property(x => x.Model).HasMaxLength(50);
 
                 builder.Property(l => l.OverUnderPrediction)
                     .HasConversion<int>()

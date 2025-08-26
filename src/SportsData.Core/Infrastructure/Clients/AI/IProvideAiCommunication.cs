@@ -12,4 +12,6 @@ public interface IProvideAiCommunication
     Task<T?> GetTypedResponseAsync<T>(
         string prompt,
         CancellationToken ct = default);
+
+    string GetModelName();
 }

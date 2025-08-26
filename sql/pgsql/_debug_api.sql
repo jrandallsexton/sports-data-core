@@ -1,4 +1,5 @@
 select * from public."ContestPreview" where "ContestId" = '0e27c391-408c-90af-c810-cd006ffbc10e'
+select * from public."MatchupPreview"
 select * from public."PickemGroup"
 
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
@@ -7,9 +8,6 @@ select * from public."PickemGroupWeek" where "GroupId" = '620d8af8-cf6f-49de-9a6
 select * from public."PickemGroupMatchup" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
 select * from public."UserPick"
 select * from public."User"
-
---delete from public."User" where "Id" not in ('e972f550-acab-4162-a4ee-e76170a4c9e1', '11111111-1111-1111-1111-111111111111')
-
 select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *

@@ -90,6 +90,11 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             }
         }
 
+        public string GetModelName()
+        {
+            return _config.Model;
+        }
+
         private class OllamaGenerateResponse
         {
             public required string Response { get; set; }

@@ -16,24 +16,29 @@ Rules:
 
 Example Input:
 
-{ "contestId": "c0e6ba13-2f58-b803-7330-44bbfc61eb8f", "startDateUtc": "2025-08-31T23:30:00Z", "away": "Notre Dame Fighting Irish", "awayRank": 6, "home": "Miami Hurricanes", "homeRank": 10, "awaySpread": -2.5, "homeSpread": 2.5, "overUnder": 50.5, "venue": "Hard Rock Stadium", "venueCity": "Miami Gardens", "venueState": "FL" }
+{"SeasonYear":2025,"WeekNumber":1,"ContestId":"8fac22f3-a8a4-773c-672b-d1c293f5d4a2","StartDateUtc":"2025-08-30T23:30:00+00:00","Venue":"Memorial Stadium (Clemson, SC)","VenueCity":"Clemson","VenueState":"SC","AwayFranchiseSeasonId":"c13b7c74-6892-3efa-2492-36ebf5220464","Away":"LSU Tigers","AwaySlug":"lsu-tigers","AwayRank":9,"AwayConferenceSlug":"sec","AwayWins":0,"AwayLosses":0,"AwayConferenceWins":0,"AwayConferenceLosses":0,"HomeFranchiseSeasonId":"28096cc9-bfae-23b7-555a-73b649025ab3","Home":"Clemson Tigers","HomeSlug":"clemson-tigers","HomeRank":4,"HomeConferenceSlug":"acc","HomeWins":0,"HomeLosses":0,"HomeConferenceWins":0,"HomeConferenceLosses":0,"Spread":"CLEM -4","AwaySpread":4.000000,"HomeSpread":-4.000000,"OverUnder":57.500000,"OverOdds":-110.000000,"UnderOdds":-110.000000}
 
 Example Output:
 Overview
-Two top-10 programs clash in prime time as Notre Dame travels to Miami for a high-stakes opener under the lights at Hard Rock Stadium.
+In a top-5 matchup, LSU faces Clemson at Memorial Stadium (Clemson, SC). Both teams look to make an early statement as they aim for national title contention.
 
 Analysis
-Expect a fast-paced, physical battle. Notre Dame brings a balanced attack and veteran leadership, while Miami counters with an aggressive front seven and home-field intensity.
+LSU relies on its formidable ground game against Clemson's stout defense. Meanwhile, the Tigers' opportunistic defense will challenge the Tigers' air-raid offense. Home-field advantage may play a significant role in this closely fought contest.
 
 Prediction
-Notre Dame controls the trenches late and wears down Miami's defense. The Irish edge out a tight one, covering the -2.5 spread with a 27-21 win.
+LSU maintains control of the line of scrimmage, keeping Clemson's run game at bay while capitalizing on turnovers. The Tigers edge out a close win that covers the spread (LSU +4). Final score: 27-24
 
 Output Rules:
 1. IMPORTANT: Your output should be in JSON format only.  No additional text or formatting is needed.
 {
   "overview": "YOUR OVERVIEW HERE",
   "analysis": "YOUR ANALYSIS HERE",
-  "prediction": "YOUR PREDICTION HERE"
+  "prediction": "YOUR PREDICTION HERE",
+  "predictedStraightUpWinner": "Guid FranchiseSeasonId of the predicted straight up winner",
+  "predictedSpreadWinner": "Guid FranchiseSeasonId of the predicted ATS winner",
+  "overUnderPrediction": "1 if Over; 2 if Under",
+  "awayScore": int,
+  "homeScore": int
 }
 
 2. Your entire response must be a valid JSON object. Do not include Markdown, bullet points, or any explanation.
@@ -48,4 +53,20 @@ Output Rules:
 
 7. Did you verify your math with regards to the spread?
 
-Now generate a preview for the following:
+8. Is "predictedStraightUpWinner" a Guid from either "AwayFranchiseSeasonId" or "HomeFranchiseSeasonId"?
+
+9. Is "predictedSpreadWinner" a Guid from either "AwayFranchiseSeasonId" or "HomeFranchiseSeasonId"?
+
+10. Is "overUnderPrediction" either "1" or "2"?
+
+11. Are both "awayScore" and "homeScore" in the JSON result?
+
+12. Does the math for "awayScore" + "homeScore" agree with your prediction text?
+
+13. Does the math for "awayScore" + "homeScore" agree with the spread?
+
+14. Does the math for "awayScore" + "homeScore" agree with your "overUnderPrediction"?
+
+If any of these 14 questions are not satisfied, continue thinking until all 14 rules are satisfied.
+
+Now generate a single preview for the following:

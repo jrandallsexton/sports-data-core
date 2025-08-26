@@ -87,7 +87,6 @@ namespace SportsData.Api.Application.Processors
 
             _logger.LogInformation("AI generated the following preview. {@Preview}", parsed);
 
-            // TODO: Save parsed to the database here
             var preview = await _dataContext.MatchupPreviews
                 .FirstOrDefaultAsync(x => x.Id == command.ContestId);
 
@@ -99,7 +98,13 @@ namespace SportsData.Api.Application.Processors
                     ContestId = command.ContestId,
                     Overview = parsed.Overview,
                     Analysis = parsed.Analysis,
-                    Prediction = parsed.Prediction
+                    Prediction = parsed.Prediction,
+                    PredictedStraightUpWinner = parsed.PredictedStraightUpWinner,
+                    PredictedSpreadWinner = parsed.PredictedSpreadWinner,
+                    OverUnderPrediction = parsed.OverUnderPrediction == "1" ? OverUnderPrediction.Over : OverUnderPrediction.Under,
+                    AwayScore = parsed.AwayScore,
+                    HomeScore = parsed.HomeScore,
+                    Model = _aiCommunication.GetModelName()
                 });
             }
             else
@@ -107,6 +112,14 @@ namespace SportsData.Api.Application.Processors
                 preview.Overview = parsed.Overview;
                 preview.Analysis = parsed.Analysis;
                 preview.Prediction = parsed.Prediction;
+                preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
+                preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
+                preview.OverUnderPrediction = parsed.OverUnderPrediction == "1"
+                    ? OverUnderPrediction.Over
+                    : OverUnderPrediction.Under;
+                preview.AwayScore = parsed.AwayScore;
+                preview.HomeScore = parsed.HomeScore;
+                preview.Model = _aiCommunication.GetModelName();
             }
 
             await _dataContext.SaveChangesAsync();
@@ -120,6 +133,16 @@ namespace SportsData.Api.Application.Processors
             public required string Analysis { get; set; }
 
             public required string Prediction { get; set; }
+
+            public Guid PredictedStraightUpWinner { get; set; }
+
+            public Guid PredictedSpreadWinner { get; set; }
+
+            public required string OverUnderPrediction { get; set; }
+
+            public int AwayScore { get; set; }
+
+            public int HomeScore { get; set; }
         }
     }
 }

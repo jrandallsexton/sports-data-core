@@ -7,14 +7,14 @@ WITH next_week AS (
   JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
   JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
   WHERE sp."Name" = 'Regular Season'
-    AND sw."StartDate" >= CURRENT_DATE
+    AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
   ORDER BY sw."StartDate"
   LIMIT 1
 )
 
 SELECT
-  nw."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
+  c."StartDateUtc" AS "StartDateUtc",
   fAway."Slug" as "AwaySlug",
   fsrdAway."Current" as "AwayRank",
   gsAway."Slug" as "AwayConferenceSlug",
@@ -42,7 +42,27 @@ left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-where fHome."Slug" = 'lsu-tigers'
+WHERE c."StartDateUtc" > CURRENT_DATE
 ORDER BY "StartDateUtc", fHome."Slug"
+
+/*
+select * from public."Contest" where "SeasonWeekId" = '5edb7b2b-d153-abc9-a965-c4c56a9bac04' order by "StartDateUtc"
+select * from public."Competition" where "ContestId" = '0e27c391-408c-90af-c810-cd006ffbc10e'
+
+select NOW()
+select * from public."SeasonWeek"
+SELECT 
+    sw."Id" AS "Id",
+    sw."Number" AS "WeekNumber",
+    s."Id" AS "SeasonId",
+    s."Year" AS "SeasonYear"
+FROM public."Season" s
+JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
+JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
+WHERE sp."Name" = 'Regular Season'
+  AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
+ORDER BY sw."StartDate"
+LIMIT 1;*/
+
 
 

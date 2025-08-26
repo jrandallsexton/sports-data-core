@@ -89,7 +89,7 @@ namespace SportsData.Api.Application.PickemGroups
                     currentWeek.Id,
                     currentWeek.SeasonYear,
                     currentWeek.WeekNumber,
-                    Guid.NewGuid());
+                    @event.CorrelationId);
 
                 // kick off a process to create the PickemGroupWeek and matchups for the current week
                 _backgroundJobProvider.Enqueue<IScheduleGroupWeekMatchups>(p => p.Process(cmd));

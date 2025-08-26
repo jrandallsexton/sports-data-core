@@ -71,27 +71,6 @@
   margin-top: 5px;
 }
 
-/* .toggle-view-button {
-  background-color: #61dafb;
-  color: #111;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s;
-}
-
-.toggle-view-button:hover {
-  background-color: #4ea0d9;
-  transform: translateY(-2px);
-}
-
-.toggle-view-button:active {
-  transform: translateY(0);
-} */
-
 .pick-status-toggle-row {
   display: flex;
   gap: 20px;
@@ -113,4 +92,17 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .picks-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pick-status-toggle-row {
+    justify-content: space-between;
+    margin-left: 0;
+  }
 }

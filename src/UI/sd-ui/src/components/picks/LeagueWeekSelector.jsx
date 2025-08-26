@@ -1,4 +1,3 @@
-// src/components/picks/LeagueWeekSelector.jsx
 import "./LeagueWeekSelector.css";
 import LeagueSelector from "../shared/LeagueSelector";
 
@@ -12,14 +11,16 @@ function LeagueWeekSelector({
   return (
     <div className="league-week-selector">
       {/* League Select */}
-      <LeagueSelector
-        leagues={leagues}
-        selectedLeagueId={selectedLeagueId}
-        setSelectedLeagueId={setSelectedLeagueId}
-      />
+      <div className="selector-block">
+        <LeagueSelector
+          leagues={leagues}
+          selectedLeagueId={selectedLeagueId}
+          setSelectedLeagueId={setSelectedLeagueId}
+        />
+      </div>
 
       {/* Week Select */}
-      <div>
+      <div className="selector-block">
         <label htmlFor="weekSelect">Week:</label>
         <select
           id="weekSelect"

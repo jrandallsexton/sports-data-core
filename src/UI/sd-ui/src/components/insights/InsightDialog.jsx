@@ -17,7 +17,7 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
 
   return (
     <div className="insight-dialog-overlay">
-      <div className="insight-dialog">
+      <div className="insight-dialog" onClick={(e) => e.stopPropagation()}>
         <button className="close-x-button" onClick={onClose}>
           &times;
         </button>

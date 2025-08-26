@@ -9,7 +9,7 @@
   justify-content: center;
   align-items: flex-start;
   padding-top: env(safe-area-inset-top, 40px); /* ✅ Updated here */
-  overflow-y: hidden;
+  overflow-y: auto;
   touch-action: none;
   overscroll-behavior: contain;
   z-index: 999;
@@ -38,7 +38,7 @@
   max-height: 90vh; /* ✅ prevent overflow offscreen */
   overflow-y: auto; /* ✅ allow scroll inside the dialog */
   -webkit-overflow-scrolling: touch; /* ✅ smooth iOS scrolling */
-  margin-top: 8px; /* Prevent collision with nav on older Androids */
+  padding-top: 32px; /* allows spacing inside dialog without nudging the box */
 }
 
 body.modal-open {

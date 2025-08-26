@@ -26,7 +26,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
       <>
         <nav className="navigation side-nav">
           <div className="nav-header">
-            <NavLink to="/app/" className="logo" end>sportDeets</NavLink>
+            <NavLink to="/app/" className="logo" end>sportDeets<span className="tm-symbol">™</span></NavLink>
           </div>
           <div className="nav-links">
             <NavLink to="/app/" className="nav-link" end onClick={handleNavLinkClick}>
@@ -71,8 +71,15 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
 
   return (
     <nav className="navigation top-nav">
+      <button 
+        className="nav-toggle"
+        onClick={onToggle}
+        title="Switch to Side Navigation"
+      >
+        <FaBars />
+      </button>
       <div className="nav-header">
-        <NavLink to="/app/" className="logo" end>sportDeets</NavLink>
+        <NavLink to="/app/" className="logo" end>sportDeets<span className="tm-symbol">™</span></NavLink>
       </div>
       <div className="nav-links">
         <table>
@@ -113,13 +120,6 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
         </table>
       </div>
       <div className="nav-actions">
-        <button 
-          className="nav-toggle"
-          onClick={onToggle}
-          title="Switch to Side Navigation"
-        >
-          <FaBars />
-        </button>
         <button className="nav-link logout-button" onClick={onSignOut}>
           <FaSignOutAlt className="nav-icon" />
           <span>Sign Out</span>

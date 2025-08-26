@@ -191,6 +191,39 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  /* Mobile top navigation layout */
+  .top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+  }
+  
+  .nav-header {
+    order: 2;
+    min-width: auto;
+    margin-left: 15px; /* Space after hamburger */
+  }
+  
+  .nav-actions {
+    order: 3;
+    margin-left: 0;
+    padding-right: 0;
+  }
+  
+  .nav-toggle {
+    order: 1;
+  }
+  
+  /* Hide "Sign Out" text on mobile, show icon only */
+  .logout-button span {
+    display: none;
+  }
+  
+  .logout-button .nav-icon {
+    margin-right: 0;
+  }
+  
   .top-nav .nav-links {
     display: none;
   }

@@ -82,7 +82,7 @@ namespace SportsData.Api.Application.Processors
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, "Attempt {Attempt} failed to deserialize AI response.", attempt);
+                    _logger.LogWarning(ex, "Attempt {Attempt} failed to deserialize AI response. {@Response}", attempt, rawResponse);
                 }
             }
 

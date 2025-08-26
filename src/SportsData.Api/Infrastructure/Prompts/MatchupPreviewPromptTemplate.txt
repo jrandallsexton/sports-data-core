@@ -69,4 +69,4 @@ Output Rules:
 
 If any of these 14 questions are not satisfied, continue thinking until all 14 rules are satisfied.
 
-Now generate a single preview for the following:
+Now generate a single preview within 150 seconds for the following:

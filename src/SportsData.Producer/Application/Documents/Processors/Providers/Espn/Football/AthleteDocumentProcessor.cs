@@ -5,6 +5,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -107,23 +108,23 @@ public class AthleteDocumentProcessor : IProcessDocuments
         await ProcessAthleteStatus(dto, entity);
         await ProcessCurrentPosition(dto, entity, command);
 
-        //if (dto.Headshot?.Href is not null)
-        //{
-        //    var imgId = Guid.NewGuid();
-        //    await _publishEndpoint.Publish(new ProcessImageRequest(
-        //        dto.Headshot.Href,
-        //        imgId,
-        //        entity.Id,
-        //        $"{entity.Id}-{imgId}.png",
-        //        command.Sport,
-        //        command.Season,
-        //        command.DocumentType,
-        //        command.SourceDataProvider,
-        //        0, 0,
-        //        null,
-        //        command.CorrelationId,
-        //        CausationId.Producer.AthleteDocumentProcessor));
-        //}
+        if (dto.Headshot?.Href is not null)
+        {
+            var imgId = Guid.NewGuid();
+            await _publishEndpoint.Publish(new ProcessImageRequest(
+                dto.Headshot.Href,
+                imgId,
+                entity.Id,
+                $"{entity.Id}-{imgId}.png",
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                0, 0,
+                null,
+                command.CorrelationId,
+                CausationId.Producer.AthleteDocumentProcessor));
+        }
 
         await _publishEndpoint.Publish(new AthleteCreated(
             entity.ToCanonicalModel(),

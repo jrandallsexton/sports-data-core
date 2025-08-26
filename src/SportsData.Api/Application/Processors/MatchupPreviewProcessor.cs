@@ -55,7 +55,7 @@ namespace SportsData.Api.Application.Processors
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                rawResponse = await _aiCommunication.GetResponseAsync(fullPrompt);
+                rawResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
 
                 if (string.IsNullOrWhiteSpace(rawResponse))
                 {

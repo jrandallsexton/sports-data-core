@@ -15,6 +15,8 @@ namespace SportsData.Core.Infrastructure.Clients.AI
         private readonly OllamaClientConfig _config;
         private readonly ILogger<OllamaClient> _logger;
 
+        private static readonly SemaphoreSlim _lock = new(1, 1); // global throttle for now
+
         public OllamaClient(HttpClient httpClient,
                             OllamaClientConfig config,
                             ILogger<OllamaClient> logger)
@@ -28,19 +30,20 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             string prompt,
             CancellationToken ct = default)
         {
-            var request = new
-            {
-                model = _config.Model,
-                prompt = prompt,
-                stream = false
-            };
-
-            _logger.LogDebug("OllamaClient began. {@Config} {@Request}", _config, request);
-
+            await _lock.WaitAsync(ct); // ⬅️ acquire lock
             try
             {
+                var request = new
+                {
+                    model = _config.Model,
+                    prompt = prompt,
+                    stream = false
+                };
+
+                _logger.LogDebug("OllamaClient began. {@Config} {@Request}", _config, request);
+
                 _httpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
-                
+
                 using var response = await _httpClient.PostAsJsonAsync("/api/generate", request, ct);
 
                 if (!response.IsSuccessStatusCode)
@@ -63,6 +66,10 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             {
                 _logger.LogError(ex, "Failed to retrieve response from Ollama.");
                 return string.Empty;
+            }
+            finally
+            {
+                _lock.Release(); // ⬅️ always release
             }
         }
 

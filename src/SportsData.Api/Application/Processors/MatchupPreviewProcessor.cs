@@ -105,6 +105,7 @@ namespace SportsData.Api.Application.Processors
                         _logger.LogWarning("Validation failed on attempt {Attempt}. Errors: {Errors}", attempt, validation.Errors);
                     }
 
+                    break;
                 }
                 catch (JsonException ex)
                 {

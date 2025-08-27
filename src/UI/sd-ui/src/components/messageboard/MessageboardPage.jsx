@@ -3,15 +3,26 @@ import PostCard from "./PostCard";
 import "./MessageBoardPage.css";
 import MessageboardApi from "../../api/messageboardApi";
 import { useParams } from "react-router-dom";
+import { useUserDto } from "../../contexts/UserContext";
+import LeagueSelector from "../shared/LeagueSelector";
 
 function MessageBoardPage() {
   const { groupId } = useParams(); // may be undefined on "All Groups"
+  const { userDto } = useUserDto();
   const [posts, setPosts] = useState([]);
   const [newPostContent, setNewPostContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedLeagueId, setSelectedLeagueId] = useState("all");
   const postThreadMapRef = useRef(new Map()); // postId -> threadId
+
+  // Get leagues from user data and add "All Leagues" option
+  const userLeagues = Array.isArray(userDto?.leagues) ? userDto.leagues : Object.values(userDto?.leagues || {});
+  const leagues = [
+    { id: "all", name: "All Leagues" },
+    ...userLeagues
+  ];
 
   // --- helpers to map BE → FE shape (minimal) ---
   const mapPost = (p) => ({
@@ -25,29 +36,6 @@ function MessageBoardPage() {
     userReaction: p.userReaction ?? null,
     replies: [],
   });
-
-  // --- initial & paged load of threads for a specific group ---
-  async function fetchThreadsPage(limit = 10) {
-    if (!groupId || loading || !hasMore) return; // guard when no groupId
-    setLoading(true);
-    try {
-      const { data } = await MessageboardApi.getThreads(groupId, {
-        limit,
-        cursor,
-      });
-      const { items, nextCursor } = data;
-
-      // For each thread, fetch the OP (parentId == null returns the root)
-      const opsWithReplies = await Promise.all(
-        items.map((t) => fetchOpWithReplies(t))
-      );
-      setPosts((prev) => [...prev, ...opsWithReplies.filter(Boolean)]);
-      setCursor(nextCursor || null);
-      setHasMore(Boolean(nextCursor));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // --- home feed: threads grouped by user's groups (flattened for now) ---
   async function fetchHomeFeed(perGroupLimit = 5) {
@@ -74,6 +62,48 @@ function MessageBoardPage() {
     }
   }
 
+  // --- fetch threads based on selected league ---
+  async function fetchThreadsByLeague() {
+    // reset state
+    setPosts([]);
+    setCursor(null);
+    setHasMore(true);
+
+    if (selectedLeagueId === "all") {
+      // Use home feed for "All Leagues"
+      fetchHomeFeed();
+    } else {
+      // Use specific league threads
+      fetchThreadsPage();
+    }
+  }
+
+  // --- update fetchThreadsPage to use selectedLeagueId ---
+  async function fetchThreadsPage(limit = 10) {
+    // When called from fetchThreadsByLeague, use selectedLeagueId directly
+    // When called from groupId-based routing, fall back to groupId
+    const targetGroupId = selectedLeagueId !== "all" ? selectedLeagueId : groupId;
+    if (!targetGroupId || loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const { data } = await MessageboardApi.getThreads(targetGroupId, {
+        limit,
+        cursor,
+      });
+      const { items, nextCursor } = data;
+
+      // For each thread, fetch the OP (parentId == null returns the root)
+      const opsWithReplies = await Promise.all(
+        items.map((t) => fetchOpWithReplies(t))
+      );
+      setPosts((prev) => [...prev, ...opsWithReplies.filter(Boolean)]);
+      setCursor(nextCursor || null);
+      setHasMore(Boolean(nextCursor));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     // reset when groupId changes
     setPosts([]);
@@ -88,10 +118,17 @@ function MessageBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
+  useEffect(() => {
+    // fetch threads when league selection changes
+    fetchThreadsByLeague();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueId]);
+
   // --- create a new thread (OP post) ---
   async function handleNewPost() {
     const content = newPostContent.trim();
-    if (!content || !groupId) return; // only allow posting when scoped to a group
+    const targetGroupId = selectedLeagueId !== "all" ? selectedLeagueId : groupId;
+    if (!content || !targetGroupId) return; // only allow posting when scoped to a specific league
 
     // optimistic OP card
     const tempId = `temp-${Date.now()}`;
@@ -111,7 +148,7 @@ function MessageBoardPage() {
     setNewPostContent("");
 
     try {
-      const { data: thread } = await MessageboardApi.createThread(groupId, {
+      const { data: thread } = await MessageboardApi.createThread(targetGroupId, {
         title: null,
         content,
       });
@@ -289,19 +326,28 @@ function MessageBoardPage() {
     <div className="message-board">
       <h2>{groupId ? "Group Message Board" : "All Groups"}</h2>
 
-      {/* New Post Form (only when scoped to a group) */}
+      {/* League Selector */}
+      <div className="league-selector-container">
+        <LeagueSelector
+          leagues={leagues}
+          selectedLeagueId={selectedLeagueId}
+          setSelectedLeagueId={setSelectedLeagueId}
+        />
+      </div>
+
+      {/* New Post Form (only when scoped to a specific league) */}
       <div className="new-post-form">
         <textarea
           placeholder={
-            groupId ? "Start a new conversation..." : "Select a group to post"
+            selectedLeagueId !== "all" ? "Start a new conversation..." : "Select a specific league to post"
           }
           value={newPostContent}
           onChange={(e) => setNewPostContent(e.target.value)}
-          disabled={!groupId}
+          disabled={selectedLeagueId === "all"}
         />
         <button
           onClick={handleNewPost}
-          disabled={!groupId || !newPostContent.trim()}
+          disabled={selectedLeagueId === "all" || !newPostContent.trim()}
         >
           Post
         </button>
@@ -318,7 +364,7 @@ function MessageBoardPage() {
           />
         ))}
 
-        {groupId && (
+        {selectedLeagueId !== "all" && (
           <div className="pager">
             {hasMore && (
               <button onClick={() => fetchThreadsPage()} disabled={loading}>

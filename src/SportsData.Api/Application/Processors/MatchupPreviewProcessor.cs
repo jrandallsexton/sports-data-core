@@ -123,7 +123,7 @@ namespace SportsData.Api.Application.Processors
 
             if (preview == null)
             {
-                await _dataContext.MatchupPreviews.AddAsync(new MatchupPreview
+                preview = new MatchupPreview
                 {
                     Id = Guid.NewGuid(),
                     ContestId = command.ContestId,
@@ -132,26 +132,35 @@ namespace SportsData.Api.Application.Processors
                     Prediction = parsed.Prediction,
                     PredictedStraightUpWinner = parsed.PredictedStraightUpWinner,
                     PredictedSpreadWinner = parsed.PredictedSpreadWinner,
-                    OverUnderPrediction = parsed.OverUnderPrediction == 1 ? OverUnderPrediction.Over : OverUnderPrediction.Under,
+                    OverUnderPrediction = parsed.OverUnderPrediction == 1
+                        ? OverUnderPrediction.Over
+                        : OverUnderPrediction.Under,
                     AwayScore = parsed.AwayScore,
                     HomeScore = parsed.HomeScore,
                     Model = _aiCommunication.GetModelName(),
-                    ValidationErrors = null
-                });
+                    ValidationErrors = null,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = command.CorrelationId
+                };
+
+                await _dataContext.MatchupPreviews.AddAsync(preview);
             }
             else
             {
-                preview.Overview = parsed.Overview;
                 preview.Analysis = parsed.Analysis;
-                preview.Prediction = parsed.Prediction;
-                preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
-                preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
-                preview.OverUnderPrediction = parsed.OverUnderPrediction == 1 ? OverUnderPrediction.Over : OverUnderPrediction.Under;
                 preview.AwayScore = parsed.AwayScore;
                 preview.HomeScore = parsed.HomeScore;
                 preview.Model = _aiCommunication.GetModelName();
-                preview.ValidationErrors = null;
+                preview.ModifiedBy = command.CorrelationId;
+                preview.ModifiedUtc = DateTime.UtcNow;
+                preview.OverUnderPrediction = parsed.OverUnderPrediction == 1 ? OverUnderPrediction.Over : OverUnderPrediction.Under;
+                preview.Overview = parsed.Overview;
+                preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
+                preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
+                preview.Prediction = parsed.Prediction;
             }
+
+            _logger.LogInformation("Preview generated for {contestId}", preview.ContestId);
 
             await _eventBus.Publish(new PreviewGenerated(
                 matchup.ContestId,

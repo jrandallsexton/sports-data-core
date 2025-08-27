@@ -324,8 +324,6 @@ function MessageBoardPage() {
 
   return (
     <div className="message-board">
-      <h2>{groupId ? "Group Message Board" : "All Groups"}</h2>
-
       {/* League Selector */}
       <div className="league-selector-container">
         <LeagueSelector

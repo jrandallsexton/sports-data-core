@@ -2,27 +2,49 @@
   color: #fff;
   max-width: 1280px;
   margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* League Selector Styling */
+.league-selector-container {
+  margin-bottom: 20px;
+}
+
+/* New Post Form Styling */
+.new-post-form {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
 }
 
 .new-post-form textarea,
 .reply-form textarea {
   width: 100%;
-  min-height: 60px;
-  background-color: #222;
+  max-width: 100%;
+  min-height: 80px;
+  background-color: #333;
   color: #fff;
-  border: 1px solid #444;
+  border: 1px solid #555;
   border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
-.post-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 15px;
-  margin-top: 8px;
-  margin-bottom: 8px;
+.new-post-form textarea:focus,
+.reply-form textarea:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
 }
 
 .new-post-form button,
@@ -31,49 +53,137 @@
 .new-post-form .submit-button {
   background-color: #61dafb;
   color: #111;
-  padding: 6px 12px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
+.new-post-form button:hover,
+.reply-form button:hover {
+  background-color: #4ea0d9;
+  transform: translateY(-1px);
+}
+
+.new-post-form button:disabled,
+.reply-form button:disabled {
+  background-color: #444;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Post List Layout */
 .post-list {
-  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .post-card {
-  background-color: #333;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 5px; /* Smaller gap between posts */
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  padding: 16px;
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
 }
 
+.post-card:hover {
+  border-color: #555;
+}
+
+/* Pagination Styling */
+.pager {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.pager button {
+  background-color: #333;
+  color: #61dafb;
+  border: 1px solid #61dafb;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pager button:hover:not(:disabled) {
+  background-color: #61dafb;
+  color: #111;
+}
+
+.pager button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Post Actions */
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #444;
+}
+
+/* Post Headers and Content */
 .post-header,
 .reply-header {
   font-size: 0.9rem;
   color: #aaa;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .post-content,
 .reply-content {
-  padding-left: 15px;
   font-size: 1rem;
-  margin-bottom: 5px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  color: #e0e0e0;
 }
 
+/* Replies Section */
 .replies {
-  margin-top: 8px; /* Tighten space between Reply Button and Replies */
-  padding-left: 16px; /* Smaller indent */
-  border-left: 2px solid #444; /* Light border for threading */
+  margin-top: 16px;
+  padding-left: 20px;
+  border-left: 3px solid #444;
+  position: relative;
+}
+
+.replies::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #61dafb, transparent);
+  opacity: 0.3;
 }
 
 .reply-card {
-  background-color: #2a2a2a; /* Slightly different to differentiate */
-  padding: 10px;
+  background-color: #333;
+  border: 1px solid #444;
+  padding: 12px;
   border-radius: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.reply-card:hover {
+  border-color: #555;
+}
+
+.reply-card:last-child {
+  margin-bottom: 0;
 }
 
 .reply-control {
@@ -86,12 +196,19 @@
   background: none;
   border: none;
   color: #61dafb;
-  font-size: 1rem; /* SMALLER size */
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   margin: 0;
   display: flex;
   align-items: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.reply-icon-button:hover {
+  color: #4ea0d9;
+  background-color: rgba(97, 218, 251, 0.1);
 }
 
 .reply-text-button {
@@ -100,36 +217,75 @@
   color: #61dafb;
   font-size: 1.2rem;
   cursor: pointer;
-  display: flex;
+  display: none;
   align-items: center;
-}
-
-.reply-icon-button:hover {
-  color: #4ea0d9;
+  transition: all 0.2s ease;
 }
 
 .reply-text-button:hover {
   color: #4ea0d9;
 }
 
-/* Default: Hide the big button on desktop */
-.reply-text-button {
-  display: none;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .message-board {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .new-post-form {
+    padding: 12px;
+  }
+  
+  .post-card {
+    padding: 12px;
+  }
+  
+  .replies {
+    padding-left: 16px;
+  }
+  
+  .new-post-form textarea {
+    min-height: 60px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
 }
 
-/* On small screens: Hide the icon button, show the full button */
 @media (max-width: 600px) {
+  /* Show text button, hide icon button on mobile */
   .reply-icon-button {
     display: none;
   }
+  
   .reply-text-button {
     display: flex;
     background-color: #61dafb;
     color: #111;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 6px;
-    font-size: 0.9rem; /* Slightly smaller text */
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .reply-text-button:hover {
+    background-color: #4ea0d9;
+    color: #111;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-board {
+    padding: 8px;
+    gap: 12px;
+  }
+  
+  .post-card,
+  .reply-card {
+    padding: 10px;
+  }
+  
+  .replies {
+    padding-left: 12px;
   }
 }
 

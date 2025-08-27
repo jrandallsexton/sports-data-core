@@ -11,9 +11,6 @@ export default function useSignalRClient({
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
-      // .withUrl("http://localhost:5262/hubs/notifications", {
-      //   withCredentials: true,
-      // })
       .withUrl("https://api-dev.sportdeets.com/hubs/notifications", {
         withCredentials: true,
       })
@@ -23,10 +20,16 @@ export default function useSignalRClient({
 
     connection.on("PreviewCompleted", onPreviewCompleted);
 
-    // connection.start().then(() => {
-    //   console.log("SignalR connected");
-    //   connection.invoke("JoinLeagueGroup", leagueId);
-    // });
+    connection
+      .start()
+      .then(() => {
+        console.log("SignalR connected");
+        // Optional: you can invoke group join here later
+        // connection.invoke("JoinLeagueGroup", leagueId);
+      })
+      .catch((err) => {
+        console.error("SignalR connection error:", err);
+      });
 
     connectionRef.current = connection;
 

@@ -100,21 +100,6 @@ namespace SportsData.Api
 
             builder.UseCommon();
 
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowFrontend", policy =>
-                {
-                    policy.WithOrigins(
-                            "http://localhost:3000",
-                            "https://dev.sportdeets.com")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials() // Required for cookies
-                        .WithExposedHeaders("Set-Cookie") // Explicitly expose Set-Cookie header
-                        .SetIsOriginAllowedToAllowWildcardSubdomains(); // Allow subdomains
-                });
-            });
-
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
@@ -175,13 +160,25 @@ namespace SportsData.Api
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];
             services
-                .AddSignalR()
-                .AddAzureSignalR(sigRConnString);
+                .AddSignalR(options =>
+                {
+                    options.EnableDetailedErrors = true;
+                    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+                })
+                .AddAzureSignalR(options =>
+                {
+                    options.ConnectionString = sigRConnString;
+                    options.ServerStickyMode = Microsoft.Azure.SignalR.ServerStickyMode.Required;
+                    options.InitialHubServerConnectionCount = 5;
+                });
 
+            // Configure CORS - single definition
             string[] allowedOrigins =
             [
                 "https://dev.sportdeets.com",
-                "http://localhost:3000" // Add this for local development
+                "http://localhost:3000"
             ];
 
             builder.Services.AddCors(options =>
@@ -191,7 +188,8 @@ namespace SportsData.Api
                     policy.WithOrigins(allowedOrigins)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials();
+                        .AllowCredentials()
+                        .WithExposedHeaders("Set-Cookie");
                 });
             });
 
@@ -231,7 +229,6 @@ namespace SportsData.Api
             app.UseCommonFeatures(buildConfigurationName);
 
             app.MapHub<NotificationHub>("/hubs/notifications");
-            app.UseCors("AllowFrontend");
 
             var logger = app.Services.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Azure SignalR registration complete with {connString}", sigRConnString);

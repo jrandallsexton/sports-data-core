@@ -110,7 +110,7 @@ function HomePage() {
           <Link to="/app/league/create" className="card-link">
             Create a League
           </Link>
-          <Link to="/app/join-league" className="card-link">
+          <Link to="/app/league/discover" className="card-link">
             Join a League
           </Link>
           {userDto?.leagues?.length > 0 && (

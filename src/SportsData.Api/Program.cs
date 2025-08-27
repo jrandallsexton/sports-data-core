@@ -170,7 +170,6 @@ namespace SportsData.Api
                 .AddAzureSignalR(options =>
                 {
                     options.ConnectionString = sigRConnString;
-                    //options.ApplicationName = "SportsData.Api"; // Add this to ensure consistent client routing
                 });
 
             // Configure CORS

@@ -187,13 +187,7 @@ namespace SportsData.Api
                     policy.WithOrigins(allowedOrigins)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials()
-                        .WithExposedHeaders("Set-Cookie")
-                        .SetIsOriginAllowed(origin =>
-                        {
-                            var host = new Uri(origin).Host;
-                            return host.EndsWith("sportdeets.com") || host == "localhost";
-                        });
+                        .AllowCredentials();
                 });
             });
 
@@ -207,20 +201,6 @@ namespace SportsData.Api
             app.UseHttpsRedirection();
 
             app.UseCors("AllowFrontend");
-
-            // Add explicit OPTIONS handling for preflight requests
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Method == "OPTIONS")
-                {
-                    context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                    context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-                    context.Response.Headers.Append("Access-Control-Max-Age", "86400");
-                    await context.Response.CompleteAsync();
-                    return;
-                }
-                await next();
-            });
 
             app.UseRouting();
             app.UseMiddleware<FirebaseAuthenticationMiddleware>();

@@ -11,6 +11,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public Guid? ParentId { get; set; }
 
+        public User? User { get; set; }
+
         public int Depth { get; set; } // 0 = root
 
         public string Path { get; set; } = ""; // e.g., "0001.0003"
@@ -47,6 +49,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 b.Property(x => x.Path).HasMaxLength(1024);
                 b.HasOne(x => x.Thread).WithMany(t => t.Posts).HasForeignKey(x => x.ThreadId);
                 b.HasOne(x => x.Parent).WithMany(p => p.Children).HasForeignKey(x => x.ParentId);
+
+                b.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
             }
         }
     }

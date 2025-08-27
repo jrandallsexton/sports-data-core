@@ -57,7 +57,7 @@ namespace SportsData.Api.Infrastructure.Data
                 SignInProvider = "password",
                 CreatedUtc = seedTime,
                 LastLoginUtc = seedTime,
-                DisplayName = "Foo Bar"
+                DisplayName = "sportDeets"
             });
 
             modelBuilder.AddInboxStateEntity(cfg =>

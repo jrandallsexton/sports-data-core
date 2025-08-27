@@ -37,6 +37,7 @@ namespace SportsData.Api.Application.UI.Messageboard
             {
                 var q = _dataContext.Set<MessageThread>()
                     .AsNoTracking()
+                    .Include(t => t.User)
                     .Where(t => t.GroupId == gid)
                     .OrderByDescending(t => t.LastActivityAt);
 
@@ -55,7 +56,6 @@ namespace SportsData.Api.Application.UI.Messageboard
             return result;
         }
 
-
         // List threads under a group, newest activity first
         public async Task<PageResult<MessageThread>> GetThreadsAsync(
             Guid groupId, PageRequest page, CancellationToken ct = default)
@@ -65,6 +65,7 @@ namespace SportsData.Api.Application.UI.Messageboard
 
             var q = _dataContext.Set<MessageThread>()
                 .AsNoTracking()
+                .Include(t => t.User)
                 .Where(t0 => t0.GroupId == groupId);
 
             if (cursorTicks is not null)
@@ -140,6 +141,7 @@ namespace SportsData.Api.Application.UI.Messageboard
             long? cursorTicks = long.TryParse(page.Cursor, out var t) ? t : (long?)null;
 
             var q = _dataContext.Set<MessagePost>()
+                .Include(p => p.User)
                 .AsNoTracking()
                 .Where(p => p.ThreadId == threadId && p.ParentId == parentId);
 
@@ -289,7 +291,6 @@ namespace SportsData.Api.Application.UI.Messageboard
 
             return type.Value;
         }
-
 
         // --- Helpers ---
 

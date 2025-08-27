@@ -8,6 +8,7 @@ select * from public."PickemGroupWeek" where "GroupId" = '620d8af8-cf6f-49de-9a6
 select * from public."PickemGroupMatchup" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
 select * from public."UserPick"
 select * from public."User"
+--update public."User" set "DisplayName" = 'sportDeets' where "Id" = '11111111-1111-1111-1111-111111111111'
 select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *
@@ -16,7 +17,9 @@ where m."GroupId" = '96d4771f-43e5-470b-aba4-7401452ee1be' and "SeasonWeek" = 1
 order by "Spread"
 
 select * from public."MessageThread"
+--update public."MessageThread" set "CreatedBy" = '11111111-1111-1111-1111-111111111111'
 select * from public."MessagePost" where "ThreadId" = '00000000-0000-0000-0000-000000000000'
+--update public."MessagePost" set "CreatedBy" = '11111111-1111-1111-1111-111111111111' where "Id" = '3359fc6b-3643-4f9b-a463-9bf51f2f25ae'
 --delete from public."PickemGroupWeek"
 --delete from public."PickemGroupMatchup"
 --delete from public."UserPick"

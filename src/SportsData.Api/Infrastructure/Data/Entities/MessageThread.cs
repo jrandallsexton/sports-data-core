@@ -9,6 +9,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
     {
         public Guid GroupId { get; set; }
 
+        public User? User { get; set; }
+
         public DateTime LastActivityAt { get; set; }
 
         public string? Title { get; set; }
@@ -31,6 +33,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 b.HasKey(x => x.Id);
                 b.HasIndex(x => new { x.GroupId, x.LastActivityAt });
                 b.Property(x => x.Slug).HasMaxLength(128);
+
+                b.HasOne<User>()      // or just `User` if no alias
+                    .WithMany()
+                    .HasForeignKey(x => x.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict); // or Cascade if you want to delete posts with users
             }
         }
     }

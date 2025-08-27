@@ -173,23 +173,21 @@ namespace SportsData.Api
                     options.ApplicationName = "SportsData.Api"; // Add this to ensure consistent client routing
                 });
 
-            // Configure CORS - single definition
-            //string[] allowedOrigins =
-            //[
-            //    "https://dev.sportdeets.com",
-            //    "http://localhost:3000"
-            //];
-
-            //builder.Services.AddCors(options =>
-            //{
-            //    options.AddPolicy("AllowFrontend", policy =>
-            //    {
-            //        policy.WithOrigins(allowedOrigins)
-            //            .AllowAnyHeader()
-            //            .AllowAnyMethod()
-            //            .AllowCredentials();
-            //    });
-            //});
+            // Configure CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins(
+                            "http://localhost:3000",
+                            "https://dev.sportdeets.com")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials() // Required for cookies
+                        .WithExposedHeaders("Set-Cookie") // Explicitly expose Set-Cookie header
+                        .SetIsOriginAllowedToAllowWildcardSubdomains(); // Allow subdomains
+                });
+            });
 
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
@@ -200,7 +198,7 @@ namespace SportsData.Api
             // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
 
-            //app.UseCors("AllowFrontend");
+            app.UseCors("AllowFrontend");
 
             app.UseRouting();
             app.UseMiddleware<FirebaseAuthenticationMiddleware>();

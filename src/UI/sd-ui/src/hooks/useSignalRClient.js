@@ -23,10 +23,10 @@ export default function useSignalRClient({
 
     connection.on("PreviewCompleted", onPreviewCompleted);
 
-    connection.start().then(() => {
-      console.log("SignalR connected");
-      connection.invoke("JoinLeagueGroup", leagueId);
-    });
+    // connection.start().then(() => {
+    //   console.log("SignalR connected");
+    //   connection.invoke("JoinLeagueGroup", leagueId);
+    // });
 
     connectionRef.current = connection;
 

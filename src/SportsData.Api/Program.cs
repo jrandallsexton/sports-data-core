@@ -14,6 +14,7 @@ using Serilog;
 
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.PickemGroups;
+using SportsData.Api.Application.Previews;
 using SportsData.Api.DependencyInjection;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
@@ -155,7 +156,8 @@ namespace SportsData.Api
             services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
             services.AddMessaging<AppDataContext>(config, [
                 typeof(PickemGroupCreatedHandler),
-                typeof(PickemGroupWeekMatchupsGeneratedHandler)
+                typeof(PickemGroupWeekMatchupsGeneratedHandler),
+                typeof(PreviewGeneratedHandler)
             ]);
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];

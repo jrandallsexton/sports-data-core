@@ -19,13 +19,7 @@ public class NotificationHub : Hub
             Context.GetHttpContext()?.Connection.RemoteIpAddress);
 
         var userId = Context.UserIdentifier;
-        if (!string.IsNullOrEmpty(userId))
-        {
-            var groupName = $"User_{userId}";
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            _logger.LogInformation("Added connection {ConnectionId} to group {GroupName}", Context.ConnectionId, groupName);
-        }
-        else
+        if (string.IsNullOrEmpty(userId))
         {
             _logger.LogWarning("Connection {ConnectionId} has no UserIdentifier", Context.ConnectionId);
         }
@@ -44,14 +38,6 @@ public class NotificationHub : Hub
             _logger.LogInformation("SignalR connection {ConnectionId} disconnected normally", Context.ConnectionId);
         }
 
-        var userId = Context.UserIdentifier;
-        if (!string.IsNullOrEmpty(userId))
-        {
-            var groupName = $"User_{userId}";
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            _logger.LogInformation("Removed connection {ConnectionId} from group {GroupName}", Context.ConnectionId, groupName);
-        }
-
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -60,5 +46,17 @@ public class NotificationHub : Hub
     {
         _logger.LogDebug("Ping received from connection {ConnectionId}", Context.ConnectionId);
         await Clients.Caller.SendAsync("Pong", DateTime.UtcNow);
+    }
+
+    // Send to a specific user
+    public async Task SendMessageToUser(string userId, string message)
+    {
+        await Clients.User(userId).SendAsync("ReceiveMessage", message);
+    }
+
+    // Send to multiple users
+    public async Task SendMessageToUsers(IEnumerable<string> userIds, string message)
+    {
+        await Clients.Users(userIds).SendAsync("ReceiveMessage", message);
     }
 }

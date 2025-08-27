@@ -170,8 +170,7 @@ namespace SportsData.Api
                 .AddAzureSignalR(options =>
                 {
                     options.ConnectionString = sigRConnString;
-                    options.ServerStickyMode = Microsoft.Azure.SignalR.ServerStickyMode.Required;
-                    options.InitialHubServerConnectionCount = 5;
+                    options.ApplicationName = "SportsData.Api"; // Add this to ensure consistent client routing
                 });
 
             // Configure CORS - single definition

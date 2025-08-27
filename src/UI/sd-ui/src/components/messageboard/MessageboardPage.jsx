@@ -17,7 +17,7 @@ function MessageBoardPage() {
   const mapPost = (p) => ({
     id: p.id,
     threadId: p.threadId,
-    author: p.createdByUserId?.slice(0, 8) || "User",
+    author: p.user?.displayName ?? "User", // ← ✅ this is the real fix
     timestamp: p.createdUtc,
     content: p.content,
     likes: p.likeCount,

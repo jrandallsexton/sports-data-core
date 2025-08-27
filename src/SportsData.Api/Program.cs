@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 
 using Npgsql;
 
+using Serilog;
+
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.DependencyInjection;
@@ -171,9 +173,10 @@ namespace SportsData.Api
                 typeof(PickemGroupWeekMatchupsGeneratedHandler)
             ]);
 
+            var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];
             services
                 .AddSignalR()
-                .AddAzureSignalR(config["CommonConfig:AzureSignalR:ConnectionString"]);
+                .AddAzureSignalR(sigRConnString);
 
             string[] allowedOrigins =
             [
@@ -229,6 +232,9 @@ namespace SportsData.Api
 
             app.MapHub<NotificationHub>("/hubs/notifications");
             app.UseCors("AllowFrontend");
+
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            Log.Information("Azure SignalR registration complete with {connString}", sigRConnString);
 
             app.Services.ConfigureHangfireJobs(mode);
 

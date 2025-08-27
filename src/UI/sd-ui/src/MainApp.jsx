@@ -4,6 +4,7 @@ import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
 import "./MainApp.css";
+import useSignalRClient from "hooks/useSignalRClient";
 
 import PicksPage from "./components/picks/PicksPage.jsx";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
@@ -63,6 +64,15 @@ function MainApp() {
     setShowWelcome(false);
   };
 
+  useSignalRClient({
+    userId: currentUser.id,
+    leagueId: currentLeague.id,
+    onPreviewCompleted: (data) => {
+      toast.success(data.message);
+      refreshMatchups(); // or setState to trigger re-render
+    },
+  });
+
   return (
     <div className="app-container">
       {showWelcome && <WelcomeDialog onClose={handleWelcomeClose} />}
@@ -88,14 +98,23 @@ function MainApp() {
           <Route path="messageboard" element={<MessageBoardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="sport/football/ncaa/team/:slug" element={<TeamCard />} />
-          <Route path="sport/football/ncaa/team/:slug/:seasonYear" element={<TeamCard />} />
-          <Route path="sport/:sport/:league/venue/:slug" element={<VenuePage />} />
+          <Route
+            path="sport/football/ncaa/team/:slug/:seasonYear"
+            element={<TeamCard />}
+          />
+          <Route
+            path="sport/:sport/:league/venue/:slug"
+            element={<VenuePage />}
+          />
           <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
           <Route path="league/create" element={<LeagueCreatePage />} />
           <Route path="league/:id" element={<LeagueDetail />} />
           <Route path="league" element={<Leagues />} />
           <Route path="join/:leagueId" element={<AutoJoinRedirect />} />
-          <Route path="*" element={<div className="not-found">Page Not Found</div>} />
+          <Route
+            path="*"
+            element={<div className="not-found">Page Not Found</div>}
+          />
         </Routes>
       </main>
       <LandingFooter />

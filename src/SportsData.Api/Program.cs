@@ -6,7 +6,6 @@ using Hangfire;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using Npgsql;
@@ -15,6 +14,7 @@ using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.DependencyInjection;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Middleware;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
@@ -27,7 +27,6 @@ using System.Data;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using SportsData.Api.Infrastructure.Notifications;
 
 namespace SportsData.Api
 {
@@ -172,6 +171,27 @@ namespace SportsData.Api
                 typeof(PickemGroupWeekMatchupsGeneratedHandler)
             ]);
 
+            services
+                .AddSignalR()
+                .AddAzureSignalR(builder.Configuration["CommonConfig:AzureSignalR:ConnectionString"]);
+
+            string[] allowedOrigins =
+            [
+                "https://dev.sportdeets.com",
+                "http://localhost:3000" // Add this for local development
+            ];
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+
             services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             services.AddLocalServices(Sport.All);
@@ -206,6 +226,9 @@ namespace SportsData.Api
             var buildConfigurationName = assemblyConfigurationAttribute?.Configuration ?? "Development";
 
             app.UseCommonFeatures(buildConfigurationName);
+
+            app.MapHub<NotificationHub>("/hubs/notifications");
+            app.UseCors("AllowFrontend");
 
             app.Services.ConfigureHangfireJobs(mode);
 

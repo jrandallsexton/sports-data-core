@@ -2,6 +2,39 @@
   position: relative;
 }
 
+.system-news-card h2 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  color: #61dafb;
+  font-weight: 600;
+}
+
+.system-news-card h2:first-of-type {
+  margin-top: 0;
+}
+
+.system-news-card p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.system-news-card ul {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.system-news-card li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.system-news-card li:last-child {
+  margin-bottom: 0;
+}
+
 .dismiss-button {
   position: absolute;
   top: 12px;

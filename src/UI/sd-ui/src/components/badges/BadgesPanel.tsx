@@ -44,7 +44,7 @@ const BadgesPanel: React.FC = () => {
 
   return (
     <div className="badges-section">
-      <h2 className="badges-heading">🏅 Your Badges</h2>
+      <h2 className="badges-heading">🏅 Your Badges (simulated)</h2>
       {error && (
         <p className="badges-error">Something went wrong while loading your badges. Please try again later.</p>
       )}

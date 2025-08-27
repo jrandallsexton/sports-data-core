@@ -2,6 +2,7 @@ function FeaturedArticleCard() {
   return (
     <section className="featured-article">
       <h2>Featured Article: Mid-Season Pick Strategies</h2>
+      <h2>( simulated )</h2>
       <div className="article-card">
         <p>
           <strong>🏆 Building a Winning Pick Strategy:</strong>
@@ -20,10 +21,10 @@ function FeaturedArticleCard() {
           and consider a calculated risk on the underdog.
         </p>
         <p>
-          SportDeets AI models are also updating weekly now with more weight
-          on injury reports, coaching changes, and even weather conditions —
-          so be sure to review the AI recommendations in your dashboard before
-          locking your picks!
+          SportDeets AI models are also updating weekly now with more weight on
+          injury reports, coaching changes, and even weather conditions — so be
+          sure to review the AI recommendations in your dashboard before locking
+          your picks!
         </p>
         <p style={{ fontStyle: "italic", marginTop: "20px" }}>
           🔥 Pro Tip: Balance 75% logical picks with 25% high-upside gambles
@@ -34,4 +35,4 @@ function FeaturedArticleCard() {
   );
 }
 
-export default FeaturedArticleCard; 
+export default FeaturedArticleCard;

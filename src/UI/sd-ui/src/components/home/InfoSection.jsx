@@ -4,7 +4,7 @@ function InfoSection() {
   return (
     <section className="info-section">
       <div className="info-block">
-        <h2>Tip of the Week</h2>
+        <h2>Tip of the Week (simulated)</h2>
         <div className="tip-card">
           <p>
             <strong>💡 Pro Strategy:</strong> Balance underdogs and favorites!
@@ -18,7 +18,7 @@ function InfoSection() {
       </div>
 
       <div className="info-block">
-        <h2>Latest News</h2>
+        <h2>Latest News (simulated)</h2>
         <div className="news-card">
           <p>
             <strong>🏈 Major upset:</strong> #14 seed upsets #2! Full recap and

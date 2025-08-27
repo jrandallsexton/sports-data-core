@@ -2,12 +2,21 @@
 import { useEffect, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 
-export default function useSignalRClient({ userId, leagueId, onPreviewCompleted }) {
+export default function useSignalRClient({
+  userId,
+  leagueId,
+  onPreviewCompleted,
+}) {
   const connectionRef = useRef(null);
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("/hubs/notifications")
+      // .withUrl("http://localhost:5262/hubs/notifications", {
+      //   withCredentials: true,
+      // })
+      .withUrl("https://api-dev.sportdeets.com/hubs/notifications", {
+        withCredentials: true,
+      })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)
       .build();

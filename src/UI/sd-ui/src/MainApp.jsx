@@ -65,11 +65,9 @@ function MainApp() {
   };
 
   useSignalRClient({
-    userId: currentUser.id,
-    leagueId: currentLeague.id,
     onPreviewCompleted: (data) => {
       toast.success(data.message);
-      refreshMatchups(); // or setState to trigger re-render
+      //refreshMatchups(); // or setState to trigger re-render
     },
   });
 

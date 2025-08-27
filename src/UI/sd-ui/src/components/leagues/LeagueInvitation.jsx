@@ -10,7 +10,7 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
 
   // Generate dashless invite code
   const inviteCode = leagueId.replace(/-/g, "");
-  const inviteUrl = `${window.location.origin}/join/${inviteCode}`;
+  const inviteUrl = `${window.location.origin}/app/join/${inviteCode}`;
 
   const handleCopy = async () => {
     try {

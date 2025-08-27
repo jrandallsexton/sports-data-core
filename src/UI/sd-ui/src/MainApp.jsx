@@ -4,7 +4,7 @@ import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
 import "./MainApp.css";
-//import useSignalRClient from "hooks/useSignalRClient";
+import useSignalRClient from "hooks/useSignalRClient";
 
 import PicksPage from "./components/picks/PicksPage.jsx";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
@@ -64,12 +64,12 @@ function MainApp() {
     setShowWelcome(false);
   };
 
-  // useSignalRClient({
-  //   onPreviewCompleted: (data) => {
-  //     toast.success(data.message);
-  //     //refreshMatchups(); // or setState to trigger re-render
-  //   },
-  // });
+  useSignalRClient({
+    onPreviewCompleted: (data) => {
+      toast.success(data.message);
+      //refreshMatchups(); // or setState to trigger re-render
+    },
+  });
 
   return (
     <div className="app-container">

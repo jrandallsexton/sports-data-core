@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import "./SystemNews.css"; // optional, if you want to isolate styles
+import { useState } from "react";
+import "./SystemNews.css";
 
 function SystemNews() {
   const [visible, setVisible] = useState(() => {

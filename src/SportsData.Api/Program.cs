@@ -173,7 +173,7 @@ namespace SportsData.Api
 
             services
                 .AddSignalR()
-                .AddAzureSignalR(builder.Configuration["CommonConfig:AzureSignalR:ConnectionString"]);
+                .AddAzureSignalR(config["CommonConfig:AzureSignalR:ConnectionString"]);
 
             string[] allowedOrigins =
             [

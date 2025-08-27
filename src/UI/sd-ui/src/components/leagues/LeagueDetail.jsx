@@ -52,32 +52,35 @@ const LeagueDetail = () => {
 
   return (
     <div className="page-container">
-      <h2>{league.name}</h2>
-      <ul>
-        <li><strong>Description:</strong> {league.description}</li>
-        <li><strong>Pick Type:</strong> {league.pickType}</li>
-        <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
-        <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
-        <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
-        <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
-        <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
-        <li><strong>Conferences:</strong> {
-          [...new Set(league.conferenceSlugs)]?.join(", ") || "None"
-        }</li>
-      </ul>
+      <div className="league-info-card">
+        <h2>{league.name}</h2>
+        <ul className="league-details-list">
+          <li><strong>Description:</strong> {league.description}</li>
+          <li><strong>Pick Type:</strong> {league.pickType}</li>
+          <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
+          <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
+          <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
+          <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
+          <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
+          <li><strong>Conferences:</strong> {
+            [...new Set(league.conferenceSlugs)]?.join(", ") || "None"
+          }</li>
+        </ul>
+      </div>
 
-      <div>
+      <div className="members-section">
         <h2>Members</h2>
         {league.members?.length > 0 ? (
-          <ul>
+          <ul className="members-list">
             {league.members.map((member) => (
               <li key={member.userId}>
-                {member.username} ({member.role})
+                <span className="member-username">{member.username}</span>
+                <span className={`member-role ${member.role}`}>{member.role}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p>No members yet.</p>
+          <p className="no-members-message">No members yet.</p>
         )}
       </div>
 
@@ -85,18 +88,20 @@ const LeagueDetail = () => {
 
       {isCommissioner && (
         <div className="danger-zone">
-          <h2 style={{ color: "red" }}>Danger Zone</h2>
+          <h2>Danger Zone</h2>
           {confirmingDelete ? (
             <>
               <p>Are you sure you want to delete this league? This cannot be undone.</p>
               <button
-                className="confirm-delete-button submit-button"
+                className="confirm-delete-button"
                 onClick={handleDelete}
                 disabled={deleting}
               >
                 {deleting ? "Deleting..." : "Yes, Delete League"}
               </button>
-              <button onClick={() => setConfirmingDelete(false)}>Cancel</button>
+              <button className="cancel-button" onClick={() => setConfirmingDelete(false)}>
+                Cancel
+              </button>
             </>
           ) : (
             <button className="delete-button" onClick={() => setConfirmingDelete(true)}>

@@ -1,0 +1,59 @@
+﻿using MassTransit.Configuration;
+using Microsoft.Extensions.Options;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
+
+namespace SportsData.Api.Infrastructure.Notifications;
+
+public interface INotificationService
+{
+    Task<Response?> SendEmailAsync(string toEmail, string templateId, object templateData);
+    Task SendSmsAsync(string toPhoneNumber, string message);
+}
+
+
+public class NotificationService : INotificationService
+{
+    private readonly string _sendGridApiKey;
+    private readonly string _fromEmail;
+    private readonly string _fromName;
+
+    private readonly string _twilioAccountSid = string.Empty;
+    private readonly string _twilioAuthToken = string.Empty;
+    private readonly string _twilioPhoneNumber = string.Empty;
+
+    public NotificationService(IOptions<NotificationConfig> config)
+    {
+        _sendGridApiKey = config.Value.Email.ApiKey;
+        _fromEmail = config.Value.Email.FromEmail;
+        _fromName = "sportDeets";
+
+        //_twilioAccountSid = config["Twilio:AccountSid"];
+        //_twilioAuthToken = config["Twilio:AuthToken"];
+        //_twilioPhoneNumber = config["Twilio:PhoneNumber"];
+
+        //TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
+    }
+
+    public async Task<Response?> SendEmailAsync(string toEmail, string templateId, object templateData)
+    {
+        var client = new SendGridClient(_sendGridApiKey);
+        var from = new EmailAddress(_fromEmail, _fromName);
+        var to = new EmailAddress(toEmail);
+        var msg = MailHelper.CreateSingleTemplateEmail(from, to, templateId, templateData);
+        var response = await client.SendEmailAsync(msg);
+        return response;
+    }
+
+    public async Task SendSmsAsync(string toPhoneNumber, string message)
+    {
+        await MessageResource.CreateAsync(
+            to: new PhoneNumber(toPhoneNumber),
+            from: new PhoneNumber(_twilioPhoneNumber),
+            body: message
+        );
+    }
+}

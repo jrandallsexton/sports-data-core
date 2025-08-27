@@ -1,5 +1,5 @@
 select * from public."ContestPreview" where "ContestId" = '0e27c391-408c-90af-c810-cd006ffbc10e'
-select * from public."MatchupPreview"
+select * from public."MatchupPreview" order by "CreatedUtc" desc
 select * from public."PickemGroup"
 
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'

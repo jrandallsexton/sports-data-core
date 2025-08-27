@@ -27,6 +27,7 @@ using System.Data;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SportsData.Api.Infrastructure.Notifications;
 
 namespace SportsData.Api
 {
@@ -119,7 +120,8 @@ namespace SportsData.Api
 
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
-
+            services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
+            
             FirebaseApp.Create(new AppOptions
             {
                 Credential = GoogleCredential.FromJson(config["CommonConfig:FirebaseConfigJson"])

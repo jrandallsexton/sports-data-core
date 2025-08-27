@@ -50,12 +50,29 @@ const deleteLeague = async (id) => {
   await apiClient.delete(`/ui/league/${id}`);
 };
 
+/**
+ * Sends an email invitation to join a league.
+ * @param {string} leagueId - League GUID
+ * @param {string} email - Recipient's email address
+ * @param {string} [inviteeName] - Optional recipient name
+ * @returns {Promise<void>} No response body expected
+ */
+const sendInvite = async (leagueId, email, inviteeName = null) => {
+  const requestBody = {
+    leagueId,
+    email,
+    inviteeName,
+  };
+  await apiClient.post(`/ui/league/${leagueId}/invite`, requestBody);
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
   getUserLeagues,
   joinLeague,
-  deleteLeague
+  deleteLeague,
+  sendInvite,
 };
 
 export default LeaguesApi;

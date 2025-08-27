@@ -73,6 +73,7 @@ namespace SportsData.Api.Application.Jobs
                     ContestId = contestId
                 };
 
+                // TODO: Replace with prioritized queue via Service Bus
                 _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
             }
 

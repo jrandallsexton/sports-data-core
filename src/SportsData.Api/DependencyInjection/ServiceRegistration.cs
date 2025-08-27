@@ -13,6 +13,7 @@ using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.User;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
@@ -34,6 +35,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<MatchupPreviewGenerator>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+
+            services.AddScoped<INotificationService, NotificationService>();
 
             services.AddSingleton<MatchupPreviewPromptProvider>();
             services.AddSingleton<CanonicalDataQueryProvider>();

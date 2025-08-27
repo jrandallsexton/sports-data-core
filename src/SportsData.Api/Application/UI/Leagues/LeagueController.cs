@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MassTransit.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Options;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
+using SportsData.Api.Application.UI.Leagues.LeagueInvitation.Dtos;
 using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues;
@@ -16,13 +19,18 @@ public class LeagueController : ApiControllerBase
 {
     private readonly ILeagueService _iLeagueService;
     private readonly AppDataContext _dbContext;
+    private readonly INotificationService _notificationService;
+    private readonly NotificationConfig _notificationConfig;
 
     public LeagueController(
         ILeagueService iLeagueService,
-        AppDataContext dbContext)
+        AppDataContext dbContext,
+        INotificationService notificationService, IOptions<NotificationConfig> notificationConfig)
     {
         _iLeagueService = iLeagueService;
         _dbContext = dbContext;
+        _notificationService = notificationService;
+        _notificationConfig = notificationConfig.Value;
     }
 
     [HttpPost]
@@ -159,6 +167,40 @@ public class LeagueController : ApiControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpPost("{id}/invite")]
+    [Authorize]
+    public async Task<IActionResult> SendInvite(Guid id, [FromBody] SendLeagueInviteRequest request)
+    {
+        if (id != request.LeagueId)
+            return BadRequest("Mismatched league ID in route vs body.");
+
+        var league = await _dbContext.PickemGroups
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (league is null)
+            return NotFound();
+
+        var userId = HttpContext.GetCurrentUserId();
+
+        // You can enhance this later to check if the user is a league admin, etc.
+
+        // TODO: Dynamically set the domain based on environment
+        var inviteUrl = $"https://dev.sportdeets.com/app/join/{league.Id.ToString().Replace("-", string.Empty)}";
+
+        await _notificationService.SendEmailAsync(
+            request.Email,
+            _notificationConfig.Email.TemplateIdInvitation ,
+            new
+            {
+                firstName = request.InviteeName ?? "friend",
+                leagueName = league.Name,
+                joinUrl = inviteUrl
+            });
+
+        return Ok(new { Message = "Invite sent." });
     }
 
 }

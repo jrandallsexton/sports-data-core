@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LeaguesApi from "api/leagues/leaguesApi";
+import "./LeagueDiscoverPage.css";
 
 function LeagueDiscoverPage() {
   const [leagues, setLeagues] = useState([]);
@@ -18,25 +19,38 @@ function LeagueDiscoverPage() {
   }, []);
 
   return (
-    <div>
+    <div className="league-discover-page">
       <h2>Discover Public Leagues</h2>
+      
       {loading ? (
-        <p>Loading leagues...</p>
+        <div className="loading-message">Loading leagues...</div>
       ) : leagues.length === 0 ? (
-        <p>No public leagues available right now.</p>
+        <div className="no-leagues-message">No public leagues available right now.</div>
       ) : (
-        <ul>
+        <div className="leagues-table">
+          <div className="table-header">
+            <div>League Name</div>
+            <div>Commissioner</div>
+            <div>Description</div>
+            <div>Action</div>
+          </div>
+          
           {leagues.map((league) => (
-            <li key={league.id} style={{ marginBottom: "1rem" }}>
-              <strong>{league.name}</strong> <br />
-              <span>Commissioner: {league.commissioner}</span> <br />
-              <span>{league.description}</span> <br />
-              <Link to={`/join/${league.id.replace(/-/g, "")}`}>
-                Join This League
-              </Link>
-            </li>
+            <div key={league.id} className="table-row">
+              <div className="league-name">{league.name}</div>
+              <div className="commissioner-name">{league.commissioner}</div>
+              <div className="league-description">{league.description}</div>
+              <div className="join-action">
+                <Link 
+                  to={`/app/join/${league.id.replace(/-/g, "")}`}
+                  className="join-button"
+                >
+                  Join League
+                </Link>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

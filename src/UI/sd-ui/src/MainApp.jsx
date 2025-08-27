@@ -92,25 +92,25 @@ function MainApp() {
       <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
         <Routes>
           <Route index element={<HomePage />} />
-          <Route path="picks/:leagueId?" element={<PicksPage />} />
-          <Route path="leaderboard" element={<LeaderboardPage />} />
-          <Route path="messageboard" element={<MessageBoardPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="sport/football/ncaa/team/:slug" element={<TeamCard />} />
+          <Route path="/picks/:leagueId?" element={<PicksPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/messageboard" element={<MessageBoardPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/sport/football/ncaa/team/:slug" element={<TeamCard />} />
           <Route
-            path="sport/football/ncaa/team/:slug/:seasonYear"
+            path="/sport/football/ncaa/team/:slug/:seasonYear"
             element={<TeamCard />}
           />
           <Route
-            path="sport/:sport/:league/venue/:slug"
+            path="/sport/:sport/:league/venue/:slug"
             element={<VenuePage />}
           />
-          <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
-          <Route path="/app/league/discover" element={<LeagueDiscoverPage />} />
-          <Route path="league/create" element={<LeagueCreatePage />} />
-          <Route path="league/:id" element={<LeagueDetail />} />
-          <Route path="league" element={<Leagues />} />
-          <Route path="join/:leagueId" element={<AutoJoinRedirect />} />
+          <Route path="/sport/:sport/:league/venue" element={<VenuesPage />} />
+          <Route path="/league/discover" element={<LeagueDiscoverPage />} />
+          <Route path="/league/create" element={<LeagueCreatePage />} />
+          <Route path="/league/:id" element={<LeagueDetail />} />
+          <Route path="/league" element={<Leagues />} />
+          <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
           <Route
             path="*"
             element={<div className="not-found">Page Not Found</div>}

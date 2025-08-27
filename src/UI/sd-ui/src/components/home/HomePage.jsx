@@ -6,6 +6,7 @@ import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
+import SystemNews from "./SystemNews";
 
 function HomePage() {
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -87,22 +88,13 @@ function HomePage() {
     return <div>Loading your dashboard...</div>;
   }
 
-  // // HomePage (or a tiny container near the chart)
-  // const groupOptions = [
-  //   { id: "all", name: "All Groups" },
-  //   ...(userDto?.leagues ?? []).map((l) => ({ id: l.id, name: l.name })),
-  // ];
-
-  // // Provide a loader the chart can call when selection changes
-  // const loadPickAccuracy = (groupId, season) =>
-  //   api.get(`/api/users/${userDto.id}/picks/accuracy`, {
-  //     params: { groupId, season },
-  //   });
-
   console.log("userDto:", userDto);
 
   return (
     <div className="home-page">
+
+<SystemNews />
+
       <div className="card">
         <h2>Pick'em Leagues</h2>
         <p>Create or join a private league to compete with friends.</p>

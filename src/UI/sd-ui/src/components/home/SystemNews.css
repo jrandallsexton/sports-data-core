@@ -1,0 +1,18 @@
+.system-news-card {
+  position: relative;
+}
+
+.dismiss-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dismiss-button:hover {
+  color: #000;
+}

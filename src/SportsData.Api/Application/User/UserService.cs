@@ -59,6 +59,7 @@ public class UserService : IUserService
             Email = user.Email,
             DisplayName = user.DisplayName,
             LastLoginUtc = user.LastLoginUtc,
+            IsAdmin = user.Id == new Guid("11111111-1111-1111-1111-111111111111"), // TODO: make dynamic
             Leagues = user.GroupMemberships
                 .Select(m => new UserDto.UserLeagueMembership
                 {

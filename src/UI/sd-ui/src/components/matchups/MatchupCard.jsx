@@ -10,7 +10,7 @@ function MatchupCard({
   onPick,
   onViewInsight,
   isInsightUnlocked,
-  isFadingOut = false,
+  isFadingOut = false
 }) {
   const awaySpread = matchup.awaySpread ?? 0;
   const homeSpread = matchup.homeSpread ?? 0;

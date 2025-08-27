@@ -99,7 +99,7 @@ function PicksPage() {
     }
 
     fetchPicks();
-  }, [selectedLeagueId, selectedWeek]);  
+  }, [selectedLeagueId, selectedWeek]);
 
   async function handlePick(matchup, selectedFranchiseSeasonId) {
     try {
@@ -178,6 +178,16 @@ function PicksPage() {
       toast.error("Failed to load insight preview.");
     } finally {
       setLoadingInsight(false);
+    }
+  }
+
+  async function handleResetPreview(contestId) {
+    try {
+      await apiWrapper.Matchups.resetPreviewByContestId(contestId);
+      toast.success("Preview regeneration triggered.");
+    } catch (error) {
+      console.error("Error resetting preview:", error);
+      toast.error("Failed to reset preview.");
     }
   }
 
@@ -262,6 +272,7 @@ function PicksPage() {
             analysis={selectedMatchup?.analysis ?? ""}
             prediction={selectedMatchup?.prediction ?? ""}
             loading={loadingInsight}
+            onResetPreview={handleResetPreview}
           />
         )}
       </div>

@@ -1,8 +1,18 @@
 import React, { useEffect } from "react";
 import "./InsightDialog.css";
-// import teams from "../../data/teams";
+import { useUserDto } from "../../contexts/UserContext";
 
-function InsightDialog({ isOpen, onClose, matchup, loading }) {
+function InsightDialog({
+  isOpen,
+  onClose,
+  matchup,
+  loading,
+  onResetPreview,
+}) {
+
+  const { userDto } = useUserDto();
+  const { isAdmin } = userDto;
+
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add("modal-open");
@@ -68,7 +78,10 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
 
               <div className="vegas-section">
                 <h3>Vegas Implied</h3>
-                <p>{matchup.vegasImpliedScore || "Vegas implied score not available."}</p>
+                <p>
+                  {matchup.vegasImpliedScore ||
+                    "Vegas implied score not available."}
+                </p>
               </div>
 
               <hr className="divider" />
@@ -77,20 +90,35 @@ function InsightDialog({ isOpen, onClose, matchup, loading }) {
                 <h3>
                   sportDeets<span className="tm-symbol">™</span> Prediction
                 </h3>
-                <p>
-                  {matchup.prediction || "Prediction not available."}
-                </p>
-                
+                <p>{matchup.prediction || "Prediction not available."}</p>
+
                 {/* Additional prediction details */}
                 <div className="prediction-details">
-                  <p>Straight Up Winner: {matchup.straightUpWinner || "Not available"}</p>
+                  <p>
+                    Straight Up Winner:{" "}
+                    {matchup.straightUpWinner || "Not available"}
+                  </p>
                   <p>ATS Winner: {matchup.atsWinner || "Not available"}</p>
-                  <p>Score: {matchup.awayScore || "N/A"} - {matchup.homeScore || "N/A"}</p>
+                  <p>
+                    Score: {matchup.awayScore || "N/A"} -{" "}
+                    {matchup.homeScore || "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
           )}
         </div>
+
+        {isAdmin && !loading && (
+          <div className="admin-controls">
+            <button
+              onClick={() => onResetPreview?.(matchup.contestId)}
+              className="admin-reset-button"
+            >
+              Regenerate Preview
+            </button>
+          </div>
+        )}
 
         <button className="close-button" onClick={onClose}>
           Close

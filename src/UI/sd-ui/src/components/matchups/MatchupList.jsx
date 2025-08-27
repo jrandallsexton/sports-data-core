@@ -11,7 +11,7 @@ function MatchupList({
   onPick,
   onViewInsight,
   isSubscribed,
-  fadingOut = [],
+  fadingOut = []
 }) {
   if (loading) {
     return (

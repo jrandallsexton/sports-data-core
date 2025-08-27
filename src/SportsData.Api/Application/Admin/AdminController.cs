@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+
+using SportsData.Api.Application.Processors;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -10,13 +13,16 @@ namespace SportsData.Api.Application.Admin
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideAiCommunication _ai;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IProvideAiCommunication ai)
+            IProvideAiCommunication ai,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _ai = ai;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         [HttpPost]
@@ -39,6 +45,18 @@ namespace SportsData.Api.Application.Admin
         public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
         {
             return Ok(await _ai.GetResponseAsync(command.Text));
+        }
+
+        [HttpPost]
+        [Route("matchup/preview/{contestId}/reset")]
+        public IActionResult ResetContestPreview([FromRoute] Guid contestId)
+        {
+            var cmd = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = contestId
+            };
+            _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
+            return Accepted();
         }
     }
 

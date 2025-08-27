@@ -5,6 +5,8 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Previews;
 using SportsData.Core.Infrastructure.Clients.AI;
 
 using System.Text.Json;
@@ -18,19 +20,22 @@ namespace SportsData.Api.Application.Processors
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly IProvideAiCommunication _aiCommunication;
         private readonly MatchupPreviewPromptProvider _promptProvider;
+        private readonly IEventBus _eventBus;
 
         public MatchupPreviewProcessor(
             AppDataContext dataContext,
             ILogger<MatchupPreviewProcessor> logger,
             IProvideCanonicalData canonicalDataProvider,
             IProvideAiCommunication aiCommunication,
-            MatchupPreviewPromptProvider promptProvider)
+            MatchupPreviewPromptProvider promptProvider,
+            IEventBus eventBus)
         {
             _dataContext = dataContext;
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
             _aiCommunication = aiCommunication;
             _promptProvider = promptProvider;
+            _eventBus = eventBus;
         }
 
         public async Task Process(GenerateMatchupPreviewsCommand command)
@@ -147,6 +152,12 @@ namespace SportsData.Api.Application.Processors
                 preview.Model = _aiCommunication.GetModelName();
                 preview.ValidationErrors = null;
             }
+
+            await _eventBus.Publish(new PreviewGenerated(
+                matchup.ContestId,
+                $"{matchup.Home} @ {matchup.Away} preview generated",
+                command.CorrelationId,
+                Guid.NewGuid()));
 
             await _dataContext.SaveChangesAsync();
         }

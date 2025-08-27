@@ -35,6 +35,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         
         public Guid CommissionerUserId { get; set; }
 
+        public User CommissionerUser { get; set; } = default!;
+
         public ICollection<PickemGroupConference> Conferences { get; set; } = [];
 
         public ICollection<PickemGroupMember> Members { get; set; } = [];
@@ -90,6 +92,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.GroupId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                builder
+                    .HasOne(x => x.CommissionerUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.CommissionerUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
         }
     }

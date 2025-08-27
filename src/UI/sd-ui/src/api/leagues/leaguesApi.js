@@ -66,6 +66,15 @@ const sendInvite = async (leagueId, email, inviteeName = null) => {
   await apiClient.post(`/ui/league/${leagueId}/invite`, requestBody);
 };
 
+/**
+ * Fetches all public leagues the current user is not already a member of.
+ * @returns {Promise<PublicLeagueDto[]>} Array of public leagues
+ */
+const getPublicLeagues = async () => {
+  const response = await apiClient.get("/ui/league/discover");
+  return response.data;
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
@@ -73,6 +82,7 @@ const LeaguesApi = {
   joinLeague,
   deleteLeague,
   sendInvite,
+  getPublicLeagues
 };
 
 export default LeaguesApi;

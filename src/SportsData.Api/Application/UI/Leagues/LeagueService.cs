@@ -12,23 +12,6 @@ using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues
 {
-    public interface ILeagueService
-    {
-        Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId,
-            CancellationToken cancellationToken = default);
-
-        Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId,
-            CancellationToken cancellationToken = default);
-
-        Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week,
-            CancellationToken cancellationToken = default);
-
-        Task<Guid> DeleteLeague(
-            Guid userId,
-            Guid leagueId,
-            CancellationToken cancellationToken = default);
-    }
-
     public class LeagueService : ILeagueService
     {
         private readonly AppDataContext _dbContext;
@@ -262,6 +245,27 @@ namespace SportsData.Api.Application.UI.Leagues
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return leagueId;
+        }
+
+        public async Task<List<PublicLeagueDto>> GetPublicLeagues(Guid userId)
+        {
+            var leagues = await _dbContext.PickemGroups
+                .Include(g => g.CommissionerUser)
+                .Include(g => g.Members)
+                .Where(g => g.IsPublic && !g.Members.Any(x => x.UserId == userId))
+                .ToListAsync();
+
+            return leagues.Select(x => new PublicLeagueDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description ?? string.Empty,
+                Commissioner = x.CommissionerUser.DisplayName,
+                RankingFilter = (int?)x.RankingFilter ?? 0,
+                PickType = (int)x.PickType,
+                UseConfidencePoints = x.UseConfidencePoints,
+                DropLowWeeksCount = x.DropLowWeeksCount ?? 0
+            }).ToList();
         }
     }
 }

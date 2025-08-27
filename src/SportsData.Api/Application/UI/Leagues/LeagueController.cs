@@ -203,4 +203,14 @@ public class LeagueController : ApiControllerBase
         return Ok(new { Message = "Invite sent." });
     }
 
+    [HttpGet("discover")]
+    [Authorize]
+    public async Task<ActionResult<List<PublicLeagueDto>>> GetPublicLeagues()
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var leagues = await _iLeagueService.GetPublicLeagues(userId);
+
+        return Ok(leagues);
+    }
 }

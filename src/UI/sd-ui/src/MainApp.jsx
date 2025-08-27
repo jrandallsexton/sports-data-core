@@ -22,6 +22,7 @@ import LandingFooter from "./components/landing/LandingFooter";
 import LeagueDetail from "./components/leagues/LeagueDetail";
 import Leagues from "./components/leagues/Leagues";
 import AutoJoinRedirect from "./components/signup/AutoJoinRedirect";
+import LeagueDiscoverPage from "components/leagues/LeagueDiscoverPage";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -105,6 +106,7 @@ function MainApp() {
             element={<VenuePage />}
           />
           <Route path="sport/:sport/:league/venue" element={<VenuesPage />} />
+          <Route path="/app/league/discover" element={<LeagueDiscoverPage />} />
           <Route path="league/create" element={<LeagueCreatePage />} />
           <Route path="league/:id" element={<LeagueDetail />} />
           <Route path="league" element={<Leagues />} />

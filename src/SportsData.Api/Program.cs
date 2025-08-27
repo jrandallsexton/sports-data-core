@@ -234,7 +234,7 @@ namespace SportsData.Api
             app.UseCors("AllowFrontend");
 
             var logger = app.Services.GetRequiredService<ILogger<Program>>();
-            Log.Information("Azure SignalR registration complete with {connString}", sigRConnString);
+            logger.LogInformation("Azure SignalR registration complete with {connString}", sigRConnString);
 
             app.Services.ConfigureHangfireJobs(mode);
 

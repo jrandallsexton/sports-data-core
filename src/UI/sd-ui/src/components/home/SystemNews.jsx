@@ -64,6 +64,8 @@ function SystemNews() {
 
       <h2>🚧 What’s Coming</h2>
       <ul>
+        <li>Importing picks from other groups</li>
+        <li>Auto-importing picks from other groups (in case you forget)</li>
         <li>Weekly recaps and reminders</li>
         <li>In-App notifications for games in your league(s)</li>
         <li>Badges.  A trophy like you never knew you wanted. <em>(you can preview them under Settings)</em></li>

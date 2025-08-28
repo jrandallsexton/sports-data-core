@@ -1,4 +1,5 @@
-﻿using SportsData.Api.Infrastructure.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
@@ -65,6 +66,22 @@ namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage
                 Role = LeagueRole.Commissioner,
                 UserId = command.CommissionerUserId,
             });
+
+            // add a synthetic to the new group
+            var synthetic = await _dbContext.Users
+                .Where(x => x.IsSynthetic == true)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (synthetic != null)
+            {
+                group.Members.Add(new PickemGroupMember()
+                {
+                    CreatedBy = command.CommissionerUserId,
+                    PickemGroupId = group.Id,
+                    Role = LeagueRole.Member,
+                    UserId = synthetic.Id,
+                });
+            }
 
             var evt = new PickemGroupCreated(
                 group.Id,

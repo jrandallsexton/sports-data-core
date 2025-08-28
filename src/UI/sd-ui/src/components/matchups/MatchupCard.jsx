@@ -140,15 +140,13 @@ function MatchupCard({
           className="insight-button"
           onClick={() => onViewInsight(matchup)}
           disabled={
-            !matchup.isPreviewAvailable || !isInsightUnlocked || isLocked
+            !matchup.isPreviewAvailable || !isInsightUnlocked
           }
           title={
             !matchup.isPreviewAvailable
               ? "Preview not available"
               : isInsightUnlocked
-              ? isLocked
-                ? "Locked – game has started"
-                : "View Insight"
+              ? "View Insight"
               : "Unlock Insights with Subscription"
           }
         >

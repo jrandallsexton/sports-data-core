@@ -53,7 +53,7 @@ namespace SportsData.Api.Application.Processors
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 var feedbackSection = validationErrors is { Count: > 0 }
-                    ? $"\n\nNote: The last attempt produced invalid results for the following reasons:\n- {string.Join("\n- ", validationErrors)}"
+                    ? $"\n\nNote: Your previous attempt produced invalid results for the following reasons:\n- {string.Join("\n- ", validationErrors)}"
                     : string.Empty;
 
                 var fullPrompt = $"{basePrompt}\n\n{jsonInput}{feedbackSection}";
@@ -62,7 +62,7 @@ namespace SportsData.Api.Application.Processors
 
                 if (string.IsNullOrWhiteSpace(rawResponse))
                 {
-                    _logger.LogWarning("Attempt {Attempt} returned empty response from AI.", attempt);
+                    _logger.LogError("Attempt {Attempt} returned empty response from AI.", attempt);
                     continue;
                 }
 
@@ -75,7 +75,7 @@ namespace SportsData.Api.Application.Processors
 
                     if (parsed is null)
                     {
-                        _logger.LogWarning("Attempt {Attempt} produced null after deserialization. Raw response: {Raw}", attempt, rawResponse);
+                        _logger.LogError("Attempt {Attempt} produced null after deserialization. Raw response: {Raw}", attempt, rawResponse);
                         continue;
                     }
 
@@ -97,14 +97,14 @@ namespace SportsData.Api.Application.Processors
                         if (validation.IsValid)
                             break; // We're good to proceed
 
-                        _logger.LogWarning("Validation failed on attempt {Attempt}. Errors: {Errors}", attempt, validation.Errors);
+                        _logger.LogError("Validation failed on attempt {Attempt}. Errors: {Errors}", attempt, validation.Errors);
                     }
 
                     break;
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, "Attempt {Attempt} failed to deserialize AI response. Raw: {Raw}", attempt, rawResponse);
+                    _logger.LogError(ex, "Attempt {Attempt} failed to deserialize AI response. Raw: {Raw}", attempt, rawResponse);
                 }
             }
 

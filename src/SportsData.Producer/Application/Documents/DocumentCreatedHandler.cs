@@ -40,6 +40,7 @@ namespace SportsData.Producer.Application.Documents
                 _logger.LogInformation("New document event received (Attempt {Attempt}): {@Message}",
                     context.Message.AttemptCount, context.Message);
 
+                // TODO: Add a delay here if AttemptCount > 1
                 _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(context.Message));
             }
 

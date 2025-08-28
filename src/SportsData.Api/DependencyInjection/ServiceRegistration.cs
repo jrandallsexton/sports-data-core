@@ -52,9 +52,6 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IConferenceService, ConferenceService>();
 
-            //services.AddScoped<IProvideAiCommunication, OllamaClient>();
-            //services.AddSingleton<OllamaClientConfig>();
-
             return services;
         }
 

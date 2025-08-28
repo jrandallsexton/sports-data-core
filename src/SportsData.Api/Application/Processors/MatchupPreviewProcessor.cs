@@ -116,7 +116,7 @@ namespace SportsData.Api.Application.Processors
             }
 
             // We have a valid response (parsed + valid)
-            _logger.LogInformation("AI generated preview. {@Parsed}", parsed);
+            _logger.LogDebug("AI generated preview. {@Parsed}", parsed);
 
             var preview = await _dataContext.MatchupPreviews
                 .FirstOrDefaultAsync(x => x.ContestId == command.ContestId);
@@ -160,8 +160,6 @@ namespace SportsData.Api.Application.Processors
                 preview.Prediction = parsed.Prediction;
             }
 
-            _logger.LogInformation("Preview generated for {contestId}", preview.ContestId);
-
             await _eventBus.Publish(new PreviewGenerated(
                 matchup.ContestId,
                 $"{matchup.Home} @ {matchup.Away} preview generated",
@@ -169,6 +167,8 @@ namespace SportsData.Api.Application.Processors
                 Guid.NewGuid()));
 
             await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Preview generated for {contestId}", preview.ContestId);
         }
     }
 }

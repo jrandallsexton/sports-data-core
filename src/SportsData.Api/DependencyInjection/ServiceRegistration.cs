@@ -16,6 +16,7 @@ using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.DependencyInjection
@@ -24,6 +25,8 @@ namespace SportsData.Api.DependencyInjection
     {
         public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
         {
+            services.AddDataPersistenceExternal();
+
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITeamCardService, TeamCardService>();
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();

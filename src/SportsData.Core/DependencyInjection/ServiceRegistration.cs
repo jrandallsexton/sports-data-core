@@ -1,4 +1,4 @@
-﻿using Hangfire;
+using Hangfire;
 using Hangfire.PostgreSql;
 using Hangfire.Tags.PostgreSql;
 
@@ -68,6 +68,11 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Adds Azure Blob Storage
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
         public static IServiceCollection AddDataPersistenceExternal(this IServiceCollection services)
         {
             services.AddScoped<IProvideBlobStorage, BlobStorageProvider>();

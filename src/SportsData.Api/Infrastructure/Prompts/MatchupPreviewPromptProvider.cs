@@ -1,24 +1,41 @@
-﻿using System.Reflection;
+﻿using SportsData.Core.Infrastructure.Blobs;
 
 namespace SportsData.Api.Infrastructure.Prompts;
 
 public class MatchupPreviewPromptProvider
 {
-    public string PromptTemplate { get; }
+    private readonly IProvideBlobStorage _blobStorage;
+    private readonly object _lock = new();
+    private Task<string>? _cachedPromptTask;
 
-    public MatchupPreviewPromptProvider()
+    private const string Container = "prompts";
+    private const string Blob = "prediction-insights-v1.txt";
+
+    public MatchupPreviewPromptProvider(IProvideBlobStorage blobStorage)
     {
-        var assembly = typeof(MatchupPreviewPromptProvider).Assembly;
+        _blobStorage = blobStorage;
+    }
 
-        var resourceName = assembly
-            .GetManifestResourceNames()
-            .FirstOrDefault(n => n.EndsWith("MatchupPreviewPromptTemplate.txt", StringComparison.OrdinalIgnoreCase));
+    public Task<string> GetPreviewInsightPromptAsync()
+    {
+        if (_cachedPromptTask != null)
+            return _cachedPromptTask;
 
-        if (resourceName is null)
-            throw new InvalidOperationException("Embedded prompt template not found: MatchupPreviewPromptTemplate.txt");
+        lock (_lock)
+        {
+            return _cachedPromptTask ??= _blobStorage.GetFileContentsAsync(Container, Blob);
+        }
+    }
 
-        using var stream = assembly.GetManifestResourceStream(resourceName)!;
-        using var reader = new StreamReader(stream);
-        PromptTemplate = reader.ReadToEnd();
+    public async Task<string> ReloadPromptAsync()
+    {
+        var newPrompt = await _blobStorage.GetFileContentsAsync(Container, Blob);
+
+        lock (_lock)
+        {
+            _cachedPromptTask = Task.FromResult(newPrompt);
+        }
+
+        return newPrompt;
     }
 }

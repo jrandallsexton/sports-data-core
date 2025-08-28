@@ -42,7 +42,7 @@ namespace SportsData.Api.Application.Processors
         {
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
-            var basePrompt = _promptProvider.PromptTemplate;
+            var basePrompt = _promptProvider.GetPreviewInsightPromptAsync();
             var jsonInput = JsonSerializer.Serialize(matchup);
 
             const int maxAttempts = 5;

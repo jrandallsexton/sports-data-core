@@ -16,6 +16,7 @@ namespace SportsData.Core.Infrastructure.Blobs
     public interface IProvideBlobStorage
     {
         Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename);
+        Task<string> GetFileContentsAsync(string containerName, string filename);
     }
 
     public class BlobStorageProvider : IProvideBlobStorage
@@ -82,6 +83,33 @@ namespace SportsData.Core.Infrastructure.Blobs
                 });
 
             return blob.Uri;
+        }
+
+        public async Task<string> GetFileContentsAsync(string containerName, string filename)
+        {
+            // Normalize names to match your naming conventions
+            //containerName = $"{_config.Value.AzureBlobStorageContainerPrefix.ToLower()}-{containerName.ToLower()}";
+
+            var clientOptions = new BlobClientOptions
+            {
+                Retry = {
+                    Mode = RetryMode.Exponential,
+                    MaxRetries = 5,
+                    Delay = TimeSpan.FromSeconds(1),
+                    MaxDelay = TimeSpan.FromSeconds(15)
+                }
+            };
+
+            var containerClient = new BlobContainerClient(
+                _config.Value.AzureBlobStorageConnectionString,
+                containerName,
+                clientOptions);
+
+            var blobClient = containerClient.GetBlobClient(filename);
+
+            var response = await blobClient.DownloadAsync();
+            using var reader = new StreamReader(response.Value.Content);
+            return await reader.ReadToEndAsync();
         }
     }
 }

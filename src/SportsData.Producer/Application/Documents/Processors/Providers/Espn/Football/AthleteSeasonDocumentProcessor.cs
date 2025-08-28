@@ -89,7 +89,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         if (athlete is null)
         {
-            _logger.LogWarning("Athlete not found for hash: {Hash}. Raising DocumentRequested.", athleteIdentity.UrlHash);
+            _logger.LogWarning("Athlete not found. Raising DocumentRequested. {@Identity} {cmdRef}", athleteIdentity, dto.Ref);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: athleteIdentity.CanonicalId.ToString(),

@@ -21,7 +21,6 @@
     <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCard.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCardSchedule.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamSeasons.sql" />
-    <None Remove="Infrastructure\Prompts\MatchupPreviewPromptTemplate.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +34,6 @@
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamCard.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamCardSchedule.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamSeasons.sql" />
-    <EmbeddedResource Include="Infrastructure\Prompts\MatchupPreviewPromptTemplate.txt" />
   </ItemGroup>
 
   <ItemGroup>

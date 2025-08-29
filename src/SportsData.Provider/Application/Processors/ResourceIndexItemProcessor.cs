@@ -105,7 +105,7 @@ namespace SportsData.Provider.Application.Processors
         {
             var collectionName = command.Sport.ToString();
 
-            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri());
+            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 
             var dbItem = await _documentStore
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == urlHash);
@@ -228,5 +228,6 @@ namespace SportsData.Provider.Application.Processors
         SourceDataProvider SourceDataProvider,
         DocumentType DocumentType,
         string? ParentId,
-        int? SeasonYear = null);
+        int? SeasonYear = null,
+        bool BypassCache = false);
 }

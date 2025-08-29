@@ -13,5 +13,6 @@ public record DocumentRequested(
     DocumentType DocumentType,
     SourceDataProvider SourceDataProvider,
     Guid CorrelationId,
-    Guid CausationId
+    Guid CausationId,
+    bool BypassCache = false
 ) : EventBase(CorrelationId, CausationId);

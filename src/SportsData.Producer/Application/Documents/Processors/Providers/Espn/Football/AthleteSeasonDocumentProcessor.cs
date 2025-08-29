@@ -94,7 +94,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: athleteIdentity.CanonicalId.ToString(),
                 ParentId: null,
-                Uri: athleteRef,
+                Uri: new Uri(athleteIdentity.CleanUrl),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.Athlete,

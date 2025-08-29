@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Scoring;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
@@ -55,8 +56,20 @@ namespace SportsData.Api.Application.Admin
             {
                 ContestId = contestId
             };
-            _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
-            return Accepted();
+            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+            return Accepted(new { cmd.CorrelationId });
+        }
+
+        [HttpPost]
+        [Route("contest/{contestId}/score")]
+        public IActionResult ScoreContest([FromRoute] Guid contestId)
+        {
+            var cmd = new ScoreContestCommand
+            {
+                ContestId = contestId
+            };
+            _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
+            return Accepted(new { cmd.CorrelationId });
         }
     }
 

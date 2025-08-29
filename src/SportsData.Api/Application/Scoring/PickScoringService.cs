@@ -9,7 +9,10 @@ namespace SportsData.Api.Application.Scoring
 
     public class PickScoringService : IPickScoringService
     {
-        public PickemGroupUserPick ScorePick(PickemGroupUserPick pick, Contest contest, Infrastructure.Data.Entities.PickemGroup league)
+        public PickemGroupUserPick ScorePick(
+            PickemGroupUserPick pick,
+            Contest contest, 
+            PickemGroup league)
         {
             if (contest == null || contest.ContestId != pick.ContestId)
                 throw new ArgumentException("Invalid or mismatched contest.");

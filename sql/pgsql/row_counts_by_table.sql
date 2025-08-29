@@ -18,7 +18,9 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
    select * from public."Franchise" where "Abbreviation" is null
    select * from public."Franchise" where "Slug" = 'lsu-tigers'
    select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc
-   select * from public."FranchiseSeason" where "Id" = '486bada5-3d1b-722c-d839-244618863cbb'
+   
+   select * from public."FranchiseSeason" where "Id" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+   select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
    
    
    select * from public."FranchiseSeason" fs where fs."SeasonYear" = 2025 and fs."Slug" = 'san-jose-state-spartans'
@@ -67,17 +69,32 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
 
    select * from public."Contest" WHERE "ShortName" like '%LSU%'order by "StartDateUtc"
    select * from public."ContestExternalId" where "ContestId" = '8775fdbd-802a-1d25-735e-bbf702ac7e2d'
+   
    select * from public."Competition" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
-select * from public."CompetitionCompetitor"
+   select * from public."CompetitionExternalId" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+select * from public."CompetitionCompetitor" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+
 select * from public."CompetitionCompetitorScores"
 select * from public."CompetitionStatus" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 select * from public."CompetitionLink" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 select * from public."CompetitionNote" --where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 
-select * from public."Contest" where "Id" = '4670f890-e947-fb5e-1a11-52c11b7087e3'
+select * from public."Contest" where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+
+/*
+update public."Contest" set
+"EndDateUtc" = '2025-08-29 01:09:03+00',
+"HomeScore" = 34, "AwayScore" = 7, "FinalizedUtc" = '2025-08-29 01:09:03+00',
+"SpreadWinnerFranchiseId" = '48a3a492-be81-ce45-2481-a4698868c5ef',
+"WinnerFranchiseId" = '48a3a492-be81-ce45-2481-a4698868c5ef'
+where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+*/
+
    select * from public."Competition" comp
    inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
-   where comp."ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
+   where comp."ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+
+select * from public."CompetitionCompetitor" where "CompetitionId" = 'c78ca8e8-7f22-ca21-8cea-455a151667f5'
 
    select * from public."SeasonRankingEntry"
 

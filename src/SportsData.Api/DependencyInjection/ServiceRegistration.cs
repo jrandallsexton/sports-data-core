@@ -2,6 +2,7 @@
 
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Conferences;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
@@ -17,7 +18,6 @@ using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.DependencyInjection
@@ -28,30 +28,27 @@ namespace SportsData.Api.DependencyInjection
         {
             services.AddDataPersistenceExternal();
 
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<ITeamCardService, TeamCardService>();
-            services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
-            services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
-            services.AddScoped<ILeagueService, LeagueService>();
-            services.AddScoped<ICreateLeagueCommandHandler, CreateLeagueCommandHandler>();
-            services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
-            services.AddScoped<MatchupScheduler>();
-            services.AddScoped<MatchupPreviewGenerator>();
-            services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
-            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-
-            services.AddScoped<INotificationService, NotificationService>();
-
-            services.AddSingleton<MatchupPreviewPromptProvider>();
-            services.AddSingleton<CanonicalDataQueryProvider>();
-
-            services.AddScoped<IPickService, PickService>();
-            services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
-            services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
-
-            services.AddScoped<IMessageboardService, MessageboardService>();
-
             services.AddScoped<IConferenceService, ConferenceService>();
+            services.AddScoped<ICreateLeagueCommandHandler, CreateLeagueCommandHandler>();
+            services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
+            services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
+            services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
+            services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
+            services.AddScoped<ILeagueService, LeagueService>();
+            services.AddScoped<IMessageboardService, MessageboardService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IPickService, PickService>();
+            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+            services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
+            services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
+            services.AddScoped<IScoreContests, ContestScoringJob>();
+            services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
+            services.AddScoped<ITeamCardService, TeamCardService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<MatchupPreviewGenerator>();
+            services.AddScoped<MatchupScheduler>();
+            services.AddSingleton<CanonicalDataQueryProvider>();
+            services.AddSingleton<MatchupPreviewPromptProvider>();
 
             return services;
         }

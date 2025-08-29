@@ -27,6 +27,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds);
 
         Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
+
+        Task<MatchupResult> GetMatchupResult(Guid contestId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -229,5 +231,17 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return result ?? throw new Exception("Not found");
         }
 
+        public async Task<MatchupResult> GetMatchupResult(Guid contestId)
+        {
+            var sql = _queryProvider.GetMatchupResultByContestId();
+
+            var result = await _connection.QuerySingleOrDefaultAsync<MatchupResult>(
+                sql,
+                new { ContestId = contestId },
+                commandType: CommandType.Text
+            );
+
+            return result ?? throw new Exception("Not found");
+        }
     }
 }

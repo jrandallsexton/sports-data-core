@@ -17,6 +17,7 @@
     <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupForPreviewGeneration.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupResultByContestId.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupsForCurrentWeek.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCard.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCardSchedule.sql" />
@@ -27,6 +28,7 @@
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupForPreviewGeneration.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupResultByContestId.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupsForCurrentWeek.sql" />
   </ItemGroup>
 

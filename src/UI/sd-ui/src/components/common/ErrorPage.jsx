@@ -6,7 +6,9 @@ export default function ErrorPage({ message = "Something went wrong." }) {
     <div className="error-page app-error">
       <h1>🏈 Fumble!</h1>
       <p>{message}</p>
-      <p className="error-sub">We dropped the ball. Try again in a bit.</p>
+      <p className="error-sub">
+        <em>(The devs are probably watching the game instead.)</em>
+      </p>
     </div>
   );
 }

@@ -50,7 +50,7 @@ public class CanonicalDataQueryProvider
 
     public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
 
-    public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId");
+    public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId.sql");
 
     public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
 

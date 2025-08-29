@@ -1,19 +1,21 @@
-﻿using SportsData.Core.Infrastructure.Blobs;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+using SportsData.Core.Infrastructure.Blobs;
 
 namespace SportsData.Api.Infrastructure.Prompts;
 
 public class MatchupPreviewPromptProvider
 {
-    private readonly IProvideBlobStorage _blobStorage;
+    private readonly IServiceProvider _serviceProvider;
     private readonly object _lock = new();
     private Task<string>? _cachedPromptTask;
 
     private const string Container = "prompts";
     private const string Blob = "prediction-insights-v1.txt";
 
-    public MatchupPreviewPromptProvider(IProvideBlobStorage blobStorage)
+    public MatchupPreviewPromptProvider(IServiceProvider serviceProvider)
     {
-        _blobStorage = blobStorage;
+        _serviceProvider = serviceProvider;
     }
 
     public Task<string> GetPreviewInsightPromptAsync()
@@ -23,13 +25,13 @@ public class MatchupPreviewPromptProvider
 
         lock (_lock)
         {
-            return _cachedPromptTask ??= _blobStorage.GetFileContentsAsync(Container, Blob);
+            return _cachedPromptTask ??= LoadPromptAsync();
         }
     }
 
     public async Task<string> ReloadPromptAsync()
     {
-        var newPrompt = await _blobStorage.GetFileContentsAsync(Container, Blob);
+        var newPrompt = await LoadPromptAsync(forceReload: true);
 
         lock (_lock)
         {
@@ -37,5 +39,13 @@ public class MatchupPreviewPromptProvider
         }
 
         return newPrompt;
+    }
+
+    private async Task<string> LoadPromptAsync(bool forceReload = false)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
+
+        return await blobStorage.GetFileContentsAsync(Container, Blob);
     }
 }

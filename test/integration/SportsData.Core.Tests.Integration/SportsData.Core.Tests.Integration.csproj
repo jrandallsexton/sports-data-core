@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\SportsData.Core\SportsData.Core.csproj" />
+    <ProjectReference Include="..\..\SportsData.Tests.Shared\SportsData.Tests.Shared.csproj" />
   </ItemGroup>
 
 </Project>

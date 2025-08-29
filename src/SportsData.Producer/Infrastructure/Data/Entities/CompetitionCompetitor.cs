@@ -19,6 +19,11 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public string? HomeAway { get; set; }
 
+    /// <summary>
+    /// This is an enriched field; not in original data
+    /// </summary>
+    public int? Points { get; set; }
+
     public bool Winner { get; set; }
 
     public int? CuratedRankCurrent { get; set; }

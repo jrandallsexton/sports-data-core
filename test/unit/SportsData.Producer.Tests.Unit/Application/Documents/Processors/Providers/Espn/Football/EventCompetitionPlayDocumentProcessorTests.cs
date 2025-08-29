@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -35,6 +36,20 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             .With(x => x.CorrelationId, Guid.NewGuid())
             .With(x => x.UrlHash, generator.Generate(PlayUrl).UrlHash)
             .Create();
+    }
+
+    [Fact]
+    public async Task WhenPlayCollectionIsProvided_ScoreCanBeCalculate()
+    {
+        // arrange
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlays.json");
+        var plays = json.FromJson<List<EspnEventCompetitionPlayDto>>();
+
+        // act
+        var scoringPlays = plays.Where(x => x.ScoringPlay).ToList();
+
+        // assert
+        scoringPlays.Count().Should().BeGreaterThan(0);
     }
 
     [Fact]

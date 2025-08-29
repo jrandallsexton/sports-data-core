@@ -38,5 +38,15 @@ namespace SportsData.Core.Config
 
         public required string FirebaseConfigJson { get; set; }
 
+        public LoggingConfig Logging { get; set; } = new();
+
+
+        public class LoggingConfig
+        {
+            public string MinimumLevel { get; set; } = "Information";
+            public Dictionary<string, string> Overrides { get; set; } = new();
+            public string SeqMinimumLevel { get; set; } = "Information";
+        }
+
     }
 }

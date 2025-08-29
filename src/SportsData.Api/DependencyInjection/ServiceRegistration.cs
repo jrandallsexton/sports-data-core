@@ -17,6 +17,7 @@ using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.DependencyInjection

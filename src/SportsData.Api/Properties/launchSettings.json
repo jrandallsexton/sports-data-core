@@ -40,6 +40,28 @@
       },
       "publishAllPorts": true,
       "useSSL": true
+    },
+    "http-dev": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Dev"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5262"
+    },
+    "https-dev": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Dev"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7177;http://localhost:5262"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

@@ -99,5 +99,19 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             result.Should().Be(new Uri(expectedSeasonRef));
         }
 
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/status")]
+        public void CompetitionRefToCompetitionStatusRef_Should_Append_Status_Correctly(
+            string competitionRef,
+            string expectedStatusRef)
+        {
+            var input = new Uri(competitionRef);
+            var result = EspnUriMapper.CompetitionRefToCompetitionStatusRef(input);
+            result.Should().Be(new Uri(expectedStatusRef));
+        }
+
+
     }
 }

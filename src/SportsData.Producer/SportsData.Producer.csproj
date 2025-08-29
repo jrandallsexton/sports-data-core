@@ -13,13 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Application\NewFolder\**" />
-    <Content Remove="Application\NewFolder\**" />
-    <EmbeddedResource Remove="Application\NewFolder\**" />
-    <None Remove="Application\NewFolder\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Azure.ResourceManager" Version="1.13.1" />
     <PackageReference Include="Azure.ResourceManager.Compute" Version="1.9.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">

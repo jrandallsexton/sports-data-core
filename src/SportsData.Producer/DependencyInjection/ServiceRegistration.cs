@@ -1,7 +1,5 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Images;

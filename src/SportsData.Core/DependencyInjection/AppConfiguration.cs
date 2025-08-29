@@ -29,47 +29,44 @@ namespace SportsData.Core.DependencyInjection
         {
             builder.Host.UseSerilog((context, configuration) =>
             {
+                var loggingSection = context.Configuration.GetSection("CommonConfig:Logging");
+                var loggingConfig = loggingSection.Get<CommonConfig.LoggingConfig>() ?? new CommonConfig.LoggingConfig();
+
                 var seqUri = context.Configuration["CommonConfig:SeqUri"];
 
-                // TODO: LoggingLevelSwitch
+                // Parse global minimum level
+                var globalLevel = ParseLevel(loggingConfig.MinimumLevel, LogEventLevel.Information);
+                configuration.MinimumLevel.Is(globalLevel);
 
+                // Parse and apply overrides
+                foreach (var entry in loggingConfig.Overrides)
+                {
+                    var level = ParseLevel(entry.Value, LogEventLevel.Warning);
+                    configuration.MinimumLevel.Override(entry.Key, level);
+                }
+
+                // Enrich
                 configuration
-                    // Global minimum level
-                    .MinimumLevel.Information()
-
-                    // Per-namespace overrides
-                    .MinimumLevel.Override("SportsData", LogEventLevel.Information)
-                    .MinimumLevel.Override("SportsData.Producer.Application.Documents.Processors.Providers.Espn", LogEventLevel.Information)
-                    .MinimumLevel.Override("SportsData.Provider.Application", LogEventLevel.Information)
-                    .MinimumLevel.Override("SportsData.Api.Infrastructure.Notifications", LogEventLevel.Debug)
-                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                    .MinimumLevel.Override("Microsoft.Azure.SignalR", LogEventLevel.Information)
-                    .MinimumLevel.Override("Microsoft.AspNetCore.SignalR", LogEventLevel.Information)
-                    .MinimumLevel.Override("System", LogEventLevel.Warning)
-                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
-                    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
-                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Fatal)
-                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Fatal)
-                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Update", LogEventLevel.Fatal)
-
-                    //.ReadFrom.Configuration(context.Configuration)
-
-                    // Enrich
                     .Enrich.FromLogContext()
                     .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName);
 
-                    // Sinks
-                    //.WriteTo.Console(); // Optional, for local debug
-
+                // Seq sink (optional)
                 if (!string.IsNullOrWhiteSpace(seqUri))
                 {
-                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: LogEventLevel.Information);
+                    var seqLevel = ParseLevel(loggingConfig.SeqMinimumLevel, globalLevel);
+                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: seqLevel);
                 }
 
+                // Serilog internal debug (optional)
                 Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
             });
 
             return builder;
+
+            static LogEventLevel ParseLevel(string? value, LogEventLevel fallback)
+            {
+                return Enum.TryParse<LogEventLevel>(value, ignoreCase: true, out var level) ? level : fallback;
+            }
         }
 
         public static WebApplication UseCommonFeatures(this WebApplication app, string buildConfiguration = "Debug")
@@ -177,7 +174,8 @@ namespace SportsData.Core.DependencyInjection
                     // Shared values
                     .Select("CommonConfig", string.Empty)
                     .Select("CommonConfig", label)
-                    .Select("CommonConfig:*", label);
+                    .Select("CommonConfig:*", label)
+                    .Select("CommonConfig:*", $"{label}.{mode}.{applicationName}");
 
                 azAppConfig
                     .Select("CommonConfig:*", $"{label}.{mode}")
@@ -191,9 +189,6 @@ namespace SportsData.Core.DependencyInjection
                         kv.SetCredential(new DefaultAzureCredential());
                     });
             });
-
-            //cfg["CommonConfig:AzureServiceBusConnectionString"] =
-            //    "Endpoint=sb://sb-debug-football-ncaa-sportdeets.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=7sZ8/mwzFGscHRz7yrspRqBNVOvz0WGLg+ASbNa8tss=";
 
             return cfg;
         }

@@ -6,6 +6,8 @@ using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class Contest : CanonicalEntityBase<Guid>, IHasExternalIds
@@ -45,6 +47,27 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Venue? Venue { get; set; }
 
         public Guid? VenueId { get; set; }
+
+        // === Scoring Results ===
+        public int? HomeScore { get; set; }
+
+        public int? AwayScore { get; set; }
+
+        public Guid? WinnerFranchiseId { get; set; }           // Straight-up
+
+        public Guid? SpreadWinnerFranchiseId { get; set; }     // ATS winner
+
+        public DateTime? FinalizedUtc { get; set; }
+
+        // === Helpers (not mapped to DB) ===
+        [NotMapped]
+        public bool IsFinal => FinalizedUtc.HasValue;
+
+        [NotMapped]
+        public int? TotalScore =>
+            HomeScore.HasValue && AwayScore.HasValue
+                ? HomeScore + AwayScore
+                : null;
 
         public ICollection<ContestLink> Links { get; set; } = new List<ContestLink>(); // Normalized set of rel/href for downstream use
         

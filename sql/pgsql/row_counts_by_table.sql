@@ -1,3 +1,4 @@
+SELECT * from public."__EFMigrations"
 SELECT *
 FROM public."Athlete"
 WHERE "DoB" > '2000-01-01'
@@ -5,6 +6,8 @@ WHERE "DoB" > '2000-01-01'
   AND "LastName" ~ '^[A-Za-z]+$'
   AND "FirstName" ~ '^[A-Za-z]+$';
 
+select * from public."Athlete" where "Id" = '7154d483-abea-083a-3c8b-89a863744f9c'
+select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/133498'
  select * from public."AthletePosition" order by "Name"
  select * from public."AthleteStatus" order by "Name"
  select * from public."AthletePositionExternalId" where "AthletePositionId" = 'dc7e2d37-f4de-b44e-3b26-c3a65957f646'
@@ -117,6 +120,8 @@ select * from public."Competition" where "Id" = '268a0393-ee15-4a52-83af-3e52a7c
    inner join public."GroupSeasonExternalId" gse on gse."GroupSeasonId" = gs."Id"
    where "Name" = 'Southeastern Conference' and gs."SeasonYear" = 2025
    order by gs."SeasonYear" desc
+
+   select * from public."Drive"
 
 	SELECT child."Id"   AS ChildId,
 	       child."Name" AS ChildName,

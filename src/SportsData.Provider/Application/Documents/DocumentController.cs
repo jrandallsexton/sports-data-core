@@ -255,11 +255,6 @@ namespace SportsData.Provider.Application.Documents
 
             var bypassCache = !_environment.IsDevelopment();
 
-            if (!bypassCache)
-            {
-                _logger.LogError("!!! bypassCache FOR IMAGES IS FALSE IN DEV!!!");
-            }
-
             // get the image (from cache or ESPN)
             await using var stream = await _espnHttpClient.GetCachedImageStreamAsync(
                 query.Uri,

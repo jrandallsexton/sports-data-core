@@ -5,7 +5,9 @@ import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
 import "./MainApp.css";
 import useSignalRClient from "hooks/useSignalRClient";
+import { setGlobalApiErrorHandler } from "api/apiClient";
 
+import ErrorPage from "components/common/ErrorPage";
 import PicksPage from "./components/picks/PicksPage.jsx";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
 import MessageBoardPage from "./components/messageboard/MessageboardPage.jsx";
@@ -29,6 +31,7 @@ function MainApp() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   const [isSideNav, setIsSideNav] = useState(false);
+  const [apiOffline, setApiOffline] = useState(false);
 
   const handleSignOut = async () => {
     const auth = getAuth();
@@ -58,6 +61,13 @@ function MainApp() {
       setShowWelcome(true);
       localStorage.setItem("seenWelcomeDialog", "true");
     }
+  }, []);
+
+  useEffect(() => {
+    setGlobalApiErrorHandler((err) => {
+      console.warn("API offline or unreachable", err);
+      setApiOffline(true);
+    });
   }, []);
 
   const handleWelcomeClose = () => {
@@ -90,33 +100,44 @@ function MainApp() {
         onSignOut={handleSignOutClick}
       />
       <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
-        <Routes>
-          <Route index element={<HomePage />} />
-          <Route path="/picks/:leagueId?" element={<PicksPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/messageboard" element={<MessageBoardPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/sport/football/ncaa/team/:slug" element={<TeamCard />} />
-          <Route
-            path="/sport/football/ncaa/team/:slug/:seasonYear"
-            element={<TeamCard />}
-          />
-          <Route
-            path="/sport/:sport/:league/venue/:slug"
-            element={<VenuePage />}
-          />
-          <Route path="/sport/:sport/:league/venue" element={<VenuesPage />} />
-          <Route path="/league/discover" element={<LeagueDiscoverPage />} />
-          <Route path="/league/create" element={<LeagueCreatePage />} />
-          <Route path="/league/:id" element={<LeagueDetail />} />
-          <Route path="/league" element={<Leagues />} />
-          <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
-          <Route
-            path="*"
-            element={<div className="not-found">Page Not Found</div>}
-          />
-        </Routes>
+        {apiOffline ? (
+          <ErrorPage message="We lost the ball trying to contact the server." />
+        ) : (
+          <Routes>
+            <Route index element={<HomePage />} />
+            <Route path="/picks/:leagueId?" element={<PicksPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/messageboard" element={<MessageBoardPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/sport/football/ncaa/team/:slug"
+              element={<TeamCard />}
+            />
+            <Route
+              path="/sport/football/ncaa/team/:slug/:seasonYear"
+              element={<TeamCard />}
+            />
+            <Route
+              path="/sport/:sport/:league/venue/:slug"
+              element={<VenuePage />}
+            />
+            <Route
+              path="/sport/:sport/:league/venue"
+              element={<VenuesPage />}
+            />
+            <Route path="/league/discover" element={<LeagueDiscoverPage />} />
+            <Route path="/league/create" element={<LeagueCreatePage />} />
+            <Route path="/league/:id" element={<LeagueDetail />} />
+            <Route path="/league" element={<Leagues />} />
+            <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
+            <Route
+              path="*"
+              element={<div className="not-found">Page Not Found</div>}
+            />
+          </Routes>
+        )}
       </main>
+
       <LandingFooter />
     </div>
   );

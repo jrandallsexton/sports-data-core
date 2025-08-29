@@ -1,6 +1,12 @@
 import axios from "axios";
 import { getAuth } from "firebase/auth";
 
+let onGlobalApiError = null;
+
+export function setGlobalApiErrorHandler(handler) {
+  onGlobalApiError = handler;
+}
+
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL,
   timeout: 10000,
@@ -32,9 +38,16 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     console.log("API Error:", error.response?.status, error.config?.url);
+
     if (error.response?.status === 401) {
       error.isUnauthorized = true;
     }
+
+    if (!error.response && onGlobalApiError) {
+      // Network error / timeout / CORS failure, etc.
+      onGlobalApiError(error);
+    }
+
     return Promise.reject(error);
   }
 );

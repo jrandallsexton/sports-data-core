@@ -62,32 +62,50 @@ namespace SportsData.Api.Application.Scoring
                 {
                     case PickType.None:
                     case PickType.StraightUp:
-                        if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
+                        if (!pick.FranchiseId.HasValue)
                         {
-                            pick.IsCorrect = true;
+                            pick.IsCorrect = false;
                             pick.ScoredAt = DateTime.UtcNow;
-                            pick.PointsAwarded = 1;
+                            pick.PointsAwarded = 0;
                         }
-                        break;
-                    case PickType.AgainstTheSpread:
-
-                        if (result.SpreadWinnerFranchiseSeasonId.HasValue)
+                        else
                         {
-                            if (pick.FranchiseId == result.SpreadWinnerFranchiseSeasonId.Value)
+                            if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
                             {
                                 pick.IsCorrect = true;
                                 pick.ScoredAt = DateTime.UtcNow;
                                 pick.PointsAwarded = 1;
                             }
                         }
+                        break;
+                    case PickType.AgainstTheSpread:
+
+                        if (!pick.FranchiseId.HasValue)
+                        {
+                            pick.IsCorrect = false;
+                            pick.ScoredAt = DateTime.UtcNow;
+                            pick.PointsAwarded = 0;
+                        }
                         else
                         {
-                            // no spread. use straight up
-                            if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
+                            if (result.SpreadWinnerFranchiseSeasonId.HasValue)
                             {
-                                pick.IsCorrect = true;
-                                pick.ScoredAt = DateTime.UtcNow;
-                                pick.PointsAwarded = 1;
+                                if (pick.FranchiseId == result.SpreadWinnerFranchiseSeasonId.Value)
+                                {
+                                    pick.IsCorrect = true;
+                                    pick.ScoredAt = DateTime.UtcNow;
+                                    pick.PointsAwarded = 1;
+                                }
+                            }
+                            else
+                            {
+                                // no spread. use straight up
+                                if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
+                                {
+                                    pick.IsCorrect = true;
+                                    pick.ScoredAt = DateTime.UtcNow;
+                                    pick.PointsAwarded = 1;
+                                }
                             }
                         }
                         break;

@@ -13,6 +13,8 @@ namespace SportsData.Core.Processing
         void Enqueue<T>(Expression<Func<T, Task>> methodCall); //where T : IAmABackgroundJob<T>;
 
         void Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context);
+
+        void Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay);
     }
 
     public class BackgroundJobProvider : IProvideBackgroundJobs
@@ -26,6 +28,11 @@ namespace SportsData.Core.Processing
         {
             BackgroundJob.Enqueue(methodCall);
             context.AddTags("Testing");
+        }
+
+        public void Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay)
+        {
+            BackgroundJob.Schedule(methodCall, delay);
         }
     }
 }

@@ -40,8 +40,32 @@ namespace SportsData.Producer.Application.Documents
                 _logger.LogInformation("New document event received (Attempt {Attempt}): {@Message}",
                     context.Message.AttemptCount, context.Message);
 
-                // TODO: Add a delay here if AttemptCount > 1
-                _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(context.Message));
+                if (context.Message.AttemptCount == 0)
+                {
+                    _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(context.Message));
+                    return;
+                }
+
+                var backoffSeconds = context.Message.AttemptCount switch
+                {
+                    1 => 0,
+                    2 => 10,
+                    3 => 30,
+                    4 => 60,
+                    5 => 120,
+                    _ => 300
+                };
+
+                if (backoffSeconds > 0)
+                {
+                    _logger.LogWarning("Delaying reprocessing of document {Id} by {Delay}s (Attempt {Attempt})",
+                        context.Message.Id, backoffSeconds, context.Message.AttemptCount);
+                }
+
+                _backgroundJobProvider.Schedule<DocumentCreatedProcessor>(
+                    x => x.Process(context.Message),
+                    delay: TimeSpan.FromSeconds(backoffSeconds)
+                );
             }
 
             await Task.CompletedTask;

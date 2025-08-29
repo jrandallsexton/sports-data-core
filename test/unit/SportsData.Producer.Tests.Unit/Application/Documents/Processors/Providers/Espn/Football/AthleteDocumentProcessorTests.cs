@@ -24,8 +24,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class AthleteDocumentProcessorTests :
     ProducerTestBase<AthleteDocumentProcessor>
 {
-    private const string SourceUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4567747";
-    private readonly string _urlHash = SourceUrl.UrlHash();
 
     [Fact]
     public async Task WhenAthleteIsValid_ShouldCreateAthlete()
@@ -37,8 +35,10 @@ public class AthleteDocumentProcessorTests :
         var publishEndpoint = Mocker.GetMock<IPublishEndpoint>();
         var sut = Mocker.CreateInstance<AthleteDocumentProcessor>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Active.json");
+        var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Debug.json");
         var dto = json.FromJson<EspnFootballAthleteDto>();
+
+        var dtoIdentity = generator.Generate(dto.Ref);
 
         var positionIdentity = generator.Generate(dto.Position.Ref);
 
@@ -66,7 +66,7 @@ public class AthleteDocumentProcessorTests :
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.Athlete)
-            .With(x => x.UrlHash, _urlHash)
+            .With(x => x.UrlHash, dtoIdentity.UrlHash)
             .With(x => x.Document, json)
             .Create();
 

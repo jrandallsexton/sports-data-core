@@ -49,8 +49,8 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later. {@evt}", docCreated);
                 await _publishEndpoint.Publish(docCreated);
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();

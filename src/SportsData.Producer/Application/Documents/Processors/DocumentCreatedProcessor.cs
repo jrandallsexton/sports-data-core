@@ -11,7 +11,7 @@ namespace SportsData.Producer.Application.Documents.Processors
 
     public class DocumentCreatedProcessor : IProcessDocumentCreatedEvents
     {
-        private ILogger<DocumentCreatedProcessor> _logger;
+        private readonly ILogger<DocumentCreatedProcessor> _logger;
         private readonly IProvideProviders _provider;
         private readonly IDocumentProcessorFactory _documentProcessorFactory;
 
@@ -73,7 +73,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.ParentId,
                 evt.Ref,
                 evt.SourceUrlHash,
-                evt.SourceRef));
+                evt.SourceRef,
+                evt.AttemptCount));
         }
     }
 }

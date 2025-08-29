@@ -76,7 +76,14 @@ namespace SportsData.Api.Application.Scoring
                                 pick.ScoredAt = DateTime.UtcNow;
                                 pick.PointsAwarded = 1;
                             }
+                            else
+                            {
+                                pick.IsCorrect = false;
+                                pick.ScoredAt = DateTime.UtcNow;
+                                pick.PointsAwarded = 0;
+                            }
                         }
+                        pick.WasAgainstSpread = false;
                         break;
                     case PickType.AgainstTheSpread:
 
@@ -96,6 +103,12 @@ namespace SportsData.Api.Application.Scoring
                                     pick.ScoredAt = DateTime.UtcNow;
                                     pick.PointsAwarded = 1;
                                 }
+                                else
+                                {
+                                    pick.IsCorrect = false;
+                                    pick.ScoredAt = DateTime.UtcNow;
+                                    pick.PointsAwarded = 0;
+                                }
                             }
                             else
                             {
@@ -106,8 +119,15 @@ namespace SportsData.Api.Application.Scoring
                                     pick.ScoredAt = DateTime.UtcNow;
                                     pick.PointsAwarded = 1;
                                 }
+                                else
+                                {
+                                    pick.IsCorrect = false;
+                                    pick.ScoredAt = DateTime.UtcNow;
+                                    pick.PointsAwarded = 0;
+                                }
                             }
                         }
+                        pick.WasAgainstSpread = true;
                         break;
                     case PickType.OverUnder:
                         continue;

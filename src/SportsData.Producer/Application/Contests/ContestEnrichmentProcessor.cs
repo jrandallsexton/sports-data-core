@@ -105,7 +105,7 @@ namespace SportsData.Producer.Application.Contests
 
                 if (plays.Count == 0)
                 {
-                    _logger.LogError("No plays found for {ContestName}", contest.Name);
+                    _logger.LogWarning("No plays found for {ContestName}", contest.Name);
 
                     // this is very likely a D2 game.  try to get it from Competition.Competitor[x].Score.Ref
                     var awayRef = competition.Competitors

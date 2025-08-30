@@ -42,13 +42,13 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
     private async Task ConsumeInternal(DocumentRequested evt)
     {
-        _logger.LogError("Handling DocumentRequested: {Evt}", evt);
+        _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
 
         var uri = evt.Uri;
 
         if (evt.DocumentType == DocumentType.EventCompetitionStatus)
         {
-            _logger.LogError("We got one. {@event}", evt);
+            _logger.LogInformation("We got one. {@event}", evt);
         }
 
         if (IsResourceIndex(uri))
@@ -77,7 +77,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             SeasonYear: evt.SeasonYear,
             BypassCache: evt.BypassCache);
 
-        _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
+        _logger.LogError("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 

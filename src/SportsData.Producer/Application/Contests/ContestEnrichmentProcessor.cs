@@ -118,7 +118,7 @@ namespace SportsData.Producer.Application.Contests
                 var plays = await _espnProvider.GetCompetitionPlaysAsync(playsUri);
                 if (plays == null)
                 {
-                    _logger.LogError("Fetching plays failed");
+                    _logger.LogError("Fetching plays failed. {@Command}", command);
                     return;
                 }
 

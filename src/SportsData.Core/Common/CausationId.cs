@@ -11,6 +11,7 @@ namespace SportsData.Core.Common
             public static Guid AthleteSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000003");
             public static Guid CoachDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000004");
             public static Guid CoachSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000005");
+            public static Guid ContestEnrichmentProcessor = new Guid("10100000-0000-0000-0000-000000000005");
             public static Guid EventCompetitionCompetitorDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000006");
             public static Guid EventCompetitionCompetitorLineScoreDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000007");
             public static Guid EventCompetitionCompetitorScoreDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000008");

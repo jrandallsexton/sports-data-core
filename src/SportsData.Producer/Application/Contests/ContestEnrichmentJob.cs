@@ -40,8 +40,7 @@ namespace SportsData.Producer.Application.Contests
             var contests = await _dataContext.Contests
                 .AsNoTracking()
                 .Where(c => c.SeasonWeekId == seasonWeek.Id &&
-                            c.StartDateUtc < DateTime.UtcNow &&
-                            c.FinalizedUtc == null)
+                            c.StartDateUtc < DateTime.UtcNow) // c.FinalizedUtc == null
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
 

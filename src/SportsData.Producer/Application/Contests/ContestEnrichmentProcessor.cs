@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
@@ -49,6 +52,7 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.Competitors)
                     .ThenInclude(comp => comp.ExternalIds)
                     .Include(c => c.Odds)
+                    .Include(c => c.Contest)
                     .Where(c => c.ContestId == command.ContestId)
                     .FirstOrDefaultAsync();
 
@@ -84,6 +88,21 @@ namespace SportsData.Producer.Application.Contests
                     _logger.LogError("Initial status fetch failed");
                     return;
                 }
+
+                await _bus.Publish(new DocumentRequested(
+                    Id: HashProvider.GenerateHashFromUri(status.Ref),
+                    ParentId: competition.Id.ToString(),
+                    Uri: status.Ref,
+                    Sport: Sport.FootballNcaa,
+                    SeasonYear: competition.Contest.SeasonYear,
+                    DocumentType: DocumentType.EventCompetitionStatus,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
+                    BypassCache: true
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                await _dataContext.SaveChangesAsync();
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {

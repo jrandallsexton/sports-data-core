@@ -39,7 +39,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
                 ExternalIds = new List<CompetitionStatusExternalId>
                 {
-                    new CompetitionStatusExternalId
+                    new()
                     {
                         Id = identity.CanonicalId,
                         Provider = SourceDataProvider.Espn,

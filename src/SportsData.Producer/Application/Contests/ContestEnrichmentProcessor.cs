@@ -3,7 +3,9 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -45,6 +47,7 @@ namespace SportsData.Producer.Application.Contests
                 var competition = await _dataContext.Competitions
                     .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
+                    .ThenInclude(comp => comp.ExternalIds)
                     .Include(c => c.Odds)
                     .Where(c => c.ContestId == command.ContestId)
                     .FirstOrDefaultAsync();
@@ -103,6 +106,46 @@ namespace SportsData.Producer.Application.Contests
                 if (plays.Count == 0)
                 {
                     _logger.LogError("No plays found for {ContestName}", contest.Name);
+
+                    // this is very likely a D2 game.  try to get it from Competition.Competitor[x].Score.Ref
+                    var awayRef = competition.Competitors
+                        .First(cmp => cmp.HomeAway == "away").ExternalIds.First().SourceUrl;
+
+                    var homeRef = competition.Competitors
+                        .First(cmp => cmp.HomeAway == "home").ExternalIds.First().SourceUrl;
+
+                    // source both
+                    var awayComp = await _espnProvider.GetResource(new Uri(awayRef), true, true);
+                    var homeComp = await _espnProvider.GetResource(new Uri(homeRef), true, true);
+
+                    var awayCompDto = awayComp.FromJson<EspnEventCompetitionCompetitorDto>();
+                    var homeCompDto = homeComp.FromJson<EspnEventCompetitionCompetitorDto>();
+
+                    if (awayCompDto is null)
+                    {
+                        _logger.LogError("Away competitor could not be deserialized");
+                        return;
+                    }
+
+                    if (homeCompDto is null)
+                    {
+                        _logger.LogError("Home competitor could not be deserialized");
+                        return;
+                    }
+
+                    // get the score for both
+                    var awayScoreJson = await _espnProvider.GetResource(awayCompDto.Score.Ref);
+                    var homeScoreJson = await _espnProvider.GetResource(homeCompDto.Score.Ref);
+
+                    var awayScoreDto = awayScoreJson.FromJson<EspnEventCompetitionCompetitorScoreDto>();
+                    var homeScoreDto = homeScoreJson.FromJson<EspnEventCompetitionCompetitorScoreDto>();
+
+                    // update, persist, and exit
+                    contest.AwayScore = (int)awayScoreDto!.Value;
+                    contest.HomeScore = (int)homeScoreDto!.Value;
+
+                    contest.FinalizedUtc = DateTime.UtcNow;
+
                     return;
                 }
 

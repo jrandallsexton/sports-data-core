@@ -51,7 +51,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             _logger.LogInformation("We got one. {@event}", evt);
         }
 
-        if (IsResourceIndex(uri))
+        if (EspnResourceIndexClassifier.IsResourceIndex(uri))
         {
             await ProcessResourceIndex(uri, evt);
         }
@@ -160,11 +160,5 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         {
             _logger.LogInformation("All resource index items queued.");
         }
-    }
-
-    private static bool IsResourceIndex(Uri uri)
-    {
-        var last = uri.Segments.Last().TrimEnd('/');
-        return !long.TryParse(last, out _);
     }
 }

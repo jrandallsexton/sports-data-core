@@ -54,7 +54,6 @@ namespace SportsData.Provider.DependencyInjection
                 .OrResult(r => (int)r.StatusCode >= 500 || r.StatusCode == HttpStatusCode.RequestTimeout)
                 .WaitAndRetryAsync(3, i => TimeSpan.FromMilliseconds(200 * Math.Pow(2, i))));
 
-
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
 
             if (useMongo)

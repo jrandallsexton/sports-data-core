@@ -122,7 +122,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: Guid.NewGuid().ToString(),
                     ParentId: null,
-                    Uri: externalDto.SeasonType.Ref,
+                    Uri: externalDto.SeasonType.Ref.ToCleanUri(),
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.SeasonType,
@@ -156,7 +156,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     await _publishEndpoint.Publish(new DocumentRequested(
                         Id: Guid.NewGuid().ToString(),
                         ParentId: null, // TODO: could be seasonPhaseId? FML.
-                        Uri: externalDto.Week.Ref,
+                        Uri: externalDto.Week.Ref.ToCleanUri(),
                         Sport: command.Sport,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.SeasonTypeWeek,
@@ -217,7 +217,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: HashProvider.GenerateHashFromUri(competition.Ref),
                     ParentId: contest.Id.ToString(),
-                    Uri: competition.Ref,
+                    Uri: competition.Ref.ToCleanUri(),
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.EventCompetition,
@@ -278,7 +278,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     await _publishEndpoint.Publish(new DocumentRequested(
                         Id: venueHash,
                         ParentId: string.Empty,
-                        Uri: venue.Ref,
+                        Uri: venue.Ref.ToCleanUri(),
                         Sport: Sport.FootballNcaa,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.Venue,
@@ -350,7 +350,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _publishEndpoint.Publish(new DocumentRequested(
                     awayTeam.Team.Ref.ToCleanUrl(),
                     awayFranchiseIdentity.CanonicalId.ToString(),
-                    awayTeam.Team.Ref,
+                    awayTeam.Team.Ref.ToCleanUri(),
                     command.Sport,
                     command.Season,
                     DocumentType.TeamSeason,

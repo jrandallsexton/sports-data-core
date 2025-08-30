@@ -204,7 +204,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: venueHash,
                     ParentId: null,
-                    Uri: venue.Ref,
+                    Uri: venue.Ref.ToCleanUri(),
                     Sport: Sport.FootballNcaa,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.Venue,
@@ -231,7 +231,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
                     ParentId: competition.Id.ToString(),
-                    Uri: competitorDto.Ref,
+                    Uri: competitorDto.Ref.ToCleanUri(),
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.EventCompetitionCompetitor,
@@ -308,7 +308,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Odds.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Odds.Ref,
+                Uri: externalDto.Odds.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionOdds,
@@ -329,7 +329,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Broadcasts.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Broadcasts.Ref,
+                Uri: externalDto.Broadcasts.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionBroadcast,
@@ -350,7 +350,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Details.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Details.Ref,
+                Uri: externalDto.Details.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionPlay,
@@ -371,7 +371,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Leaders.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Leaders.Ref,
+                Uri: externalDto.Leaders.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionLeaders,
@@ -417,7 +417,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Predictor.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Predictor.Ref,
+                Uri: externalDto.Predictor.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionPrediction,
@@ -438,7 +438,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Probabilities.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Probabilities.Ref,
+                Uri: externalDto.Probabilities.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionProbability,
@@ -459,7 +459,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.PowerIndexes.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.PowerIndexes.Ref,
+                Uri: externalDto.PowerIndexes.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionPowerIndex,
@@ -480,7 +480,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(externalDto.Drives.Ref),
                 ParentId: competition.Id.ToString(),
-                Uri: externalDto.Drives.Ref,
+                Uri: externalDto.Drives.Ref.ToCleanUri(),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionDrive,

@@ -136,7 +136,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         await _publishEndpoint.Publish(new DocumentRequested(
                             Id: athleteHash,
                             ParentId: competition.Id.ToString(),
-                            Uri: leaderDto.Athlete.Ref,
+                            Uri: leaderDto.Athlete.Ref.ToCleanUri(),
                             Sport: command.Sport,
                             SeasonYear: command.Season,
                             DocumentType: DocumentType.Athlete,
@@ -170,7 +170,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         await _publishEndpoint.Publish(new DocumentRequested(
                             Id: teamHash,
                             ParentId: competition.Id.ToString(),
-                            Uri: leaderDto.Team.Ref,
+                            Uri: leaderDto.Team.Ref.ToCleanUri(),
                             Sport: command.Sport,
                             SeasonYear: command.Season,
                             DocumentType: DocumentType.TeamSeason,

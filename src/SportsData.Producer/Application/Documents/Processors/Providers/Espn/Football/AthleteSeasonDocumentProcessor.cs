@@ -161,7 +161,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: franchiseSeasonIdentity.CanonicalId.ToString(),
             ParentId: null,
-            Uri: dto.Team.Ref,
+            Uri: dto.Team.Ref.ToCleanUri(),
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: DocumentType.TeamSeason,
@@ -197,7 +197,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: positionIdentity.CanonicalId.ToString(),
             ParentId: null,
-            Uri: dto.Position.Ref,
+            Uri: dto.Position.Ref.ToCleanUri(),
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: DocumentType.AthletePosition,

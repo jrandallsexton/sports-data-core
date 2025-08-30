@@ -92,7 +92,7 @@ namespace SportsData.Producer.Application.Contests
                 await _bus.Publish(new DocumentRequested(
                     Id: HashProvider.GenerateHashFromUri(status.Ref),
                     ParentId: competition.Id.ToString(),
-                    Uri: status.Ref,
+                    Uri: status.Ref.ToCleanUri(),
                     Sport: Sport.FootballNcaa,
                     SeasonYear: competition.Contest.SeasonYear,
                     DocumentType: DocumentType.EventCompetitionStatus,

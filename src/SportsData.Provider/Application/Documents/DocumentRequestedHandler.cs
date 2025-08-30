@@ -77,7 +77,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             SeasonYear: evt.SeasonYear,
             BypassCache: evt.BypassCache);
 
-        _logger.LogError("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
+        _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 

@@ -276,7 +276,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: positionIdentity.CanonicalId.ToString(),
                 ParentId: null,
-                Uri: externalProviderDto.Position.Ref,
+                Uri: externalProviderDto.Position.Ref.ToCleanUri(),
                 Sport: Sport.FootballNcaa,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.AthletePosition,

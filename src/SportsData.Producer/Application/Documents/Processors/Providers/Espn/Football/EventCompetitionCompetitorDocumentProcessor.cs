@@ -175,7 +175,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: identity.CanonicalId.ToString(),
             ParentId: competitionCompetitorId.ToString(),
-            Uri: externalProviderDto.Score.Ref,
+            Uri: externalProviderDto.Score.Ref.ToCleanUri(),
             Sport: Sport.FootballNcaa,
             SeasonYear: command.Season,
             DocumentType: DocumentType.EventCompetitionCompetitorScore,
@@ -198,7 +198,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: identity.CanonicalId.ToString(),
             ParentId: competitionCompetitorId.ToString(),
-            Uri: externalProviderDto.Linescores.Ref,
+            Uri: externalProviderDto.Linescores.Ref.ToCleanUri(),
             Sport: Sport.FootballNcaa,
             SeasonYear: command.Season,
             DocumentType: DocumentType.EventCompetitionCompetitorLineScore,

@@ -190,7 +190,7 @@ namespace SportsData.Api
                 });
             });
 
-            services.AddHealthChecksMaster(builder.Environment.ApplicationName);
+            services.AddHealthChecksMaster<Program>(builder.Environment.ApplicationName);
 
             services.AddLocalServices(Sport.All);
 

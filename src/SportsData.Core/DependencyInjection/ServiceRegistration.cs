@@ -185,7 +185,10 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddHealthChecksMaster(this IServiceCollection services, string apiName)
+        public static IServiceCollection AddHealthChecksMaster<TPublisher>(
+            this IServiceCollection services,
+            string apiName)
+            where TPublisher : class
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
@@ -197,8 +200,11 @@ namespace SportsData.Core.DependencyInjection
                 //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
                 //.AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
                 .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient);
-                //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
-                //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+            //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
+            //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+
+            services.AddHostedService<HeartbeatPublisher<TPublisher>>();
+
             return services;
         }
 

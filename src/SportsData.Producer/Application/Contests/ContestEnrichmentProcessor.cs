@@ -86,7 +86,7 @@ namespace SportsData.Producer.Application.Contests
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {
-                    _logger.LogWarning("Contest status is not yet final. Found: {status}", status.Type.Name);
+                    _logger.LogWarning("Contest status is not yet final for {ContestName}. Found: {status}", contest.Name, status.Type.Name);
                     return;
                 }
 

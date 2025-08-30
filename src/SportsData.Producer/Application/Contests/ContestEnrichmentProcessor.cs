@@ -58,7 +58,7 @@ namespace SportsData.Producer.Application.Contests
 
                 if (competition is null)
                 {
-                    _logger.LogError("Competition could not be loaded for provided contest id");
+                    _logger.LogError("Competition could not be loaded for provided contest id. {@Command}", command);
                     return;
                 }
 
@@ -67,14 +67,14 @@ namespace SportsData.Producer.Application.Contests
 
                 if (contest is null)
                 {
-                    _logger.LogError("Contest could not be loaded for provided contest id");
+                    _logger.LogError("Contest could not be loaded for provided contest id. {@Command}", command);
                     return;
                 }
 
                 var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
                 if (externalId == null)
                 {
-                    _logger.LogError("CompetitionExternalId not found");
+                    _logger.LogError("CompetitionExternalId not found. {@Command}", command);
                     return;
                 }
 
@@ -85,7 +85,7 @@ namespace SportsData.Producer.Application.Contests
                 var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
                 if (status == null)
                 {
-                    _logger.LogError("Initial status fetch failed");
+                    _logger.LogError("Initial status fetch failed. {@Command}", command);
                     return;
                 }
 

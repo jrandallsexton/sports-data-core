@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
@@ -7,7 +8,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Documents;
 
@@ -42,7 +42,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
     private async Task ConsumeInternal(DocumentRequested evt)
     {
-        _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
+        _logger.LogError("Handling DocumentRequested: {Evt}", evt);
 
         var uri = evt.Uri;
 

@@ -12,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Sport sport,
             int seasonYear,
-            Guid? seasonWeekId,
+            Guid seasonWeekId,
             Guid seasonPhaseId,
             Guid correlationId)
         {

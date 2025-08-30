@@ -2,14 +2,11 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
-
-using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -32,7 +29,7 @@ public class AthleteDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var publishEndpoint = Mocker.GetMock<IPublishEndpoint>();
+        var publishEndpoint = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteDocumentProcessor>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Debug.json");

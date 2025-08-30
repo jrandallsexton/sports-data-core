@@ -40,6 +40,7 @@ public class MatchupPreviewValidator
             {
                 errors.Add("Spread prediction should be null (push), but a winner was predicted.");
             }
+            return new ValidationResult(errors.Count == 0, errors);
         }
         else
         {

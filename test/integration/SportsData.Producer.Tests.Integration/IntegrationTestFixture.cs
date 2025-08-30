@@ -12,7 +12,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Mapping;
 
 using System.Reflection;
-
+using SportsData.Core.Eventing;
 using Xunit;
 
 namespace SportsData.Producer.Tests.Integration
@@ -47,7 +47,7 @@ namespace SportsData.Producer.Tests.Integration
                     services.AddAutoMapper(typeof(MappingProfile));
                     services.AddMediatR(Assembly.GetExecutingAssembly());
                     services.AddScoped<IPublishEndpoint, NoOpPublishEndpoint>();
-                    services.AddScoped<IBus, NoOpBus>();
+                    services.AddScoped<IEventBus, NoOpBus>();
 
                     services.AddLocalServices(mode);
                 });
@@ -61,7 +61,7 @@ namespace SportsData.Producer.Tests.Integration
         public Task DisposeAsync() => Task.CompletedTask;
     }
 
-    public class NoOpBus : IBus
+    public class NoOpBus : IEventBus
     {
         public ConnectHandle ConnectPublishObserver(IPublishObserver observer) => new NoOpConnectHandle();
 
@@ -69,6 +69,9 @@ namespace SportsData.Producer.Tests.Integration
             Task.FromResult<ISendEndpoint>(new NoOpSendEndpoint());
 
         public Task Publish<T>(T message, CancellationToken cancellationToken = default) where T : class =>
+            Task.CompletedTask;
+
+        public Task PublishBatch<T>(IEnumerable<T> messages, CancellationToken ct = default) where T : class =>
             Task.CompletedTask;
 
         public Task Publish<T>(T message, IPipe<PublishContext<T>> publishPipe, CancellationToken cancellationToken = default) where T : class =>

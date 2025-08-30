@@ -2,12 +2,11 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
@@ -46,7 +45,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .Create();
 
             var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -90,7 +89,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .Create();
 
             var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -112,7 +111,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .Create();
 
             var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -145,7 +144,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .Create();
 
             var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             // Act
             await sut.ProcessAsync(command);

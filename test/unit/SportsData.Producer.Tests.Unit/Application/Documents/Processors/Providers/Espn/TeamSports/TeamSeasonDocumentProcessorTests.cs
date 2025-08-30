@@ -2,14 +2,13 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
@@ -32,7 +31,7 @@ public class TeamSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
 
@@ -87,7 +86,7 @@ public class TeamSeasonDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
 

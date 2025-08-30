@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\SportsData.Api\SportsData.Api.csproj" />
+    <ProjectReference Include="..\..\SportsData.Tests.Shared\SportsData.Tests.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -50,9 +50,8 @@ namespace SportsData.Api.Application.UI.Leagues
             if (!Enum.TryParse<TeamRankingFilter>(request.RankingFilter, ignoreCase: true, out var rankingFilter))
                 throw new ArgumentException($"Invalid ranking filter: {request.RankingFilter}");
 
-            var tiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission; // Default value
-            //if (!Enum.TryParse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true, out var tiebreakerTiePolicy))
-            //    throw new ArgumentException($"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}");
+            if (!Enum.TryParse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true, out var tiebreakerTiePolicy))
+                throw new ArgumentException($"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}");
 
             // === Canonical Resolution ===
             var conferenceIds = request.ConferenceSlugs.Count > 0

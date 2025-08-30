@@ -1,0 +1,246 @@
+﻿using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Producer.Enums;
+using SportsData.Producer.Infrastructure.Data.Football;
+
+namespace SportsData.Producer.Application.Contests
+{
+    public interface IEnrichContests
+    {
+        Task Process(EnrichContestCommand command);
+    }
+
+    public class ContestEnrichmentProcessor : IEnrichContests
+    {
+        private readonly ILogger<ContestEnrichmentProcessor> _logger;
+        private readonly FootballDataContext _dataContext;
+        private readonly IProvideEspnApiData _espnProvider;
+        private readonly IEventBus _bus;
+
+        public ContestEnrichmentProcessor(
+            ILogger<ContestEnrichmentProcessor> logger,
+            FootballDataContext dataContext,
+            IProvideEspnApiData espnProvider,
+            IEventBus bus)
+        {
+            _logger = logger;
+            _dataContext = dataContext;
+            _espnProvider = espnProvider;
+            _bus = bus;
+        }
+
+        public async Task Process(EnrichContestCommand command)
+        {
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = command.CorrelationId
+                   }))
+            {
+                _logger.LogInformation("Contest enrichment job started for {@command}", command);
+
+                var competition = await _dataContext.Competitions
+                    .Include(c => c.ExternalIds)
+                    .Include(c => c.Competitors)
+                    .Include(c => c.Odds)
+                    .Where(c => c.ContestId == command.ContestId)
+                    .FirstOrDefaultAsync();
+
+                if (competition is null)
+                {
+                    _logger.LogError("Competition could not be loaded for provided contest id");
+                    return;
+                }
+
+                var contest = await _dataContext.Contests
+                    .FirstOrDefaultAsync(x => x.Id == command.ContestId);
+
+                if (contest is null)
+                {
+                    _logger.LogError("Contest could not be loaded for provided contest id");
+                    return;
+                }
+
+                var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
+                if (externalId == null)
+                {
+                    _logger.LogError("CompetitionExternalId not found");
+                    return;
+                }
+
+                // Get the current status to ensure the game is actually over
+                var statusUri = EspnUriMapper
+                    .CompetitionRefToCompetitionStatusRef(new Uri(externalId.SourceUrl));
+
+                var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
+                if (status == null)
+                {
+                    _logger.LogError("Initial status fetch failed");
+                    return;
+                }
+
+                if (status.Type.Name != "STATUS_FINAL")
+                {
+                    _logger.LogWarning("Contest status is not yet final. Found: {status}", status.Type.Name);
+                    return;
+                }
+
+                // in order to calculate the final score and winners, we need to get all plays
+                // take the last scoring play and that is what we have
+                var playsUri = EspnUriMapper
+                    .CompetitionRefToCompetitionPlaysRef(new Uri(externalId.SourceUrl), 999);
+
+                var plays = await _espnProvider.GetCompetitionPlaysAsync(playsUri);
+                if (plays == null)
+                {
+                    _logger.LogError("Fetching plays failed");
+                    return;
+                }
+
+                if (plays.Count == 0)
+                {
+                    _logger.LogError("No plays found!");
+                    return;
+                }
+
+                var finalScoringPlay = plays.Items
+                    .Where(x => x.ScoringPlay)
+                    .TakeLast(1)
+                    .FirstOrDefault();
+
+                if (finalScoringPlay == null)
+                {
+                    _logger.LogWarning("No scoring plays found.  Assume zero?");
+                    contest.AwayScore = 0;
+                    contest.HomeScore = 0;
+                }
+                else
+                {
+                    contest.AwayScore = finalScoringPlay.AwayScore;
+                    contest.HomeScore = finalScoringPlay.HomeScore;
+                }
+
+                var awayFranchiseSeasonId = competition.Competitors
+                    .First(cmp => cmp.HomeAway == "away").FranchiseSeasonId;
+                var homeFranchiseSeasonId = competition.Competitors
+                    .First(cmp => cmp.HomeAway == "home").FranchiseSeasonId;
+
+                if (contest.AwayScore != contest.HomeScore)
+                {
+                    var homeWasWinner = contest.AwayScore < contest.HomeScore;
+
+                    contest.WinnerFranchiseId =
+                        homeWasWinner ?
+                        homeFranchiseSeasonId :
+                        awayFranchiseSeasonId;
+                }
+
+                contest.FinalizedUtc = DateTime.UtcNow; // TODO: Inject IProvideDateTimes
+                contest.EndDateUtc = plays.Items.Last().Wallclock;
+
+                // were there odds on this game?
+                var odds = competition.Odds?.FirstOrDefault();
+
+                // TODO: Later we might want to score each odd individually - or even see if they were updated
+                // Bit says they are indeed update post-game.  Will verify.
+                if (odds != null)
+                {
+                    if (odds.OverUnder.HasValue)
+                    {
+                        contest.OverUnder = GetOverUnderResult(
+                            contest.AwayScore!.Value,
+                            contest.HomeScore!.Value,
+                            odds.OverUnder.Value);
+                    }
+
+                    if (odds.Spread.HasValue)
+                    {
+                        contest.SpreadWinnerFranchiseId = GetSpreadWinnerFranchiseSeasonId(
+                            awayFranchiseSeasonId,
+                            homeFranchiseSeasonId,
+                            contest.AwayScore!.Value,
+                            contest.HomeScore!.Value,
+                            odds.Spread!.Value);
+                    }
+                }
+
+                await _bus.Publish(
+                    new ContestEnrichmentCompleted(
+                        command.ContestId,
+                        command.CorrelationId,
+                        Guid.NewGuid()));
+                await _dataContext.SaveChangesAsync();
+            }
+        }
+
+        public OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
+        {
+            var total = awayScore + homeScore;
+
+            if (total > overUnder)
+                return OverUnderResult.Over;
+
+            if (total < overUnder)
+                return OverUnderResult.Under;
+
+            return OverUnderResult.Push;
+        }
+
+        public Guid? GetSpreadWinnerFranchiseSeasonId(
+            Guid awayFranchiseSeasonId,
+            Guid homeFranchiseSeasonId,
+            int awayScore,
+            int homeScore,
+            decimal spread)
+        {
+            var adjustedHomeScore = homeScore + spread;
+            var margin = adjustedHomeScore - awayScore;
+
+            return margin switch
+            {
+                > 0 => homeFranchiseSeasonId,
+                < 0 => awayFranchiseSeasonId,
+                _ => Guid.Empty
+            };
+        }
+
+        //private async Task<EspnEventCompetitionPlaysDto?> GetPlaysAsync(Uri uri)
+        //{
+        //    try
+        //    {
+        //        var response = await _httpClient.GetAsync(uri);
+        //        if (!response.IsSuccessStatusCode) return null;
+
+        //        var json = await response.Content.ReadAsStringAsync();
+        //        return json.FromJson<EspnEventCompetitionPlaysDto>();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Failed to get plays from {Uri}", uri);
+        //        return null;
+        //    }
+        //}
+
+        //private async Task<EspnEventCompetitionStatusDto?> GetStatusAsync(Uri uri)
+        //{
+        //    try
+        //    {
+        //        var response = await _httpClient.GetAsync(uri);
+        //        if (!response.IsSuccessStatusCode) return null;
+
+        //        var json = await response.Content.ReadAsStringAsync();
+        //        return json.FromJson<EspnEventCompetitionStatusDto>();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Failed to get status from {Uri}", uri);
+        //        return null;
+        //    }
+        //}
+    }
+}

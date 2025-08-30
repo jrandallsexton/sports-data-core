@@ -137,7 +137,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
             }
 
-            Guid? seasonWeekId = null;
+            var seasonWeekId = Guid.Empty;
 
             if (externalDto.Week is null)
             {

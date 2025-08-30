@@ -71,8 +71,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 
             if (exists)
             {
-                _logger.LogInformation("Update detected; not implemented");
-                //await ProcessUpdate(command, espnDto);
+                //_logger.LogInformation("Update detected; not implemented");
+                await ProcessUpdate(command, espnDto);
             }
             else
             {

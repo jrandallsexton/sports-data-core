@@ -1,4 +1,7 @@
-﻿namespace SportsData.Provider.Infrastructure.Providers.Espn
+﻿using System;
+using System.Linq;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public static class EspnRequestUri
     {

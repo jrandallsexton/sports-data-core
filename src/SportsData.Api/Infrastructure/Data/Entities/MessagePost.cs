@@ -11,7 +11,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public Guid? ParentId { get; set; }
 
-        public User? User { get; set; }
+        public User User { get; set; } = null!;
 
         public int Depth { get; set; } // 0 = root
 
@@ -53,6 +53,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 b.HasOne(x => x.User)
                     .WithMany()
                     .HasForeignKey(x => x.CreatedBy)
+                    .IsRequired()
                     .OnDelete(DeleteBehavior.Restrict);
 
             }

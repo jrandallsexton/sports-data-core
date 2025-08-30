@@ -18,7 +18,7 @@ public class FranchiseLogoRequestProcessorTests : ProducerTestBase<ImageRequeste
     //public async Task WhenFoo_DoesBar()
     //{
     //    //// arrange
-    //    //var bus = Mocker.GetMock<IPublishEndpoint>();
+    //    //var bus = Mocker.GetMock<IEventBus>();
 
     //    //Mocker.GetMock<IProvideBlobStorage>()
     //    //    .Setup(s => s.UploadImageAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()))

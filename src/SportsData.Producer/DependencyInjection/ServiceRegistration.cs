@@ -1,6 +1,9 @@
-﻿using SportsData.Core.Common;
+﻿using Hangfire;
+
+using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Infrastructure.Data;
@@ -51,6 +54,25 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IProcessProcessedImages, ImageProcessedProcessor>();
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+
+            services.AddScoped<ContestEnrichmentJob>();
+
+            return services;
+        }
+
+        public static IServiceProvider ConfigureHangfireJobs(
+            this IServiceProvider services,
+            Sport mode)
+        {
+            var serviceScope = services.CreateScope();
+
+            var recurringJobManager = serviceScope.ServiceProvider
+                .GetRequiredService<IRecurringJobManager>();
+
+            recurringJobManager.AddOrUpdate<ContestEnrichmentJob>(
+                nameof(ContestEnrichmentJob),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
 
             return services;
         }

@@ -1,6 +1,10 @@
 ﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn
+using System;
+using System.Threading.Tasks;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public interface IProvideEspnApiData
     {
@@ -19,5 +23,9 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask);
 
         Task<string> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true);
+
+        Task<EspnEventCompetitionPlaysDto?> GetCompetitionPlaysAsync(Uri uri);
+
+        Task<EspnEventCompetitionStatusDto?> GetCompetitionStatusAsync(Uri uri);
     }
 }

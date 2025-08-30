@@ -5,13 +5,10 @@ using Polly;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Parsing;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Http.Policies;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
-using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Net;
 using System.Net.Security;
@@ -28,10 +25,6 @@ namespace SportsData.Provider.DependencyInjection
             bool useMongo)
         {
             services.AddDataPersistenceExternal();
-
-            services.Configure<EspnApiClientConfig>(
-                configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
-            );
 
             services.AddScoped<IProcessResourceIndexes, ResourceIndexJob>();
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
@@ -61,10 +54,7 @@ namespace SportsData.Provider.DependencyInjection
                 .OrResult(r => (int)r.StatusCode >= 500 || r.StatusCode == HttpStatusCode.RequestTimeout)
                 .WaitAndRetryAsync(3, i => TimeSpan.FromMilliseconds(200 * Math.Pow(2, i))));
 
-            services.AddHttpClient<EspnHttpClient>()
-                .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
-            services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddScoped<IProcessPublishDocumentEvents, PublishDocumentEventsProcessor>();
 
             if (useMongo)

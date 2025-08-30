@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
@@ -36,9 +37,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? Week { get; set; }               // From `week` ref, parsed from URL or hydrated from companion doc
 
-        public Guid? SeasonWeekId { get; set; }
+        public Guid SeasonWeekId { get; set; }
 
-        public SeasonWeek? SeasonWeek { get; set; }
+        public SeasonWeek SeasonWeek { get; set; } = null!;
 
         public Guid SeasonPhaseId { get; set; }
 
@@ -56,6 +57,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Guid? WinnerFranchiseId { get; set; }           // Straight-up
 
         public Guid? SpreadWinnerFranchiseId { get; set; }     // ATS winner
+
+        public OverUnderResult OverUnder { get; set; } = OverUnderResult.None;
 
         public DateTime? FinalizedUtc { get; set; }
 
@@ -132,7 +135,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder
                     .Property(x => x.SeasonWeekId)
-                    .IsRequired(false);
+                    .IsRequired(true);
 
                 builder
                     .HasOne(x => x.SeasonWeek)

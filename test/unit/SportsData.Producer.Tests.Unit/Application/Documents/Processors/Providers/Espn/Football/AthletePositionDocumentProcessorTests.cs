@@ -2,8 +2,6 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -11,6 +9,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -30,7 +29,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var existingId = Guid.NewGuid();
@@ -98,7 +97,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var existingId = Guid.NewGuid();
@@ -156,7 +155,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var existingId = Guid.NewGuid();
@@ -224,7 +223,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
 
         var parentUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70";
@@ -286,7 +285,7 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var logger = Mocker.GetMock<ILogger<AthletePositionDocumentProcessor<FootballDataContext>>>();
         
         var sut = Mocker.CreateInstance<AthletePositionDocumentProcessor<FootballDataContext>>();

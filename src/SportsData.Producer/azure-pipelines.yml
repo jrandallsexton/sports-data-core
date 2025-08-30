@@ -75,6 +75,7 @@ stages:
             command: 'test'
             projects: '**/SportsData.Producer.Tests.Unit.csproj'
             testRunTitle: 'producer-tests-unit'
+          continueOnError: false
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR

@@ -5,6 +5,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 using SportsData.Provider.Infrastructure.Providers.Espn;

@@ -2,14 +2,13 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -150,7 +149,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenNoExistingOdds_AddsNewCompetitionOdds_NoPublish()
         {
             // Arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
             var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
             var hash = Mocker.GetMock<IJsonHashCalculator>();
 
@@ -215,7 +214,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenExistingByUrlHashAndProvider_NoChange_NoPublish()
         {
             // Arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
             var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
             var hash = Mocker.GetMock<IJsonHashCalculator>();
 
@@ -287,7 +286,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         //public async Task WhenDifferentUrlHash_AddsNewOdds_NoPublish()
         //{
         //    // Arrange
-        //    var bus = Mocker.GetMock<IPublishEndpoint>();
+        //    var bus = Mocker.GetMock<IEventBus>();
         //    var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
         //    var hash = Mocker.GetMock<IJsonHashCalculator>();
 

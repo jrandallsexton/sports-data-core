@@ -160,6 +160,8 @@ namespace SportsData.Api.Application.UI.Messageboard
                 items = items.Take(page.Limit).ToList();
             }
 
+            _logger.LogInformation("Replies returned: {Count}", items.Count);
+
             return new PageResult<MessagePost>(items, next);
         }
 

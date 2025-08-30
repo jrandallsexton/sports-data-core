@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using AutoFixture;
 
 using FluentAssertions;
 
@@ -11,14 +8,21 @@ using SportsData.Api.Application.UI.Messageboard;
 using SportsData.Api.Infrastructure.Data.Entities; // MessageThread, MessagePost, MessageReaction, ReactionType
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Messageboard
 {
     public class MessageboardServiceTests : ApiTestBase<MessageboardService>
     {
+        private readonly ITestOutputHelper _output;
         private readonly Guid _groupId = Guid.NewGuid();
         private readonly Guid _userA = Guid.NewGuid();
         private readonly Guid _userB = Guid.NewGuid();
+
+        public MessageboardServiceTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         private MessageboardService CreateSut() => Mocker.CreateInstance<MessageboardService>();
 
@@ -202,7 +206,6 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Messageboard
             result[g2].NextCursor.Should().BeNull(); // exactly 2, no next
         }
 
-
         [Fact]
         public async Task GetThreadsAsync_Should_Return_MostRecentActivity_First_With_PagingCursor()
         {
@@ -253,11 +256,52 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Messageboard
         public async Task GetRepliesAsync_Should_Return_TopLevel_Replies_In_Chrono_Order_With_Cursor()
         {
             // Arrange
+            var userA = Fixture.Build<Infrastructure.Data.Entities.User>()
+                .OmitAutoProperties()
+                .With(x => x.FirebaseUid, "foo")
+                .With(x => x.DisplayName, "foo")
+                .With(x => x.Email, "foo@foo.com")
+                .With(x => x.Id, _userA)
+                .Create();
+            await DataContext.Users.AddAsync(userA);
+            var userB = Fixture.Build<Infrastructure.Data.Entities.User>()
+                .With(x => x.FirebaseUid, "foo")
+                .With(x => x.DisplayName, "foo")
+                .With(x => x.Email, "foo@foo.com")
+                .With(x => x.Id, _userB)
+                .Create();
+            await DataContext.Users.AddAsync(userB);
+            await DataContext.SaveChangesAsync();
+
+            var pickemGroup = Fixture.Build<PickemGroup>()
+                .With(x => x.Id, _groupId)
+                .With(x => x.Members, new List<PickemGroupMember>())
+                .Create();
+            await DataContext.PickemGroups.AddAsync(pickemGroup);
+            await DataContext.SaveChangesAsync();
+
+            await AddMembershipAsync(userA.Id, _groupId);
+            await AddMembershipAsync(userB.Id, _groupId);
+
             var (thread, root) = await AddThreadWithRootAsync(new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc));
+            
             var r1 = await AddReplyAsync(thread, root, new DateTime(2025, 8, 18, 12, 5, 0, DateTimeKind.Utc), "r1");
+
             var r2 = await AddReplyAsync(thread, root, new DateTime(2025, 8, 18, 12, 6, 0, DateTimeKind.Utc), "r2");
+
             var r3 = await AddReplyAsync(thread, root, new DateTime(2025, 8, 18, 12, 7, 0, DateTimeKind.Utc), "r3");
+
             var sut = CreateSut();
+
+            var debug = await DataContext.Set<MessagePost>()
+                .Include(x => x.User)
+                .Where(x => x.ParentId == root.Id)
+                .ToListAsync();
+
+            foreach (var r in debug)
+            {
+                _output.WriteLine($"Reply: {r.Content}, CreatedBy: {r.CreatedBy}, User.Id: {r.User?.Id}");
+            }
 
             // Act page1 (limit 2)
             var page1 = await sut.GetRepliesAsync(thread.Id, root.Id, new PageRequest(Limit: 2), CancellationToken.None);

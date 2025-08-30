@@ -9,6 +9,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;

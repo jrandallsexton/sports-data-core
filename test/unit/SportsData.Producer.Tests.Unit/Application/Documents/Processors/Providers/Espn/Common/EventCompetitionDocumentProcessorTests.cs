@@ -2,14 +2,13 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -49,7 +48,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             var dto = documentJson.FromJson<EspnEventCompetitionDto>();
 

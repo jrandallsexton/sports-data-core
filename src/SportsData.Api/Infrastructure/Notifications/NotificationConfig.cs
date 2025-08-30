@@ -12,5 +12,10 @@
 
             public required string TemplateIdInvitation { get; set; }
         }
+
+        public class SmsConfig
+        {
+
+        }
     }
 }

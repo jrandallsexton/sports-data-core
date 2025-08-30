@@ -11,6 +11,7 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Collections.Concurrent;
 using System.Text.Json;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Provider.Application.Jobs
 {

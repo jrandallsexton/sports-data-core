@@ -119,9 +119,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _dataContext.SeasonPhases.AddAsync(seasonPhase);
             await _dataContext.SaveChangesAsync();
 
-            await _dataContext.Seasons
-                .Where(s => s.Id == season.Id && s.ActivePhaseId == null)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.ActivePhaseId, _ => seasonPhase.Id));
+            //await _dataContext.Seasons
+            //    .Where(s => s.Id == season.Id && s.ActivePhaseId == null)
+            //    .ExecuteUpdateAsync(s => s.SetProperty(x => x.ActivePhaseId, _ => seasonPhase.Id));
+
+            var existingSeason = await _dataContext.Seasons
+                .FirstOrDefaultAsync(s => s.Id == season.Id && s.ActivePhaseId == null);
+
+            if (existingSeason is not null)
+            {
+                existingSeason.ActivePhaseId = seasonPhase.Id;
+                await _dataContext.SaveChangesAsync();
+            }
+
 
             _logger.LogInformation("Linked ActivePhaseId for Season {SeasonId} -> Phase {PhaseId}",
                 season.Id, seasonPhase.Id);

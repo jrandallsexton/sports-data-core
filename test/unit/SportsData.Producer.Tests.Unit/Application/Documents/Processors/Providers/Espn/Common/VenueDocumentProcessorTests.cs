@@ -10,6 +10,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -30,7 +31,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             var sut = Mocker.CreateInstance<VenueDocumentProcessor<FootballDataContext>>();
 
@@ -114,7 +115,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .OmitAutoProperties()
                 .Create();
 
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             var sut = Mocker.CreateInstance<VenueDocumentProcessor<FootballDataContext>>();
 

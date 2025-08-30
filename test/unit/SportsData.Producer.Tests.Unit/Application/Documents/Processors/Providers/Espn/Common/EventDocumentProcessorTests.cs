@@ -2,14 +2,13 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
@@ -41,7 +40,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .OmitAutoProperties()
                 .Create());
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
@@ -210,10 +209,69 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .OmitAutoProperties()
                 .Create());
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json"); var dto = json.FromJson<EspnEventDto>();
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");
+
+        await FootballDataContext.SaveChangesAsync();
+
+        var dto = json.FromJson<EspnEventDto>();
+
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto.SeasonType.Ref);
+
+        var season = Fixture.Build<Season>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonId)
+            .With(x => x.Name, "2024")
+            .With(x => x.Phases, [])
+            .Create();
+        await FootballDataContext.Seasons.AddAsync(season);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonPhase = Fixture.Build<SeasonPhase>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonTypeIdentity.CanonicalId)
+            .With(x => x.Name, "Regular Season")
+            .With(x => x.Abbreviation, "reg")
+            .With(x => x.Slug, "reg-season")
+            .With(x => x.SeasonId, seasonId)
+            .With(x => x.ExternalIds, new List<SeasonPhaseExternalId>()
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash,
+                    Value = seasonTypeIdentity.UrlHash
+                }
+            })
+            .Create();
+        await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonWeekIdentity = generator.Generate(dto.Week.Ref);
+        var seasonWeek = Fixture.Build<SeasonWeek>()
+            .OmitAutoProperties()
+            .With(x => x.Id, seasonWeekIdentity.CanonicalId)
+            .With(x => x.SeasonPhaseId, seasonPhase.Id)
+            .With(x => x.ExternalIds, new List<SeasonWeekExternalId>()
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonWeekIdentity.CleanUrl,
+                    SourceUrlHash = seasonWeekIdentity.UrlHash,
+                    Value = seasonWeekIdentity.UrlHash
+                }
+            })
+            .Create();
+        await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+        await FootballDataContext.SaveChangesAsync();
+
         Guid homeId = Guid.Empty;
         Guid awayId = Guid.Empty;
 
@@ -246,14 +304,14 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .With(x => x.FranchiseId, Guid.NewGuid())
                 .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
                 {
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        Provider = SourceDataProvider.Espn,
-                        SourceUrl = identity.CleanUrl,
-                        SourceUrlHash = identity.UrlHash,
-                        Value = identity.UrlHash
-                    }
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = identity.CleanUrl,
+                            SourceUrlHash = identity.UrlHash,
+                            Value = identity.UrlHash
+                        }
                 })
                 .Create();
 
@@ -293,7 +351,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEvent.json");

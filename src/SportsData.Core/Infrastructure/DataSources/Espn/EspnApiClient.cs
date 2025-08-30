@@ -1,4 +1,8 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Provider.Infrastructure.Providers.Espn
@@ -98,9 +102,17 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return await _http.GetDeserializedAsync<EspnTeamSeasonDto>(uri, false, false);
         }
 
-        // You can add more typed methods here:
-        // public async Task<AwardDto?> GetAward(string uri) { ... }
-        // public async Task<EspnAthleteDto?> GetAthlete(string uri) { ... }
-        // etc.
+        public async Task<EspnEventCompetitionPlaysDto?> GetCompetitionPlaysAsync(Uri uri)
+        {
+            _logger.LogDebug("Fetching CompetitionPlays from {Uri}", uri);
+            return await _http.GetDeserializedAsync<EspnEventCompetitionPlaysDto>(uri, bypassCache: false);
+        }
+
+        public async Task<EspnEventCompetitionStatusDto?> GetCompetitionStatusAsync(Uri uri)
+        {
+            _logger.LogDebug("Fetching CompetitionStatus from {Uri}", uri);
+            return await _http.GetDeserializedAsync<EspnEventCompetitionStatusDto>(uri, bypassCache: false);
+        }
+
     }
 }

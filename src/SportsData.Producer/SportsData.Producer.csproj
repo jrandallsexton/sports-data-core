@@ -34,7 +34,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Application\Contests\" />
     <Folder Include="Application\Documents\Processors\Providers\Cbs\" />
     <Folder Include="Application\Documents\Processors\Providers\Espn\Basketball\" />
     <Folder Include="Application\Documents\Processors\Providers\Yahoo\" />

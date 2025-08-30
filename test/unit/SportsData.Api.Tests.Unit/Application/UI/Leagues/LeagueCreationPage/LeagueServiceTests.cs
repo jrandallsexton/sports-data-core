@@ -117,6 +117,7 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
     {
         var sut = Mocker.CreateInstance<LeagueService>();
         var request = BuildValidRequest();
+        request.RankingFilter = "AP_TOP_25";
         request.TiebreakerTiePolicy = "Nope";
 
         var act = () => sut.CreateAsync(request, Guid.NewGuid());
@@ -131,16 +132,17 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
         var request = BuildValidRequest();
         var currentUserId = Guid.NewGuid();
 
-        var slugToGuid = new Dictionary<string, Guid>
+        var slugToGuid = new Dictionary<Guid, string>
         {
-            ["acc"] = Guid.NewGuid(),
-            ["big12"] = Guid.NewGuid(),
+            [Guid.NewGuid()] = "acc",
+            [Guid.NewGuid()] = "big12"
         };
 
-        request.ConferenceSlugs = new List<string> { "acc", "big12", "garbage" };
+        request.RankingFilter = "AP_TOP_25";
+        request.ConferenceSlugs = ["acc", "big12", "garbage"];
 
         Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetFranchiseIdsBySlugsAsync(Sport.FootballNcaa, request.ConferenceSlugs))
+            .Setup(x => x.GetConferenceIdsBySlugsAsync(Sport.FootballNcaa, 2025, request.ConferenceSlugs))
             .ReturnsAsync(slugToGuid);
 
         var sut = Mocker.CreateInstance<LeagueService>();

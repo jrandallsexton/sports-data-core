@@ -69,6 +69,15 @@ stages:
               configuration: '$(buildConfiguration)'
               msbuildArguments: '/t:Restore'
 
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: '**/SportsData.Api.Tests.Unit.csproj'
+              testRunTitle: 'api-tests-unit'
+              arguments: '--no-build'
+            continueOnError: false
+
   - stage: BuildImagePushACR
     displayName: 'Build Image & Push to ACR'
     dependsOn: BuildAndTest

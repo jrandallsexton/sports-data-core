@@ -2,12 +2,11 @@ using AutoFixture;
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -27,7 +26,7 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonRecordAtsDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecordAts.json");
 

@@ -18,6 +18,7 @@ using SportsData.Tests.Shared;
 
 using System.Linq.Expressions;
 using Microsoft.Extensions.Options;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using Xunit;
 
 namespace SportsData.Provider.Tests.Unit.Application.Documents;

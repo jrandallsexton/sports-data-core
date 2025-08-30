@@ -1,4 +1,4 @@
-﻿namespace SportsData.Provider.Infrastructure.Providers.Espn
+﻿namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public class EspnApiClientConfig
     {

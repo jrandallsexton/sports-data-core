@@ -46,7 +46,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         var plays = json.FromJson<List<EspnEventCompetitionPlayDto>>();
 
         // act
-        var scoringPlays = plays.Where(x => x.ScoringPlay).ToList();
+        var scoringPlays = plays!.Where(x => x.ScoringPlay).ToList();
 
         // assert
         scoringPlays.Count().Should().BeGreaterThan(0);

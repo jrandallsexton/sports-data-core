@@ -3,6 +3,7 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;

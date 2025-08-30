@@ -2,12 +2,11 @@ using AutoFixture;
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -23,7 +22,7 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
     public async Task WhenCoachDoesNotExist_ShouldCreateIt()
     {
         // Arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
@@ -55,7 +54,7 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
     public async Task WhenCoachExists_ShouldUpdateExperience()
     {
         // Arrange
-        var bus = Mocker.GetMock<IPublishEndpoint>();
+        var bus = Mocker.GetMock<IEventBus>();
         var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";
         var urlHash = HashProvider.UrlHash(url);
         var existing = new Coach

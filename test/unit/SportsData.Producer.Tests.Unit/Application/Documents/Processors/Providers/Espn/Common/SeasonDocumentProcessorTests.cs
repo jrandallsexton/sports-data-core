@@ -55,7 +55,7 @@ public class SeasonDocumentProcessorTests
 
         Assert.NotNull(season);
         Assert.Equal(2025, season.Year);
-        Assert.Empty(season.Phases);
+        Assert.NotEmpty(season.Phases);
         Assert.NotEmpty(season.ExternalIds);
         Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
     }
@@ -90,7 +90,7 @@ public class SeasonDocumentProcessorTests
 
         Assert.NotNull(season);
         Assert.Equal(2024, season.Year);
-        Assert.Empty(season.Phases);
+        Assert.NotEmpty(season.Phases);
         Assert.NotEmpty(season.ExternalIds);
         Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
     }

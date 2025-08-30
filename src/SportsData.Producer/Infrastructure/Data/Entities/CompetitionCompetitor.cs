@@ -17,7 +17,7 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public int Order { get; set; }
 
-    public string? HomeAway { get; set; }
+    public required string HomeAway { get; set; }
 
     /// <summary>
     /// This is an enriched field; not in original data
@@ -47,6 +47,7 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
                 .HasMaxLength(20);
 
             builder.Property(x => x.HomeAway)
+                .IsRequired()
                 .HasMaxLength(10);
 
             builder.Property(x => x.CuratedRankCurrent);

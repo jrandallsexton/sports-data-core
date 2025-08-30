@@ -1,8 +1,17 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
-namespace SportsData.Provider.Infrastructure.Providers.Espn
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public class EspnHttpClient
     {

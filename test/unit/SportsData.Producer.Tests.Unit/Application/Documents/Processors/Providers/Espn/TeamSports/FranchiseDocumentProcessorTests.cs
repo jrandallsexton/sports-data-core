@@ -2,14 +2,13 @@
 
 using FluentAssertions;
 
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
@@ -26,7 +25,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityDoesNotExist_VenueDoesExist_IsAdded()
         {
             // arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
@@ -87,7 +86,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityDoesNotExist_VenueDoesNotExist_IsAdded()
         {
             // arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
@@ -121,7 +120,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityExists_IsUpdated()
         {
             // arrange
-            var bus = Mocker.GetMock<IPublishEndpoint>();
+            var bus = Mocker.GetMock<IEventBus>();
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 

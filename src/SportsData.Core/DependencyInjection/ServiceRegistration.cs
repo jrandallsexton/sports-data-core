@@ -19,7 +19,9 @@ using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Middleware.Health;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System;
 using System.Linq;
@@ -247,6 +249,19 @@ namespace SportsData.Core.DependencyInjection
 
             // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
+
+            /* ESPN */
+
+            services.Configure<EspnApiClientConfig>(
+                configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
+            );
+
+            services.AddHttpClient<EspnHttpClient>()
+                .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
+
+            services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+
+            /* End ESPN */
 
             // Register single-mode services
             services

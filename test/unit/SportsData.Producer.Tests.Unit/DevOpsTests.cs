@@ -9,6 +9,6 @@ public class DevOpsTests
     [Fact]
     public void TrueShouldBeTrue()
     {
-        false.Should().BeTrue();
+        true.Should().BeTrue();
     }
 }

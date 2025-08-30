@@ -104,7 +104,7 @@ namespace SportsData.Producer.Application.Contests
 
                 if (plays.Count == 0)
                 {
-                    _logger.LogError("No plays found!");
+                    _logger.LogError("No plays found for {ContestName}", contest.Name);
                     return;
                 }
 

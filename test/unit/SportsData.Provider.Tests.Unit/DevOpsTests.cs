@@ -8,7 +8,7 @@ namespace SportsData.Provider.Tests.Unit
         [Fact]
         public void TrueShouldBeTrue()
         {
-            true.Should().BeFalse();
+            true.Should().BeTrue();
         }
     }
 }

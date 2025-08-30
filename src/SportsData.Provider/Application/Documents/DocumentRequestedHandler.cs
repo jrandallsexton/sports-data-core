@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
@@ -45,6 +45,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
 
         var uri = evt.Uri;
+
+        if (evt.DocumentType == DocumentType.EventCompetitionStatus)
+        {
+            _logger.LogError("We got one. {@event}", evt);
+        }
 
         if (IsResourceIndex(uri))
         {

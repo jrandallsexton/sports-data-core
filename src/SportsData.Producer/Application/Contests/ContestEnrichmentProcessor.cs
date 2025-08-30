@@ -146,6 +146,13 @@ namespace SportsData.Producer.Application.Contests
 
                     contest.FinalizedUtc = DateTime.UtcNow;
 
+                    await _bus.Publish(
+                        new ContestEnrichmentCompleted(
+                            command.ContestId,
+                            command.CorrelationId,
+                            Guid.NewGuid()));
+                    await _dataContext.SaveChangesAsync();
+
                     return;
                 }
 

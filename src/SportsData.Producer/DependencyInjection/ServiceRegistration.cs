@@ -55,6 +55,7 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
+            services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
             services.AddScoped<ContestEnrichmentJob>();
 
             return services;

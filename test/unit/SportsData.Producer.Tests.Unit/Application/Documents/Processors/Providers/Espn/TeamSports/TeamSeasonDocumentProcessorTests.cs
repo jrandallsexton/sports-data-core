@@ -10,6 +10,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -33,13 +35,38 @@ public class TeamSeasonDocumentProcessorTests :
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+        
         var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
+        var dto = json.FromJson<EspnTeamSeasonDto>();
+
+        var groupSeasonIdentity = generator.Generate(dto.Groups.Ref);
+        var group = Fixture.Build<GroupSeason>()
+            .OmitAutoProperties()
+            .With(x => x.Id, groupSeasonIdentity.CanonicalId)
+            .With(x => x.Abbreviation, "foo")
+            .With(x => x.Name, "Name")
+            .With(x => x.ShortName, "Name")
+            .With(x => x.Slug, "Name")
+            .With(x => x.ExternalIds, new List<GroupSeasonExternalId>()
+            {
+                new GroupSeasonExternalId()
+                {
+                    Id = Guid.NewGuid(),
+                    Value = groupSeasonIdentity.CanonicalId.ToString(),
+                    SourceUrlHash = groupSeasonIdentity.UrlHash,
+                    SourceUrl = groupSeasonIdentity.CleanUrl,
+                    GroupSeasonId = groupSeasonIdentity.CanonicalId
+                }
+            })
+            .Create();
+        await FootballDataContext.GroupSeasons.AddAsync(group);
+        await FootballDataContext.SaveChangesAsync();
 
         var franchiseIdentity = generator.Generate(SourceUrl);
 
         var franchise = Fixture.Build<Franchise>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, franchiseIdentity.CanonicalId)
             .With(x => x.Name, "Test Franchise")
             .With(x => x.ExternalIds, new List<FranchiseExternalId>
             {

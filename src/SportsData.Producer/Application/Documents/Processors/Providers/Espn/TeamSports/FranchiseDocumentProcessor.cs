@@ -215,102 +215,100 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             await ProcessLogos(franchise, command, dto);
         }
 
-        return;
+        if (dto.Venue is not null)
+        {
+            var venue = await _dataContext.Venues
+                .Include(x => x.ExternalIds)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
+                    z.Provider == command.SourceDataProvider &&
+                    z.Value == dto.Venue.Ref.ToString().UrlHash(true)));
 
-        //if (dto.Venue is not null)
-        //{
-        //    var venue = await _dataContext.Venues
-        //        .Include(x => x.ExternalIds)
-        //        .AsNoTracking()
-        //        .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
-        //            z.Provider == command.SourceDataProvider &&
-        //            z.Value == dto.Venue.Ref.ToString().UrlHash(true)));
+            if (venue != null)
+            {
+                if (venue.Id != franchise.VenueId)
+                {
+                    _logger.LogInformation("Updating Venue from {Old} to {New}", franchise.VenueId, venue.Id);
+                    franchise.VenueId = venue.Id;
+                }
+            }
+        }
 
-        //    if (venue != null)
-        //    {
-        //        if (venue.Id != franchise.VenueId)
-        //        {
-        //            _logger.LogInformation("Updating Venue from {Old} to {New}", franchise.VenueId, venue.Id);
-        //            franchise.VenueId = venue.Id;
-        //        }
-        //    }
-        //}
+        var updated = false;
 
-        //var updated = false;
+        if (franchise.Name != dto.Name)
+        {
+            _logger.LogInformation("Updating Name from {Old} to {New}", franchise.Name, dto.Name);
+            franchise.Name = dto.Name;
+            updated = true;
+        }
 
-        //if (franchise.Name != dto.Name)
-        //{
-        //    _logger.LogInformation("Updating Name from {Old} to {New}", franchise.Name, dto.Name);
-        //    franchise.Name = dto.Name;
-        //    updated = true;
-        //}
+        if (franchise.Location != dto.Location)
+        {
+            _logger.LogInformation("Updating Location from {Old} to {New}", franchise.Location, dto.Location);
+            franchise.Location = dto.Location;
+            updated = true;
+        }
 
-        //if (franchise.Location != dto.Location)
-        //{
-        //    _logger.LogInformation("Updating Location from {Old} to {New}", franchise.Location, dto.Location);
-        //    franchise.Location = dto.Location;
-        //    updated = true;
-        //}
+        if (franchise.Slug != dto.Slug)
+        {
+            _logger.LogInformation("Updating Slug from {Old} to {New}", franchise.Slug, dto.Slug);
+            franchise.Slug = dto.Slug;
+            updated = true;
+        }
 
-        //if (franchise.Slug != dto.Slug)
-        //{
-        //    _logger.LogInformation("Updating Slug from {Old} to {New}", franchise.Slug, dto.Slug);
-        //    franchise.Slug = dto.Slug;
-        //    updated = true;
-        //}
+        if (franchise.Abbreviation != dto.Abbreviation)
+        {
+            _logger.LogInformation("Updating Abbreviation from {Old} to {New}", franchise.Abbreviation, dto.Abbreviation);
+            franchise.Abbreviation = dto.Abbreviation;
+            updated = true;
+        }
 
-        //if (franchise.Abbreviation != dto.Abbreviation)
-        //{
-        //    _logger.LogInformation("Updating Abbreviation from {Old} to {New}", franchise.Abbreviation, dto.Abbreviation);
-        //    franchise.Abbreviation = dto.Abbreviation;
-        //    updated = true;
-        //}
+        if (franchise.DisplayNameShort != dto.ShortDisplayName)
+        {
+            _logger.LogInformation("Updating ShortDisplayName from {Old} to {New}", franchise.DisplayNameShort, dto.ShortDisplayName);
+            franchise.DisplayNameShort = dto.ShortDisplayName;
+            updated = true;
+        }
 
-        //if (franchise.DisplayNameShort != dto.ShortDisplayName)
-        //{
-        //    _logger.LogInformation("Updating ShortDisplayName from {Old} to {New}", franchise.DisplayNameShort, dto.ShortDisplayName);
-        //    franchise.DisplayNameShort = dto.ShortDisplayName;
-        //    updated = true;
-        //}
+        if (franchise.DisplayName != dto.DisplayName)
+        {
+            _logger.LogInformation("Updating DisplayName from {Old} to {New}", franchise.DisplayName, dto.DisplayName);
+            franchise.DisplayName = dto.DisplayName;
+            updated = true;
+        }
 
-        //if (franchise.DisplayName != dto.DisplayName)
-        //{
-        //    _logger.LogInformation("Updating DisplayName from {Old} to {New}", franchise.DisplayName, dto.DisplayName);
-        //    franchise.DisplayName = dto.DisplayName;
-        //    updated = true;
-        //}
+        if (franchise.ColorCodeHex != dto.Color)
+        {
+            _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, dto.Color);
+            franchise.ColorCodeHex = dto.Color;
+            updated = true;
+        }
 
-        //if (franchise.ColorCodeHex != dto.Color)
-        //{
-        //    _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, dto.Color);
-        //    franchise.ColorCodeHex = dto.Color;
-        //    updated = true;
-        //}
+        if (franchise.IsActive != dto.IsActive)
+        {
+            _logger.LogInformation("Updating IsActive from {Old} to {New}", franchise.IsActive, dto.IsActive);
+            franchise.IsActive = dto.IsActive;
+            updated = true;
+        }
 
-        //if (franchise.IsActive != dto.IsActive)
-        //{
-        //    _logger.LogInformation("Updating IsActive from {Old} to {New}", franchise.IsActive, dto.IsActive);
-        //    franchise.IsActive = dto.IsActive;
-        //    updated = true;
-        //}
+        if (updated)
+        {
+            await _dataContext.SaveChangesAsync();
 
-        //if (updated)
-        //{
-        //    await _dataContext.SaveChangesAsync();
+            var evt = new FranchiseUpdated(
+                franchise.ToCanonicalModel(),
+                command.CorrelationId,
+                CausationId.Producer.FranchiseDocumentProcessor);
 
-        //    var evt = new FranchiseUpdated(
-        //        franchise.ToCanonicalModel(),
-        //        command.CorrelationId,
-        //        CausationId.Producer.FranchiseDocumentProcessor);
+            await _publishEndpoint.Publish(evt, CancellationToken.None);
 
-        //    await _publishEndpoint.Publish(evt, CancellationToken.None);
-
-        //    _logger.LogInformation("Published update for Franchise {Id}", franchise.Id);
-        //}
-        //else
-        //{
-        //    _logger.LogInformation("No changes detected for Franchise {Id}", franchise.Id);
-        //}
+            _logger.LogInformation("Published update for Franchise {Id}", franchise.Id);
+        }
+        else
+        {
+            _logger.LogInformation("No changes detected for Franchise {Id}", franchise.Id);
+        }
     }
 
 }

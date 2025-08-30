@@ -3,9 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Football;
 

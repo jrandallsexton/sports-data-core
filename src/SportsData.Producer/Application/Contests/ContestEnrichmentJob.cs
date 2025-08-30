@@ -39,7 +39,9 @@ namespace SportsData.Producer.Application.Contests
             // get contests that have not been finalized
             var contests = await _dataContext.Contests
                 .AsNoTracking()
-                .Where(c => c.SeasonWeekId == seasonWeek.Id && c.FinalizedUtc == null)
+                .Where(c => c.SeasonWeekId == seasonWeek.Id &&
+                            c.StartDateUtc < DateTime.UtcNow &&
+                            c.FinalizedUtc == null)
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
 

@@ -6,7 +6,7 @@ using SportsData.Api.Application.UI.Leaderboard.Dtos;
 namespace SportsData.Api.Application.UI.Leaderboard;
 
 [ApiController]
-[Route("api/ui/leaderboard")]
+[Route("ui/leaderboard")]
 [Authorize]
 public class LeaderboardController : ControllerBase
 {

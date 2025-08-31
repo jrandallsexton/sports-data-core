@@ -38,9 +38,11 @@ namespace SportsData.Api.Application.UI.Leaderboard
                     CurrentWeekPoints = g
                         .Where(p => p.Week == currentWeek)
                         .Sum(p => p.PointsAwarded ?? 0),
-                    WeeksPlayed = g.Select(p => p.Week).Distinct().Count()
+                    WeeksPlayed = g.Select(p => p.Week).Distinct().Count(),
+                    TotalPicks = g.Count(),
+                    TotalCorrect = g.Count(p => p.IsCorrect.HasValue && p.IsCorrect.Value == true)
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var result = leaderboard
                 .OrderByDescending(x => x.TotalPoints)
@@ -54,6 +56,11 @@ namespace SportsData.Api.Application.UI.Leaderboard
                         ? Math.Round((decimal)x.TotalPoints / x.WeeksPlayed, 1)
                         : 0,
                     Rank = index + 1,
+                    TotalPicks = x.TotalPicks,
+                    TotalCorrect = x.TotalCorrect,
+                    PickAccuracy = x.TotalPicks > 0
+                        ? Math.Round((decimal)x.TotalCorrect / x.TotalPicks * 100, 2)
+                        : 0,
                     LastWeekRank = null // Optional — fill later if needed
                 })
                 .ToList();

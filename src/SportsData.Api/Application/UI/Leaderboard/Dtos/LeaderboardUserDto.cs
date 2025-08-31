@@ -6,6 +6,12 @@
 
         public string Name { get; set; } = "";   // Display name
 
+        public int TotalPicks { get; set; } // Total number of picks made
+
+        public int TotalCorrect { get; set; }
+
+        public decimal PickAccuracy { get; set; }
+
         public int TotalPoints { get; set; }     // Across all weeks up to now
 
         public int CurrentWeekPoints { get; set; }    // For a single week

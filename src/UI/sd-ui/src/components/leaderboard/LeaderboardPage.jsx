@@ -33,7 +33,15 @@ function LeaderboardPage() {
           currentWeek
         );
 
-        setLeaderboard(data);
+        console.log("Leaderboard API response:", data);
+        console.log("Is array?", Array.isArray(data));
+        console.log("Is data.data array?", Array.isArray(data.data));
+        
+        // Extract the actual leaderboard array from the response
+        const leaderboardArray = data.data || data || [];
+        
+        // Ensure we always set an array
+        setLeaderboard(Array.isArray(leaderboardArray) ? leaderboardArray : []);
       } catch (err) {
         console.error("Failed to load leaderboard", err);
         setLeaderboard([]);
@@ -54,11 +62,13 @@ function LeaderboardPage() {
     }
   }
 
-  const sortedLeaderboard = [...leaderboard].sort((a, b) => {
-    const valA = a[sortBy];
-    const valB = b[sortBy];
-    return sortOrder === "asc" ? valA - valB : valB - valA;
-  });
+  const sortedLeaderboard = Array.isArray(leaderboard) 
+    ? [...leaderboard].sort((a, b) => {
+        const valA = a[sortBy];
+        const valB = b[sortBy];
+        return sortOrder === "asc" ? valA - valB : valB - valA;
+      })
+    : [];
 
   if (userLoading) {
     return <div className="leaderboard-container">Loading user data...</div>;
@@ -112,7 +122,7 @@ function LeaderboardPage() {
             {sortedLeaderboard.map((user) => {
               const movement = user.lastWeekRank
                 ? user.lastWeekRank - user.rank
-                : 0;
+                : null;
 
               return (
                 <tr
@@ -123,13 +133,15 @@ function LeaderboardPage() {
                 >
                   <td className="rank-cell">
                     <div className="rank-number">{user.rank}</div>
-                    {movement > 0 && (
+                    {movement !== null && movement > 0 && (
                       <div className="movement-up">+{movement} 🔺</div>
                     )}
-                    {movement < 0 && (
+                    {movement !== null && movement < 0 && (
                       <div className="movement-down">{movement} 🔻</div>
                     )}
-                    {movement === 0 && <div className="movement-same">➡️</div>}
+                    {movement !== null && movement === 0 && (
+                      <div className="movement-same">➡️</div>
+                    )}
                   </td>
 
                   <td>

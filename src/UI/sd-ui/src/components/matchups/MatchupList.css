@@ -3,4 +3,37 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
+}
+
+/* Desktop layout - switch to grid for larger screens */
+@media (min-width: 768px) {
+  .matchup-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+  }
+}
+
+/* Large desktop - allow more columns with smaller minimum width */
+@media (min-width: 1200px) {
+  .matchup-list {
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+  }
+}
+
+/* Extra large screens - optimize for 32" monitors and similar */
+@media (min-width: 1600px) {
+  .matchup-list {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 28px;
+  }
+}
+
+/* Ultra wide screens - 4+ columns for very large monitors */
+@media (min-width: 2000px) {
+  .matchup-list {
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 32px;
+  }
 } 

@@ -4,11 +4,13 @@
   border: 2px solid #61dafb;
   border-radius: 16px;
   padding: 20px;
-  margin: 0 0 20px 0;
+  margin: 0;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow-x: hidden; /* Prevent horizontal overflow */
   word-wrap: break-word; /* Allow long words to break */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .team-row {

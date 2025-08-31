@@ -1,6 +1,6 @@
 .picks-page-container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 20px;
   box-sizing: border-box;
@@ -25,13 +25,6 @@
 .picks-page-header > :first-child {
   grid-column: 1;
   justify-self: start;
-}
-
-.matchup-list {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .group-week-selector {

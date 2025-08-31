@@ -6,8 +6,9 @@ WHERE "DoB" > '2000-01-01'
   AND "LastName" ~ '^[A-Za-z]+$'
   AND "FirstName" ~ '^[A-Za-z]+$';
 
-select * from public."Athlete" where "Id" = '7154d483-abea-083a-3c8b-89a863744f9c'
-select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/133498'
+select * from public."Athlete" where "Id" = '566eb050-d42c-bdf9-4495-4b43aea47574'
+select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/381939'
+
  select * from public."AthletePosition" order by "Name"
  select * from public."AthleteStatus" order by "Name"
  select * from public."AthletePositionExternalId" where "AthletePositionId" = 'dc7e2d37-f4de-b44e-3b26-c3a65957f646'
@@ -43,13 +44,26 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
    select * from public."FranchiseExternalId" where "FranchiseId" = 'ba491b1b-606d-5272-fdf4-461cf0cb1be8'
    select * from public."SeasonPhase" order by "Year"
    
-   select * from public."SeasonWeek" sw
+   select sw.* from public."SeasonWeek" sw
    inner join public."Season" s on s."Id" = sw."SeasonId"
-   where s."Year" = 2025
+   where s."Year" = 2025 and sw."StartDate" <= Now() and sw."EndDate" >= Now()
    order by sw."StartDate" DESC
    
    select * from public."SeasonRanking"
    select * from public."SeasonRankingEntry"
+
+   SELECT 
+    sw."Id" AS "Id",
+    sw."Number" AS "WeekNumber",
+    s."Id" AS "SeasonId",
+    s."Year" AS "SeasonYear"
+FROM public."Season" s
+JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
+JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
+WHERE sp."Name" = 'Regular Season'
+  AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
+ORDER BY sw."StartDate"
+LIMIT 1;
 
    
    select sre.* from public."Season" s
@@ -67,12 +81,22 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
    inner join public."Venue" V on V."Id" = C."VenueId"
    WHERE C."ShortName" LIKE '%LSU%' ORDER BY C."StartDateUtc"
 
-   select * from public."Contest" WHERE "ShortName" like '%LSU%'order by "StartDateUtc"
+   /* Enriched/Finalized Contests */
+   select * from public."Contest"
+   WHERE
+       "SeasonYear" = 2025
+   and "SeasonWeekId" = '5edb7b2b-d153-abc9-a965-c4c56a9bac04'
+   and "StartDateUtc" < Now()
+   and "FinalizedUtc" is not null
+   order by "StartDateUtc"
+   
    select * from public."ContestExternalId" where "ContestId" = '8775fdbd-802a-1d25-735e-bbf702ac7e2d'
    
    select * from public."Competition" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
    select * from public."CompetitionExternalId" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+   
+	select * from public."CompetitionCompetitor" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
+	select * from public."CompetitionCompetitorExternalIds" where "SourceUrl" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773604/competitions/401773604/competitors/2214'
 
 select * from public."CompetitionCompetitorScores"
 select * from public."CompetitionStatus" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
@@ -80,6 +104,8 @@ select * from public."CompetitionLink" where "CompetitionId" = 'f5cfd727-3b4a-f4
 select * from public."CompetitionNote" --where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 
 select * from public."Contest" where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+
+
 
 /*
 update public."Contest" set
@@ -90,21 +116,20 @@ update public."Contest" set
 where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
 */
 
-   select * from public."Competition" comp
-   inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
-   where comp."ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+	select * from public."Competition" comp
+	inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
+	where comp."ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
 
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'c78ca8e8-7f22-ca21-8cea-455a151667f5'
+	select * from public."CompetitionOdds" co where co."CompetitionId" = 'c78ca8e8-7f22-ca21-8cea-455a151667f5'
+	select * from public."CompetitionTeamOdds" where "CompetitionOddsId" = '48e50b66-3d41-1083-7435-81b636066b20'
 
-   select * from public."SeasonRankingEntry"
+	select * from public."CompetitionCompetitor" where "HomeAway" is null where "CompetitionId" = 'c78ca8e8-7f22-ca21-8cea-455a151667f5'
 
-select * from public."ContestOdds" where "ContestId" = '8fac22f3-a8a4-773c-672b-d1c293f5d4a2'
-select * from public."ContestOdds" where "ContestId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
-   
-   select * from public."PowerIndex"
-   select * from public."Play"
-   select * from public."Competitor"
-   select "ShortName", "Slug" from public."Group"
+	select * from public."SeasonRankingEntry"   
+	select * from public."PowerIndex"
+	select * from public."Play"
+	select * from public."Competitor"
+	select "ShortName", "Slug" from public."Group"
    
    select CON."Id" as "ConId", CON."Name" AS "Contest", CON."StartDateUtc", PI."DisplayName" AS "PowerIndex", CPI."Value", CPI."DisplayValue"
    from public."CompetitionPowerIndex" CPI

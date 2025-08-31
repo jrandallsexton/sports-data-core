@@ -199,7 +199,7 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.VenueState = canonical.VenueState;
 
                     // Result
-                    matchup.IsComplete = canonical.IsComplete;
+                    matchup.IsComplete = canonical.CompletedUtc.HasValue;
                     matchup.AwayScore = canonical.AwayScore;
                     matchup.HomeScore = canonical.HomeScore;
                     matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;

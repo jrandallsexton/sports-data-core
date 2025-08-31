@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 function MatchupCard({
   matchup,
   userPickFranchiseSeasonId,
+  userPickResult, // New: DTO containing isCorrect, franchiseId, etc.
   onPick,
   onViewInsight,
   isInsightUnlocked,
@@ -21,18 +22,31 @@ function MatchupCard({
 
   // Determine pick result when game is complete
   const getUserPickResult = () => {
-    if (!matchup.isComplete || !userPickFranchiseSeasonId) return null;
+    if (!matchup.isComplete) return null;
     
-    const userPickedCorrect = userPickFranchiseSeasonId === matchup.winnerFranchiseSeasonId;
-    return userPickedCorrect ? 'correct' : 'incorrect';
+    // Use server-calculated result if available
+    if (userPickResult) {
+      return userPickResult.isCorrect ? 'correct' : 'incorrect';
+    }
+    
+    // Fallback to client-side calculation (should be rare/deprecated)
+    if (userPickFranchiseSeasonId) {
+      const userPickedCorrect = userPickFranchiseSeasonId === matchup.winnerFranchiseSeasonId;
+      return userPickedCorrect ? 'correct' : 'incorrect';
+    }
+    
+    return null;
   };
 
   const pickResult = getUserPickResult();
 
+  // Determine selected team using pick result data or fallback to prop
+  const selectedFranchiseId = userPickResult?.franchiseId || userPickFranchiseSeasonId;
+
   const isAwaySelected =
-    userPickFranchiseSeasonId === matchup.awayFranchiseSeasonId;
+    selectedFranchiseId === matchup.awayFranchiseSeasonId;
   const isHomeSelected =
-    userPickFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+    selectedFranchiseId === matchup.homeFranchiseSeasonId;
 
   const [now, setNow] = useState(new Date());
 
@@ -51,7 +65,8 @@ function MatchupCard({
   const getCardBorderClass = () => {
     if (!matchup.isComplete) return ""; // No border for incomplete games
     
-    if (!userPickFranchiseSeasonId) return "pick-no-submission"; // Red border for no pick
+    // Check if user made a pick (either in new or old format)
+    if (!userPickResult && !userPickFranchiseSeasonId) return "pick-no-submission"; // Red border for no pick
     
     return pickResult ? `pick-${pickResult}` : ""; // Green/red based on result
   };

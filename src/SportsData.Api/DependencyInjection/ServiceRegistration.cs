@@ -41,7 +41,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
-            services.AddScoped<IScoreContests, ContestScoringJob>();
+            services.AddScoped<IScoreContests, ContestScoringProcessor>();
             services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
             services.AddScoped<ITeamCardService, TeamCardService>();
             services.AddScoped<IUserService, UserService>();
@@ -49,6 +49,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<MatchupScheduler>();
             services.AddSingleton<CanonicalDataQueryProvider>();
             services.AddSingleton<MatchupPreviewPromptProvider>();
+            services.AddScoped<ContestScoringJob>();
+
+            services.AddScoped<IPickScoringService, PickScoringService>();
 
             return services;
         }
@@ -69,6 +72,11 @@ namespace SportsData.Api.DependencyInjection
 
             recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
                 nameof(MatchupPreviewGenerator),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<ContestScoringJob>(
+                nameof(ContestScoringJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 

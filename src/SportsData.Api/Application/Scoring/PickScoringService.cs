@@ -1,84 +1,81 @@
-﻿using SportsData.Api.Infrastructure.Data.Entities;
+﻿using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Api.Infrastructure.Data.Entities;
 
-namespace SportsData.Api.Application.Scoring
+namespace SportsData.Api.Application.Scoring;
+
+public class PickScoringService : IPickScoringService
 {
-    public interface IPickScoringService
+    public void ScorePick(PickemGroup group, PickemGroupUserPick pick, MatchupResult result)
     {
-        PickemGroupUserPick ScorePick(PickemGroupUserPick pick, Contest contest, Infrastructure.Data.Entities.PickemGroup league);
+        var now = DateTime.UtcNow;
+
+        switch (group.PickType)
+        {
+            case PickType.None:
+            case PickType.StraightUp:
+                ScoreStraightUp(pick, result, now);
+                pick.WasAgainstSpread = false;
+                break;
+
+            case PickType.AgainstTheSpread:
+                ScoreAgainstSpread(pick, result, now);
+                pick.WasAgainstSpread = true;
+                break;
+
+            case PickType.OverUnder:
+                // TODO: Implement when OverUnder scoring logic is ready
+                break;
+
+            default:
+                throw new InvalidOperationException("Unsupported PickType: " + group.PickType);
+        }
+
+        if (group.UseConfidencePoints)
+        {
+            // TODO: Apply confidence logic to pick.PointsAwarded
+        }
     }
 
-    public class PickScoringService : IPickScoringService
+    private void ScoreStraightUp(PickemGroupUserPick pick, MatchupResult result, DateTime now)
     {
-        public PickemGroupUserPick ScorePick(
-            PickemGroupUserPick pick,
-            Contest contest, 
-            PickemGroup league)
+        if (!pick.FranchiseId.HasValue)
         {
-            if (contest == null || contest.ContestId != pick.ContestId)
-                throw new ArgumentException("Invalid or mismatched contest.");
-
-            if (!contest.IsFinal)
-                throw new InvalidOperationException("Contest has not been finalized.");
-
-            var isCorrect = false;
-            var points = 0;
-
-            var leaguePickTypes = league.PickType;
-
-            // Straight-Up
-            if (leaguePickTypes.HasFlag(PickType.StraightUp) && pick.FranchiseId.HasValue)
-            {
-                if (contest.WinnerFranchiseId.HasValue && pick.FranchiseId == contest.WinnerFranchiseId)
-                {
-                    isCorrect = true;
-                    points += 1;
-                }
-            }
-
-            // Against the Spread
-            if (leaguePickTypes.HasFlag(PickType.AgainstTheSpread) && pick.FranchiseId.HasValue)
-            {
-                pick.WasAgainstSpread = true;
-
-                if (contest.SpreadWinnerFranchiseId.HasValue && pick.FranchiseId == contest.SpreadWinnerFranchiseId)
-                {
-                    isCorrect = true;
-                    points += 1;
-                }
-            }
-
-            // Over/Under
-            if (leaguePickTypes.HasFlag(PickType.OverUnder) &&
-                pick.OverUnder.HasValue &&
-                contest.OverUnder.HasValue &&
-                contest.HomeScore.HasValue &&
-                contest.AwayScore.HasValue)
-            {
-                var totalScore = contest.HomeScore.Value + contest.AwayScore.Value;
-                var wentOver = totalScore > contest.OverUnder.Value;
-                var wentUnder = totalScore < contest.OverUnder.Value;
-
-                if ((wentOver && pick.OverUnder == OverUnderPick.Over) ||
-                    (wentUnder && pick.OverUnder == OverUnderPick.Under))
-                {
-                    isCorrect = true;
-                    points += 1;
-                }
-            }
-
-            // Confidence Scoring (overrides point value if correct)
-            if (league.UseConfidencePoints &&
-                pick.ConfidencePoints.HasValue &&
-                isCorrect)
-            {
-                points = pick.ConfidencePoints.Value;
-            }
-
-            pick.IsCorrect = isCorrect;
-            pick.PointsAwarded = points;
-            pick.ScoredAt = DateTime.UtcNow;
-
-            return pick;
+            SetIncorrect(pick, now);
+            return;
         }
+
+        pick.IsCorrect = pick.FranchiseId == result.WinnerFranchiseSeasonId;
+        pick.ScoredAt = now;
+        pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
+    }
+
+    private void ScoreAgainstSpread(PickemGroupUserPick pick, MatchupResult result, DateTime now)
+    {
+        if (!pick.FranchiseId.HasValue)
+        {
+            SetIncorrect(pick, now);
+            return;
+        }
+
+        var spreadWinner = result.SpreadWinnerFranchiseSeasonId;
+
+        if (spreadWinner.HasValue)
+        {
+            pick.IsCorrect = pick.FranchiseId == spreadWinner.Value;
+        }
+        else
+        {
+            pick.IsCorrect = pick.FranchiseId == result.WinnerFranchiseSeasonId;
+        }
+
+        pick.ScoredAt = now;
+        pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
+    }
+
+    private void SetIncorrect(PickemGroupUserPick pick, DateTime now)
+    {
+        pick.IsCorrect = false;
+        pick.ScoredAt = now;
+        pick.PointsAwarded = 0;
     }
 }

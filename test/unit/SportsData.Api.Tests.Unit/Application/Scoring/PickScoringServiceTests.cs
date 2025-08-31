@@ -1,342 +1,170 @@
-﻿//using FluentAssertions;
+﻿using AutoFixture;
 
-//using SportsData.Api.Application;
-//using SportsData.Api.Application.Scoring;
-//using SportsData.Api.Infrastructure.Data.Entities;
-//using SportsData.Core.Common;
+using FluentAssertions;
 
-//using Xunit;
+using SportsData.Api.Application;
+using SportsData.Api.Application.Scoring;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Api.Infrastructure.Data.Entities;
 
-//namespace SportsData.Api.Tests.Unit.Application.Scoring
-//{
-//    public class PickScoringServiceTests
-//    {
-//        private readonly PickScoringService _service = new();
+using Xunit;
 
-//        private static Infrastructure.Data.Entities.PickemGroup GetDefaultLeague(
-//            PickType pickType,
-//            bool useConfidence = false) =>
-//            new()
-//            {
-//                Id = Guid.NewGuid(),
-//                Name = "Test League",
-//                Sport = Sport.FootballNcaa,
-//                League = Api.Application.League.NCAAF,
-//                PickType = pickType,
-//                UseConfidencePoints = useConfidence,
-//                CommissionerUserId = Guid.NewGuid()
-//            };
+namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
-//        private static Contest GetFinalizedContest(
-//            Guid contestId,
-//            Guid winnerId,
-//            Guid spreadWinnerId,
-//            int homeScore = 28,
-//            int awayScore = 17,
-//            double? overUnder = 44.5) =>
-//            new()
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                HomeFranchiseId = Guid.NewGuid(),
-//                AwayFranchiseId = Guid.NewGuid(),
-//                WinnerFranchiseId = winnerId,
-//                SpreadWinnerFranchiseId = spreadWinnerId,
-//                HomeScore = homeScore,
-//                AwayScore = awayScore,
-//                OverUnder = overUnder,
-//                FinalizedUtc = DateTime.UtcNow
-//            };
+public class PickScoringServiceTests : ApiTestBase<PickScoringService>
+{
+    private readonly PickScoringService _sut = new(); // no dependencies
 
-//        [Fact]
-//        public void Scores_StraightUp_Correctly()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var winnerId = Guid.NewGuid();
+    [Fact]
+    public void ScorePick_StraightUp_CorrectPick_SetsCorrectTrueAndAwardsPoint()
+    {
+        // Arrange
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.StraightUp)
+            .Create();
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = winnerId,
-//                PickType = PickType.StraightUp
-//            };
+        var winnerId = Guid.NewGuid();
 
-//            var league = GetDefaultLeague(PickType.StraightUp);
-//            var contest = GetFinalizedContest(contestId, winnerId, Guid.NewGuid());
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, winnerId)
+            .Create();
 
-//            var result = _service.ScorePick(pick, contest, league);
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.WinnerFranchiseSeasonId, winnerId)
+            .Create();
 
-//            result.IsCorrect.Should().BeTrue();
-//            result.PointsAwarded.Should().Be(1);
-//        }
+        // Act
+        _sut.ScorePick(group, pick, result);
 
-//        [Fact]
-//        public void Scores_ATS_Correctly()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var atsWinnerId = Guid.NewGuid();
+        // Assert
+        pick.IsCorrect.Should().BeTrue();
+        pick.PointsAwarded.Should().Be(1);
+        pick.ScoredAt.Should().NotBeNull();
+        pick.WasAgainstSpread.Should().BeFalse();
+    }
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = atsWinnerId,
-//                PickType = PickType.AgainstTheSpread
-//            };
+    [Fact]
+    public void ScorePick_StraightUp_IncorrectPick_SetsCorrectFalseAndAwardsZero()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.StraightUp)
+            .Create();
 
-//            var league = GetDefaultLeague(PickType.AgainstTheSpread);
-//            var contest = GetFinalizedContest(contestId, Guid.NewGuid(), atsWinnerId);
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, Guid.NewGuid())
+            .Create();
 
-//            var result = _service.ScorePick(pick, contest, league);
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.WinnerFranchiseSeasonId, Guid.NewGuid()) // different
+            .Create();
 
-//            result.IsCorrect.Should().BeTrue();
-//            result.PointsAwarded.Should().Be(1);
-//            result.WasAgainstSpread.Should().BeTrue();
-//        }
+        _sut.ScorePick(group, pick, result);
 
-//        [Fact]
-//        public void Scores_OverUnder_Correctly()
-//        {
-//            var contestId = Guid.NewGuid();
+        pick.IsCorrect.Should().BeFalse();
+        pick.PointsAwarded.Should().Be(0);
+        pick.ScoredAt.Should().NotBeNull();
+        pick.WasAgainstSpread.Should().BeFalse();
+    }
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                OverUnder = OverUnderPick.Over,
-//                PickType = PickType.OverUnder
-//            };
+    [Fact]
+    public void ScorePick_AgainstTheSpread_WithSpreadWinner_MatchesCorrectly()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.AgainstTheSpread)
+            .Create();
 
-//            var league = GetDefaultLeague(PickType.OverUnder);
-//            var contest = GetFinalizedContest(contestId, Guid.NewGuid(), Guid.NewGuid(), 35, 20, 52.5); // Total = 55
+        var spreadWinnerId = Guid.NewGuid();
 
-//            var result = _service.ScorePick(pick, contest, league);
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, spreadWinnerId)
+            .Create();
 
-//            result.IsCorrect.Should().BeTrue();
-//            result.PointsAwarded.Should().Be(1);
-//        }
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.SpreadWinnerFranchiseSeasonId, spreadWinnerId)
+            .Create();
 
-//        [Fact]
-//        public void Applies_ConfidencePoints_WhenEnabled_AndCorrect()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var winnerId = Guid.NewGuid();
+        _sut.ScorePick(group, pick, result);
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = winnerId,
-//                ConfidencePoints = 5,
-//                PickType = PickType.StraightUp | PickType.Confidence
-//            };
+        pick.IsCorrect.Should().BeTrue();
+        pick.PointsAwarded.Should().Be(1);
+        pick.ScoredAt.Should().NotBeNull();
+        pick.WasAgainstSpread.Should().BeTrue();
+    }
 
-//            var league = GetDefaultLeague(PickType.StraightUp | PickType.Confidence, useConfidence: true);
-//            var contest = GetFinalizedContest(contestId, winnerId, Guid.NewGuid());
+    [Fact]
+    public void ScorePick_AgainstTheSpread_NoSpreadWinner_FallbacksToStraightUp()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.AgainstTheSpread)
+            .Create();
 
-//            var result = _service.ScorePick(pick, contest, league);
+        var winnerId = Guid.NewGuid();
 
-//            result.IsCorrect.Should().BeTrue();
-//            result.PointsAwarded.Should().Be(5);
-//        }
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, winnerId)
+            .Create();
 
-//        [Fact]
-//        public void Scores_IncorrectPick_AsZeroPoints()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var correctId = Guid.NewGuid();
-//            var incorrectId = Guid.NewGuid();
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.SpreadWinnerFranchiseSeasonId, (Guid?)null)
+            .With(r => r.WinnerFranchiseSeasonId, winnerId)
+            .Create();
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = incorrectId,
-//                PickType = PickType.StraightUp
-//            };
+        _sut.ScorePick(group, pick, result);
 
-//            var league = GetDefaultLeague(PickType.StraightUp);
-//            var contest = GetFinalizedContest(contestId, correctId, Guid.NewGuid());
+        pick.IsCorrect.Should().BeTrue();
+        pick.PointsAwarded.Should().Be(1);
+        pick.ScoredAt.Should().NotBeNull();
+        pick.WasAgainstSpread.Should().BeTrue();
+    }
 
-//            var result = _service.ScorePick(pick, contest, league);
+    [Fact]
+    public void ScorePick_MissingFranchiseId_SetsIncorrect()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.StraightUp)
+            .Create();
 
-//            result.IsCorrect.Should().BeFalse();
-//            result.PointsAwarded.Should().Be(0);
-//        }
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, (Guid?)null)
+            .Create();
 
-//        [Fact]
-//        public void Throws_If_ContestNotFinalized()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var contest = new Contest
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FinalizedUtc = null
-//            };
+        var result = Fixture.Create<MatchupResult>();
 
-//            var league = GetDefaultLeague(PickType.StraightUp);
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = Guid.NewGuid(),
-//                PickType = PickType.StraightUp
-//            };
+        _sut.ScorePick(group, pick, result);
 
-//            var act = () => _service.ScorePick(pick, contest, league);
+        pick.IsCorrect.Should().BeFalse();
+        pick.PointsAwarded.Should().Be(0);
+        pick.ScoredAt.Should().NotBeNull();
+    }
 
-//            act.Should().Throw<InvalidOperationException>().WithMessage("*not been finalized*");
-//        }
+    [Fact]
+    public void ScorePick_OverUnder_DoesNothing()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.OverUnder)
+            .Create();
 
-//        [Fact]
-//        public void Applies_ConfidencePoints_ButZero_IfIncorrect()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var winnerId = Guid.NewGuid();
-//            var wrongId = Guid.NewGuid();
+        var pick = Fixture.Create<PickemGroupUserPick>();
+        var result = Fixture.Create<MatchupResult>();
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = wrongId,
-//                ConfidencePoints = 7,
-//                PickType = PickType.StraightUp
-//            };
+        _sut.Invoking(s => s.ScorePick(group, pick, result))
+            .Should().NotThrow();
 
-//            var league = GetDefaultLeague(PickType.StraightUp | PickType.Confidence, useConfidence: true);
-//            var contest = GetFinalizedContest(contestId, winnerId, Guid.NewGuid());
+        // No-op test — add logic later
+    }
 
-//            var result = _service.ScorePick(pick, contest, league);
+    [Fact]
+    public void ScorePick_UnknownPickType_Throws()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, (PickType)999)
+            .Create();
 
-//            result.IsCorrect.Should().BeFalse();
-//            result.PointsAwarded.Should().Be(0);
-//        }
+        var pick = Fixture.Create<PickemGroupUserPick>();
+        var result = Fixture.Create<MatchupResult>();
 
-//        [Fact]
-//        public void OverUnder_Push_ShouldNotScore()
-//        {
-//            var contestId = Guid.NewGuid();
-
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                OverUnder = OverUnderPick.Over,
-//                PickType = PickType.OverUnder
-//            };
-
-//            var league = GetDefaultLeague(PickType.OverUnder);
-//            var contest = GetFinalizedContest(contestId, Guid.NewGuid(), Guid.NewGuid(), 24, 24, 48.0); // Total = 48, line = 48
-
-//            var result = _service.ScorePick(pick, contest, league);
-
-//            result.IsCorrect.Should().BeFalse();
-//            result.PointsAwarded.Should().Be(0);
-//        }
-
-//        [Fact]
-//        public void MultiPickType_AllCorrect_ShouldAccumulatePoints()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var teamId = Guid.NewGuid();
-
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = teamId,
-//                OverUnder = OverUnderPick.Over,
-//                PickType = PickType.StraightUp | PickType.AgainstTheSpread | PickType.OverUnder
-//            };
-
-//            var league = GetDefaultLeague(pick.PickType);
-//            var contest = GetFinalizedContest(contestId, teamId, teamId, 35, 20, 52.5); // Total = 55, line = 52.5
-
-//            var result = _service.ScorePick(pick, contest, league);
-
-//            result.IsCorrect.Should().BeTrue(); // at least one correct
-//            result.PointsAwarded.Should().Be(3);
-//        }
-
-//        [Fact]
-//        public void StraightUp_TieGame_ShouldNotScoreAsCorrect()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var pickedTeam = Guid.NewGuid();
-
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = pickedTeam,
-//                PickType = PickType.StraightUp
-//            };
-
-//            var league = GetDefaultLeague(PickType.StraightUp);
-
-//            var contest = new Contest
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                HomeFranchiseId = pickedTeam, // Could be home or away
-//                AwayFranchiseId = Guid.NewGuid(),
-//                WinnerFranchiseId = null, // Tied
-//                HomeScore = 24,
-//                AwayScore = 24,
-//                FinalizedUtc = DateTime.UtcNow
-//            };
-
-//            var result = _service.ScorePick(pick, contest, league);
-
-//            result.IsCorrect.Should().BeFalse();
-//            result.PointsAwarded.Should().Be(0);
-//        }
-
-//        [Fact]
-//        public void NFL_TieGame_ShouldScoreIncorrect()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var pickedTeam = Guid.NewGuid();
-
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                FranchiseId = pickedTeam,
-//                PickType = PickType.StraightUp
-//            };
-
-//            var league = new Infrastructure.Data.Entities.PickemGroup
-//            {
-//                Id = Guid.NewGuid(),
-//                Name = "NFL League",
-//                Sport = Sport.FootballNfl,
-//                League = Api.Application.League.NFL,
-//                PickType = PickType.StraightUp,
-//                UseConfidencePoints = false,
-//                CommissionerUserId = Guid.NewGuid()
-//            };
-
-//            var contest = new Contest
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                HomeFranchiseId = pickedTeam,
-//                AwayFranchiseId = Guid.NewGuid(),
-//                WinnerFranchiseId = null,
-//                HomeScore = 17,
-//                AwayScore = 17,
-//                FinalizedUtc = DateTime.UtcNow
-//            };
-
-//            var result = _service.ScorePick(pick, contest, league);
-
-//            result.IsCorrect.Should().BeFalse();
-//            result.PointsAwarded.Should().Be(0);
-//        }
-
-//    }
-//}
+        _sut.Invoking(s => s.ScorePick(group, pick, result))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("*Unsupported PickType*");
+    }
+}

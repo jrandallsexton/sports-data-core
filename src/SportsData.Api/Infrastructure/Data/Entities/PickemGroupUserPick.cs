@@ -10,6 +10,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
     {
         public Guid PickemGroupId { get; set; }
 
+        public PickemGroup Group { get; set; } = null!;
+
         public Guid UserId { get; set; }
 
         public User User { get; set; } = null!; // Navigation property to User
@@ -17,8 +19,6 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public Guid ContestId { get; set; } // From Producer
 
         public int Week { get; set; }
-
-        //public Contest Contest { get; set; } = null!;
 
         public Guid? FranchiseId { get; set; } // Used for SU or ATS
 
@@ -75,6 +75,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.PickType)
                     .HasConversion<int>()
                     .IsRequired();
+
+                builder.HasOne(x => x.Group)
+                    .WithMany() // or `.WithMany(g => g.UserPicks)` if collection exists
+                    .HasForeignKey(x => x.PickemGroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.User)
+                    .WithMany() // or `.WithMany(u => u.UserPicks)` if applicable
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
     }

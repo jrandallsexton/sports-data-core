@@ -7,6 +7,7 @@ using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 
 using System.Data;
+using Microsoft.AspNetCore.Connections;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
 {
@@ -29,6 +30,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
 
         Task<MatchupResult> GetMatchupResult(Guid contestId);
+
+        Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -242,6 +245,24 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             );
 
             return result ?? throw new Exception("Not found");
+        }
+
+        public async Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId)
+        {
+            const string sql = @"
+                SELECT ""Id""
+                FROM public.""Contest""
+                WHERE ""FinalizedUtc"" IS NOT NULL
+                  AND ""SeasonWeekId"" = @SeasonWeekId;
+            ";
+
+            var results = await _connection.QueryAsync<Guid>(
+                sql,
+                new { SeasonWeekId = seasonWeekId },
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
         }
     }
 }

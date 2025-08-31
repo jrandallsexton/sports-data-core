@@ -2,149 +2,77 @@
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Core.Eventing;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Scoring
 {
-    public interface IScoreContests
-    {
-        Task Process(ScoreContestCommand command);
-    }
-
-    public class ContestScoringJob : IScoreContests
+    public class ContestScoringJob
     {
         private readonly ILogger<ContestScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideCanonicalData _canonicalData;
-        public readonly IEventBus _bus;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly Guid _correlationId = Guid.NewGuid();
 
         public ContestScoringJob(
             ILogger<ContestScoringJob> logger,
             AppDataContext dataContext,
             IProvideCanonicalData canonicalData,
-            IEventBus bus)
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _canonicalData = canonicalData;
-            _bus = bus;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task Process(ScoreContestCommand command)
+        public async Task ExecuteAsync()
         {
-            var result = await _canonicalData.GetMatchupResult(command.ContestId);
-
-            if (result is null)
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = _correlationId
+                    }))
             {
-                _logger.LogError("Result not found");
+                _logger.LogInformation("{MethodName} Began", nameof(ContestScoringJob));
+
+                await ExecuteInternal();
+            }
+        }
+
+        private async Task ExecuteInternal()
+        {
+            // get the current week
+            var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
+
+            if (currentWeek is null)
+            {
+                _logger.LogError("Could not get current season week.");
                 return;
             }
 
-            // now we need all UserPicks for this contest - including the group they are in
-            var picks = await _dataContext.UserPicks
-                .Where(p => p.ContestId == command.ContestId)
+            // get a distinct list of all contests associated with UserPick records that have not been scored
+            var unscoredContestIds = await _dataContext.UserPicks
+                .Where(p => p.ScoredAt == null)
+                .Select(p => p.ContestId)
                 .ToListAsync();
 
-            foreach (var pick in picks)
+            // get a list of all contests for the week that have been finalized
+            var contestIdsReadyToScore = await _canonicalData
+                .GetFinalizedContestIds(currentWeek.Id);
+
+            // determine if they have been enriched
+            var contestIdsToScore = unscoredContestIds
+                .Where(x => contestIdsReadyToScore.Contains(x));
+
+            // send them each for scoring (generating UserPick points)
+            foreach (var contestId in contestIdsToScore)
             {
-                var group = await _dataContext.PickemGroups
-                    .Where(g => g.Id == pick.PickemGroupId)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-
-                if (group is null)
+                var cmd = new ScoreContestCommand()
                 {
-                    _logger.LogError("Group was null");
-                    continue;
-                }
-
-                switch (group.PickType)
-                {
-                    case PickType.None:
-                    case PickType.StraightUp:
-                        if (!pick.FranchiseId.HasValue)
-                        {
-                            pick.IsCorrect = false;
-                            pick.ScoredAt = DateTime.UtcNow;
-                            pick.PointsAwarded = 0;
-                        }
-                        else
-                        {
-                            if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
-                            {
-                                pick.IsCorrect = true;
-                                pick.ScoredAt = DateTime.UtcNow;
-                                pick.PointsAwarded = 1;
-                            }
-                            else
-                            {
-                                pick.IsCorrect = false;
-                                pick.ScoredAt = DateTime.UtcNow;
-                                pick.PointsAwarded = 0;
-                            }
-                        }
-                        pick.WasAgainstSpread = false;
-                        break;
-                    case PickType.AgainstTheSpread:
-
-                        if (!pick.FranchiseId.HasValue)
-                        {
-                            pick.IsCorrect = false;
-                            pick.ScoredAt = DateTime.UtcNow;
-                            pick.PointsAwarded = 0;
-                        }
-                        else
-                        {
-                            if (result.SpreadWinnerFranchiseSeasonId.HasValue)
-                            {
-                                if (pick.FranchiseId == result.SpreadWinnerFranchiseSeasonId.Value)
-                                {
-                                    pick.IsCorrect = true;
-                                    pick.ScoredAt = DateTime.UtcNow;
-                                    pick.PointsAwarded = 1;
-                                }
-                                else
-                                {
-                                    pick.IsCorrect = false;
-                                    pick.ScoredAt = DateTime.UtcNow;
-                                    pick.PointsAwarded = 0;
-                                }
-                            }
-                            else
-                            {
-                                // no spread. use straight up
-                                if (pick.FranchiseId == result.WinnerFranchiseSeasonId)
-                                {
-                                    pick.IsCorrect = true;
-                                    pick.ScoredAt = DateTime.UtcNow;
-                                    pick.PointsAwarded = 1;
-                                }
-                                else
-                                {
-                                    pick.IsCorrect = false;
-                                    pick.ScoredAt = DateTime.UtcNow;
-                                    pick.PointsAwarded = 0;
-                                }
-                            }
-                        }
-                        pick.WasAgainstSpread = true;
-                        break;
-                    case PickType.OverUnder:
-                        continue;
-                    default:
-                        _logger.LogError("PickType was outside range");
-                        continue;
-                }
-
-                await _dataContext.SaveChangesAsync();
+                    ContestId = contestId
+                };
+                _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
             }
         }
-    }
-
-    public class ScoreContestCommand
-    {
-        public Guid ContestId { get; set; }
-
-        public Guid CorrelationId { get; set; } = Guid.NewGuid();
     }
 }

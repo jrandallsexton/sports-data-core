@@ -83,11 +83,20 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
             command.CorrelationId);
 
         var existing = await _dataContext.CompetitionStatuses
+            .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
 
         if (existing is not null)
         {
             publishEvent = existing.StatusTypeName != dto.Type.Name;
+
+            // Remove only the ExternalIds for the ESPN provider to avoid unique key constraint violations
+            var espnExternalIds = existing.ExternalIds
+                .Where(x => x.Provider == SourceDataProvider.Espn)
+                .ToList();
+
+            _dataContext.CompetitionStatusExternalIds.RemoveRange(espnExternalIds);
+
             _dataContext.CompetitionStatuses.Remove(existing);
         }
 

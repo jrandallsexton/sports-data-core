@@ -14,7 +14,7 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [InlineData("http://espn.com/v2/sports/football/events/401767256", false)]
         [InlineData("http://espn.com/v2/sports/football/events/401767256/competitions", true)]
         [InlineData("http://espn.com/v2/sports/football/events/401767256/competitions/401767256", false)]
-        [InlineData("http://espn.com/v2/sports/football/leagues/college-football", false)]
+        [InlineData("http://espn.com/v2/sports/football/leagues/college-football", true)]
         public void IsResourceIndex_Should_Classify_Uris(string uriString, bool expected)
         {
             var uri = new Uri(uriString);

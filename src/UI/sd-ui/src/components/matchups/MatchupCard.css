@@ -160,8 +160,8 @@
 }
 
 .pick-button.selected {
-  background-color: var(--accent-color, #4caf50);
-  color: #fff;
+  background-color: #61dafb;
+  color: #111;
 }
 
 .pick-button:disabled {
@@ -171,7 +171,7 @@
 
 .pick-check-icon {
   margin-right: 6px;
-  color: green;
+  color: #61dafb;
   vertical-align: middle;
 }
 

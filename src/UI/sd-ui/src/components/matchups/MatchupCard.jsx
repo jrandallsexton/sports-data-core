@@ -131,7 +131,8 @@ function MatchupCard({
           onClick={() => onPick(matchup, matchup.awayFranchiseSeasonId)}
           disabled={isLocked}
         >
-          {isAwaySelected && <FaCheckCircle className="pick-check-icon" />}
+          {isAwaySelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
+          {isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
           {!isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.awayShort}
         </button>
@@ -158,7 +159,8 @@ function MatchupCard({
           onClick={() => onPick(matchup, matchup.homeFranchiseSeasonId)}
           disabled={isLocked}
         >
-          {isHomeSelected && <FaCheckCircle className="pick-check-icon" />}
+          {isHomeSelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
+          {isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
           {!isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.homeShort}
         </button>

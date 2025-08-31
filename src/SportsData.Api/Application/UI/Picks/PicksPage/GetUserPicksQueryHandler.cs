@@ -44,7 +44,8 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
                     FranchiseId = p.FranchiseId ?? Guid.Empty,
                     IsCorrect = p.IsCorrect,
                     PickType = p.PickType,
-                    TiebreakerGuessTotal = p.TiebreakerGuessTotal
+                    TiebreakerGuessTotal = p.TiebreakerGuessTotal,
+                    PointsAwarded = p.PointsAwarded
                 })
                 .ToListAsync(cancellationToken);
         }

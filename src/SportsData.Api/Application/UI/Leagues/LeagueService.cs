@@ -198,6 +198,15 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.VenueCity = canonical.VenueCity;
                     matchup.VenueState = canonical.VenueState;
 
+                    // Result
+                    matchup.IsComplete = canonical.IsComplete;
+                    matchup.AwayScore = canonical.AwayScore;
+                    matchup.HomeScore = canonical.HomeScore;
+                    matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;
+                    matchup.SpreadWinnerFranchiseSeasonId = canonical.SpreadWinnerFranchiseSeasonId;
+                    matchup.OverUnderResult = canonical.OverUnderResult;
+                    matchup.CompletedUtc = canonical.CompletedUtc;
+
                     matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId);
                 }
             }

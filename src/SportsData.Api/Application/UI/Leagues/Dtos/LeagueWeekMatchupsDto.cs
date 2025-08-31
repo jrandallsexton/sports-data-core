@@ -46,6 +46,15 @@
             public string VenueState { get; set; } = default!;
 
             public bool IsPreviewAvailable { get; set; }
+
+            // Result
+            public bool IsComplete { get; set; }
+            public int? AwayScore { get; set; }
+            public int? HomeScore { get; set; }
+            public Guid? WinnerFranchiseSeasonId { get; set; }
+            public Guid? SpreadWinnerFranchiseSeasonId { get; set; }
+            public OverUnderPick? OverUnderResult { get; set; }
+            public DateTime? CompletedUtc { get; set; }
         }
 
     }

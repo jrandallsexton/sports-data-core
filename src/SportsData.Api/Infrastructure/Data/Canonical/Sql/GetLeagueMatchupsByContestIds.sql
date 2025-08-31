@@ -36,7 +36,15 @@
   co."Spread" as "HomeSpread",
   co."OverUnder" as "OverUnder",
   co."OverOdds" as "OverOdds",
-  co."UnderOdds" as "UnderOdds"
+  co."UnderOdds" as "UnderOdds",
+
+  c."IsComplete",
+  c."AwayScore",
+  c."HomeScore",
+  c."WinnerFranchiseId" as "WinnerFranchiseSeasonId,
+  c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
+  c."OverUnder" as "OverUnderResult",
+  c."EndDateUtc" as "CompletedUtc"
 
 FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"

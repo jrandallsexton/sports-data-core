@@ -15,4 +15,6 @@ public class UserPickDto
     public int? TiebreakerGuessTotal { get; set; }
 
     public bool? IsCorrect { get; set; }
+
+    public int? PointsAwarded { get; set; }
 }

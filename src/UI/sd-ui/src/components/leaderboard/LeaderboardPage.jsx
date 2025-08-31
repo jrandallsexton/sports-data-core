@@ -169,7 +169,7 @@ function LeaderboardPage() {
                   </td>
 
                   <td>
-                    {user.name === "sportDeets" && (
+                    {user.name === "StatBot" && (
                       <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
                     )}
                     {user.name}{" "}

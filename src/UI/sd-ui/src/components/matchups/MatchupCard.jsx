@@ -12,7 +12,6 @@ function MatchupCard({
   isInsightUnlocked,
   isFadingOut = false
 }) {
-  const awaySpread = matchup.awaySpread ?? 0;
   const homeSpread = matchup.homeSpread ?? 0;
   const overUnder = matchup.overUnder ?? "TBD";
   const gameTime = formatToEasternTime(matchup.startDateUtc);

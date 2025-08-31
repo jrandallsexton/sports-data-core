@@ -73,8 +73,41 @@ function MessageBoardPage() {
       // Use home feed for "All Leagues"
       fetchHomeFeed();
     } else {
-      // Use specific league threads
-      fetchThreadsPage();
+      // Use specific league threads - force execution by bypassing hasMore check
+      fetchThreadsPageForced();
+    }
+  }
+
+  // --- forced version of fetchThreadsPage that bypasses hasMore check ---
+  async function fetchThreadsPageForced(limit = 10) {
+    const targetGroupId = selectedLeagueId !== "all" ? selectedLeagueId : groupId;
+    
+    if (!targetGroupId || loading) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await MessageboardApi.getThreads(targetGroupId, {
+        limit,
+        cursor: null, // Always start fresh for league changes
+      });
+
+      const { items, nextCursor } = data;
+
+      // For each thread, fetch the OP (parentId == null returns the root)
+      const opsWithReplies = await Promise.all(
+        items.map((t) => fetchOpWithReplies(t))
+      );
+      
+      const allPosts = opsWithReplies.filter(Boolean);
+
+      setPosts(allPosts);
+      setCursor(nextCursor || null);
+      setHasMore(Boolean(nextCursor));
+    } catch (error) {
+      console.error("Error fetching threads:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -83,7 +116,10 @@ function MessageBoardPage() {
     // When called from fetchThreadsByLeague, use selectedLeagueId directly
     // When called from groupId-based routing, fall back to groupId
     const targetGroupId = selectedLeagueId !== "all" ? selectedLeagueId : groupId;
-    if (!targetGroupId || loading || !hasMore) return;
+    
+    if (!targetGroupId || loading || !hasMore) {
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await MessageboardApi.getThreads(targetGroupId, {

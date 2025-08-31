@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
   const setToken = async (firebaseUser) => {
     try {
       const token = await firebaseUser.getIdToken();
-      console.log('Setting token cookie for user:', firebaseUser.uid);
+      //console.log('Setting token cookie for user:', firebaseUser.uid);
       await apiClient.post('/auth/set-token', { token });
       setUser(firebaseUser);
     } catch (error) {
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     const auth = getAuth();
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser ? 'User present' : 'No user');
+      //console.log('Auth state changed:', firebaseUser ? 'User present' : 'No user');
       
       if (firebaseUser) {
         // Only set the token if we're explicitly signing in
@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
       } else {
         // Only clear the token if we're explicitly signing out
         if (user !== null) {
-          console.log('Clearing token cookie due to auth state change');
+          //console.log('Clearing token cookie due to auth state change');
           await apiClient.post('/auth/clear-token');
         }
         setUser(null);

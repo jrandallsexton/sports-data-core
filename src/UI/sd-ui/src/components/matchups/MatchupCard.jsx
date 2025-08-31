@@ -74,9 +74,6 @@ function MatchupCard({
             </div>
           </div>
         </div>
-        <div className="team-spread">
-          {awaySpread > 0 ? `+${awaySpread}` : awaySpread}
-        </div>
       </div>
 
       <div className="at-divider">at</div>

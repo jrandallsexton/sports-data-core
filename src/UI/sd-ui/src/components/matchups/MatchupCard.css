@@ -94,6 +94,36 @@
   font-size: 0.9rem;
 }
 
+/* Game Result Section */
+.game-result {
+  text-align: center;
+  padding: 8px;
+  background: linear-gradient(135deg, #2d2d30 0%, #1c1e22 100%);
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+.final-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.result-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #61dafb;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.score-display {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
 .pick-distribution {
   margin: 1rem 0;
 }
@@ -212,6 +242,41 @@
 .matchup-card.fade-out {
   opacity: 0;
   transition: opacity 500ms ease-in-out;
+}
+
+/* Pick Result Styling */
+.pick-button.result-correct {
+  background-color: #28a745 !important; /* Green for correct picks */
+  color: white !important;
+  border: 2px solid #1e7e34;
+}
+
+.pick-button.result-incorrect {
+  background-color: #dc3545 !important; /* Red for incorrect picks */
+  color: white !important;
+  border: 2px solid #c82333;
+}
+
+.pick-result-icon {
+  margin-right: 6px;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+/* Card border based on pick result */
+.matchup-card.pick-correct {
+  border: 2px solid #28a745;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+.matchup-card.pick-incorrect {
+  border: 2px solid #dc3545;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+}
+
+.matchup-card.pick-no-submission {
+  border: 2px solid #dc3545;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
 }
 
 /* Mobile responsiveness */

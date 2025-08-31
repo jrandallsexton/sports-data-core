@@ -1,5 +1,5 @@
 import "./MatchupCard.css";
-import { FaChartLine, FaLock, FaCheckCircle } from "react-icons/fa";
+import { FaChartLine, FaLock, FaCheckCircle, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
 import { useState, useEffect } from "react";
@@ -18,6 +18,16 @@ function MatchupCard({
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
   const seasonYear = matchup.seasonYear ?? 2025;
+
+  // Determine pick result when game is complete
+  const getUserPickResult = () => {
+    if (!matchup.isComplete || !userPickFranchiseSeasonId) return null;
+    
+    const userPickedCorrect = userPickFranchiseSeasonId === matchup.winnerFranchiseSeasonId;
+    return userPickedCorrect ? 'correct' : 'incorrect';
+  };
+
+  const pickResult = getUserPickResult();
 
   const isAwaySelected =
     userPickFranchiseSeasonId === matchup.awayFranchiseSeasonId;
@@ -38,8 +48,16 @@ function MatchupCard({
   const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
   const isLocked = now > lockTime;
 
+  const getCardBorderClass = () => {
+    if (!matchup.isComplete) return ""; // No border for incomplete games
+    
+    if (!userPickFranchiseSeasonId) return "pick-no-submission"; // Red border for no pick
+    
+    return pickResult ? `pick-${pickResult}` : ""; // Green/red based on result
+  };
+
   return (
-    <div className={`matchup-card ${isFadingOut ? "fade-out" : ""}`}>
+    <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${getCardBorderClass()}`}>
       {/* Away Team Row */}
       <div className="team-row">
         <div className="team-info">
@@ -115,21 +133,39 @@ function MatchupCard({
         </div>
       </div>
 
-      <div className="game-time-location">
-        {gameTime} | {venue} | {location}
-      </div>
+      {/* Game Result - show final score if game is complete */}
+      {matchup.isComplete ? (
+        <div className="game-result">
+          <div className="final-score">
+            <span className="result-label">FINAL:</span>
+            <span className="score-display">
+              {matchup.awayShort} {matchup.awayScore} - {matchup.homeScore} {matchup.homeShort}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="game-time-location">
+          {gameTime} | {venue} | {location}
+        </div>
+      )}
 
       <div className="spread-ou">O/U: {overUnder}</div>
 
       <div className="pick-buttons">
         <button
-          className={`pick-button ${isAwaySelected ? "selected" : ""}`}
+          className={`pick-button ${isAwaySelected ? "selected" : ""} ${
+            pickResult && isAwaySelected ? `result-${pickResult}` : ""
+          }`}
           onClick={() => onPick(matchup, matchup.awayFranchiseSeasonId)}
           disabled={isLocked}
         >
-          {isAwaySelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
-          {isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
-          {!isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {/* Show result icons for completed games */}
+          {pickResult && isAwaySelected && pickResult === 'correct' && <FaCheckCircle className="pick-result-icon" />}
+          {pickResult && isAwaySelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
+          {/* Show normal pick/lock icons for ongoing games */}
+          {!pickResult && isAwaySelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
+          {!pickResult && isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {!pickResult && !isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.awayShort}
         </button>
 
@@ -151,13 +187,19 @@ function MatchupCard({
         </button>
 
         <button
-          className={`pick-button ${isHomeSelected ? "selected" : ""}`}
+          className={`pick-button ${isHomeSelected ? "selected" : ""} ${
+            pickResult && isHomeSelected ? `result-${pickResult}` : ""
+          }`}
           onClick={() => onPick(matchup, matchup.homeFranchiseSeasonId)}
           disabled={isLocked}
         >
-          {isHomeSelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
-          {isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
-          {!isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {/* Show result icons for completed games */}
+          {pickResult && isHomeSelected && pickResult === 'correct' && <FaCheckCircle className="pick-result-icon" />}
+          {pickResult && isHomeSelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
+          {/* Show normal pick/lock icons for ongoing games */}
+          {!pickResult && isHomeSelected && !isLocked && <FaCheckCircle className="pick-check-icon" />}
+          {!pickResult && isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
+          {!pickResult && !isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.homeShort}
         </button>
       </div>

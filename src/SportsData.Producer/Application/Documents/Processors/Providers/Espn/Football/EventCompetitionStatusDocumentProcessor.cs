@@ -113,7 +113,7 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
         await _dataContext.CompetitionStatuses.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogWarning("Persisted CompetitionStatus for competition {competitionId}", competitionId);
+        _logger.LogInformation("Persisted CompetitionStatus for competition {competitionId}", competitionId);
     }
 
 }

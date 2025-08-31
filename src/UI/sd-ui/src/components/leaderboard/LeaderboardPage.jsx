@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { FaArrowDown, FaArrowUp, FaRobot } from "react-icons/fa";
 import { useUserDto } from "../../contexts/UserContext";
 import LeagueSelector from "../shared/LeagueSelector";
 import apiWrapper from "../../api/apiWrapper";
@@ -145,6 +145,9 @@ function LeaderboardPage() {
                   </td>
 
                   <td>
+                    {user.name === "sportDeets" && (
+                      <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
+                    )}
                     {user.name}{" "}
                     {user.userId === currentUserId && (
                       <span className="you-label">(You)</span>

@@ -44,9 +44,22 @@ namespace SportsData.Api.Application.UI.Leaderboard
                 })
                 .ToListAsync(cancellationToken);
 
-            var result = leaderboard
-                .OrderByDescending(x => x.TotalPoints)
-                .Select((x, index) => new LeaderboardUserDto
+            var result = new List<LeaderboardUserDto>();
+
+            int rank = 1;
+            int position = 0;
+            int? previousPoints = null;
+
+            foreach (var x in leaderboard.OrderByDescending(x => x.TotalPoints))
+            {
+                position++;
+
+                if (previousPoints != x.TotalPoints)
+                {
+                    rank = position;
+                }
+
+                result.Add(new LeaderboardUserDto
                 {
                     UserId = x.UserId,
                     Name = x.DisplayName,
@@ -55,15 +68,18 @@ namespace SportsData.Api.Application.UI.Leaderboard
                     WeeklyAverage = x.WeeksPlayed > 0
                         ? Math.Round((decimal)x.TotalPoints / x.WeeksPlayed, 1)
                         : 0,
-                    Rank = index + 1,
+                    Rank = rank,
                     TotalPicks = x.TotalPicks,
                     TotalCorrect = x.TotalCorrect,
                     PickAccuracy = x.TotalPicks > 0
                         ? Math.Round((decimal)x.TotalCorrect / x.TotalPicks * 100, 2)
                         : 0,
-                    LastWeekRank = null // Optional — fill later if needed
-                })
-                .ToList();
+                    LastWeekRank = null
+                });
+
+                previousPoints = x.TotalPoints;
+            }
+
 
             return result;
         }

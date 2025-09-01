@@ -36,6 +36,14 @@
   margin: 0;
 }
 
+.team-record {
+  font-size: 1.1rem;
+  color: var(--highlight-color, #ffc107);
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
 .team-location,
 .team-stadium {
   font-size: 1rem;
@@ -71,6 +79,10 @@
 
   .team-name {
     font-size: 1.3rem;
+  }
+
+  .team-record {
+    font-size: 1rem;
   }
 
   .team-location,

@@ -50,10 +50,17 @@ function TeamCard() {
         />
         <div>
           <h2 className="team-name">{team.name}</h2>
-          <p className="team-location">{team.location}</p>
+          <p className="team-record">
+            {team.overallRecord} ({team.conferenceRecord})
+          </p>
+          <br/>
           <p className="team-stadium">
-            {team.stadiumName} – {team.stadiumCapacity.toLocaleString()}{" "}
-            capacity
+            {team.stadiumName}
+            {team.stadiumCapacity > 0 && (
+              <>
+                {" – "}{team.stadiumCapacity.toLocaleString()} capacity
+              </>
+            )}
           </p>
         </div>
 

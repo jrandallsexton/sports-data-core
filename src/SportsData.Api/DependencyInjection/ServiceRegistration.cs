@@ -1,5 +1,6 @@
 ﻿using Hangfire;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
@@ -54,6 +55,7 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeaderboardService, LeaderboardService>();
+            services.AddScoped<IAdminService, AdminService>();
 
             return services;
         }

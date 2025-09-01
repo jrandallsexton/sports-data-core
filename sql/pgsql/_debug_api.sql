@@ -1,14 +1,35 @@
-select * from public."ContestPreview" where "ContestId" = '0e27c391-408c-90af-c810-cd006ffbc10e'
+
+select * from public."MatchupPreview" where "Id" = 'cb8b19c4-4cba-4893-a710-8782a16a2772'
+update public."MatchupPreview" set
+"PredictedStraightUpWinner" = 'fed0ff75-7350-9b1e-11c0-b0ad672e8c63',
+"PredictedSpreadWinner" = 'fed0ff75-7350-9b1e-11c0-b0ad672e8c63'
+where "Id" = 'cb8b19c4-4cba-4893-a710-8782a16a2772'
+
+/*
+update public."MatchupPreview" set
+"PredictedStraightUpWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d',
+"PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
+*/
+
 select * from public."MatchupPreview" order by "CreatedUtc" desc
-select * from public."PickemGroup"
+select * from public."PickemGroup" where "IsPublic" = true
+
+select g."Id", u."DisplayName" as "Commissioner", g."Name", g."Description", g."RankingFilter", g."PickType", g."UseConfidencePoints", g."DropLowWeeksCount"
+from public."PickemGroup" g
+inner join public."User" u on u."Id" = g."CommissionerUserId"
+where g."IsPublic" = true
 
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
 select * from public."PickemGroupMatchup" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
-select * from public."UserPick"
+select * from public."UserPick" where "ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+
+select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+--delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+--update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null
 select * from public."User"
---update public."User" set "DisplayName" = 'sportDeets' where "Id" = '11111111-1111-1111-1111-111111111111'
+--update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true where "Id" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *

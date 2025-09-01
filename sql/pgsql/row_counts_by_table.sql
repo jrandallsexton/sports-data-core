@@ -17,10 +17,10 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
    select * from public."Group" order by "Slug"
    select * from public."FranchiseLogo"
    select * from public."Franchise" where "Abbreviation" is null
-   select * from public."Franchise" where "Slug" = 'lsu-tigers'
-   select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc
+   select * from public."Franchise" where "Slug" = 'vanderbilt-commodores'
+   select * from public."FranchiseSeason" where "FranchiseId" = '9c2127a2-2edd-8479-1ef0-f0dba8914be1' order by "SeasonYear" desc
    
-   select * from public."FranchiseSeason" where "Id" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+   select * from public."FranchiseSeason" where "Id" = '347b91c8-1e7a-609e-ef3f-58d45405d9e2'
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
    
    
@@ -103,8 +103,8 @@ select * from public."CompetitionStatus" where "CompetitionId" = 'f5cfd727-3b4a-
 select * from public."CompetitionLink" where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 select * from public."CompetitionNote" --where "CompetitionId" = 'f5cfd727-3b4a-f464-1ce1-8d2ffbc4e652'
 
-select * from public."Contest" where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
-
+select * from public."Contest" where "Id" = 'f63548d6-f7a2-5e15-cfcc-8931235cad37'
+select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d'
 
 
 /*
@@ -118,7 +118,7 @@ where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
 
 	select * from public."Competition" comp
 	inner join public."CompetitionCompetitor" cc on cc."CompetitionId" = comp."Id"
-	where comp."ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+	where comp."ContestId" = 'f63548d6-f7a2-5e15-cfcc-8931235cad37'
 
 	select * from public."CompetitionOdds" co where co."CompetitionId" = 'c78ca8e8-7f22-ca21-8cea-455a151667f5'
 	select * from public."CompetitionTeamOdds" where "CompetitionOddsId" = '48e50b66-3d41-1083-7435-81b636066b20'

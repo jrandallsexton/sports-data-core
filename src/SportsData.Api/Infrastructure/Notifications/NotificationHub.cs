@@ -21,7 +21,7 @@ public class NotificationHub : Hub
         var userId = Context.UserIdentifier;
         if (string.IsNullOrEmpty(userId))
         {
-            _logger.LogWarning("Connection {ConnectionId} has no UserIdentifier", Context.ConnectionId);
+            _logger.LogInformation("Connection {ConnectionId} has no UserIdentifier", Context.ConnectionId);
         }
 
         await base.OnConnectedAsync();

@@ -71,6 +71,24 @@ namespace SportsData.Api.Application.Admin
             _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
         }
+
+        [HttpPost]
+        [Route("ai-refresh")]
+        public IActionResult RefreshAiExistence()
+        {
+            var correlationId = Guid.NewGuid();
+            _backgroundJobProvider.Enqueue<IAdminService>(p => p.RefreshAiExistence(correlationId));
+            return Accepted(correlationId);
+        }
+
+        [HttpPost]
+        [Route("ai-audit")]
+        public IActionResult AiPreviewsAudit()
+        {
+            var correlationId = Guid.NewGuid();
+            _backgroundJobProvider.Enqueue<IAdminService>(p => p.AuditAi(correlationId));
+            return Accepted(correlationId);
+        }
     }
 
     public class GenerateUrlIdentityCommand

@@ -5,6 +5,7 @@ public class MatchupPreviewValidator
     public record ValidationResult(bool IsValid, List<string> Errors);
 
     public static ValidationResult Validate(
+        Guid contestId,
         int homeScore,
         int awayScore,
         double homeSpread,
@@ -55,6 +56,17 @@ public class MatchupPreviewValidator
             {
                 errors.Add("Spread winner is inconsistent with spread and score differential.");
             }
+        }
+
+        // 3. Ensure winner ids not set to ContestId (yes, i've seen this)
+        if (contestId == predictedStraightUpWinner)
+        {
+            errors.Add("Straight-up winner's FranchiseSeasonId is the ContestId.");
+        }
+
+        if (contestId == predictedSpreadWinner)
+        {
+            errors.Add("Spread winner's FranchiseSeasonId is the ContestId.");
         }
 
         return new ValidationResult(errors.Count == 0, errors);

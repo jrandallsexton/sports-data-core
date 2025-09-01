@@ -5,6 +5,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Documents.Processors;
+using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -13,7 +14,9 @@ namespace SportsData.Producer.DependencyInjection
 {
     public static class ServiceRegistration
     {
-        public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
+        public static IServiceCollection AddLocalServices(
+            this IServiceCollection services,
+            Sport mode)
         {
             services.AddScoped<IDataContextFactory, DataContextFactory>();
 
@@ -58,6 +61,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
             services.AddScoped<ContestEnrichmentJob>();
 
+            services.AddScoped<IEnrichFranchiseSeasons, FranchiseSeasonEnrichmentProcessor<TeamSportDataContext>>();
+            services.AddScoped<FranchiseSeasonEnrichmentJob>();
+
             return services;
         }
 
@@ -72,6 +78,11 @@ namespace SportsData.Producer.DependencyInjection
 
             recurringJobManager.AddOrUpdate<ContestEnrichmentJob>(
                 nameof(ContestEnrichmentJob),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(
+                nameof(FranchiseSeasonEnrichmentJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 

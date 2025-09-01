@@ -47,10 +47,7 @@ namespace SportsData.Producer.Application.Contests
             // spawn a job to finalize each
             foreach (var contest in contests)
             {
-                var cmd = new EnrichContestCommand()
-                {
-                    ContestId = contest.Id
-                };
+                var cmd = new EnrichContestCommand(contest.Id, Guid.NewGuid());
                 _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
             }
         }
@@ -59,12 +56,5 @@ namespace SportsData.Producer.Application.Contests
     public interface IAmARecurringJob
     {
         Task ExecuteAsync();
-    }
-
-    public class EnrichContestCommand
-    {
-        public Guid ContestId { get; set; }
-
-        public Guid CorrelationId { get; set; } = Guid.NewGuid();
     }
 }

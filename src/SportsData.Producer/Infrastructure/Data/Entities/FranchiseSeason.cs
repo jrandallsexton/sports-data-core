@@ -43,11 +43,20 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<FranchiseSeasonLogo> Logos { get; set; } = new List<FranchiseSeasonLogo>();
 
+        // Enrichment Properties
         public int Wins { get; set; }
 
         public int Losses { get; set; }
 
         public int Ties { get; set; }
+
+        public int ConferenceWins { get; set; }
+
+        public int ConferenceLosses { get; set; }
+
+        public int ConferenceTies { get; set; }
+
+        // End Enrichment Properties
 
         public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
 

@@ -37,7 +37,15 @@ namespace SportsData.Producer.Application.Franchises
             {
                 _logger.LogInformation("Began with {@command}", command);
 
-                await ProcessInternal(command);
+                try
+                {
+                    await ProcessInternal(command);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception occurred while enriching franchise season. {@Command}", command);
+                    throw;
+                }
             }
         }
 

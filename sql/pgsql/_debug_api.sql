@@ -1,9 +1,10 @@
 
-select * from public."MatchupPreview" where "Id" = 'cb8b19c4-4cba-4893-a710-8782a16a2772'
+select * from public."MatchupPreview" where "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'
+
 update public."MatchupPreview" set
-"PredictedStraightUpWinner" = 'fed0ff75-7350-9b1e-11c0-b0ad672e8c63',
-"PredictedSpreadWinner" = 'fed0ff75-7350-9b1e-11c0-b0ad672e8c63'
-where "Id" = 'cb8b19c4-4cba-4893-a710-8782a16a2772'
+"PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
+"PredictedSpreadWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd'
+where "Id" = 'c30dedee-663b-405f-8de5-ce7c5ea6998e'
 
 /*
 update public."MatchupPreview" set
@@ -25,7 +26,8 @@ select * from public."PickemGroupWeek" where "GroupId" = '620d8af8-cf6f-49de-9a6
 select * from public."PickemGroupMatchup" where "GroupId" = '620d8af8-cf6f-49de-9a66-658bbfd02e82'
 select * from public."UserPick" where "ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
 
-select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+--delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+select * from public."UserPick" where "UserId" = '6b4d61b8-7abc-43fb-82cc-27753373cf48' and "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null
 select * from public."User"

@@ -3,6 +3,28 @@ import { formatToEasternTime } from "../../utils/timeUtils";
 import "./TeamSchedule.css";
 
 function TeamSchedule({ schedule, seasonYear }) {
+  // Helper function to format game result
+  const formatGameResult = (game) => {
+    // If game is not finalized, show TBD
+    if (!game.finalizedUtc) {
+      return "TBD";
+    }
+    
+    // Format the score and determine win/loss
+    const score = `${game.awayScore}-${game.homeScore}`;
+    const resultText = game.wasWinner ? "W" : "L";
+    
+    return `${resultText} | ${score}`;
+  };
+
+  // Helper function to get CSS class for result
+  const getResultClass = (game) => {
+    if (!game.finalizedUtc) {
+      return "result-tbd";
+    }
+    return game.wasWinner ? "result-win" : "result-loss";
+  };
+
   return (
     <div className="team-schedule">
       <h3>Schedule ({seasonYear})</h3>
@@ -29,14 +51,8 @@ function TeamSchedule({ schedule, seasonYear }) {
                   </Link>
                 </td>
                 <td>{game.location}</td>
-                <td
-                  className={
-                    game.result?.trim().toUpperCase().startsWith("W")
-                      ? "result-win"
-                      : "result-loss"
-                  }
-                >
-                  {game.result}
+                <td className={getResultClass(game)}>
+                  {formatGameResult(game)}
                 </td>
               </tr>
             ))

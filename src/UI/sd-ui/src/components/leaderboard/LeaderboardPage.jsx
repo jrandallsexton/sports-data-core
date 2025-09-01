@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { FaArrowDown, FaArrowUp, FaRobot } from "react-icons/fa";
 import { useUserDto } from "../../contexts/UserContext";
+import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
 import apiWrapper from "../../api/apiWrapper";
 import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
   const { userDto, loading: userLoading } = useUserDto();
+  const { selectedLeagueId, setSelectedLeagueId, initializeLeagueSelection } = useLeagueContext();
   const leagues = Object.values(userDto?.leagues || []);
-  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [sortBy, setSortBy] = useState("totalPoints");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -18,10 +19,10 @@ function LeaderboardPage() {
   const currentWeek = 1; // 🔧 You can dynamically fetch this later
 
   useEffect(() => {
-    if (leagues.length > 0 && !selectedLeagueId) {
-      setSelectedLeagueId(leagues[0].id);
+    if (!userLoading && leagues.length > 0) {
+      initializeLeagueSelection(leagues);
     }
-  }, [leagues, selectedLeagueId]);
+  }, [userLoading, leagues, initializeLeagueSelection]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {

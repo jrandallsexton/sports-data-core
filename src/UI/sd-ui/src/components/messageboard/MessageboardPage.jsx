@@ -4,16 +4,20 @@ import "./MessageBoardPage.css";
 import MessageboardApi from "../../api/messageboardApi";
 import { useParams } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
+import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
 
 function MessageBoardPage() {
   const { groupId } = useParams(); // may be undefined on "All Groups"
   const { userDto } = useUserDto();
+  const { selectedLeagueId: globalLeagueId, setSelectedLeagueId: setGlobalLeagueId, initializeLeagueSelection } = useLeagueContext();
   const [posts, setPosts] = useState([]);
   const [newPostContent, setNewPostContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  
+  // For messageboard, we need to handle "all" option specially
   const [selectedLeagueId, setSelectedLeagueId] = useState("all");
   const postThreadMapRef = useRef(new Map()); // postId -> threadId
 
@@ -23,6 +27,24 @@ function MessageBoardPage() {
     { id: "all", name: "All Leagues" },
     ...userLeagues
   ];
+
+  // Initialize league selection from global context
+  useEffect(() => {
+    if (userLeagues.length > 0) {
+      initializeLeagueSelection(userLeagues);
+      // If we have a global selection that's not "all", use it
+      if (globalLeagueId && globalLeagueId !== "all") {
+        setSelectedLeagueId(globalLeagueId);
+      }
+    }
+  }, [userLeagues, globalLeagueId, initializeLeagueSelection]);
+
+  // Update global context when user changes league (except for "all")
+  useEffect(() => {
+    if (selectedLeagueId && selectedLeagueId !== "all") {
+      setGlobalLeagueId(selectedLeagueId);
+    }
+  }, [selectedLeagueId, setGlobalLeagueId]);
 
   // --- helpers to map BE → FE shape (minimal) ---
   const mapPost = (p) => ({

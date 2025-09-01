@@ -20,6 +20,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import PrivateRoute from "./routes/PrivateRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { LeagueProvider } from "./contexts/LeagueContext";
 import { setGlobalApiErrorHandler } from "api/apiClient";
 
 function AppRoutes() {
@@ -85,9 +86,11 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
+          <LeagueProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </LeagueProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

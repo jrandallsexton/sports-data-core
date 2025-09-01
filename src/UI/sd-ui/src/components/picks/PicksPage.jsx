@@ -3,6 +3,7 @@ import "./PicksPage.css";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
+import { useLeagueContext } from "../../contexts/LeagueContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
@@ -12,6 +13,7 @@ import MatchupGrid from "../matchups/MatchupGrid.jsx";
 
 function PicksPage() {
   const { userDto, loading: userLoading } = useUserDto();
+  const { selectedLeagueId: globalLeagueId, setSelectedLeagueId: setGlobalLeagueId, initializeLeagueSelection } = useLeagueContext();
   const { leagueId: routeLeagueId } = useParams(); // optional route param
   const navigate = useNavigate();
 
@@ -36,21 +38,31 @@ function PicksPage() {
   // Select default league on load or when leagues change
   useEffect(() => {
     if (!userLoading && leagues.length > 0) {
+      // Initialize global context
+      initializeLeagueSelection(leagues);
+      
       const isRouteValid =
         routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
       if (isRouteValid) {
         setSelectedLeagueId(routeLeagueId);
+        setGlobalLeagueId(routeLeagueId); // Sync with global context
       } else if (!selectedLeagueId) {
-        setSelectedLeagueId(leagues[0].id);
+        // Use global context if available, otherwise default to first league
+        const leagueToUse = globalLeagueId && leagues.some(l => l.id === globalLeagueId) 
+          ? globalLeagueId 
+          : leagues[0].id;
+        setSelectedLeagueId(leagueToUse);
+        setGlobalLeagueId(leagueToUse);
       }
     }
-  }, [userLoading, leagues, routeLeagueId, selectedLeagueId]);
+  }, [userLoading, leagues, routeLeagueId, selectedLeagueId, globalLeagueId, setGlobalLeagueId, initializeLeagueSelection]);
 
-  // Keep URL in sync with selectedLeagueId
+  // Keep URL in sync with selectedLeagueId and update global context
   useEffect(
     () => {
       if (selectedLeagueId && selectedLeagueId !== routeLeagueId) {
         navigate(`/app/picks/${selectedLeagueId}`, { replace: true });
+        setGlobalLeagueId(selectedLeagueId); // Update global context
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

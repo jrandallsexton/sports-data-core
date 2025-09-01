@@ -33,6 +33,31 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public double? UnderOdds { get; set; }
 
+        // Record snapshots (records at the time of matchup generation)
+        public int AwayWins { get; set; }
+
+        public int AwayLosses { get; set; }
+
+        public int AwayTies { get; set; }
+
+        public int AwayConferenceWins { get; set; }
+
+        public int AwayConferenceLosses { get; set; }
+
+        public int AwayConferenceTies { get; set; }
+
+        public int HomeWins { get; set; }
+
+        public int HomeLosses { get; set; }
+
+        public int HomeTies { get; set; }
+
+        public int HomeConferenceWins { get; set; }
+
+        public int HomeConferenceLosses { get; set; }
+
+        public int HomeConferenceTies { get; set; }
+
         // Nav back to PickemGroupWeek (optional but recommended)
         public PickemGroupWeek GroupWeek { get; set; } = null!;
 

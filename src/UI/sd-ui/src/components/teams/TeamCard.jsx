@@ -85,7 +85,9 @@ function TeamCard() {
         </div>
       </div>
 
-      <TeamNews news={team.news} />
+      {team.news && team.news.length > 0 && (
+        <TeamNews news={team.news} />
+      )}
 
       <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
       {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}

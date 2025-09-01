@@ -77,13 +77,11 @@ function LeaderboardPage() {
 
   return (
     <div className="leaderboard-container">
-      <h2>Group Leaderboard Through Week {currentWeek}</h2>
       <LeagueSelector
         leagues={leagues}
         selectedLeagueId={selectedLeagueId}
         setSelectedLeagueId={setSelectedLeagueId}
       />
-      <p>🏆 See how you stack up against your friends!</p>
 
       {loading ? (
         <div className="loading">Loading leaderboard...</div>

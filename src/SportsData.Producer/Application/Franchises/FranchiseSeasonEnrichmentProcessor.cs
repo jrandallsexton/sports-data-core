@@ -54,9 +54,9 @@ namespace SportsData.Producer.Application.Franchises
 
             // update the wins and losses
             var contests = await _dataContext.Contests
-                .Where(c => c.FinalizedUtc.HasValue &&
-                            c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ||
-                            c.HomeTeamFranchiseSeasonId == command.FranchiseSeasonId)
+                .Where(c => c.FinalizedUtc != null &&
+                            (c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ||
+                            c.HomeTeamFranchiseSeasonId == command.FranchiseSeasonId))
                 .ToListAsync();
 
             var wins = 0;

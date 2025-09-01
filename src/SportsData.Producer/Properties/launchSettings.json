@@ -65,6 +65,18 @@
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5231"
+    },
+    "http-dev.FootballNcaa": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode FootballNcaa",
+      "launchBrowser": true,
+      "launchUrl": "dashboard",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Dev"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5231"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

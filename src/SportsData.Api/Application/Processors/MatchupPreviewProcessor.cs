@@ -83,6 +83,7 @@ namespace SportsData.Api.Application.Processors
                     {
                         // Run semantic validation
                         var validation = MatchupPreviewValidator.Validate(
+                            contestId: command.ContestId,
                             homeScore: parsed.HomeScore,
                             awayScore: parsed.AwayScore,
                             homeSpread: matchup.HomeSpread.Value,

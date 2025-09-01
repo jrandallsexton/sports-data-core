@@ -8,6 +8,7 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Matchups;
 
 public class MatchupPreviewValidatorTests
 {
+    private readonly Guid _contestId = Guid.NewGuid();
     private readonly Guid _home = Guid.NewGuid();
     private readonly Guid _away = Guid.NewGuid();
 
@@ -25,6 +26,7 @@ public class MatchupPreviewValidatorTests
         bool expectedValidationResult)
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore,
             awayScore,
             homeSpread,
@@ -48,6 +50,7 @@ public class MatchupPreviewValidatorTests
     public void Validator_Should_Fail_When_StraightUp_Is_Wrong()
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore: 21,
             awayScore: 27,
             homeSpread: -3,
@@ -65,6 +68,7 @@ public class MatchupPreviewValidatorTests
     public void Validator_Should_Fail_When_Spread_Winner_Is_Wrong()
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore: 21,
             awayScore: 27,
             homeSpread: -3,
@@ -82,6 +86,7 @@ public class MatchupPreviewValidatorTests
     public void Validator_Should_Fail_When_Tied_But_StraightUp_Winner_Predicted()
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore: 17,
             awayScore: 17,
             homeSpread: -2,
@@ -99,6 +104,7 @@ public class MatchupPreviewValidatorTests
     public void Validator_Should_Fail_When_Push_But_Spread_Winner_Predicted()
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore: 35,
             awayScore: 31,
             homeSpread: -4,
@@ -116,6 +122,7 @@ public class MatchupPreviewValidatorTests
     public void Validator_Should_Fail_When_Both_SU_And_Spread_Wrong()
     {
         var result = MatchupPreviewValidator.Validate(
+            _contestId,
             homeScore: 24,
             awayScore: 31,
             homeSpread: -2.5,

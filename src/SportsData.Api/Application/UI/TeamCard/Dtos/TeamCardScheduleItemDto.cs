@@ -14,7 +14,11 @@ public class TeamCardScheduleItemDto
 
     public string LocationType { get; set; } = default!;
 
-    public string Result { get; set; } = default!;
+    public DateTime? FinalizedUtc { get; set; }
+
+    public int? AwayScore { get; set; }
+
+    public int? HomeScore { get; set; }
 
     public bool WasWinner { get; set; }
 }

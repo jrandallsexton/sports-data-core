@@ -43,7 +43,7 @@ namespace SportsData.Producer.Application.Franchises
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Exception occurred while enriching franchise season. {@Command}", command);
+                    _logger.LogError(ex, "Exception occurred while enriching franchise season. {@Command} {@StackTrace}", command, ex.StackTrace);
                     throw;
                 }
             }
@@ -76,7 +76,7 @@ namespace SportsData.Producer.Application.Franchises
 
             foreach (var contest in contests)
             {
-                var wasWinner = contest.WinnerFranchiseId!.Value == command.FranchiseSeasonId;
+                var wasWinner = contest.WinnerFranchiseId == command.FranchiseSeasonId;
 
                 if (wasWinner)
                     wins++;
@@ -88,15 +88,9 @@ namespace SportsData.Producer.Application.Franchises
                 var conferenceId = franchiseSeason.GroupSeasonId;
 
                 // determine the opponent's conference
-                Guid opponentFranchiseSeasonId;
-                if (contest.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId)
-                {
-                    opponentFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
-                }
-                else
-                {
-                    opponentFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
-                }
+                var opponentFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ?
+                    contest.HomeTeamFranchiseSeasonId :
+                    contest.AwayTeamFranchiseSeasonId;
 
                 // get the opponent's franchiseSeason
                 var oppFranchiseSeason = await _dataContext

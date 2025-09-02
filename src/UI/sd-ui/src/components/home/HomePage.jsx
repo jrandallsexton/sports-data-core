@@ -4,6 +4,7 @@ import PickAccuracyChart from "./PickAccuracyChart";
 import AIAccuracyChart from "./AIAccuracyChart";
 import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
+import LeaderboardWidget from "../widgets/LeaderboardWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import SystemNews from "./SystemNews";
@@ -115,16 +116,7 @@ function HomePage() {
 
       {/* Leaderboard + Your Stats */}
       <section className="card-section">
-        <div className="card">
-          <h2>Current Leaderboard</h2>
-          <em>(simulated until after Week 1)</em>
-          <p className="highlight-text">
-            You are ranked <span className="highlight-number">12th</span>
-          </p>
-          <Link to="/app/leaderboard" className="card-link">
-            View Full Leaderboard
-          </Link>
-        </div>
+        <LeaderboardWidget />
 
         <div className="card">
           <h2>Your Pick Record</h2>

@@ -1,0 +1,45 @@
+/* LeaderboardWidget.css */
+
+/* The widget inherits styles from the parent card class,
+   but can add specific overrides here if needed */
+
+.leaderboard-widget .highlight-text {
+  /* Ensure highlight text styles are applied */
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.leaderboard-widget .highlight-number {
+  /* Ensure highlight number styles are applied */
+  color: var(--accent-color);
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.leaderboard-items {
+  margin: 1rem 0;
+}
+
+.leaderboard-item {
+  margin: 0.5rem 0;
+}
+
+.leaderboard-link {
+  display: block;
+  padding: 0.5rem;
+  color: var(--text-color);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.leaderboard-link:hover {
+  background-color: var(--hover-background, rgba(0, 0, 0, 0.05));
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.error-text {
+  color: var(--error-color, #dc3545);
+  font-style: italic;
+}

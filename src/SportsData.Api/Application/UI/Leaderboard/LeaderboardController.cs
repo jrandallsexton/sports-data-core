@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Leaderboard.Dtos;
+using SportsData.Api.Extensions;
 
 namespace SportsData.Api.Application.UI.Leaderboard;
 
@@ -31,5 +32,18 @@ public class LeaderboardController : ControllerBase
             .GetLeaderboardAsync(groupId, week, cancellationToken);
 
         return Ok(leaderboard);
+    }
+
+    [HttpGet("widget")]
+    [Authorize]
+    public async Task<ActionResult<List<LeaderboardUserDto>>> GetLeaderboardWidget(
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var leaderboardWidget = await _leaderboardService
+            .GetLeaderboardWidgetForUser(userId, 2025, cancellationToken);
+
+        return Ok(leaderboardWidget);
     }
 }

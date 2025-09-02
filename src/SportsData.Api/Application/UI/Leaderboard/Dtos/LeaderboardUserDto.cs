@@ -2,6 +2,10 @@
 {
     public class LeaderboardUserDto
     {
+        public Guid LeagueId { get; set; }
+
+        public required string LeagueName { get; set; }
+
         public Guid UserId { get; set; }         // Unique user ID
 
         public string Name { get; set; } = "";   // Display name

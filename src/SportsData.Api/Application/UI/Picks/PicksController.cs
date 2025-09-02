@@ -33,7 +33,9 @@ public class PicksController : ApiControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> SubmitPick([FromBody] SubmitUserPickRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> SubmitPick(
+        [FromBody] SubmitUserPickRequest request,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
@@ -63,6 +65,18 @@ public class PicksController : ApiControllerBase
         var userId = HttpContext.GetCurrentUserId();
 
         var widget = await _userPickService.GetPickRecordWidget(userId, cancellationToken);
+
+        return Ok(widget);
+    }
+
+    [HttpGet("widget/synthetic")]
+    [Authorize]
+    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var widget = await _userPickService.GetPickRecordWidgetForSynthetic(userId, cancellationToken);
 
         return Ok(widget);
     }

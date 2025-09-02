@@ -6,6 +6,7 @@ import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
 import LeaderboardWidget from "../widgets/LeaderboardWidget";
 import PickRecordWidget from "../widgets/PickRecordWidget";
+import AiRecordWidget from "../widgets/AiRecordWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import SystemNews from "./SystemNews";
@@ -121,16 +122,7 @@ function HomePage() {
 
         <PickRecordWidget />
 
-        <div className="card">
-          <h2>sportDeets AI Accuracy</h2>
-          <em>(simulated until after Week 1)</em>
-          <p>
-            Overall Correct Picks: <strong>74%</strong>
-          </p>
-          <Link to="/app/ai-performance" className="card-link">
-            See Full AI Stats
-          </Link>
-        </div>
+        <AiRecordWidget />
       </section>
 
       <section className="chart-section">

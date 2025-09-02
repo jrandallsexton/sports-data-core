@@ -21,6 +21,10 @@ namespace SportsData.Api.Application.UI.Picks
         Task<PickRecordWidgetDto> GetPickRecordWidget(
             Guid userId,
             CancellationToken cancellationToken);
+
+        Task<PickRecordWidgetDto> GetPickRecordWidgetForSynthetic(
+            Guid userId,
+            CancellationToken cancellationToken);
     }
 
     public class PickService : IPickService
@@ -152,5 +156,11 @@ namespace SportsData.Api.Application.UI.Picks
             return widget;
         }
 
+        public async Task<PickRecordWidgetDto> GetPickRecordWidgetForSynthetic(Guid userId, CancellationToken cancellationToken)
+        {
+            var synthetic = await _dataContext.Users.Where(u => u.IsSynthetic).FirstOrDefaultAsync(cancellationToken);
+
+            return await GetPickRecordWidget(synthetic!.Id, cancellationToken);
+        }
     }
 }

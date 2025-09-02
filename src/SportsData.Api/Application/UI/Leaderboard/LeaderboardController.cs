@@ -36,7 +36,7 @@ public class LeaderboardController : ControllerBase
 
     [HttpGet("widget")]
     [Authorize]
-    public async Task<ActionResult<List<LeaderboardUserDto>>> GetLeaderboardWidget(
+    public async Task<ActionResult<LeaderboardWidgetDto>> GetLeaderboardWidget(
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();

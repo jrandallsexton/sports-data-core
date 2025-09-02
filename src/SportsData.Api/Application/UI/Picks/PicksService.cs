@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Application.UI.Picks.PicksPage;
 using SportsData.Api.Application.UI.Picks.Queries;
@@ -15,6 +16,10 @@ namespace SportsData.Api.Application.UI.Picks
             Guid userId,
             Guid groupId,
             int weekNumber,
+            CancellationToken cancellationToken);
+
+        Task<PickRecordWidgetDto> GetPickRecordWidget(
+            Guid userId,
             CancellationToken cancellationToken);
     }
 
@@ -100,5 +105,50 @@ namespace SportsData.Api.Application.UI.Picks
 
             return await _getUserPicksQueryHandler.GetUserPicksByGroupAndWeek(query, cancellationToken);
         }
+
+        public async Task<PickRecordWidgetDto> GetPickRecordWidget(
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            var widget = new PickRecordWidgetDto
+            {
+                AsOfWeek = 1,
+                SeasonYear = 2025
+            };
+
+            var groupIds = await _dataContext.PickemGroupMembers
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Select(x => x.PickemGroupId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var groupId in groupIds)
+            {
+                var group = await _dataContext.PickemGroups
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(g => g.Id == groupId, cancellationToken: cancellationToken);
+
+                var userPicks = (await GetUserPicksByGroupAndWeek(userId, groupId, 1, cancellationToken))
+                                ?? [];
+
+                var correct = userPicks.Count(x => x.IsCorrect == true);
+                var incorrect = userPicks.Count(x => x.IsCorrect == false);
+                var total = correct + incorrect;
+
+                var widgetItem = new PickRecordWidgetDto.PickRecordWidgetItem
+                {
+                    LeagueId = groupId,
+                    LeagueName = group!.Name,
+                    Correct = correct,
+                    Incorrect = incorrect,
+                    Accuracy = total > 0 ? Math.Round((double)correct / total, 2) : 0
+                };
+
+                widget.Items.Add(widgetItem);
+            }
+
+            return widget;
+        }
+
     }
 }

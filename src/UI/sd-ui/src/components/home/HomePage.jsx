@@ -5,6 +5,7 @@ import AIAccuracyChart from "./AIAccuracyChart";
 import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
 import LeaderboardWidget from "../widgets/LeaderboardWidget";
+import PickRecordWidget from "../widgets/PickRecordWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import SystemNews from "./SystemNews";
@@ -118,24 +119,7 @@ function HomePage() {
       <section className="card-section">
         <LeaderboardWidget />
 
-        <div className="card">
-          <h2>Your Pick Record</h2>
-          <em>(simulated until after Week 1)</em>
-          <ul className="pick-record">
-            <li>
-              Wins: <strong>55</strong>
-            </li>
-            <li>
-              Losses: <strong>25</strong>
-            </li>
-            <li>
-              Win %: <strong>68%</strong>
-            </li>
-          </ul>
-          <Link to="/app/your-picks" className="card-link">
-            View Your Weekly Picks
-          </Link>
-        </div>
+        <PickRecordWidget />
 
         <div className="card">
           <h2>sportDeets AI Accuracy</h2>

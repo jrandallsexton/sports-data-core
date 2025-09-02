@@ -1,4 +1,4 @@
-/* LeaderboardWidget.css */
+/* PickRecordWidget.css */
 
 /* The widget inherits styles from the parent card class */
 
@@ -31,6 +31,19 @@
 
 .pick-record-table tr:hover {
   background-color: var(--hover-background, rgba(0, 0, 0, 0.02));
+}
+
+.overall-totals-row {
+  border-top: 2px solid var(--primary-color, #007bff);
+  background-color: var(--highlight-background, rgba(0, 123, 255, 0.05));
+}
+
+.overall-totals-row:hover {
+  background-color: var(--highlight-background, rgba(0, 123, 255, 0.08));
+}
+
+.overall-totals-row td {
+  color: var(--primary-color, #007bff);
 }
 
 /* Responsive table */

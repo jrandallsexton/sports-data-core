@@ -62,14 +62,27 @@ const LeaderboardWidget = () => {
       )}
       
       {leaderboardData && leaderboardData.items && leaderboardData.items.length > 0 ? (
-        <div className="leaderboard-items">
-          {leaderboardData.items.map((item) => (
-            <div key={item.leagueId} className="leaderboard-item">
-              <Link to="/app/leaderboard" className="leaderboard-link">
-                {item.name} - {formatRankAsOrdinal(item.rank)}
-              </Link>
-            </div>
-          ))}
+        <div className="league-records">
+          <table className="pick-record-table">
+            <thead>
+              <tr>
+                <th>League</th>
+                <th>Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboardData.items.map((item) => (
+                <tr key={item.leagueId}>
+                  <td>
+                    <Link to="/app/leaderboard" className="leaderboard-link">
+                      {item.name}
+                    </Link>
+                  </td>
+                  <td>{formatRankAsOrdinal(item.rank)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <p>No leaderboard data available</p>

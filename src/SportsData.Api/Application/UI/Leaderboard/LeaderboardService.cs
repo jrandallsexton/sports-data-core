@@ -126,7 +126,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
                 if (entry == null)
                     continue;
 
-                widget.Items.Add(new WidgetItem()
+                widget.Items.Add(new LeaderboardWidgetItem()
                 {
                     LeagueId = entry.LeagueId,
                     Name = entry.LeagueName,

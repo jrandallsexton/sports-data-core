@@ -6,9 +6,9 @@
 
         public int AsOfWeek { get; set; }
 
-        public List<WidgetItem> Items { get; set; } = [];
+        public List<LeaderboardWidgetItem> Items { get; set; } = [];
 
-        public class WidgetItem
+        public class LeaderboardWidgetItem
         {
             public Guid LeagueId { get; set; }
 

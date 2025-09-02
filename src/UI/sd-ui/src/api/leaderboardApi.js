@@ -13,9 +13,7 @@ const LeaderboardApi = {
       `/ui/leaderboard/${encodeURIComponent(groupId)}?week=${week}`
     ),
   
-  getWidgetForUser: () =>    apiClient.get(
-    `/ui/leaderboard/widget`
-  )
+  getWidgetForUser: () => apiClient.get(`/ui/leaderboard/widget`)
 };
 
 export default LeaderboardApi;

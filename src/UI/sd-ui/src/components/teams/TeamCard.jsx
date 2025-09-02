@@ -50,6 +50,9 @@ function TeamCard() {
         />
         <div>
           <h2 className="team-name">{team.name}</h2>
+          <p className="team-conference">
+            {team.conferenceName} ({team.conferenceShortName})
+          </p>
           <p className="team-record">
             {team.overallRecord} ({team.conferenceRecord})
           </p>

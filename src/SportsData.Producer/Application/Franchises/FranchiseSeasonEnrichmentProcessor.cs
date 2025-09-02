@@ -124,6 +124,9 @@ namespace SportsData.Producer.Application.Franchises
                 franchiseSeason.ConferenceLosses = conferenceLosses;
                 franchiseSeason.ConferenceTies = conferenceTies;
 
+                franchiseSeason.ModifiedUtc = DateTime.UtcNow;
+                franchiseSeason.ModifiedBy = Guid.NewGuid();
+
                 await _eventBus.Publish(
                     new FranchiseSeasonEnrichmentCompleted(
                         command.FranchiseSeasonId,

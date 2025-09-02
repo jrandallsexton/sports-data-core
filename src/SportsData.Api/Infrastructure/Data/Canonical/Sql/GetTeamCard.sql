@@ -3,6 +3,9 @@
 	F."DisplayName" AS "Name",
 	F."DisplayNameShort" AS "ShortName",
 	'-1' AS "Ranking",
+	GS."Name" AS "ConferenceName",
+	GS."ShortName" AS "ConferenceShortName",
+	GS."Slug" AS "ConferenceSlug",
 	FS."Wins" || '-' || FS."Losses" || '-' || FS."Ties" AS "OverallRecord",
 	FS."ConferenceWins" || '-' || FS."ConferenceLosses" || '-' || FS."ConferenceTies" AS "ConferenceRecord",
 	F."ColorCodeHex" AS "ColorPrimary",
@@ -15,6 +18,7 @@
 FROM
 	PUBLIC."Franchise" F
 	INNER JOIN PUBLIC."FranchiseSeason" FS on FS."FranchiseId" = F."Id"
+	INNER JOIN PUBLIC."GroupSeason" GS ON GS."Id" = FS."GroupSeasonId"
 	LEFT JOIN PUBLIC."FranchiseLogo" FL ON FL."FranchiseId" = F."Id"
 	LEFT JOIN PUBLIC."Venue" V ON V."Id" = F."VenueId"
 WHERE

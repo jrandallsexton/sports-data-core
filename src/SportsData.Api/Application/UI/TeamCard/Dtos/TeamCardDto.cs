@@ -10,6 +10,14 @@ public class TeamCardDto
 
     public int? Ranking { get; set; }
 
+    public string? Division { get; set; } // TODO
+
+    public string? ConferenceName { get; set; }
+
+    public string? ConferenceShortName { get; set; }
+
+    public string? ConferenceSlug { get; set; }
+
     public required string OverallRecord { get; set; }
 
     public required string ConferenceRecord { get; set; }

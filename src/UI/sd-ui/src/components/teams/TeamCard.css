@@ -36,6 +36,14 @@
   margin: 0;
 }
 
+.team-conference {
+  font-size: 1rem;
+  color: var(--accent-color, #6c63ff);
+  font-weight: 500;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .team-record {
   font-size: 1.1rem;
   color: var(--highlight-color, #ffc107);
@@ -79,6 +87,10 @@
 
   .team-name {
     font-size: 1.3rem;
+  }
+
+  .team-conference {
+    font-size: 0.9rem;
   }
 
   .team-record {

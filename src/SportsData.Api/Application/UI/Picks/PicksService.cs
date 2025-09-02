@@ -147,6 +147,8 @@ namespace SportsData.Api.Application.UI.Picks
                 widget.Items.Add(widgetItem);
             }
 
+            widget.Items = widget.Items.OrderBy(x => x.LeagueName).ToList();
+
             return widget;
         }
 

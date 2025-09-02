@@ -2,8 +2,25 @@
 
 /* The widget inherits styles from the parent card class */
 
+/* Reset all spacing to match PickRecordWidget exactly */
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.card em {
+  margin-top: 0;
+  margin-bottom: 0;
+  display: inline;
+}
+
 .league-records {
   margin: 1rem 0;
+}
+
+/* Fix spacing between header and table */
+em + .league-records {
+  margin-top: 1rem;
 }
 
 .pick-record-table {
@@ -33,6 +50,20 @@
   background-color: var(--hover-background, rgba(0, 0, 0, 0.02));
 }
 
+.overall-totals-row {
+  border-top: 2px solid var(--primary-color, #007bff);
+  background-color: var(--highlight-background, rgba(0, 123, 255, 0.05));
+}
+
+.overall-totals-row:hover {
+  background-color: var(--highlight-background, rgba(0, 123, 255, 0.08));
+}
+
+.overall-totals-row td {
+  color: var(--text-color);
+  font-weight: bold;
+}
+
 /* Responsive table */
 @media (max-width: 768px) {
   .pick-record-table th,
@@ -40,6 +71,34 @@
     padding: 0.5rem;
     font-size: 0.9rem;
   }
+}
+
+.leaderboard-link {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 123, 255, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.leaderboard-link:hover {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-thickness: 2px;
+}
+
+.leaderboard-link:visited {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 123, 255, 0.3);
+}
+
+.leaderboard-link:visited:hover {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-thickness: 2px;
 }
 
 .error-text {

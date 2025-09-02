@@ -43,7 +43,36 @@
 }
 
 .overall-totals-row td {
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.league-link {
   color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 123, 255, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.league-link:hover {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-thickness: 2px;
+}
+
+.league-link:visited {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 123, 255, 0.3);
+}
+
+.league-link:visited:hover {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-thickness: 2px;
 }
 
 /* Responsive table */

@@ -88,7 +88,11 @@ const PickRecordWidget = () => {
             <tbody>
               {pickRecordData.items.map((item) => (
                 <tr key={item.leagueId}>
-                  <td>{item.leagueName}</td>
+                  <td>
+                    <Link to="/app/leaderboard" className="league-link">
+                      {item.leagueName}
+                    </Link>
+                  </td>
                   <td>{item.correct}</td>
                   <td>{item.incorrect}</td>
                   <td>{(item.accuracy * 100).toFixed(1)}%</td>

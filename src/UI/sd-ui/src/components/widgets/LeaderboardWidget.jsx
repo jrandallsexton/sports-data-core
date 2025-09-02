@@ -15,6 +15,13 @@ const LeaderboardWidget = () => {
     return rank + (suffix[(value - 20) % 10] || suffix[value] || suffix[0]);
   };
 
+  // Calculate average rank across all leagues
+  const calculateAverageRank = (items) => {
+    if (!items || items.length === 0) return 0;
+    const totalRank = items.reduce((sum, item) => sum + item.rank, 0);
+    return totalRank / items.length;
+  };
+
   useEffect(() => {
     const fetchLeaderboardWidget = async () => {
       try {
@@ -56,8 +63,7 @@ const LeaderboardWidget = () => {
 
   return (
     <div className="card">
-      <h2>Your Ranking(s)</h2>
-      {leaderboardData && (
+      <h2>Your Ranking(s)</h2>{leaderboardData && (
         <em>(as of week {leaderboardData.asOfWeek})</em>
       )}
       
@@ -81,6 +87,14 @@ const LeaderboardWidget = () => {
                   <td>{formatRankAsOrdinal(item.rank)}</td>
                 </tr>
               ))}
+              
+              {/* Average Rank Row */}
+              {leaderboardData.items.length > 1 && (
+                <tr className="overall-totals-row">
+                  <td><strong>Average Rank</strong></td>
+                  <td><strong>{formatRankAsOrdinal(Math.round(calculateAverageRank(leaderboardData.items)))}</strong></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

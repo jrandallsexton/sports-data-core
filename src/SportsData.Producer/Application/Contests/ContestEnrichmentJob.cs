@@ -24,31 +24,35 @@ namespace SportsData.Producer.Application.Contests
         public async Task ExecuteAsync()
         {
             // get the current season week
-            var seasonWeek = await _dataContext.SeasonWeeks
+            var seasonWeeks = await _dataContext.SeasonWeeks
                 .AsNoTracking()
-                .Include(sw => sw.Season)
-                .Where(sw => sw.StartDate < DateTime.UtcNow && sw.EndDate > DateTime.UtcNow)
-                .FirstOrDefaultAsync();
+                .Where(sw => sw.StartDate < DateTime.UtcNow)
+                .Take(2)
+                .ToListAsync();
 
-            if (seasonWeek is null)
+            if (!seasonWeeks.Any())
             {
                 _logger.LogError("Could not determine current season week");
                 return;
             }
 
-            // get contests that have not been finalized
-            var contests = await _dataContext.Contests
-                .AsNoTracking()
-                .Where(c => c.SeasonWeekId == seasonWeek.Id &&
-                            c.StartDateUtc < DateTime.UtcNow) // c.FinalizedUtc == null
-                .OrderBy(c => c.StartDateUtc)
-                .ToListAsync();
-
-            // spawn a job to finalize each
-            foreach (var contest in contests)
+            foreach (var seasonWeek in seasonWeeks)
             {
-                var cmd = new EnrichContestCommand(contest.Id, Guid.NewGuid());
-                _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
+                // get contests that have not been finalized
+                var contests = await _dataContext.Contests
+                    .AsNoTracking()
+                    .Where(c => c.SeasonWeekId == seasonWeek.Id &&
+                                c.StartDateUtc < DateTime.UtcNow.AddHours(3) &&
+                                c.FinalizedUtc == null)
+                    .OrderBy(c => c.StartDateUtc)
+                    .ToListAsync();
+
+                // spawn a job to finalize each
+                foreach (var contest in contests)
+                {
+                    var cmd = new EnrichContestCommand(contest.Id, Guid.NewGuid());
+                    _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
+                }
             }
         }
     }

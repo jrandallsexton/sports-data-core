@@ -24,7 +24,8 @@ select * from public."AthleteExternalId" where "SourceUrl" = 'http://sports.core
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
    
    
-   select * from public."FranchiseSeason" fs where fs."SeasonYear" = 2025 and fs."Slug" = 'san-jose-state-spartans'
+   select * from public."FranchiseSeason" fs where fs."SeasonYear" = 2025 and fs."Slug" = 'lsu-tigers'
+   select * from public."FranchiseSeason" where "Wins" > 0
    select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = '254ef4ef-a953-a914-9943-fe648368a0b3'
    
    select * from public."FranchiseSeasonRanking" fsr

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import PickAccuracyChart from "./PickAccuracyChart";
-import AIAccuracyChart from "./AIAccuracyChart";
+import PickAccuracyWidget from "../widgets/PickAccuracyWidget";
+import AiAccuracyWidget from "../widgets/AiAccuracyWidget";
 import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
 import LeaderboardWidget from "../widgets/LeaderboardWidget";
@@ -126,13 +126,13 @@ function HomePage() {
       </section>
 
       <section className="chart-section">
-        <PickAccuracyChart
+        <PickAccuracyWidget
           selectedGroup={selectedGroup}
           onGroupChange={setSelectedGroup}
           groups={pickGroups}
         />
 
-        <AIAccuracyChart
+        <AiAccuracyWidget
           selectedGroup={selectedAIGroup}
           onGroupChange={setSelectedAIGroup}
           groups={pickGroups}

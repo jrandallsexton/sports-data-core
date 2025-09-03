@@ -1,4 +1,4 @@
-/* LeaderboardWidget.css */
+/* AiRecordWidget.css */
 
 /* The widget inherits styles from the parent card class */
 
@@ -64,44 +64,47 @@ em + .league-records {
   font-weight: bold;
 }
 
-/* Responsive table */
-@media (max-width: 768px) {
-  .pick-record-table th,
-  .pick-record-table td {
-    padding: 0.5rem;
-    font-size: 0.9rem;
-  }
+.league-link {
+  color: var(--link-color, #007bff);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.leaderboard-link {
-  color: var(--primary-color, #007bff);
+.league-link:hover {
+  color: var(--link-hover-color, #0056b3);
   text-decoration: underline;
-  text-decoration-color: rgba(0, 123, 255, 0.3);
-  transition: all 0.2s ease;
-  cursor: pointer;
 }
 
-.leaderboard-link:hover {
-  color: var(--primary-color, #007bff);
-  text-decoration: underline;
-  text-decoration-color: var(--primary-color, #007bff);
-  text-decoration-thickness: 2px;
+.league-link:visited {
+  color: var(--link-color, #007bff);
 }
 
-.leaderboard-link:visited {
-  color: var(--primary-color, #007bff);
-  text-decoration: underline;
-  text-decoration-color: rgba(0, 123, 255, 0.3);
+.league-link:visited:hover {
+  color: var(--link-hover-color, #0056b3);
 }
 
-.leaderboard-link:visited:hover {
-  color: var(--primary-color, #007bff);
+.card-link {
+  color: var(--link-color, #007bff);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.card-link:hover {
+  color: var(--link-hover-color, #0056b3);
   text-decoration: underline;
-  text-decoration-color: var(--primary-color, #007bff);
-  text-decoration-thickness: 2px;
+}
+
+.card-link:visited {
+  color: var(--link-color, #007bff);
+}
+
+.card-link:visited:hover {
+  color: var(--link-hover-color, #0056b3);
 }
 
 .error-text {
   color: var(--error-color, #dc3545);
-  font-style: italic;
+  margin: 1rem 0;
 }

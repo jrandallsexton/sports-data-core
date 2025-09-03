@@ -69,9 +69,9 @@ const PickRecordWidget = () => {
   return (
     <div className="card">
       <h2>Your Pick Record</h2>
-      {pickRecordData && (
+      {/* {pickRecordData && (
         <em>(as of week {pickRecordData.asOfWeek})</em>
-      )}
+      )} */}
       
       {/* Individual League Records */}
       {pickRecordData && pickRecordData.items && pickRecordData.items.length > 0 ? (

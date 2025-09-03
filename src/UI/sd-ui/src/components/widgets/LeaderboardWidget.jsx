@@ -63,9 +63,10 @@ const LeaderboardWidget = () => {
 
   return (
     <div className="card">
-      <h2>Your Ranking(s)</h2>{leaderboardData && (
+      <h2>Your Ranking(s)</h2>
+      {/* {leaderboardData && (
         <em>(as of week {leaderboardData.asOfWeek})</em>
-      )}
+      )} */}
       
       {leaderboardData && leaderboardData.items && leaderboardData.items.length > 0 ? (
         <div className="league-records">

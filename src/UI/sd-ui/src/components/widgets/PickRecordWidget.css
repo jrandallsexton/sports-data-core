@@ -2,14 +2,20 @@
 
 /* The widget inherits styles from the parent card class */
 
+/* Override HomePage h2 styles with highest specificity */
+.home-page .card-section .card h2 {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+}
+
 .league-records {
-  margin: 1rem 0;
+  margin: 0;
 }
 
 .pick-record-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1rem 0;
+  margin: 0.5rem 0;
 }
 
 .pick-record-table th,

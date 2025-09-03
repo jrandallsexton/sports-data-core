@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiWrapper from '../../api/apiWrapper';
-import './PickRecordWidget.css';
+import './AiRecordWidget.css';
 
 const AiRecordWidget = () => {
   const [aiRecordData, setAiRecordData] = useState(null);
@@ -68,12 +68,11 @@ const AiRecordWidget = () => {
 
   return (
     <div className="card">
-      <h2>AI Pick Record</h2>
-      {aiRecordData && (
+      <h2>sportDeets AI Accuracy</h2>
+      {/* {aiRecordData && (
         <em>(as of week {aiRecordData.asOfWeek})</em>
-      )}
+      )} */}
       
-      {/* Individual League Records */}
       {aiRecordData && aiRecordData.items && aiRecordData.items.length > 0 ? (
         <div className="league-records">
           <table className="pick-record-table">

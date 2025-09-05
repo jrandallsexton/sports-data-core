@@ -287,6 +287,9 @@ public class EspnTeamSeasonRankSeasonType : IHasRef
     [JsonPropertyName("groups")]
     public EspnLinkDto Groups { get; set; }
 
+    [JsonPropertyName("week")]
+    public EspnLeagueSeasonWeek Week { get; set; }
+
     [JsonPropertyName("weeks")]
     public EspnLinkDto Weeks { get; set; }
 

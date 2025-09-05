@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -67,6 +68,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
+            var seasonPollId = Guid.NewGuid();
+
             var seasonWeekId = Guid.NewGuid();
             var generator = new ExternalRefIdentityGenerator();
             var correlationId = Guid.NewGuid();
@@ -94,16 +97,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // act
             var before = DateTime.UtcNow;
-            var entity = dto.AsEntity(seasonWeekId, generator, franchiseDictionary, correlationId);
+            var entity = dto.AsEntity(seasonPollId, seasonWeekId, generator, franchiseDictionary, correlationId);
             var after = DateTime.UtcNow;
 
             // assert: top-level entity
             entity.Should().NotBeNull();
             entity.Id.Should().Be(expectedIdentity.CanonicalId);
             entity.SeasonWeekId.Should().Be(seasonWeekId);
-            entity.PollName.Should().Be("AFCA Coaches Poll");
-            entity.PollShortName.Should().Be("AFCA Coaches Poll");
-            entity.PollType.Should().Be("usa");
             entity.Headline.Should().Be("2025 NCAA Football Rankings - AFCA Coaches Poll Preseason");
             entity.ShortHeadline.Should().Be("2025 AFCA Coaches Poll: Preseason");
 
@@ -137,7 +137,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var first = entity.Entries.First();
             first.Current.Should().Be(1);
             first.Previous.Should().Be(0);
-            first.Points.Should().Be(1606m);
+            first.Points.Should().Be(1606);
             first.FirstPlaceVotes.Should().Be(28);
             first.Trend.Should().Be("-");
             first.RowDateUtc.Should().Be(DateTime.Parse("2025-08-04T07:00Z").ToUniversalTime());
@@ -165,14 +165,29 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         [Fact]
         public async Task ProcessNewSeasonTypeWeekRankings_CreatesRankingEntity()
         {
+            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+
             // Arrange
             var correlationId = Guid.NewGuid();
             var seasonId = Guid.NewGuid();
             var seasonPhaseId = Guid.NewGuid();
-            var seasonWeekId = Guid.NewGuid();
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto.Ref);
+            var seasonPollIdentity = generator.Generate(seasonPollRef);
+
+            // Add the SeasonPoll (parent of the incoming document)
+            var seasonPoll = Fixture.Build<SeasonPoll>()
+                .OmitAutoProperties()
+                .With(x => x.Id, seasonPollIdentity.CanonicalId)
+                .With(x => x.Name, "AP Top 25")
+                .With(x => x.ShortName, "AP Poll")
+                .Create();
+            await FootballDataContext.SeasonPolls.AddAsync(seasonPoll);
+            await FootballDataContext.SaveChangesAsync();
 
             var season = Fixture.Build<Season>()
                 .OmitAutoProperties()
@@ -193,13 +208,14 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var weekRefUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us";
             var weekHash = generator.Generate(weekRefUrl).UrlHash;
 
+            var seasonWeekIdentity = generator.Generate(dto.Season.Type.Week.Ref);
             var seasonWeek = Fixture.Build<SeasonWeek>()
                 .OmitAutoProperties()
-                .With(x => x.Id, seasonWeekId)
+                .With(x => x.Id, seasonWeekIdentity.CanonicalId)
                 .With(x => x.SeasonId, seasonId)
                 .With(x => x.SeasonPhaseId, seasonPhaseId)
                 .With(x => x.SeasonPhase, seasonPhase)
-                .With(x => x.Rankings, new List<SeasonRanking>())
+                .With(x => x.Rankings, new List<SeasonPollWeek>())
                 .With(x => x.ExternalIds, new List<SeasonWeekExternalId>
                 {
                     new()
@@ -218,7 +234,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
             await FootballDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
             var command = new ProcessDocumentCommand(
                 SourceDataProvider.Espn,
                 Sport.FootballNcaa,
@@ -226,13 +241,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 DocumentType.SeasonTypeWeekRankings,
                 json,
                 correlationId,
-                parentId: seasonWeekId.ToString(),
+                parentId: seasonWeekIdentity.CanonicalId.ToString(),
                 sourceUri: new Uri(weekRefUrl),
                 urlHash: weekHash
             );
 
             // seed FranchiseSeason entities for all teams in the rankings JSON
-            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             foreach (var entry in dto!.Ranks)
             {
@@ -356,14 +370,14 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await sut.ProcessAsync(command);
 
             // Assert
-            var ranking = await FootballDataContext.SeasonRankings
+            var ranking = await FootballDataContext.SeasonPollWeeks
                 .Include(r => r.Entries)
                 .ThenInclude(e => e.Stats)
                 .Include(r => r.ExternalIds)
                 .FirstOrDefaultAsync();
 
             ranking.Should().NotBeNull();
-            ranking!.SeasonWeekId.Should().Be(seasonWeekId);
+            ranking!.SeasonWeekId.Should().Be(seasonWeekIdentity.CanonicalId);
             ranking.Entries.Should().HaveCount(51);
             ranking.ExternalIds.Should().ContainSingle(x => x.SourceUrlHash == weekHash);
 

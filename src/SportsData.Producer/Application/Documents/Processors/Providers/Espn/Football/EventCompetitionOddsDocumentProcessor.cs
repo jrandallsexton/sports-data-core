@@ -1,10 +1,9 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -141,10 +140,11 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
             contentHash: contentHash);
 
         await _db.CompetitionOdds.AddAsync(entity);
-        await _db.SaveChangesAsync();
 
-        //await _bus.Publish(new ContestOddsCreated(
-        //    contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+        await _bus.Publish(new ContestOddsCreated(
+            contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+
+        await _db.SaveChangesAsync();
     }
 
     private async Task ProcessUpdate(

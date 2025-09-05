@@ -47,6 +47,7 @@ public class UserService : IUserService
         var user = await _db.Users
             .Include(x => x.GroupMemberships)
             .ThenInclude(m => m.Group)
+            .ThenInclude(g => g.Weeks)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (user is null)
@@ -64,7 +65,11 @@ public class UserService : IUserService
                 .Select(m => new UserDto.UserLeagueMembership
                 {
                     Id = m.Group.Id,
-                    Name = m.Group.Name
+                    Name = m.Group.Name,
+                    MaxSeasonWeek = m.Group.Weeks
+                        .Select(w => (int?)w.SeasonWeek)
+                        .DefaultIfEmpty()
+                        .Max()
                 })
                 .ToList()
         };

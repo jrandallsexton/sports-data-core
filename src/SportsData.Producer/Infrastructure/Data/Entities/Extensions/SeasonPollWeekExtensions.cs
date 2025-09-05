@@ -7,9 +7,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class SeasonRankExtensions
     {
-        public static SeasonRanking AsEntity(
+        public static SeasonPollWeek AsEntity(
             this EspnFootballSeasonTypeWeekRankingsDto dto,
-            Guid seasonWeekId,
+            Guid seasonPollId,
+            Guid? seasonWeekId,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Dictionary<string, Guid> franchiseDictionary,
             Guid correlationId)
@@ -19,16 +20,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-            var ranking = new SeasonRanking
+            var ranking = new SeasonPollWeek
             {
                 Id = identity.CanonicalId,
+                SeasonPollId = seasonPollId,
                 SeasonWeekId = seasonWeekId,
 
                 // poll meta
-                ProviderPollId = dto.Id,
-                PollName = dto.Name,
-                PollShortName = dto.ShortName,
-                PollType = dto.Type,
 
                 // occurrence
                 OccurrenceNumber = dto.Occurrence?.Number ?? 0,
@@ -40,18 +38,20 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 // timestamps/headlines
                 DateUtc = dto.Date.TryParseUtcNullable(),
                 LastUpdatedUtc = dto.LastUpdated.TryParseUtcNullable(),
+                Name = dto.Name,
+                ShortName = dto.ShortName,
                 Headline = dto.Headline,
                 ShortHeadline = dto.ShortHeadline,
-
+                Type = dto.Type,
                 CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,
 
                 ExternalIds =
                 {
-                    new SeasonRankingExternalId
+                    new SeasonPollWeekExternalId
                     {
                         Id = Guid.NewGuid(),
-                        SeasonRankingId = identity.CanonicalId,
+                        SeasonPollWeekId = identity.CanonicalId,
                         Value = identity.UrlHash,
                         SourceUrl = identity.CleanUrl,
                         Provider = SourceDataProvider.Espn,
@@ -61,11 +61,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
 
             // Helper local to map a single row (from ranks or others)
-            SeasonRankingEntry MapEntry(
+            SeasonPollWeekEntry MapEntry(
                 int current, int previous, double points, int fpVotes, string trend,
                 string teamRef, string rowDate, string rowLastUpdated, string? recordSummary,
                 IEnumerable<EspnFootballSeasonTypeWeekRankingsRankRecordStat>? stats,
-                bool isOther)
+                bool isOther, bool isDroppedOut)
             {
                 var teamHash = !string.IsNullOrWhiteSpace(teamRef)
                     ? externalRefIdentityGenerator.Generate(new Uri(teamRef)).UrlHash
@@ -83,7 +83,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     }
                 }
 
-                var entry = new SeasonRankingEntry
+                var entry = new SeasonPollWeekEntry
                 {
                     Id = Guid.NewGuid(),
                     CreatedBy = correlationId,
@@ -92,13 +92,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     FirstPlaceVotes = fpVotes,
                     FranchiseSeasonId = franchiseDictionary[teamRef],
                     IsOtherReceivingVotes = isOther,
+                    IsDroppedOut = isDroppedOut,
                     Losses = losses,
-                    Points = (decimal)points,
+                    Points = points,
                     Previous = previous,
                     RecordSummary = recordSummary,
-                    RowDateUtc = rowDate.TryParseUtcNullable(),
-                    RowLastUpdatedUtc = rowLastUpdated.TryParseUtcNullable(),
-                    SeasonRankingId = ranking.Id,
+                    RowDateUtc = DateTime.Parse(rowDate).ToUniversalTime(),
+                    RowLastUpdatedUtc = DateTime.Parse(rowLastUpdated).ToUniversalTime(),
+                    SeasonPollWeekId = ranking.Id,
                     SourceList = isOther ? "others" : "ranks",
                     Trend = trend ?? "-",
                     Wins = wins,
@@ -109,7 +110,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 {
                     foreach (var s in stats.Where(x => x is not null))
                     {
-                        entry.Stats.Add(new SeasonRankingEntryStat
+                        entry.Stats.Add(new SeasonPollWeekEntryStat
                         {
                             Id = Guid.NewGuid(),
                             Abbreviation = s.Abbreviation,
@@ -119,7 +120,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                             DisplayName = s.DisplayName,
                             DisplayValue = s.DisplayValue,
                             Name = s.Name,
-                            SeasonRankingEntryId = entry.Id,
+                            SeasonPollWeekEntryId = entry.Id,
                             ShortDisplayName = s.ShortDisplayName,
                             Type = s.Type,
                             Value = (decimal?)s.Value
@@ -140,7 +141,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         MapEntry(
                             r.Current, r.Previous, r.Points, r.FirstPlaceVotes, r.Trend,
                             r.Team.Ref.ToCleanUrl(), r.Date, r.LastUpdated,
-                            r.Record?.Summary, recordStats, isOther: false));
+                            r.Record?.Summary, recordStats, isOther: false, isDroppedOut: false));
                 }
             }
 
@@ -155,7 +156,22 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                             o.Team.Ref.ToCleanUrl(), o.Date, o.LastUpdated,
                             o.Record?.Ref?.ToString(),            // summary not expanded here; keep raw if needed later
                             null,                     // no expanded stats in "others" payload
-                            isOther: true));
+                            isOther: true,
+                            isDroppedOut: false));
+                }
+            }
+
+            // Teams that dropped from the poll
+            if (dto.DroppedOut?.Count > 0)
+            {
+                foreach (var d in dto.DroppedOut)
+                {
+                    ranking.Entries.Add(
+                        MapEntry(
+                            0, d.Previous, d.Points, 0, d.Trend ?? "-",
+                            d.Team.Ref.ToCleanUrl(), d.Date, d.LastUpdated,
+                            null, null,
+                            isOther: false, isDroppedOut: true));
                 }
             }
 

@@ -25,6 +25,7 @@ public static class FranchiseSeasonRankingExtensions
             Id = identity.CanonicalId,
             FranchiseId = franchiseId,
             FranchiseSeasonId = franchiseSeasonId,
+            SeasonWeekId = externalRefIdentityGenerator.Generate(dto.Season.Type.Week.Ref).CanonicalId,
             SeasonYear = seasonYear,
             Name = dto.Name,
             ShortName = dto.ShortName,

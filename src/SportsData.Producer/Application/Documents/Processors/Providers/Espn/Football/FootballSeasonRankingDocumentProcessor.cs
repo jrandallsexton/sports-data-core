@@ -5,6 +5,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
@@ -84,18 +85,20 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
-            var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
+            // Does the parent poll exist?
+            var pollIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
             var poll = await _dataContext.SeasonPolls
                 .Include(x => x.ExternalIds)
                 .Where(x => x.SeasonYear == command.Season &&
-                            x.ExternalIds.Any(z => z.SourceUrlHash == identity.UrlHash))
+                            x.ExternalIds.Any(z => z.Value == pollIdentity.CanonicalId.ToString()))
                 .FirstOrDefaultAsync();
 
             if (poll is null)
             {
                 poll = new SeasonPoll()
                 {
+                    Id = pollIdentity.CanonicalId,
                     CreatedBy = command.CorrelationId,
                     Name = dto.Name,
                     SeasonYear = command.Season.Value,
@@ -106,9 +109,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         new()
                         {
                             Id = Guid.NewGuid(),
-                            SourceUrl = identity.CleanUrl,
-                            SourceUrlHash = identity.UrlHash,
-                            Value = identity.UrlHash,
+                            SourceUrl = pollIdentity.CleanUrl,
+                            SourceUrlHash = pollIdentity.UrlHash,
+                            Value = pollIdentity.CanonicalId.ToString(),
                             CreatedBy = command.CorrelationId,
                             Provider = command.SourceDataProvider
                         }

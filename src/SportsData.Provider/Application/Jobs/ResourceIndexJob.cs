@@ -67,7 +67,8 @@ namespace SportsData.Provider.Application.Jobs
                     jobDefinition.SourceDataProvider,
                     jobDefinition.DocumentType,
                     null,                                     // parentId
-                    jobDefinition.SeasonYear
+                    jobDefinition.SeasonYear,
+                    true
                 );
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));

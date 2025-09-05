@@ -64,7 +64,7 @@ public class Program
         services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
 
         // Add messaging via MassTransit using Outbox pattern
-        services.AddMessaging<FootballDataContext>(config, [
+        services.AddMessaging<BaseDataContext>(config, [
             typeof(DocumentCreatedHandler),
             typeof(ProcessImageRequestedHandler),
             typeof(ProcessImageResponseHandler)

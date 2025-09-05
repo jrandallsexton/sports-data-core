@@ -64,6 +64,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnrichFranchiseSeasons, FranchiseSeasonEnrichmentProcessor<TeamSportDataContext>>();
             services.AddScoped<FranchiseSeasonEnrichmentJob>();
 
+            services.AddScoped<IUpdateContests, ContestUpdateProcessor>();
+            services.AddScoped<ContestUpdateJob>();
+
             return services;
         }
 
@@ -85,6 +88,11 @@ namespace SportsData.Producer.DependencyInjection
                 nameof(FranchiseSeasonEnrichmentJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<ContestUpdateJob>(
+                nameof(ContestUpdateJob),
+                job => job.ExecuteAsync(),
+                Cron.Daily);
 
             return services;
         }

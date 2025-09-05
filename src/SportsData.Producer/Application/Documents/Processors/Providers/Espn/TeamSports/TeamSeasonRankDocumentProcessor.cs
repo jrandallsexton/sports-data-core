@@ -54,17 +54,17 @@ public class TeamSeasonRankDocumentProcessor<TDataContext> : IProcessDocuments
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalProviderDto = command.Document.FromJson<EspnTeamSeasonRankDto>();
+        var dto = command.Document.FromJson<EspnTeamSeasonRankDto>();
 
-        if (externalProviderDto is null)
+        if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnTeamSeasonDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonRankDto. {@Command}", command);
             return;
         }
 
-        if (string.IsNullOrEmpty(externalProviderDto.Ref?.ToString()))
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnTeamSeasonDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnTeamSeasonRankDto Ref is null or empty. {@Command}", command);
             return;
         }
 
@@ -84,12 +84,26 @@ public class TeamSeasonRankDocumentProcessor<TDataContext> : IProcessDocuments
             return;
         }
 
-        var entity = externalProviderDto.AsEntity(
+        var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
             franchiseSeason.FranchiseId,
             franchiseSeason.Id,
             franchiseSeason.SeasonYear,
             command.CorrelationId);
+
+        var dtoIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
+
+        var existing = await _dataContext.FranchiseSeasonRankings
+            .AsNoTracking()
+            .Where(r => r.Id == dtoIdentity.CanonicalId)
+            .FirstOrDefaultAsync();
+
+        if (existing is not null)
+        {
+            // Polls do not change once published.  Skip it.
+            _logger.LogWarning("Previously processed. {@Command}", command);
+            return;
+        }
 
         await _dataContext.FranchiseSeasonRankings.AddAsync(entity);
 

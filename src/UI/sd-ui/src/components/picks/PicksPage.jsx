@@ -221,6 +221,10 @@ function PicksPage() {
       )
     : matchups;
 
+  // Find the selected league's maxSeasonWeek
+  const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
+  const maxSeasonWeek = selectedLeague?.maxSeasonWeek || 1;
+
   return (
     <div className="picks-page-container">
       <div className="picks-content-wrapper">
@@ -231,6 +235,7 @@ function PicksPage() {
             setSelectedLeagueId={setSelectedLeagueId}
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
+            maxSeasonWeek={maxSeasonWeek}
           />
           <div className="pick-status-toggle-row">
             <span className="pick-status">

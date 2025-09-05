@@ -58,6 +58,8 @@
         CoachRecord = 55,
         SeasonRanking = 56,
         EventCompetitionSituation = 57,
+        SeasonPoll = 58,
+        SeasonPollWeek = 58,
         Unknown = 9999
     }
 }

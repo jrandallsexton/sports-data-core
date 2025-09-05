@@ -17,6 +17,10 @@ public class FranchiseSeasonRanking : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public Franchise Franchise { get; set; } = null!;
 
+    public Guid? SeasonWeekId { get; set; }
+
+    public SeasonWeek? SeasonWeek { get; set; }
+
     public int SeasonYear { get; set; }
     
     public string Name { get; set; } = string.Empty;
@@ -115,6 +119,11 @@ public class FranchiseSeasonRanking : CanonicalEntityBase<Guid>, IHasExternalIds
                 .WithOne(x => x.Ranking)
                 .HasForeignKey(x => x.RankingId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(e => e.SeasonWeek)
+                .WithMany() // no inverse nav
+                .HasForeignKey(e => e.SeasonWeekId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

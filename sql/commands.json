@@ -55,10 +55,55 @@
   "sport": 2,
   "sourceDataProvider": 0,
   "documentType": 32,
-  "seasonYear": 2024
+  "seasonYear": 2024,
   "ref": "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024",
   "isRecurring": false,
   "cronExpression": null,
   "isEnabled": true,
   "shape": 2  
+}
+
+{
+  "sport": 2,
+  "sourceDataProvider": 0,
+  "documentType": 42,
+  "seasonYear": 2024,
+  "ref": "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams",
+  "isRecurring": false,
+  "cronExpression": null,
+  "isEnabled": true,
+  "shape": 1  
+}
+
+{
+  "sport": 2,
+  "sourceDataProvider": 0,
+  "documentType": 3,
+  "seasonYear": 2024,
+  "ref": "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes",
+  "isRecurring": false,
+  "cronExpression": null,
+  "isEnabled": true,
+  "shape": 1  
+}
+
+// POST /resourceIndex (new AP Poll sourcing)
+{
+  "sport": 2,
+  "sourceDataProvider": 0,
+  "documentType": 32,
+  "seasonYear": 2024,
+  "ref": "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024",
+  "isRecurring": false,
+  "cronExpression": null,
+  "isEnabled": true,
+  "shape": 2  
+}
+
+// PublishDocumentEventsCommand - causes previously-sourced documents to regenerate DocumentCreated events
+{
+  "sport": 2,
+  "sourceDataProvider": 0,
+  "documentType": 22,
+  "seasonYear": 2025  
 }

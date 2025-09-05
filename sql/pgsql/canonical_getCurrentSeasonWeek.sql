@@ -13,4 +13,4 @@ WHERE
 ORDER BY sw."StartDate"
 LIMIT 1;
 
-  select * from public."SeasonWeek"
+  --select * from public."SeasonWeek"

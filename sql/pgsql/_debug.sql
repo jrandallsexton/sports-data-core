@@ -22,7 +22,7 @@ select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4b
 select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 select * from public."Season"
 select * from public."SeasonPhase"
-select * from public."SeasonWeek"
+select * from public."SeasonWeek" where "Number" = 2
 select * from public."Contest"
 select * from public."Venue"
 

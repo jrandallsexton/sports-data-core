@@ -113,7 +113,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public List<EspnLeagueSeasonType> Items { get; set; }
     }
 
-    public class Week : IHasRef
+    public class EspnLeagueSeasonWeek : IHasRef
     {
         [JsonPropertyName("$ref")]
         public Uri Ref { get; set; }
@@ -179,7 +179,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string Slug { get; set; }
 
         [JsonPropertyName("week")]
-        public Week Week { get; set; }
+        public EspnLeagueSeasonWeek Week { get; set; }
 
         [JsonPropertyName("leaders")]
         public EspnLinkDto Leaders { get; set; }

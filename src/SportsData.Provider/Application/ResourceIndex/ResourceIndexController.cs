@@ -36,6 +36,8 @@ namespace SportsData.Provider.Application.ResourceIndex
                             x.Uri == command.Ref)
                 .FirstOrDefaultAsync();
 
+            var existingCount = await _dataContext.ResourceIndexJobs.CountAsync();
+
             if (exists is not null)
             {
                 return BadRequest("ResourceIndex already exists.");
@@ -51,10 +53,12 @@ namespace SportsData.Provider.Application.ResourceIndex
                 Name = _routingKeyGenerator.Generate(command.SourceDataProvider, command.Ref),
                 Provider = command.SourceDataProvider,
                 SeasonYear = command.SeasonYear,
+                IsSeasonSpecific =  command.SeasonYear.HasValue,
                 Shape = command.Shape,
                 SourceUrlHash = HashProvider.GenerateHashFromUri(command.Ref),
                 SportId = command.Sport,
-                Uri = command.Ref
+                Uri = command.Ref,
+                Ordinal = command.Ordinal ?? existingCount
             };
             await _dataContext.ResourceIndexJobs.AddAsync(resourceIndexJob);
             await _dataContext.SaveChangesAsync();
@@ -74,6 +78,8 @@ namespace SportsData.Provider.Application.ResourceIndex
         public string? CronExpression { get; set; }
         public bool IsEnabled { get; set; }
         public ResourceShape Shape { get; set; } = ResourceShape.Auto;
+
+        public int? Ordinal { get; set; }
     }
 
 }

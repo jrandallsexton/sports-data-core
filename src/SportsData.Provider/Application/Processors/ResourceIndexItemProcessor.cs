@@ -120,7 +120,7 @@ namespace SportsData.Provider.Application.Processors
                 var newHash = _jsonHashCalculator.NormalizeAndHash(itemJson);
                 var currentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
 
-                if (newHash != currentHash)
+                if (newHash != currentHash || command.BypassCache)
                 {
                     await HandleUpdatedDocumentAsync(command, urlHash, correlationId, collectionName, itemJson);
                 }
@@ -197,13 +197,18 @@ namespace SportsData.Provider.Application.Processors
 
             await _documentStore.ReplaceOneAsync(collectionName, urlHash, document);
 
+            // TODO: pull this from CommonConfig and make it available within the class root
+            var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
+            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+
             var jsonDoc = json.GetSizeInKilobytes() <= 200 ? json : null;
 
-            var evt = new DocumentUpdated(
+            // TODO: Put this back to DocumentUpdated (need the handler in Producer first)
+            var evt = new DocumentCreated(
                 urlHash,
                 command.ParentId,
                 collectionName,
-                command.Uri, // TODO: This should be the provider ref, not the command.Uri
+                providerRef,
                 command.Uri,
                 jsonDoc,
                 urlHash,

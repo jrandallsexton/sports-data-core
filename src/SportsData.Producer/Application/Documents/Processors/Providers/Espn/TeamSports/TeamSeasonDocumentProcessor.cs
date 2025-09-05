@@ -120,8 +120,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             throw new ExternalDocumentNotSourcedException($"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
         }
 
-        var franchiseSeasonId = DeterministicGuid.Combine(franchise.Id, command.Season.Value);
-        var existingSeason = franchise.Seasons.FirstOrDefault(s => s.Id == franchiseSeasonId);
+        var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);
+        var existingSeason = franchise.Seasons.FirstOrDefault(s => s.Id == franchiseSeasonIdentity.CanonicalId);
 
         if (existingSeason is not null)
         {
@@ -202,6 +202,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             seasonYear,
             command.CorrelationId);
 
+        // TODO: This might be a bug b/c it does not check for dependency errors/issues
         await ProcessDependencies(franchise, canonicalEntity, dto, command);
 
         await ProcessDependents(canonicalEntity, dto, command);
@@ -527,12 +528,79 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
-    private async Task ProcessUpdateEntity(FranchiseSeason existing, EspnTeamSeasonDto dto, ProcessDocumentCommand command)
+    private async Task ProcessUpdateEntity(
+        FranchiseSeason existing,
+        EspnTeamSeasonDto dto,
+        ProcessDocumentCommand command)
     {
-        await Task.Delay(100);
+        var saveChanges = false;
 
-        // TODO: Compare and update if necessary
-        // For now, log and skip
-        _logger.LogWarning("Update detected; not implemented");
+        // request updated statistics
+        if (dto.Statistics?.Ref is not null)
+        {
+            var identity = _externalRefIdentityGenerator.Generate(dto.Statistics.Ref);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: identity.UrlHash,
+                ParentId: existing.Id.ToString(),
+                Uri: new Uri(identity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.TeamSeasonStatistics,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+            ));
+            saveChanges = true;
+            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Statistics");
+        }
+
+        if (dto.Ranks?.Ref is not null)
+        {
+            var identity = _externalRefIdentityGenerator.Generate(dto.Ranks.Ref);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: identity.UrlHash,
+                ParentId: existing.Id.ToString(),
+                Uri: new Uri(identity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.TeamSeasonRank,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+            ));
+            saveChanges = true;
+            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Ranks");
+        }
+
+        if (dto.Leaders?.Ref is not null)
+        {
+            var identity = _externalRefIdentityGenerator.Generate(dto.Leaders.Ref);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: identity.UrlHash,
+                ParentId: existing.Id.ToString(),
+                Uri: new Uri(identity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.TeamSeasonLeaders,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+            ));
+            saveChanges = true;
+            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Leaders");
+        }
+
+        if (saveChanges)
+        {
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
+        }
+        else
+        {
+            _logger.LogWarning($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raised zero events.");
+        }
     }
 }

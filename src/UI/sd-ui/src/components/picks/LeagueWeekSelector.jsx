@@ -7,6 +7,7 @@ function LeagueWeekSelector({
   setSelectedLeagueId,
   selectedWeek,
   setSelectedWeek,
+  maxSeasonWeek = 1,
 }) {
   return (
     <div className="league-week-selector">
@@ -27,7 +28,7 @@ function LeagueWeekSelector({
           value={selectedWeek}
           onChange={(e) => setSelectedWeek(Number(e.target.value))}
         >
-          {Array.from({ length: 12 }, (_, i) => (
+          {Array.from({ length: maxSeasonWeek }, (_, i) => (
             <option key={i + 1} value={i + 1}>
               Week {i + 1}
             </option>

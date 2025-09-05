@@ -14,7 +14,6 @@ using SportsData.Core.Config;
 using SportsData.Core.Middleware.Health;
 
 using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -58,7 +57,7 @@ namespace SportsData.Core.DependencyInjection
                 }
 
                 // Serilog internal debug (optional)
-                Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
+                //Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
             });
 
             return builder;

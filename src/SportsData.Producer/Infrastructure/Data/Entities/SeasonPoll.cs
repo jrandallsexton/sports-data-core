@@ -13,9 +13,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string ShortName { get; set; }
 
-        public required string Slug { get; set; }
+        public string? Slug { get; set; }
 
         public required int SeasonYear { get; set; }
+
+        public ICollection<SeasonPollWeek> Weeks { get; set; } = [];
 
         public ICollection<SeasonPollExternalId> ExternalIds { get; set; } = [];
 
@@ -26,6 +28,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<SeasonPoll> builder)
             {
                 builder.ToTable(nameof(SeasonPoll));
+
+                builder.HasKey(t => t.Id);
 
                 builder.Property(t => t.Id)
                     .IsRequired();
@@ -42,8 +46,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .IsRequired();
 
                 builder.Property(t => t.Slug)
-                    .HasMaxLength(100)
-                    .IsRequired();
+                    .HasMaxLength(100);
+
+                // ✅ Explicit 1:N relationship with SeasonPollWeek
+                builder.HasMany(t => t.Weeks)
+                    .WithOne(w => w.SeasonPoll)
+                    .HasForeignKey(w => w.SeasonPollId)
+                    .IsRequired()
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
     }

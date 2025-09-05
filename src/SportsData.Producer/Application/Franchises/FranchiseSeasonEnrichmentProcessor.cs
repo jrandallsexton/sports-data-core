@@ -1,8 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SportsData.Producer.Application.Franchises
 {
@@ -52,6 +58,7 @@ namespace SportsData.Producer.Application.Franchises
         private async Task ProcessInternal(EnrichFranchiseSeasonCommand command)
         {
             var franchiseSeason = await _dataContext.FranchiseSeasons
+                .Include(x => x.ExternalIds)
                 .FirstOrDefaultAsync(x => x.Id == command.FranchiseSeasonId);
 
             if (franchiseSeason == null)
@@ -60,6 +67,16 @@ namespace SportsData.Producer.Application.Franchises
                 return;
             }
 
+            await UpdateWinsAndLosses(command, franchiseSeason);
+
+            await RequestFranchiseSeasonSourcing(command, franchiseSeason, franchiseSeason.ExternalIds.First());
+        }
+
+        private async Task UpdateWinsAndLosses(
+            EnrichFranchiseSeasonCommand command,
+            FranchiseSeason franchiseSeason)
+        {
+            
             // update the wins and losses
             var contests = await _dataContext.Contests
                 .Where(c => c.FinalizedUtc != null &&
@@ -135,6 +152,27 @@ namespace SportsData.Producer.Application.Franchises
 
                 await _dataContext.SaveChangesAsync();
             }
+        }
+
+        private async Task RequestFranchiseSeasonSourcing(
+            EnrichFranchiseSeasonCommand command,
+            FranchiseSeason franchiseSeason,
+            FranchiseSeasonExternalId externalId)
+        {
+            await _eventBus.Publish(new DocumentRequested(
+                Id: externalId.SourceUrlHash,
+                ParentId: franchiseSeason.FranchiseId.ToString(),
+                Uri: new Uri(externalId.SourceUrl),
+                Sport: Sport.FootballNcaa,
+                SeasonYear: command.SeasonYear,
+                DocumentType: DocumentType.TeamSeason,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor,
+                BypassCache: true
+            ));
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

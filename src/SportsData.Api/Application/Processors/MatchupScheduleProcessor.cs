@@ -111,7 +111,15 @@ namespace SportsData.Api.Application.Processors
                     UnderOdds = groupMatchup.UnderOdds,
                     AwayRank = groupMatchup.AwayRank,
                     HomeRank = groupMatchup.HomeRank,
-                    StartDateUtc = groupMatchup.StartDateUtc
+                    StartDateUtc = groupMatchup.StartDateUtc,
+                    AwayWins = groupMatchup.AwayWins,
+                    AwayLosses = groupMatchup.AwayLosses,
+                    AwayConferenceWins = groupMatchup.AwayConferenceWins,
+                    AwayConferenceLosses = groupMatchup.AwayConferenceLosses,
+                    HomeWins = groupMatchup.HomeWins,
+                    HomeLosses = groupMatchup.HomeLosses,
+                    HomeConferenceWins = groupMatchup.HomeConferenceWins,
+                    HomeConferenceLosses = groupMatchup.HomeConferenceLosses
                 });
             }
 

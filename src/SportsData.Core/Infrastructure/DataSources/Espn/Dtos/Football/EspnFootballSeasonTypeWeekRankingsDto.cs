@@ -48,26 +48,17 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public List<EspnFootballSeasonTypeWeekRankingsRank> Ranks { get; set; }
 
         [JsonPropertyName("others")]
-        public List<Other>? Others { get; set; }
+        public List<EspnFootballSeasonTypeWeekRankingsOther>? Others { get; set; }
+
+        [JsonPropertyName("droppedOut")]
+        public List<EspnFootballSeasonTypeWeekRankingsRank>? DroppedOut { get; set; }
 
         [JsonPropertyName("availability")]
         public Availability Availability { get; set; }
     }
 
-    public class Athletes
-    {
-        [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
-    }
-
     public class Availability
     {
-    }
-
-    public class Futures
-    {
-        [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
     }
 
     public class Groups
@@ -142,7 +133,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public string DisplayValue { get; set; }
     }
 
-    public class Other
+    public class EspnFootballSeasonTypeWeekRankingsOther
     {
         [JsonPropertyName("current")]
         public int Current { get; set; }
@@ -238,10 +229,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public EspnLinkDto Rankings { get; set; }
 
         [JsonPropertyName("athletes")]
-        public Athletes Athletes { get; set; }
+        public EspnLinkDto Athletes { get; set; }
 
         [JsonPropertyName("futures")]
-        public Futures Futures { get; set; }
+        public EspnLinkDto Futures { get; set; }
     }
 
     public class EspnFootballSeasonTypeWeekRankingsRankRecordStat
@@ -310,10 +301,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public Groups Groups { get; set; }
 
         [JsonPropertyName("week")]
-        public Week Week { get; set; }
+        public EspnLeagueSeasonWeek? Week { get; set; }
 
         [JsonPropertyName("weeks")]
-        public Weeks Weeks { get; set; }
+        public EspnLinkDto Weeks { get; set; }
 
         [JsonPropertyName("slug")]
         public string Slug { get; set; }
@@ -360,12 +351,4 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         [JsonPropertyName("rankings")]
         public EspnLinkDto Rankings { get; set; }
     }
-
-    public class Weeks
-    {
-        [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
-    }
-
-
 }

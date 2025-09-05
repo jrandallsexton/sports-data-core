@@ -14,10 +14,10 @@
   fAway."Slug" as "AwaySlug",
   fsrdAway."Current" as "AwayRank",
   gsAway."Slug" as "AwayConferenceSlug",
-  0 as "AwayWins",
-  0 as "AwayLosses",
-  0 as "AwayConferenceWins",
-  0 as "AwayConferenceLosses",
+  fsAway."Wins" as "AwayWins",
+  fsAway."Losses" as "AwayLosses",
+  fsAway."ConferenceWins" as "AwayConferenceWins",
+  fsAway."ConferenceLosses" as "AwayConferenceLosses",
   
   fHome."DisplayName" as "Home",
   fHome."DisplayNameShort" as "HomeShort",
@@ -26,10 +26,10 @@
   fHome."Slug" as "HomeSlug",
   fsrdHome."Current" as "HomeRank",
   gsHome."Slug" as "HomeConferenceSlug",
-  0 as "HomeWins",
-  0 as "HomeLosses",
-  0 as "HomeConferenceWins",
-  0 as "HomeConferenceLosses",
+  fsHome."Wins" as "HomeWins",
+  fsHome."Losses" as "HomeLosses",
+  fsHome."ConferenceWins" as "HomeConferenceWins",
+  fsHome."ConferenceLosses" as "HomeConferenceLosses",
   
   co."Details" as "Spread",
   (co."Spread" * -1) as "AwaySpread",
@@ -62,8 +62,8 @@ LEFT JOIN LATERAL (
 ) flAway ON TRUE
 
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
-LEFT  JOIN public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap'
-LEFT  JOIN public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
+left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
@@ -77,8 +77,8 @@ LEFT JOIN LATERAL (
 ) flHome ON TRUE
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-LEFT  JOIN public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
-LEFT  JOIN public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
+left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
 WHERE c."Id" = ANY(@ContestIds)
 ORDER BY c."StartDateUtc", fHome."Slug";

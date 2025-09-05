@@ -77,59 +77,78 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (command.Season is null)
             {
-                _logger.LogError("Command does not contain a valid Season. {@Command}", command);
+                _logger.LogError("Command does not contain a valid SeasonYear. {@Command}", command);
                 return;
             }
 
-            if (!Guid.TryParse(command.ParentId, out var seasonWeekId))
+            // Determine the Poll to which this PollWeek belongs (eg. AP, Coaches)
+            if (!Guid.TryParse(command.ParentId, out var seasonPollId))
             {
-                _logger.LogWarning("SeasonWeekId not on command.ParentId. Attempting to get from dto.");
-                // can we get it from the DTO?
-                var seasonTypeWeekRef = dto.Season.Type.Week.Ref;
-                var seasonTypeWeekIdentity = _externalRefIdentityGenerator.Generate(seasonTypeWeekRef);
+                _logger.LogWarning("SeasonPollId not on command.ParentId. Attempting to derive.");
 
-                seasonWeekId = seasonTypeWeekIdentity.CanonicalId;
+                var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto.Ref);
+                var seasonPollIdentity = _externalRefIdentityGenerator.Generate(seasonPollRef);
+
+                var seasonPoll = await _dataContext.SeasonPolls
+                    .FirstOrDefaultAsync(x => x.Id == seasonPollIdentity.CanonicalId);
+
+                if (seasonPoll is null)
+                {
+                    _logger.LogError("SeasonPollId could not be derived/inferred. {@Command}", command);
+                    return;
+                }
             }
 
-            var seasonWeek = await _dataContext.SeasonWeeks
-                .Include(x => x.ExternalIds)
-                .Include(x => x.Rankings)
-                .ThenInclude(r => r.ExternalIds)
-                .Where(x => x.Id == seasonWeekId)
-                .FirstOrDefaultAsync();
+            // Determine the SeasonWeek for this poll
+            // can be null: preseason/postseason polls
+            Guid? seasonWeekId = null;
 
-            if (seasonWeek == null)
+            if (dto.Season.Type.Week is not null)
             {
-                var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
+                var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Week.Ref);
+                var seasonWeek = await _dataContext.SeasonWeeks
+                    .Include(x => x.ExternalIds)
+                    .Include(x => x.Rankings)
+                    .ThenInclude(r => r.ExternalIds)
+                    .Where(x => x.Id == seasonWeekIdentity.CanonicalId)
+                    .FirstOrDefaultAsync();
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
-                    ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
-                    Uri: dto.Season.Type.Week.Ref,
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.SeasonTypeWeek,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                ));
+                if (seasonWeek == null)
+                {
+                    var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
 
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                await _dataContext.SaveChangesAsync();
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
+                        ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
+                        Uri: dto.Season.Type.Week.Ref,
+                        Sport: Sport.FootballNcaa,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.SeasonTypeWeek,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
+                        BypassCache: true
+                    ));
 
-                _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
-                throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
+
+                    _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
+                    throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
+                }
+
+                seasonWeekId = seasonWeek.Id;
             }
 
             var dtoIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-            var ranking = seasonWeek.Rankings
-                .FirstOrDefault(r => r.ExternalIds.Any(id => id.SourceUrlHash == dtoIdentity.UrlHash &&
-                                                             id.Provider == command.SourceDataProvider));
+            var pollWeek = await _dataContext.SeasonPollWeeks
+                .Where(x => x.Id == dtoIdentity.CanonicalId)
+                .FirstOrDefaultAsync();
 
-            if (ranking is null)
+            if (pollWeek is null)
             {
-                await ProcessNewEntity(dto, dtoIdentity, seasonWeekId, command);
+                await ProcessNewEntity(dto, dtoIdentity, seasonPollId, seasonWeekId, command);
             }
             else 
             {
@@ -140,7 +159,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessNewEntity(
             EspnFootballSeasonTypeWeekRankingsDto dto,
             ExternalRefIdentity dtoIdentity,
-            Guid seasonWeekId,
+            Guid seasonPollId,
+            Guid? seasonWeekId,
             ProcessDocumentCommand command)
         {
             // We need to create a mapping of the Team's season ref to the FranchiseSeasonId
@@ -170,28 +190,76 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.TeamSeason,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
+                        BypassCache: true
                     ));
                 }
 
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
-                throw new Exception($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
+                throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
             }
 
             // Create the entity from the DTO
             var entity = dto.AsEntity(
+                seasonPollId,
                 seasonWeekId,
                 _externalRefIdentityGenerator,
                 franchiseDictionary,
                 command.CorrelationId);
 
+            // for every FranchiseSeason affected (ranked, dropped out, etc)
+            // we will request the FranchiseSeason document for it
+            // and allow the appropriate FranchiseSeasonDocumentProcessor to handle updating
+            // an existing entity - which would include rankings
+            foreach (var ranking in dto.Ranks)
+            {
+                var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
+                await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+            }
+
+            if (dto.Others != null)
+            {
+                foreach (var ranking in dto.Others)
+                {
+                    var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
+                    await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+                }
+            }
+
+            if (dto.DroppedOut != null)
+            {
+                foreach (var ranking in dto.DroppedOut)
+                {
+                    var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
+                    await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+                }
+            }
+
             // Add to EF and save
-            await _dataContext.SeasonRankings.AddAsync(entity);
+            await _dataContext.SeasonPollWeeks.AddAsync(entity);
             await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation("Created SeasonRanking entity {@SeasonRankingId}", entity.Id);
+            _logger.LogInformation("Created SeasonPollWeek entity {@SeasonRankingId}", entity.Id);
+        }
+
+        private async Task PublishFranchiseSeasonDocumentRequestedEvent(
+            ProcessDocumentCommand command,
+            ExternalRefIdentity identity)
+        {
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: identity.UrlHash,
+                ParentId: null,
+                Uri: new Uri(identity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.TeamSeason,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
+                BypassCache: true
+            ));
         }
 
         private static async Task<(Dictionary<string, Guid> franchiseDictionary, Dictionary<Guid, Uri> missingFranchiseSeasons)>
@@ -232,6 +300,33 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (dto.Others is not null)
             {
                 foreach (var entry in dto.Others)
+                {
+                    var teamRef = entry.Team?.Ref;
+                    if (teamRef is null)
+                        continue;
+
+                    var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
+
+                    var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                        entry.Team!,
+                        command.SourceDataProvider,
+                        () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                        logger);
+
+                    if (franchiseSeasonId.HasValue)
+                    {
+                        franchiseDictionary.TryAdd(teamRef.ToCleanUrl(), franchiseSeasonId.Value);
+                    }
+                    else
+                    {
+                        missingFranchiseSeasons.TryAdd(teamIdentity.CanonicalId, teamRef);
+                    }
+                }
+            }
+
+            if (dto.DroppedOut is not null)
+            {
+                foreach (var entry in dto.DroppedOut)
                 {
                     var teamRef = entry.Team?.Ref;
                     if (teamRef is null)

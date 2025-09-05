@@ -1,7 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using SportsData.Core.Converters;
-
-namespace SportsData.Api.Application.Processors;
+﻿namespace SportsData.Api.Application.Processors;
 
 public class MatchupPreviewResponse
 {
@@ -13,9 +10,9 @@ public class MatchupPreviewResponse
 
     public Guid PredictedStraightUpWinner { get; set; }
 
-    public Guid PredictedSpreadWinner { get; set; }
+    public Guid? PredictedSpreadWinner { get; set; }
 
-    public int OverUnderPrediction { get; set; }
+    public int? OverUnderPrediction { get; set; }
 
     public int AwayScore { get; set; }
 

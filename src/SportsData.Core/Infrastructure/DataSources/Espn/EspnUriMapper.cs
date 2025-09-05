@@ -203,4 +203,38 @@ public static class EspnUriMapper
 
         return new Uri(path + limitQuery, UriKind.Absolute);
     }
+
+    public static Uri SeasonPollWeekRefToSeasonPollRef(Uri seasonPollWeekRef)
+    {
+        if (seasonPollWeekRef == null) throw new ArgumentNullException(nameof(seasonPollWeekRef));
+
+        var s = seasonPollWeekRef.GetLeftPart(UriPartial.Path); // removes ?query
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / types / {typeId} / weeks / {weekId} / rankings / {rankingId}
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var typesIndex = Array.IndexOf(parts, "types");
+        var weeksIndex = Array.IndexOf(parts, "weeks");
+        var rankingsIndex = Array.IndexOf(parts, "rankings");
+
+        if (seasonsIndex < 0 || typesIndex < 0 || weeksIndex < 0 || rankingsIndex < 0 || rankingsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonPollWeek ref format: {seasonPollWeekRef}");
+
+        var seasonYearPart = parts[seasonsIndex + 1];
+        var rankingIdPart = parts[rankingsIndex + 1];
+
+        if (!seasonYearPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid season year in ref: {seasonPollWeekRef}");
+
+        if (!rankingIdPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid ranking id in ref: {seasonPollWeekRef}");
+
+        // Keep everything up to /seasons/{year}
+        var baseParts = parts.Take(seasonsIndex + 2); // includes "seasons" and seasonYear
+        var finalPath = string.Join('/', baseParts.Concat(new[] { "rankings", rankingIdPart }));
+
+        return new Uri(finalPath, UriKind.Absolute); // do NOT append query string
+    }
+
+
 }

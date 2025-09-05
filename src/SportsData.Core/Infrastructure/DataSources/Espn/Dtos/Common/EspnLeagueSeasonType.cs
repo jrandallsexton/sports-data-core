@@ -39,7 +39,7 @@ public class EspnLeagueSeasonType
     public EspnLinkDto Groups { get; set; }
 
     [JsonPropertyName("week")]
-    public Week Week { get; set; }
+    public EspnLeagueSeasonWeek Week { get; set; }
 
     [JsonPropertyName("weeks")]
     public EspnLinkDto Weeks { get; set; }

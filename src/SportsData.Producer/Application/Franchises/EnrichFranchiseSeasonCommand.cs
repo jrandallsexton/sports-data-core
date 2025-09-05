@@ -1,3 +1,6 @@
 ﻿namespace SportsData.Producer.Application.Franchises;
 
-public record EnrichFranchiseSeasonCommand(Guid FranchiseSeasonId, Guid CorrelationId);
+public record EnrichFranchiseSeasonCommand(
+    Guid FranchiseSeasonId,
+    int SeasonYear,
+    Guid CorrelationId);

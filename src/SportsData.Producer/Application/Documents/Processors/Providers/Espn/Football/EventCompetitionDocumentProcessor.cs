@@ -1,6 +1,4 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -8,9 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider;
-using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -492,11 +488,37 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
-            EspnEventCompetitionDto externalDto,
-            Competition entity)
+            EspnEventCompetitionDto dto,
+            Competition competition)
         {
-            _logger.LogError("Update was detected. Not implemented");
-            await Task.Delay(100);
+            var raiseEvents = false;
+
+            // update spreads, moneylines, totals, etc.
+            if (dto.Odds?.Ref is not null)
+            {
+                var oddsIdentity = _externalRefIdentityGenerator.Generate(dto.Odds.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: oddsIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(oddsIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionOdds,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+                ));
+
+                raiseEvents = true;
+            }
+
+            if (raiseEvents)
+            {
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+            }
+
         }
     }
 }

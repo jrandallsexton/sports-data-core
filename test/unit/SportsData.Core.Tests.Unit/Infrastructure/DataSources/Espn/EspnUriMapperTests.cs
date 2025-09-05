@@ -112,6 +112,20 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             result.Should().Be(new Uri(expectedStatusRef));
         }
 
-
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/2/rankings/1",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/rankings/1")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/rankings/2")]
+        public void SeasonPollWeekRefToSeasonPollRef_Should_Remove_Type_And_Week_Levels(
+            string seasonPollWeekRef,
+            string expectedSeasonPollRef)
+        {
+            var input = new Uri(seasonPollWeekRef);
+            var result = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(input);
+            result.Should().Be(new Uri(expectedSeasonPollRef));
+        }
     }
 }

@@ -28,6 +28,8 @@ namespace SportsData.Api.Application.User
             public Guid Id { get; set; }
 
             public required string Name { get; set; }
+
+            public int? MaxSeasonWeek { get; set; }
         }
     }
 }

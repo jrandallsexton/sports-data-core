@@ -36,7 +36,11 @@ namespace SportsData.Producer.Application.Franchises
 
             foreach (var franchiseSeason in franchiseSeasons)
             {
-                var cmd = new EnrichFranchiseSeasonCommand(franchiseSeason.Id, Guid.NewGuid());
+                var cmd = new EnrichFranchiseSeasonCommand(
+                    franchiseSeason.Id,
+                    SEASON_YEAR,
+                    Guid.NewGuid());
+
                 _backgroundJobProvider
                     .Enqueue<FranchiseSeasonEnrichmentProcessor<TeamSportDataContext>>(p => p.Process(cmd));
             }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20250904113814_04SepV2")]
+    partial class _04SepV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5927,7 +5930,7 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("SeasonPollId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SeasonWeekId")
+                    b.Property<Guid>("SeasonWeekId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ShortHeadline")
@@ -6134,9 +6137,14 @@ namespace SportsData.Producer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("WeekId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SeasonPollWeekId");
+
+                    b.HasIndex("WeekId");
 
                     b.ToTable("SeasonPollWeekExternalId");
                 });
@@ -7341,7 +7349,8 @@ namespace SportsData.Producer.Migrations
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonWeek", "SeasonWeek")
                         .WithMany("Rankings")
                         .HasForeignKey("SeasonWeekId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("SeasonPoll");
 
@@ -7380,9 +7389,15 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonPollWeekExternalId", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonPollWeek", "Week")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonPollWeek", null)
                         .WithMany("ExternalIds")
                         .HasForeignKey("SeasonPollWeekId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonPollWeek", "Week")
+                        .WithMany()
+                        .HasForeignKey("WeekId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

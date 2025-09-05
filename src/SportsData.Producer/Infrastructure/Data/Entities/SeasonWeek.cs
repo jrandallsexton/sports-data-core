@@ -23,7 +23,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime EndDate { get; set; }
 
-        public ICollection<SeasonRanking> Rankings { get; set; } = [];
+        public ICollection<SeasonPollWeek> Rankings { get; set; } = [];
 
         public ICollection<SeasonWeekExternalId> ExternalIds { get; set; } = [];
 
@@ -63,6 +63,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.Navigation(x => x.ExternalIds)
                     .AutoInclude(false);
+
+                builder.HasMany(x => x.Rankings)
+                    .WithOne(x => x.SeasonWeek)
+                    .HasForeignKey(x => x.SeasonWeekId)
+                    .OnDelete(DeleteBehavior.Cascade); // or Restrict, depending on your deletion rules
             }
         }
     }

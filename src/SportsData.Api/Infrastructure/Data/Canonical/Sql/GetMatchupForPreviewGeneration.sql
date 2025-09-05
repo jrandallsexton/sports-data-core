@@ -13,20 +13,20 @@
     fAway."Slug" as "AwaySlug",
     fsrdAway."Current" as "AwayRank",
     gsAway."Slug" as "AwayConferenceSlug",
-    0 as "AwayWins",
-    0 as "AwayLosses",
-    0 as "AwayConferenceWins",
-    0 as "AwayConferenceLosses",
+  fsAway."Wins" as "AwayWins",
+  fsAway."Losses" as "AwayLosses",
+  fsAway."ConferenceWins" as "AwayConferenceWins",
+  fsAway."ConferenceLosses" as "AwayConferenceLosses",
 
 	fsHome."Id" as "HomeFranchiseSeasonId",
     fHome."DisplayName" as "Home",
     fHome."Slug" as "HomeSlug",
     fsrdHome."Current" as "HomeRank",
     gsHome."Slug" as "HomeConferenceSlug",
-    0 as "HomeWins",
-    0 as "HomeLosses",
-    0 as "HomeConferenceWins",
-    0 as "HomeConferenceLosses",
+  fsHome."Wins" as "HomeWins",
+  fsHome."Losses" as "HomeLosses",
+  fsHome."ConferenceWins" as "HomeConferenceWins",
+  fsHome."ConferenceLosses" as "HomeConferenceLosses",
 
     co."Details" as "Spread",
     (co."Spread" * -1) as "AwaySpread",
@@ -46,8 +46,8 @@
   inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
   inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
   inner join public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap'
+  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
-  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap'
+  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 where c."Id" = @ContestId

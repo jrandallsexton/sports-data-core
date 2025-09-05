@@ -1,4 +1,35 @@
-﻿WITH next_week AS (
+select * from public."SeasonPoll"
+select * from public."SeasonPollWeek"
+
+select * from public."SeasonPollWeekEntry"
+where "SeasonPollWeekId" = '75030c65-aa46-4324-4c03-6f0a1c61b50a' AND
+"IsOtherReceivingVotes" = false and "IsDroppedOut" = false
+order by "Current"
+
+select * from public."SeasonPollWeekEntry"
+Where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+order by "RowDateUtc" desc
+
+-- select *from public."SeasonPollWeekEntryStat"
+-- where "SeasonPollWeekEntryId" = '054ed369-98b9-4aee-8295-d9659b54c820'
+
+-- delete from public."SeasonPollWeekEntryStat"
+-- delete from public."SeasonPollWeekEntry"
+-- delete from public."SeasonPollExternalId"
+-- delete from public."SeasonPoll"
+
+select * from public."SeasonWeek" order by "Number"
+
+select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
+
+select * from public."FranchiseSeasonRanking"
+where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' and "Type" = 'ap'
+order by "Date" desc
+
+select * from public."FranchiseSeasonRankingDetail"
+where "FranchiseSeasonRankingId" = '557e5b90-76f7-d9ea-75a4-dc7db52bd526'
+
+WITH next_week AS (
   SELECT sw."Id" AS "SeasonWeekId",
          sw."Number" AS "WeekNumber",
          s."Id" AS "SeasonId",
@@ -17,17 +48,9 @@ SELECT
   c."StartDateUtc" AS "StartDateUtc",
   fAway."Slug" as "AwaySlug",
   fsrdAway."Current" as "AwayRank",
-  fsAway."Wins" as "AwayWins",
-  fsAway."Losses" as "AwayLosses",
-  fsAway."ConferenceWins" as "AwayConferenceWins",
-  fsAway."ConferenceLosses" as "AwayConferenceLosses",
   gsAway."Slug" as "AwayConferenceSlug",
   fHome."Slug" as "HomeSlug",
   fsrdHome."Current" as "HomeRank",
-  fsHome."Wins" as "HomeWins",
-  fsHome."Losses" as "HomeLosses",
-  fsHome."ConferenceWins" as "HomeConferenceWins",
-  fsHome."ConferenceLosses" as "HomeConferenceLosses",
   gsHome."Slug" as "HomeConferenceSlug",
   co."Details" as "Spread",
   (co."Spread" * -1) as "AwaySpread",
@@ -50,5 +73,5 @@ left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = nw."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-WHERE c."StartDateUtc" >= CURRENT_DATE
+WHERE c."StartDateUtc" > CURRENT_DATE
 ORDER BY "StartDateUtc", fHome."Slug"

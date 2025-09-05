@@ -146,7 +146,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
 
         [Fact]
-        public async Task WhenNoExistingOdds_AddsNewCompetitionOdds_NoPublish()
+        public async Task WhenNoExistingOdds_AddsNewCompetitionOdds_Publishes()
         {
             // Arrange
             var bus = Mocker.GetMock<IEventBus>();
@@ -207,7 +207,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved[0].Teams.Should().HaveCount(2);
             saved[0].Totals.Should().NotBeEmpty();
 
-            bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+            bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

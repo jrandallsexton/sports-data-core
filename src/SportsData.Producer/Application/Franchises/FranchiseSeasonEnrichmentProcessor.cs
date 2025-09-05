@@ -1,14 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
-
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SportsData.Producer.Application.Franchises
 {

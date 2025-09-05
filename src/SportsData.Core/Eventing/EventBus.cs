@@ -69,10 +69,19 @@ namespace SportsData.Core.Eventing
             IMessageDeliveryPolicy policy, IOutboxAmbientState outbox)
         { _publish = publish; _bus = bus; _policy = policy; _outbox = outbox; }
 
-        public Task Publish<T>(T message, CancellationToken ct = default) where T : class
+        public async Task Publish<T>(T message, CancellationToken ct = default) where T : class
         {
             var direct = _policy.Mode == DeliveryMode.Direct || !_outbox.IsActive;
-            return direct ? _bus.Publish(message, ct) : _publish.Publish(message, ct);
+
+            if (direct)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), ct); // 🚨 Dirty Hack: Give consumers time to commit
+                await _bus.Publish(message, ct);
+            }
+            else
+            {
+                await _publish.Publish(message, ct);
+            }
         }
 
         public Task PublishBatch<T>(IEnumerable<T> messages, CancellationToken ct = default) where T : class

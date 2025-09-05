@@ -51,6 +51,7 @@ public class Program
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
                 services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode);
+                services.AddScoped<FootballDataContext>();
                 services.AddScoped<TeamSportDataContext, FootballDataContext>();
                 services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
@@ -64,11 +65,26 @@ public class Program
         services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
 
         // Add messaging via MassTransit using Outbox pattern
-        services.AddMessaging<BaseDataContext>(config, [
+        //services.AddMessaging<BaseDataContext, TeamSportDataContext, FootballDataContext>(config, [
+        //    typeof(DocumentCreatedHandler),
+        //    typeof(ProcessImageRequestedHandler),
+        //    typeof(ProcessImageResponseHandler)
+        //]);
+
+        // Add messaging via MassTransit WITHOUT using Outbox pattern
+        services.AddMessaging(config, [
             typeof(DocumentCreatedHandler),
             typeof(ProcessImageRequestedHandler),
             typeof(ProcessImageResponseHandler)
         ]);
+
+        //services.AddMessaging<BaseDataContext, TeamSportDataContext, FootballDataContext>(
+        //    config,
+        //    [
+        //        typeof(DocumentCreatedHandler),
+        //        typeof(ProcessImageRequestedHandler),
+        //        typeof(ProcessImageResponseHandler)
+        //    ]);
 
         services.AddInstrumentation(builder.Environment.ApplicationName);
 

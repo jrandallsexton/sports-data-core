@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
+
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
 

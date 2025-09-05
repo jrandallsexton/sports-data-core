@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -507,7 +507,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionOdds,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
                 ));
 
                 raiseEvents = true;

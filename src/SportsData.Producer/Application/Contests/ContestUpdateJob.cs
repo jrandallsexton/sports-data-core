@@ -29,9 +29,10 @@ namespace SportsData.Producer.Application.Contests
         {
             // get the current season week
             var currentSeasonWeek = await _dataContext.SeasonWeeks
+                .Include(w => w.Season)
                 .AsNoTracking()
                 .Where(sw => sw.StartDate < DateTime.UtcNow &&
-                             sw.EndDate < DateTime.UtcNow)
+                             sw.EndDate > DateTime.UtcNow)
                 .FirstOrDefaultAsync();
 
             if (currentSeasonWeek is null)
@@ -50,10 +51,9 @@ namespace SportsData.Producer.Application.Contests
             // spawn a job to update each
             foreach (var contest in contests)
             {
-                // TODO: Remove hardcoded season year, etc.
                 var cmd = new UpdateContestCommand(
                     contest.Id,
-                    2025,
+                    currentSeasonWeek.Season!.Year,
                     SourceDataProvider.Espn,
                     Sport.FootballNcaa,
                     Guid.NewGuid());

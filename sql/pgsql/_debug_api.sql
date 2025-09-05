@@ -23,10 +23,19 @@ where g."IsPublic" = true
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
--- update public."PickemGroupWeek" set "AreMatchupsGenerated" = false where "SeasonWeek" = 2
 select * from public."PickemGroupMatchup" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041'
+
+-- FIX DEV
+-- delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
 -- delete from public."PickemGroupMatchup" where "SeasonWeek" = 2
-select * from public."UserPick" where "ContestId" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
+-- update public."PickemGroupWeek" set "AreMatchupsGenerated" = false where "SeasonWeek" = 2
+-- delete from public."MatchupPreview" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
+-- in Producer, execute "FranchiseSeasonEnrichmentJob"
+-- in Producer, execute "ContestUpdateJob"
+-- in API, execute "MatchupScheduler"
+
+select * from public."UserPick" ORDER BY "CreatedUtc" desc
+--delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 select * from public."UserPick" where "UserId" = '6b4d61b8-7abc-43fb-82cc-27753373cf48' and "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'

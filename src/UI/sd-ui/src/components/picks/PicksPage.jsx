@@ -13,7 +13,11 @@ import MatchupGrid from "../matchups/MatchupGrid.jsx";
 
 function PicksPage() {
   const { userDto, loading: userLoading } = useUserDto();
-  const { selectedLeagueId: globalLeagueId, setSelectedLeagueId: setGlobalLeagueId, initializeLeagueSelection } = useLeagueContext();
+  const {
+    selectedLeagueId: globalLeagueId,
+    setSelectedLeagueId: setGlobalLeagueId,
+    initializeLeagueSelection,
+  } = useLeagueContext();
   const { leagueId: routeLeagueId } = useParams(); // optional route param
   const navigate = useNavigate();
 
@@ -27,7 +31,7 @@ function PicksPage() {
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState(null);
   const viewMode = "card";
 
   const [hidePicked, setHidePicked] = useState(false);
@@ -40,7 +44,7 @@ function PicksPage() {
     if (!userLoading && leagues.length > 0) {
       // Initialize global context
       initializeLeagueSelection(leagues);
-      
+
       const isRouteValid =
         routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
       if (isRouteValid) {
@@ -48,14 +52,23 @@ function PicksPage() {
         setGlobalLeagueId(routeLeagueId); // Sync with global context
       } else if (!selectedLeagueId) {
         // Use global context if available, otherwise default to first league
-        const leagueToUse = globalLeagueId && leagues.some(l => l.id === globalLeagueId) 
-          ? globalLeagueId 
-          : leagues[0].id;
+        const leagueToUse =
+          globalLeagueId && leagues.some((l) => l.id === globalLeagueId)
+            ? globalLeagueId
+            : leagues[0].id;
         setSelectedLeagueId(leagueToUse);
         setGlobalLeagueId(leagueToUse);
       }
     }
-  }, [userLoading, leagues, routeLeagueId, selectedLeagueId, globalLeagueId, setGlobalLeagueId, initializeLeagueSelection]);
+  }, [
+    userLoading,
+    leagues,
+    routeLeagueId,
+    selectedLeagueId,
+    globalLeagueId,
+    setGlobalLeagueId,
+    initializeLeagueSelection,
+  ]);
 
   // Keep URL in sync with selectedLeagueId and update global context
   useEffect(
@@ -203,6 +216,18 @@ function PicksPage() {
     }
   }
 
+  // Find the selected league's maxSeasonWeek
+  const selectedLeague = leagues.find((l) => l.id === selectedLeagueId) ?? null;
+  const maxSeasonWeek = selectedLeague?.maxSeasonWeek ?? null;
+
+  // When selectedLeagueId or maxSeasonWeek changes, default selectedWeek to maxSeasonWeek
+  useEffect(() => {
+    if (selectedLeagueId && maxSeasonWeek && selectedWeek !== maxSeasonWeek) {
+      setSelectedWeek(maxSeasonWeek);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueId, maxSeasonWeek, selectedLeague]);
+
   if (userLoading) return <div>Loading user info...</div>;
 
   if (!leagues.length) {
@@ -220,18 +245,6 @@ function PicksPage() {
         (m) => !userPicks[m.contestId] || fadingOut.includes(m.contestId)
       )
     : matchups;
-
-  // Find the selected league's maxSeasonWeek
-  const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
-  const maxSeasonWeek = selectedLeague?.maxSeasonWeek || 1;
-
-  // When selectedLeagueId or maxSeasonWeek changes, default selectedWeek to maxSeasonWeek
-  useEffect(() => {
-    if (selectedLeagueId && maxSeasonWeek && selectedWeek !== maxSeasonWeek) {
-      setSelectedWeek(maxSeasonWeek);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLeagueId, maxSeasonWeek]);
 
   return (
     <div className="picks-page-container">

@@ -225,6 +225,14 @@ function PicksPage() {
   const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
   const maxSeasonWeek = selectedLeague?.maxSeasonWeek || 1;
 
+  // When selectedLeagueId or maxSeasonWeek changes, default selectedWeek to maxSeasonWeek
+  useEffect(() => {
+    if (selectedLeagueId && maxSeasonWeek && selectedWeek !== maxSeasonWeek) {
+      setSelectedWeek(maxSeasonWeek);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueId, maxSeasonWeek]);
+
   return (
     <div className="picks-page-container">
       <div className="picks-content-wrapper">

@@ -29,18 +29,23 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? ValidationErrors { get; set; }
 
+        public string? PromptVersion { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {
             public void Configure(EntityTypeBuilder<MatchupPreview> builder)
             {
                 builder.ToTable(nameof(MatchupPreview));
                 builder.HasKey(x => x.Id);
-                builder.HasIndex(x => x.ContestId).IsUnique();
+                builder.HasIndex(x => new { x.ContestId, x.Model, x.PromptVersion }).IsUnique();
 
                 builder.Property(x => x.Overview).HasMaxLength(512);
                 builder.Property(x => x.Analysis).HasMaxLength(1024);
                 builder.Property(x => x.Prediction).HasMaxLength(768);
+
                 builder.Property(x => x.Model).HasMaxLength(50);
+                builder.Property(x => x.PromptVersion).HasMaxLength(50);
+
                 builder.Property(x => x.ValidationErrors).HasMaxLength(1024);
 
                 builder.Property(l => l.OverUnderPrediction)

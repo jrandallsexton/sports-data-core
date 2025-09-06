@@ -26,7 +26,8 @@ namespace SportsData.Producer.Application.Contests
             // get the current season week
             var seasonWeeks = await _dataContext.SeasonWeeks
                 .AsNoTracking()
-                .Where(sw => sw.StartDate < DateTime.UtcNow)
+                .Where(sw => sw.StartDate < DateTime.UtcNow &&
+                             sw.EndDate > DateTime.UtcNow)
                 .Take(2)
                 .ToListAsync();
 

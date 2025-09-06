@@ -35,7 +35,15 @@ select * from public."PickemGroupMatchup" where "GroupId" = '4319cb6e-e503-465f-
 -- in Producer, execute "ContestUpdateJob"
 -- in API, execute "MatchupScheduler"
 
-select * from public."UserPick" ORDER BY "CreatedUtc" desc
+select * from public."User"
+select * from public."UserPick"
+where
+  "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3f0f720' and
+  "Week" = 2 and
+  "PickemGroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
+ORDER BY "CreatedUtc" desc
+
+--update public."UserPick" set "PickType" = 2
 --delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'

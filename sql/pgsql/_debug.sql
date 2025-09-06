@@ -1,6 +1,6 @@
 
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
-select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
+select * from public."FranchiseSeason" where "Slug" = 'texas-tech-red-raiders'
 select * from public."AthletePosition"
 /* Season Roster */
 select
@@ -19,11 +19,13 @@ order by ap."Name", ats."LastName", ats."FirstName"
 select * from public."FranchiseSeasonRecord"
 select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
-select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb'
+select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 select * from public."Season"
 select * from public."SeasonPhase"
-select * from public."SeasonWeek" where "Number" = 2
-select * from public."Contest"
+select * from public."SeasonWeek" order by "StartDate"
+select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
+select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
 select * from public."Venue"
 
 select *

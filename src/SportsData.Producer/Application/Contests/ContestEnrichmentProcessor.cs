@@ -89,20 +89,21 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                await _bus.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(status.Ref),
-                    ParentId: competition.Id.ToString(),
-                    Uri: status.Ref.ToCleanUri(),
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: competition.Contest.SeasonYear,
-                    DocumentType: DocumentType.EventCompetitionStatus,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
-                    BypassCache: true
-                ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
-                await _dataContext.SaveChangesAsync();
+                // Why are we requesting this via an event? we just got it above.
+                //await _bus.Publish(new DocumentRequested(
+                //    Id: HashProvider.GenerateHashFromUri(status.Ref),
+                //    ParentId: competition.Id.ToString(),
+                //    Uri: status.Ref.ToCleanUri(),
+                //    Sport: Sport.FootballNcaa,
+                //    SeasonYear: competition.Contest.SeasonYear,
+                //    DocumentType: DocumentType.EventCompetitionStatus,
+                //    SourceDataProvider: SourceDataProvider.Espn,
+                //    CorrelationId: command.CorrelationId,
+                //    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
+                //    BypassCache: true
+                //));
+                //await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                //await _dataContext.SaveChangesAsync();
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {

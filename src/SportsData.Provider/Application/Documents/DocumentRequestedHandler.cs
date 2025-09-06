@@ -113,7 +113,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             if (dto == null || dto.Items == null || dto.Items.Count == 0)
             {
-                _logger.LogInformation("Empty ResourceIndex at {Uri}. Nothing to enqueue.", uri);
+                _logger.LogWarning("Empty ResourceIndex at {Uri}. Nothing to enqueue.", uri);
                 break;
             }
 

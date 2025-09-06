@@ -28,7 +28,8 @@ function MatchupList({
         <MatchupCard
           key={matchup.contestId}
           matchup={matchup}
-          userPickFranchiseSeasonId={userPicks[matchup.contestId]}
+          userPickFranchiseSeasonId={userPicks[matchup.contestId]?.franchiseId}
+          userPickResult={userPicks[matchup.contestId]}
           onPick={onPick}
           onViewInsight={onViewInsight}
           isInsightUnlocked={true}

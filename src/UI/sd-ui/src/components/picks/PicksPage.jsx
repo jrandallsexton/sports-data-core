@@ -114,7 +114,7 @@ function PicksPage() {
 
         const picksByContest = {};
         for (const pick of response.data) {
-          picksByContest[pick.contestId] = pick.franchiseId;
+          picksByContest[pick.contestId] = pick; // Store full pick object
         }
 
         setUserPicks(picksByContest);

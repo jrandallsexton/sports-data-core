@@ -23,18 +23,11 @@ function MatchupCard({
   // Determine pick result when game is complete
   const getUserPickResult = () => {
     if (!matchup.isComplete) return null;
-    
-    // Use server-calculated result if available
-    if (userPickResult) {
+    // Only use server-calculated result
+    if (userPickResult && typeof userPickResult.isCorrect === 'boolean') {
       return userPickResult.isCorrect ? 'correct' : 'incorrect';
     }
-    
-    // Fallback to client-side calculation (should be rare/deprecated)
-    if (userPickFranchiseSeasonId) {
-      const userPickedCorrect = userPickFranchiseSeasonId === matchup.winnerFranchiseSeasonId;
-      return userPickedCorrect ? 'correct' : 'incorrect';
-    }
-    
+    // If not scored, do not show any result
     return null;
   };
 

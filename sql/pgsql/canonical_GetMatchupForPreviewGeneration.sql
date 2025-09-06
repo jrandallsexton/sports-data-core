@@ -58,4 +58,4 @@
   left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
   left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-where c."Id" = '47b9b31f-5c89-8347-c2f9-dfbcc97247ba' --) t;
+where c."Id" = 'd4dd527e-e5ea-8676-87b9-da77b7625d16' --) t;

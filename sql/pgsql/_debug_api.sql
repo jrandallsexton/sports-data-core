@@ -1,5 +1,6 @@
 
-select * from public."MatchupPreview" where "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'
+select * from public."MatchupPreview" where "ContestId" = '6fafd6ee-c474-4b7e-d822-cd3348c52467'
+-- https://api-dev.sportdeets.com/ui/matchup/6fafd6ee-c474-4b7e-d822-cd3348c52467/preview
 
 update public."MatchupPreview" set
 "PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
@@ -23,7 +24,7 @@ where g."IsPublic" = true
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
-select * from public."PickemGroupMatchup" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041'
+select * from public."PickemGroupMatchup" where "GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' order by "ContestId"
 
 -- FIX DEV
 -- delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'

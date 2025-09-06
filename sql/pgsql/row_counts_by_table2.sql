@@ -20,7 +20,7 @@ BEGIN
         )
         INTO row_count;
 
-        IF row_count >= 0 THEN
+        IF row_count > 0 THEN
             RAISE NOTICE '% | %', r.table_name, row_count;
         END IF;
 

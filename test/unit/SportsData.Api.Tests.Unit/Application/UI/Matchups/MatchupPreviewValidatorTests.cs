@@ -15,8 +15,8 @@ public class MatchupPreviewValidatorTests
     [Theory]
     [InlineData(30, 20, -5, true, true, true)] // Home wins and covers
     [InlineData(24, 31, -3.5, false, false, true)] // Away wins and covers
-    [InlineData(28, 24, -4, true, null, false)] // Push
-    [InlineData(27, 24, 0, true, true, true)] // Pick'em
+    [InlineData(28, 24, -4, true, null, true)] // Push
+    [InlineData(27, 24, 0, true, null, true)] // Pick'em
     public void Validator_Should_Pass_For_Valid_Cases(
         int homeScore,
         int awayScore,
@@ -31,7 +31,7 @@ public class MatchupPreviewValidatorTests
             awayScore,
             homeSpread,
             predictedStraightUpWinner: predictSUHome ? _home : _away,
-            predictedSpreadWinner: predictATSHome is null ? Guid.Empty : predictATSHome.Value ? _home : _away,
+            predictedSpreadWinner: predictATSHome is null ? null : predictATSHome.Value ? _home : _away,
             homeFranchiseSeasonId: _home,
             awayFranchiseSeasonId: _away
         );

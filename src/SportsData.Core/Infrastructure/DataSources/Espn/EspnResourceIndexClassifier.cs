@@ -9,6 +9,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private static readonly HashSet<string> KnownLeafSuffixes = new(StringComparer.OrdinalIgnoreCase)
         {
             "status",
+            "statistics"
             // Add more false-positive suffixes here as you find them
         };
 

@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Jobs
+namespace SportsData.Api.Application.Previews
 {
     public class MatchupPreviewGenerator
     {
@@ -48,6 +47,8 @@ namespace SportsData.Api.Application.Jobs
                 .Distinct()
                 .ToListAsync();
 
+            var leagueMatchupCount = 0;
+
             // === 1. Process league matchups first ===
             foreach (var matchup in matchups.Where(x => leagueContestIds.Contains(x.ContestId)))
             {
@@ -55,6 +56,8 @@ namespace SportsData.Api.Application.Jobs
                     continue;
 
                 Enqueue(matchup.ContestId);
+
+                leagueMatchupCount++;
             }
 
             // === 2. Process non-league matchups second ===
@@ -81,6 +84,8 @@ namespace SportsData.Api.Application.Jobs
             {
                 return previews.TryGetValue(contestId, out var errors) && string.IsNullOrWhiteSpace(errors);
             }
+
+            _logger.LogInformation("Enqueued {LeagueCount} league matchups for preview generation.", leagueMatchupCount);
         }
 
     }

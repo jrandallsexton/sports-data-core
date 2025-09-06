@@ -514,6 +514,25 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 raiseEvents = true;
             }
 
+            if (dto.Predictor?.Ref is not null)
+            {
+                var predictionIdentity = _externalRefIdentityGenerator.Generate(dto.Predictor.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: predictionIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(predictionIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionPrediction,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
             if (raiseEvents)
             {
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());

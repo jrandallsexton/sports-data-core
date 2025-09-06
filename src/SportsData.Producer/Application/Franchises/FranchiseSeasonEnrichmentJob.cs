@@ -29,7 +29,7 @@ namespace SportsData.Producer.Application.Franchises
                 .AsNoTracking()
                 .Where(x => x.SeasonYear == SEASON_YEAR &&
                             (x.ModifiedUtc == null ||
-                            x.ModifiedUtc < DateTime.UtcNow.AddHours(-24)))
+                            x.ModifiedUtc < DateTime.UtcNow.AddHours(24))) // TOD: Make this configurable
                 .ToListAsync();
 
             _logger.LogInformation("Requesting enrichment for {count} franchise seasons.", franchiseSeasons.Count);

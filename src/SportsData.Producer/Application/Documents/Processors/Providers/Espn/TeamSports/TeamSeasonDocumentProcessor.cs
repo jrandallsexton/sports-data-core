@@ -549,7 +549,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 DocumentType: DocumentType.TeamSeasonStatistics,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor,
+                BypassCache: true
             ));
             saveChanges = true;
             _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Statistics");
@@ -568,7 +569,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 DocumentType: DocumentType.TeamSeasonRank,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor,
+                BypassCache: true
             ));
             saveChanges = true;
             _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Ranks");
@@ -587,7 +589,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 DocumentType: DocumentType.TeamSeasonLeaders,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor,
+                BypassCache: true
             ));
             saveChanges = true;
             _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Leaders");

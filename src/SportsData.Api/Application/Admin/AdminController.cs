@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;

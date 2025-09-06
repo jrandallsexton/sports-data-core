@@ -71,7 +71,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_Skips_WhenNoDeltaDetected()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics_Week2.json");
 
             // Seed existing snapshot
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
@@ -103,6 +103,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await sut.ProcessAsync(command);
 
             // Assert
+            var data = await TeamSportDataContext.FranchiseSeasonStatistics
+                .Include(x => x.Stats)
+                .ToListAsync();
+            data.Count.Should().Be(dto.Splits.Categories.Count, "should not modify existing categories when no delta detected");
             var count = await TeamSportDataContext.FranchiseSeasonStatistics.CountAsync();
             count.Should().Be(dto.Splits.Categories.Count, "should not add duplicate categories when no delta detected");
         }
@@ -143,6 +147,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await sut.ProcessAsync(command);
 
             // Assert
+            var data = await TeamSportDataContext.FranchiseSeasonStatistics
+                .Include(x => x.Stats)
+                .ToListAsync();
+
             var allCategories = await TeamSportDataContext.FranchiseSeasonStatistics
                 .Where(c => c.FranchiseSeasonId == franchiseSeason.Id)
                 .ToListAsync();

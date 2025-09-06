@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.Processors;
+﻿namespace SportsData.Api.Application.Previews.Models;
 
 public class MatchupPreviewResponse
 {

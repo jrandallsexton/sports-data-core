@@ -3,7 +3,7 @@
 using Moq;
 
 using SportsData.Api.Application.PickemGroups;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;

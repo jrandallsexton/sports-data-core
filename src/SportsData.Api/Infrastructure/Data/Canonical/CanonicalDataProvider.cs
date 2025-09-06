@@ -32,6 +32,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<MatchupResult> GetMatchupResult(Guid contestId);
 
         Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
+
+        Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -264,5 +266,56 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
             return results.ToList();
         }
+
+        public async Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId)
+        {
+            var sql = _queryProvider.GetFranchiseSeasonStatisticsForPreviewGeneration();
+
+            var rawStats = (await _connection.QueryAsync<FranchiseSeasonRawStat>(
+                sql,
+                new { FranchiseSeasonId = franchiseSeasonId },
+                commandType: CommandType.Text
+            )).ToList(); // fully materialize once
+
+            if (!rawStats.Any())
+            {
+                _logger.LogError("Stats not found for FranchiseSeasonId={FranchiseSeasonId}", franchiseSeasonId);
+                return new FranchiseSeasonModelStatsDto();
+            }
+
+            return MapToModelStats(rawStats) ?? throw new Exception("Stat mapping failed");
+        }
+
+        private FranchiseSeasonModelStatsDto MapToModelStats(List<FranchiseSeasonRawStat> stats)
+        {
+            var dict = stats
+                .GroupBy(s => s.Statistic)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            double? Get(string key) => dict.TryGetValue(key, out var s) ? s.PerGameValue : null;
+            double? Div(double? a, double? b) => (a.HasValue && b.HasValue && b != 0) ? a / b : null;
+            int? ToInt(double? val) => val.HasValue ? (int?)Convert.ToInt32(val.Value) : null;
+
+            return new FranchiseSeasonModelStatsDto
+            {
+                PointsPerGame = Get("totalPointsPerGame"),
+                YardsPerGame = Get("totalYardsFromScrimmage"),
+                PassingYardsPerGame = Get("passingYards"),
+                RushingYardsPerGame = Get("rushingYards"),
+                ThirdDownConvPct = Get("thirdDownConvPct"),
+                RedZoneScoringPct = Get("redzoneScoringPct"),
+                TurnoverDifferential = Get("turnOverDifferential"),
+
+                PenaltiesPerGame = Div(Get("totalPenalties"), Get("teamGamesPlayed")),
+                PenaltyYardsPerGame = Div(Get("totalPenaltyYards"), Get("teamGamesPlayed")),
+                AvgYardsPerPlay = Div(Get("totalYardsFromScrimmage"), Get("totalOffensivePlays")),
+
+                Sacks = ToInt(Get("sacks")),
+                Interceptions = ToInt(Get("interceptions")),
+                FumblesLost = ToInt(Get("fumblesLost")),
+                Takeaways = ToInt(Get("totalTakeaways"))
+            };
+        }
+
     }
 }

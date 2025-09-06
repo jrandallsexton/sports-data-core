@@ -1,4 +1,6 @@
-﻿  SELECT
+-- SELECT json_agg(row_to_json(t))
+-- FROM (
+  SELECT
     sp."Year" as "SeasonYear",
     sw."Number" as "WeekNumber",
     c."Id" AS "ContestId",
@@ -56,4 +58,4 @@
   left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
   left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-where c."Id" = @ContestId
+where c."Id" = '47b9b31f-5c89-8347-c2f9-dfbcc97247ba' --) t;

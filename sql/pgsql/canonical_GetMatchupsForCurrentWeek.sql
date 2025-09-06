@@ -13,6 +13,7 @@ WITH next_week AS (
 )
 
 SELECT
+  nw."SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
   fAway."Slug" as "AwaySlug",

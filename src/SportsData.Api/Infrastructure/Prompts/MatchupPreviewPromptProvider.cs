@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-using SportsData.Core.Infrastructure.Blobs;
+﻿using SportsData.Core.Infrastructure.Blobs;
 
 namespace SportsData.Api.Infrastructure.Prompts;
 
@@ -8,44 +6,67 @@ public class MatchupPreviewPromptProvider
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly object _lock = new();
+
     private Task<string>? _cachedPromptTask;
+    private Task<string>? _cachedPromptWithStatsTask;
 
     private const string Container = "prompts";
+
     private const string Blob = "prediction-insights-v1.txt";
+    private const string BlobWithStats = "prediction-insights-with-stats.txt";
 
     public MatchupPreviewPromptProvider(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
 
-    public Task<string> GetPreviewInsightPromptAsync()
+    public Task<string> GetPreviewInsightPromptAsync(bool hasStats)
     {
-        if (_cachedPromptTask != null)
-            return _cachedPromptTask;
+        if (hasStats)
+        {
+            if (_cachedPromptWithStatsTask != null)
+                return _cachedPromptWithStatsTask;
+        }
+        else
+        {
+            if (_cachedPromptTask != null)
+                return _cachedPromptTask;
+        }
 
         lock (_lock)
         {
-            return _cachedPromptTask ??= LoadPromptAsync();
+            if (hasStats)
+            {
+                return _cachedPromptWithStatsTask ??= LoadPromptAsync(BlobWithStats);
+            }
+            else
+            {
+                return _cachedPromptTask ??= LoadPromptAsync(Blob);
+            }
         }
     }
 
-    public async Task<string> ReloadPromptAsync()
+    public async Task<string> ReloadPromptAsync(bool hasStats)
     {
-        var newPrompt = await LoadPromptAsync(forceReload: true);
+        var blobName = hasStats ? BlobWithStats : Blob;
+        var newPrompt = await LoadPromptAsync(blobName, forceReload: true);
 
         lock (_lock)
         {
-            _cachedPromptTask = Task.FromResult(newPrompt);
+            if (hasStats)
+                _cachedPromptWithStatsTask = Task.FromResult(newPrompt);
+            else
+                _cachedPromptTask = Task.FromResult(newPrompt);
         }
 
         return newPrompt;
     }
 
-    private async Task<string> LoadPromptAsync(bool forceReload = false)
+    private async Task<string> LoadPromptAsync(string blobName, bool forceReload = false)
     {
         using var scope = _serviceProvider.CreateScope();
         var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
 
-        return await blobStorage.GetFileContentsAsync(Container, Blob);
+        return await blobStorage.GetFileContentsAsync(Container, blobName);
     }
 }

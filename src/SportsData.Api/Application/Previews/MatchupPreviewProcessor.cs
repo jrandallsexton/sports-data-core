@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Previews.Models;
 using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
@@ -11,7 +12,7 @@ using SportsData.Core.Infrastructure.Clients.AI;
 
 using System.Text.Json;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Previews
 {
     public class MatchupPreviewProcessor : IGenerateMatchupPreviews
     {
@@ -42,7 +43,13 @@ namespace SportsData.Api.Application.Processors
         {
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
-            var basePrompt = await _promptProvider.GetPreviewInsightPromptAsync();
+            matchup.AwayStats = await _canonicalDataProvider.GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
+            matchup.HomeStats = await _canonicalDataProvider.GetFranchiseSeasonStatsForPreview(matchup.HomeFranchiseSeasonId);
+
+            var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
+                            matchup.HomeStats.RushingYardsPerGame.HasValue);
+
+            var basePrompt = await _promptProvider.GetPreviewInsightPromptAsync(hasStats);
             var jsonInput = JsonSerializer.Serialize(matchup);
 
             const int maxAttempts = 5;

@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.Processors;
+﻿namespace SportsData.Api.Application.Previews;
 
 public class GenerateMatchupPreviewsCommand
 {

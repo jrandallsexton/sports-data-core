@@ -13,6 +13,7 @@
 )
 
 SELECT
+  nw."SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
   fAway."Slug" as "AwaySlug",

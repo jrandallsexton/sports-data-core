@@ -16,6 +16,11 @@ public class MatchupPreviewValidator
     {
         var errors = new List<string>();
 
+        if (homeScore < 0 || awayScore < 0)
+        {
+            errors.Add("Scores cannot be negative.");
+        }
+
         // 1. Straight-Up Winner Check
         if (awayScore > homeScore && predictedStraightUpWinner != awayFranchiseSeasonId)
         {
@@ -34,6 +39,14 @@ public class MatchupPreviewValidator
         var actualMargin = homeScore - awayScore;
         var spread = homeSpread;
 
+        if (Math.Abs(spread) < 0.1)
+        {
+            if (predictedSpreadWinner.HasValue)
+            {
+                errors.Add("Spread is zero (pick'em), but a spread winner was predicted.");
+            }
+        }
+
         // A "push" means the favorite won by exactly the spread
         if (Math.Abs(actualMargin - Math.Abs(spread)) < 0.1)
         {
@@ -41,7 +54,21 @@ public class MatchupPreviewValidator
             {
                 errors.Add("Spread prediction should be null (push), but a winner was predicted.");
             }
-            return new ValidationResult(errors.Count == 0, errors);
+        }
+
+        if (Math.Abs(spread) < 0.1)
+        {
+            if (predictedSpreadWinner.HasValue)
+            {
+                errors.Add("Spread is zero (pick'em), but a spread winner was predicted.");
+            }
+        }
+        else if (Math.Abs(actualMargin - Math.Abs(spread)) < 0.1)
+        {
+            if (predictedSpreadWinner.HasValue)
+            {
+                errors.Add("Spread prediction should be null (push), but a winner was predicted.");
+            }
         }
         else
         {
@@ -58,6 +85,7 @@ public class MatchupPreviewValidator
             }
         }
 
+
         // 3. Ensure winner ids not set to ContestId (yes, i've seen this)
         if (contestId == predictedStraightUpWinner)
         {
@@ -67,6 +95,30 @@ public class MatchupPreviewValidator
         if (contestId == predictedSpreadWinner)
         {
             errors.Add("Spread winner's FranchiseSeasonId is the ContestId.");
+        }
+
+        if (predictedStraightUpWinner == Guid.Empty)
+        {
+            errors.Add("Straight-up winner is not set (Guid.Empty).");
+        }
+
+        if (predictedStraightUpWinner != homeFranchiseSeasonId &&
+            predictedStraightUpWinner != awayFranchiseSeasonId)
+        {
+            errors.Add("Straight-up winner is not one of the valid team FranchiseSeasonIds.");
+        }
+
+        if (predictedSpreadWinner.HasValue &&
+            predictedSpreadWinner.Value != homeFranchiseSeasonId &&
+            predictedSpreadWinner.Value != awayFranchiseSeasonId)
+        {
+            errors.Add("Spread winner is not one of the valid team FranchiseSeasonIds.");
+        }
+
+        var totalScore = homeScore + awayScore;
+        if (totalScore > 120)
+        {
+            errors.Add($"Total score ({totalScore}) appears unreasonably high.");
         }
 
         return new ValidationResult(errors.Count == 0, errors);

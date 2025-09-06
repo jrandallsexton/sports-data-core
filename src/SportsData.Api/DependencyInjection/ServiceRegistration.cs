@@ -2,6 +2,7 @@
 
 using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Jobs;
+using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Conferences;

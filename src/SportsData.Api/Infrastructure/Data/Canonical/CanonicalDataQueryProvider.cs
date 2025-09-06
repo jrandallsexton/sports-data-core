@@ -10,7 +10,8 @@ public class CanonicalDataQueryProvider
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
         "GetTeamSeasons.sql",
-        "GetMatchupResultByContestId.sql"
+        "GetMatchupResultByContestId.sql",
+        "GetFranchiseSeasonStatisticsForPreviewGeneration.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -45,6 +46,8 @@ public class CanonicalDataQueryProvider
     }
 
     public string GetCurrentSeasonWeek() => Get("GetCurrentSeasonWeek.sql");
+
+    public string GetFranchiseSeasonStatisticsForPreviewGeneration() => Get("GetFranchiseSeasonStatisticsForPreviewGeneration.sql");
 
     public string GetLeagueMatchupsByContestIds() => Get("GetLeagueMatchupsByContestIds.sql");
 

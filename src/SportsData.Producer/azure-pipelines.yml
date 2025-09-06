@@ -5,7 +5,8 @@ trigger:
       - test/*
   paths:
     include:
-      - 'src/SportsData.Producer/*'
+      - 'src/SportsData.Producer/**'
+      - 'src/SportsData.Core/**'
 
 # Centralized agent and demand config for all stages/jobs
 pool:

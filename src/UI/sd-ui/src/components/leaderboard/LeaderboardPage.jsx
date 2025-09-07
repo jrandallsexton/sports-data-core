@@ -226,6 +226,14 @@ function LeaderboardPage() {
               <th>Player</th>
               <th
                 className="sortable"
+                onClick={() => handleSort("currentWeekPoints")}
+              >
+                Current Week{" "}
+                {sortBy === "currentWeekPoints" &&
+                  (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
+              </th>
+              <th
+                className="sortable"
                 onClick={() => handleSort("totalPoints")}
               >
                 Total Points{" "}
@@ -254,14 +262,6 @@ function LeaderboardPage() {
               >
                 Pick %{" "}
                 {sortBy === "pickAccuracy" &&
-                  (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
-              </th>
-              <th
-                className="sortable"
-                onClick={() => handleSort("currentWeekPoints")}
-              >
-                Current Week{" "}
-                {sortBy === "currentWeekPoints" &&
                   (sortOrder === "asc" ? <FaArrowUp /> : <FaArrowDown />)}
               </th>
               <th
@@ -309,11 +309,11 @@ function LeaderboardPage() {
                       <span className="you-label">(You)</span>
                     )}
                   </td>
+                  <td>{user.currentWeekPoints}</td>
                   <td>{user.totalPoints}</td>
                   <td>{user.totalPicks}</td>
                   <td>{user.totalCorrect}</td>
                   <td>{user.pickAccuracy}%</td>
-                  <td>{user.currentWeekPoints}</td>
                   <td>{user.weeklyAverage.toFixed(1)}</td>
                 </tr>
               );

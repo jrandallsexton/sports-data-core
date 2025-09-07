@@ -264,14 +264,16 @@ function PicksPage() {
                 ? "All Picks Made"
                 : `${picksMade} / ${totalGames} Picks Made`}
             </span>
-            <label className="hide-picked-toggle">
-              <input
-                type="checkbox"
-                checked={hidePicked}
-                onChange={() => setHidePicked(!hidePicked)}
-              />
-              Hide Picked Games
-            </label>
+            {!allPicked && (
+              <label className="hide-picked-toggle">
+                <input
+                  type="checkbox"
+                  checked={hidePicked}
+                  onChange={() => setHidePicked(!hidePicked)}
+                />
+                Hide Picked Games
+              </label>
+            )}
           </div>
         </div>
 

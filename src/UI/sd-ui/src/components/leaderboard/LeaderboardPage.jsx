@@ -11,14 +11,15 @@ function LeaderboardPage() {
   const { userDto, loading: userLoading } = useUserDto();
   const { selectedLeagueId, setSelectedLeagueId, initializeLeagueSelection } = useLeagueContext();
   const leagues = Object.values(userDto?.leagues || []);
+
   const [leaderboard, setLeaderboard] = useState([]);
   const [sortBy, setSortBy] = useState("totalPoints");
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(false);
   const [overview, setOverview] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState(1);
 
   const currentUserId = userDto?.id ?? null;
-  const currentWeek = 1; // 🔧 You can dynamically fetch this later
 
   useEffect(() => {
     if (!userLoading && leagues.length > 0) {
@@ -28,22 +29,15 @@ function LeaderboardPage() {
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
-      if (!selectedLeagueId) return;
+      if (!selectedLeagueId || !selectedWeek) return;
       setLoading(true);
       try {
         const data = await apiWrapper.Leaderboard.getByGroupAndWeek(
           selectedLeagueId,
-          currentWeek
+          selectedWeek
         );
-
-        console.log("Leaderboard API response:", data);
-        console.log("Is array?", Array.isArray(data));
-        console.log("Is data.data array?", Array.isArray(data.data));
-        
         // Extract the actual leaderboard array from the response
         const leaderboardArray = data.data || data || [];
-        
-        // Ensure we always set an array
         setLeaderboard(Array.isArray(leaderboardArray) ? leaderboardArray : []);
       } catch (err) {
         console.error("Failed to load leaderboard", err);
@@ -52,23 +46,21 @@ function LeaderboardPage() {
         setLoading(false);
       }
     };
-
     fetchLeaderboard();
-  }, [selectedLeagueId]);
+  }, [selectedLeagueId, selectedWeek]);
 
   // Add the API call for week overview using the selectedLeagueId from context
   useEffect(() => {
-    if (selectedLeagueId) {
-      LeaguesApi.getLeagueWeekOverview(selectedLeagueId, 1)
+    if (selectedLeagueId && selectedWeek) {
+      LeaguesApi.getLeagueWeekOverview(selectedLeagueId, selectedWeek)
         .then(response => {
           setOverview(response.data);
         })
         .catch(err => {
           // Optionally log error
-          // console.error('Error fetching league week overview:', err);
         });
     }
-  }, [selectedLeagueId]);
+  }, [selectedLeagueId, selectedWeek]);
 
   function handleSort(column) {
     if (sortBy === column) {
@@ -170,6 +162,9 @@ function LeaderboardPage() {
     return <div className="leaderboard-container">Loading user data...</div>;
   }
 
+  // For now, assume 18 weeks. You can make this dynamic if needed.
+  const weekOptions = Array.from({ length: 18 }, (_, i) => i + 1);
+
   return (
     <div className="leaderboard-container">
       <LeagueSelector
@@ -177,6 +172,20 @@ function LeaderboardPage() {
         selectedLeagueId={selectedLeagueId}
         setSelectedLeagueId={setSelectedLeagueId}
       />
+
+      <div style={{ margin: '16px 0' }}>
+        <label htmlFor="week-select" style={{ marginRight: 8, fontWeight: 500 }}>Week:</label>
+        <select
+          id="week-select"
+          value={selectedWeek}
+          onChange={e => setSelectedWeek(Number(e.target.value))}
+          style={{ padding: '4px 8px', borderRadius: 4 }}
+        >
+          {weekOptions.map(week => (
+            <option key={week} value={week}>Week {week}</option>
+          ))}
+        </select>
+      </div>
 
       {loading ? (
         <div className="loading">Loading leaderboard...</div>

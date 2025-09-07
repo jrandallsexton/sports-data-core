@@ -24,6 +24,11 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
+
+select * from public."Contest" where "Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+select * from public."Competition" where "ContestId" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'
+
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
 select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
 select * from public."Venue"

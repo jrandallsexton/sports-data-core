@@ -59,5 +59,5 @@ INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = ANY(@ContestIds)
+WHERE c."Id" = ANY(@ContestIds) and co."ProviderId" != '59'
 ORDER BY c."StartDateUtc", fHome."Slug";

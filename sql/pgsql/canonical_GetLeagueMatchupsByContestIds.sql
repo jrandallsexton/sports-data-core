@@ -1,4 +1,4 @@
-﻿SELECT
+SELECT
   c."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" as "StartDateUtc",
@@ -48,7 +48,7 @@
 FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
-LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id"
+LEFT  JOIN public."CompetitionOdds" co  on co."CompetitionId" = comp."Id" 
 
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
@@ -80,5 +80,7 @@ INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = ANY(@ContestIds) and co."ProviderId" != '59'
+WHERE
+c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e' and -- ANY(@ContestIds)
+co."ProviderId" != '59'
 ORDER BY c."StartDateUtc", fHome."Slug";

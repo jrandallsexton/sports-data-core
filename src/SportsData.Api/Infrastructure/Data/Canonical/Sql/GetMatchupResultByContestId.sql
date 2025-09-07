@@ -1,7 +1,7 @@
 ﻿select
   c."Id" as "ContestId",
-  c."AwayTeamFranchiseSeasonId",
-  c."HomeTeamFranchiseSeasonId",
+  c."AwayTeamFranchiseSeasonId" as "AwayFranchiseSeasonId",
+  c."HomeTeamFranchiseSeasonId" as "HomeFranchiseSeasonId",
   c."SeasonWeekId",
   c."AwayScore",
   c."HomeScore",

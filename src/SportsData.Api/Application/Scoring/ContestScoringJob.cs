@@ -54,6 +54,7 @@ namespace SportsData.Api.Application.Scoring
             var unscoredContestIds = await _dataContext.UserPicks
                 .Where(p => p.ScoredAt == null)
                 .Select(p => p.ContestId)
+                .Distinct()
                 .ToListAsync();
 
             // get a list of all contests for the week that have been finalized

@@ -15,6 +15,7 @@ namespace SportsData.Api.Application.UI.Leagues
 {
     public class LeagueService : ILeagueService
     {
+        private readonly ILogger<LeagueService> _logger;
         private readonly AppDataContext _dbContext;
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly ICreateLeagueCommandHandler _handler;
@@ -22,12 +23,14 @@ namespace SportsData.Api.Application.UI.Leagues
         private readonly IPickService _pickService;
 
         public LeagueService(
+            ILogger<LeagueService> logger,
             AppDataContext dbContext,
             IProvideCanonicalData canonicalDataProvider,
             ICreateLeagueCommandHandler handler,
             IJoinLeagueCommandHandler joinLeagueHandler,
             IPickService pickService)
         {
+            _logger = logger;
             _dbContext = dbContext;
             _canonicalDataProvider = canonicalDataProvider;
             _handler = handler;
@@ -292,16 +295,58 @@ namespace SportsData.Api.Application.UI.Leagues
             if (league is null)
                 throw new InvalidOperationException($"League with ID {leagueId} not found.");
 
-            var contestIds = await _dbContext.PickemGroupMatchups
+            var matchups = await _dbContext.PickemGroupMatchups
                 .AsNoTracking()
                 .Where(m => m.GroupId == leagueId && m.SeasonWeek == week)
-                .Select(m => m.ContestId)
                 .ToListAsync();
+
+            var contestIds = matchups
+                .Select(m => m.ContestId)
+                .ToList();
 
             var result = new LeagueWeekOverviewDto();
 
             var canonicalContests = await _canonicalDataProvider
                 .GetContestResultsByContestIds(contestIds);
+
+            // once again, our canonical results have spread results
+            // against the closing spread ...
+            // while our matchups used a snapshot
+            // how to reconcile here?
+
+            foreach (var canonicalContest in canonicalContests)
+            {
+                var matchup = matchups
+                    .FirstOrDefault(m => m.ContestId == canonicalContest.ContestId);
+
+                if (matchup is null)
+                {
+                    _logger.LogError("Matchup could not be found");
+                    throw new Exception("Matchup could not be found");
+                }
+
+                canonicalContest.AwaySpread = (decimal?)matchup.AwaySpread;
+                canonicalContest.HomeSpread = (decimal?)matchup.HomeSpread;
+                canonicalContest.WinnerFranchiseSeasonId = canonicalContest.AwayScore > canonicalContest.HomeScore
+                    ? canonicalContest.AwayFranchiseSeasonId
+                    : canonicalContest.HomeFranchiseSeasonId;
+
+                // Determine spread winner based on the matchup spread
+                if (matchup.AwaySpread.HasValue && matchup.HomeSpread.HasValue)
+                {
+                    var spreadDifference = (canonicalContest.AwayScore + matchup.AwaySpread.Value) - canonicalContest.HomeScore;
+                    if (spreadDifference > 0)
+                        canonicalContest.SpreadWinnerFranchiseSeasonId = canonicalContest.AwayFranchiseSeasonId;
+                    else if (spreadDifference < 0)
+                        canonicalContest.SpreadWinnerFranchiseSeasonId = canonicalContest.HomeFranchiseSeasonId;
+                    else
+                        canonicalContest.SpreadWinnerFranchiseSeasonId = null; // Push
+                }
+                else
+                {
+                    canonicalContest.SpreadWinnerFranchiseSeasonId = null; // No spread
+                }
+            }
 
             result.Contests = canonicalContests.OrderBy(x => x.StartDateUtc)
                 .Select(x => new LeagueWeekMatchupResultDto(x)

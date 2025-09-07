@@ -104,7 +104,12 @@ function LeaderboardPage() {
             <tr>
               <th>Game</th>
               {users.map(user => (
-                <th key={user.userId}>{user.user}</th>
+                <th key={user.userId}>
+                  {user.user === "StatBot" && (
+                    <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
+                  )}
+                  {user.user}
+                </th>
               ))}
             </tr>
           </thead>
@@ -120,9 +125,11 @@ function LeaderboardPage() {
                         {contest.awayShort}
                       </span>
                       <span style={{ flex: 1, textAlign: 'center', color: '#888' }}>
-                        {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread)
-                          ? (contest.homeSpread > 0 ? '+' : '') + contest.homeSpread
-                          : ''}
+                        {contest.homeSpread === null || contest.homeSpread === 0
+                          ? 'Off'
+                          : (typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread)
+                              ? (contest.homeSpread > 0 ? '+' : '') + contest.homeSpread
+                              : '')}
                       </span>
                       <span style={{ flex: 1, textAlign: 'right', color: contest.leagueWinnerFranchiseSeasonId === contest.homeFranchiseSeasonId ? 'limegreen' : undefined }}>
                         {contest.homeShort}

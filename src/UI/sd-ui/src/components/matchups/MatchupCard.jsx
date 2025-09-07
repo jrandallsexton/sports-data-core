@@ -14,7 +14,7 @@ function MatchupCard({
   isFadingOut = false
 }) {
   const homeSpread = matchup.homeSpread ?? 0;
-  const overUnder = matchup.overUnder ?? "TBD";
+  const overUnder = (matchup.overUnder === null || matchup.overUnder === 0 || matchup.overUnder === 'TBD') ? 'Off' : matchup.overUnder;
   const gameTime = formatToEasternTime(matchup.startDateUtc);
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
@@ -90,11 +90,7 @@ function MatchupCard({
             </div>
             <div className="team-record">
               <span>
-                Overall: {matchup.awayWins}-{matchup.awayLosses}
-              </span>
-              <span>
-                Conference: {matchup.awayConferenceWins}-
-                {matchup.awayConferenceLosses}
+                {matchup.awayWins}-{matchup.awayLosses} ({matchup.awayConferenceWins}-{matchup.awayConferenceLosses})
               </span>
             </div>
           </div>
@@ -127,17 +123,13 @@ function MatchupCard({
             </div>
             <div className="team-record">
               <span>
-                Overall: {matchup.homeWins}-{matchup.homeLosses}
-              </span>
-              <span>
-                Conference: {matchup.homeConferenceWins}-
-                {matchup.homeConferenceLosses}
+                {matchup.homeWins}-{matchup.homeLosses} ({matchup.homeConferenceWins}-{matchup.homeConferenceLosses})
               </span>
             </div>
           </div>
         </div>
         <div className="team-spread">
-          {homeSpread > 0 ? `+${homeSpread}` : homeSpread}
+          {homeSpread === 0 ? 'Off' : (homeSpread > 0 ? `+${homeSpread}` : homeSpread)}
         </div>
       </div>
 

@@ -34,6 +34,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
 
         Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId);
+
+        Task<List<ContestResultDto>> GetContestResultsByContestIds(List<Guid> contestIds);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -284,6 +286,19 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
 
             return MapToModelStats(rawStats) ?? throw new Exception("Stat mapping failed");
+        }
+
+        public async Task<List<ContestResultDto>> GetContestResultsByContestIds(List<Guid> contestIds)
+        {
+            var sql = _queryProvider.GetContestResultsByContestIds();
+
+            var results = await _connection.QueryAsync<ContestResultDto>(
+                sql,
+                new { ContestIds = contestIds }, // contestIds = List<Guid>
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
         }
 
         private FranchiseSeasonModelStatsDto MapToModelStats(List<FranchiseSeasonRawStat> stats)

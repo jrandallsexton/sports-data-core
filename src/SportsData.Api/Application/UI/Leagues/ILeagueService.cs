@@ -21,4 +21,8 @@ public interface ILeagueService
         CancellationToken cancellationToken = default);
 
     Task<List<PublicLeagueDto>> GetPublicLeagues(Guid userId);
+
+    Task<LeagueWeekOverviewDto> GetLeagueWeekOverview(
+        Guid leagueId,
+        int week);
 }

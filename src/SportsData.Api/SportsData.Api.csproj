@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />
@@ -26,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />

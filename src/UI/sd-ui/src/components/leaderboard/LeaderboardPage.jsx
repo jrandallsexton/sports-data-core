@@ -4,6 +4,7 @@ import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
 import apiWrapper from "../../api/apiWrapper";
+import LeaguesApi from '../../api/leagues/leaguesApi';
 import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
@@ -14,6 +15,7 @@ function LeaderboardPage() {
   const [sortBy, setSortBy] = useState("totalPoints");
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(false);
+  const [overview, setOverview] = useState(null);
 
   const currentUserId = userDto?.id ?? null;
   const currentWeek = 1; // 🔧 You can dynamically fetch this later
@@ -54,6 +56,20 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [selectedLeagueId]);
 
+  // Add the API call for week overview using the selectedLeagueId from context
+  useEffect(() => {
+    if (selectedLeagueId) {
+      LeaguesApi.getLeagueWeekOverview(selectedLeagueId, 1)
+        .then(response => {
+          setOverview(response.data);
+        })
+        .catch(err => {
+          // Optionally log error
+          // console.error('Error fetching league week overview:', err);
+        });
+    }
+  }, [selectedLeagueId]);
+
   function handleSort(column) {
     if (sortBy === column) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -70,6 +86,83 @@ function LeaderboardPage() {
         return sortOrder === "asc" ? valA - valB : valB - valA;
       })
     : [];
+
+  // Render the grid if overview data is available (users as columns, contests as rows)
+  const renderLeagueWeekOverviewTable = () => {
+    if (!overview || !overview.contests || !overview.userPicks) return null;
+    const contests = overview.contests;
+    const userPicks = overview.userPicks;
+
+    // Get unique users
+    const users = Array.from(
+      new Map(userPicks.map(p => [p.userId, { userId: p.userId, user: p.user }])).values()
+    );
+
+    // Build a lookup: { [userId]: { [contestId]: pick } }
+    const pickMap = {};
+    userPicks.forEach(pick => {
+      if (!pickMap[pick.userId]) pickMap[pick.userId] = {};
+      pickMap[pick.userId][pick.contestId] = pick;
+    });
+
+    return (
+      <table border="1" style={{ borderCollapse: 'collapse', margin: '2rem 0' }}>
+        <thead>
+          <tr>
+            <th>Game</th>
+            {users.map(user => (
+              <th key={user.userId}>{user.user}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {contests.map(contest => {
+            const isLocked = !!contest.finalizedUtc;
+            if (!isLocked) return null;
+            return (
+              <tr key={contest.contestId}>
+                <td>
+                  {contest.awayShort} @ {contest.homeShort}
+                  {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread) && (
+                    <span style={{ marginLeft: 6, color: '#888' }}>
+                      {contest.homeSpread > 0 ? '+' : ''}{contest.homeSpread}
+                    </span>
+                  )}
+                </td>
+                {users.map(user => {
+                  const pick = pickMap[user.userId]?.[contest.contestId];
+                  let teamShort = '';
+                  if (pick) {
+                    if (pick.franchiseId === contest.awayFranchiseSeasonId) {
+                      teamShort = contest.awayShort;
+                    } else if (pick.franchiseId === contest.homeFranchiseSeasonId) {
+                      teamShort = contest.homeShort;
+                    } else {
+                      teamShort = pick.franchiseId; // fallback
+                    }
+                  }
+                  return (
+                    <td key={user.userId}>
+                      {pick ? (
+                        <span>
+                          {teamShort}
+                          {typeof pick.isCorrect === 'boolean' && (
+                            <span style={{ marginLeft: 4, color: pick.isCorrect ? 'green' : 'red' }}>
+                              {pick.isCorrect ? '✔' : '✘'}
+                            </span>
+                          )}
+                        </span>
+                      ) : ''}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  };
 
   if (userLoading) {
     return <div className="leaderboard-container">Loading user data...</div>;
@@ -188,6 +281,8 @@ function LeaderboardPage() {
           </tbody>
         </table>
       )}
+
+      {renderLeagueWeekOverviewTable()}
     </div>
   );
 }

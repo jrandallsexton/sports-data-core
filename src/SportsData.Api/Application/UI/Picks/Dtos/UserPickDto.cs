@@ -2,6 +2,10 @@
 
 public class UserPickDto
 {
+    public Guid UserId { get; set; }
+
+    public string? User { get; set; }
+
     public Guid Id { get; set; }
 
     public Guid ContestId { get; set; }

@@ -15,9 +15,8 @@ SELECT
   (co."Spread" * -1) as "AwaySpread",
   co."Spread" as "HomeSpread",
   co."OverUnder" as "OverUnder",
-  co."OverOdds" as "OverOdds",
-  co."UnderOdds" as "UnderOdds",
 
+  c."FinalizedUtc",
   c."AwayScore",
   c."HomeScore",
   c."WinnerFranchiseId" as "WinnerFranchiseSeasonId",

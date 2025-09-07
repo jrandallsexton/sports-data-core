@@ -75,6 +75,12 @@ const getPublicLeagues = async () => {
   return response.data;
 };
 
+const getLeagueWeekOverview = async (leagueId, weekNumber) => {
+  return apiClient.get(
+    `/ui/league/${encodeURIComponent(leagueId)}/overview/${weekNumber}`
+  );
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
@@ -82,7 +88,8 @@ const LeaguesApi = {
   joinLeague,
   deleteLeague,
   sendInvite,
-  getPublicLeagues
+  getPublicLeagues,
+  getLeagueWeekOverview
 };
 
 export default LeaguesApi;

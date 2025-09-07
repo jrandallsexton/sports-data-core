@@ -32,6 +32,7 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
         {
             return await _dataContext.UserPicks
                 .AsNoTracking()
+                .Include(x => x.User)
                 .Where(p =>
                     p.PickemGroupId == query.GroupId &&
                     p.UserId == query.UserId &&
@@ -39,6 +40,8 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
                 .Select(p => new UserPickDto
                 {
                     Id = p.Id,
+                    UserId = p.UserId,
+                    User = p.User.DisplayName,
                     ConfidencePoints = p.ConfidencePoints,
                     ContestId = p.ContestId,
                     FranchiseId = p.FranchiseId ?? Guid.Empty,

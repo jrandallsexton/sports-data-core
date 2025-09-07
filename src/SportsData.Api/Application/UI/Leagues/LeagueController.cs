@@ -1,8 +1,8 @@
-﻿using MassTransit.Configuration;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
 using SportsData.Api.Application.UI.Leagues.LeagueInvitation.Dtos;
@@ -25,7 +25,8 @@ public class LeagueController : ApiControllerBase
     public LeagueController(
         ILeagueService iLeagueService,
         AppDataContext dbContext,
-        INotificationService notificationService, IOptions<NotificationConfig> notificationConfig)
+        INotificationService notificationService,
+        IOptions<NotificationConfig> notificationConfig)
     {
         _iLeagueService = iLeagueService;
         _dbContext = dbContext;
@@ -137,7 +138,9 @@ public class LeagueController : ApiControllerBase
 
     [HttpGet("{id}/matchups/{week}")]
     [Authorize]
-    public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(Guid id, int week)
+    public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(
+        [FromRoute]Guid id,
+        [FromRoute]int week)
     {
         var userId = HttpContext.GetCurrentUserId();
         var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
@@ -146,7 +149,9 @@ public class LeagueController : ApiControllerBase
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
@@ -212,5 +217,18 @@ public class LeagueController : ApiControllerBase
         var leagues = await _iLeagueService.GetPublicLeagues(userId);
 
         return Ok(leagues);
+    }
+
+    [HttpGet("{id}/overview/{week}")]
+    [Authorize]
+    public async Task<IActionResult> GetLeagueWeekOverview(
+        [FromRoute] Guid id,
+        [FromRoute] int week)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await _iLeagueService.GetLeagueWeekOverview(id, week);
+
+        return Ok(result);
     }
 }

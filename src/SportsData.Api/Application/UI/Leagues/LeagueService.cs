@@ -6,6 +6,7 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
+using SportsData.Api.Application.UI.Picks;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
@@ -18,17 +19,20 @@ namespace SportsData.Api.Application.UI.Leagues
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly ICreateLeagueCommandHandler _handler;
         private readonly IJoinLeagueCommandHandler _joinLeagueHandler;
+        private readonly IPickService _pickService;
 
         public LeagueService(
             AppDataContext dbContext,
             IProvideCanonicalData canonicalDataProvider,
             ICreateLeagueCommandHandler handler,
-            IJoinLeagueCommandHandler joinLeagueHandler)
+            IJoinLeagueCommandHandler joinLeagueHandler,
+            IPickService pickService)
         {
             _dbContext = dbContext;
             _canonicalDataProvider = canonicalDataProvider;
             _handler = handler;
             _joinLeagueHandler = joinLeagueHandler;
+            _pickService = pickService;
         }
 
         public async Task<Guid> CreateAsync(
@@ -274,6 +278,40 @@ namespace SportsData.Api.Application.UI.Leagues
                 UseConfidencePoints = x.UseConfidencePoints,
                 DropLowWeeksCount = x.DropLowWeeksCount ?? 0
             }).ToList();
+        }
+
+        public async Task<LeagueWeekOverviewDto> GetLeagueWeekOverview(
+            Guid leagueId,
+            int week)
+        {
+            var league = await _dbContext.PickemGroups
+                .AsNoTracking()
+                .Include(x => x.Members)
+                .FirstOrDefaultAsync(g => g.Id == leagueId);
+
+            if (league is null)
+                throw new InvalidOperationException($"League with ID {leagueId} not found.");
+
+            var contestIds = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.GroupId == leagueId && m.SeasonWeek == week)
+                .Select(m => m.ContestId)
+                .ToListAsync();
+
+            var result = new LeagueWeekOverviewDto();
+
+            result.Contests = await _canonicalDataProvider
+                .GetContestResultsByContestIds(contestIds);
+
+            foreach (var member in league.Members)
+            {
+                var userPicks = await _pickService
+                    .GetUserPicksByGroupAndWeek(member.UserId, leagueId, week, CancellationToken.None);
+
+                result.UserPicks.AddRange(userPicks);
+            }
+
+            return result;
         }
     }
 }

@@ -4,14 +4,15 @@ public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
         "GetCurrentSeasonWeek.sql",
+        "GetFranchiseSeasonStatisticsForPreviewGeneration.sql",
         "GetLeagueMatchupsByContestIds.sql",
+        "GetContestResultsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
+        "GetMatchupResultByContestId.sql",
         "GetMatchupsForCurrentWeek.sql",
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
-        "GetTeamSeasons.sql",
-        "GetMatchupResultByContestId.sql",
-        "GetFranchiseSeasonStatisticsForPreviewGeneration.sql"
+        "GetTeamSeasons.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -50,6 +51,8 @@ public class CanonicalDataQueryProvider
     public string GetFranchiseSeasonStatisticsForPreviewGeneration() => Get("GetFranchiseSeasonStatisticsForPreviewGeneration.sql");
 
     public string GetLeagueMatchupsByContestIds() => Get("GetLeagueMatchupsByContestIds.sql");
+
+    public string GetContestResultsByContestIds() => Get("GetContestResultsByContestIds.sql");
 
     public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
 

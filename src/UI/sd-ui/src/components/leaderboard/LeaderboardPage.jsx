@@ -116,14 +116,21 @@ function LeaderboardPage() {
                 <tr key={contest.contestId}>
                   <td>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ flex: 1, textAlign: 'left' }}>
-                        {contest.awayShort} @ {contest.homeShort}
+                      <span style={{ flex: 1, textAlign: 'left', color: contest.leagueWinnerFranchiseSeasonId === contest.awayFranchiseSeasonId ? 'limegreen' : undefined }}>
+                        {contest.awayShort}
                       </span>
                       <span style={{ flex: 1, textAlign: 'center', color: '#888' }}>
                         {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread)
                           ? (contest.homeSpread > 0 ? '+' : '') + contest.homeSpread
                           : ''}
                       </span>
+                      <span style={{ flex: 1, textAlign: 'right', color: contest.leagueWinnerFranchiseSeasonId === contest.homeFranchiseSeasonId ? 'limegreen' : undefined }}>
+                        {contest.homeShort}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.9em', color: '#aaa' }}>
+                      <span style={{ flex: 1 }}></span>
+                      <span style={{ flex: 1, textAlign: 'center' }}></span>
                       <span style={{ flex: 1, textAlign: 'right' }}>
                         {typeof contest.awayScore === 'number' && typeof contest.homeScore === 'number'
                           ? `${contest.awayScore}-${contest.homeScore}`

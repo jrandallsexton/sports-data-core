@@ -300,10 +300,16 @@ namespace SportsData.Api.Application.UI.Leagues
 
             var result = new LeagueWeekOverviewDto();
 
-            result.Contests = await _canonicalDataProvider
+            var canonicalContests = await _canonicalDataProvider
                 .GetContestResultsByContestIds(contestIds);
 
-            foreach (var member in league.Members)
+            result.Contests = canonicalContests.OrderBy(x => x.StartDateUtc)
+                .Select(x => new LeagueWeekMatchupResultDto(x)
+                {
+                    LeagueWinnerFranchiseSeasonId = x.SpreadWinnerFranchiseSeasonId ?? x.WinnerFranchiseSeasonId
+                }).ToList();
+
+            foreach (var member in league.Members.OrderBy(x => x.UserId))
             {
                 var userPicks = await _pickService
                     .GetUserPicksByGroupAndWeek(member.UserId, leagueId, week, CancellationToken.None);

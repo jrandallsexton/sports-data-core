@@ -1,4 +1,5 @@
 ﻿SELECT
+  c."StartDateUtc",
   c."Id" AS "ContestId",
 
   fAway."Abbreviation" as "AwayShort",

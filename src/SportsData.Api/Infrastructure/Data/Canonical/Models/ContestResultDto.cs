@@ -4,6 +4,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical.Models
 {
     public class ContestResultDto
     {
+        public DateTime StartDateUtc { get; set; }
         public Guid ContestId { get; set; }
 
         // Teams

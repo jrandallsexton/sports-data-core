@@ -67,10 +67,7 @@ namespace SportsData.Api.Application.Scoring
             // send them each for scoring (generating UserPick points)
             foreach (var contestId in contestIdsToScore)
             {
-                var cmd = new ScoreContestCommand()
-                {
-                    ContestId = contestId
-                };
+                var cmd = new ScoreContestCommand(contestId);
                 _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
             }
         }

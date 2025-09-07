@@ -18,13 +18,13 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
     [Fact]
     public void ScorePick_StraightUp_CorrectPick_SetsCorrectTrueAndAwardsPoint()
     {
-        // Arrange
         var group = Fixture.Build<PickemGroup>()
             .With(g => g.PickType, PickType.StraightUp)
             .Create();
 
-        var winnerId = Guid.NewGuid();
+        var matchup = Fixture.Create<PickemGroupMatchup>();
 
+        var winnerId = Guid.NewGuid();
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(p => p.FranchiseId, winnerId)
             .Create();
@@ -33,10 +33,8 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, winnerId)
             .Create();
 
-        // Act
-        _sut.ScorePick(group, pick, result);
+        _sut.ScorePick(group, matchup, pick, result);
 
-        // Assert
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
         pick.ScoredAt.Should().NotBeNull();
@@ -50,15 +48,17 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(g => g.PickType, PickType.StraightUp)
             .Create();
 
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(p => p.FranchiseId, Guid.NewGuid())
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
-            .With(r => r.WinnerFranchiseSeasonId, Guid.NewGuid()) // different
+            .With(r => r.WinnerFranchiseSeasonId, Guid.NewGuid())
             .Create();
 
-        _sut.ScorePick(group, pick, result);
+        _sut.ScorePick(group, matchup, pick, result);
 
         pick.IsCorrect.Should().BeFalse();
         pick.PointsAwarded.Should().Be(0);
@@ -73,17 +73,26 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(g => g.PickType, PickType.AgainstTheSpread)
             .Create();
 
-        var spreadWinnerId = Guid.NewGuid();
+        var homeFranchiseSeasonId = Guid.NewGuid();
+        var awayFranchiseSeasonId = Guid.NewGuid();
+
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(m => m.HomeSpread, -5.5)
+            .Create();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, spreadWinnerId)
+            .With(p => p.FranchiseId, homeFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
-            .With(r => r.SpreadWinnerFranchiseSeasonId, spreadWinnerId)
+            .With(r => r.AwayFranchiseSeasonId, awayFranchiseSeasonId)
+            .With(r => r.HomeFranchiseSeasonId, homeFranchiseSeasonId)
+            .With(r => r.SpreadWinnerFranchiseSeasonId, homeFranchiseSeasonId)
+            .With(r => r.AwayScore, 17)
+            .With(r => r.HomeScore, 24)
             .Create();
 
-        _sut.ScorePick(group, pick, result);
+        _sut.ScorePick(group, matchup, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -100,6 +109,10 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         var winnerId = Guid.NewGuid();
 
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(m => m.HomeSpread, (double?)null)
+            .Create();
+
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(p => p.FranchiseId, winnerId)
             .Create();
@@ -109,7 +122,36 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, winnerId)
             .Create();
 
-        _sut.ScorePick(group, pick, result);
+        _sut.ScorePick(group, matchup, pick, result);
+
+        pick.IsCorrect.Should().BeTrue();
+        pick.PointsAwarded.Should().Be(1);
+        pick.ScoredAt.Should().NotBeNull();
+        pick.WasAgainstSpread.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ScorePick_AgainstTheSpread_NoSpreadProvided_FallbacksToStraightUp()
+    {
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.AgainstTheSpread)
+            .Create();
+
+        var winnerId = Guid.NewGuid();
+
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(m => m.HomeSpread, (double?)null)
+            .Create();
+
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, winnerId)
+            .Create();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.WinnerFranchiseSeasonId, winnerId)
+            .Create();
+
+        _sut.ScorePick(group, matchup, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -124,13 +166,15 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(g => g.PickType, PickType.StraightUp)
             .Create();
 
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(p => p.FranchiseId, (Guid?)null)
             .Create();
 
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.ScorePick(group, pick, result);
+        _sut.ScorePick(group, matchup, pick, result);
 
         pick.IsCorrect.Should().BeFalse();
         pick.PointsAwarded.Should().Be(0);
@@ -144,13 +188,13 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(g => g.PickType, PickType.OverUnder)
             .Create();
 
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
         var pick = Fixture.Create<PickemGroupUserPick>();
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.Invoking(s => s.ScorePick(group, pick, result))
+        _sut.Invoking(s => s.ScorePick(group, matchup, pick, result))
             .Should().NotThrow();
-
-        // No-op test — add logic later
     }
 
     [Fact]
@@ -160,10 +204,12 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(g => g.PickType, (PickType)999)
             .Create();
 
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
         var pick = Fixture.Create<PickemGroupUserPick>();
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.Invoking(s => s.ScorePick(group, pick, result))
+        _sut.Invoking(s => s.ScorePick(group, matchup, pick, result))
             .Should().Throw<InvalidOperationException>()
             .WithMessage("*Unsupported PickType*");
     }

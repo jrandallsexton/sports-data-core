@@ -4,6 +4,11 @@ namespace SportsData.Core.Common
 {
     public static class CausationId
     {
+        public static class Api
+        {
+            public static Guid ContestScoringProcessor = new Guid("10000000-2000-0000-0000-000000000001");
+        }
+
         public static class Producer
         {
             public static Guid AthleteDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000001");

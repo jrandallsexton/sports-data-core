@@ -5,7 +5,11 @@ namespace SportsData.Api.Application.Scoring;
 
 public class PickScoringService : IPickScoringService
 {
-    public void ScorePick(PickemGroup group, PickemGroupUserPick pick, MatchupResult result)
+    public void ScorePick(
+        PickemGroup group,
+        PickemGroupMatchup matchup,
+        PickemGroupUserPick pick,
+        MatchupResult result)
     {
         var now = DateTime.UtcNow;
 
@@ -18,7 +22,7 @@ public class PickScoringService : IPickScoringService
                 break;
 
             case PickType.AgainstTheSpread:
-                ScoreAgainstSpread(pick, result, now);
+                ScoreAgainstSpread(pick, matchup, result, now);
                 pick.WasAgainstSpread = true;
                 break;
 
@@ -49,7 +53,11 @@ public class PickScoringService : IPickScoringService
         pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
     }
 
-    private void ScoreAgainstSpread(PickemGroupUserPick pick, MatchupResult result, DateTime now)
+    private void ScoreAgainstSpread(
+        PickemGroupUserPick pick,
+        PickemGroupMatchup matchup,
+        MatchupResult result,
+        DateTime now)
     {
         if (!pick.FranchiseId.HasValue)
         {
@@ -57,20 +65,48 @@ public class PickScoringService : IPickScoringService
             return;
         }
 
-        var spreadWinner = result.SpreadWinnerFranchiseSeasonId;
+        var homeSpread = matchup.HomeSpread;
 
-        if (spreadWinner.HasValue)
+        // If no spread was provided or is zero, fall back to straight up scoring
+        if (!homeSpread.HasValue || homeSpread.Value == 0)
         {
-            pick.IsCorrect = pick.FranchiseId == spreadWinner.Value;
+            ScoreStraightUp(pick, result, now);
+            return;
+        }
+
+        var homeScore = result.HomeScore;
+        var awayScore = result.AwayScore;
+
+        Guid? spreadWinnerId = null;
+
+        if (homeSpread.Value < 0)
+        {
+            // Home team was favored: adjust home score
+            var adjustedHomeScore = homeScore + homeSpread.Value;
+
+            if (adjustedHomeScore > awayScore)
+                spreadWinnerId = result.HomeFranchiseSeasonId;
+            else if (adjustedHomeScore < awayScore)
+                spreadWinnerId = result.AwayFranchiseSeasonId;
+            // else: it's a push → leave spreadWinnerId as null
         }
         else
         {
-            pick.IsCorrect = pick.FranchiseId == result.WinnerFranchiseSeasonId;
+            // Away team was favored: adjust away score
+            var adjustedAwayScore = awayScore + (-homeSpread.Value);
+
+            if (adjustedAwayScore > homeScore)
+                spreadWinnerId = result.AwayFranchiseSeasonId;
+            else if (adjustedAwayScore < homeScore)
+                spreadWinnerId = result.HomeFranchiseSeasonId;
+            // else: it's a push → leave spreadWinnerId as null
         }
 
+        pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseId == spreadWinnerId.Value;
         pick.ScoredAt = now;
         pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
     }
+
 
     private void SetIncorrect(PickemGroupUserPick pick, DateTime now)
     {

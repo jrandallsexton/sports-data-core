@@ -5,5 +5,9 @@ namespace SportsData.Api.Application.Scoring;
 
 public interface IPickScoringService
 {
-    void ScorePick(PickemGroup group, PickemGroupUserPick pick, MatchupResult result);
+    void ScorePick(
+        PickemGroup group,
+        PickemGroupMatchup matchup,
+        PickemGroupUserPick pick,
+        MatchupResult result);
 }

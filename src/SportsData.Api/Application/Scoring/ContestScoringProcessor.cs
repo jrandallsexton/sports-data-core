@@ -2,6 +2,7 @@
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 
 namespace SportsData.Api.Application.Scoring
@@ -43,6 +44,12 @@ namespace SportsData.Api.Application.Scoring
                 return;
             }
 
+            // canonical data has the true spread winner, but that is based on the final spread
+            // our matchups were generated with the opening spread, so we need to adjust
+            // we cannot score picks based on the final spread
+            // instead, we need to determine the spread winner based on the snapshot
+            // of the spread at the time we generated the matchup
+
             // we need all UserPicks for this contest - including the group they are in
             var picks = await _dataContext.UserPicks
                 .Include(p => p.Group)
@@ -59,6 +66,8 @@ namespace SportsData.Api.Application.Scoring
             foreach (var kvp in dictionary)
             {
                 var group = await _dataContext.PickemGroups
+                    .Include(g => g.Weeks.Where(x => x.SeasonWeekId == result.SeasonWeekId))
+                    .ThenInclude(w => w.Matchups.Where(m => m.ContestId == result.ContestId))
                     .Where(g => g.Id == kvp.Key)
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
@@ -73,12 +82,19 @@ namespace SportsData.Api.Application.Scoring
                 {
                     try
                     {
-                        _pickScoringService.ScorePick(group, pick, result);
+                        _pickScoringService.ScorePick(
+                            group,
+                            group.Weeks.First().Matchups.First(),
+                            pick,
+                            result);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error scoring pick {PickId} for group {GroupId}", pick.Id, group.Id);
                     }
+
+                    pick.ModifiedUtc = DateTime.UtcNow;
+                    pick.ModifiedBy = CausationId.Api.ContestScoringProcessor;
 
                     await _dataContext.SaveChangesAsync();
                 }

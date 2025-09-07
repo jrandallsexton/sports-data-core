@@ -24,7 +24,15 @@ where g."IsPublic" = true
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
-select * from public."PickemGroupMatchup" where "GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' order by "ContestId"
+
+select *
+from public."PickemGroupMatchup"
+where
+  --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
+  --"SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and
+  "ContestId" = '33629e7d-ed7c-bbda-daab-86369d4910e8'
+order by "ContestId"
+-- https://api-dev.sportdeets.com/ui/matchup/33629e7d-ed7c-bbda-daab-86369d4910e8/preview
 
 -- FIX DEV
 -- delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
@@ -49,7 +57,7 @@ ORDER BY "CreatedUtc" desc
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 select * from public."UserPick" where "UserId" = '6b4d61b8-7abc-43fb-82cc-27753373cf48' and "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
---update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null
+--update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2
 select * from public."User"
 --update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true where "Id" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 select * from public."OutboxMessage"

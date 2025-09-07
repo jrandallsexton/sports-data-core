@@ -64,10 +64,7 @@ namespace SportsData.Api.Application.Admin
         [Route("contest/{contestId}/score")]
         public IActionResult ScoreContest([FromRoute] Guid contestId)
         {
-            var cmd = new ScoreContestCommand
-            {
-                ContestId = contestId
-            };
+            var cmd = new ScoreContestCommand(contestId);
             _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
         }

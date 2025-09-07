@@ -19,19 +19,41 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
     {
         // Arrange
         var contestId = Guid.NewGuid();
+        var seasonWeekId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
 
         var result = Fixture.Build<MatchupResult>()
             .With(x => x.WinnerFranchiseSeasonId, Guid.NewGuid())
+            .With(x => x.ContestId, contestId)
+            .With(x => x.SeasonWeekId, seasonWeekId)
             .Create();
 
         Mocker.GetMock<IProvideCanonicalData>()
             .Setup(x => x.GetMatchupResult(contestId))
             .ReturnsAsync(result);
 
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.SeasonWeekId, seasonWeekId)
+            .Create();
+
         var group = Fixture.Build<PickemGroup>()
             .With(x => x.Id, groupId)
             .With(x => x.PickType, PickType.StraightUp)
+            .With (x => x.Weeks, new List<PickemGroupWeek>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    Matchups = new List<PickemGroupMatchup>
+                    {
+                        matchup
+                    },
+                    SeasonYear = 2025,
+                    SeasonWeek = 2,
+                    GroupId = groupId
+                }
+            })
             .Create();
 
         await DataContext.PickemGroups.AddAsync(group);
@@ -47,7 +69,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddRangeAsync(picks);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand { ContestId = contestId };
+        var command = new ScoreContestCommand(contestId);
 
         var sut = Mocker.CreateInstance<ContestScoringProcessor>();
 
@@ -60,9 +82,11 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         foreach (var pick in picks)
         {
             scoring.Verify(s =>
-                s.ScorePick(It.Is<PickemGroup>(g => g.Id == groupId),
-                            It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
-                            result),
+                s.ScorePick(
+                    It.Is<PickemGroup>(g => g.Id == groupId),
+                    It.IsAny<PickemGroupMatchup>(),
+                    It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
+                    result),
                 Times.Once);
         }
 
@@ -81,7 +105,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             .Setup(x => x.GetMatchupResult(contestId))
             .ReturnsAsync((MatchupResult?)null);
 
-        var command = new ScoreContestCommand { ContestId = contestId };
+        var command = new ScoreContestCommand(contestId);
 
         var sut = Mocker.CreateInstance<ContestScoringProcessor>();
 
@@ -90,7 +114,11 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
 
         // Assert
         Mocker.GetMock<IPickScoringService>()
-            .Verify(x => x.ScorePick(It.IsAny<PickemGroup>(), It.IsAny<PickemGroupUserPick>(), It.IsAny<MatchupResult>()),
+            .Verify(x => x.ScorePick(
+                    It.IsAny<PickemGroup>(),
+                    It.IsAny<PickemGroupMatchup>(),
+                    It.IsAny<PickemGroupUserPick>(),
+                    It.IsAny<MatchupResult>()),
             Times.Never);
     }
 
@@ -118,7 +146,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddAsync(pick);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand { ContestId = contestId };
+        var command = new ScoreContestCommand(contestId);
 
         var sut = Mocker.CreateInstance<ContestScoringProcessor>();
 
@@ -127,7 +155,11 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
 
         // Assert
         Mocker.GetMock<IPickScoringService>()
-            .Verify(x => x.ScorePick(It.IsAny<PickemGroup>(), It.IsAny<PickemGroupUserPick>(), It.IsAny<MatchupResult>()),
+            .Verify(x => x.ScorePick(
+                    It.IsAny<PickemGroup>(),
+                    It.IsAny<PickemGroupMatchup>(),
+                    It.IsAny<PickemGroupUserPick>(),
+                    It.IsAny<MatchupResult>()),
             Times.Never);
     }
 }

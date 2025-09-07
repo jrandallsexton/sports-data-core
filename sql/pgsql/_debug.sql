@@ -25,6 +25,19 @@ select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
 
+select
+  c."Id" as "ContestId",
+  c."AwayTeamFranchiseSeasonId",
+  c."HomeTeamFranchiseSeasonId",
+  c."SeasonWeekId",
+  c."AwayScore",
+  c."HomeScore",
+  c."WinnerFranchiseId" as "WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
+  c."FinalizedUtc"
+from public."Contest" c
+where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+
 select * from public."Contest" where "Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 select * from public."Competition" where "ContestId" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'

@@ -106,61 +106,63 @@ function LeaderboardPage() {
     });
 
     return (
-      <table border="1" style={{ borderCollapse: 'collapse', margin: '2rem 0' }}>
-        <thead>
-          <tr>
-            <th>Game</th>
-            {users.map(user => (
-              <th key={user.userId}>{user.user}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {contests.map(contest => {
-            const isLocked = !!contest.finalizedUtc;
-            if (!isLocked) return null;
-            return (
-              <tr key={contest.contestId}>
-                <td>
-                  {contest.awayShort} @ {contest.homeShort}
-                  {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread) && (
-                    <span style={{ marginLeft: 6, color: '#888' }}>
-                      {contest.homeSpread > 0 ? '+' : ''}{contest.homeSpread}
-                    </span>
-                  )}
-                </td>
-                {users.map(user => {
-                  const pick = pickMap[user.userId]?.[contest.contestId];
-                  let teamShort = '';
-                  if (pick) {
-                    if (pick.franchiseId === contest.awayFranchiseSeasonId) {
-                      teamShort = contest.awayShort;
-                    } else if (pick.franchiseId === contest.homeFranchiseSeasonId) {
-                      teamShort = contest.homeShort;
-                    } else {
-                      teamShort = pick.franchiseId; // fallback
+      <div className="leaderboard-container">
+        <table className="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Game</th>
+              {users.map(user => (
+                <th key={user.userId}>{user.user}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {contests.map(contest => {
+              const isLocked = !!contest.finalizedUtc;
+              if (!isLocked) return null;
+              return (
+                <tr key={contest.contestId}>
+                  <td>
+                    {contest.awayShort} @ {contest.homeShort}
+                    {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread) && (
+                      <span style={{ marginLeft: 6, color: '#888' }}>
+                        {contest.homeSpread > 0 ? '+' : ''}{contest.homeSpread}
+                      </span>
+                    )}
+                  </td>
+                  {users.map(user => {
+                    const pick = pickMap[user.userId]?.[contest.contestId];
+                    let teamShort = '';
+                    if (pick) {
+                      if (pick.franchiseId === contest.awayFranchiseSeasonId) {
+                        teamShort = contest.awayShort;
+                      } else if (pick.franchiseId === contest.homeFranchiseSeasonId) {
+                        teamShort = contest.homeShort;
+                      } else {
+                        teamShort = pick.franchiseId; // fallback
+                      }
                     }
-                  }
-                  return (
-                    <td key={user.userId}>
-                      {pick ? (
-                        <span>
-                          {teamShort}
-                          {typeof pick.isCorrect === 'boolean' && (
-                            <span style={{ marginLeft: 4, color: pick.isCorrect ? 'green' : 'red' }}>
-                              {pick.isCorrect ? '✔' : '✘'}
-                            </span>
-                          )}
-                        </span>
-                      ) : ''}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    return (
+                      <td key={user.userId}>
+                        {pick ? (
+                          <span>
+                            {teamShort}
+                            {typeof pick.isCorrect === 'boolean' && (
+                              <span style={{ marginLeft: 4, color: pick.isCorrect ? 'green' : 'red' }}>
+                                {pick.isCorrect ? '✔' : '✘'}
+                              </span>
+                            )}
+                          </span>
+                        ) : ''}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     );
   };
 

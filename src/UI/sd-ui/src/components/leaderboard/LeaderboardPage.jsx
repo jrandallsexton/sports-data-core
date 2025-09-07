@@ -115,12 +115,21 @@ function LeaderboardPage() {
               return (
                 <tr key={contest.contestId}>
                   <td>
-                    {contest.awayShort} @ {contest.homeShort}
-                    {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread) && (
-                      <span style={{ marginLeft: 6, color: '#888' }}>
-                        {contest.homeSpread > 0 ? '+' : ''}{contest.homeSpread}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ flex: 1, textAlign: 'left' }}>
+                        {contest.awayShort} @ {contest.homeShort}
                       </span>
-                    )}
+                      <span style={{ flex: 1, textAlign: 'center', color: '#888' }}>
+                        {typeof contest.homeSpread === 'number' && !isNaN(contest.homeSpread)
+                          ? (contest.homeSpread > 0 ? '+' : '') + contest.homeSpread
+                          : ''}
+                      </span>
+                      <span style={{ flex: 1, textAlign: 'right' }}>
+                        {typeof contest.awayScore === 'number' && typeof contest.homeScore === 'number'
+                          ? `${contest.awayScore}-${contest.homeScore}`
+                          : ''}
+                      </span>
+                    </div>
                   </td>
                   {users.map(user => {
                     const pick = pickMap[user.userId]?.[contest.contestId];
@@ -152,6 +161,19 @@ function LeaderboardPage() {
                 </tr>
               );
             })}
+            {/* Point totals row */}
+            <tr style={{ fontWeight: 'bold', background: '#222' }}>
+              <td>Total</td>
+              {users.map(user => {
+                // Sum up correct picks for this user
+                let total = 0;
+                contests.forEach(contest => {
+                  const pick = pickMap[user.userId]?.[contest.contestId];
+                  if (pick && pick.isCorrect) total += 1;
+                });
+                return <td key={user.userId}>{total}</td>;
+              })}
+            </tr>
           </tbody>
         </table>
       </div>

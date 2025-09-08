@@ -19,7 +19,8 @@ order by ap."Name", ats."LastName", ats."FirstName"
 select * from public."FranchiseSeasonRecord"
 select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
-select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb'
+select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'e74fa119-0208-337e-0f96-0c64224d7d20' where "ShortHeadline" = '2025 AP Poll: Week 3'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 select * from public."Season"
 select * from public."SeasonPhase"

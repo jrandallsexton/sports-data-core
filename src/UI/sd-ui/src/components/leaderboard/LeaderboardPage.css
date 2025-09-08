@@ -92,3 +92,20 @@
   font-size: 0.8rem;
   margin-top: 2px;
 }
+
+.week-selector-select {
+  padding: 6px 10px;
+  font-size: 1rem;
+  background-color: #222;
+  color: #61dafb;
+  border: 1px solid #444;
+  border-radius: 6px;
+  transition: background-color 0.3s, color 0.3s;
+  min-width: 150px;
+  height: 32px;
+  margin-top: 2px;
+}
+
+.week-selector-select:hover {
+  background-color: #333;
+}

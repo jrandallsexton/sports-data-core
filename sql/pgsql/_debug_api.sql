@@ -64,8 +64,22 @@ select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *
 from public."PickemGroupMatchup" m
-where m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeek" = 1
+where m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeek" = 2 --and "ContestId" = 'df5fe110-1801-c8c6-826c-847aa01f8e29'
 order by "Spread"
+
+-- SELECT *
+-- FROM public."PickemGroupMatchup" m
+-- WHERE m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
+--   AND m."SeasonWeek" = 1
+--   AND m."ContestId" IN (
+--     SELECT "ContestId"
+--     FROM public."PickemGroupMatchup"
+--     WHERE "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
+--       AND "SeasonWeek" = 1
+--     GROUP BY "ContestId"
+--     HAVING COUNT(*) > 1
+--   )
+
 
 select * from public."MessageThread"
 --update public."MessageThread" set "CreatedBy" = '11111111-1111-1111-1111-111111111111'

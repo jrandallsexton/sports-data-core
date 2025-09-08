@@ -21,15 +21,11 @@ public class LeaderboardController : ControllerBase
     [HttpGet("{groupId}")]
     [Authorize]
     public async Task<ActionResult<List<LeaderboardUserDto>>> GetLeaderboard(
-        Guid groupId,
-        [FromQuery] int week,
+        [FromRoute] Guid groupId,
         CancellationToken cancellationToken)
     {
-        if (week <= 0)
-            return BadRequest("Week must be greater than 0.");
-
         var leaderboard = await _leaderboardService
-            .GetLeaderboardAsync(groupId, week, cancellationToken);
+            .GetLeaderboardAsync(groupId, cancellationToken);
 
         return Ok(leaderboard);
     }

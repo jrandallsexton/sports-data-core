@@ -11,7 +11,6 @@ namespace SportsData.Api.Application.UI.Leaderboard
     {
         Task<List<LeaderboardUserDto>> GetLeaderboardAsync(
             Guid groupId,
-            int currentWeek,
             CancellationToken cancellationToken);
 
         Task<LeaderboardWidgetDto> GetLeaderboardWidgetForUser(
@@ -35,9 +34,14 @@ namespace SportsData.Api.Application.UI.Leaderboard
 
         public async Task<List<LeaderboardUserDto>> GetLeaderboardAsync(
             Guid groupId,
-            int currentWeek,
             CancellationToken cancellationToken)
         {
+            // get the max week for the group where picks have been scored
+            var currentWeek = await _dataContext.UserPicks
+                .AsNoTracking()
+                .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
+                .MaxAsync(p => (int?)p.Week, cancellationToken) ?? 0;
+
             var leaderboard = await _dataContext.UserPicks
                 .Include(p => p.Group)
                 .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
@@ -118,7 +122,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
 
             foreach (var groupId in groupIds)
             {
-                var leaderboard = await GetLeaderboardAsync(groupId, 2, cancellationToken);
+                var leaderboard = await GetLeaderboardAsync(groupId, cancellationToken);
 
                 var entry = leaderboard
                     .FirstOrDefault(x => x.UserId == userId);

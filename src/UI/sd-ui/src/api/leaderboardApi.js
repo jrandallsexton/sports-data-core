@@ -5,12 +5,11 @@ const LeaderboardApi = {
   /**
    * Fetches leaderboard for a given group and week.
    * @param {string} groupId - GUID of the group
-   * @param {number} week - Week number to calculate leaderboard
    * @returns {Promise<LeaderboardUserDto[]>}
    */
-  getByGroupAndWeek: (groupId, week) =>
+  getByGroupAndWeek: (groupId) =>
     apiClient.get(
-      `/ui/leaderboard/${encodeURIComponent(groupId)}?week=${week}`
+      `/ui/leaderboard/${encodeURIComponent(groupId)}`
     ),
   
   getWidgetForUser: () => apiClient.get(`/ui/leaderboard/widget`)

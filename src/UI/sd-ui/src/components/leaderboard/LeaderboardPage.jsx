@@ -85,14 +85,6 @@ function LeaderboardPage() {
     }
   }
 
-  const sortedLeaderboard = Array.isArray(leaderboard) 
-    ? [...leaderboard].sort((a, b) => {
-        const valA = a[sortBy];
-        const valB = b[sortBy];
-        return sortOrder === "asc" ? valA - valB : valB - valA;
-      })
-    : [];
-
   if (userLoading) {
     return <div className="leaderboard-container">Loading user data...</div>;
   }

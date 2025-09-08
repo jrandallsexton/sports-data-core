@@ -157,7 +157,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 })
                 .ToListAsync(cancellationToken);
 
-            var contestIds = matchups.Select(x => x.ContestId).ToList();
+            var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
 
             var previews = await _dbContext.MatchupPreviews
                 .Where(x => contestIds.Contains(x.ContestId))

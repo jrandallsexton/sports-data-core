@@ -110,13 +110,40 @@ namespace SportsData.Api.Application.UI.Picks
             return await _getUserPicksQueryHandler.GetUserPicksByGroupAndWeek(query, cancellationToken);
         }
 
+        public async Task<List<UserPickDto>> GetUserPicksByGroup(
+            Guid groupId,
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            return await _dataContext.UserPicks
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Where(p =>
+                    p.PickemGroupId == groupId &&
+                    p.UserId == userId)
+                .Select(p => new UserPickDto
+                {
+                    Id = p.Id,
+                    UserId = p.UserId,
+                    User = p.User.DisplayName,
+                    ConfidencePoints = p.ConfidencePoints,
+                    ContestId = p.ContestId,
+                    FranchiseId = p.FranchiseId ?? Guid.Empty,
+                    IsCorrect = p.IsCorrect,
+                    PickType = p.PickType,
+                    TiebreakerGuessTotal = p.TiebreakerGuessTotal,
+                    PointsAwarded = p.PointsAwarded
+                })
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<PickRecordWidgetDto> GetPickRecordWidget(
             Guid userId,
             CancellationToken cancellationToken)
         {
+
             var widget = new PickRecordWidgetDto
             {
-                AsOfWeek = 1,
                 SeasonYear = 2025
             };
 
@@ -128,11 +155,22 @@ namespace SportsData.Api.Application.UI.Picks
 
             foreach (var groupId in groupIds)
             {
+                // get the max week for the group where picks have been scored
+                var currentWeek = await _dataContext.UserPicks
+                    .AsNoTracking()
+                    .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
+                    .MaxAsync(p => (int?)p.Week, cancellationToken) ?? 0;
+
+                if (widget.AsOfWeek == 0)
+                {
+                    widget.AsOfWeek = currentWeek;
+                }
+
                 var group = await _dataContext.PickemGroups
                     .AsNoTracking()
                     .FirstOrDefaultAsync(g => g.Id == groupId, cancellationToken: cancellationToken);
 
-                var userPicks = (await GetUserPicksByGroupAndWeek(userId, groupId, 1, cancellationToken))
+                var userPicks = (await GetUserPicksByGroup(groupId, userId, cancellationToken))
                                 ?? [];
 
                 var correct = userPicks.Count(x => x.IsCorrect == true);

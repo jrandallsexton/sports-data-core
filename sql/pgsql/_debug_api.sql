@@ -64,7 +64,7 @@ select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *
 from public."PickemGroupMatchup" m
-where m."GroupId" = '96d4771f-43e5-470b-aba4-7401452ee1be' and "SeasonWeek" = 1
+where m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeek" = 1
 order by "Spread"
 
 select * from public."MessageThread"

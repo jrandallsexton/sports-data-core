@@ -106,7 +106,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
         {
             var widget = new LeaderboardWidgetDto
             {
-                AsOfWeek = 1,
+                AsOfWeek = 2,
                 SeasonYear = seasonYear
             };
 
@@ -118,7 +118,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
 
             foreach (var groupId in groupIds)
             {
-                var leaderboard = await GetLeaderboardAsync(groupId, 1, cancellationToken);
+                var leaderboard = await GetLeaderboardAsync(groupId, 2, cancellationToken);
 
                 var entry = leaderboard
                     .FirstOrDefault(x => x.UserId == userId);

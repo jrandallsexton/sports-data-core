@@ -100,10 +100,11 @@ function HomePage() {
     <div className="home-page">
       <SystemNews />
 
-      <div className="card">
-        <RankingsWidget />
-      </div>
-
+      <section className="card-section">
+        <div className="card">
+          <RankingsWidget />
+        </div>
+      </section>
       {/* Leaderboard + Your Stats */}
       <section className="card-section">
         <LeaderboardWidget />

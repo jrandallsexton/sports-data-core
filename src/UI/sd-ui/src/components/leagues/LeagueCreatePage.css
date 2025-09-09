@@ -1,3 +1,13 @@
+.page-container .card {
+  /* ...existing styles... */
+}
+
+@media (max-width: 600px) {
+  .page-container .card {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
 .page-container {
   max-width: 700px;
   margin: 2rem auto;
@@ -15,10 +25,10 @@ p {
   margin-bottom: 1rem;
 }
 
-.card {
+.page-container .card {
   background-color: #fff;
   border-radius: 12px;
-  padding: 2rem !important;
+  padding: 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }

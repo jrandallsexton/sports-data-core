@@ -27,12 +27,12 @@ h2 {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  margin-top: 30px;
 }
 
+/* HomePage card style override */
 .card {
   background-color: #1e1e1e;
-  padding: 20px;
+  padding: 1rem;
   border-radius: 10px;
   flex: 1 1 300px;
   color: #fff;

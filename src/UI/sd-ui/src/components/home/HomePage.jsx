@@ -4,6 +4,8 @@ import PickAccuracyWidget from "../widgets/PickAccuracyWidget";
 import AiAccuracyWidget from "../widgets/AiAccuracyWidget";
 import FeaturedArticleCard from "./FeaturedArticleCard";
 import InfoSection from "./InfoSection";
+import TipWeekWidget from "../widgets/TipWeekWidget";
+import NewsWidget from "../widgets/NewsWidget";
 import LeaderboardWidget from "../widgets/LeaderboardWidget";
 import PickRecordWidget from "../widgets/PickRecordWidget";
 import AiRecordWidget from "../widgets/AiRecordWidget";
@@ -99,34 +101,41 @@ function HomePage() {
       <SystemNews />
 
       <div className="card">
-        <h2>Pick'em Leagues</h2>
-        <p>Create or join a private league to compete with friends.</p>
-        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-          <Link to="/app/league/create" className="card-link">
-            Create a League
-          </Link>
-          <Link to="/app/league/discover" className="card-link">
-            Join a League
-          </Link>
-          {userDto?.leagues?.length > 0 && (
-            <Link to="/app/league" className="card-link">
-              My Leagues
-            </Link>
-          )}
-        </div>
-      </div>
-
-      <div className="card">
         <RankingsWidget />
       </div>
 
       {/* Leaderboard + Your Stats */}
       <section className="card-section">
         <LeaderboardWidget />
-
         <PickRecordWidget />
-
         <AiRecordWidget />
+      </section>
+
+      {/* Tips and News */}
+      <section className="card-section">
+        <div className="card">
+          <h2>Pick'em Leagues</h2>
+          <p>Create or join a private league to compete with friends.</p>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+            <Link to="/app/league/create" className="card-link">
+              Create a League
+            </Link>
+            <Link to="/app/league/discover" className="card-link">
+              Join a League
+            </Link>
+            {userDto?.leagues?.length > 0 && (
+              <Link to="/app/league" className="card-link">
+                My Leagues
+              </Link>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <TipWeekWidget />
+        </div>
+        <div className="card">
+          <NewsWidget />
+        </div>
       </section>
 
       <section className="chart-section">
@@ -145,7 +154,9 @@ function HomePage() {
       </section>
 
       <InfoSection />
-      <FeaturedArticleCard />
+      <div className="card">
+        <FeaturedArticleCard />
+      </div>
     </div>
   );
 }

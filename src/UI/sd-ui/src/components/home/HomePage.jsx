@@ -139,20 +139,23 @@ function HomePage() {
       </section>
 
       <section className="chart-section">
-        <PickAccuracyWidget
-          selectedGroup={selectedGroup}
-          onGroupChange={setSelectedGroup}
-          groups={pickGroups}
-        />
+        <div className="card">
+          <PickAccuracyWidget
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
+            groups={pickGroups}
+          />
+        </div>
 
-        <AiAccuracyWidget
-          selectedGroup={selectedAIGroup}
-          onGroupChange={setSelectedAIGroup}
-          groups={pickGroups}
-          aiAccuracyData={aiAccuracyData}
-        />
+        <div className="card">
+          <AiAccuracyWidget
+            selectedGroup={selectedAIGroup}
+            onGroupChange={setSelectedAIGroup}
+            groups={pickGroups}
+            aiAccuracyData={aiAccuracyData}
+          />
+        </div>
       </section>
-
 
       <div className="card">
         <FeaturedArticleCard />

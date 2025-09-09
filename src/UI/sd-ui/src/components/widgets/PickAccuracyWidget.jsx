@@ -25,7 +25,7 @@ function PickAccuracyWidget({ data, selectedGroup, onGroupChange, groups }) {
 
   return (
     <div className="chart-block">
-      <h2>Pick Accuracy by Week</h2>
+  <h2>Pick Accuracy by Week</h2>
       <em>(simulated until after Week 1)</em>
       <div className="group-selector">
         <select 

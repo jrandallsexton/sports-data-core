@@ -1,34 +1,36 @@
 function FeaturedArticleCard() {
   return (
     <section className="featured-article">
-      <h2>Featured Article: Mid-Season Pick Strategies</h2>
-      <h2>( simulated )</h2>
+      <h2>Featured Article: Early-Season Pick Insights</h2>
       <div className="article-card">
         <p>
-          <strong>🏆 Building a Winning Pick Strategy:</strong>
+          <strong>🚀 Capitalizing on Early-Season Volatility:</strong>
         </p>
         <p>
-          As we reach the midpoint of the season, it's important to reevaluate
-          your pick strategy. Early trends are helpful, but teams evolve.
-          Injuries, morale, and home-field advantages start playing bigger
-          roles. Don't just trust team records — look deeper into strength of
-          schedule and player news.
+          The first few weeks of the season are chaotic — and that's good news
+          for sharp pickers. Power rankings are still stabilizing, and public
+          perception often lags behind reality. This is your window to find
+          value where others see noise.
         </p>
         <p>
-          One of the best ways to gain an edge is by identifying overhyped
-          favorites. Upsets tend to cluster late in the season when playoff
-          pressure builds. Look for games where the spread seems too generous,
-          and consider a calculated risk on the underdog.
+          Avoid overreacting to Week 1 blowouts. Teams often iron out mistakes
+          quickly. Focus on consistency at quarterback, coaching continuity, and
+          whether a team played above or below its expected efficiency.
         </p>
         <p>
-          SportDeets AI models are also updating weekly now with more weight on
-          injury reports, coaching changes, and even weather conditions — so be
-          sure to review the AI recommendations in your dashboard before locking
-          your picks!
+          Don’t forget to watch the spread. Early-season lines are often set
+          based on preseason expectations, not current performance. That means
+          smart underdog picks can lead to early leaderboard jumps in your
+          pick’em group.
+        </p>
+        <p>
+          SportDeets AI is trained to spot misleading Week 1 results — check the
+          “Preview” tab to see which games the models flag as potential
+          overreactions.
         </p>
         <p style={{ fontStyle: "italic", marginTop: "20px" }}>
-          🔥 Pro Tip: Balance 75% logical picks with 25% high-upside gambles
-          late in the year!
+          🧠 Pro Tip: In Weeks 1–3, lean into volatility — you only get a few
+          chances each season to outsmart the field this early.
         </p>
       </div>
     </section>

@@ -63,7 +63,7 @@ const LeaderboardWidget = () => {
 
   return (
     <div className="card">
-      <h2>Your Ranking(s)</h2>
+  <h2>Your Ranking(s)</h2>
       {/* {leaderboardData && (
         <em>(as of week {leaderboardData.asOfWeek})</em>
       )} */}

@@ -5,7 +5,7 @@ import "../home/HomePage.css";
 function NewsWidget() {
   return (
     <div className="news-card">
-      <h2>Latest News (simulated)</h2>
+  <h2>Latest News (simulated)</h2>
       <p>
         <strong>🏈 Major upset:</strong> #14 seed upsets #2! Full recap and impact on playoff brackets <Link to="/app/news">here</Link>.
       </p>

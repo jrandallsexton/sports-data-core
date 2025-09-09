@@ -68,7 +68,7 @@ const PickRecordWidget = () => {
 
   return (
     <div className="card">
-      <h2>Your Pick Record</h2>
+  <h2>Your Pick Record</h2>
       {/* {pickRecordData && (
         <em>(as of week {pickRecordData.asOfWeek})</em>
       )} */}

@@ -68,7 +68,7 @@ const AiRecordWidget = () => {
 
   return (
     <div className="card">
-      <h2>sportDeets AI Accuracy</h2>
+  <h2>sportDeets AI Accuracy</h2>
       {/* {aiRecordData && (
         <em>(as of week {aiRecordData.asOfWeek})</em>
       )} */}

@@ -4,7 +4,7 @@ import "../home/HomePage.css";
 function TipWeekWidget() {
   return (
     <div className="tip-card">
-      <h2>Tip of the Week (simulated)</h2>
+  <h2>Tip of the Week (simulated)</h2>
       <p>
         <strong>💡 Pro Strategy:</strong> Balance underdogs and favorites! Most users win more by mixing picks based on matchup strength, not just spreads.
       </p>

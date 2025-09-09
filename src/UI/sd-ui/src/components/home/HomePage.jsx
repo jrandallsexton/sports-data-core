@@ -116,7 +116,9 @@ function HomePage() {
         </div>
       </div>
 
-      <RankingsWidget />
+      <div className="card">
+        <RankingsWidget />
+      </div>
 
       {/* Leaderboard + Your Stats */}
       <section className="card-section">

@@ -32,24 +32,24 @@
 }
 
 .rankings-table {
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-  background: var(--background-color);
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
   width: 100%;
   min-width: 0;
+  flex: 1 1 0;
+  margin-top: 20px;
+  border-collapse: collapse;
+  color: #fff;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
   font-size: 0.97rem;
   table-layout: fixed;
   overflow: hidden;
-  color: var(--text-color);
-  flex: 1 1 0;
 }
 
 .rankings-table th, .rankings-table td {
-  border: 1px solid #e0e0e0;
-  padding: 0.4em 0.3em;
-  text-align: left;
+  border: 1px solid #333;
+  padding: 10px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,18 +58,30 @@
 }
 
 .rankings-table th {
-  background: var(--sidebar-background-color);
-  font-weight: 600;
-  font-size: 0.98em;
-  color: var(--text-color);
+  background-color: #222;
+  color: #61dafb;
+  font-weight: bold;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #333;
 }
 
-.rankings-table td img {
-  vertical-align: middle;
-  margin-right: 6px;
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
+.rankings-table td {
+  border: 1px solid #333;
+  padding: 10px;
+  color: #fff;
+}
+
+.rankings-table td:not(.rank-cell) {
+  text-align: center;
+}
+
+.rankings-table tr:nth-child(even) {
+  background-color: #2c2c2c;
+}
+
+.rankings-table tr:hover {
+  background-color: #333;
 }
 
 @media (max-width: 1200px) {
@@ -125,6 +137,33 @@
   font-size: 0.92em;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.rankings-table th:nth-child(5), .rankings-table td:nth-child(5) {
+  width: 44px;
+  min-width: 36px;
+  max-width: 48px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.rankings-table th:nth-child(6), .rankings-table td:nth-child(6) {
+  width: 54px;
+  min-width: 36px;
+  max-width: 60px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.rankings-table th:nth-child(1), .rankings-table td:nth-child(1) {
+  width: 38px;
+  min-width: 32px;
+  max-width: 44px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .rankings-widget::-webkit-scrollbar {

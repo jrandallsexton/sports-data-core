@@ -75,7 +75,13 @@ function RankingsWidget() {
                             }}
                           />
                         )}
-                        {team.franchiseName || "Unknown"}
+                        <a
+                          href={`/app/sport/football/ncaa/team/${team.franchiseSlug || ''}/2025`}
+                          className="team-link"
+                          style={{ color: '#61dafb', textDecoration: 'underline', fontWeight: 500 }}
+                        >
+                          {team.franchiseName || "Unknown"}
+                        </a>
                       </td>
                       <td>
                         {team.wins}-{team.losses}

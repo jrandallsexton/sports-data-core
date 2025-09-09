@@ -3,13 +3,14 @@
 public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
+        "GetContestResultsByContestIds.sql",
         "GetCurrentSeasonWeek.sql",
         "GetFranchiseSeasonStatisticsForPreviewGeneration.sql",
         "GetLeagueMatchupsByContestIds.sql",
-        "GetContestResultsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
         "GetMatchupResultByContestId.sql",
         "GetMatchupsForCurrentWeek.sql",
+        "GetRankingsByPollBySeasonByWeek.sql",
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
         "GetTeamSeasons.sql"
@@ -65,4 +66,6 @@ public class CanonicalDataQueryProvider
     public string GetTeamCardSchedule() => Get("GetTeamCardSchedule.sql");
 
     public string GetTeamSeasons() => Get("GetTeamSeasons.sql");
+
+    public string GetRankingsByPollBySeasonByWeek() => Get("GetRankingsByPollBySeasonByWeek.sql");
 }

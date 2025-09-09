@@ -1,13 +1,15 @@
 ﻿using Dapper;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 
 using System.Data;
-using Microsoft.AspNetCore.Connections;
+
+using static SportsData.Api.Application.UI.Rankings.Dtos.RankingsByPollIdByWeekDto;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
 {
@@ -36,6 +38,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId);
 
         Task<List<ContestResultDto>> GetContestResultsByContestIds(List<Guid> contestIds);
+
+        Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(string pollType, int seasonYear, int weekNumber);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -299,6 +303,36 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             );
 
             return results.ToList();
+        }
+
+        public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(
+            string pollType,
+            int seasonYear,
+            int weekNumber)
+        {
+            var sql = _queryProvider.GetRankingsByPollBySeasonByWeek();
+
+            var entries = await _connection.QueryAsync<RankingsByPollIdByWeekEntryDto>(
+                sql,
+                new
+                {
+                    PollType = pollType,
+                    WeekNumber = weekNumber,
+                    SeasonYear = seasonYear
+                },
+                commandType: CommandType.Text
+            );
+
+            var result = new RankingsByPollIdByWeekDto()
+            {
+                PollName = pollType,
+                SeasonYear = seasonYear,
+                Week = weekNumber,
+                PollDateUtc = entries.FirstOrDefault()?.PollDateUtc ?? DateTime.MinValue,
+                Entries = entries.ToList(),
+            };
+
+            return result;
         }
 
         private FranchiseSeasonModelStatsDto MapToModelStats(List<FranchiseSeasonRawStat> stats)

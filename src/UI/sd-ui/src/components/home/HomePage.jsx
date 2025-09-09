@@ -10,6 +10,7 @@ import AiRecordWidget from "../widgets/AiRecordWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import SystemNews from "./SystemNews";
+import RankingsWidget from "../widgets/RankingsWidget";
 
 function HomePage() {
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -95,8 +96,7 @@ function HomePage() {
 
   return (
     <div className="home-page">
-
-<SystemNews />
+      <SystemNews />
 
       <div className="card">
         <h2>Pick'em Leagues</h2>
@@ -115,6 +115,8 @@ function HomePage() {
           )}
         </div>
       </div>
+
+      <RankingsWidget />
 
       {/* Leaderboard + Your Stats */}
       <section className="card-section">

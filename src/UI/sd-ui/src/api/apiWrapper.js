@@ -6,6 +6,7 @@ import Venues from "./venuesApi";
 import TeamCard from "./teamCardApi";
 import Picks from "./picksApi";
 import Conferences from "./conferenceApi";
+import Rankings  from "./rankingsApi";
 
 const apiWrapper = {
   Matchups,
@@ -15,7 +16,8 @@ const apiWrapper = {
   Venues,
   TeamCard,
   Picks,
-  Conferences
+  Conferences,
+  Rankings
 };
 
 export default apiWrapper;

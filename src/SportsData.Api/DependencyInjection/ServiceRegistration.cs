@@ -13,6 +13,7 @@ using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
 using SportsData.Api.Application.UI.Messageboard;
 using SportsData.Api.Application.UI.Picks;
 using SportsData.Api.Application.UI.Picks.PicksPage;
+using SportsData.Api.Application.UI.Rankings;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.User;
@@ -57,6 +58,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
+
+            services.AddScoped<IRankingsService, RankingsService>();
 
             return services;
         }

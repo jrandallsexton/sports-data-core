@@ -1,0 +1,133 @@
+.rankings-widget {
+  width: 100%;
+  overflow-x: visible;
+  background: var(--card-background-color);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 1.2rem 1.2rem 1.5rem 1.2rem;
+  margin: 0 auto 2rem auto;
+  color: var(--text-color);
+  border: 2px solid #61dafb;
+}
+
+.rankings-widget h2 {
+  text-align: left;
+  color: #61dafb;
+  margin-bottom: 1.2rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding-left: 2px;
+  border-bottom: 1.5px solid #61dafb;
+  padding-bottom: 0.4rem;
+  margin-top: 0;
+}
+
+.rankings-widget > div[style*="display: flex"] {
+  display: flex !important;
+  gap: 2rem;
+  justify-content: flex-start;
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.rankings-table {
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  background: var(--background-color);
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  width: 100%;
+  min-width: 0;
+  font-size: 0.97rem;
+  table-layout: fixed;
+  overflow: hidden;
+  color: var(--text-color);
+  flex: 1 1 0;
+}
+
+.rankings-table th, .rankings-table td {
+  border: 1px solid #e0e0e0;
+  padding: 0.4em 0.3em;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: inherit;
+  color: var(--text-color);
+}
+
+.rankings-table th {
+  background: var(--sidebar-background-color);
+  font-weight: 600;
+  font-size: 0.98em;
+  color: var(--text-color);
+}
+
+.rankings-table td img {
+  vertical-align: middle;
+  margin-right: 6px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+@media (max-width: 1200px) {
+  .rankings-table {
+    font-size: 0.97rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .rankings-widget > div[style*="display: flex"] {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    align-items: stretch;
+    max-width: 100%;
+    width: 100%;
+  }
+  .rankings-table {
+    font-size: 0.93rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .rankings-widget {
+    padding: 0 2px;
+  }
+  .rankings-table {
+    font-size: 0.91rem;
+  }
+  .rankings-table th, .rankings-table td {
+    max-width: 60px;
+    padding: 0.3em 0.2em;
+    font-size: 0.91em;
+  }
+  .rankings-table th {
+    font-size: 0.93em;
+  }
+}
+
+.rankings-table th:first-child, .rankings-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--sidebar-background-color);
+  z-index: 1;
+  min-width: 36px;
+  max-width: 40px;
+  text-align: center;
+}
+
+.rankings-table th:last-child, .rankings-table td:last-child {
+  min-width: 36px;
+  max-width: 40px;
+  text-align: center;
+  font-size: 0.92em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rankings-widget::-webkit-scrollbar {
+  display: none;
+}

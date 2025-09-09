@@ -1,4 +1,5 @@
 ﻿SELECT DISTINCT ON (F."Id")
+	FS."Id" AS "FranchiseSeasonId",
 	F."Slug" AS "Slug",
 	F."DisplayName" AS "Name",
 	F."DisplayNameShort" AS "ShortName",
@@ -22,7 +23,7 @@ FROM
 	LEFT JOIN PUBLIC."FranchiseLogo" FL ON FL."FranchiseId" = F."Id"
 	LEFT JOIN PUBLIC."Venue" V ON V."Id" = F."VenueId"
 WHERE
-	F."Slug" = @Slug
+	F."Slug" = @Slug and FS."SeasonYear" = @SeasonYear
 ORDER BY
     F."Id",
     FL."CreatedUtc" ASC NULLS LAST;

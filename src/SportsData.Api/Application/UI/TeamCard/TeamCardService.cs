@@ -3,6 +3,8 @@
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.UI.TeamCard.Queries;
+using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.TeamCard
@@ -12,19 +14,24 @@ namespace SportsData.Api.Application.UI.TeamCard
         Task<Result<TeamCardDto?>> GetTeamCard(
             GetTeamCardQuery query,
             CancellationToken cancellationToken = default);
+
+        Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId);
     }
 
     public class TeamCardService : ITeamCardService
     {
         private readonly ILogger<TeamCardService> _logger;
         private readonly IGetTeamCardQueryHandler _getTeamCardQueryHandler;
+        private readonly IProvideCanonicalData _canonicalDataProvider;
 
         public TeamCardService(
             ILogger<TeamCardService> logger,
-            IGetTeamCardQueryHandler getTeamCardQueryHandler)
+            IGetTeamCardQueryHandler getTeamCardQueryHandler,
+            IProvideCanonicalData canonicalDataProvider)
         {
             _logger = logger;
             _getTeamCardQueryHandler = getTeamCardQueryHandler;
+            _canonicalDataProvider = canonicalDataProvider;
         }
 
         public async Task<Result<TeamCardDto?>> GetTeamCard(
@@ -45,6 +52,12 @@ namespace SportsData.Api.Application.UI.TeamCard
                     ResultStatus.NotFound,
                     [new ValidationFailure("TeamCard", "Team card not found")]);
             }
+        }
+
+        public async Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId)
+        {
+            return await _canonicalDataProvider
+                .GetFranchiseSeasonStatistics(franchiseSeasonId);
         }
     }
 }

@@ -2,6 +2,8 @@
 
 public class TeamCardDto
 {
+    public Guid FranchiseSeasonId { get; set; }
+
     public required string Slug { get; set; }
 
     public required string Name { get; set; }

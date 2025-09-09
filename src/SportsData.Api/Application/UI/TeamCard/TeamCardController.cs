@@ -46,5 +46,21 @@ namespace SportsData.Api.Application.UI.TeamCard
 
             return StatusCode(500); // fallback safety
         }
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetTeamStatistics(
+            string sport,
+            string league,
+            string slug,
+            int seasonYear,
+            [FromQuery] Guid franchiseSeasonId,
+            [FromServices] ITeamCardService service,
+            CancellationToken cancellationToken)
+        {
+            // TODO: Rework this to get the franchiseSeasonId from the other parameters
+            var stats = await service.GetTeamStatistics(
+                franchiseSeasonId);
+            return Ok(stats);
+        }
     }
 }

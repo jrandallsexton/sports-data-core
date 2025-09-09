@@ -1,25 +1,28 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import apiClient from "../../api/apiClient";
+import apiWrapper from "../../api/apiWrapper";
 import "./TeamCard.css";
 import TeamSchedule from "./TeamSchedule";
 //import TeamScheduleMUI from "./TeamScheduleMUI";
 import TeamNews from "./TeamNews";
+import TeamStatistics from "./TeamStatistics";
 
 function TeamCard() {
   const { slug, seasonYear } = useParams();
   const navigate = useNavigate();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState("schedule");
+  const [teamStats, setTeamStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState(null);
 
   const resolvedSeason = seasonYear || new Date().getFullYear();
 
   useEffect(() => {
     const fetchTeam = async () => {
       try {
-        const response = await apiClient.get(
-          `/ui/teamcard/sport/football/league/ncaa/team/${slug}/${resolvedSeason}`
-        );
+        const response = await apiWrapper.TeamCard.getBySlugAndSeason(slug, resolvedSeason);
         setTeam(response.data);
       } catch (error) {
         console.error("Failed to fetch team data:", error);
@@ -30,6 +33,23 @@ function TeamCard() {
 
     fetchTeam();
   }, [slug, resolvedSeason]);
+
+  useEffect(() => {
+    if (selectedTab === "statistics" && team && team.franchiseSeasonId) {
+      setStatsLoading(true);
+      setStatsError(null);
+      apiWrapper.TeamCard.getStatistics(slug, resolvedSeason, team.franchiseSeasonId)
+        .then((response) => {
+          setTeamStats(response.data);
+        })
+        .catch((error) => {
+          setStatsError("Failed to load statistics");
+        })
+        .finally(() => {
+          setStatsLoading(false);
+        });
+    }
+  }, [selectedTab, slug, resolvedSeason, team]);
 
   if (loading) return <div className="team-card">Loading team data…</div>;
   if (!team) return <div className="team-card">Team not found.</div>;
@@ -92,7 +112,35 @@ function TeamCard() {
         <TeamNews news={team.news} />
       )}
 
-      <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
+      <div className="team-tabs">
+        <button
+          className={selectedTab === "schedule" ? "active" : ""}
+          onClick={() => setSelectedTab("schedule")}
+        >
+          Schedule
+        </button>
+        <button
+          className={selectedTab === "statistics" ? "active" : ""}
+          onClick={() => setSelectedTab("statistics")}
+        >
+          Statistics
+        </button>
+      </div>
+
+      <div className="team-card-content">
+        {selectedTab === "schedule" && (
+          <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
+        )}
+        {selectedTab === "statistics" && (
+          statsLoading ? (
+            <div>Loading statistics…</div>
+          ) : statsError ? (
+            <div className="error">{statsError}</div>
+          ) : (
+            <TeamStatistics team={team} seasonYear={resolvedSeason} stats={teamStats} />
+          )
+        )}
+      </div>
       {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}
     </div>
   );

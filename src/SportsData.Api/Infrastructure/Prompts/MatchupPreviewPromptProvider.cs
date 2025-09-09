@@ -7,8 +7,8 @@ public class MatchupPreviewPromptProvider
     private readonly IServiceProvider _serviceProvider;
     private readonly object _lock = new();
 
-    private Task<string>? _cachedPromptTask;
-    private Task<string>? _cachedPromptWithStatsTask;
+    private Task<(string, string)>? _cachedPromptTask;
+    private Task<(string, string)>? _cachedPromptWithStatsTask;
 
     private const string Container = "prompts";
 
@@ -20,7 +20,7 @@ public class MatchupPreviewPromptProvider
         _serviceProvider = serviceProvider;
     }
 
-    public Task<string> GetPreviewInsightPromptAsync(bool hasStats)
+    public Task<(string PromptText, string PromptName)> GetPreviewInsightPromptAsync(bool hasStats)
     {
         if (hasStats)
         {
@@ -49,20 +49,31 @@ public class MatchupPreviewPromptProvider
     public async Task<string> ReloadPromptAsync(bool hasStats)
     {
         var blobName = hasStats ? BlobWithStats : Blob;
-        var newPrompt = await LoadPromptAsync(blobName, forceReload: true);
+        var newPrompt = await LoadPromptTextOnlyAsync(blobName);
 
         lock (_lock)
         {
             if (hasStats)
-                _cachedPromptWithStatsTask = Task.FromResult(newPrompt);
+                _cachedPromptWithStatsTask = Task.FromResult((newPrompt, Path.GetFileNameWithoutExtension(blobName)));
             else
-                _cachedPromptTask = Task.FromResult(newPrompt);
+                _cachedPromptTask = Task.FromResult((newPrompt, Path.GetFileNameWithoutExtension(blobName)));
         }
 
         return newPrompt;
     }
 
-    private async Task<string> LoadPromptAsync(string blobName, bool forceReload = false)
+    private async Task<(string, string)> LoadPromptAsync(string blobName, bool forceReload = false)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
+
+        var promptText = await blobStorage.GetFileContentsAsync(Container, blobName);
+        var promptName = Path.GetFileNameWithoutExtension(blobName);
+
+        return (promptText, promptName);
+    }
+
+    private async Task<string> LoadPromptTextOnlyAsync(string blobName)
     {
         using var scope = _serviceProvider.CreateScope();
         var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();

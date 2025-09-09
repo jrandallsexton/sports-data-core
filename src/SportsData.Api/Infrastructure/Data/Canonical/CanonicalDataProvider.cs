@@ -40,6 +40,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<List<ContestResultDto>> GetContestResultsByContestIds(List<Guid> contestIds);
 
         Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(string pollType, int seasonYear, int weekNumber);
+
+        Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -366,5 +368,28 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             };
         }
 
+        public async Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId)
+        {
+            var sql = _queryProvider.GetFranchiseSeasonStatistics();
+
+            var entries = (await _connection.QueryAsync<FranchiseSeasonStatisticDto.FranchiseSeasonStatisticEntry>(
+                sql,
+                new { FranchiseSeasonId = franchiseSeasonId },
+                commandType: CommandType.Text
+            )).ToList();
+
+            var dto = new FranchiseSeasonStatisticDto
+            {
+                GamesPlayed = 0, // TODO: Set this when you’re ready to pull it from somewhere
+                Statistics = entries
+                    .GroupBy(e => e.Category)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.ToList()
+                    )
+            };
+
+            return dto;
+        }
     }
 }

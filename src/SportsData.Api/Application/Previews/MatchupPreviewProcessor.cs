@@ -49,7 +49,7 @@ namespace SportsData.Api.Application.Previews
             var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
                             matchup.HomeStats.RushingYardsPerGame.HasValue);
 
-            var basePrompt = await _promptProvider.GetPreviewInsightPromptAsync(hasStats);
+            var promptData = await _promptProvider.GetPreviewInsightPromptAsync(hasStats);
             var jsonInput = JsonSerializer.Serialize(matchup);
 
             const int maxAttempts = 5;
@@ -63,7 +63,7 @@ namespace SportsData.Api.Application.Previews
                     ? $"\n\nNote: Your previous attempt produced invalid results for the following reasons:\n- {string.Join("\n- ", validationErrors)}"
                     : string.Empty;
 
-                var fullPrompt = $"{basePrompt}\n\n{jsonInput}{feedbackSection}";
+                var fullPrompt = $"{promptData.PromptText}\n\n{jsonInput}{feedbackSection}";
 
                 rawResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
 
@@ -148,7 +148,8 @@ namespace SportsData.Api.Application.Previews
                     Model = _aiCommunication.GetModelName(),
                     ValidationErrors = null,
                     CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = command.CorrelationId
+                    CreatedBy = command.CorrelationId,
+                    PromptVersion = promptData.PromptName
                 };
 
                 await _dataContext.MatchupPreviews.AddAsync(preview);
@@ -166,6 +167,7 @@ namespace SportsData.Api.Application.Previews
                 preview.PredictedSpreadWinner = parsed.PredictedSpreadWinner;
                 preview.PredictedStraightUpWinner = parsed.PredictedStraightUpWinner;
                 preview.Prediction = parsed.Prediction;
+                preview.PromptVersion = promptData.PromptName;
             }
 
             await _eventBus.Publish(new PreviewGenerated(

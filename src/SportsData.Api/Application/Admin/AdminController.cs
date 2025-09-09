@@ -15,15 +15,18 @@ namespace SportsData.Api.Application.Admin
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideAiCommunication _ai;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IAdminService _adminService;
 
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideAiCommunication ai,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IAdminService adminService)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _ai = ai;
             _backgroundJobProvider = backgroundJobProvider;
+            _adminService = adminService;
         }
 
         [HttpPost]
@@ -61,6 +64,20 @@ namespace SportsData.Api.Application.Admin
         }
 
         [HttpPost]
+        [Route("matchup/preview/{contestId}")]
+        public async Task<IActionResult> UpsertContestPreview(
+            [FromRoute] Guid contestId,
+            [FromBody] string matchupPreview)
+        {
+            var result = await _adminService.UpsertMatchupPreview(matchupPreview);
+
+            if (result == contestId)
+                return Created();
+            else
+                return BadRequest("The provided preview does not match the specified contest ID.");
+        }
+
+        [HttpPost]
         [Route("contest/{contestId}/score")]
         public IActionResult ScoreContest([FromRoute] Guid contestId)
         {
@@ -85,6 +102,13 @@ namespace SportsData.Api.Application.Admin
             var correlationId = Guid.NewGuid();
             _backgroundJobProvider.Enqueue<IAdminService>(p => p.AuditAi(correlationId));
             return Accepted(correlationId);
+        }
+
+        [HttpGet]
+        [Route("matchup/preview/{contestId}")]
+        public async Task<IActionResult> GetAiPreview([FromRoute] Guid contestId)
+        {
+            return Ok(await _adminService.GetMatchupPreview(contestId));
         }
     }
 

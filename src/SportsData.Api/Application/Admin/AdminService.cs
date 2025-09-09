@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -11,6 +13,10 @@ namespace SportsData.Api.Application.Admin
         Task RefreshAiExistence(Guid correlationId);
 
         Task AuditAi(Guid correlationId);
+
+        Task<string> GetMatchupPreview(Guid contestId);
+
+        Task<Guid> UpsertMatchupPreview(string jsonContent);
     }
 
     public class AdminService : IAdminService
@@ -211,6 +217,39 @@ namespace SportsData.Api.Application.Admin
             }
 
             _logger.LogCritical($"!!! {errorCount} of {previews.Count} AI previews have issues with FranchiseSeasonId !!!");
+        }
+
+        public async Task<string> GetMatchupPreview(Guid contestId)
+        {
+            var preview = await _dataContext.MatchupPreviews
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ContestId == contestId);
+
+            if (preview is null)
+            {
+                throw new InvalidOperationException("No preview found for the specified contest.");
+            }
+
+            return preview.ToJson();
+        }
+
+        public async Task<Guid> UpsertMatchupPreview(string jsonContent)
+        {
+            var preview = jsonContent.FromJson<MatchupPreview>();
+
+            if (preview is null)
+                throw new InvalidOperationException("Invalid preview content.");
+
+            var existing = await _dataContext.MatchupPreviews
+                .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId);
+
+            if (existing is not null)
+                _dataContext.MatchupPreviews.Remove(existing);
+
+            await _dataContext.MatchupPreviews.AddAsync(preview);
+            await _dataContext.SaveChangesAsync();
+
+            return preview.ContestId;
         }
     }
 }

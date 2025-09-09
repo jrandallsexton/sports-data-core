@@ -25,7 +25,7 @@ function RankingsWidget() {
 
   return (
     <div className="rankings-widget">
-      <h2>AP Top 25 - Week 3 (2025)</h2>
+      <h2>AP Top 25 - Week 3</h2>
       {loading ? (
         <div>Loading rankings...</div>
       ) : error ? (

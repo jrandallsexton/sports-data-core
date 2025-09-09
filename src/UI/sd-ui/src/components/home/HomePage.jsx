@@ -3,7 +3,7 @@ import { useState } from "react";
 import PickAccuracyWidget from "../widgets/PickAccuracyWidget";
 import AiAccuracyWidget from "../widgets/AiAccuracyWidget";
 import FeaturedArticleCard from "./FeaturedArticleCard";
-import InfoSection from "./InfoSection";
+
 import TipWeekWidget from "../widgets/TipWeekWidget";
 import NewsWidget from "../widgets/NewsWidget";
 import LeaderboardWidget from "../widgets/LeaderboardWidget";
@@ -153,7 +153,7 @@ function HomePage() {
         />
       </section>
 
-      <InfoSection />
+
       <div className="card">
         <FeaturedArticleCard />
       </div>

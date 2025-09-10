@@ -189,6 +189,7 @@ function PicksPage() {
 
       setSelectedMatchup((prev) => ({
         ...prev,
+        id: preview.id, // Ensure preview id is available for rejection
         insightText: preview.overview,
         analysis: preview.analysis,
         prediction: preview.prediction,
@@ -206,13 +207,18 @@ function PicksPage() {
     }
   }
 
-  async function handleResetPreview(contestId) {
+  async function handleRejectPreview({ PreviewId, ContestId, RejectionNote }) {
     try {
-      await apiWrapper.Matchups.resetPreviewByContestId(contestId);
-      toast.success("Preview regeneration triggered.");
+      console.log("Reject Preview Payload:", { PreviewId, ContestId, RejectionNote });
+      await apiWrapper.Matchups.rejectPreviewByContestId(ContestId, {
+        PreviewId,
+        ContestId,
+        RejectionNote,
+      });
+      toast.success("Preview rejection sent.");
     } catch (error) {
-      console.error("Error resetting preview:", error);
-      toast.error("Failed to reset preview.");
+      console.error("Error rejecting preview:", error);
+      toast.error("Failed to reject preview.");
     }
   }
 
@@ -312,7 +318,7 @@ function PicksPage() {
             analysis={selectedMatchup?.analysis ?? ""}
             prediction={selectedMatchup?.prediction ?? ""}
             loading={loadingInsight}
-            onResetPreview={handleResetPreview}
+            onRejectPreview={handleRejectPreview}
           />
         )}
       </div>

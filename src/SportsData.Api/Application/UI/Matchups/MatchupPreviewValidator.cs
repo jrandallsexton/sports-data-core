@@ -21,6 +21,11 @@ public class MatchupPreviewValidator
             errors.Add("Scores cannot be negative.");
         }
 
+        if (predictedStraightUpWinner == Guid.Empty)
+        {
+            errors.Add("Straight-up winner is not set (Guid.Empty).");
+        }
+
         // 1. Straight-Up Winner Check
         if (awayScore > homeScore && predictedStraightUpWinner != awayFranchiseSeasonId)
         {
@@ -38,14 +43,6 @@ public class MatchupPreviewValidator
         // 2. Spread Winner Check (final corrected logic)
         var actualMargin = homeScore - awayScore;
         var spread = homeSpread;
-
-        if (Math.Abs(spread) < 0.1)
-        {
-            if (predictedSpreadWinner.HasValue)
-            {
-                errors.Add("Spread is zero (pick'em), but a spread winner was predicted.");
-            }
-        }
 
         // A "push" means the favorite won by exactly the spread
         if (Math.Abs(actualMargin - Math.Abs(spread)) < 0.1)
@@ -95,11 +92,6 @@ public class MatchupPreviewValidator
         if (contestId == predictedSpreadWinner)
         {
             errors.Add("Spread winner's FranchiseSeasonId is the ContestId.");
-        }
-
-        if (predictedStraightUpWinner == Guid.Empty)
-        {
-            errors.Add("Straight-up winner is not set (Guid.Empty).");
         }
 
         if (predictedStraightUpWinner != homeFranchiseSeasonId &&

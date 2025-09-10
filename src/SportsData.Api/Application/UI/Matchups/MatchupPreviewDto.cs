@@ -2,6 +2,10 @@
 {
     public class MatchupPreviewDto
     {
+        public Guid Id { get; set; }
+
+        public Guid ContestId { get; set; }
+
         public string? Overview { get; set; }
 
         public string? Analysis { get; set; }

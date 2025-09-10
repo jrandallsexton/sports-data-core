@@ -1,5 +1,5 @@
 
-select * from public."MatchupPreview" where "ContestId" = '6fafd6ee-c474-4b7e-d822-cd3348c52467'
+select * from public."MatchupPreview" order by "CreatedUtc" desc --where "ContestId" = '6fafd6ee-c474-4b7e-d822-cd3348c52467'
 -- https://api-dev.sportdeets.com/ui/matchup/6fafd6ee-c474-4b7e-d822-cd3348c52467/preview
 
 update public."MatchupPreview" set
@@ -55,8 +55,9 @@ ORDER BY "CreatedUtc" desc
 --delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
-select * from public."UserPick" where "UserId" = '6b4d61b8-7abc-43fb-82cc-27753373cf48' and "ContestId" = 'e8fa1ebe-fc40-e43f-308f-80a66670d0df'
+select * from public."UserPick" where "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3f0f720' and "IsCorrect" is null
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+--delete from public."UserPick" where "Week" = 3
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2
 select * from public."User"
 --update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true where "Id" = '5fa4c116-1993-4f2b-9729-c50c62150813'

@@ -31,7 +31,8 @@ namespace SportsData.Api.Application.UI.Matchups
 
             var preview = await _dbContext.MatchupPreviews
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.ContestId == id);
+                .OrderByDescending(x => x.CreatedUtc)
+                .FirstOrDefaultAsync(x => x.ContestId == id && x.RejectedUtc == null);
 
             if (preview is null)
                 return NotFound();
@@ -57,6 +58,8 @@ namespace SportsData.Api.Application.UI.Matchups
 
             return Ok(new MatchupPreviewDto()
             {
+                Id = preview.Id,
+                ContestId = preview.ContestId,
                 Overview = preview.Overview,
                 Analysis = preview.Analysis,
                 Prediction = preview.Prediction,

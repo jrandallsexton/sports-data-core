@@ -33,7 +33,6 @@ function MatchupCard({
 
   const pickResult = getUserPickResult();
 
-
   // Local state for optimistic pick selection
   const [localPickFranchiseId, setLocalPickFranchiseId] = useState(null);
 

@@ -33,7 +33,7 @@ namespace SportsData.Api.Application.Previews
 
             // Fetch existing previews (including their validation status)
             var existingPreviews = await _dataContext.MatchupPreviews
-                .Where(x => contestIds.Contains(x.ContestId))
+                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc != null)
                 .AsNoTracking()
                 .ToDictionaryAsync(x => x.ContestId, x => x.ValidationErrors);
 

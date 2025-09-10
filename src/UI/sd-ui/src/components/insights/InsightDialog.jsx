@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./InsightDialog.css";
 import { useUserDto } from "../../contexts/UserContext";
 
@@ -7,11 +7,14 @@ function InsightDialog({
   onClose,
   matchup,
   loading,
-  onResetPreview,
+  onRejectPreview,
 }) {
 
   const { userDto } = useUserDto();
   const { isAdmin } = userDto;
+
+  // Local state for rejection note
+  const [rejectionNote, setRejectionNote] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -111,11 +114,24 @@ function InsightDialog({
 
         {isAdmin && !loading && (
           <div className="admin-controls">
+            <textarea
+              className="admin-rejection-note"
+              placeholder="Enter reason for rejection..."
+              value={rejectionNote}
+              onChange={e => setRejectionNote(e.target.value)}
+              rows={3}
+              style={{ width: '100%', maxWidth: '500px', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+            />
             <button
-              onClick={() => onResetPreview?.(matchup.contestId)}
+              onClick={() => onRejectPreview?.({
+                PreviewId: matchup.id,
+                ContestId: matchup.contestId,
+                RejectionNote: rejectionNote.trim()
+              })}
               className="admin-reset-button"
+              disabled={!rejectionNote.trim()}
             >
-              Regenerate Preview
+              Reject Preview
             </button>
           </div>
         )}

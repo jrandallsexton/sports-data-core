@@ -25,11 +25,19 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public int? HomeScore { get; set; }
 
+        public int? IterationsRequired { get; set; }
+
         public string? Model { get; set; }
 
         public string? ValidationErrors { get; set; }
 
         public string? PromptVersion { get; set; }
+
+        public DateTime? ApprovedUtc { get; set; }
+
+        public DateTime? RejectedUtc { get; set; }
+
+        public string? RejectionNote { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {
@@ -37,7 +45,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
             {
                 builder.ToTable(nameof(MatchupPreview));
                 builder.HasKey(x => x.Id);
-                builder.HasIndex(x => new { x.ContestId, x.Model, x.PromptVersion }).IsUnique();
+                //builder.HasIndex(x => new { x.ContestId, x.Model, x.PromptVersion }).IsUnique();
 
                 builder.Property(x => x.Overview).HasMaxLength(512);
                 builder.Property(x => x.Analysis).HasMaxLength(1024);
@@ -47,6 +55,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.PromptVersion).HasMaxLength(50);
 
                 builder.Property(x => x.ValidationErrors).HasMaxLength(1024);
+                builder.Property(x => x.RejectionNote).HasMaxLength(512);
 
                 builder.Property(l => l.OverUnderPrediction)
                     .HasConversion<int>()

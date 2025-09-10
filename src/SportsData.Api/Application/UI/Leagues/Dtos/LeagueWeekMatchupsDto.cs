@@ -3,7 +3,10 @@
     public class LeagueWeekMatchupsDto
     {
         public int SeasonYear { get; set; }
+
         public int WeekNumber { get; set; }
+
+        public PickType PickType { get; set; }
 
         public List<MatchupForPickDto> Matchups { get; set; } = new();
 

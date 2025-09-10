@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Extensions;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
+
+using static SportsData.Api.Application.Admin.AdminService;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -60,6 +64,32 @@ namespace SportsData.Api.Application.Admin
                 ContestId = contestId
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+            return Accepted(new { cmd.CorrelationId });
+        }
+
+        [HttpPost]
+        [Authorize]
+        [Route("matchup/{contestId}/preview/reject")]
+        public async Task<IActionResult> RejectContestPreview([FromBody] RejectMatchupPreviewCommand command)
+        {
+            var userId = HttpContext.GetCurrentUserId();
+
+            command.RejectedByUserId = userId;
+
+            var rejectionResult = await _adminService.RejectMatchupPreview(command);
+
+            if (rejectionResult != command.PreviewId)
+            {
+                return BadRequest();
+            }
+
+            var cmd = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = command.ContestId
+            };
+
+            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+
             return Accepted(new { cmd.CorrelationId });
         }
 

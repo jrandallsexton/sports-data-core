@@ -1,10 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Extensions;
+
+using static SportsData.Api.Application.Admin.AdminService;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -17,6 +20,8 @@ namespace SportsData.Api.Application.Admin
         Task<string> GetMatchupPreview(Guid contestId);
 
         Task<Guid> UpsertMatchupPreview(string jsonContent);
+
+        Task<Guid> RejectMatchupPreview(RejectMatchupPreviewCommand command);
     }
 
     public class AdminService : IAdminService
@@ -250,6 +255,52 @@ namespace SportsData.Api.Application.Admin
             await _dataContext.SaveChangesAsync();
 
             return preview.ContestId;
+        }
+
+        public async Task<Guid> RejectMatchupPreview(RejectMatchupPreviewCommand command)
+        {
+            var user = await _dataContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == command.RejectedByUserId);
+
+            if (user is null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+
+            //if (!user.)
+            //{
+            //    throw new UnauthorizedAccessException("User is not an admin");
+            //}
+
+            var preview = await _dataContext.MatchupPreviews
+                .FirstOrDefaultAsync(x => x.Id == command.PreviewId &&
+                                          x.ContestId == command.ContestId);
+
+            if (preview is null)
+                throw new InvalidOperationException("Preview not found.");
+
+            preview.RejectedUtc = DateTime.UtcNow;
+            preview.RejectionNote = command.RejectionNote;
+            preview.ModifiedBy = command.RejectedByUserId;
+
+            await _dataContext.SaveChangesAsync();
+
+            return preview.Id;
+        }
+
+        public class RejectMatchupPreviewCommand
+        {
+            [JsonPropertyName("previewId")]
+            public Guid PreviewId { get; set; }
+
+            [JsonPropertyName("contestId")]
+            public Guid ContestId { get; set; }
+
+            [JsonPropertyName("rejectionNote")]
+            public required string RejectionNote { get; set; }
+
+            public Guid RejectedByUserId { get; set; }
         }
     }
 }

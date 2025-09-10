@@ -12,6 +12,11 @@ const MatchupsApi = {
     apiClient.post(
       `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset`
     ),
+  rejectPreviewByContestId: (contestId, command) =>
+    apiClient.post(
+      `/admin/matchup/${encodeURIComponent(contestId)}/preview/reject`,
+      command
+    )
 };
 
 export default MatchupsApi;

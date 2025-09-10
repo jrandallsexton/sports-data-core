@@ -218,8 +218,13 @@ namespace SportsData.Api.Application.UI.Leagues
                 }
             }
 
+            var league = await _dbContext.PickemGroups
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.Id == leagueId, cancellationToken: cancellationToken);
+
             return new LeagueWeekMatchupsDto
             {
+                PickType = league!.PickType,
                 SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
                 WeekNumber = week,
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()

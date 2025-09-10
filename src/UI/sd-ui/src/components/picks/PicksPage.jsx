@@ -1,12 +1,3 @@
-  async function handleApprovePreview(contestId, previewId) {
-    try {
-      await apiWrapper.Matchups.approvePreviewByContestId(contestId, previewId);
-      toast.success("Preview approved.");
-    } catch (error) {
-      console.error("Error approving preview:", error);
-      toast.error("Failed to approve preview.");
-    }
-  }
 import "./PicksPage.css";
 
 import { useState, useEffect } from "react";
@@ -218,7 +209,11 @@ function PicksPage() {
 
   async function handleRejectPreview({ PreviewId, ContestId, RejectionNote }) {
     try {
-      console.log("Reject Preview Payload:", { PreviewId, ContestId, RejectionNote });
+      console.log("Reject Preview Payload:", {
+        PreviewId,
+        ContestId,
+        RejectionNote,
+      });
       await apiWrapper.Matchups.rejectPreviewByContestId(ContestId, {
         PreviewId,
         ContestId,
@@ -228,6 +223,16 @@ function PicksPage() {
     } catch (error) {
       console.error("Error rejecting preview:", error);
       toast.error("Failed to reject preview.");
+    }
+  }
+
+  async function handleApprovePreview(contestId, previewId) {
+    try {
+      await apiWrapper.Matchups.approvePreviewByContestId(contestId, previewId);
+      toast.success("Preview approved.");
+    } catch (error) {
+      console.error("Error approving preview:", error);
+      toast.error("Failed to approve preview.");
     }
   }
 

@@ -214,7 +214,11 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.OverUnderResult = canonical.OverUnderResult;
                     matchup.CompletedUtc = canonical.CompletedUtc;
 
-                    matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId);
+                    matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId &&
+                                                                   x.RejectedUtc == null);
+
+                    matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
+                                                                  x is { ApprovedUtc: not null, RejectedUtc: null });
                 }
             }
 

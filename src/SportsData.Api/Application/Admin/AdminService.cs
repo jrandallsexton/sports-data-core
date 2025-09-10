@@ -22,6 +22,8 @@ namespace SportsData.Api.Application.Admin
         Task<Guid> UpsertMatchupPreview(string jsonContent);
 
         Task<Guid> RejectMatchupPreview(RejectMatchupPreviewCommand command);
+
+        Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command);
     }
 
     public class AdminService : IAdminService
@@ -289,6 +291,36 @@ namespace SportsData.Api.Application.Admin
             return preview.Id;
         }
 
+        public async Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command)
+        {
+            var user = await _dataContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == command.ApprovedByUserId);
+
+            if (user is null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+
+            //if (!user.IsAdmin)
+            //{
+            //    throw new UnauthorizedAccessException("User is not an admin");
+            //}
+            var preview = await _dataContext.MatchupPreviews
+                .FirstOrDefaultAsync(x => x.Id == command.PreviewId &&
+                                          x.ContestId == command.ContestId);
+
+            if (preview is null)
+                throw new InvalidOperationException("Preview not found.");
+
+            preview.ApprovedUtc = DateTime.UtcNow;
+            preview.ModifiedBy = command.ApprovedByUserId;
+
+            await _dataContext.SaveChangesAsync();
+
+            return preview.Id;
+        }
+
         public class RejectMatchupPreviewCommand
         {
             [JsonPropertyName("previewId")]
@@ -301,6 +333,17 @@ namespace SportsData.Api.Application.Admin
             public required string RejectionNote { get; set; }
 
             public Guid RejectedByUserId { get; set; }
+        }
+
+        public class ApproveMatchupPreviewCommand
+        {
+            [JsonPropertyName("previewId")]
+            public Guid PreviewId { get; set; }
+
+            [JsonPropertyName("contestId")]
+            public Guid ContestId { get; set; }
+
+            public Guid ApprovedByUserId { get; set; }
         }
     }
 }

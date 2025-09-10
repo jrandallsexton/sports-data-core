@@ -1,3 +1,11 @@
+.admin-action-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+}
 .insight-dialog-overlay {
   position: fixed;
   top: 60px; /* ⬅️ Respect nav bar height */
@@ -72,6 +80,7 @@ body.modal-open {
   font-weight: bold;
   border-radius: 8px;
   cursor: pointer;
+  margin-bottom: 8px;
 }
 
 .close-button:hover {
@@ -243,6 +252,47 @@ body.modal-open {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.admin-reset-button {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-top: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(211,47,47,0.08);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.admin-reset-button:hover {
+  background: #b71c1c;
+  color: #fff;
+}
+
+.admin-approve-button {
+  background: #388e3c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-left: 12px;
+  margin-top: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(56,142,60,0.08);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.admin-approve-button:hover {
+  background: #1b5e20;
+  color: #fff;
 }
 
 /* Mobile */

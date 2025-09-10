@@ -1,3 +1,12 @@
+  async function handleApprovePreview(contestId, previewId) {
+    try {
+      await apiWrapper.Matchups.approvePreviewByContestId(contestId, previewId);
+      toast.success("Preview approved.");
+    } catch (error) {
+      console.error("Error approving preview:", error);
+      toast.error("Failed to approve preview.");
+    }
+  }
 import "./PicksPage.css";
 
 import { useState, useEffect } from "react";
@@ -319,6 +328,7 @@ function PicksPage() {
             prediction={selectedMatchup?.prediction ?? ""}
             loading={loadingInsight}
             onRejectPreview={handleRejectPreview}
+            onApprovePreview={handleApprovePreview}
           />
         )}
       </div>

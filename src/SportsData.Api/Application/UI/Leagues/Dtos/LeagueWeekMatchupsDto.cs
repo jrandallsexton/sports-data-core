@@ -49,6 +49,7 @@
             public string VenueState { get; set; } = default!;
 
             public bool IsPreviewAvailable { get; set; }
+            public bool IsPreviewReviewed { get; set; }
 
             // Result
             public bool IsComplete { get; set; }

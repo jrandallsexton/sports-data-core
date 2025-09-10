@@ -177,7 +177,7 @@ function MatchupCard({
         </button>
 
         <button
-          className="insight-button"
+          className={`insight-button${matchup.isPreviewReviewed ? " insight-reviewed" : ""}`}
           onClick={() => onViewInsight(matchup)}
           disabled={
             !matchup.isPreviewAvailable || !isInsightUnlocked
@@ -186,8 +186,8 @@ function MatchupCard({
             !matchup.isPreviewAvailable
               ? "Preview not available"
               : isInsightUnlocked
-              ? "View Insight"
-              : "Unlock Insights with Subscription"
+                ? (matchup.isPreviewReviewed ? "View Validated Insight" : "View Insight")
+                : "Unlock Insights with Subscription"
           }
         >
           {isInsightUnlocked ? <FaChartLine /> : <FaLock />}

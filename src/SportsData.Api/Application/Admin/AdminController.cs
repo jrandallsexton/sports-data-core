@@ -68,6 +68,29 @@ namespace SportsData.Api.Application.Admin
         }
 
         [HttpPost]
+        [Route("matchup/{contestId}/preview/{previewId}/approve")]
+        public async Task<IActionResult> ApproveContestPreview([FromRoute] Guid contestId, [FromRoute] Guid previewId)
+        {
+            var userId = HttpContext.GetCurrentUserId();
+
+            var cmd = new ApproveMatchupPreviewCommand
+            {
+                PreviewId = previewId,
+                ContestId = contestId,
+                ApprovedByUserId = userId
+            };
+
+            var approvalResult = await _adminService.ApproveMatchupPreview(cmd);
+
+            if (approvalResult != previewId)
+            {
+                return BadRequest();
+            }
+
+            return Ok(approvalResult);
+        }
+
+        [HttpPost]
         [Authorize]
         [Route("matchup/{contestId}/preview/reject")]
         public async Task<IActionResult> RejectContestPreview([FromBody] RejectMatchupPreviewCommand command)

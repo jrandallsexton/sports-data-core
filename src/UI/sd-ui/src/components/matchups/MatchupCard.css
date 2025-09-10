@@ -1,3 +1,12 @@
+.insight-button.insight-reviewed {
+  background-color: #2a2d33;
+  color: #ffc107;
+  border: 2px solid #ffc107;
+  box-shadow: 0 0 6px 1px rgba(255, 193, 7, 0.15);
+}
+.insight-button.insight-reviewed svg {
+  color: #ffc107;
+}
 .matchup-card {
   background-color: #1c1e22;
   color: #f8f9fa;

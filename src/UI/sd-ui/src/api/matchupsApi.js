@@ -16,6 +16,10 @@ const MatchupsApi = {
     apiClient.post(
       `/admin/matchup/${encodeURIComponent(contestId)}/preview/reject`,
       command
+    ),
+  approvePreviewByContestId: (contestId, previewId) =>
+    apiClient.post(
+      `/admin/matchup/${encodeURIComponent(contestId)}/preview/${encodeURIComponent(previewId)}/approve`
     )
 };
 

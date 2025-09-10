@@ -8,6 +8,7 @@ function InsightDialog({
   matchup,
   loading,
   onRejectPreview,
+  onApprovePreview,
 }) {
 
   const { userDto } = useUserDto();
@@ -122,17 +123,26 @@ function InsightDialog({
               rows={3}
               style={{ width: '100%', maxWidth: '500px', marginBottom: '0.5rem', boxSizing: 'border-box' }}
             />
-            <button
-              onClick={() => onRejectPreview?.({
-                PreviewId: matchup.id,
-                ContestId: matchup.contestId,
-                RejectionNote: rejectionNote.trim()
-              })}
-              className="admin-reset-button"
-              disabled={!rejectionNote.trim()}
-            >
-              Reject Preview
-            </button>
+            <div className="admin-action-row">
+              <button
+                onClick={() => onApprovePreview?.(matchup.contestId, matchup.id)}
+                className="admin-approve-button"
+              >
+                Approve Preview
+              </button>
+              <div style={{ flex: 1 }} />
+              <button
+                onClick={() => onRejectPreview?.({
+                  PreviewId: matchup.id,
+                  ContestId: matchup.contestId,
+                  RejectionNote: rejectionNote.trim()
+                })}
+                className="admin-reset-button"
+                disabled={!rejectionNote.trim()}
+              >
+                Reject Preview
+              </button>
+            </div>
           </div>
         )}
 

@@ -176,7 +176,7 @@ function MatchupCard({
           {!pickResult && !isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.awayShort}
           {matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId && (
-            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, color: '#61dafb', verticalAlign: 'middle' }} />
+            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
           )}
         </button>
 
@@ -213,7 +213,7 @@ function MatchupCard({
           {!pickResult && !isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.homeShort}
           {matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId && (
-            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, color: '#61dafb', verticalAlign: 'middle' }} />
+            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
           )}
         </button>
       </div>

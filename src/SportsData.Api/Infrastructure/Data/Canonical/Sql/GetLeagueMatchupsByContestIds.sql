@@ -8,7 +8,7 @@
   v."State" as "VenueState",
   
   fAway."DisplayName" as "Away",
-  fAway."DisplayNameShort" as "AwayShort",
+  fAway."Abbreviation" as "AwayShort",
   fsAway."Id" as "AwayFranchiseSeasonId",
   flAway."Uri" as "AwayLogoUri",
   fAway."Slug" as "AwaySlug",
@@ -20,7 +20,7 @@
   fsAway."ConferenceLosses" as "AwayConferenceLosses",
   
   fHome."DisplayName" as "Home",
-  fHome."DisplayNameShort" as "HomeShort",
+  fHome."Abbreviation" as "HomeShort",
   fsHome."Id" as "HomeFranchiseSeasonId",
   flHome."Uri" as "HomeLogoUri",  
   fHome."Slug" as "HomeSlug",

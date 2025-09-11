@@ -11,37 +11,24 @@ import {
   LabelList,
 } from "recharts";
 
-function AiAccuracyWidget({ selectedGroup, onGroupChange, groups, aiAccuracyData }) {
-  // Find the maximum value across all datasets
-  const maxValue = Math.max(
-    ...Object.values(aiAccuracyData).flatMap(group => 
-      group.map(d => d.aiAccuracy)
-    )
-  );
-
-  // Calculate mean values for the selected group
-  const selectedGroupData = aiAccuracyData[selectedGroup];
-  const aiMean = selectedGroupData.reduce((sum, item) => sum + item.aiAccuracy, 0) / selectedGroupData.length;
+function AiAccuracyWidget({ syntheticDto }) {
+  const weekly = syntheticDto?.weeklyAccuracy || [];
+  const maxValue = weekly.length > 0 ? Math.max(...weekly.map(d => d.accuracyPercent)) : 100;
+  const aiMean = weekly.length > 0 ? weekly.reduce((sum, item) => sum + item.accuracyPercent, 0) / weekly.length : 0;
 
   return (
     <div className="chart-block">
-  <h2>AI Accuracy by Week</h2>
-      <em>(simulated until after Week 1)</em>
-      <div className="group-selector">
-        <select 
-          value={selectedGroup} 
-          onChange={(e) => onGroupChange(e.target.value)}
-          className="group-dropdown"
-        >
-          {Object.entries(groups).map(([key, group]) => (
-            <option key={key} value={key}>{group.name}</option>
-          ))}
-        </select>
-      </div>
-      <div className="chart-container">
+      <h2>AI Accuracy by Week</h2>
+  <div className="group-selector" style={{ minHeight: 40 }}></div>
+  <div className="chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={selectedGroupData}
+            data={weekly.map(w => ({
+              week: w.week,
+              aiAccuracy: w.accuracyPercent,
+              correctPicks: w.correctPicks,
+              totalPicks: w.totalPicks
+            }))}
             margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
           >
             <defs>

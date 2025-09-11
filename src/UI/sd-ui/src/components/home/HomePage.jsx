@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PickAccuracyWidget from "../widgets/PickAccuracyWidget";
 import AiAccuracyWidget from "../widgets/AiAccuracyWidget";
 import FeaturedArticleCard from "./FeaturedArticleCard";
@@ -11,84 +11,44 @@ import PickRecordWidget from "../widgets/PickRecordWidget";
 import AiRecordWidget from "../widgets/AiRecordWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
+import apiWrapper from "../../api/apiWrapper.js";
 import SystemNews from "./SystemNews";
 import RankingsWidget from "../widgets/RankingsWidget";
 
 function HomePage() {
-  const [selectedGroup, setSelectedGroup] = useState("all");
-  const [selectedAIGroup, setSelectedAIGroup] = useState("all");
+  const [pickGroups, setPickGroups] = useState([]); // Array of league DTOs
+  const [syntheticDto, setSyntheticDto] = useState(null);
   const { userDto, loading: userLoading } = useUserDto();
+  const [loadingPickAccuracy, setLoadingPickAccuracy] = useState(true);
 
-  // Sample data structure for multiple groups
-  const pickGroups = {
-    all: {
-      name: "All Groups",
-      data: [
-        { week: "1", accuracy: 45, correctPicks: 9, totalPicks: 20 },
-        { week: "2", accuracy: 65, correctPicks: 13, totalPicks: 20 },
-        { week: "3", accuracy: 52, correctPicks: 10, totalPicks: 19 },
-        { week: "4", accuracy: 78, correctPicks: 16, totalPicks: 20 },
-        { week: "5", accuracy: 60, correctPicks: 12, totalPicks: 20 },
-        { week: "6", accuracy: 85, correctPicks: 17, totalPicks: 20 },
-        { week: "7", accuracy: 72, correctPicks: 14, totalPicks: 19 },
-      ],
-    },
-    group1: {
-      name: "Fantasy Football League",
-      data: [
-        { week: "1", accuracy: 50, correctPicks: 8, totalPicks: 16 },
-        { week: "2", accuracy: 62, correctPicks: 10, totalPicks: 16 },
-        { week: "3", accuracy: 56, correctPicks: 9, totalPicks: 16 },
-        { week: "4", accuracy: 75, correctPicks: 12, totalPicks: 16 },
-        { week: "5", accuracy: 68, correctPicks: 11, totalPicks: 16 },
-        { week: "6", accuracy: 81, correctPicks: 13, totalPicks: 16 },
-        { week: "7", accuracy: 75, correctPicks: 12, totalPicks: 16 },
-      ],
-    },
-    group2: {
-      name: "Office Pool",
-      data: [
-        { week: "1", accuracy: 40, correctPicks: 6, totalPicks: 15 },
-        { week: "2", accuracy: 66, correctPicks: 10, totalPicks: 15 },
-        { week: "3", accuracy: 46, correctPicks: 7, totalPicks: 15 },
-        { week: "4", accuracy: 80, correctPicks: 12, totalPicks: 15 },
-        { week: "5", accuracy: 53, correctPicks: 8, totalPicks: 15 },
-        { week: "6", accuracy: 86, correctPicks: 13, totalPicks: 15 },
-        { week: "7", accuracy: 66, correctPicks: 10, totalPicks: 15 },
-      ],
-    },
-  };
+  useEffect(() => {
+    async function fetchPickAccuracy() {
+      setLoadingPickAccuracy(true);
+      try {
+        const response = await apiWrapper.Picks.getAccuracyChartForUser();
+        setPickGroups(response.data || []);
+  // No need to set selectedGroup; selection is now handled in PickAccuracyWidget
+      } catch (e) {
+        setPickGroups([]);
+      } finally {
+        setLoadingPickAccuracy(false);
+      }
+    }
+    fetchPickAccuracy();
+  }, []);
 
-  // AI Accuracy Data
-  const aiAccuracyData = {
-    all: [
-      { week: "1", aiAccuracy: 55, correctPicks: 11, totalPicks: 20 },
-      { week: "2", aiAccuracy: 70, correctPicks: 14, totalPicks: 20 },
-      { week: "3", aiAccuracy: 65, correctPicks: 13, totalPicks: 20 },
-      { week: "4", aiAccuracy: 82, correctPicks: 16, totalPicks: 19 },
-      { week: "5", aiAccuracy: 75, correctPicks: 15, totalPicks: 20 },
-      { week: "6", aiAccuracy: 88, correctPicks: 18, totalPicks: 20 },
-      { week: "7", aiAccuracy: 80, correctPicks: 16, totalPicks: 20 },
-    ],
-    group1: [
-      { week: "1", aiAccuracy: 56, correctPicks: 9, totalPicks: 16 },
-      { week: "2", aiAccuracy: 68, correctPicks: 11, totalPicks: 16 },
-      { week: "3", aiAccuracy: 62, correctPicks: 10, totalPicks: 16 },
-      { week: "4", aiAccuracy: 81, correctPicks: 13, totalPicks: 16 },
-      { week: "5", aiAccuracy: 75, correctPicks: 12, totalPicks: 16 },
-      { week: "6", aiAccuracy: 87, correctPicks: 14, totalPicks: 16 },
-      { week: "7", aiAccuracy: 81, correctPicks: 13, totalPicks: 16 },
-    ],
-    group2: [
-      { week: "1", aiAccuracy: 53, correctPicks: 8, totalPicks: 15 },
-      { week: "2", aiAccuracy: 73, correctPicks: 11, totalPicks: 15 },
-      { week: "3", aiAccuracy: 66, correctPicks: 10, totalPicks: 15 },
-      { week: "4", aiAccuracy: 80, correctPicks: 12, totalPicks: 15 },
-      { week: "5", aiAccuracy: 73, correctPicks: 11, totalPicks: 15 },
-      { week: "6", aiAccuracy: 86, correctPicks: 13, totalPicks: 15 },
-      { week: "7", aiAccuracy: 80, correctPicks: 12, totalPicks: 15 },
-    ],
-  };
+
+  useEffect(() => {
+    async function fetchSyntheticAccuracy() {
+      try {
+        const response = await apiWrapper.Picks.getAccuracyChartForSynthetic();
+        setSyntheticDto(response.data || null);
+      } catch (e) {
+        setSyntheticDto(null);
+      }
+    }
+    fetchSyntheticAccuracy();
+  }, []);
 
   if (userLoading) {
     return <div>Loading your dashboard...</div>;
@@ -140,21 +100,14 @@ function HomePage() {
       </section>
 
       <section className="chart-section">
+
         <div className="card">
-          <PickAccuracyWidget
-            selectedGroup={selectedGroup}
-            onGroupChange={setSelectedGroup}
-            groups={pickGroups}
-          />
+          <PickAccuracyWidget leagues={pickGroups} />
+          {loadingPickAccuracy && <div style={{color:'#ffc107',textAlign:'center'}}>Loading pick accuracy...</div>}
         </div>
 
         <div className="card">
-          <AiAccuracyWidget
-            selectedGroup={selectedAIGroup}
-            onGroupChange={setSelectedAIGroup}
-            groups={pickGroups}
-            aiAccuracyData={aiAccuracyData}
-          />
+          <AiAccuracyWidget syntheticDto={syntheticDto} />
         </div>
       </section>
 

@@ -80,4 +80,28 @@ public class PicksController : ApiControllerBase
 
         return Ok(widget);
     }
+
+    [HttpGet("chart")]
+    [Authorize]
+    public async Task<ActionResult<List<PickAccuracyByWeekDto>>> GetPickAccuracyChart(
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var widget = await _userPickService.GetPickAccuracyByWeek(userId, cancellationToken);
+
+        return Ok(widget);
+    }
+
+    [HttpGet("chart/synthetic")]
+    [Authorize]
+    public async Task<ActionResult<List<PickAccuracyByWeekDto>>> GetPickAccuracyChartForSynthetic(
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var widget = await _userPickService.GetPickAccuracyByWeekForSynthetic(userId, cancellationToken);
+
+        return Ok(widget);
+    }
 }

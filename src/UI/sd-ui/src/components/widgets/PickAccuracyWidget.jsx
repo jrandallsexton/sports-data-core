@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -11,37 +12,50 @@ import {
   LabelList,
 } from "recharts";
 
-function PickAccuracyWidget({ data, selectedGroup, onGroupChange, groups }) {
-  // Find the maximum value across all datasets
-  const maxValue = Math.max(
-    ...Object.values(groups).flatMap(group => 
-      group.data.map(d => d.accuracy)
-    )
-  );
+function PickAccuracyWidget({ leagues }) {
+  const [selectedLeagueId, setSelectedLeagueId] = useState(leagues && leagues.length > 0 ? leagues[0].leagueId : "");
 
-  // Calculate mean values for the selected group
-  const selectedGroupData = groups[selectedGroup].data;
-  const pickMean = selectedGroupData.reduce((sum, item) => sum + item.accuracy, 0) / selectedGroupData.length;
+  useEffect(() => {
+    if (leagues && leagues.length > 0) {
+      setSelectedLeagueId(leagues[0].leagueId);
+    }
+  }, [leagues]);
+
+  const selectedLeague = leagues && leagues.find(l => l.leagueId === selectedLeagueId);
+  const selectedData = selectedLeague ? selectedLeague.weeklyAccuracy.map(w => ({
+    week: w.week,
+    accuracy: w.accuracyPercent,
+    correctPicks: w.correctPicks,
+    totalPicks: w.totalPicks
+  })) : [];
+
+  // Find the maximum value across all datasets
+  const allAccuracies = leagues ? leagues.flatMap(l => l.weeklyAccuracy.map(w => w.accuracyPercent)) : [];
+  const maxValue = allAccuracies.length > 0 ? Math.max(...allAccuracies) : 100;
+
+  const pickMean = selectedData.length > 0
+    ? selectedData.reduce((sum, item) => sum + item.accuracy, 0) / selectedData.length
+    : 0;
 
   return (
     <div className="chart-block">
-  <h2>Pick Accuracy by Week</h2>
-      <em>(simulated until after Week 1)</em>
+      <h2>Pick Accuracy by Week</h2>
       <div className="group-selector">
-        <select 
-          value={selectedGroup} 
-          onChange={(e) => onGroupChange(e.target.value)}
+        <select
+          value={selectedLeagueId}
+          onChange={e => setSelectedLeagueId(e.target.value)}
           className="group-dropdown"
+          disabled={!leagues || leagues.length === 0}
         >
-          {Object.entries(groups).map(([key, group]) => (
-            <option key={key} value={key}>{group.name}</option>
+          {leagues && leagues.map(league => (
+            <option key={league.leagueId} value={league.leagueId}>{league.leagueName}</option>
           ))}
         </select>
       </div>
       <div className="chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={selectedGroupData}
+            data={selectedData}
             margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
           >
             <defs>

@@ -1,3 +1,30 @@
+/* Fine-tune vertical alignment for lucide-react Bot icon */
+.ai-pick-indicator {
+  position: relative;
+  top: -2px;
+  margin-left: 6px;
+  color: #61dafb;
+  font-size: 1.1em;
+  vertical-align: middle;
+  transition: color 0.2s;
+}
+/* AI Pick Indicator */
+.ai-pick-indicator {
+  margin-left: 6px;
+  color: #61dafb;
+  font-size: 1.1em;
+  vertical-align: middle;
+  transition: color 0.2s;
+}
+.pick-button.selected {
+  color: #111 !important;
+  filter: drop-shadow(0 0 2px #fff);
+}
+
+.ai-pick-indicator-selected {
+  color: #111 !important;
+}
+
 .insight-button.insight-reviewed {
   background-color: #2a2d33;
   color: #ffc107;

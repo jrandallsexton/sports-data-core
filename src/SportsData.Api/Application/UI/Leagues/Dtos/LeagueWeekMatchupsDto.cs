@@ -48,6 +48,7 @@
             public string VenueCity { get; set; } = default!;
             public string VenueState { get; set; } = default!;
 
+            public Guid? AiWinnerFranchiseSeasonId { get; set; }
             public bool IsPreviewAvailable { get; set; }
             public bool IsPreviewReviewed { get; set; }
 

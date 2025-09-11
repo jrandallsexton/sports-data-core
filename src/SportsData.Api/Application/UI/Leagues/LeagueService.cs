@@ -144,6 +144,11 @@ namespace SportsData.Api.Application.UI.Leagues
             int week,
             CancellationToken cancellationToken = default)
         {
+            var league = await _dbContext.PickemGroups
+                .AsNoTracking()
+                .Where(x => x.Id == leagueId)
+                .FirstAsync(cancellationToken: cancellationToken);
+
             var matchups = await _dbContext.PickemGroupMatchups
                 .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
                 .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
@@ -214,6 +219,20 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.OverUnderResult = canonical.OverUnderResult;
                     matchup.CompletedUtc = canonical.CompletedUtc;
 
+                    var preview = previews.FirstOrDefault(x => x.ContestId == matchup.ContestId &&
+                                                               x.RejectedUtc == null);
+                    if (preview != null)
+                    {
+                        if (league.PickType == PickType.StraightUp)
+                        {
+                            matchup.AiWinnerFranchiseSeasonId = preview.PredictedStraightUpWinner;
+                        }
+                        else
+                        {
+                            matchup.AiWinnerFranchiseSeasonId = preview.PredictedSpreadWinner ?? preview.PredictedStraightUpWinner;
+                        }
+                    }
+
                     matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId &&
                                                                    x.RejectedUtc == null);
 
@@ -221,10 +240,6 @@ namespace SportsData.Api.Application.UI.Leagues
                                                                   x is { ApprovedUtc: not null, RejectedUtc: null });
                 }
             }
-
-            var league = await _dbContext.PickemGroups
-                .AsNoTracking()
-                .FirstOrDefaultAsync(g => g.Id == leagueId, cancellationToken: cancellationToken);
 
             return new LeagueWeekMatchupsDto
             {

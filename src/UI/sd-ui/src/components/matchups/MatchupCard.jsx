@@ -1,5 +1,5 @@
 import "./MatchupCard.css";
-import { FaChartLine, FaLock, FaCheckCircle, FaTimes } from "react-icons/fa";
+import { FaChartLine, FaLock, FaCheckCircle, FaTimes, FaRobot } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
 import { useState, useEffect } from "react";
@@ -174,6 +174,9 @@ function MatchupCard({
           {pickResult && isAwaySelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
           {!pickResult && !isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.awayShort}
+          {matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId && (
+            <FaRobot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, color: '#61dafb', verticalAlign: 'middle' }} />
+          )}
         </button>
 
         <button
@@ -208,6 +211,9 @@ function MatchupCard({
           {pickResult && isHomeSelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
           {!pickResult && !isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
           {matchup.homeShort}
+          {matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId && (
+            <FaRobot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, color: '#61dafb', verticalAlign: 'middle' }} />
+          )}
         </button>
       </div>
     </div>

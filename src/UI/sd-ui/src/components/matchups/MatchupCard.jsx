@@ -73,149 +73,158 @@ function MatchupCard({
   };
 
   return (
-    <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${getCardBorderClass()}`}>
-      {/* Away Team Row */}
-      <div className="team-row">
-        <div className="team-info">
-          {matchup.awayLogoUri && (
-            <img
-              src={matchup.awayLogoUri}
-              alt={`${matchup.away} logo`}
-              className="matchup-logo"
-            />
-          )}
-          <div className="team-details">
-            <div className="team-name-row">
-              {matchup.awayRank && (
-                <span className="team-ranking">#{matchup.awayRank}</span>
-              )}
-              <Link
-                to={`/app/sport/football/ncaa/team/${matchup.awaySlug}/${seasonYear}`}
-                className="team-link"
-              >
-                {matchup.away}
-              </Link>
+    <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${getCardBorderClass()}`}
+         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="matchup-card-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Away Team Row */}
+        <div className="team-row">
+          <div className="team-info">
+            {matchup.awayLogoUri && (
+              <img
+                src={matchup.awayLogoUri}
+                alt={`${matchup.away} logo`}
+                className="matchup-logo"
+              />
+            )}
+            <div className="team-details">
+              <div className="team-name-row">
+                {matchup.awayRank && (
+                  <span className="team-ranking">#{matchup.awayRank}</span>
+                )}
+                <Link
+                  to={`/app/sport/football/ncaa/team/${matchup.awaySlug}/${seasonYear}`}
+                  className="team-link"
+                >
+                  {matchup.away}
+                </Link>
+              </div>
+              <div className="team-record">
+                <span>
+                  {matchup.awayWins}-{matchup.awayLosses} ({matchup.awayConferenceWins}-{matchup.awayConferenceLosses})
+                </span>
+              </div>
             </div>
-            <div className="team-record">
-              <span>
-                {matchup.awayWins}-{matchup.awayLosses} ({matchup.awayConferenceWins}-{matchup.awayConferenceLosses})
+          </div>
+        </div>
+
+        <div className="at-divider">at</div>
+
+        {/* Home Team Row */}
+        <div className="team-row">
+          <div className="team-info">
+            {matchup.homeLogoUri && (
+              <img
+                src={matchup.homeLogoUri}
+                alt={`${matchup.home} logo`}
+                className="matchup-logo"
+              />
+            )}
+            <div className="team-details">
+              <div className="team-name-row">
+                {matchup.homeRank && (
+                  <span className="team-ranking">#{matchup.homeRank}</span>
+                )}
+                <Link
+                  to={`/app/sport/football/ncaa/team/${matchup.homeSlug}/${seasonYear}`}
+                  className="team-link"
+                >
+                  {matchup.home}
+                </Link>
+              </div>
+              <div className="team-record">
+                <span>
+                  {matchup.homeWins}-{matchup.homeLosses} ({matchup.homeConferenceWins}-{matchup.homeConferenceLosses})
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="team-spread">
+            {homeSpread === 0 ? 'Off' : (homeSpread > 0 ? `+${homeSpread}` : homeSpread)}
+          </div>
+        </div>
+
+        {/* Game Result - show final score if game is complete */}
+        {matchup.isComplete ? (
+          <div className="game-result">
+            <div className="final-score">
+              <span className="result-label">FINAL:</span>
+              <span className="score-display">
+                {matchup.awayShort} {matchup.awayScore} - {matchup.homeScore} {matchup.homeShort}
               </span>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="game-time-location">
+            {gameTime} | {venue} | {location}
+          </div>
+        )}
+
+        <div className="spread-ou">O/U: {overUnder}</div>
       </div>
 
-      <div className="at-divider">at</div>
-
-      {/* Home Team Row */}
-      <div className="team-row">
-        <div className="team-info">
-          {matchup.homeLogoUri && (
-            <img
-              src={matchup.homeLogoUri}
-              alt={`${matchup.home} logo`}
-              className="matchup-logo"
-            />
-          )}
-          <div className="team-details">
-            <div className="team-name-row">
-              {matchup.homeRank && (
-                <span className="team-ranking">#{matchup.homeRank}</span>
-              )}
-              <Link
-                to={`/app/sport/football/ncaa/team/${matchup.homeSlug}/${seasonYear}`}
-                className="team-link"
-              >
-                {matchup.home}
-              </Link>
-            </div>
-            <div className="team-record">
-              <span>
-                {matchup.homeWins}-{matchup.homeLosses} ({matchup.homeConferenceWins}-{matchup.homeConferenceLosses})
+      <div className="pick-buttons-row" style={{ marginTop: 'auto' }}>
+        <div className="pick-buttons">
+          <button
+            className={`pick-button ${isAwaySelected ? "selected" : ""} ${
+              pickResult && isAwaySelected ? `result-${pickResult}` : ""
+            }`}
+            onClick={() => {
+              setLocalPickFranchiseId(matchup.awayFranchiseSeasonId);
+              onPick(matchup, matchup.awayFranchiseSeasonId);
+            }}
+            disabled={isLocked}
+          >
+            {/* Always show checkmark if selected, unless game is complete and incorrect */}
+            {isAwaySelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}
+            {pickResult && isAwaySelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
+            {!pickResult && !isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
+            {matchup.awayShort}
+            {matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId && (
+              <span title="AI Selection" aria-label="AI Selection">
+                <Bot className="ai-pick-indicator" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
               </span>
-            </div>
-          </div>
+            )}
+          </button>
+
+          <button
+            className={`insight-button${matchup.isPreviewReviewed ? " insight-reviewed" : ""}`}
+            onClick={() => onViewInsight(matchup)}
+            disabled={
+              !matchup.isPreviewAvailable || !isInsightUnlocked
+            }
+            title={
+              !matchup.isPreviewAvailable
+                ? "Preview not available"
+                : isInsightUnlocked
+                  ? (matchup.isPreviewReviewed ? "View Validated Insight" : "View Insight")
+                  : "Unlock Insights with Subscription"
+            }
+          >
+            {isInsightUnlocked ? <FaChartLine /> : <FaLock />}
+          </button>
+
+          <button
+            className={`pick-button ${isHomeSelected ? "selected" : ""} ${
+              pickResult && isHomeSelected ? `result-${pickResult}` : ""
+            }`}
+            onClick={() => {
+              setLocalPickFranchiseId(matchup.homeFranchiseSeasonId);
+              onPick(matchup, matchup.homeFranchiseSeasonId);
+            }}
+            disabled={isLocked}
+          >
+            {/* Always show checkmark if selected, unless game is complete and incorrect */}
+            {isHomeSelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}
+            {pickResult && isHomeSelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
+            {!pickResult && !isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
+            {matchup.homeShort}
+            {matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId && (
+              <span title="AI Selection" aria-label="AI Selection">
+                <Bot className="ai-pick-indicator" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
+              </span>
+            )}
+          </button>
         </div>
-        <div className="team-spread">
-          {homeSpread === 0 ? 'Off' : (homeSpread > 0 ? `+${homeSpread}` : homeSpread)}
-        </div>
-      </div>
-
-      {/* Game Result - show final score if game is complete */}
-      {matchup.isComplete ? (
-        <div className="game-result">
-          <div className="final-score">
-            <span className="result-label">FINAL:</span>
-            <span className="score-display">
-              {matchup.awayShort} {matchup.awayScore} - {matchup.homeScore} {matchup.homeShort}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="game-time-location">
-          {gameTime} | {venue} | {location}
-        </div>
-      )}
-
-      <div className="spread-ou">O/U: {overUnder}</div>
-
-      <div className="pick-buttons">
-        <button
-          className={`pick-button ${isAwaySelected ? "selected" : ""} ${
-            pickResult && isAwaySelected ? `result-${pickResult}` : ""
-          }`}
-          onClick={() => {
-            setLocalPickFranchiseId(matchup.awayFranchiseSeasonId);
-            onPick(matchup, matchup.awayFranchiseSeasonId);
-          }}
-          disabled={isLocked}
-        >
-          {/* Always show checkmark if selected, unless game is complete and incorrect */}
-          {isAwaySelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}
-          {pickResult && isAwaySelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
-          {!pickResult && !isAwaySelected && isLocked && <FaLock className="pick-lock-icon" />}
-          {matchup.awayShort}
-          {matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId && (
-            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
-          )}
-        </button>
-
-        <button
-          className={`insight-button${matchup.isPreviewReviewed ? " insight-reviewed" : ""}`}
-          onClick={() => onViewInsight(matchup)}
-          disabled={
-            !matchup.isPreviewAvailable || !isInsightUnlocked
-          }
-          title={
-            !matchup.isPreviewAvailable
-              ? "Preview not available"
-              : isInsightUnlocked
-                ? (matchup.isPreviewReviewed ? "View Validated Insight" : "View Insight")
-                : "Unlock Insights with Subscription"
-          }
-        >
-          {isInsightUnlocked ? <FaChartLine /> : <FaLock />}
-        </button>
-
-        <button
-          className={`pick-button ${isHomeSelected ? "selected" : ""} ${
-            pickResult && isHomeSelected ? `result-${pickResult}` : ""
-          }`}
-          onClick={() => {
-            setLocalPickFranchiseId(matchup.homeFranchiseSeasonId);
-            onPick(matchup, matchup.homeFranchiseSeasonId);
-          }}
-          disabled={isLocked}
-        >
-          {/* Always show checkmark if selected, unless game is complete and incorrect */}
-          {isHomeSelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}
-          {pickResult && isHomeSelected && pickResult === 'incorrect' && <FaTimes className="pick-result-icon" />}
-          {!pickResult && !isHomeSelected && isLocked && <FaLock className="pick-lock-icon" />}
-          {matchup.homeShort}
-          {matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId && (
-            <Bot className="ai-pick-indicator" title="AI Pick" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
-          )}
-        </button>
       </div>
     </div>
   );

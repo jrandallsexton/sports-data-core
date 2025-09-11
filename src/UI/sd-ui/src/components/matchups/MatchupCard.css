@@ -11,6 +11,7 @@
   align-items: center;
   vertical-align: middle;
   transition: color 0.2s;
+  /* margin-bottom removed, spacing handled by flex gap */
 }
 .pick-button.selected {
   color: #111 !important;
@@ -44,6 +45,21 @@
   word-wrap: break-word; /* Allow long words to break */
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.matchup-card-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pick-buttons-row {
+  margin-top: auto;
 }
 
 .team-row {
@@ -122,9 +138,15 @@
 
 .game-time-location {
   text-align: center;
-  margin: 1rem 0;
+  /* margin-top: 1rem; */
+  /* margin-bottom: 0; */
   color: #adb5bd;
   font-size: 0.9rem;
+  min-height: 1.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
 }
 
 /* Game Result Section */
@@ -191,7 +213,8 @@
 
 .spread-ou {
   text-align: center;
-  margin: 1rem 0;
+  /* margin-top: 1rem; */
+  /* margin-bottom: 0; */
   font-weight: bold;
   color: #61dafb;
 }
@@ -201,7 +224,8 @@
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 1rem;
+  /* margin-top: 1rem; */
+  /* margin-bottom: 0; */
 }
 
 .pick-button {

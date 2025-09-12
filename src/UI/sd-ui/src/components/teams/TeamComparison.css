@@ -1,0 +1,129 @@
+ .team-comparison-dialog-backdrop {
+   position: fixed;
+   top: 0; left: 0; right: 0; bottom: 0;
+   background: rgba(0,0,0,0.45);
+   z-index: 1000;
+   display: flex;
+   align-items: flex-start;
+   justify-content: center;
+   overflow: hidden;
+}
+
+ .team-comparison-dialog {
+   background: #23272f;
+   border-radius: 14px;
+   box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+   padding: 2rem 2.5rem 1.5rem 2.5rem;
+   min-width: 340px;
+   max-width: 90vw;
+   max-height: 90vh;
+   min-height: 200px;
+   color: #f8f9fa;
+   position: relative;
+   display: flex;
+   flex-direction: column;
+   gap: 1.5rem;
+   overflow-y: auto;
+   margin-top: 3vh;
+}
+
+@media (max-width: 600px) {
+  .team-comparison-dialog {
+    max-width: 98vw;
+    min-width: 0;
+    padding: 1rem 0.5rem 1rem 0.5rem;
+    margin-top: 2vw;
+  }
+}
+
+.team-comparison-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.team-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #61dafb;
+  text-align: center;
+}
+
+.vs-col {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #adb5bd;
+}
+
+ .team-comparison-tabs {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 0.5rem;
+   margin-bottom: 1.2rem;
+   justify-content: center;
+ }
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 1rem;
+}
+
+.stat-category {
+  flex: 0 0 120px;
+  text-align: center;
+  color: #adb5bd;
+  font-weight: 500;
+}
+
+.stat-value {
+  flex: 1 1 0;
+  text-align: center;
+  font-weight: 600;
+  background: #2a2d33;
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+}
+
+.stat-value.favored {
+  background: #61dafb;
+  color: #23272f;
+}
+
+.close-btn {
+  margin: 0 auto;
+  margin-top: 1.5rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  background: #61dafb;
+  color: #23272f;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.close-btn:hover {
+  background: #4b6cb7;
+  color: #fff;
+}

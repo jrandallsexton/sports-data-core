@@ -1,9 +1,11 @@
 import "./MatchupCard.css";
-import { FaChartLine, FaLock, FaCheckCircle, FaTimes } from "react-icons/fa";
+import { FaChartLine, FaLock, FaCheckCircle, FaTimes, FaClipboardList } from "react-icons/fa";
 import { Bot } from 'lucide-react'
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
 import { useState, useEffect } from "react";
+import apiWrapper from "../../api/apiWrapper";
+import TeamComparison from "../teams/TeamComparison";
 
 function MatchupCard({
   matchup,
@@ -14,6 +16,40 @@ function MatchupCard({
   isInsightUnlocked,
   isFadingOut = false
 }) {
+  // State for TeamComparison dialog
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonData, setComparisonData] = useState(null);
+  const handleOpenComparison = async () => {
+    setComparisonLoading(true);
+    setShowComparison(true);
+    try {
+      const [awayRes, homeRes] = await Promise.all([
+        apiWrapper.TeamCard.getStatistics(matchup.awaySlug, 2025, matchup.awayFranchiseSeasonId),
+        apiWrapper.TeamCard.getStatistics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId)
+      ]);
+      setComparisonData({
+        teamA: {
+          name: matchup.away,
+          logoUri: matchup.awayLogoUri,
+          stats: awayRes.data
+        },
+        teamB: {
+          name: matchup.home,
+          logoUri: matchup.homeLogoUri,
+          stats: homeRes.data
+        }
+      });
+    } catch (e) {
+      setComparisonData(null);
+    } finally {
+      setComparisonLoading(false);
+    }
+  };
+  const handleCloseComparison = () => {
+    setShowComparison(false);
+    setComparisonData(null);
+  };
   const homeSpread = matchup.homeSpread ?? 0;
   const overUnder = (matchup.overUnder === null || matchup.overUnder === 0 || matchup.overUnder === 'TBD') ? 'Off' : matchup.overUnder;
   const gameTime = formatToEasternTime(matchup.startDateUtc);
@@ -185,6 +221,16 @@ function MatchupCard({
               </span>
             )}
           </button>
+          {/* Team Comparison Button - now immediately before insight button */}
+          <button
+            className="comparison-button"
+            onClick={handleOpenComparison}
+            title="Compare Team Stats"
+            style={{ marginLeft: 6, marginRight: 6 }}
+            disabled={comparisonLoading}
+          >
+            <FaClipboardList />
+          </button>
 
           <button
             className={`insight-button${matchup.isPreviewReviewed ? " insight-reviewed" : ""}`}
@@ -199,6 +245,7 @@ function MatchupCard({
                   ? (matchup.isPreviewReviewed ? "View Validated Insight" : "View Insight")
                   : "Unlock Insights with Subscription"
             }
+            style={{ marginLeft: 6 }}
           >
             {isInsightUnlocked ? <FaChartLine /> : <FaLock />}
           </button>
@@ -226,6 +273,23 @@ function MatchupCard({
           </button>
         </div>
       </div>
+    {/* TeamComparison Dialog */}
+    {showComparison && (
+      comparisonLoading || !comparisonData || !comparisonData.teamA || !comparisonData.teamB || !comparisonData.teamA.stats || !comparisonData.teamB.stats ? (
+        <div className="team-comparison-dialog-backdrop">
+          <div className="team-comparison-dialog" style={{textAlign: 'center', padding: '2rem'}}>
+            Loading team comparison...
+          </div>
+        </div>
+      ) : (
+        <TeamComparison
+          open={showComparison}
+          onClose={handleCloseComparison}
+          teamA={comparisonData.teamA}
+          teamB={comparisonData.teamB}
+        />
+      )
+    )}
     </div>
   );
 }

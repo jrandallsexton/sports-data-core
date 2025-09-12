@@ -1,0 +1,26 @@
+.team-comparison-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+  justify-content: center;
+}
+.team-comparison-tab {
+  padding: 0.4rem 1.1rem;
+  border-radius: 6px 6px 0 0;
+  background: #23272f;
+  color: #adb5bd;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: background 0.2s, color 0.2s;
+}
+.team-comparison-tab.selected {
+  background: #61dafb;
+  color: #23272f;
+  font-weight: bold;
+}
+.team-comparison-tab:hover:not(.selected) {
+  background: #2a2d33;
+  color: #f8f9fa;
+}

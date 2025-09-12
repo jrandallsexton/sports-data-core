@@ -1,3 +1,25 @@
+.comparison-button {
+  flex: 0 0 auto;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #2a2d33;
+  color: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comparison-button:hover {
+  background-color: #3a3d43;
+}
+
+.comparison-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ai-pick-indicator-selected {
   color: #222 !important;
   fill: #222 !important;

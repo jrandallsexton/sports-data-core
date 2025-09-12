@@ -10,7 +10,10 @@ namespace SportsData.Api.Application.UI.Picks
 {
     public interface IPickService
     {
-        Task SubmitPickAsync(Guid userId, SubmitUserPickRequest request, CancellationToken cancellationToken);
+        Task SubmitPickAsync(
+            Guid userId,
+            SubmitUserPickRequest request,
+            CancellationToken cancellationToken);
 
         Task<List<UserPickDto>> GetUserPicksByGroupAndWeek(
             Guid userId,

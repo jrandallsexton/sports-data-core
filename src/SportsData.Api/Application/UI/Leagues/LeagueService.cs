@@ -153,6 +153,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
                 .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
                 {
+                    StartDateUtc = x.StartDateUtc,
                     ContestId = x.ContestId,
                     AwaySpread = (decimal?)x.AwaySpread,
                     AwayRank = x.AwayRank,
@@ -179,7 +180,7 @@ namespace SportsData.Api.Application.UI.Leagues
             {
                 if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
                 {
-                    matchup.StartDateUtc = canonical.StartDateUtc;
+                    //matchup.StartDateUtc = canonical.StartDateUtc;
 
                     // Away team
                     matchup.Away = canonical.Away;

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider;
@@ -492,6 +493,24 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             Competition competition)
         {
             var raiseEvents = false;
+
+            var updatedEntity = dto.AsEntity(
+                _externalRefIdentityGenerator,
+                competition.ContestId,
+                command.CorrelationId);
+
+            if (competition.Date != updatedEntity.Date)
+            {
+                competition.Date = updatedEntity.Date;
+
+                await _publishEndpoint.Publish(
+                    new ContestStartTimeUpdated(
+                        competition.ContestId,
+                        competition.Date,
+                        command.CorrelationId,
+                        CausationId.Producer.EventCompetitionDocumentProcessor));
+                raiseEvents = true;
+            }
 
             // update spreads, moneylines, totals, etc.
             if (dto.Odds?.Ref is not null)

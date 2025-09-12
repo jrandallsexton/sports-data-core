@@ -13,6 +13,7 @@ using Npgsql;
 using Serilog;
 
 using SportsData.Api.Application.Auth;
+using SportsData.Api.Application.Events;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.DependencyInjection;
@@ -153,11 +154,15 @@ namespace SportsData.Api
             /* End AI */
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+
             services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
-            services.AddMessaging<AppDataContext>(config, [
+
+            services.AddMessaging<AppDataContext>(config,
+            [
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                typeof(PreviewGeneratedHandler)
+                typeof(PreviewGeneratedHandler),
+                typeof(ContestStartTimeUpdatedHandler)
             ]);
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];

@@ -17,6 +17,7 @@ where ats."FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' and
 order by ap."Name", ats."LastName", ats."FirstName"
 
 select * from public."FranchiseSeasonRecord"
+select * from public."Franchise"
 select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."FranchiseSeasonLogo"
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
@@ -41,7 +42,7 @@ select
 from public."Contest" c
 where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 
-select * from public."Contest" where "Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+select * from public."Contest" where "Id" = '22ce0efb-21b6-2d1a-6067-2291699162eb'
 select * from public."Competition" where "ContestId" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'
 

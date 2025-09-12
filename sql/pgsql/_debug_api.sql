@@ -25,12 +25,13 @@ select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
 
+-- https://api-dev.sportdeets.com/ui/matchup//preview
 select *
 from public."PickemGroupMatchup"
 where
   --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
   --"SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and
-  "ContestId" = '33629e7d-ed7c-bbda-daab-86369d4910e8'
+  "ContestId" = '22ce0efb-21b6-2d1a-6067-2291699162eb'
 order by "ContestId"
 -- https://api-dev.sportdeets.com/ui/matchup/33629e7d-ed7c-bbda-daab-86369d4910e8/preview
 

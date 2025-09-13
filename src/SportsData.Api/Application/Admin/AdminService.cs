@@ -138,7 +138,7 @@ namespace SportsData.Api.Application.Admin
                             ? preview.PredictedSpreadWinner
                             : preview.PredictedStraightUpWinner,
                         PickemGroupId = group.Id,
-                        PickType = UserPickType.StraightUp,
+                        PickType = group.PickType == PickType.StraightUp ? UserPickType.StraightUp : UserPickType.AgainstTheSpread,
                         Week = WEEK,
                         TiebreakerType = TiebreakerType.TotalPoints
                     };

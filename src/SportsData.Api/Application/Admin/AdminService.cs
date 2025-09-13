@@ -47,7 +47,7 @@ namespace SportsData.Api.Application.Admin
 
         public async Task RefreshAiExistence(Guid correlationId)
         {
-            const int WEEK = 2;
+            const int WEEK = 3;
 
             // get the synthetic; there is only one now
             var synthetic = await _dataContext.Users

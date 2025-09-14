@@ -120,7 +120,8 @@ namespace SportsData.Api.Application.Admin
                     // get the previously-generated preview
                     var preview = await _dataContext.MatchupPreviews
                         .AsNoTracking()
-                        .Where(x => x.ContestId == matchup.ContestId)
+                        .Where(x => x.ContestId == matchup.ContestId &&
+                                    x.RejectedUtc == null)
                         .FirstOrDefaultAsync();
 
                     // no preview? skip it

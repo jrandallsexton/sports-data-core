@@ -9,6 +9,8 @@ public class AthleteSeasonStatisticCategory : CanonicalEntityBase<Guid>
 {
     public Guid AthleteSeasonStatisticId { get; set; }
 
+    public AthleteSeasonStatistic Statistic { get; set; } = null!;
+
     public string Name { get; set; } = string.Empty;
 
     public string DisplayName { get; set; } = string.Empty;
@@ -18,8 +20,6 @@ public class AthleteSeasonStatisticCategory : CanonicalEntityBase<Guid>
     public string Abbreviation { get; set; } = string.Empty;
 
     public string? Summary { get; set; }
-
-    public AthleteSeasonStatistic Statistic { get; set; } = null!;
 
     public List<AthleteSeasonStatisticStat> Stats { get; set; } = [];
 

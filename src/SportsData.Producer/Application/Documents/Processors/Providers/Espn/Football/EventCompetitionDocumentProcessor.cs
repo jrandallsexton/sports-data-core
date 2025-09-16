@@ -552,6 +552,31 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 raiseEvents = true;
             }
 
+            foreach (var competitor in dto.Competitors)
+            {
+                if (competitor.Statistics?.Ref is null)
+                {
+                    continue;
+                }
+
+                var competitorIdentity = _externalRefIdentityGenerator.Generate(competitor.Ref);
+                var teamIdentity = _externalRefIdentityGenerator.Generate(competitor.Team.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: teamIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: competitor.Statistics.Ref,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionCompetitorStatistics,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
             if (raiseEvents)
             {
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());

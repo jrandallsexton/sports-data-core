@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.Dtos
+﻿using SportsData.Core.Common;
+
+namespace SportsData.Api.Application.UI.Leagues.Dtos
 {
     public class LeagueWeekMatchupsDto
     {
@@ -8,12 +10,15 @@
 
         public PickType PickType { get; set; }
 
-        public List<MatchupForPickDto> Matchups { get; set; } = new();
+        public List<MatchupForPickDto> Matchups { get; set; } = [];
 
         public class MatchupForPickDto
         {
             public Guid ContestId { get; set; }
+
             public DateTime StartDateUtc { get; set; }
+
+            public ContestStatus Status { get; set; }
 
             // Teams
             public string Away { get; set; } = default!;
@@ -61,7 +66,5 @@
             public OverUnderPick? OverUnderResult { get; set; }
             public DateTime? CompletedUtc { get; set; }
         }
-
     }
-
 }

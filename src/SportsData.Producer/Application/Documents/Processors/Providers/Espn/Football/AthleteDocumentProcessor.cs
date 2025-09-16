@@ -83,11 +83,13 @@ public class AthleteDocumentProcessor : IProcessDocuments
             return;
         }
 
+        var athleteIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
+
         var exists = await _dataContext.Athletes
             .Include(x => x.ExternalIds)
             .AsNoTracking()
             .AnyAsync(x => x.ExternalIds.Any(z =>
-                z.Value == command.UrlHash &&
+                z.Value == athleteIdentity.CanonicalId.ToString() &&
                 z.Provider == command.SourceDataProvider));
 
         if (exists)
@@ -299,10 +301,32 @@ public class AthleteDocumentProcessor : IProcessDocuments
         _logger.LogInformation("Resolved CurrentPositionId: {PositionId} for AthleteId: {AthleteId}", positionId, newEntity.Id);
     }
 
-    private Task ProcessExisting(ProcessDocumentCommand command, EspnFootballAthleteDto dto)
+    private async Task ProcessExisting(
+        ProcessDocumentCommand command,
+        EspnFootballAthleteDto dto)
     {
+        // TODO: Implement update logic if needed
         _logger.LogWarning("Athlete already exists for {Provider}. Skipping for now.", command.SourceDataProvider);
-        return Task.CompletedTask;
+
+        //if (dto.Headshot?.Href is not null)
+        //{
+        //    var imgId = Guid.NewGuid();
+        //    await _publishEndpoint.Publish(new ProcessImageRequest(
+        //        dto.Headshot.Href,
+        //        imgId,
+        //        entity.Id,
+        //        $"{entity.Id}-{imgId}.png",
+        //        command.Sport,
+        //        command.Season,
+        //        command.DocumentType,
+        //        command.SourceDataProvider,
+        //        0, 0,
+        //        null,
+        //        command.CorrelationId,
+        //        CausationId.Producer.AthleteDocumentProcessor));
+        //}
+
+        await Task.CompletedTask;
     }
 
 }

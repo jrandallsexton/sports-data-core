@@ -18,7 +18,13 @@ order by ap."Name", ats."LastName", ats."FirstName"
 
 select * from public."FranchiseSeasonRecord"
 select * from public."Franchise"
+select * from public."FranchiseExternalId"
 select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
+
+select * from public."FranchiseSeasonStatisticCategory"
+where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+order by "Name"
+
 select * from public."FranchiseSeasonLogo"
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
@@ -42,10 +48,21 @@ select
 from public."Contest" c
 where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 
-select * from public."Contest" where "Id" = '22ce0efb-21b6-2d1a-6067-2291699162eb'
-select * from public."Competition" where "ContestId" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+select * from public."Contest" where "Id" = '1e0e9634-e38a-ff27-c918-75b318f59b32'
+select * from public."Competition" where "ContestId" = '1e0e9634-e38a-ff27-c918-75b318f59b32'
+
+select * from public."CompetitionCompetitorStatistics"
+where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+
+select * from public."CompetitionCompetitorStatisticCategories"
+where "CompetitionCompetitorStatisticId" = '78ea9a07-9bfb-0397-caeb-be0c26d1ee50'
+order by "Name"
+
+select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '0c5d0ca5-802c-4087-9bcf-75b85e90383a' order by "Name"
+
 select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'
 
+select * from public."CompetitionStatus" where "CompetitionId" = '65ea0c60-4e44-b36b-c5bf-33971f677728'
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
 select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
 select * from public."Venue"

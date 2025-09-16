@@ -4,7 +4,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class FranchiseSeasonStatisticCategoryExtensions
     {
-        public static FranchiseSeasonStatisticCategory AsEntity(this EspnTeamSeasonStatisticsCategoryDto dto, Guid franchiseSeasonId)
+        public static FranchiseSeasonStatisticCategory AsEntity(
+            this EspnTeamSeasonStatisticsCategoryDto dto,
+            Guid franchiseSeasonId)
         {
             return new FranchiseSeasonStatisticCategory
             {

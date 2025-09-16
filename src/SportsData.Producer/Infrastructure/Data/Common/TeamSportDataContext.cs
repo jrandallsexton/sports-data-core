@@ -1,7 +1,4 @@
-﻿using MassTransit;
-using MassTransit.EntityFrameworkCoreIntegration;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -43,6 +40,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CompetitionCompetitorScore> CompetitionCompetitorScores { get; set; }
 
         public DbSet<CompetitionCompetitorScoreExternalId> CompetitionCompetitorScoreExternalIds { get; set; }
+
+        public DbSet<CompetitionCompetitorStatistic> CompetitionCompetitorStatistics { get; set; }
+        public DbSet<CompetitionCompetitorStatisticCategory> CompetitionCompetitorStatisticCategories { get; set; }
+        public DbSet<CompetitionCompetitorStatisticStat> CompetitionCompetitorStatisticStats { get; set; }
 
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
@@ -126,60 +127,95 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new AthletePosition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthletePositionExternalId.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new AthleteSeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Award.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AwardExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Coach.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CoachRecord.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachRecordStat.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new CoachExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionCompetitor.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScore.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScoreExternalId.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatistic.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticCategory.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionLeaderStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionOddsExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndex.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndexExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionPrediction.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPredictionValue.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionProbability.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionStatusExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new DriveExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseLogo.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAward.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAwardWinner.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new FranchiseSeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonLogo.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRanking.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecord.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAts.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAtsCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonStatisticCategory.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new GroupSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new GroupSeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new GroupSeasonLogo.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Play.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new PlayExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new PlayTypeCategory.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new PowerIndex.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new PredictionMetric.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new SeasonFuture.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonFutureExternalId.EntityConfiguration());
         }

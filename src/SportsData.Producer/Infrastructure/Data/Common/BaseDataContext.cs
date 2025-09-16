@@ -56,22 +56,39 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatistic.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatisticCategory.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatisticStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new AthleteImage.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteSeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new AthleteStatus.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionBroadcast.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Location.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Season.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new SeasonPhase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPhaseExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new SeasonPoll.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPollWeek.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPollWeekEntry.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonPollWeekEntryStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new SeasonWeek.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new SeasonWeekExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Venue.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new VenueExternalId.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new VenueImage.EntityConfiguration());
             modelBuilder.AddInboxStateEntity(cfg =>
             {

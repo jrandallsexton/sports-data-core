@@ -23,15 +23,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private readonly ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _publishEndpoint;
+        private readonly IGenerateExternalRefIdentities _externalIdentityGenerator;
 
         public EventCompetitionLeadersDocumentProcessor(
             ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> logger,
             TDataContext dataContext,
-            IEventBus publishEndpoint)
+            IEventBus publishEndpoint,
+            IGenerateExternalRefIdentities externalIdentityGenerator)
         {
             _logger = logger;
             _dataContext = dataContext;
             _publishEndpoint = publishEndpoint;
+            _externalIdentityGenerator = externalIdentityGenerator;
         }
 
         public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -183,6 +186,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                         throw new InvalidOperationException($"Missing franchise season for leader category '{category.Name}' - will retry later.");
                     }
+
+                    // need to request sourcing for leader.Statistics
+                    // this is the complete stats object for this athlete in this competition
+                    var athleteSeasonIdentity = _externalIdentityGenerator.Generate(leaderDto.Athlete.Ref);
+                    var athleteCompetitionStatsIdentity = _externalIdentityGenerator.Generate(leaderDto.Statistics.Ref);
+
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: athleteCompetitionStatsIdentity.UrlHash,
+                        ParentId: athleteSeasonIdentity.CanonicalId.ToString(),
+                        Uri: new Uri(athleteCompetitionStatsIdentity.CleanUrl),
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.EventCompetitionAthleteStatistics,
+                        SourceDataProvider: command.SourceDataProvider,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
+                    ));
 
                     var stat = leaderDto.AsEntity(
                         parentLeaderId: leaderEntity.Id,

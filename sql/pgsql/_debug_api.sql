@@ -1,7 +1,7 @@
 
-select * from public."MatchupPreview" order by "CreatedUtc" desc --where "ContestId" = '6fafd6ee-c474-4b7e-d822-cd3348c52467'
+select * from public."MatchupPreview" where "ContestId" = 'a30f78b5-3d66-6d76-88d2-47d3349863d5'
 -- https://api-dev.sportdeets.com/ui/matchup/6fafd6ee-c474-4b7e-d822-cd3348c52467/preview
-
+--update "MatchupPreview" set "RejectedUtc" = '2025-09-10 13:39:08.011918+00' where "Id" = 'a97f5e56-6849-4087-8e80-d3d618048ec0'
 update public."MatchupPreview" set
 "PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
 "PredictedSpreadWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd'
@@ -47,13 +47,14 @@ order by "ContestId"
 select * from public."User"
 select * from public."UserPick"
 where
-  "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3f0f720' and
-  "Week" = 2 and
+  "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and
+  "Week" = 3 
+  and
   "PickemGroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
 ORDER BY "CreatedUtc" desc
 
 --update public."UserPick" set "PickType" = 2
---delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'
+--delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 3
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 select * from public."UserPick" where "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3f0f720' and "IsCorrect" is null

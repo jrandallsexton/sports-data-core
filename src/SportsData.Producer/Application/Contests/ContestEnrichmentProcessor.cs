@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
@@ -68,8 +71,10 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
-                if (externalId == null)
+                var competitionExternalId = competition.ExternalIds
+                    .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
+
+                if (competitionExternalId == null)
                 {
                     _logger.LogError("CompetitionExternalId not found. {@Command}", command);
                     return;
@@ -77,7 +82,7 @@ namespace SportsData.Producer.Application.Contests
 
                 // Get the current status to ensure the game is actually over
                 var statusUri = EspnUriMapper
-                    .CompetitionRefToCompetitionStatusRef(new Uri(externalId.SourceUrl));
+                    .CompetitionRefToCompetitionStatusRef(new Uri(competitionExternalId.SourceUrl));
 
                 var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
                 if (status == null)
@@ -86,21 +91,20 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // Why are we requesting this via an event? we just got it above.
-                //await _bus.Publish(new DocumentRequested(
-                //    Id: HashProvider.GenerateHashFromUri(status.Ref),
-                //    ParentId: competition.Id.ToString(),
-                //    Uri: status.Ref.ToCleanUri(),
-                //    Sport: Sport.FootballNcaa,
-                //    SeasonYear: competition.Contest.SeasonYear,
-                //    DocumentType: DocumentType.EventCompetitionStatus,
-                //    SourceDataProvider: SourceDataProvider.Espn,
-                //    CorrelationId: command.CorrelationId,
-                //    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
-                //    BypassCache: true
-                //));
-                //await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
-                //await _dataContext.SaveChangesAsync();
+                await _bus.Publish(new DocumentRequested(
+                    Id: HashProvider.GenerateHashFromUri(status.Ref),
+                    ParentId: contest.Id.ToString(),
+                    Uri: new Uri(competitionExternalId.SourceUrl),
+                    Sport: Sport.FootballNcaa,
+                    SeasonYear: competition.Contest.SeasonYear,
+                    DocumentType: DocumentType.EventCompetition,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
+                    BypassCache: true
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                await _dataContext.SaveChangesAsync();
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {
@@ -111,7 +115,7 @@ namespace SportsData.Producer.Application.Contests
                 // in order to calculate the final score and winners, we need to get all plays
                 // take the last scoring play and that is what we have
                 var playsUri = EspnUriMapper
-                    .CompetitionRefToCompetitionPlaysRef(new Uri(externalId.SourceUrl), 999);
+                    .CompetitionRefToCompetitionPlaysRef(new Uri(competitionExternalId.SourceUrl), 999);
 
                 var plays = await _espnProvider.GetCompetitionPlaysAsync(playsUri);
                 if (plays == null)

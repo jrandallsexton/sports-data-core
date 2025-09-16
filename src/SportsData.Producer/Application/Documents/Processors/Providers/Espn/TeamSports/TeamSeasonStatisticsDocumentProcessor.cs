@@ -27,9 +27,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = command.CorrelationId
-                   }))
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
             {
                 _logger.LogInformation("Processing TeamSeasonStatistics for FranchiseSeason {ParentId}", command.ParentId);
 
@@ -51,31 +51,30 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
                 }
 
                 var dto = command.Document.FromJson<EspnTeamSeasonStatisticsDto>();
-                if (dto?.Splits?.Categories == null || !dto.Splits.Categories.Any())
+                if (dto?.Splits?.Categories == null || dto.Splits.Categories.Count == 0)
                 {
                     _logger.LogWarning("No categories found in document for FranchiseSeason {Id}", franchiseSeasonId);
                     return;
                 }
 
-                // ✅ Delta Check
-                if (franchiseSeason.Statistics.CategoriesMatch(dto.Splits.Categories))
+                // 🧹 Remove existing statistics
+                if (franchiseSeason.Statistics?.Any() == true)
                 {
-                    _logger.LogInformation("No changes detected for FranchiseSeason {ParentId}. Skipping insert.", command.ParentId);
-                    return;
+                    _dataContext.FranchiseSeasonStatistics.RemoveRange(franchiseSeason.Statistics);
+                    _logger.LogInformation("Removed existing TeamSeasonStatistics for FranchiseSeason {Id}", franchiseSeasonId);
                 }
 
-                // ✅ Append new snapshot
+                // ➕ Insert new categories
                 foreach (var dtoCategory in dto.Splits.Categories)
                 {
-                    var newCategory = dtoCategory.AsEntity(franchiseSeason.Id);
+                    var newCategory = dtoCategory.AsEntity(franchiseSeasonId);
                     await _dataContext.FranchiseSeasonStatistics.AddAsync(newCategory);
                 }
 
                 await _dataContext.SaveChangesAsync();
 
-                _logger.LogInformation("Inserted new TeamSeasonStatistics snapshot for FranchiseSeason {ParentId}", command.ParentId);
+                _logger.LogInformation("Inserted new TeamSeasonStatistics snapshot for FranchiseSeason {Id}", franchiseSeasonId);
             }
         }
-
     }
 }

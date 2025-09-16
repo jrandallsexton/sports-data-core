@@ -30,6 +30,7 @@ namespace SportsData.Core.Common
             public static Guid FootballSeasonRankingDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000010");
             public static Guid FranchiseDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000011");
             public static Guid FranchiseSeasonCreated = new Guid("10000000-0000-0000-0000-000000000012");
+            public static Guid FranchiseSeasonEnrichmentProcessor = new Guid("10000001-0000-0000-0000-00000000001F");
             public static Guid GroupSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000013");
             public static Guid ImageRequestedProcessor = new Guid("10000000-0000-0000-0000-000000000014");
             public static Guid PositionDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000015");
@@ -42,7 +43,6 @@ namespace SportsData.Core.Common
             public static Guid TeamSeasonRecordDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001C");
             public static Guid VenueCreatedDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001D");
             public static Guid VenueDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001E");
-            public static Guid FranchiseSeasonEnrichmentProcessor = new Guid("10000001-0000-0000-0000-00000000001F");
         }
 
 

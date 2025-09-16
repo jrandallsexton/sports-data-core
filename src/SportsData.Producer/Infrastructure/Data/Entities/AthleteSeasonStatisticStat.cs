@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -10,15 +9,17 @@ public class AthleteSeasonStatisticStat : CanonicalEntityBase<Guid>
 {
     public Guid AthleteSeasonStatisticCategoryId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    public AthleteSeasonStatisticCategory Category { get; set; } = null!;
 
-    public string DisplayName { get; set; } = string.Empty;
+    public required string Name { get; set; }
 
-    public string ShortDisplayName { get; set; } = string.Empty;
+    public required string DisplayName { get; set; }
+
+    public required string ShortDisplayName { get; set; }
 
     public string? Description { get; set; }
 
-    public string Abbreviation { get; set; } = string.Empty;
+    public required string Abbreviation { get; set; } = string.Empty;
 
     public string DisplayValue { get; set; } = string.Empty;
 
@@ -27,8 +28,6 @@ public class AthleteSeasonStatisticStat : CanonicalEntityBase<Guid>
     public decimal? Value { get; set; }
 
     public decimal? PerGameValue { get; set; }
-
-    public AthleteSeasonStatisticCategory Category { get; set; } = null!;
 
     public class EntityConfiguration : IEntityTypeConfiguration<AthleteSeasonStatisticStat>
     {

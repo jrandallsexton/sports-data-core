@@ -14,8 +14,10 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using FootballLeaderCategory = SportsData.Core.Common.FootballLeaderCategory;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
@@ -31,6 +33,49 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         _output = output;
         var documentJson = LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json").Result;
         _dto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+    }
+
+    [Fact]
+    public async Task WhenFoo_DoesBar()
+    {
+        var json = await base.LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders_LaTechLsu2025.json");
+        var dto = json.FromJson<EspnEventCompetitionLeadersDto>();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+
+        var teamTotals = new Dictionary<Guid, Dictionary<string, double>>();
+
+        dto.Categories.ForEach(c =>
+        {
+            c.Leaders.ForEach(l =>
+            {
+                var athleteId = identityGenerator.Generate(l.Athlete.Ref).CanonicalId;
+                var teamId = identityGenerator.Generate(l.Team.Ref).CanonicalId;
+
+                if (!teamTotals.ContainsKey(teamId))
+                {
+                    teamTotals[teamId] = new Dictionary<string, double>();
+                }
+                if (!teamTotals[teamId].ContainsKey(c.Name))
+                {
+                    teamTotals[teamId][c.Name] = l.Value;
+                }
+                else
+                {
+                    teamTotals[teamId][c.Name] += l.Value;
+                }
+            });
+        });
+
+        foreach (var team in teamTotals)
+        {
+            _output.WriteLine($"Team: {team.Key}");
+            foreach (var category in team.Value)
+            {
+                _output.WriteLine($"  Category: {category.Key} => Total: {category.Value}");
+            }
+        }
+
     }
 
     [Fact]

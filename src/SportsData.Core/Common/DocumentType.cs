@@ -60,6 +60,8 @@
         EventCompetitionSituation = 57,
         SeasonPoll = 58,
         SeasonPollWeek = 58,
+        EventCompetitionAthleteStatistics = 59,
+        EventCompetitionCompetitorStatistics = 60,
         Unknown = 9999
     }
 }

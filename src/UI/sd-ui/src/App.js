@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { LeagueProvider } from "./contexts/LeagueContext";
 import { setGlobalApiErrorHandler } from "api/apiClient";
+import MaintenancePage from "./components/maintenance/MaintenancePage";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/maintenance" element={<MaintenancePage />} />
           <Route
             path="/app/*"
             element={

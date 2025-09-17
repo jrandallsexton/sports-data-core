@@ -19,7 +19,7 @@ order by ap."Name", ats."LastName", ats."FirstName"
 select * from public."FranchiseSeasonRecord"
 select * from public."Franchise"
 select * from public."FranchiseExternalId"
-select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
+select * from public."FranchiseSeason" where "Id" = '0abfe224-2ff2-951d-25e1-a9d59d57bfe7'
 
 select * from public."FranchiseSeasonStatisticCategory"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
@@ -48,8 +48,9 @@ select
 from public."Contest" c
 where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 
-select * from public."Contest" where "Id" = '1e0e9634-e38a-ff27-c918-75b318f59b32'
-select * from public."Competition" where "ContestId" = '1e0e9634-e38a-ff27-c918-75b318f59b32'
+select * from public."Contest" where "Id" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'
+select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
+select * from public."Competition" where "ContestId" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'
 
 select * from public."CompetitionCompetitorStatistics"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'

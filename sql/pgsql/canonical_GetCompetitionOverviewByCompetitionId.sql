@@ -10,29 +10,29 @@
     v."City" as "VenueCity",
     v."State" as "VenueState",
 
-	  fsAway."Id" as "AwayFranchiseSeasonId",
+	fsAway."Id" as "AwayFranchiseSeasonId",
     fAway."DisplayName" as "Away",
     fAway."Slug" as "AwaySlug",
     fsrdAway."Current" as "AwayRank",
     gsAway."Id" as "AwayConferenceId",
     gsAway."Slug" as "AwayConferenceSlug",
     gsAwayParent."Slug" as "AwayParentConferenceSlug",
-    fsAway."Wins" as "AwayWins",
-    fsAway."Losses" as "AwayLosses",
-    fsAway."ConferenceWins" as "AwayConferenceWins",
-    fsAway."ConferenceLosses" as "AwayConferenceLosses",
+  fsAway."Wins" as "AwayWins",
+  fsAway."Losses" as "AwayLosses",
+  fsAway."ConferenceWins" as "AwayConferenceWins",
+  fsAway."ConferenceLosses" as "AwayConferenceLosses",
 
-	  fsHome."Id" as "HomeFranchiseSeasonId",
+	fsHome."Id" as "HomeFranchiseSeasonId",
     fHome."DisplayName" as "Home",
     fHome."Slug" as "HomeSlug",
     fsrdHome."Current" as "HomeRank",
     gsHome."Id" as "HomeConferenceId",
     gsHome."Slug" as "HomeConferenceSlug",
     gsHomeParent."Slug" as "HomeParentConferenceSlug",
-    fsHome."Wins" as "HomeWins",
-    fsHome."Losses" as "HomeLosses",
-    fsHome."ConferenceWins" as "HomeConferenceWins",
-    fsHome."ConferenceLosses" as "HomeConferenceLosses",
+  fsHome."Wins" as "HomeWins",
+  fsHome."Losses" as "HomeLosses",
+  fsHome."ConferenceWins" as "HomeConferenceWins",
+  fsHome."ConferenceLosses" as "HomeConferenceLosses",
 
     co."Details" as "Spread",
     (co."Spread" * -1) as "AwaySpread",
@@ -46,31 +46,21 @@
   inner join public."Venue" v on v."Id" = c."VenueId"
   inner join public."Competition" comp on comp."ContestId" = c."Id"
   left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" != '59'
-
   inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
   inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
   inner join public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
   inner join public."GroupSeason" gsAwayParent on gsAway."ParentId" = gsAwayParent."Id"
-
   inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
   inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
   inner join public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
   inner join public."GroupSeason" gsHomeParent on gsHome."ParentId" = gsHomeParent."Id"
-
   left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
   left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 --where c."Id" = @ContestId
-where c."Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a' --) t;
+where c."Id" = 'f34db581-7d43-6ccb-4fb9-18e395107e13' --) t;
 
-select * from public."Contest" where "Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
-SELECT * from "Competition" where "ContestId" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
-
-SELECT c.*
-FROM public."Contest" c
-LEFT JOIN public."Competition" comp ON comp."ContestId" = c."Id"
-WHERE comp."Id" IS NULL ORDER BY c."StartDateUtc"
-
-
---select * from public."FranchiseSeason" where "Id" = '0abfe224-2ff2-951d-25e1-a9d59d57bfe7'
+--select * from public."CompetitionCompetitor" where "CompetitionId" = '37b87b09-3599-2e50-1f49-790d7d3c69d5'
+--select * from public."CompetitionCompetitor" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+select * from public."CompetitionCompetitorLineScore" WHERE "CompetitionCompetitorId" = '6bc3ab6c-c94e-1fed-d8e7-62016768dd8e' order by "Period"

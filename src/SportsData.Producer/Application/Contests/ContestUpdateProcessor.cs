@@ -46,7 +46,42 @@ namespace SportsData.Producer.Application.Contests
 
             if (competition is null)
             {
-                _logger.LogError("Competition could not be loaded for provided contest id. {@Command}", command);
+                var contest = await _dataContext.Contests
+                    .Include(c => c.ExternalIds)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == command.ContestId);
+
+                if (contest is null)
+                {
+                    _logger.LogError("Contest not found");
+                    return;
+                } 
+
+                var contestExternalId = contest.ExternalIds.FirstOrDefault(x => x.Provider == command.SourceDataProvider);
+
+                if (contestExternalId is null)
+                {
+                    _logger.LogError("contestExternalId not found");
+                    return;
+                }
+
+                var contestIdentity = _externalIdentityGenerator.Generate(contestExternalId.SourceUrl);
+
+                await _bus.Publish(new DocumentRequested(
+                    Id: contestIdentity.UrlHash,
+                    ParentId: command.ContestId.ToString(),
+                    Uri: new Uri(contestIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.SeasonYear,
+                    DocumentType: DocumentType.Event,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.ContestUpdateProcessor,
+                    BypassCache: true
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                await _dataContext.SaveChangesAsync();
+
                 return;
             }
 

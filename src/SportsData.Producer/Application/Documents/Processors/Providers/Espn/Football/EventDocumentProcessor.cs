@@ -389,8 +389,28 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto dto,
             Contest entity)
         {
-            // TODO: Implement update logic if necessary
-            await Task.Delay(100);
+            // I'm not sure if there is anything to update here,
+            // but we will request sourcing of competitions again
+            if (dto.Competitions.Any())
+            {
+                var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competitions.First().Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: competitionIdentity.CanonicalId.ToString(),
+                    ParentId: entity.Id.ToString(),
+                    Uri: new Uri(competitionIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetition,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventDocumentProcessor,
+                    BypassCache: true
+                ));
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+            }
         }
     }
 }

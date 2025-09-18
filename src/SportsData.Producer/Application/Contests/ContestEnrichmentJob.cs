@@ -24,18 +24,18 @@ namespace SportsData.Producer.Application.Contests
         public async Task ExecuteAsync()
         {
             // get the current season week
-            //var seasonWeeks = await _dataContext.SeasonWeeks
-            //    .AsNoTracking()
-            //    .Where(sw => sw.StartDate < DateTime.UtcNow)
-            //    .Take(2)
-            //    .ToListAsync();
-
             var seasonWeeks = await _dataContext.SeasonWeeks
                 .AsNoTracking()
-                .Where(sw => sw.StartDate < DateTime.UtcNow &&
-                             sw.EndDate > DateTime.UtcNow)
+                .Where(sw => sw.StartDate < DateTime.UtcNow)
                 .Take(2)
                 .ToListAsync();
+
+            //var seasonWeeks = await _dataContext.SeasonWeeks
+            //    .AsNoTracking()
+            //    .Where(sw => sw.StartDate < DateTime.UtcNow &&
+            //                 sw.EndDate > DateTime.UtcNow)
+            //    .Take(2)
+            //    .ToListAsync();
 
             if (!seasonWeeks.Any())
             {
@@ -46,20 +46,20 @@ namespace SportsData.Producer.Application.Contests
             foreach (var seasonWeek in seasonWeeks)
             {
                 // get contests that have not been finalized
-                //var contests = await _dataContext.Contests
-                //    .AsNoTracking()
-                //    .Where(c => c.SeasonWeekId == seasonWeek.Id &&
-                //                c.StartDateUtc < DateTime.UtcNow.AddHours(3))
-                //    .OrderBy(c => c.StartDateUtc)
-                //    .ToListAsync();
-
                 var contests = await _dataContext.Contests
                     .AsNoTracking()
                     .Where(c => c.SeasonWeekId == seasonWeek.Id &&
-                                c.StartDateUtc < DateTime.UtcNow.AddHours(3) &&
-                                c.FinalizedUtc == null)
+                                c.StartDateUtc < DateTime.UtcNow.AddHours(3))
                     .OrderBy(c => c.StartDateUtc)
                     .ToListAsync();
+
+                //var contests = await _dataContext.Contests
+                //    .AsNoTracking()
+                //    .Where(c => c.SeasonWeekId == seasonWeek.Id &&
+                //                c.StartDateUtc < DateTime.UtcNow.AddHours(3) &&
+                //                c.FinalizedUtc == null)
+                //    .OrderBy(c => c.StartDateUtc)
+                //    .ToListAsync();
 
                 // spawn a job to finalize each
                 foreach (var contest in contests)

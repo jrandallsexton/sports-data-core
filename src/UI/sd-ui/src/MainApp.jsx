@@ -25,6 +25,7 @@ import LeagueDetail from "./components/leagues/LeagueDetail";
 import Leagues from "./components/leagues/Leagues";
 import AutoJoinRedirect from "./components/signup/AutoJoinRedirect";
 import LeagueDiscoverPage from "components/leagues/LeagueDiscoverPage";
+import ContestOverview from "./components/contests/ContestOverview";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -130,6 +131,10 @@ function MainApp() {
             <Route path="/league/:id" element={<LeagueDetail />} />
             <Route path="/league" element={<Leagues />} />
             <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
+            <Route
+              path="/sport/football/ncaa/contest/:contestId"
+              element={<ContestOverview />}
+            />
             <Route
               path="*"
               element={<div className="not-found">Page Not Found</div>}

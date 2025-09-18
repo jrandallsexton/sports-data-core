@@ -1,0 +1,150 @@
+{
+  "header": {
+    "contestId": "4e13c1fd-4288-48ed-8950-2f16823dc9da",
+    "status": 2,
+    "weekLabel": "Week 4",
+    "startTimeUtc": "2025-09-17T22:30:00Z",
+    "venueName": "Tiger Stadium",
+    "location": "Baton Rouge, LA",
+    "homeTeam": {
+      "franchiseSeasonId": "3a4bd9e9-f9d0-4054-932d-c2687fc6224e",
+      "displayName": "LSU Tigers",
+      "logoUrl": "https://sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-franchiselogo/3cace6c1c15ed710e81055d599eb1b60c55388a24ad648d1e64e2bd31009e687.png",
+      "colorPrimary": "#461D7C",
+      "finalScore": 27
+    },
+    "awayTeam": {
+      "franchiseSeasonId": "b741edcb-8cbe-49c2-b69f-ba35e4a88ff4",
+      "displayName": "Florida Gators",
+      "logoUrl": "https://sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-franchiselogo/57e8ff5f6594cd8bac8559b47a393679fb7b5aca7f449309361174bbf29420e7.png",
+      "colorPrimary": "#0021A5",
+      "finalScore": 24
+    },
+    "quarterScores": [
+      {
+        "quarter": 1,
+        "homeScore": 7,
+        "awayScore": 3
+      },
+      {
+        "quarter": 2,
+        "homeScore": 10,
+        "awayScore": 7
+      },
+      {
+        "quarter": 3,
+        "homeScore": 7,
+        "awayScore": 7
+      },
+      {
+        "quarter": 4,
+        "homeScore": 3,
+        "awayScore": 7
+      }
+    ]
+  },
+  "leaders": {
+    "homeLeaders": [
+      {
+        "category": "Passing",
+        "playerName": "Jayden Daniels",
+        "statLine": "22/31, 278 YDS, 2 TD"
+      },
+      {
+        "category": "Rushing",
+        "playerName": "Josh Williams",
+        "statLine": "18 CAR, 94 YDS, 1 TD"
+      }
+    ],
+    "awayLeaders": [
+      {
+        "category": "Passing",
+        "playerName": "Graham Mertz",
+        "statLine": "25/38, 260 YDS, 2 TD"
+      },
+      {
+        "category": "Rushing",
+        "playerName": "Montrell Johnson Jr.",
+        "statLine": "20 CAR, 89 YDS"
+      }
+    ]
+  },
+  "summary": {
+    "previewText": "LSU looks to stay perfect at home against a rebuilding Florida team.",
+    "resultText": "LSU held off a late Florida rally with a 47-yard FG in the final minute."
+  },
+  "winProbability": {
+    "points": [
+      {
+        "gameClock": "00:12:00",
+        "homeWinPercent": 60,
+        "awayWinPercent": 40,
+        "quarter": 1
+      },
+      {
+        "gameClock": "00:05:00",
+        "homeWinPercent": 55,
+        "awayWinPercent": 45,
+        "quarter": 2
+      },
+      {
+        "gameClock": "00:02:00",
+        "homeWinPercent": 51,
+        "awayWinPercent": 49,
+        "quarter": 4
+      }
+    ],
+    "finalHomeWinPercent": 100,
+    "finalAwayWinPercent": 0
+  },
+  "scoringSummary": {
+    "plays": [
+      {
+        "quarter": 1,
+        "team": "LSU",
+        "description": "Daniels 10 YD TD pass",
+        "timeRemaining": "00:09:34"
+      },
+      {
+        "quarter": 2,
+        "team": "Florida",
+        "description": "Mertz 18 YD TD pass",
+        "timeRemaining": "00:05:10"
+      },
+      {
+        "quarter": 4,
+        "team": "LSU",
+        "description": "47 YD FG",
+        "timeRemaining": "00:00:42"
+      }
+    ]
+  },
+  "teamStats": {
+    "homeTeam": {
+      "stats": {
+        "Total Yards": "387",
+        "Turnovers": "1",
+        "Time of Possession": "31:22"
+      }
+    },
+    "awayTeam": {
+      "stats": {
+        "Total Yards": "372",
+        "Turnovers": "2",
+        "Time of Possession": "28:38"
+      }
+    }
+  },
+  "info": {
+    "kickoffTimeUtc": "2025-09-17T22:20:00Z",
+    "broadcast": "ESPN",
+    "attendance": 98217
+  },
+  "matchupAnalysis": {
+    "predictedSummary": "LSU expected to control the game on the ground and win by 6.",
+    "actualResultSummary": "LSU edged out Florida with a late field goal.",
+    "modelAccuracyNotes": "Predicted win, but missed point spread by 3.",
+    "whereItWasRight": "LSU run game was dominant.",
+    "whereItWasWrong": "Florida\u2019s passing attack kept the game closer than expected."
+  }
+}

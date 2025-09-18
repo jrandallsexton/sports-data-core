@@ -7,6 +7,7 @@ import TeamCard from "./teamCardApi";
 import Picks from "./picksApi";
 import Conferences from "./conferenceApi";
 import Rankings  from "./rankingsApi";
+import Contest from "./contestApi";
 
 const apiWrapper = {
   Matchups,
@@ -17,7 +18,8 @@ const apiWrapper = {
   TeamCard,
   Picks,
   Conferences,
-  Rankings
+  Rankings,
+  Contest,
 };
 
 export default apiWrapper;

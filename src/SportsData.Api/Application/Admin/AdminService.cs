@@ -47,7 +47,14 @@ namespace SportsData.Api.Application.Admin
 
         public async Task RefreshAiExistence(Guid correlationId)
         {
-            const int WEEK = 3;
+            // get the current week
+            var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
+
+            if (currentWeek is null)
+            {
+                _logger.LogError("Current week could not be found");
+                throw new Exception("Current week could not be found");
+            }
 
             // get the synthetic; there is only one now
             var synthetic = await _dataContext.Users
@@ -101,7 +108,7 @@ namespace SportsData.Api.Application.Admin
             {
                 // get the matchups for the group
                 var groupMatchups = await _leagueService
-                        .GetMatchupsForLeagueWeekAsync(synthetic.Id, group.Id, WEEK, CancellationToken.None);
+                        .GetMatchupsForLeagueWeekAsync(synthetic.Id, group.Id, currentWeek.WeekNumber, CancellationToken.None);
 
                 // iterate each group matchup
                 foreach (var matchup in groupMatchups.Matchups)
@@ -140,7 +147,7 @@ namespace SportsData.Api.Application.Admin
                             : preview.PredictedStraightUpWinner,
                         PickemGroupId = group.Id,
                         PickType = group.PickType == PickType.StraightUp ? UserPickType.StraightUp : UserPickType.AgainstTheSpread,
-                        Week = WEEK,
+                        Week = currentWeek.WeekNumber,
                         TiebreakerType = TiebreakerType.TotalPoints
                     };
 

@@ -35,72 +35,35 @@ namespace SportsData.Producer.Application.Contests
 
         public async Task Process(UpdateContestCommand command)
         {
-            var competition = await _dataContext.Competitions
+            var contest = await _dataContext.Contests
                 .Include(c => c.ExternalIds)
-                .Include(c => c.Competitors)
-                    .ThenInclude(comp => comp.ExternalIds)
-                .Include(c => c.Odds)
-                .Include(c => c.Contest)
-                .Where(c => c.ContestId == command.ContestId)
-                .FirstOrDefaultAsync();
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == command.ContestId);
 
-            if (competition is null)
+            if (contest is null)
             {
-                var contest = await _dataContext.Contests
-                    .Include(c => c.ExternalIds)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == command.ContestId);
-
-                if (contest is null)
-                {
-                    _logger.LogError("Contest not found");
-                    return;
-                } 
-
-                var contestExternalId = contest.ExternalIds.FirstOrDefault(x => x.Provider == command.SourceDataProvider);
-
-                if (contestExternalId is null)
-                {
-                    _logger.LogError("contestExternalId not found");
-                    return;
-                }
-
-                var contestIdentity = _externalIdentityGenerator.Generate(contestExternalId.SourceUrl);
-
-                await _bus.Publish(new DocumentRequested(
-                    Id: contestIdentity.UrlHash,
-                    ParentId: command.ContestId.ToString(),
-                    Uri: new Uri(contestIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.SeasonYear,
-                    DocumentType: DocumentType.Event,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.ContestUpdateProcessor,
-                    BypassCache: true
-                ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
-                await _dataContext.SaveChangesAsync();
-
+                _logger.LogError("Contest not found");
                 return;
             }
 
-            var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
-            if (externalId == null)
+            var contestExternalId = contest.ExternalIds
+                .FirstOrDefault(x => x.Provider == command.SourceDataProvider);
+
+            if (contestExternalId is null)
             {
-                _logger.LogError("CompetitionExternalId not found. {@Command}", command);
+                _logger.LogError("contestExternalId not found");
                 return;
             }
 
-            var competitionIdentity = _externalIdentityGenerator.Generate(externalId.SourceUrl);
+            var contestIdentity = _externalIdentityGenerator.Generate(contestExternalId.SourceUrl);
 
             await _bus.Publish(new DocumentRequested(
-                Id: competitionIdentity.UrlHash,
+                Id: contestIdentity.UrlHash,
                 ParentId: command.ContestId.ToString(),
-                Uri: new Uri(competitionIdentity.CleanUrl),
+                Uri: new Uri(contestIdentity.CleanUrl),
                 Sport: command.Sport,
                 SeasonYear: command.SeasonYear,
-                DocumentType: DocumentType.EventCompetition,
+                DocumentType: DocumentType.Event,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.ContestUpdateProcessor,

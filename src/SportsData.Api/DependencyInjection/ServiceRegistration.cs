@@ -6,6 +6,7 @@ using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Conferences;
+using SportsData.Api.Application.UI.Contest;
 using SportsData.Api.Application.UI.Leaderboard;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
@@ -59,6 +60,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
 
+            services.AddScoped<IContestService, ContestService>();
             services.AddScoped<IRankingsService, RankingsService>();
 
             return services;

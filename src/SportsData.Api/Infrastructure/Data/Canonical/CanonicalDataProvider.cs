@@ -6,6 +6,7 @@ using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 using System.Data;
 
@@ -42,6 +43,10 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(string pollType, int seasonYear, int weekNumber);
 
         Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
+
+        Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
+
+        Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks();
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -179,7 +184,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to retrieve conference divisions, names, and slugs for SeasonYear: {SeasonYear}", seasonYear);
-                return new List<ConferenceDivisionNameAndSlugDto>();
+                return [];
             }
         }
 
@@ -196,6 +201,22 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             {
                 _logger.LogError(ex, "Failed to resolve current season week.");
                 return null;
+            }
+        }
+
+        public async Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks()
+        {
+            var sql = _queryProvider.GetCurrentAndLastWeekSeasonWeeks();
+
+            try
+            {
+                var result = await _connection.QueryAsync<SeasonWeek>(sql);
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resolve current season week.");
+                return [];
             }
         }
 
@@ -390,6 +411,71 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             };
 
             return dto;
+        }
+
+        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
+        {
+            var gameInfo = GetContestOverviewGameInfo(contestId);
+            var quarterScores = GetContestOverviewQuarterScores(contestId);
+            var probabilityPoints = GetContestOverviewWinProbabilityPoints(contestId);
+            var playLog = GetContestOverviewPlayLog(contestId);
+
+            var data = await File.ReadAllTextAsync("c:\\temp\\MockContestOverviewDto_LSU_Florida_Week4.json");
+            var dto = data.FromJson<ContestOverviewDto>();
+
+            return dto ?? throw new Exception("Not found");
+        }
+
+        private async Task<GameInfoDto> GetContestOverviewGameInfo(Guid contestId)
+        {
+            var sql = _queryProvider.GetContestOverviewGameOverview();
+
+            var result = await _connection.QuerySingleOrDefaultAsync<GameInfoDto>(
+                sql,
+                new { ContestId = contestId },
+                commandType: CommandType.Text
+            );
+
+            return result ?? throw new Exception("Not found");
+        }
+
+        private async Task<List<QuarterScoreDto>> GetContestOverviewQuarterScores(Guid competitionId)
+        {
+            var sql = _queryProvider.GetContestResultsByContestIds();
+
+            var results = await _connection.QueryAsync<QuarterScoreDto>(
+                sql,
+                new { competitionId = competitionId },
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
+        }
+
+        private async Task<List<WinProbabilityPointDto>> GetContestOverviewWinProbabilityPoints(Guid competitionId)
+        {
+            var sql = _queryProvider.GetContestOverviewWinProbabilityPoints();
+
+            var results = await _connection.QueryAsync<WinProbabilityPointDto>(
+                sql,
+                new { competitionId = competitionId },
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
+        }
+
+        private async Task<List<PlayDto>> GetContestOverviewPlayLog(Guid competitionId)
+        {
+            var sql = _queryProvider.GetContestOverviewPlayLog();
+
+            var results = await _connection.QueryAsync<PlayDto>(
+                sql,
+                new { competitionId = competitionId },
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
         }
     }
 }

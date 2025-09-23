@@ -30,5 +30,16 @@ namespace SportsData.Producer.Application.Contests
             _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));
             return Ok(new { Message = $"Contest {contestId} update initiated." });
         }
+
+        [HttpPost]
+        [Route("{contestId}/enrich")]
+        public IActionResult EnrichContest([FromRoute] Guid contestId)
+        {
+            var cmd = new EnrichContestCommand(
+                contestId,
+                Guid.NewGuid());
+            _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
+            return Ok(new { Message = $"Contest {contestId} enrichment initiated." });
+        }
     }
 }

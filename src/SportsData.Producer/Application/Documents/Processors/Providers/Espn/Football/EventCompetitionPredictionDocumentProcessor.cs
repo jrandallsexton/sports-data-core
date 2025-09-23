@@ -64,19 +64,19 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
         if (dto is null)
         {
             _logger.LogError("Failed to deserialize document to EspnEventCompetitionPredictorDto. {@Command}", command);
-            return; // terminal failure — don't retry
+            return;
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
             _logger.LogError("EspnEventCompetitionPredictorDto Ref is null or empty. {@Command}", command);
-            return; // terminal failure — don't retry
+            return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
             _logger.LogError("ParentId is missing or invalid for CompetitionPrediction: {parentId}", command.ParentId);
-            throw new InvalidOperationException("CompetitionId (ParentId) is required to process CompetitionPrediction");
+            return;
         }
 
         var homeFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
@@ -97,26 +97,52 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
             return;
         }
 
-        var knownMetrics = await _dataContext.PredictionMetrics
+        // 🔍 STEP 1: Extract all metric categories from both teams
+        var allMetrics = dto.HomeTeam.Statistics
+            .Concat(dto.AwayTeam.Statistics)
+            .GroupBy(m => m.Name.ToLowerInvariant())
+            .Select(g => g.First()) // de-dupe
+            .ToList();
+
+        // 🔍 STEP 2: Load existing metrics
+        var existingMetrics = await _dataContext.PredictionMetrics
             .ToDictionaryAsync(x => x.Name.ToLower());
 
+        // 🔍 STEP 3: Identify new metrics
+        var newMetrics = allMetrics
+            .Where(m => !existingMetrics.ContainsKey(m.Name.ToLowerInvariant()))
+            .Select(m => new PredictionMetric
+            {
+                Id = Guid.NewGuid(),
+                Name = m.Name,
+                DisplayName = m.DisplayName,
+                ShortDisplayName = m.ShortDisplayName,
+                Abbreviation = m.Abbreviation,
+                Description = m.Description
+            })
+            .ToList();
+
+        if (newMetrics.Any())
+        {
+            _logger.LogInformation("Discovered {count} new prediction metrics.", newMetrics.Count);
+            await _dataContext.PredictionMetrics.AddRangeAsync(newMetrics);
+            await _dataContext.SaveChangesAsync(); // save so they get their PKs
+        }
+
+        // 🔁 STEP 4: Rebuild dictionary with all metrics (including new)
+        var allMetricsDict = await _dataContext.PredictionMetrics
+            .ToDictionaryAsync(x => x.Name.ToLower());
+
+        // 🏗 STEP 5: Build new CompetitionPrediction + Values
         var predictions = dto.AsEntities(
             _externalRefIdentityGenerator,
             competitionId,
             homeFranchiseSeasonId.Value,
             awayFranchiseSeasonId.Value,
             command.CorrelationId,
-            knownMetrics);
+            allMetricsDict);
 
-        // Ensure new metrics are added to the DB
-        var newMetrics = knownMetrics.Values
-            .Where(m => !_dataContext.PredictionMetrics.Any(x => x.Id == m.Id))
-            .ToList();
-
-        if (newMetrics.Any())
-            await _dataContext.PredictionMetrics.AddRangeAsync(newMetrics);
-
-        // Remove existing CompetitionPrediction entries (clean insert pattern)
+        // 🧹 STEP 6: Remove any existing predictions for this competition
         var existingPredictionIds = await _dataContext.CompetitionPredictions
             .Where(x => x.CompetitionId == competitionId)
             .Select(x => x.Id)
@@ -139,13 +165,9 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         await _dataContext.CompetitionPredictions.AddRangeAsync(predictions);
 
-        // NOTE: Values are created by processor during AsEntities and tracked manually
+        // ✅ STEP 7: Persist values (populated inside AsEntities)
         var predictionValues = predictions
-            .SelectMany(p => new List<CompetitionPredictionValue>
-            {
-                // Not actually populated unless .AsEntity is updated to include nav
-                // You may prefer to persist them inline instead of extracting here
-            })
+            .SelectMany(p => p.Values)
             .ToList();
 
         if (predictionValues.Any())
@@ -153,6 +175,7 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CompetitionPredictions for competition {id}", competitionId);
+        _logger.LogInformation("Persisted CompetitionPredictions and {count} values for competition {id}", predictionValues.Count, competitionId);
     }
+
 }

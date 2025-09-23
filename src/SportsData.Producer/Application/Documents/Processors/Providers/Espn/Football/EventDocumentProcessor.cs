@@ -387,17 +387,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
             EspnEventDto dto,
-            Contest entity)
+            Contest contest)
         {
+            if (DateTime.TryParse(dto.Date, out var startDateTime))
+            {
+                contest.StartDateUtc = DateTime.Parse(dto.Date).ToUniversalTime();
+                await _dataContext.SaveChangesAsync();
+            }
+
             // I'm not sure if there is anything to update here,
             // but we will request sourcing of competitions again
-            if (dto.Competitions.Any())
+            foreach (var competition in dto.Competitions)
             {
-                var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competitions.First().Ref);
+                var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
 
                 await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: competitionIdentity.CanonicalId.ToString(),
-                    ParentId: entity.Id.ToString(),
+                    Id: competitionIdentity.UrlHash,
+                    ParentId: contest.Id.ToString(),
                     Uri: new Uri(competitionIdentity.CleanUrl),
                     Sport: command.Sport,
                     SeasonYear: command.Season,

@@ -47,6 +47,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
+        public DbSet<CompetitionLeaderCategory> CompetitionLeaderCategories { get; set; }
+
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
 
         public DbSet<CompetitionOdds> CompetitionOdds { get; set; }
@@ -109,8 +111,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<GroupSeasonLogo> GroupSeasonLogos { get; set; }
 
-        public DbSet<Play> Plays { get; set; }
-        public DbSet<PlayExternalId> PlayExternalIds { get; set; }
+        public DbSet<CompetitionPlay> CompetitionPlays { get; set; }
+        public DbSet<CompetitionPlayExternalId> CompetitionPlayExternalIds { get; set; }
 
         public DbSet<PlayTypeCategory> PlayTypeCategories { get; set; }
 
@@ -152,9 +154,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
-
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());
-
             modelBuilder.ApplyConfiguration(new CompetitionLeaderStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
@@ -207,8 +207,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new GroupSeasonLogo.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new Play.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new PlayExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionPlay.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionPlayExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new PlayTypeCategory.EntityConfiguration());
 

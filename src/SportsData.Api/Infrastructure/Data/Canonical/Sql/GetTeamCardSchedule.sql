@@ -1,4 +1,5 @@
 ﻿select
+    C."Id" AS "ContestId",
 	C."Week" AS "Week",
 	C."StartDateUtc" AS "Date",	
 	CASE

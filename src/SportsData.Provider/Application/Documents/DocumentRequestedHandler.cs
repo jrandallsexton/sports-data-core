@@ -1,6 +1,5 @@
 ﻿using MassTransit;
 
-using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
@@ -46,11 +45,6 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         var uri = evt.Uri;
 
-        if (evt.DocumentType == DocumentType.EventCompetitionStatus)
-        {
-            _logger.LogInformation("We got one. {@event}", evt);
-        }
-
         if (EspnResourceIndexClassifier.IsResourceIndex(uri))
         {
             await ProcessResourceIndex(uri, evt);
@@ -75,7 +69,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             DocumentType: evt.DocumentType,
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
-            BypassCache: evt.BypassCache);
+            BypassCache: true); // TODO: I cannot think of a reason where would ever want a cached document here.
 
         _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
@@ -151,9 +145,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 break;
             }
 
+            //var nextPage = dto.PageIndex + 1;
+            //var baseUri = uri.GetLeftPart(UriPartial.Path);
+            //uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
+
             var nextPage = dto.PageIndex + 1;
+
+            var originalQuery = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            originalQuery["page"] = nextPage.ToString();
+            originalQuery["limit"] = dto.PageSize.ToString();
+
             var baseUri = uri.GetLeftPart(UriPartial.Path);
-            uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
+            var newQuery = originalQuery.ToString(); // re-encoded querystring
+            uri = new Uri($"{baseUri}?{newQuery}");
         }
 
         if (enqueuedAnyRefs)

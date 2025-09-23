@@ -61,6 +61,36 @@
 --where c."Id" = @ContestId
 where c."Id" = 'f34db581-7d43-6ccb-4fb9-18e395107e13' --) t;
 
+select * from public."Contest" where "Id" = 'de77a1a4-e010-5851-f367-78bb2600490e'
+select * from public."Competition" where "ContestId" = 'de77a1a4-e010-5851-f367-78bb2600490e'
+select * from public."CompetitionStatus" where "CompetitionId" = '7a22132e-2e76-01a8-eaf3-94c10cc89fb4'
+select * from public."CompetitionOdds" where "CompetitionId" = '7a22132e-2e76-01a8-eaf3-94c10cc89fb4'
 --select * from public."CompetitionCompetitor" where "CompetitionId" = '37b87b09-3599-2e50-1f49-790d7d3c69d5'
 --select * from public."CompetitionCompetitor" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
-select * from public."CompetitionCompetitorLineScore" WHERE "CompetitionCompetitorId" = '6bc3ab6c-c94e-1fed-d8e7-62016768dd8e' order by "Period"
+--select * from public."CompetitionCompetitorLineScore" WHERE "CompetitionCompetitorId" = '6bc3ab6c-c94e-1fed-d8e7-62016768dd8e' order by "Period"
+select * from public."CompetitionPlay" WHERE "CompetitionId" = '7a22132e-2e76-01a8-eaf3-94c10cc89fb4' order by "SequenceNumber"
+select * from public."CompetitionPlayExternalId"
+
+-- delete from public."PlayExternalId"
+-- delete from public."CompetitionProbability"
+-- delete from public."Play"
+
+/* Game Information */
+-- SELECT
+--   comp."Date" as "StartDateUtc",
+--   comp."Attendance",
+--       v."Name" as "Venue",
+--     v."City" as "VenueCity",
+--     v."State" as "VenueState",
+--     vi."Uri" as "VenueImageUri"
+-- FROM public."Competition" comp
+-- INNER JOIN public."Contest" c ON c."Id" = comp."ContestId"
+-- inner join public."Venue" v on v."Id" = c."VenueId"
+-- LEFT JOIN LATERAL (
+--   SELECT "Uri"
+--   FROM public."VenueImage"
+--   WHERE "VenueId" = v."Id"
+--   ORDER BY "CreatedUtc" ASC NULLS LAST
+--   LIMIT 1
+-- ) vi ON true
+-- where c."Id" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'

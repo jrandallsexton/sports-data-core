@@ -64,13 +64,13 @@
 --where c."Id" = @ContestId
 where c."Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a' --) t;
 
-select * from public."Contest" where "Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
-SELECT * from "Competition" where "ContestId" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
+-- select * from public."Contest" where "Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
+-- SELECT * from "Competition" where "ContestId" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
 
-SELECT c.*
-FROM public."Contest" c
-LEFT JOIN public."Competition" comp ON comp."ContestId" = c."Id"
-WHERE comp."Id" IS NULL ORDER BY c."StartDateUtc"
+-- SELECT c.*
+-- FROM public."Contest" c
+-- LEFT JOIN public."Competition" comp ON comp."ContestId" = c."Id"
+-- WHERE comp."Id" IS NULL ORDER BY c."StartDateUtc"
 
 
 --select * from public."FranchiseSeason" where "Id" = '0abfe224-2ff2-951d-25e1-a9d59d57bfe7'

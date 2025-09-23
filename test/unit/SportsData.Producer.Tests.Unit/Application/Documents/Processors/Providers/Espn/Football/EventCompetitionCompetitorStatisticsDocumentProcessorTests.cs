@@ -20,30 +20,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         : ProducerTestBase<EventCompetitionCompetitorStatisticsDocumentProcessor<TeamSportDataContext>>
     {
         [Fact]
-        public async Task ProcessAsync_Throws_WhenCompetitionNotFound()
-        {
-            // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
-
-            var dto = json.FromJson<EspnEventCompetitionCompetitorStatisticsDto>();
-            var fakeCompetitionId = Guid.NewGuid();
-
-            var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.ParentId, fakeCompetitionId.ToString())
-                .With(x => x.Document, json)
-                .OmitAutoProperties()
-                .Create();
-
-            var sut = Mocker.CreateInstance<EventCompetitionCompetitorStatisticsDocumentProcessor<TeamSportDataContext>>();
-
-            // Act & Assert
-            var act = () => sut.ProcessAsync(command);
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage($"Competition {fakeCompetitionId} not found.");
-        }
-
-
-        [Fact]
         public async Task ProcessAsync_Throws_WhenFranchiseSeasonNotFound()
         {
             // Arrange

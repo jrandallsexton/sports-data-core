@@ -99,7 +99,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionNote> Notes { get; set; } = [];
 
-        public ICollection<Play> Plays { get; set; } = [];
+        public ICollection<CompetitionPlay> Plays { get; set; } = [];
 
         public ICollection<Drive> Drives { get; set; } = [];
 

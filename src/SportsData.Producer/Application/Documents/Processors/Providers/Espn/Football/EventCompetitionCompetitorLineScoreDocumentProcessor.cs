@@ -1,6 +1,4 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -80,17 +78,38 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
             }
 
-            var entity = dto.AsEntity(
-                competitionCompetitorId,
-                _externalRefIdentityGenerator,
-                command.SourceDataProvider,
-                command.CorrelationId);
+            var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
+            var entry = await _dataContext.CompetitionCompetitorLineScores
+                .AsTracking()
+                .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
 
-            await _dataContext.CompetitionCompetitorLineScores.AddAsync(entity);
+            if (entry is not null)
+            {
+                entry.Value = dto.Value;
+                entry.DisplayValue = dto.DisplayValue;
+                entry.Period = dto.Period;
+                entry.SourceId = dto.Source?.Id ?? string.Empty;
+                entry.SourceDescription = dto.Source?.Description ?? string.Empty;
+                entry.SourceState = dto.Source?.State;
+                entry.ModifiedUtc = DateTime.UtcNow;
+                entry.ModifiedBy = command.CorrelationId;
+
+                _logger.LogInformation("Updated existing line score for Competitor {Id}, Period {Period}", competitionCompetitorId, dto.Period);
+            }
+            else
+            {
+                var entity = dto.AsEntity(
+                    competitionCompetitorId,
+                    _externalRefIdentityGenerator,
+                    command.SourceDataProvider,
+                    command.CorrelationId);
+
+                await _dataContext.CompetitionCompetitorLineScores.AddAsync(entity);
+
+                _logger.LogInformation("Inserted new line score for Competitor {Id}, Period {Period}", competitionCompetitorId, dto.Period);
+            }
+
             await _dataContext.SaveChangesAsync();
-
-            _logger.LogInformation("Persisted line score for Competitor {Id}", competitionCompetitorId);
         }
-
     }
 }

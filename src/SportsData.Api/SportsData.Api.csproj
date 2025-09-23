@@ -14,7 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameOverview.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentAndLastWeekSeasonWeeks.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatistics.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />
@@ -29,7 +34,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameOverview.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentAndLastWeekSeasonWeeks.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatistics.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />

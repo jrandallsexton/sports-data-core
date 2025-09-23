@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities

@@ -2,6 +2,8 @@
 
 public class TeamCardScheduleItemDto
 {
+    public Guid ContestId { get; set; }
+
     public int Week { get; set; }
 
     public DateTime Date { get; set; } = default!;

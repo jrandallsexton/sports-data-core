@@ -1,10 +1,9 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -89,11 +88,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException("ParentId must be a valid Guid.");
             }
 
-            var competitionExists = await _dataContext.Competitions
+            var competition = await _dataContext.Competitions
+                .Include(c => c.Status)
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == competitionId);
+                .FirstOrDefaultAsync(x => x.Id == competitionId);
 
-            if (!competitionExists)
+            if (competition is null)
             {
                 _logger.LogError("Competition not found for {CompetitionId}", competitionId);
                 throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
@@ -112,7 +112,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
-            var entity = await _dataContext.Plays
+            var entity = await _dataContext.CompetitionPlays
                 .Include(x => x.ExternalIds)
                 .FirstOrDefaultAsync(x =>
                     x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
@@ -123,7 +123,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await ProcessNewEntity(
                     command,
                     externalDto,
-                    competitionId,
+                    competition,
                     franchiseSeasonId.Value);
             }
             else
@@ -135,7 +135,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessNewEntity(
             ProcessDocumentCommand command,
             EspnEventCompetitionPlayDto externalDto,
-            Guid competitionId,
+            Competition competition,
             Guid franchiseSeasonId)
         {
             var startTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
@@ -147,21 +147,35 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var play = externalDto.AsEntity(
                 _externalRefIdentityGenerator,
                 command.CorrelationId,
-                competitionId,
+                competition.Id,
                 null,
                 franchiseSeasonId,
                 startTeamFranchiseSeasonId);
 
-            await _dataContext.Plays.AddAsync(play);
+            // if the competition is underway,
+            // broadcast a CompetitionPlayCompleted event
+            // CompetitionPlayCompleted
+            if (competition.Status is not null && !competition.Status.IsCompleted)
+            {
+                await _publishEndpoint.Publish(new CompetitionPlayCompleted(
+                    CompetitionPlayId: play.Id,
+                    CompetitionId: competition.Id,
+                    ContestId: competition.ContestId,
+                    PlayDescription: play.Text,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
+            }
+
+            await _dataContext.CompetitionPlays.AddAsync(play);
             await _dataContext.SaveChangesAsync();
         }
 
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
             EspnEventCompetitionPlayDto externalDto,
-            Play entity)
+            CompetitionPlay entity)
         {
-            // TODO: Implement update logic if necessary
+            _logger.LogWarning("Update detected; not implemented. {@Command}", command);
             await Task.Delay(100);
         }
     }

@@ -13,90 +13,149 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
+namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
+
+public class EventCompetitionPredictionDocumentProcessorTests :
+    ProducerTestBase<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>
 {
-    public class EventCompetitionPredictionDocumentProcessorTests :
-        ProducerTestBase<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>
+    private readonly string _documentPath = "EspnFootballNcaaEventCompetitionPredictor.json";
+
+    private async Task<ProcessDocumentCommand> SeedRequiredEntitiesAsync(Guid competitionId)
     {
-        [Fact]
-        public async Task WhenCompetitionAndTeamsExist_PredictionsAreCreated()
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var homeRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en");
+        var awayRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en");
+
+        var homeSeason = Fixture.Build<FranchiseSeason>()
+            .WithAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .Create();
+
+        var awaySeason = Fixture.Build<FranchiseSeason>()
+            .WithAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .Create();
+
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeSeason, awaySeason);
+        await FootballDataContext.FranchiseSeasonExternalIds.AddRangeAsync(
+            new FranchiseSeasonExternalId
+            {
+                Id = Guid.NewGuid(),
+                FranchiseSeasonId = homeSeason.Id,
+                Provider = SourceDataProvider.Espn,
+                SourceUrl = homeRef.CleanUrl,
+                SourceUrlHash = homeRef.UrlHash,
+                Value = homeRef.UrlHash
+            },
+            new FranchiseSeasonExternalId
+            {
+                Id = Guid.NewGuid(),
+                FranchiseSeasonId = awaySeason.Id,
+                Provider = SourceDataProvider.Espn,
+                SourceUrl = awayRef.CleanUrl,
+                SourceUrlHash = awayRef.UrlHash,
+                Value = awayRef.UrlHash
+            });
+
+        var competition = Fixture.Build<Competition>()
+            .WithAutoProperties()
+            .With(x => x.Id, competitionId)
+            .Create();
+
+        await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        var documentJson = await LoadJsonTestData(_documentPath);
+
+        return Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionPrediction)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.ParentId, competitionId.ToString())
+            .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/predictor?lang=en".UrlHash())
+            .Create();
+    }
+
+    [Fact]
+    public async Task Should_CreatePredictionsAndValues()
+    {
+        var competitionId = Guid.NewGuid();
+        var command = await SeedRequiredEntitiesAsync(competitionId);
+
+        var sut = Mocker.CreateInstance<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>();
+        await sut.ProcessAsync(command);
+
+        var predictions = await FootballDataContext.CompetitionPredictions
+            .Where(x => x.CompetitionId == competitionId)
+            .ToListAsync();
+
+        predictions.Should().HaveCount(2); // home + away
+        predictions.Should().Contain(x => x.IsHome);
+        predictions.Should().Contain(x => !x.IsHome);
+
+        var values = await FootballDataContext.CompetitionPredictionValues.ToListAsync();
+        values.Should().NotBeEmpty();
+        values.Should().AllSatisfy(v =>
         {
-            // Arrange
-            var identityGenerator = new ExternalRefIdentityGenerator();
-            Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+            v.PredictionMetricId.Should().NotBeEmpty();
+            v.DisplayValue.Should().NotBeNullOrWhiteSpace();
+        });
+    }
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPredictor.json");
+    [Fact]
+    public async Task Should_AddNewPredictionMetricsIfMissing()
+    {
+        var competitionId = Guid.NewGuid();
+        var command = await SeedRequiredEntitiesAsync(competitionId);
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .Create();
+        // Ensure PredictionMetrics table starts empty
+        FootballDataContext.PredictionMetrics.RemoveRange(FootballDataContext.PredictionMetrics);
+        await FootballDataContext.SaveChangesAsync();
 
-            await FootballDataContext.Competitions.AddAsync(competition);
+        var sut = Mocker.CreateInstance<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>();
+        await sut.ProcessAsync(command);
 
-            var homeFranchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .Create();
+        var metricCount = await FootballDataContext.PredictionMetrics.CountAsync();
+        metricCount.Should().BeGreaterThan(10); // ~17 per team
 
-            var awayFranchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .Create();
+        var sample = await FootballDataContext.PredictionMetrics
+            .FirstOrDefaultAsync(x => x.Name == "gameProjection");
 
-            var homeId = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en");
-            var awayId = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en");
+        sample.Should().NotBeNull();
+        sample!.DisplayName.Should().Be("WIN PROB");
+    }
 
-            await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeFranchiseSeason, awayFranchiseSeason);
-            await FootballDataContext.FranchiseSeasonExternalIds.AddRangeAsync(
-                new FranchiseSeasonExternalId
-                {
-                    Id = Guid.NewGuid(),
-                    FranchiseSeasonId = homeFranchiseSeason.Id,
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrl = homeId.CleanUrl,
-                    SourceUrlHash = homeId.UrlHash,
-                    Value = homeId.UrlHash
-                },
-                new FranchiseSeasonExternalId
-                {
-                    Id = Guid.NewGuid(),
-                    FranchiseSeasonId = awayFranchiseSeason.Id,
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrl = awayId.CleanUrl,
-                    SourceUrlHash = awayId.UrlHash,
-                    Value = awayId.UrlHash
-                });
+    [Fact]
+    public async Task Should_UseExistingPredictionMetricsIfAlreadySeeded()
+    {
+        var preexistingMetric = new PredictionMetric
+        {
+            Id = Guid.NewGuid(),
+            Name = "gameProjection",
+            DisplayName = "WIN PROB",
+            ShortDisplayName = "GP",
+            Abbreviation = "GP",
+            Description = "Pre-seeded"
+        };
 
-            await FootballDataContext.SaveChangesAsync();
+        await FootballDataContext.PredictionMetrics.AddAsync(preexistingMetric);
+        await FootballDataContext.SaveChangesAsync();
 
-            var command = Fixture.Build<ProcessDocumentCommand>()
-                .OmitAutoProperties()
-                .With(x => x.Document, documentJson)
-                .With(x => x.DocumentType, DocumentType.EventCompetitionPrediction)
-                .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-                .With(x => x.CorrelationId, Guid.NewGuid())
-                .With(x => x.ParentId, competition.Id.ToString())
-                .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/predictor?lang=en".UrlHash())
-                .Create();
+        var competitionId = Guid.NewGuid();
+        var command = await SeedRequiredEntitiesAsync(competitionId);
 
-            var sut = Mocker.CreateInstance<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>();
+        await sut.ProcessAsync(command);
 
-            // Act
-            await sut.ProcessAsync(command);
+        var values = await FootballDataContext.CompetitionPredictionValues
+            .Where(x => x.PredictionMetricId == preexistingMetric.Id)
+            .ToListAsync();
 
-            // Assert
-            var predictions = await FootballDataContext.CompetitionPredictions
-                .Where(x => x.CompetitionId == competition.Id)
-                .ToListAsync();
-
-            predictions.Should().NotBeEmpty();
-            predictions.Should().Contain(x => x.IsHome);
-            predictions.Should().Contain(x => !x.IsHome);
-
-            var metricCount = await FootballDataContext.PredictionMetrics.CountAsync();
-            metricCount.Should().BeGreaterThan(0);
-        }
+        values.Should().NotBeEmpty("should reuse pre-seeded metric by name match");
     }
 }

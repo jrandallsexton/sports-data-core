@@ -8,7 +8,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Play : CanonicalEntityBase<Guid>, IHasExternalIds
+    public class CompetitionPlay : CanonicalEntityBase<Guid>, IHasExternalIds   
     {
         public Competition Competition { get; set; } = null!;
 
@@ -20,7 +20,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string EspnId { get; set; } // Maps to "id" in JSON
 
-        public required string SequenceNumber { get; set; }
+        /// <summary>
+        /// Our canonical ordinal position of the play within the competition
+        /// Generated via enrichment after the fact, not from source
+        /// </summary>
+        public int? Ordinal { get; set; }
+
+        public required string SequenceNumber { get; set; } // this is from ESPN
 
         public PlayType Type { get; set; }
 
@@ -76,15 +82,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
 
-        public ICollection<PlayExternalId> ExternalIds { get; set; } = [];
+        public ICollection<CompetitionPlayExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<Play>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionPlay>
         {
-            public void Configure(EntityTypeBuilder<Play> builder)
+            public void Configure(EntityTypeBuilder<CompetitionPlay> builder)
             {
-                builder.ToTable(nameof(Play));
+                builder.ToTable(nameof(CompetitionPlay));
                 builder.HasKey(x => x.Id);
 
                 builder.Property(x => x.EspnId).IsRequired().HasMaxLength(30);
@@ -116,7 +122,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.HasMany(x => x.ExternalIds)
                     .WithOne()
-                    .HasForeignKey(nameof(PlayExternalId.PlayId))
+                    .HasForeignKey(x => x.CompetitionPlayId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.Probabilities)

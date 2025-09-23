@@ -130,7 +130,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var page2 = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlays_Page1.json");
 
         var uriPage1 = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays?lang=en&region=us&page=1&limit=25");
-        var uriPage2 = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays?limit=25&page=2");
+        var uriPage2 = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays?lang=en&region=us&page=2&limit=25");
 
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
 

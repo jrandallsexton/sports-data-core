@@ -80,5 +80,5 @@ INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = '1e0e9634-e38a-ff27-c918-75b318f59b32' -- ANY(@ContestIds)
+WHERE c."Id" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800' -- ANY(@ContestIds)
 ORDER BY c."StartDateUtc", fHome."Slug";

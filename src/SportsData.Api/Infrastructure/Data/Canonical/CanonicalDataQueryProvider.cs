@@ -14,7 +14,12 @@ public class CanonicalDataQueryProvider
         "GetRankingsByPollBySeasonByWeek.sql",
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
-        "GetTeamSeasons.sql"
+        "GetTeamSeasons.sql",
+        "GetContestOverviewGameOverview.sql",
+        "GetContestOverviewQuarterScores.sql",
+        "GetContestOverviewWinProbabilityPoints.sql",
+        "GetContestOverviewPlayLog.sql",
+        "GetCurrentAndLastWeekSeasonWeeks.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -47,6 +52,16 @@ public class CanonicalDataQueryProvider
 
         return sql;
     }
+
+    public string GetCurrentAndLastWeekSeasonWeeks() => Get("GetCurrentAndLastWeekSeasonWeeks.sql");
+
+    public string GetContestOverviewGameOverview() => Get("GetContestOverviewGameOverview.sql");
+
+    public string GetContestOverviewQuarterScores() => Get("GetContestOverviewQuarterScores.sql");
+
+    public string GetContestOverviewWinProbabilityPoints() => Get("GetContestOverviewWinProbabilityPoints.sql");
+
+    public string GetContestOverviewPlayLog() => Get("GetContestOverviewPlayLog.sql");
 
     public string GetCurrentSeasonWeek() => Get("GetCurrentSeasonWeek.sql");
 

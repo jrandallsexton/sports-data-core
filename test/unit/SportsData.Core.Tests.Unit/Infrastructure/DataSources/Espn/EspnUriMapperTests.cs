@@ -127,5 +127,25 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             var result = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(input);
             result.Should().Be(new Uri(expectedSeasonPollRef));
         }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752699/competitions/401752699/leaders?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752699/competitions/401752699")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/leaders",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334")]
+        public void CompetitionLeadersRefToCompetitionRef_Should_Trim_To_CompetitionUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(input);
+
+            result.Should().Be(expected);
+        }
+
     }
 }

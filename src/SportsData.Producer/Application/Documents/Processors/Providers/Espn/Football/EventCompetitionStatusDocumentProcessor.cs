@@ -40,7 +40,7 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
                    ["CorrelationId"] = command.CorrelationId
                }))
         {
-            _logger.LogWarning("Began with {@command}", command);
+            _logger.LogInformation("Began with {@command}", command);
             try
             {
                 await ProcessInternal(command);

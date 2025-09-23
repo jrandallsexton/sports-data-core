@@ -15,7 +15,7 @@ public static class CompetitionLeaderStatExtensions
         {
             Id = Guid.NewGuid(),
             CompetitionLeaderId = parentLeaderId,
-            AthleteId = athleteSeasonId,
+            AthleteSeasonId = athleteSeasonId,
             FranchiseSeasonId = franchiseSeasonId,
             DisplayValue = dto.DisplayValue,
             Value = dto.Value,

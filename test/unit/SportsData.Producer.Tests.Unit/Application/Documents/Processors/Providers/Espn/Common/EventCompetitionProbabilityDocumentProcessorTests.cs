@@ -52,14 +52,14 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             })
             .Create();
 
-        var play = Fixture.Build<Play>()
+        var play = Fixture.Build<CompetitionPlay>()
             .OmitAutoProperties()
             .With(x => x.Id, playIdentity.CanonicalId)
             .With(x => x.EspnId, "0")
             .With(x => x.SequenceNumber, "0")
             .With(x => x.Text, "Smith ran to the right for 3 yards")
             .With(x => x.TypeId, "typeId")
-            .With(x => x.ExternalIds, new List<PlayExternalId>
+            .With(x => x.ExternalIds, new List<CompetitionPlayExternalId>
             {
                 new()
                 {
@@ -73,7 +73,7 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             .Create();
 
         await FootballDataContext.Competitions.AddAsync(competition);
-        await FootballDataContext.Plays.AddAsync(play);
+        await FootballDataContext.CompetitionPlays.AddAsync(play);
         await FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -131,9 +131,9 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             })
             .Create();
 
-        var play = Fixture.Build<Play>()
+        var play = Fixture.Build<CompetitionPlay>()
             .With(x => x.Id, playIdentity.CanonicalId)
-            .With(x => x.ExternalIds, new List<PlayExternalId>
+            .With(x => x.ExternalIds, new List<CompetitionPlayExternalId>
             {
                 new()
                 {
@@ -147,7 +147,7 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             .Create();
 
         await FootballDataContext.Competitions.AddAsync(competition);
-        await FootballDataContext.Plays.AddAsync(play);
+        await FootballDataContext.CompetitionPlays.AddAsync(play);
         await FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()

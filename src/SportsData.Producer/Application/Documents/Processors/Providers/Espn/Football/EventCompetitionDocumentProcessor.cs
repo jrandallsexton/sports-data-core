@@ -501,6 +501,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 competition.ContestId,
                 command.CorrelationId);
 
+            if (competition.Attendance != updatedEntity.Attendance)
+            {
+                competition.Attendance = updatedEntity.Attendance;
+            }
+
             if (competition.Date != updatedEntity.Date)
             {
                 competition.Date = updatedEntity.Date;
@@ -511,6 +516,44 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         competition.Date,
                         command.CorrelationId,
                         CausationId.Producer.EventCompetitionDocumentProcessor));
+                raiseEvents = true;
+            }
+
+            if (dto.Situation?.Ref is not null)
+            {
+                var situationIdentity = _externalRefIdentityGenerator.Generate(dto.Situation.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: situationIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(situationIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionSituation,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+
+                raiseEvents = true;
+            }
+
+            if (dto.Status?.Ref is not null)
+            {
+                var statusIdentity = _externalRefIdentityGenerator.Generate(dto.Status.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: statusIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(statusIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionStatus,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
                 raiseEvents = true;
             }
 
@@ -535,6 +578,60 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 raiseEvents = true;
             }
 
+            if (dto.Broadcasts?.Ref is not null)
+            {
+                var broadcastIdentity = _externalRefIdentityGenerator.Generate(dto.Broadcasts.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: broadcastIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(broadcastIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionBroadcast,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
+            if (dto.Details?.Ref is not null)
+            {
+                var playLogIdentity = _externalRefIdentityGenerator.Generate(dto.Details.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: playLogIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(playLogIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionPlay,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
+            if (dto.Leaders?.Ref is not null)
+            {
+                var leadersIdentity = _externalRefIdentityGenerator.Generate(dto.Leaders.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: leadersIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(leadersIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionLeaders,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
             if (dto.Predictor?.Ref is not null)
             {
                 var predictionIdentity = _externalRefIdentityGenerator.Generate(dto.Predictor.Ref);
@@ -554,32 +651,92 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 raiseEvents = true;
             }
 
+            if (dto.Probabilities?.Ref is not null)
+            {
+                var probabilityIdentity = _externalRefIdentityGenerator.Generate(dto.Probabilities.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: probabilityIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(probabilityIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionProbability,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
+            if (dto.PowerIndexes?.Ref is not null)
+            {
+                var powerIndexIdentity = _externalRefIdentityGenerator.Generate(dto.PowerIndexes.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: powerIndexIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(powerIndexIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionPowerIndex,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
+            if (dto.Drives?.Ref is not null)
+            {
+                var drivesIdentity = _externalRefIdentityGenerator.Generate(dto.Drives.Ref);
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: drivesIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(drivesIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionDrive,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                    BypassCache: true
+                ));
+                raiseEvents = true;
+            }
+
             foreach (var competitor in dto.Competitors)
             {
-                if (competitor.Statistics?.Ref is not null)
+                var competitorIdentity = _externalRefIdentityGenerator.Generate(competitor.Ref);
+
+                if (competitor.Score?.Ref is not null)
                 {
-                    var teamIdentity = _externalRefIdentityGenerator.Generate(competitor.Team.Ref);
+                    var scoreIdentity = _externalRefIdentityGenerator.Generate(competitor.Score.Ref);
+
                     await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: teamIdentity.UrlHash,
+                        Id: scoreIdentity.UrlHash,
                         ParentId: competition.Id.ToString(),
-                        Uri: competitor.Statistics.Ref,
+                        Uri: new Uri(scoreIdentity.CleanUrl),
                         Sport: command.Sport,
                         SeasonYear: command.Season,
-                        DocumentType: DocumentType.EventCompetitionCompetitorStatistics,
+                        DocumentType: DocumentType.EventCompetitionCompetitorScore,
                         SourceDataProvider: command.SourceDataProvider,
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
                         BypassCache: true
                     ));
+                    raiseEvents = true;
                 }
 
                 if (competitor.Linescores?.Ref is not null)
                 {
-                    var competitorIdentity = _externalRefIdentityGenerator.Generate(competitor.Ref);
+                    
+                    var lineScoreIdentity = _externalRefIdentityGenerator.Generate(competitor.Linescores.Ref);
+
                     await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: competitorIdentity.UrlHash,
+                        Id: lineScoreIdentity.UrlHash,
                         ParentId: competitorIdentity.CanonicalId.ToString(),
-                        Uri: competitor.Linescores.Ref,
+                        Uri: new Uri(lineScoreIdentity.CleanUrl),
                         Sport: command.Sport,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.EventCompetitionCompetitorLineScore,
@@ -588,9 +745,44 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
                         BypassCache: true
                     ));
+                    raiseEvents = true;
                 }
 
-                raiseEvents = true;
+                if (competitor.Statistics?.Ref is not null)
+                {
+                    var statisticsIdentity = _externalRefIdentityGenerator.Generate(competitor.Statistics.Ref);
+
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: statisticsIdentity.UrlHash,
+                        ParentId: competition.Id.ToString(),
+                        Uri: new Uri(statisticsIdentity.CleanUrl),
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.EventCompetitionCompetitorStatistics,
+                        SourceDataProvider: command.SourceDataProvider,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                        BypassCache: true
+                    ));
+                    raiseEvents = true;
+                }
+
+                //if (competitor.Leaders?.Ref is not null)
+                //{
+                //    var leadersIdentity = _externalRefIdentityGenerator.Generate(competitor.Leaders.Ref);
+                //    await _publishEndpoint.Publish(new DocumentRequested(
+                //        Id: leadersIdentity.UrlHash,
+                //        ParentId: competition.Id.ToString(),
+                //        Uri: new Uri(leadersIdentity.CleanUrl),
+                //        Sport: command.Sport,
+                //        SeasonYear: command.Season,
+                //        DocumentType: DocumentType.EventCompetitionLeaders,
+                //        SourceDataProvider: command.SourceDataProvider,
+                //        CorrelationId: command.CorrelationId,
+                //        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
+                //        BypassCache: true
+                //    ));
+                //}
             }
 
             if (raiseEvents)

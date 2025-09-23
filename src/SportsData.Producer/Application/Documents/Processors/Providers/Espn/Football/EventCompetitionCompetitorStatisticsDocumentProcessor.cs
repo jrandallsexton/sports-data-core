@@ -66,7 +66,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!Guid.TryParse(command.ParentId, out var competitionId))
             {
                 _logger.LogError("Invalid or missing Competition ID in ParentId.");
-                throw new InvalidOperationException("Missing or invalid ParentId.");
+                return;
             }
 
             var competition = await _dataContext.Competitions
@@ -75,7 +75,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (competition is null)
             {
                 _logger.LogError("Competition not found for ID {CompetitionId}", competitionId);
-                throw new InvalidOperationException($"Competition {competitionId} not found.");
+                return;
             }
 
             // Resolve FranchiseSeason
@@ -87,7 +87,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (franchiseSeason is null)
             {
                 _logger.LogError("FranchiseSeason not found for URL hash {Hash}", franchiseSeasonIdentity.UrlHash);
-                throw new InvalidOperationException($"FranchiseSeason not found for identity {franchiseSeasonIdentity.CanonicalId}");
+                return;
             }
 
             // Blow away any existing stats for this team/competition

@@ -135,6 +135,22 @@ public static class EspnUriMapper
         return new Uri(path + query, UriKind.Absolute);
     }
 
+    public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)
+    {
+        if (competitionLeadersRef == null)
+            throw new ArgumentNullException(nameof(competitionLeadersRef));
+
+        // Remove query string and trailing segments after "/competitions/{id}"
+        var uri = competitionLeadersRef.GetLeftPart(UriPartial.Path);
+
+        // Find "/leaders" segment and trim it off
+        var trimmed = uri;
+        if (trimmed.EndsWith("/leaders", StringComparison.OrdinalIgnoreCase))
+            trimmed = trimmed[..^"/leaders".Length];
+
+        return new Uri(trimmed);
+    }
+
     public static Uri CompetitionRefToCompetitionStatusRef(Uri competitionRef)
     {
         if (competitionRef == null)
@@ -235,6 +251,4 @@ public static class EspnUriMapper
 
         return new Uri(finalPath, UriKind.Absolute); // do NOT append query string
     }
-
-
 }

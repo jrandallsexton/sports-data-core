@@ -65,7 +65,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, Guid.NewGuid())
             .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Plays, new List<Play>())
+            .With(x => x.Plays, new List<CompetitionPlay>())
             .Create();
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();
@@ -123,7 +123,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await sut.ProcessAsync(command);
 
         // assert
-        var play = await FootballDataContext.Plays
+        var play = await FootballDataContext.CompetitionPlays
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
 
@@ -208,7 +208,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await sut.ProcessAsync(command);
 
         // assert
-        var play = await FootballDataContext.Plays
+        var play = await FootballDataContext.CompetitionPlays
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
 
@@ -234,15 +234,15 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await FootballDataContext.Competitions.AddAsync(competition);
 
         var playId = Guid.NewGuid();
-        var play = Fixture.Build<Play>()
+        var play = Fixture.Build<CompetitionPlay>()
             .With(x => x.Id, playId)
             .With(x => x.CompetitionId, competitionId)
             .With(x => x.CreatedBy, Guid.NewGuid())
             .Create();
-        await FootballDataContext.Plays.AddAsync(play);
+        await FootballDataContext.CompetitionPlays.AddAsync(play);
 
-        var externalId = Fixture.Build<PlayExternalId>()
-            .With(x => x.PlayId, playId)
+        var externalId = Fixture.Build<CompetitionPlayExternalId>()
+            .With(x => x.CompetitionPlayId, playId)
             .With(x => x.Provider, SourceDataProvider.Espn)
             .With(x => x.SourceUrlHash, generator.Generate(PlayUrl).UrlHash)
             .With(x => x.CreatedBy, Guid.NewGuid())
@@ -260,7 +260,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await sut.ProcessAsync(command);
 
         // assert
-        var updatedPlay = await FootballDataContext.Plays
+        var updatedPlay = await FootballDataContext.CompetitionPlays
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.Id == playId);
 

@@ -11,11 +11,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Guid CompetitionLeaderId { get; set; }
         public CompetitionLeader CompetitionLeader { get; set; } = null!;
 
+        public Guid AthleteSeasonId { get; set; }
+        public AthleteSeason AthleteSeason { get; set; } = null!;
+
         public string DisplayValue { get; set; } = null!;
         public double Value { get; set; }
-
-        public Guid AthleteId { get; set; }
-        public Athlete Athlete { get; set; } = null!;
 
         public Guid FranchiseSeasonId { get; set; }
         public FranchiseSeason FranchiseSeason { get; set; } = null!;
@@ -39,9 +39,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.CompetitionLeaderId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.HasOne(x => x.Athlete)
+                builder.HasOne(x => x.AthleteSeason)
                     .WithMany()
-                    .HasForeignKey(x => x.AthleteId)
+                    .HasForeignKey(x => x.AthleteSeasonId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 builder.HasOne(x => x.FranchiseSeason)

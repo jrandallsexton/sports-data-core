@@ -65,7 +65,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             foreach (var stat in stats)
             {
-                if (!knownMetrics.TryGetValue(stat.Name.Trim().ToLowerInvariant(), out var metric))
+                var key = stat.Name.Trim().ToLowerInvariant();
+
+                if (!knownMetrics.TryGetValue(key, out var metric))
                 {
                     metric = new PredictionMetric
                     {
@@ -76,7 +78,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                         Abbreviation = stat.Abbreviation,
                         Description = stat.Description
                     };
-                    knownMetrics[stat.Name.Trim().ToLowerInvariant()] = metric;
+
+                    knownMetrics[key] = metric;
                 }
 
                 var value = new CompetitionPredictionValue
@@ -90,11 +93,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     CreatedUtc = DateTime.UtcNow
                 };
 
-                // Attach manually — since no nav
-                // This would be handled by processor
+                prediction.Values.Add(value); // ✅ Add the value to the nav prop
             }
 
             return prediction;
         }
+
     }
 }

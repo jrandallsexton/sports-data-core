@@ -13,6 +13,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsHome { get; set; }
 
+        public ICollection<CompetitionPredictionValue> Values { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<CompetitionPrediction>
         {
             public void Configure(EntityTypeBuilder<CompetitionPrediction> builder)
@@ -25,6 +27,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.IsHome).IsRequired();
                 builder.HasIndex(x => new { x.CompetitionId, x.FranchiseSeasonId, x.IsHome })
                     .IsUnique();
+
+                builder.HasMany(x => x.Values)
+                    .WithOne()
+                    .HasForeignKey(v => v.CompetitionPredictionId)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
     }

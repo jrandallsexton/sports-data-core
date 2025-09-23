@@ -89,7 +89,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 playId = await _dataContext.TryResolveFromDtoRefAsync(
                     dto.Play,
                     command.SourceDataProvider,
-                    () => _dataContext.Plays.Include(x => x.ExternalIds).AsNoTracking(),
+                    () => _dataContext.CompetitionPlays.Include(x => x.ExternalIds).AsNoTracking(),
                     _logger);
             }
 

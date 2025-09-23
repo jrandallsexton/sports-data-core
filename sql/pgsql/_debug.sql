@@ -19,16 +19,16 @@ order by ap."Name", ats."LastName", ats."FirstName"
 select * from public."FranchiseSeasonRecord"
 select * from public."Franchise"
 select * from public."FranchiseExternalId"
-select * from public."FranchiseSeason" where "Id" = '0abfe224-2ff2-951d-25e1-a9d59d57bfe7'
+select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
 
 select * from public."FranchiseSeasonStatisticCategory"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 order by "Name"
 
-select * from public."FranchiseSeasonLogo"
+select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c'
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'e74fa119-0208-337e-0f96-0c64224d7d20' where "ShortHeadline" = '2025 AP Poll: Week 3'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '0506f7ab-39ad-b0ba-0c4a-2b2b8b794eaf' where "ShortHeadline" = '2025 AP Poll: Week 5'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"
@@ -48,7 +48,7 @@ select
 from public."Contest" c
 where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 
-select * from public."Contest" where "Id" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'
+select * from public."Contest" where "Id" = 'cbd1f3e5-9547-9e5f-e7a6-64530cb575a5'
 select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
 select * from public."Competition" where "ContestId" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'
 
@@ -72,3 +72,5 @@ select *
 from public."GroupSeason" gs
 inner join public."Season" s on s."Id" = gs."SeasonId"
 where gs."Slug" = 'sec' and gs."SeasonYear" = 2025
+
+select * from public."PredictionMetric" order by "Name"

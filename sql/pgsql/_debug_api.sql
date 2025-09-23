@@ -28,12 +28,25 @@ select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7
 -- https://api-dev.sportdeets.com/ui/matchup//preview
 select *
 from public."PickemGroupMatchup"
-where
+--where
   --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
   --"SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and
-  "ContestId" = '22ce0efb-21b6-2d1a-6067-2291699162eb'
-order by "ContestId"
--- https://api-dev.sportdeets.com/ui/matchup/33629e7d-ed7c-bbda-daab-86369d4910e8/preview
+  --"ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
+order by "StartDateUtc" desc
+
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 16:30:00-04' WHERE "ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = '543f7123-a6ef-e247-2f7f-43ba6989e6bc'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:30:00-04' WHERE "ContestId" = '79644b4f-98d9-c2c6-f4c1-26068931d10c'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 23:00:00-04' WHERE "ContestId" = '86a15558-ffaf-e157-02c4-dc38264e1657'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:00:00-04' WHERE "ContestId" = '9fe25355-e3de-f5e7-5bd8-ab1e07788f72'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = 'bcff12ac-7350-ed91-fac6-d9fd19fcc016'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:30:00-04' WHERE "ContestId" = 'cbd1f3e5-9547-9e5f-e7a6-64530cb575a5'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:00:00-04' WHERE "ContestId" = 'cc27abad-d9aa-c777-d37a-ef34446d6f95'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 12:00:00-04' WHERE "ContestId" = 'd7ec614d-9825-b2c9-c25d-234db71a7bec'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 12:00:00-04' WHERE "ContestId" = 'de77a1a4-e010-5851-f367-78bb2600490e'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = 'f66adefe-4df1-5a80-57e4-637fccf78299'
+
+-- http://localhost:5262/ui/matchup/f66adefe-4df1-5a80-57e4-637fccf78299/preview
 
 -- FIX DEV
 -- delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20250920092105_20SepV1")]
+    partial class _20SepV1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2599,7 +2602,7 @@ namespace SportsData.Producer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("AthleteSeasonId")
+                    b.Property<Guid>("AthleteId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CompetitionLeaderId")
@@ -2631,7 +2634,7 @@ namespace SportsData.Producer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AthleteSeasonId");
+                    b.HasIndex("AthleteId");
 
                     b.HasIndex("CompetitionLeaderId");
 
@@ -7030,9 +7033,9 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeaderStat", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Athlete", "Athlete")
                         .WithMany()
-                        .HasForeignKey("AthleteSeasonId")
+                        .HasForeignKey("AthleteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -7048,7 +7051,7 @@ namespace SportsData.Producer.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AthleteSeason");
+                    b.Navigation("Athlete");
 
                     b.Navigation("CompetitionLeader");
 
@@ -7160,15 +7163,6 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("CompetitionPowerIndex");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPredictionValue", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPrediction", null)
-                        .WithMany("Values")
-                        .HasForeignKey("CompetitionPredictionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", b =>
@@ -7980,11 +7974,6 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPowerIndex", b =>
                 {
                     b.Navigation("ExternalIds");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPrediction", b =>
-                {
-                    b.Navigation("Values");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionProbability", b =>

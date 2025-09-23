@@ -5,8 +5,11 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -40,14 +43,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = command.CorrelationId
+                   }))
             {
-                ["CorrelationId"] = command.CorrelationId
-            }))
-            {
-                _logger.LogInformation("Processing EventCompetitionLeadersDocument with {@Command}", command);
+                _logger.LogInformation("Processing EventDocument with {@Command}", command);
                 try
                 {
                     await ProcessInternal(command);
+                }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _publishEndpoint.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -60,36 +71,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             var dto = command.Document.FromJson<EspnEventCompetitionLeadersDto>();
-
-            if (dto is null)
+            if (dto is null || string.IsNullOrEmpty(dto.Ref?.ToString()))
             {
-                _logger.LogError("Failed to deserialize document to EspnEventCompetitionLeadersDto. {@Command}", command);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(dto.Ref?.ToString()))
-            {
-                _logger.LogError("EspnEventCompetitionLeadersDto Ref is null. {@Command}", command);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(command.ParentId))
-            {
-                _logger.LogError("ParentId not provided. Cannot process competition leaders for null CompetitionId");
+                _logger.LogError("Invalid or null DTO in {@Command}", command);
                 return;
             }
 
             if (!Guid.TryParse(command.ParentId, out var competitionId))
             {
-                _logger.LogError("Invalid ParentId format for CompetitionId. Cannot parse to Guid.");
+                _logger.LogError("Invalid or missing ParentId in {@Command}", command);
                 return;
             }
 
-            // Resolve parent Competition entity
             var competition = await _dataContext.Competitions
                 .Include(x => x.ExternalIds)
-                .Include(x => x.Leaders)
-                    .ThenInclude(x => x.Stats)
+                .Include(x => x.Leaders).ThenInclude(x => x.Stats)
                 .FirstOrDefaultAsync(x => x.Id == competitionId);
 
             if (competition is null)
@@ -98,8 +94,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
+            // delete existing leaders & stats
+            _dataContext.CompetitionLeaderStats.RemoveRange(
+                competition.Leaders.SelectMany(l => l.Stats));
+            _dataContext.CompetitionLeaders.RemoveRange(competition.Leaders);
+            await _dataContext.SaveChangesAsync();
+
             var franchiseSeasonCache = new Dictionary<string, Guid>();
             var athleteSeasonCache = new Dictionary<string, Guid>();
+
+            var leaders = new List<CompetitionLeader>();
 
             foreach (var category in dto.Categories)
             {
@@ -114,95 +118,30 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 }
 
                 var leaderEntity = category.AsEntity(
-                    competitionId: competition.Id,
-                    leaderCategoryId: leaderCategory.Id,
-                    correlationId: command.CorrelationId);
+                    competitionId,
+                    leaderCategory.Id,
+                    command.CorrelationId
+                );
 
                 foreach (var leaderDto in category.Leaders)
                 {
-                    if (!athleteSeasonCache.TryGetValue(leaderDto.Athlete.Ref.ToString(), out var athleteSeasonId))
-                    {
-                        athleteSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                            leaderDto.Athlete,
-                            command.SourceDataProvider,
-                            () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                            _logger) ?? Guid.Empty;
+                    var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+                    var franchiseSeasonId = await ResolveFranchiseSeasonIdAsync(leaderDto.Team, command, franchiseSeasonCache);
 
-                        athleteSeasonCache[leaderDto.Athlete.Ref.ToString()] = athleteSeasonId;
-                    }
-
-                    if (athleteSeasonId == Guid.Empty)
-                    {
-                        var athleteHash = HashProvider.GenerateHashFromUri(leaderDto.Athlete.Ref);
-                        _logger.LogWarning("Athlete not found for hash {AthleteHash}, publishing sourcing request.", athleteHash);
-
-                        await _publishEndpoint.Publish(new DocumentRequested(
-                            Id: athleteHash,
-                            ParentId: competition.Id.ToString(),
-                            Uri: leaderDto.Athlete.Ref.ToCleanUri(),
-                            Sport: command.Sport,
-                            SeasonYear: command.Season,
-                            DocumentType: DocumentType.Athlete,
-                            SourceDataProvider: command.SourceDataProvider,
-                            CorrelationId: command.CorrelationId,
-                            CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-                        ));
-                        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                        await _dataContext.SaveChangesAsync();
-
-                        // TODO: Continue processing and raise the document requested event at the end and throw a single exception
-                        throw new InvalidOperationException($"Missing athlete for leader category '{category.Name}' - will retry later.");
-                    }
-
-                    if (!franchiseSeasonCache.TryGetValue(leaderDto.Team.Ref.ToString(), out var franchiseSeasonId))
-                    {
-                        franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                            leaderDto.Team,
-                            command.SourceDataProvider,
-                            () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                            _logger) ?? Guid.Empty;
-
-                        franchiseSeasonCache[leaderDto.Team.Ref.ToString()] = franchiseSeasonId;
-                    }
-
-                    if (franchiseSeasonId == Guid.Empty)
-                    {
-                        var teamHash = HashProvider.GenerateHashFromUri(leaderDto.Team.Ref);
-                        _logger.LogWarning("FranchiseSeason not found for hash {TeamHash}, publishing sourcing request.", teamHash);
-
-                        await _publishEndpoint.Publish(new DocumentRequested(
-                            Id: teamHash,
-                            ParentId: competition.Id.ToString(),
-                            Uri: leaderDto.Team.Ref.ToCleanUri(),
-                            Sport: command.Sport,
-                            SeasonYear: command.Season,
-                            DocumentType: DocumentType.TeamSeason,
-                            SourceDataProvider: command.SourceDataProvider,
-                            CorrelationId: command.CorrelationId,
-                            CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-                        ));
-                        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                        await _dataContext.SaveChangesAsync();
-
-                        throw new InvalidOperationException($"Missing franchise season for leader category '{category.Name}' - will retry later.");
-                    }
-
-                    // need to request sourcing for leader.Statistics
-                    // this is the complete stats object for this athlete in this competition
                     var athleteSeasonIdentity = _externalIdentityGenerator.Generate(leaderDto.Athlete.Ref);
-                    var athleteCompetitionStatsIdentity = _externalIdentityGenerator.Generate(leaderDto.Statistics.Ref);
+                    var statsIdentity = _externalIdentityGenerator.Generate(leaderDto.Statistics.Ref);
 
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: athleteCompetitionStatsIdentity.UrlHash,
-                        ParentId: athleteSeasonIdentity.CanonicalId.ToString(),
-                        Uri: new Uri(athleteCompetitionStatsIdentity.CleanUrl),
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.EventCompetitionAthleteStatistics,
-                        SourceDataProvider: command.SourceDataProvider,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-                    ));
+                    //await _publishEndpoint.Publish(new DocumentRequested(
+                    //    Id: statsIdentity.UrlHash,
+                    //    ParentId: athleteSeasonIdentity.CanonicalId.ToString(),
+                    //    Uri: new Uri(statsIdentity.CleanUrl),
+                    //    Sport: command.Sport,
+                    //    SeasonYear: command.Season,
+                    //    DocumentType: DocumentType.EventCompetitionAthleteStatistics,
+                    //    SourceDataProvider: command.SourceDataProvider,
+                    //    CorrelationId: command.CorrelationId,
+                    //    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
+                    //));
 
                     var stat = leaderDto.AsEntity(
                         parentLeaderId: leaderEntity.Id,
@@ -210,17 +149,106 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         franchiseSeasonId: franchiseSeasonId,
                         correlationId: command.CorrelationId);
 
-                    //leaderEntity.Stats.Add(stat);
-                    await _dataContext.CompetitionLeaderStats.AddAsync(stat);
+                    leaderEntity.Stats.Add(stat);
                 }
 
-                if (leaderEntity.Stats.Count > 0)
-                {
-                    await _dataContext.CompetitionLeaders.AddAsync(leaderEntity);
-                }
+                leaders.Add(leaderEntity);
             }
 
+            await _dataContext.CompetitionLeaders.AddRangeAsync(leaders);
+
             await _dataContext.SaveChangesAsync();
+        }
+
+        private async Task<Guid> ResolveAthleteSeasonIdAsync(
+            IHasRef athleteDto,
+            ProcessDocumentCommand command,
+            Dictionary<string, Guid> cache)
+        {
+            var key = athleteDto.Ref.ToString();
+
+            if (cache.TryGetValue(key, out var cachedId))
+                return cachedId;
+
+            var resolvedId = await _dataContext.TryResolveFromDtoRefAsync(
+                athleteDto,
+                command.SourceDataProvider,
+                () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger
+            );
+
+            if (resolvedId is null)
+            {
+                var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
+                var athleteIdentity = _externalIdentityGenerator.Generate(athleteRef);
+
+                var athleteSeasonIdentity = _externalIdentityGenerator.Generate(athleteDto.Ref);
+
+                _logger.LogWarning("AthleteSeason not found for hash {Hash}, requesting source.", athleteSeasonIdentity.UrlHash);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: athleteSeasonIdentity.UrlHash,
+                    ParentId: athleteIdentity.CanonicalId.ToString(),
+                    Uri: new Uri(athleteSeasonIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.AthleteSeason,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor,
+                    BypassCache: true
+                ));
+
+                throw new ExternalDocumentNotSourcedException($"Missing AthleteSeason for ref {athleteDto.Ref}");
+            }
+
+            cache[key] = resolvedId.Value;
+            return resolvedId.Value;
+        }
+
+        private async Task<Guid> ResolveFranchiseSeasonIdAsync(
+            IHasRef teamDto,
+            ProcessDocumentCommand command,
+            Dictionary<string, Guid> cache)
+        {
+            var key = teamDto.Ref.ToString();
+
+            if (cache.TryGetValue(key, out var cachedId))
+                return cachedId;
+
+            var resolvedId = await _dataContext.TryResolveFromDtoRefAsync(
+                teamDto,
+                command.SourceDataProvider,
+                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
+                _logger
+            );
+
+            if (resolvedId is null)
+            {
+                var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(teamDto.Ref);
+                var franchiseIdentity = _externalIdentityGenerator.Generate(franchiseRef);
+
+                var franchiseSeasonIdentity = _externalIdentityGenerator.Generate(teamDto.Ref);
+                
+                _logger.LogWarning("FranchiseSeason not found for hash {Hash}, requesting source.", franchiseSeasonIdentity.UrlHash);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: franchiseSeasonIdentity.UrlHash,
+                    ParentId: franchiseIdentity.CanonicalId.ToString(),
+                    Uri: new Uri(franchiseSeasonIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.TeamSeason,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
+                ));
+
+                throw new ExternalDocumentNotSourcedException($"Missing FranchiseSeason for ref {teamDto.Ref}");
+            }
+
+            cache[key] = resolvedId.Value;
+            return resolvedId.Value;
         }
     }
 }

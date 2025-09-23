@@ -18,7 +18,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
 public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
-    private const string TestUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/1/linescores/1";
+    private const string TestUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores/1/1?lang=en&region=us";
 
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
     {
@@ -73,6 +73,66 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         lineScore.SourceDescription.Should().Be("Basic/Manual");
         lineScore.SourceState.Should().BeNull(); // since `state` is missing in the JSON
     }
+
+    [Fact]
+    public async Task WhenLineScoreExists_ShouldUpdate()
+    {
+        // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var competitorId = Guid.NewGuid();
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
+        var command = CreateCommand(json, competitorId.ToString());
+
+        var identity = generator.Generate(TestUrl);
+
+        var existing = Fixture.Build<CompetitionCompetitorLineScore>()
+            .With(x => x.Id, identity.CanonicalId)
+            .With(x => x.CompetitionCompetitorId, competitorId)
+            .With(x => x.Value, 99)
+            .With(x => x.DisplayValue, "99")
+            .With(x => x.Period, 1)
+            .With(x => x.SourceId, "OLD")
+            .With(x => x.SourceDescription, "Old Desc")
+            .With(x => x.ExternalIds, new List<CompetitionCompetitorLineScoreExternalId>
+            {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Provider = SourceDataProvider.Espn,
+                Value = identity.UrlHash,
+                SourceUrl = identity.CleanUrl,
+                SourceUrlHash = identity.UrlHash
+            }
+            })
+            .Create();
+
+        var competitor = Fixture.Build<CompetitionCompetitor>()
+            .With(x => x.Id, competitorId)
+            .Without(x => x.LineScores) // don’t assign LineScores manually
+            .Create();
+
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+        await FootballDataContext.CompetitionCompetitorLineScores.AddAsync(existing);
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
+
+        // Act — reprocess same data
+        await sut.ProcessAsync(command);
+
+        // Assert — verify update
+        var updated = await FootballDataContext.CompetitionCompetitorLineScores
+            .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
+
+        updated.Should().NotBeNull();
+        updated!.Value.Should().Be(0); // from JSON
+        updated.DisplayValue.Should().Be("0");
+        updated.SourceId.Should().Be("1");
+        updated.SourceDescription.Should().Be("Basic/Manual");
+    }
+
 
     [Fact]
     public async Task WhenParentIdInvalid_ShouldThrow()

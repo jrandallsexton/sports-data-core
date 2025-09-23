@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -281,28 +282,32 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         statCount.Should().BeGreaterThan(0);
     }
 
-    [Fact(Skip="TODO")]
+    [Fact]
     public async Task WhenCompetitionExistsAndDataIsResolvable_LeadersAndStatsAreCreated()
     {
         // Arrange
         var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
         var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+
         var identityGenerator = new ExternalRefIdentityGenerator();
-        var identity = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en");
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto!.Ref);
+        var competitionIdentity = identityGenerator.Generate(competitionRef);
 
         // Seed competition
         var competition = Fixture.Build<Competition>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, competitionIdentity.CanonicalId)
             .With(x => x.ExternalIds, new List<CompetitionExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
                     Provider = SourceDataProvider.Espn,
-                    SourceUrl = identity.CleanUrl,
-                    SourceUrlHash = identity.UrlHash,
-                    Value = identity.UrlHash
+                    SourceUrl = competitionIdentity.CleanUrl,
+                    SourceUrlHash = competitionIdentity.UrlHash,
+                    Value = competitionIdentity.UrlHash
                 }
             })
             .With(x => x.Leaders, new List<CompetitionLeader>())
@@ -312,7 +317,6 @@ public class EventCompetitionLeadersDocumentProcessorTests :
 
         // Seed LeaderCategories
         var nextCategoryId = 1;
-        var expectedRecordCount = 0;
         foreach (var category in leadersDto.Categories)
         {
             FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
@@ -324,64 +328,69 @@ public class EventCompetitionLeadersDocumentProcessorTests :
                 Abbreviation = category.Abbreviation,
                 CreatedUtc = DateTime.UtcNow
             });
-            expectedRecordCount += category.Leaders.Count;
         }
+
+        var athleteSeasonIds = new List<Guid>();
+        var franchiseSeasonIds = new List<Guid>();
 
         // Seed Athlete + FranchiseSeason for each leader
         foreach (var leader in leadersDto.Categories.SelectMany(c => c.Leaders))
         {
-            var athleteId = Guid.NewGuid();
-            var teamId = Guid.NewGuid();
-
-            var athleteHash = HashProvider.GenerateHashFromUri(leader.Athlete.Ref);
-            var teamHash = HashProvider.GenerateHashFromUri(leader.Team.Ref);
-
-            var athlete = Fixture.Build<FootballAthleteSeason>()
-                .WithAutoProperties()
-                .With(x => x.Id, athleteId)
-                .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
-                {
-                    new()
+            var athleteSeasonIdentity = identityGenerator.Generate(leader.Athlete.Ref);
+            if (!athleteSeasonIds.Contains(athleteSeasonIdentity.CanonicalId))
+            {
+                var athlete = Fixture.Build<FootballAthleteSeason>()
+                    .WithAutoProperties()
+                    .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
+                    .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
                     {
-                        Id = Guid.NewGuid(),
-                        AthleteSeasonId = athleteId,
-                        Provider = SourceDataProvider.Espn,
-                        SourceUrl = leader.Athlete.Ref.ToString(),
-                        SourceUrlHash = athleteHash,
-                        Value = athleteHash
-                    }
-                })
-                .Create();
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = athleteSeasonIdentity.CleanUrl,
+                            SourceUrlHash = athleteSeasonIdentity.UrlHash,
+                            Value = athleteSeasonIdentity.UrlHash
+                        }
+                    })
+                    .Create();
+                await FootballDataContext.AthleteSeasons.AddAsync(athlete);
+                athleteSeasonIds.Add(athleteSeasonIdentity.CanonicalId);
+            }
 
-            var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.Id, teamId)
-                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
-                {
-                    new()
+            var franchiseSeasonIdentity = identityGenerator.Generate(leader.Team.Ref);
+            if (!franchiseSeasonIds.Contains(franchiseSeasonIdentity.CanonicalId))
+            {
+                var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                    .WithAutoProperties()
+                    .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
+                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
                     {
-                        Id = Guid.NewGuid(),
-                        FranchiseSeasonId = teamId,
-                        Provider = SourceDataProvider.Espn,
-                        SourceUrl = leader.Team.Ref.ToString(),
-                        SourceUrlHash = teamHash,
-                        Value = teamHash
-                    }
-                })
-                .Create();
-
-            await FootballDataContext.AthleteSeasons.AddAsync(athlete);
-            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = franchiseSeasonIdentity.CleanUrl,
+                            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+                            Value = franchiseSeasonIdentity.UrlHash
+                        }
+                    })
+                    .Create();
+                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+                franchiseSeasonIds.Add(franchiseSeasonIdentity.CanonicalId);
+            }
         }
 
         await FootballDataContext.SaveChangesAsync();
 
         var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
 
+        var leadersIdentity = identityGenerator.Generate(leadersDto!.Ref);
+
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
             .With(x => x.Document, documentJson)
-            .With(x => x.UrlHash, identity.UrlHash)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
             .With(x => x.DocumentType, DocumentType.EventCompetitionLeaders)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
@@ -412,6 +421,166 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         }
 
         var leaderCategories = await FootballDataContext.CompetitionLeaders.ToListAsync();
+        leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
+    }
+
+
+    [Fact]
+    public async Task WhenCompetitionExistsAndDataIsResolvable_LeadersAndStatsReplaceExistingData()
+    {
+        // Arrange
+        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto!.Ref);
+        var competitionIdentity = identityGenerator.Generate(competitionRef);
+
+        // Seed competition
+        var competition = Fixture.Build<Competition>()
+            .WithAutoProperties()
+            .With(x => x.Id, competitionIdentity.CanonicalId)
+            .With(x => x.ExternalIds, new List<CompetitionExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = competitionIdentity.CleanUrl,
+                    SourceUrlHash = competitionIdentity.UrlHash,
+                    Value = competitionIdentity.UrlHash
+                }
+            })
+            .With(x => x.Leaders, new List<CompetitionLeader>())
+            .Create();
+
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Seed LeaderCategories
+        var nextCategoryId = 1;
+        foreach (var category in leadersDto.Categories)
+        {
+            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+            {
+                Id = nextCategoryId++,
+                Name = category.Name,
+                DisplayName = category.DisplayName,
+                ShortDisplayName = category.ShortDisplayName,
+                Abbreviation = category.Abbreviation,
+                CreatedUtc = DateTime.UtcNow
+            });
+        }
+
+        var athleteSeasonIds = new List<Guid>();
+        var franchiseSeasonIds = new List<Guid>();
+
+        // Seed Athlete + FranchiseSeason for each leader
+        foreach (var leader in leadersDto.Categories.SelectMany(c => c.Leaders))
+        {
+            var athleteSeasonIdentity = identityGenerator.Generate(leader.Athlete.Ref);
+            if (!athleteSeasonIds.Contains(athleteSeasonIdentity.CanonicalId))
+            {
+                var athlete = Fixture.Build<FootballAthleteSeason>()
+                    .WithAutoProperties()
+                    .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
+                    .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = athleteSeasonIdentity.CleanUrl,
+                            SourceUrlHash = athleteSeasonIdentity.UrlHash,
+                            Value = athleteSeasonIdentity.UrlHash
+                        }
+                    })
+                    .Create();
+                await FootballDataContext.AthleteSeasons.AddAsync(athlete);
+                athleteSeasonIds.Add(athleteSeasonIdentity.CanonicalId);
+            }
+
+            var franchiseSeasonIdentity = identityGenerator.Generate(leader.Team.Ref);
+            if (!franchiseSeasonIds.Contains(franchiseSeasonIdentity.CanonicalId))
+            {
+                var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                    .WithAutoProperties()
+                    .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
+                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = franchiseSeasonIdentity.CleanUrl,
+                            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+                            Value = franchiseSeasonIdentity.UrlHash
+                        }
+                    })
+                    .Create();
+                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+                franchiseSeasonIds.Add(franchiseSeasonIdentity.CanonicalId);
+            }
+        }
+
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
+
+        var leadersIdentity = identityGenerator.Generate(leadersDto!.Ref);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionLeaders)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.ParentId, competition.Id.ToString())
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        var expected = leadersDto.Categories
+            .Select(c => new
+            {
+                c.Name,
+                Count = c.Leaders.Count
+            })
+            .OrderBy(c => c.Name);
+
+        _output.WriteLine("Expected leader counts per category:");
+        foreach (var cat in expected)
+        {
+            _output.WriteLine($"Category: {cat.Name} => Count: {cat.Count}");
+        }
+
+        var leaderCategories = await FootballDataContext.CompetitionLeaders.ToListAsync();
+        leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
+
+        // Now re-process the same document to test replacement
+        await sut.ProcessAsync(command);
+
+        // Assert
+        expected = leadersDto.Categories
+            .Select(c => new
+            {
+                c.Name,
+                Count = c.Leaders.Count
+            })
+            .OrderBy(c => c.Name);
+
+        _output.WriteLine("Expected leader counts per category:");
+        foreach (var cat in expected)
+        {
+            _output.WriteLine($"Category: {cat.Name} => Count: {cat.Count}");
+        }
+
+        leaderCategories = await FootballDataContext.CompetitionLeaders.ToListAsync();
         leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
     }
 }

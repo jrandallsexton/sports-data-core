@@ -4,9 +4,9 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-public static class PlayExtensions
+public static class CompetitionPlayExtensions
 {
-    public static Play AsEntity(
+    public static CompetitionPlay AsEntity(
         this EspnEventCompetitionPlayDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid correlationId,
@@ -17,7 +17,7 @@ public static class PlayExtensions
     {
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-        return new Play
+        return new CompetitionPlay
         {
             Id = identity.CanonicalId,
             AlternativeText = dto.AlternativeText,
@@ -52,7 +52,7 @@ public static class PlayExtensions
             Text = dto.Text ?? "UNK", // TODO: This popped up as null in some data; need to investigate
             Type = dto.Type?.Id is null ? PlayType.Unknown: Enum.Parse<PlayType>(dto.Type.Id),
             TypeId = dto.Type?.Id is null ? "9999" : dto.Type.Id,
-            ExternalIds = new List<PlayExternalId>
+            ExternalIds = new List<CompetitionPlayExternalId>
             {
                 new()
                 {

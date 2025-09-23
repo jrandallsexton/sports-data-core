@@ -149,7 +149,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         /// </summary>
         public double? TimeElapsedValue { get; set; }
 
-        public ICollection<Play> Plays { get; set; } = new List<Play>();
+        public ICollection<CompetitionPlay> Plays { get; set; } = new List<CompetitionPlay>();
         
         public ICollection<DriveExternalId> ExternalIds { get; set; } = new List<DriveExternalId>();
 

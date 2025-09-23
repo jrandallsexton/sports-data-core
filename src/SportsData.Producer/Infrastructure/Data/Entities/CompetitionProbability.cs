@@ -13,7 +13,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Competition Competition { get; set; } = null!;
 
         public Guid? PlayId { get; set; }
-        public Play? Play { get; set; }
+        public CompetitionPlay? Play { get; set; }
 
         public double TiePercentage { get; set; }
         public double HomeWinPercentage { get; set; }

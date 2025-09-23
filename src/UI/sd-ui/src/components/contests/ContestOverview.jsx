@@ -37,30 +37,27 @@ export default function ContestOverview() {
   }
 
   const { header } = data.data;
-  const { homeTeam, awayTeam, venueName, location, weekLabel, startTimeUtc, status, quarterScores } = header;
+  const { homeTeam, awayTeam, quarterScores } = header;
   const { leaders, scoringSummary, teamStats, matchupAnalysis, summary, winProbability, info } = data.data;
-
-  // Helper: get total scores from quarterScores
-  const awayTotal = quarterScores.reduce((sum, q) => sum + q.awayScore, 0);
-  const homeTotal = quarterScores.reduce((sum, q) => sum + q.homeScore, 0);
 
   return (
     <div className="contest-overview-container">
       <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewPlaylog scoringSummary={scoringSummary} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewTeamStats homeTeam={homeTeam} awayTeam={awayTeam} teamStats={teamStats} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewSummary summary={summary} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewWinProb winProbability={winProbability} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewInfo info={info} />
-      <div className="contest-section-separator"></div>
-      <ContestOverviewAnalysis matchupAnalysis={matchupAnalysis} />
+      <div className="contest-overview-grid">
+        <div className="contest-overview-col">
+          <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
+          <ContestOverviewPlaylog scoringSummary={scoringSummary} />
+        </div>
+        <div className="contest-overview-col">
+          <ContestOverviewTeamStats homeTeam={homeTeam} awayTeam={awayTeam} teamStats={teamStats} />
+          <ContestOverviewSummary summary={summary} />
+          <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
+        </div>
+        <div className="contest-overview-col">
+          <ContestOverviewInfo info={info} />
+          <ContestOverviewAnalysis matchupAnalysis={matchupAnalysis} />
+        </div>
+      </div>
     </div>
   );
 }

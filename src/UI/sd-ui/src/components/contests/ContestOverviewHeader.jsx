@@ -7,18 +7,15 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
 
   return (
     <div className="contest-section">
-      <div className="contest-section-title">Box Score</div>
-      <div className="contest-boxscore-row">
-        {/* Away team info */}
-        <div className="contest-team contest-team-away">
-          <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
-          <div className="contest-team-name">{awayTeam.displayName}</div>
-          <div className="contest-team-score contest-team-score-away">{awayTotal}</div>
-        </div>
-        {/* Box score table */}
-        <div className="contest-boxscore-table-wrapper">
+      <div className="contest-header-row contest-header-flex">
+        {/* Away Side */}
+        <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
+        <div className="contest-team-name contest-header-team-name">{awayTeam.displayName}</div>
+        <div className="contest-team-score contest-header-team-score-away">{awayTotal}</div>
+        {/* Box Score Table */}
+        <div className="contest-boxscore-table-wrapper compact">
           <div className="contest-boxscore-final">Final</div>
-          <table className="contest-boxscore-table">
+          <table className="contest-boxscore-table compact">
             <thead>
               <tr>
                 <th></th>
@@ -46,12 +43,10 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
             </tbody>
           </table>
         </div>
-        {/* Home team info */}
-        <div className="contest-team contest-team-home">
-          <img src={homeTeam.logoUrl} alt={homeTeam.displayName} className="contest-team-logo" />
-          <div className="contest-team-name">{homeTeam.displayName}</div>
-          <div className="contest-team-score contest-team-score-home">{homeTotal}</div>
-        </div>
+        {/* Home Side */}
+        <div className="contest-team-score contest-header-team-score-home">{homeTotal}</div>
+        <div className="contest-team-name contest-header-team-name">{homeTeam.displayName}</div>
+        <img src={homeTeam.logoUrl} alt={homeTeam.displayName} className="contest-team-logo" />
       </div>
     </div>
   );

@@ -1,7 +1,30 @@
 /* ContestOverview page layout and styles */
 
 .contest-overview-container {
-  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 12px;
+}
+
+.contest-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+@media (max-width: 900px) {
+  .contest-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+.contest-overview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .contest-week-status {
@@ -19,15 +42,19 @@
 }
 
 .contest-team {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 120px;
+  max-width: 160px;
+  gap: 4px;
 }
 
 .contest-team-logo {
   width: 48px;
   height: 48px;
   object-fit: contain;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .contest-team-name {
@@ -38,7 +65,7 @@
 }
 
 .contest-team-score {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin-top: 2px;
 }
@@ -56,9 +83,11 @@
   text-align: center;
 }
 
-.contest-boxscore-final {
-  font-weight: 600;
-  margin-bottom: 2px;
+.contest-boxscore-table-wrapper.compact {
+  min-width: 220px;
+  max-width: 320px;
+  margin: 0 12px;
+  padding: 0;
 }
 
 .contest-boxscore-table {
@@ -67,6 +96,10 @@
   color: #f8f9fa;
   font-size: 1rem;
   margin: 0 auto;
+}
+
+.contest-boxscore-table.compact {
+  font-size: 0.98rem;
 }
 
 .contest-boxscore-table th,
@@ -438,4 +471,75 @@
 .contest-winprob-final {
   background: #23272f;
   color: #f8f9fa;
+}
+
+.contest-header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 12px 0 8px 0;
+}
+
+@media (max-width: 900px) {
+  .contest-header-row {
+    flex-direction: column;
+    gap: 18px;
+    padding: 8px 0;
+  }
+  .contest-boxscore-table-wrapper.compact {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+.contest-header-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 10px 0 6px 0;
+}
+.contest-header-team-name {
+  font-size: 1.08rem;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+}
+.contest-header-team-score-away,
+.contest-header-team-score-home {
+  font-size: 1.35rem;
+  font-weight: 700;
+  min-width: 36px;
+  text-align: center;
+}
+.contest-team-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-bottom: 0;
+}
+.contest-boxscore-table-wrapper.compact {
+  min-width: 180px;
+  max-width: 260px;
+  margin: 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .contest-header-flex {
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .contest-boxscore-table-wrapper.compact {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
 }

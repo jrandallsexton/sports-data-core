@@ -254,7 +254,8 @@ namespace SportsData.Provider.Application.Documents
                 });
             }
 
-            var bypassCache = !_environment.IsDevelopment();
+            // TODO: Do this better
+            var bypassCache = (Environment.MachineName != "BENDER");
 
             // get the image (from cache or ESPN)
             await using var stream = await _espnHttpClient.GetCachedImageStreamAsync(

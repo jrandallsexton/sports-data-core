@@ -5,40 +5,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn;
 
 public static class EspnUriMapper
 {
-    public static Uri TeamSeasonToFranchiseRef(Uri teamSeasonRef)
-    {
-        if (teamSeasonRef == null) throw new ArgumentNullException(nameof(teamSeasonRef));
-
-        var s = teamSeasonRef.ToString();
-        var parts = s.Split('/');
-
-        // Expect: ... / seasons / {year} / teams / {teamId}[?qs]
-        var seasonsIndex = Array.IndexOf(parts, "seasons");
-        var teamsIndex = Array.IndexOf(parts, "teams");
-
-        if (seasonsIndex < 0 || teamsIndex < 0 || teamsIndex + 1 >= parts.Length)
-            throw new InvalidOperationException($"Unexpected ESPN TeamSeason ref format: {teamSeasonRef}");
-
-        // Extract teamId (strip query if present on the last segment)
-        var teamIdPart = parts[teamsIndex + 1];
-        var q = teamIdPart.IndexOf('?');
-        var teamId = q >= 0 ? teamIdPart[..q] : teamIdPart;
-
-        // NEW: guard invalid/missing ID
-        if (string.IsNullOrWhiteSpace(teamId) || !teamId.All(char.IsDigit))
-            throw new InvalidOperationException($"Missing or invalid team id in ref: {teamSeasonRef}");
-
-        // Build base up to *before* "seasons"
-        var baseParts = parts.Take(seasonsIndex)
-            .Append("franchises")
-            .Append(teamId);
-
-        var path = string.Join('/', baseParts);
-        var query = teamSeasonRef.Query; // preserves ?lang=en&region=us, etc.
-
-        return new Uri(path + query, UriKind.Absolute);
-    }
-
     public static Uri AthleteSeasonToAthleteRef(Uri athleteSeasonRef)
     {
         if (athleteSeasonRef == null)
@@ -73,66 +39,35 @@ public static class EspnUriMapper
         return new Uri(path + query, UriKind.Absolute);
     }
 
-    public static Uri SeasonTypeWeekToSeasonType(Uri weekRef)
+    public static Uri CompetitionCompetitorRefToCompetitionRef(Uri competitionCompetitorRef)
     {
-        if (weekRef == null) throw new ArgumentNullException(nameof(weekRef));
+        if (competitionCompetitorRef is null)
+            throw new ArgumentNullException(nameof(competitionCompetitorRef));
 
-        var s = weekRef.ToString();
-        var parts = s.Split('/');
+        var segments = competitionCompetitorRef.Segments;
 
-        // Expect: ... / seasons / {year} / types / {typeId} / weeks / {weekId}[?qs]
-        var seasonsIndex = Array.IndexOf(parts, "seasons");
-        var typesIndex = Array.IndexOf(parts, "types");
-        var weeksIndex = Array.IndexOf(parts, "weeks");
+        // Find /events/{eventId}
+        var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
+        if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionCompetitorRef));
 
-        if (seasonsIndex < 0 || typesIndex < 0 || weeksIndex < 0 || weeksIndex + 1 >= parts.Length)
-            throw new InvalidOperationException($"Unexpected ESPN SeasonTypeWeek ref format: {weekRef}");
+        // Find /competitions/{competitionId} AFTER events/{id}
+        var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
+        if (compIdx < 0 || compIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionCompetitorRef));
 
-        var seasonYearPart = parts[seasonsIndex + 1];
-        var typeIdPart = parts[typesIndex + 1];
+        // Rebuild up to events/{eventId}/competitions/{competitionId}
+        var prefix = string.Concat(segments.Take(evtIdx));            // keep leading path as-is
+        var eventsSeg = "events/";                                    // normalize segment casing
+        var eventIdSeg = segments[evtIdx + 1].TrimEnd('/');
 
-        if (!seasonYearPart.All(char.IsDigit))
-            throw new InvalidOperationException($"Invalid season year in ref: {weekRef}");
+        var competitions = "competitions/";
+        var competitionIdSeg = segments[compIdx + 1].TrimEnd('/');
 
-        if (!typeIdPart.All(char.IsDigit))
-            throw new InvalidOperationException($"Invalid type id in ref: {weekRef}");
+        var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionIdSeg}";
+        var uriString = $"{competitionCompetitorRef.Scheme}://{competitionCompetitorRef.Authority}{path}".TrimEnd('/');
 
-        // FIXED: include the {typeId} segment
-        var baseParts = parts.Take(weeksIndex); // stop before "weeks"
-        var path = string.Join('/', baseParts);
-        var query = weekRef.Query;
-
-        return new Uri(path + query, UriKind.Absolute);
-    }
-
-    public static Uri SeasonTypeToSeason(Uri seasonTypeRef)
-    {
-        if (seasonTypeRef == null)
-            throw new ArgumentNullException(nameof(seasonTypeRef));
-
-        var s = seasonTypeRef.ToString();
-        var parts = s.Split('/');
-
-        // Expect: ... / seasons / {year} / types / {typeId}[?qs]
-        var seasonsIndex = Array.IndexOf(parts, "seasons");
-        var typesIndex = Array.IndexOf(parts, "types");
-
-        if (seasonsIndex < 0 || typesIndex < 0 || seasonsIndex + 1 >= parts.Length)
-            throw new InvalidOperationException($"Unexpected ESPN SeasonType ref format: {seasonTypeRef}");
-
-        var yearPart = parts[seasonsIndex + 1];
-        var q = yearPart.IndexOf('?');
-        var seasonYear = q >= 0 ? yearPart[..q] : yearPart;
-
-        if (!int.TryParse(seasonYear, out _))
-            throw new InvalidOperationException($"Missing or invalid season year in ref: {seasonTypeRef}");
-
-        // Build base path to season root
-        var baseParts = parts.Take(seasonsIndex + 2); // includes "seasons/{year}"
-        var path = string.Join('/', baseParts);
-        var query = seasonTypeRef.Query;
-
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(uriString);
     }
 
     public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)
@@ -151,37 +86,69 @@ public static class EspnUriMapper
         return new Uri(trimmed);
     }
 
-    public static Uri CompetitionRefToCompetitionStatusRef(Uri competitionRef)
+    public static Uri CompetitionLineScoreRefToCompetitionCompetitorRef(Uri competitionLineScoreRef)
     {
-        if (competitionRef == null)
-            throw new ArgumentNullException(nameof(competitionRef));
+        if (competitionLineScoreRef is null)
+            throw new ArgumentNullException(nameof(competitionLineScoreRef));
 
-        var s = competitionRef.ToString();
-        var parts = s.Split('/');
+        var segments = competitionLineScoreRef.Segments;
 
-        // Expect: ... / events / {eventId} / competitions / {competitionId}[?qs]
-        var eventsIndex = Array.IndexOf(parts, "events");
-        var competitionsIndex = Array.IndexOf(parts, "competitions");
+        // locate /events/{eventId}
+        var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
+        if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionLineScoreRef));
 
-        if (eventsIndex < 0 || competitionsIndex < 0 || competitionsIndex + 1 >= parts.Length)
-            throw new InvalidOperationException($"Unexpected ESPN Competition ref format: {competitionRef}");
+        // locate /competitions/{competitionId} AFTER events/{id}
+        var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
+        if (compIdx < 0 || compIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionLineScoreRef));
 
-        // Extract competitionId (strip query if present)
-        var competitionIdPart = parts[competitionsIndex + 1];
-        var q = competitionIdPart.IndexOf('?');
-        var competitionId = q >= 0 ? competitionIdPart[..q] : competitionIdPart;
+        // locate /competitors/{competitorId} AFTER competitions/{id}
+        var competitorIdx = Array.FindIndex(segments, compIdx + 2, s => s.Equals("competitors/", StringComparison.OrdinalIgnoreCase));
+        if (competitorIdx < 0 || competitorIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", nameof(competitionLineScoreRef));
 
-        if (string.IsNullOrWhiteSpace(competitionId) || !competitionId.All(char.IsDigit))
-            throw new InvalidOperationException($"Missing or invalid competition id in ref: {competitionRef}");
+        // normalize segment names; keep IDs as-is
+        var prefix = string.Concat(segments.Take(evtIdx));           // everything before "events/"
+        var eventsSeg = "events/";
+        var eventIdSeg = segments[evtIdx + 1].TrimEnd('/');
 
-        // Append "status" after competition ID
-        var baseParts = parts.Take(competitionsIndex + 2)
-            .Append("status");
+        var competitions = "competitions/";
+        var competitionId = segments[compIdx + 1].TrimEnd('/');
 
-        var path = string.Join('/', baseParts);
-        var query = competitionRef.Query;
+        var competitors = "competitors/";
+        var competitorId = segments[competitorIdx + 1].TrimEnd('/');
 
-        return new Uri(path + query, UriKind.Absolute);
+        var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionId}/{competitors}{competitorId}";
+        var uriString = $"{competitionLineScoreRef.Scheme}://{competitionLineScoreRef.Authority}{path}".TrimEnd('/');
+
+        return new Uri(uriString);
+    }
+
+    public static Uri CompetitionLineScoreRefToCompetitionRef(Uri competitionLineScoreRef)
+    {
+        if (competitionLineScoreRef is null)
+            throw new ArgumentNullException(nameof(competitionLineScoreRef));
+
+        var segments = competitionLineScoreRef.Segments;
+
+        // find "/competitions/" (case-insensitive) and ensure there is an id after it
+        var idx = Array.FindIndex(segments, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
+        if (idx < 0 || idx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionLineScoreRef));
+
+        // rebuild path up to competitions/{id}
+        // keep the prefix segments as-is, normalize only the "competitions/" segment
+        var prefix = string.Concat(segments.Take(idx));
+        var competitionsSeg = "competitions/"; // normalized
+        var idSeg = segments[idx + 1].TrimEnd('/');
+
+        var path = $"{prefix}{competitionsSeg}{idSeg}";
+
+        // compose final uri (drop query/fragment, trim trailing slash)
+        var uriString = $"{competitionLineScoreRef.Scheme}://{competitionLineScoreRef.Authority}{path}".TrimEnd('/');
+
+        return new Uri(uriString);
     }
 
     public static Uri CompetitionRefToCompetitionPlaysRef(Uri competitionRef, int limit = 25)
@@ -220,6 +187,63 @@ public static class EspnUriMapper
         return new Uri(path + limitQuery, UriKind.Absolute);
     }
 
+    public static Uri CompetitionRefToCompetitionStatusRef(Uri competitionRef)
+    {
+        if (competitionRef == null)
+            throw new ArgumentNullException(nameof(competitionRef));
+
+        var s = competitionRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / events / {eventId} / competitions / {competitionId}[?qs]
+        var eventsIndex = Array.IndexOf(parts, "events");
+        var competitionsIndex = Array.IndexOf(parts, "competitions");
+
+        if (eventsIndex < 0 || competitionsIndex < 0 || competitionsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN Competition ref format: {competitionRef}");
+
+        // Extract competitionId (strip query if present)
+        var competitionIdPart = parts[competitionsIndex + 1];
+        var q = competitionIdPart.IndexOf('?');
+        var competitionId = q >= 0 ? competitionIdPart[..q] : competitionIdPart;
+
+        if (string.IsNullOrWhiteSpace(competitionId) || !competitionId.All(char.IsDigit))
+            throw new InvalidOperationException($"Missing or invalid competition id in ref: {competitionRef}");
+
+        // Append "status" after competition ID
+        var baseParts = parts.Take(competitionsIndex + 2)
+            .Append("status");
+
+        var path = string.Join('/', baseParts);
+        var query = competitionRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionRefToContestRef(Uri competitionRef)
+    {
+        if (competitionRef is null)
+            throw new ArgumentNullException(nameof(competitionRef));
+
+        var segments = competitionRef.Segments;
+
+        // Find "/events/" segment (case-insensitive) and ensure an id follows
+        var idx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
+        if (idx < 0 || idx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionRef));
+
+        // Rebuild path up to events/{id}
+        var prefix = string.Concat(segments.Take(idx));
+        var eventsSeg = "events/";                       // normalize casing
+        var eventIdSeg = segments[idx + 1].TrimEnd('/');  // keep original id
+
+        var path = $"{prefix}{eventsSeg}{eventIdSeg}";
+
+        var uriString = $"{competitionRef.Scheme}://{competitionRef.Authority}{path}".TrimEnd('/');
+
+        return new Uri(uriString);
+    }
+
     public static Uri SeasonPollWeekRefToSeasonPollRef(Uri seasonPollWeekRef)
     {
         if (seasonPollWeekRef == null) throw new ArgumentNullException(nameof(seasonPollWeekRef));
@@ -250,5 +274,101 @@ public static class EspnUriMapper
         var finalPath = string.Join('/', baseParts.Concat(new[] { "rankings", rankingIdPart }));
 
         return new Uri(finalPath, UriKind.Absolute); // do NOT append query string
+    }
+
+    public static Uri SeasonTypeToSeason(Uri seasonTypeRef)
+    {
+        if (seasonTypeRef == null)
+            throw new ArgumentNullException(nameof(seasonTypeRef));
+
+        var s = seasonTypeRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / types / {typeId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var typesIndex = Array.IndexOf(parts, "types");
+
+        if (seasonsIndex < 0 || typesIndex < 0 || seasonsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonType ref format: {seasonTypeRef}");
+
+        var yearPart = parts[seasonsIndex + 1];
+        var q = yearPart.IndexOf('?');
+        var seasonYear = q >= 0 ? yearPart[..q] : yearPart;
+
+        if (!int.TryParse(seasonYear, out _))
+            throw new InvalidOperationException($"Missing or invalid season year in ref: {seasonTypeRef}");
+
+        // Build base path to season root
+        var baseParts = parts.Take(seasonsIndex + 2); // includes "seasons/{year}"
+        var path = string.Join('/', baseParts);
+        var query = seasonTypeRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
+    public static Uri SeasonTypeWeekToSeasonType(Uri weekRef)
+    {
+        if (weekRef == null) throw new ArgumentNullException(nameof(weekRef));
+
+        var s = weekRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / types / {typeId} / weeks / {weekId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var typesIndex = Array.IndexOf(parts, "types");
+        var weeksIndex = Array.IndexOf(parts, "weeks");
+
+        if (seasonsIndex < 0 || typesIndex < 0 || weeksIndex < 0 || weeksIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonTypeWeek ref format: {weekRef}");
+
+        var seasonYearPart = parts[seasonsIndex + 1];
+        var typeIdPart = parts[typesIndex + 1];
+
+        if (!seasonYearPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid season year in ref: {weekRef}");
+
+        if (!typeIdPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Invalid type id in ref: {weekRef}");
+
+        // FIXED: include the {typeId} segment
+        var baseParts = parts.Take(weeksIndex); // stop before "weeks"
+        var path = string.Join('/', baseParts);
+        var query = weekRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
+    public static Uri TeamSeasonToFranchiseRef(Uri teamSeasonRef)
+    {
+        if (teamSeasonRef == null) throw new ArgumentNullException(nameof(teamSeasonRef));
+
+        var s = teamSeasonRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / teams / {teamId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var teamsIndex = Array.IndexOf(parts, "teams");
+
+        if (seasonsIndex < 0 || teamsIndex < 0 || teamsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN TeamSeason ref format: {teamSeasonRef}");
+
+        // Extract teamId (strip query if present on the last segment)
+        var teamIdPart = parts[teamsIndex + 1];
+        var q = teamIdPart.IndexOf('?');
+        var teamId = q >= 0 ? teamIdPart[..q] : teamIdPart;
+
+        // NEW: guard invalid/missing ID
+        if (string.IsNullOrWhiteSpace(teamId) || !teamId.All(char.IsDigit))
+            throw new InvalidOperationException($"Missing or invalid team id in ref: {teamSeasonRef}");
+
+        // Build base up to *before* "seasons"
+        var baseParts = parts.Take(seasonsIndex)
+            .Append("franchises")
+            .Append(teamId);
+
+        var path = string.Join('/', baseParts);
+        var query = teamSeasonRef.Query; // preserves ?lang=en&region=us, etc.
+
+        return new Uri(path + query, UriKind.Absolute);
     }
 }

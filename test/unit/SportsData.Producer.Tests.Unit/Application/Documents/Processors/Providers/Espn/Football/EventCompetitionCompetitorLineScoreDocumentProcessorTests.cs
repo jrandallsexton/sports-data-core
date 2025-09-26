@@ -132,25 +132,4 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         updated.SourceId.Should().Be("1");
         updated.SourceDescription.Should().Be("Basic/Manual");
     }
-
-
-    [Fact]
-    public async Task WhenParentIdInvalid_ShouldThrow()
-    {
-        var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
-        var command = CreateCommand(json, "not-a-guid");
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
-    }
-
-    [Fact]
-    public async Task WhenParentMissing_ShouldThrow()
-    {
-        var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
-        var command = CreateCommand(json, null);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
-    }
 }

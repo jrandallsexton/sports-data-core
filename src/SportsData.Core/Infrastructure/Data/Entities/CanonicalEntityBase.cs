@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace SportsData.Core.Infrastructure.Data.Entities;
@@ -9,6 +10,16 @@ namespace SportsData.Core.Infrastructure.Data.Entities;
 /// <typeparam name="T"></typeparam>
 public abstract class CanonicalEntityBase<T> : IEntity<T>
 {
+    protected CanonicalEntityBase()
+    {
+        if (typeof(T) == typeof(Guid))
+        {
+            var id = (T)(object)Guid.NewGuid();
+            if (EqualityComparer<T>.Default.Equals(Id!, default!))
+                Id = id;
+        }
+    }
+
     [Key]
     public T? Id { get; set; }
 

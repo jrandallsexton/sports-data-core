@@ -7,8 +7,10 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -39,14 +41,22 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId
+               }))
         {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Processing EventCompetitionCompetitorDocument with {@Command}", command);
+            _logger.LogInformation("Processing EventDocument with {@Command}", command);
             try
             {
                 await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -96,11 +106,28 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 
         if (!competitionExists)
         {
-            // TODO: Publish a DocumentRequested event for the Competition
-            // Problem with this is that we do not know the parentId which is the ContestId. ugh.
-            // In the meantime, just throw an exception, allow Hangfire to retry and hopefully the Competition gets sourced prior to then
             _logger.LogError("Competition not found for {CompetitionId}", competitionId);
-            throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+
+            var competitionRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(dto.Ref);
+            var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
+
+            var contestRef = EspnUriMapper.CompetitionRefToContestRef(competitionRef);
+            var contestIdentity = _externalRefIdentityGenerator.Generate(contestRef);
+
+            // raise an event to source the competition competitor
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: competitionIdentity.UrlHash,
+                ParentId: contestIdentity.CanonicalId.ToString(),
+                Uri: competitionRef,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.EventCompetition,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
+            ));
+
+            throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");
         }
 
         var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(

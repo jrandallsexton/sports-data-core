@@ -100,17 +100,17 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
         // 🔍 STEP 1: Extract all metric categories from both teams
         var allMetrics = dto.HomeTeam.Statistics
             .Concat(dto.AwayTeam.Statistics)
-            .GroupBy(m => m.Name.ToLowerInvariant())
+            .GroupBy(m => m.Name)
             .Select(g => g.First()) // de-dupe
             .ToList();
 
         // 🔍 STEP 2: Load existing metrics
         var existingMetrics = await _dataContext.PredictionMetrics
-            .ToDictionaryAsync(x => x.Name.ToLower());
+            .ToDictionaryAsync(x => x.Name);
 
         // 🔍 STEP 3: Identify new metrics
         var newMetrics = allMetrics
-            .Where(m => !existingMetrics.ContainsKey(m.Name.ToLowerInvariant()))
+            .Where(m => !existingMetrics.ContainsKey(m.Name))
             .Select(m => new PredictionMetric
             {
                 Id = Guid.NewGuid(),

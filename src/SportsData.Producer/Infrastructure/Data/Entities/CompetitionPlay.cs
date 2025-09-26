@@ -93,14 +93,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable(nameof(CompetitionPlay));
                 builder.HasKey(x => x.Id);
 
-                builder.Property(x => x.EspnId).IsRequired().HasMaxLength(30);
-                builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(20);
-                builder.Property(x => x.TypeId).IsRequired().HasMaxLength(10);
-                builder.Property(x => x.Text).IsRequired().HasMaxLength(500);
-                builder.Property(x => x.ShortText).HasMaxLength(250);
-                builder.Property(x => x.AlternativeText).HasMaxLength(500);
-                builder.Property(x => x.ShortAlternativeText).HasMaxLength(250);
-                builder.Property(x => x.ClockDisplayValue).HasMaxLength(20);
+                builder.Property(x => x.EspnId).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.TypeId).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.Text).IsRequired().HasMaxLength(1024);
+                builder.Property(x => x.ShortText).HasMaxLength(256);
+                builder.Property(x => x.AlternativeText).HasMaxLength(1024);
+                builder.Property(x => x.ShortAlternativeText).HasMaxLength(256);
+                builder.Property(x => x.ClockDisplayValue).HasMaxLength(32);
                 builder.Property(x => x.Modified).IsRequired();
                 builder.Property(x => x.TeamFranchiseSeasonId).IsRequired();
                 builder.Property(x => x.DriveId).IsRequired(false); // Nullable FK

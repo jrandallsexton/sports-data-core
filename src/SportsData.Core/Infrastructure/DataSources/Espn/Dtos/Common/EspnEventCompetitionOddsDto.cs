@@ -54,6 +54,9 @@ public class EspnEventCompetitionOddsDto : IHasRef
 
     [JsonPropertyName("current")]
     public OddsPhaseBlock? Current { get; set; }
+
+    [JsonPropertyName("propBets")]
+    public EspnLinkDto? PropBets { get; set; }
 }
 
 public class EspnEventCompetitionOddsTeamOdds

@@ -30,8 +30,8 @@ public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 
         // Register mock canonical data
         Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetCurrentSeasonWeek())
-            .ReturnsAsync(currentWeek);
+            .Setup(x => x.GetCurrentAndLastWeekSeasonWeeks())
+            .ReturnsAsync([currentWeek]);
 
         // These are the contest IDs referenced by unscored picks
         var contestId1 = Guid.NewGuid();

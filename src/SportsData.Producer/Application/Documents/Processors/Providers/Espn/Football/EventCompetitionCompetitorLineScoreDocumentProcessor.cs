@@ -3,10 +3,14 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
@@ -35,14 +39,22 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         public async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = command.CorrelationId
+                   }))
             {
-                ["CorrelationId"] = command.CorrelationId
-            }))
-            {
-                _logger.LogInformation("Processing LineScores with {@Command}", command);
+                _logger.LogInformation("Processing EventDocument with {@Command}", command);
                 try
                 {
                     await ProcessInternal(command);
+                }
+                catch (ExternalDocumentNotSourcedException retryEx)
+                {
+                    _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                    var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                    await _bus.Publish(docCreated);
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -65,7 +77,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
             {
                 _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId");
-                throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
+                return; // fatal. do not retry
             }
 
             var exists = await _dataContext.CompetitionCompetitors
@@ -75,7 +87,27 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!exists)
             {
                 _logger.LogError("CompetitionCompetitor not found for Id: {Id}", competitionCompetitorId);
-                throw new InvalidOperationException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
+
+                var competitionCompetitorRef = EspnUriMapper.CompetitionLineScoreRefToCompetitionCompetitorRef(dto.Ref);
+                var competitionCompetitorIdentity = _externalRefIdentityGenerator.Generate(competitionCompetitorRef);
+
+                var competitionRef = EspnUriMapper.CompetitionLineScoreRefToCompetitionRef(dto.Ref);
+                var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
+
+                // raise an event to source the competition competitor
+                await _bus.Publish(new DocumentRequested(
+                    Id: competitionCompetitorIdentity.UrlHash,
+                    ParentId: competitionIdentity.CanonicalId.ToString(),
+                    Uri: competitionCompetitorRef,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionCompetitor,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
+                ));
+
+                throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
             }
 
             var identity = _externalRefIdentityGenerator.Generate(dto.Ref);

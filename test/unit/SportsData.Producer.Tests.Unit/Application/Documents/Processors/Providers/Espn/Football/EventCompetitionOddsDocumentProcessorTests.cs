@@ -85,15 +85,23 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             dto.Current.Under.Outcome!.Type.Should().Be("win");
             dto.Current.Total.AlternateDisplayValue.Should().Be("67.5");
 
-            // Links (just presence of key rels)
+            // Links (presence + valid hrefs)
             dto.Links.Should().NotBeNullOrEmpty();
             dto.Links.Should().ContainSingle(l => l.Rel.Contains("home"));
             dto.Links.Should().ContainSingle(l => l.Rel.Contains("away"));
             dto.Links.Should().ContainSingle(l => l.Rel.Contains("over"));
             dto.Links.Should().ContainSingle(l => l.Rel.Contains("under"));
             dto.Links.Should().ContainSingle(l => l.Rel.Contains("game"));
-        }
+            dto.Links.Should().OnlyContain(l => !string.IsNullOrWhiteSpace(l.Href.OriginalString));
 
+            // Totals "value" is a price (decimal odds), not the line; keep expectations loose
+            dto.Open.Total.Value.Should().NotBeNull();
+            dto.Open.Total.Value!.Value.Should().BeGreaterThan(1.0m).And.BeLessThan(3.5m);
+
+            // Prop bets ref (if present in fixture)
+            if (dto.PropBets is not null)
+                dto.PropBets.Ref.Should().NotBeNull();
+        }
 
         [Fact]
         public async Task EspnEventCompetitionOddsDto_Deserializes_AllFieldsCorrectly()
@@ -142,7 +150,17 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             actual.Current.Under.Outcome!.Type.Should().Be("win");
             actual.Current.Total.AlternateDisplayValue.Should().Be("67.5");
 
+            // Links well-formed
             actual.Links.Should().NotBeNullOrEmpty();
+            actual.Links.Should().OnlyContain(l => !string.IsNullOrWhiteSpace(l.Href.OriginalString));
+
+            // Totals "value" (price) sanity
+            actual.Open.Total.Value.Should().NotBeNull();
+            actual.Open.Total.Value!.Value.Should().BeGreaterThan(1.0m).And.BeLessThan(3.5m);
+
+            // Prop bets ref (if present)
+            if (actual.PropBets is not null)
+                actual.PropBets.Ref.Should().NotBeNull();
         }
 
         [Fact]
@@ -200,12 +218,22 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var saved = await FootballDataContext.CompetitionOdds
                 .Include(o => o.Teams).ThenInclude(t => t.Snapshots)
                 .Include(o => o.Totals)
+                .Include(o => o.Links) // ← include links now that we persist them
                 .ToListAsync();
 
             saved.Should().HaveCount(1);
             saved[0].CompetitionId.Should().Be(compId);
             saved[0].Teams.Should().HaveCount(2);
             saved[0].Totals.Should().NotBeEmpty();
+
+            // Links persisted and hrefs non-empty
+            saved[0].Links.Should().NotBeEmpty();
+            saved[0].Links.Should().OnlyContain(l => !string.IsNullOrWhiteSpace(l.Href));
+
+            // Totals "Current" snapshot parsed line matches the stored raw (american/alt)
+            var currentTotals = saved[0].Totals.Single(t => t.Phase == "Current");
+            currentTotals.TotalAmerican.Should().NotBeNullOrWhiteSpace();
+            currentTotals.TotalValue.Should().Be(decimal.Parse(currentTotals.TotalAmerican!, System.Globalization.CultureInfo.InvariantCulture));
 
             bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -245,7 +273,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash");
 
             // seed existing odds with ExternalId matching UrlHash+Provider
-            var existing = dto.AsEntity(idGen.Object, compId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "content-hash");
+            var existing = dto.AsEntity(idGen.Object, compId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+                "content-hash");
             existing.ExternalIds = new List<CompetitionOddsExternalId>
             {
                 new CompetitionOddsExternalId
@@ -282,77 +311,120 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
-        //[Fact]
-        //public async Task WhenDifferentUrlHash_AddsNewOdds_NoPublish()
-        //{
-        //    // Arrange
-        //    var bus = Mocker.GetMock<IEventBus>();
-        //    var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
-        //    var hash = Mocker.GetMock<IJsonHashCalculator>();
+        [Fact(Skip = "needs review")]
+        public async Task WhenExistingOddsChanged_UpdatesHeadlinesAndSnapshots_NoDuplicateRows()
+        {
+            // Arrange
+            var bus = Mocker.GetMock<IEventBus>();
+            var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
+            var hash = Mocker.GetMock<IJsonHashCalculator>();
 
-        //    var compId = Guid.NewGuid();
+            var compId = Guid.NewGuid();
+            var contest = Fixture.Build<Contest>()
+                .WithAutoProperties()
+                .With(x => x.HomeTeamFranchiseSeasonId, Guid.NewGuid())
+                .With(x => x.AwayTeamFranchiseSeasonId, Guid.NewGuid())
+                .With(x => x.Competitions, new List<Competition>())
+                .Create();
 
-        //    var contest = Fixture.Build<Contest>()
-        //        .WithAutoProperties()
-        //        .With(x => x.Competitions, new List<Competition>())
-        //        .Create();
+            var competition = Fixture.Build<Competition>()
+                .WithAutoProperties()
+                .With(x => x.Id, compId)
+                .With(x => x.ContestId, contest.Id)
+                .With(x => x.Contest, contest)
+                .With(x => x.Odds, new List<CompetitionOdds>())
+                .Create();
 
-        //    var competition = Fixture.Build<Competition>()
-        //        .WithAutoProperties()
-        //        .With(x => x.Id, compId)
-        //        .With(x => x.ContestId, contest.Id)
-        //        .With(x => x.Contest, contest)
-        //        .With(x => x.Odds, new List<CompetitionOdds>())
-        //        .Create();
+            await FootballDataContext.Contests.AddAsync(contest);
+            await FootballDataContext.Competitions.AddAsync(competition);
+            await FootballDataContext.SaveChangesAsync();
 
-        //    await FootballDataContext.Contests.AddAsync(contest);
-        //    await FootballDataContext.Competitions.AddAsync(competition);
-        //    await FootballDataContext.SaveChangesAsync();
+            // Load fixtures
+            var jsonOriginal = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_20Sep25.json");
+            var jsonUpdated = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_23Sep25.json");
 
-        //    var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
-        //    var dto = json.FromJson<EspnEventCompetitionOddsDto>();
+            // Set up stable identity
+            var canonicalId = Guid.NewGuid();
+            idGen.Setup(x => x.Generate(It.IsAny<Uri>()))
+                 .Returns(new ExternalRefIdentity(canonicalId, "url-hash", "http://x/clean"));
 
-        //    idGen.Setup(x => x.Generate(It.IsAny<Uri>()))
-        //        .Returns(new ExternalRefIdentity(Guid.NewGuid(), "hash", "http://x/clean"));
-        //    hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash");
+            // Set up content hashes
+            hash.SetupSequence(x => x.NormalizeAndHash(It.IsAny<string>()))
+                .Returns("content-hash-v1")
+                .Returns("content-hash-v2");
 
-        //    // existing with url-hash A
-        //    var existing = dto.AsEntity(idGen.Object, compId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "content-hash");
-        //    existing.ExternalIds = new List<CompetitionOddsExternalId>
-        //    {
-        //        new CompetitionOddsExternalId
-        //        {
-        //            Id = existing.Id,
-        //            Value = "hash-A",
-        //            Provider = SourceDataProvider.Espn,
-        //            SourceUrlHash = "hash-A",
-        //            SourceUrl = "http://x/clean"
-        //        }
-        //    };
-        //    await FootballDataContext.CompetitionOdds.AddAsync(existing);
-        //    await FootballDataContext.SaveChangesAsync();
+            var sut = Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>();
 
-        //    // command arrives with different UrlHash B -> should add new odds
-        //    var cmd = Fixture.Build<ProcessDocumentCommand>()
-        //        .With(x => x.ParentId, compId.ToString())
-        //        .With(x => x.Season, 2025)
-        //        .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-        //        .With(x => x.Sport, Sport.FootballNcaa)
-        //        .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
-        //        .With(x => x.Document, json)
-        //        .With(x => x.UrlHash, "hash-B")
-        //        .OmitAutoProperties()
-        //        .Create();
+            // ---------- CREATE PASS ----------
+            var cmdCreate = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.Season, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, jsonOriginal)
+                .With(x => x.UrlHash, "url-hash")
+                .OmitAutoProperties()
+                .Create();
 
-        //    var sut = Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>();
+            await sut.ProcessAsync(cmdCreate);
 
-        //    // Act
-        //    await sut.ProcessAsync(cmd);
+            // Verify initial state
+            var afterCreate = await FootballDataContext.CompetitionOdds
+                .Include(o => o.Teams).ThenInclude(t => t.Snapshots)
+                .Include(o => o.Totals)
+                .Include(o => o.Links)
+                .AsNoTracking()
+                .SingleOrDefaultAsync();
 
-        //    // Assert
-        //    var count = await FootballDataContext.CompetitionOdds.CountAsync();
-        //    count.Should().Be(2);
-        //    bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
-        //}
+            afterCreate.Should().NotBeNull("the create pass should have inserted one CompetitionOdds row");
+            FootballDataContext.CompetitionOdds.Count().Should().Be(1, "exactly one row should exist after create");
+            afterCreate!.Spread.Should().Be(-1.5m, "original headline spread should be -1.5");
+
+            // Clear tracking state
+            FootballDataContext.ChangeTracker.Clear();
+
+            // ---------- UPDATE PASS ----------
+            var cmdUpdate = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.Season, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, jsonUpdated)
+                .With(x => x.UrlHash, "url-hash")
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(cmdUpdate);
+
+            // Verify final state
+            var saved = await FootballDataContext.CompetitionOdds
+                .Include(o => o.Teams).ThenInclude(t => t.Snapshots)
+                .Include(o => o.Totals)
+                .Include(o => o.Links)
+                .AsNoTracking()
+                .SingleOrDefaultAsync();
+
+            saved.Should().NotBeNull("the update pass should modify the existing row, not delete it");
+            FootballDataContext.CompetitionOdds.Count().Should().Be(1, "no duplicate rows should be created");
+            saved!.Spread.Should().Be(-2.0m, "spread should be updated to -2.0");
+
+            // Verify point spreads in snapshots
+            var homeCurrent = saved.Teams.Single(t => t.Side == "Home").Snapshots.Single(s => s.Phase == "Current");
+            var awayCurrent = saved.Teams.Single(t => t.Side == "Away").Snapshots.Single(s => s.Phase == "Current");
+            homeCurrent.PointSpreadRaw.Should().Be("-1.5");
+            awayCurrent.PointSpreadRaw.Should().Be("+1.5");
+
+            // Verify snapshots count
+            saved.Teams.Single(t => t.Side == "Home").Snapshots.Count.Should().Be(2);
+            saved.Teams.Single(t => t.Side == "Away").Snapshots.Count.Should().Be(2);
+
+            // Verify content hash updated
+            saved.ContentHash.Should().Be("content-hash-v2");
+
+            // Verify event published only once
+            bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
     }
 }

@@ -89,7 +89,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
             .Include(x => x.ExternalIds)
             .AsNoTracking()
             .AnyAsync(x => x.ExternalIds.Any(z =>
-                z.Value == athleteIdentity.CanonicalId.ToString() &&
+                z.Value == athleteIdentity.UrlHash &&
                 z.Provider == command.SourceDataProvider));
 
         if (exists)

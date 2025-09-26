@@ -7,10 +7,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class CompetitionTotalsSnapshot : CanonicalEntityBase<Guid>
     {
-        public Guid CompetitionOddsId { get; set; }       // FK -> CompetitionOdds
-        public string Phase { get; set; } = null!;        // "Open" | "Close" | "Current"
+        public Guid CompetitionOddsId { get; set; }   // FK -> CompetitionOdds
+        public string Phase { get; set; } = null!;    // "Open" | "Close" | "Current"
 
-        // Over
+        // Over PRICE (+ outcome)
         public decimal? OverValue { get; set; }
         public string? OverDisplay { get; set; }
         public string? OverAlt { get; set; }
@@ -19,7 +19,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string? OverAmerican { get; set; }
         public string? OverOutcome { get; set; }
 
-        // Under
+        // Under PRICE (+ outcome)
         public decimal? UnderValue { get; set; }
         public string? UnderDisplay { get; set; }
         public string? UnderAlt { get; set; }
@@ -28,13 +28,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public string? UnderAmerican { get; set; }
         public string? UnderOutcome { get; set; }
 
-        // Total line
-        public decimal? TotalValue { get; set; }
+        // Total LINE (OU line)
+        public decimal? TotalValue { get; set; }       // parsed from "total.american"/"alternateDisplayValue"
         public string? TotalDisplay { get; set; }
         public string? TotalAlt { get; set; }
         public decimal? TotalDecimal { get; set; }
         public string? TotalFraction { get; set; }
-        public string? TotalAmerican { get; set; }
+        public string? TotalAmerican { get; set; }     // raw "50.5", "47.5"
+
+        // Provenance
+        public DateTime FetchedUtc { get; set; }       // set by ingester
+        public string? SourceUrlHash { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<CompetitionTotalsSnapshot>
         {
@@ -62,16 +66,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.TotalFraction).HasMaxLength(256);
                 builder.Property(x => x.TotalAmerican).HasMaxLength(256);
 
+                builder.Property(x => x.SourceUrlHash).HasMaxLength(128);
+
                 builder.HasOne<CompetitionOdds>()
-                    .WithMany() // parent doesn’t need nav for now
-                    .HasForeignKey(x => x.CompetitionOddsId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                       .WithMany(x => x.Totals)
+                       .HasForeignKey(x => x.CompetitionOddsId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 foreach (var p in typeof(CompetitionTotalsSnapshot).GetProperties()
                              .Where(p => p.PropertyType == typeof(decimal?)))
                 {
                     builder.Property(p.Name).HasPrecision(18, 6);
                 }
+
+                // Phase uniqueness per provider/competition
+                builder.HasIndex(x => new { x.CompetitionOddsId, x.Phase }).IsUnique();
             }
         }
     }

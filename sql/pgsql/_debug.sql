@@ -73,4 +73,7 @@ from public."GroupSeason" gs
 inner join public."Season" s on s."Id" = gs."SeasonId"
 where gs."Slug" = 'sec' and gs."SeasonYear" = 2025
 
+select * from public."CompetitionPrediction"
+select * from public."CompetitionPredictionValue"
 select * from public."PredictionMetric" order by "Name"
+--delete from public."PredictionMetric"

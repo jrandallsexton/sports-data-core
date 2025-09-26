@@ -147,5 +147,120 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             result.Should().Be(expected);
         }
 
+        [Theory]
+        [InlineData(
+            // with query + deep segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773615/competitions/401773615/competitors/2231/linescores/1/3?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773615/competitions/401773615")]
+        [InlineData(
+            // no query
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000/competitors/1/linescores/2",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000")]
+        [InlineData(
+            // trailing slash after id
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000/competitors/2/linescores/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000")]
+        [InlineData(
+            // mixed casing (method should be case-insensitive on segment match)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/Competitions/401900000/Competitors/5/LineScores/10",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/competitions/401900000")]
+        public void CompetitionLineScoreRefToCompetitionRef_Should_Trim_To_CompetitionUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionLineScoreRefToCompetitionRef(input);
+
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData(
+            // standard competition ref
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773615/competitions/401773615",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773615")]
+        [InlineData(
+            // mixed casing on segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401700000/Competitions/401700000",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000")]
+        [InlineData(
+            // trailing slash + query
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000/?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000")]
+        [InlineData(
+            // extra segments after competition id (should still trim back to event)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/competitions/401900000/boxscore/team",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000")]
+        public void CompetitionRefToContestRef_Should_Trim_To_EventUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionRefToContestRef(input);
+
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData(
+            // with query + deep linescores path
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773463/competitions/401773463/competitors/125/linescores/1/4?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401773463/competitions/401773463/competitors/125")]
+        [InlineData(
+            // no query, extra depth
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000/competitors/7/linescores/2/9",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000/competitors/7")]
+        [InlineData(
+            // trailing slash after competitor id
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000/competitors/33/linescores/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000/competitors/33")]
+        [InlineData(
+            // mixed casing on segments (method normalizes segment names)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401900000/Competitions/401900000/Competitors/125/LineScores/10",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/competitions/401900000/competitors/125")]
+        public void CompetitionLineScoreRefToCompetitionCompetitorRef_Should_Trim_To_CompetitorUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionLineScoreRefToCompetitionCompetitorRef(input);
+
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData(
+            // standard with query
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752710/competitions/401752710/competitors/99?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752710/competitions/401752710")]
+        [InlineData(
+            // no query
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000/competitors/12",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401700000/competitions/401700000")]
+        [InlineData(
+            // mixed casing on segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401800000/Competitions/401800000/Competitors/7",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401800000/competitions/401800000")]
+        [InlineData(
+            // trailing slash + extra segments (ignored)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/competitions/401900000/competitors/5/stats/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401900000/competitions/401900000")]
+        public void CompetitionCompetitorRefToCompetitionRef_Should_Trim_To_CompetitionUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(input);
+
+            result.Should().Be(expected);
+        }
     }
 }

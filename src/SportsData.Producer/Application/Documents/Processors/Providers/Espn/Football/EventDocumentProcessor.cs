@@ -130,8 +130,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.EventDocumentProcessor
                 ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
                     $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
@@ -164,8 +162,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.EventDocumentProcessor
                     ));
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                    await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException(
                         $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
@@ -202,6 +198,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 contest.ToCanonicalModel(),
                 command.CorrelationId,
                 CausationId.Producer.EventDocumentProcessor));
+
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
 
             await _dataContext.SaveChangesAsync();
         }

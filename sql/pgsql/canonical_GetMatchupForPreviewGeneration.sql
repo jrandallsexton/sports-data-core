@@ -63,18 +63,24 @@
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 --where c."Id" = @ContestId
 where c."Id" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800' --) t;
--- https://api-dev.sportdeets.com/ui/matchup/4bc09728-f73d-ab83-ca3c-8f943f2f2800/preview
--- select * from public."Contest" where "Id" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
--- SELECT * from "Competition" where "ContestId" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800'
+-- https://api-dev.sportdeets.com/ui/matchup/31138ab2-801d-0e43-8a1c-6b921701d950/preview
+-- select * from public."Contest" where "Id" = '31138ab2-801d-0e43-8a1c-6b921701d950'
+-- SELECT * from "Competition" where "ContestId" = '31138ab2-801d-0e43-8a1c-6b921701d950'
+-- SELECT * from "Competition" where "Id" = 'a8515029-a951-4648-9029-86190beb97d0'
 select * from public."CompetitionOdds" where "CompetitionId" = 'a8515029-a951-4648-9029-86190beb97d0'
 select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = '15e5b4c2-2f6f-135d-6c4f-194f2790fcbf'
-select * from public."CompetitionTeamOddsSnapshot" where "TeamOddsId" = '0198e146-df9b-7dce-8e06-b8d97538d94a'
-select * from public."CompetitionTotalsSnapshot"
+
+select *
+from public."CompetitionOdds" CO
+inner join public."CompetitionTeamOdds" ctoHome on ctoHome."CompetitionOddsId" = CO."Id" and ctoHome."Side" = 'Home'
+inner join public."CompetitionTeamOdds" ctoAway on ctoAway."CompetitionOddsId" = CO."Id" and ctoAway."Side" = 'Away'
+where CO."CompetitionId" = 'a8515029-a951-4648-9029-86190beb97d0'
+
 
 -- delete from public."CompetitionTeamOddsSnapshot"
 -- delete from public."CompetitionTeamOdds"
--- delete from public."CompetitionOdds"
 -- delete from public."CompetitionTotalsSnapshot"
+-- delete from public."CompetitionOdds"
 
 -- SELECT c.*
 -- FROM public."Contest" c

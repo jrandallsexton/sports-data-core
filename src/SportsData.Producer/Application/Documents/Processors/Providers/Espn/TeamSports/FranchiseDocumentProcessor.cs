@@ -278,10 +278,11 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             updated = true;
         }
 
-        if (franchise.ColorCodeHex != dto.Color)
+        var incomingColor = string.IsNullOrEmpty(dto.Color) ? "ffffff" : dto.Color;
+        if (franchise.ColorCodeHex != incomingColor)
         {
-            _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, dto.Color);
-            franchise.ColorCodeHex = dto.Color;
+            _logger.LogInformation("Updating Color from {Old} to {New}", franchise.ColorCodeHex, incomingColor);
+            franchise.ColorCodeHex = incomingColor;
             updated = true;
         }
 

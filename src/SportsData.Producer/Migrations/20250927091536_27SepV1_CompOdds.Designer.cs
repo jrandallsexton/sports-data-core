@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20250927091536_27SepV1_CompOdds")]
+    partial class _27SepV1_CompOdds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -195,39 +198,31 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<string>("Side")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("text");
 
                     b.Property<decimal?>("SpreadPointsClose")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("SpreadPointsCurrent")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("SpreadPointsOpen")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("SpreadPriceClose")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("SpreadPriceCurrent")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("SpreadPriceOpen")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompetitionOddsId", "Side")
-                        .IsUnique();
+                    b.HasIndex("CompetitionOddsId");
 
-                    b.ToTable("CompetitionTeamOdds", (string)null);
+                    b.ToTable("CompetitionTeamOdds");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>
@@ -2998,8 +2993,7 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<string>("Href")
                         .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsExternal")
                         .HasColumnType("boolean");
@@ -3008,8 +3002,7 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Language")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
@@ -3019,22 +3012,19 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<string>("Rel")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("text");
 
                     b.Property<string>("ShortText")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Text")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompetitionOddsId", "Rel", "Href");
+                    b.HasIndex("CompetitionOddsId");
 
-                    b.ToTable("CompetitionOddsLink", (string)null);
+                    b.ToTable("CompetitionOddsLink");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPlay", b =>

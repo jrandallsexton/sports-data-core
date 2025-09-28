@@ -221,7 +221,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetition,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor
+                    CausationId: CausationId.Producer.EventDocumentProcessor,
+                    BypassCache: true
                 ));
             }
         }
@@ -282,7 +283,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.Venue,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor
+                        CausationId: CausationId.Producer.EventDocumentProcessor,
+                        BypassCache: true
                     ));
                 }
             }

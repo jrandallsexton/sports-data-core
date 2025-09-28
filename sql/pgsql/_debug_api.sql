@@ -34,19 +34,18 @@ from public."PickemGroupMatchup"
   --"ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
 order by "StartDateUtc" desc
 
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 16:30:00-04' WHERE "ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = '543f7123-a6ef-e247-2f7f-43ba6989e6bc'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:30:00-04' WHERE "ContestId" = '79644b4f-98d9-c2c6-f4c1-26068931d10c'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 23:00:00-04' WHERE "ContestId" = '86a15558-ffaf-e157-02c4-dc38264e1657'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:00:00-04' WHERE "ContestId" = '9fe25355-e3de-f5e7-5bd8-ab1e07788f72'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = 'bcff12ac-7350-ed91-fac6-d9fd19fcc016'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:30:00-04' WHERE "ContestId" = 'cbd1f3e5-9547-9e5f-e7a6-64530cb575a5'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 19:00:00-04' WHERE "ContestId" = 'cc27abad-d9aa-c777-d37a-ef34446d6f95'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 12:00:00-04' WHERE "ContestId" = 'd7ec614d-9825-b2c9-c25d-234db71a7bec'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 12:00:00-04' WHERE "ContestId" = 'de77a1a4-e010-5851-f367-78bb2600490e'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-20 15:30:00-04' WHERE "ContestId" = 'f66adefe-4df1-5a80-57e4-637fccf78299'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 12:00:00-04' WHERE "ContestId" = '043b7478-ac11-403a-19e5-39c35b095337'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '14ede6f6-88cb-8dc1-78a3-491707bab7e7'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 12:00:00-04' WHERE "ContestId" = '26695c7c-be12-d78d-1560-bf649dde791e'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '31138ab2-801d-0e43-8a1c-6b921701d950'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '4be038bd-b397-c2cf-3f15-04fb80275f3f'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:00:00-04' WHERE "ContestId" = '765ecabd-cf17-9a72-8643-aa7c91c4e566'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:45:00-04' WHERE "ContestId" = 'a38eb870-6cee-bffa-173c-9dc831608132'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:30:00-04' WHERE "ContestId" = 'e1a886a3-adb9-9cd0-5c38-8391a6ac624d'
+--update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 16:15:00-04' WHERE "ContestId" = 'ef9045f3-0346-d153-baee-b97231badda1'
 
--- http://localhost:5262/ui/matchup/f66adefe-4df1-5a80-57e4-637fccf78299/preview
+-- https://api-dev.sportdeets.com/ui/matchup/ef9045f3-0346-d153-baee-b97231badda1/preview
 
 -- FIX DEV
 -- delete from public."UserPick" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04'

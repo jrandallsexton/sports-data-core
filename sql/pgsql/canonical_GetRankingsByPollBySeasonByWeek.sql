@@ -23,7 +23,7 @@ left join lateral (
 ) as fsl on true
 inner join public."SeasonWeek" sw on sw."Id" = fsr."SeasonWeekId"
 inner join public."Season" s on s."Id" = sw."SeasonId"
-WHERE fsr."Type" = 'ap' and sw."Number" = 3 and s."Year" = 2025
+WHERE fsr."Type" = 'ap' and sw."Number" = 5 and s."Year" = 2025
 order by fsrd."Current" asc
 
 --select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"

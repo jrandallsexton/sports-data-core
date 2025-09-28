@@ -155,15 +155,10 @@ namespace SportsData.Core.DependencyInjection
                 x.UseTagsWithPostgreSql();
             });
 
-            //services.AddHangfire(x => x.UsePostgreSqlStorage(options =>
-            //{
-            //    options.UseNpgsqlConnection(connString);
-            //}));
-
             services.AddHangfireServer(serverOptions =>
             {
                 // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = maxWorkers ?? Environment.ProcessorCount * 3;
+                serverOptions.WorkerCount = maxWorkers ?? Environment.ProcessorCount * 2;
                 
             });
             return services;

@@ -52,8 +52,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CompetitionLeader> CompetitionLeaders { get; set; }
 
         public DbSet<CompetitionOdds> CompetitionOdds { get; set; }
-
         public DbSet<CompetitionOddsExternalId> CompetitionOddsExternalIds { get; set; }
+        public DbSet<CompetitionTeamOdds> CompetitionTeamOdds { get; set; }
+        public DbSet<CompetitionOddsLink> CompetitionOddsLinks { get; set; }
 
         public DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; }
 
@@ -159,6 +160,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionOddsExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionTeamOdds.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionOddsLink.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndex.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPowerIndexExternalId.EntityConfiguration());

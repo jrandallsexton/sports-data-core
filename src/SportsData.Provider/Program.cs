@@ -1,17 +1,15 @@
 using Hangfire;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
+
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
-using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Seeders;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 using SportsData.Provider.Middleware.Health;
 
 namespace SportsData.Provider

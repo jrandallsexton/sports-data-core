@@ -47,8 +47,15 @@ namespace SportsData.Api.Application.Previews
 
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
-            matchup.AwayStats = await _canonicalDataProvider.GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
-            matchup.HomeStats = await _canonicalDataProvider.GetFranchiseSeasonStatsForPreview(matchup.HomeFranchiseSeasonId);
+            matchup.AwayStats = await _canonicalDataProvider
+                .GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
+            matchup.HomeStats = await _canonicalDataProvider
+                .GetFranchiseSeasonStatsForPreview(matchup.HomeFranchiseSeasonId);
+
+            matchup.AwayCompetitionResults = await _canonicalDataProvider
+                .GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(matchup.AwayFranchiseSeasonId);
+            matchup.HomeCompetitionResults = await _canonicalDataProvider
+                .GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(matchup.HomeFranchiseSeasonId);
 
             var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
                             matchup.HomeStats.RushingYardsPerGame.HasValue);

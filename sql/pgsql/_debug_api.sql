@@ -13,7 +13,7 @@ update public."MatchupPreview" set
 "PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
 */
 
-select * from public."MatchupPreview" where "CreatedUtc" > '2025-09-01 00:00:00.000000-04' order by "CreatedUtc" desc
+select * from public."MatchupPreview" where "ContestId" = '5188a7dc-79f2-387b-d283-d1c58b0f3eae' -- "CreatedUtc" > '2025-09-01 00:00:00.000000-04' order by "CreatedUtc" desc
 select * from public."PickemGroup" where "IsPublic" = true
 
 select g."Id", u."DisplayName" as "Commissioner", g."Name", g."Description", g."RankingFilter", g."PickType", g."UseConfidencePoints", g."DropLowWeeksCount"

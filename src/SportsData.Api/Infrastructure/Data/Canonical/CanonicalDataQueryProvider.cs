@@ -19,7 +19,8 @@ public class CanonicalDataQueryProvider
         "GetContestOverviewQuarterScores.sql",
         "GetContestOverviewWinProbabilityPoints.sql",
         "GetContestOverviewPlayLog.sql",
-        "GetCurrentAndLastWeekSeasonWeeks.sql"
+        "GetCurrentAndLastWeekSeasonWeeks.sql",
+        "GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -52,6 +53,8 @@ public class CanonicalDataQueryProvider
 
         return sql;
     }
+
+    public string GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId() => Get("GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql");
 
     public string GetCurrentAndLastWeekSeasonWeeks() => Get("GetCurrentAndLastWeekSeasonWeeks.sql");
 

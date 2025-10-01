@@ -47,6 +47,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
 
         Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks();
+
+        Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -218,6 +220,19 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
                 _logger.LogError(ex, "Failed to resolve current season week.");
                 return [];
             }
+        }
+
+        public async Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId)
+        {
+            var sql = _queryProvider.GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId();
+
+            var results = await _connection.QueryAsync<FranchiseSeasonCompetitionResultDto>(
+                sql,
+                new { FranchiseSeasonId = franchiseSeasonId },
+                commandType: CommandType.Text
+            );
+
+            return results.ToList();
         }
 
         public async Task<List<Matchup>> GetMatchupsForCurrentWeek()

@@ -13,7 +13,7 @@ public class MatchupPreviewPromptProvider
     private const string Container = "prompts";
 
     private const string Blob = "prediction-insights-v1.txt";
-    private const string BlobWithStats = "prediction-insights-with-stats.txt";
+    private const string BlobWithStats = "prediction-insights-with-stats-schedule.txt";
 
     public MatchupPreviewPromptProvider(IServiceProvider serviceProvider)
     {

@@ -62,13 +62,13 @@
   left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 --where c."Id" = @ContestId
-where c."Id" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800' --) t;
--- https://api-dev.sportdeets.com/ui/matchup/31138ab2-801d-0e43-8a1c-6b921701d950/preview
--- select * from public."Contest" where "Id" = '31138ab2-801d-0e43-8a1c-6b921701d950'
--- SELECT * from "Competition" where "ContestId" = '31138ab2-801d-0e43-8a1c-6b921701d950'
--- SELECT * from "Competition" where "Id" = 'a8515029-a951-4648-9029-86190beb97d0'
-select * from public."CompetitionOdds" where "CompetitionId" = 'a8515029-a951-4648-9029-86190beb97d0'
-select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = '15e5b4c2-2f6f-135d-6c4f-194f2790fcbf'
+where c."Id" = '96a0895f-729c-4ba3-c446-6af6e267a6dd' --) t;
+-- https://api-dev.sportdeets.com/ui/matchup/96a0895f-729c-4ba3-c446-6af6e267a6dd/preview
+-- select * from public."Contest" where "Id" = '96a0895f-729c-4ba3-c446-6af6e267a6dd'
+-- SELECT * from "Competition" where "ContestId" = '96a0895f-729c-4ba3-c446-6af6e267a6dd'
+-- SELECT * from "Competition" where "Id" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
+select * from public."CompetitionOdds" where "CompetitionId" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
+select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = 'b77a7510-4a7a-6f2b-1755-96924c34495a'
 
 select *
 from public."CompetitionOdds" CO
@@ -76,6 +76,15 @@ inner join public."CompetitionTeamOdds" ctoHome on ctoHome."CompetitionOddsId" =
 inner join public."CompetitionTeamOdds" ctoAway on ctoAway."CompetitionOddsId" = CO."Id" and ctoAway."Side" = 'Away'
 where CO."CompetitionId" = 'a8515029-a951-4648-9029-86190beb97d0'
 
+-- SELECT
+--   d.datname AS database_name,
+--   pg_size_pretty(pg_database_size(d.datname)) AS size
+-- FROM
+--   pg_database d
+-- WHERE
+--   d.datistemplate = false
+-- ORDER BY
+--   pg_database_size(d.datname) DESC;
 
 -- delete from public."CompetitionTeamOddsSnapshot"
 -- delete from public."CompetitionTeamOdds"

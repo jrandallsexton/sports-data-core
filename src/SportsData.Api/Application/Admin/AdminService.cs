@@ -151,7 +151,7 @@ namespace SportsData.Api.Application.Admin
                         TiebreakerType = TiebreakerType.TotalPoints
                     };
 
-                    if (group.PickType == PickType.AgainstTheSpread && matchup.HomeSpread.HasValue)
+                    if (group.PickType == PickType.AgainstTheSpread && matchup.SpreadCurrent.HasValue)
                     {
                         synPick.FranchiseId = preview.PredictedSpreadWinner;
                         if (synPick.FranchiseId == Guid.Empty)

@@ -1,6 +1,7 @@
 
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."FranchiseSeason" where "Slug" = 'texas-tech-red-raiders'
+select * from public."Franchise"
 select * from public."AthletePosition"
 /* Season Roster */
 select
@@ -28,7 +29,7 @@ order by "Name"
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c'
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '0506f7ab-39ad-b0ba-0c4a-2b2b8b794eaf' where "ShortHeadline" = '2025 AP Poll: Week 5'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda' where "ShortHeadline" = '2025 AP Poll: Week 6'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"

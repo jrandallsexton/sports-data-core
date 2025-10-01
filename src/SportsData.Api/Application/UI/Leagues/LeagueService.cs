@@ -155,11 +155,8 @@ namespace SportsData.Api.Application.UI.Leagues
                 {
                     StartDateUtc = x.StartDateUtc,
                     ContestId = x.ContestId,
-                    AwaySpread = (decimal?)x.AwaySpread,
                     AwayRank = x.AwayRank,
-                    HomeSpread = (decimal?)x.HomeSpread,
                     HomeRank = x.HomeRank,
-                    OverUnder = (decimal?)x.OverUnder
                 })
                 .ToListAsync(cancellationToken);
 
@@ -205,6 +202,23 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.HomeConferenceWins = canonical.HomeConferenceWins;
                     matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
                     matchup.HomeRank = canonical.HomeRank;
+
+                    // Odds
+                    matchup.SpreadCurrent = canonical.SpreadCurrent.HasValue
+                        ? Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                        : (decimal?)null;
+
+                    matchup.SpreadOpen = canonical.SpreadOpen.HasValue
+                        ? Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
+                        : (decimal?)null;
+
+                    matchup.OverUnderCurrent = canonical.OverUnderCurrent.HasValue
+                        ? Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                        : (decimal?)null;
+
+                    matchup.OverUnderOpen = canonical.OverUnderOpen.HasValue
+                        ? Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
+                        : (decimal?)null;
 
                     // Venue
                     matchup.Venue = canonical.Venue;

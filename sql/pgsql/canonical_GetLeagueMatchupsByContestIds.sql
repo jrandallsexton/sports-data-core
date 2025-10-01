@@ -31,10 +31,11 @@ SELECT
   fsHome."ConferenceWins" as "HomeConferenceWins",
   fsHome."ConferenceLosses" as "HomeConferenceLosses",
   
-  co."Details" as "Spread",
-  (co."Spread" * -1) as "AwaySpread",
-  co."Spread" as "HomeSpread",
-  co."OverUnder" as "OverUnder",
+  co."Details" as "SpreadCurrentDetails",
+  co."Spread" as "SpreadCurrent",
+  cto."SpreadPointsOpen" as "SpreadOpen",
+  co."OverUnder" as "OverUnderCurrent",
+  co."TotalPointsOpen" as "OverUnderOpen",
   co."OverOdds" as "OverOdds",
   co."UnderOdds" as "UnderOdds",
 
@@ -48,7 +49,8 @@ SELECT
 FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
-LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" != '59'
+LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
+LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
 
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
@@ -80,5 +82,10 @@ INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800' -- ANY(@ContestIds)
+WHERE c."Id" = '2bdcdede-e853-c469-f98a-59d4a1269ed1' -- ANY(@ContestIds)
 ORDER BY c."StartDateUtc", fHome."Slug";
+
+-- SELECT * from "Competition" where "ContestId" = '96a0895f-729c-4ba3-c446-6af6e267a6dd'
+-- SELECT * from "Competition" where "Id" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
+--select * from public."CompetitionOdds" where "CompetitionId" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
+--select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = 'b77a7510-4a7a-6f2b-1755-96924c34495a'

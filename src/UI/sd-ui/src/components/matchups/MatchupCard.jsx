@@ -51,8 +51,42 @@ function MatchupCard({
     setShowComparison(false);
     setComparisonData(null);
   };
-  const homeSpread = matchup.homeSpread ?? 0;
-  const overUnder = (matchup.overUnder === null || matchup.overUnder === 0 || matchup.overUnder === 'TBD') ? 'Off' : matchup.overUnder;
+  // Use spreadCurrent and spreadOpen for spread display
+  const homeSpread = matchup.spreadCurrent ?? 0;
+  const homeSpreadOpen = matchup.spreadOpen;
+  let spreadArrow = null;
+  if (
+    homeSpreadOpen !== undefined &&
+    homeSpreadOpen !== null &&
+    homeSpread !== homeSpreadOpen
+  ) {
+    const absCurrent = Math.abs(Number(homeSpread));
+    const absOpen = Math.abs(Number(homeSpreadOpen));
+    if (absCurrent < absOpen) {
+      // Spread moved closer to zero (easier for home) - green down arrow
+      spreadArrow = <span style={{ color: '#00c853', fontWeight: 700, marginRight: 2 }} title="Spread moved in favor of home">▼</span>;
+    } else if (absCurrent > absOpen) {
+      // Spread moved further from zero (harder for home) - red up arrow
+      spreadArrow = <span style={{ color: '#ff1744', fontWeight: 700, marginRight: 2 }} title="Spread moved against home">▲</span>;
+    }
+  }
+  const overUnder = (matchup.overUnderCurrent === null || matchup.overUnderCurrent === 0 || matchup.overUnderCurrent === 'TBD') ? 'Off' : matchup.overUnderCurrent;
+  const overUnderOpen = matchup.overUnderOpen;
+  let ouArrow = null;
+  if (
+    overUnderOpen !== undefined &&
+    overUnderOpen !== null &&
+    overUnder !== 'Off' &&
+    overUnder !== overUnderOpen
+  ) {
+    if (Number(overUnder) > Number(overUnderOpen)) {
+      // O/U moved up (raised) - red
+      ouArrow = <span style={{ color: '#ff1744', fontWeight: 700, marginRight: 2 }} title="O/U moved up">▲</span>;
+    } else if (Number(overUnder) < Number(overUnderOpen)) {
+      // O/U moved down (lowered) - green
+      ouArrow = <span style={{ color: '#00c853', fontWeight: 700, marginRight: 2 }} title="O/U moved down">▼</span>;
+    }
+  }
   const gameTime = formatToEasternTime(matchup.startDateUtc);
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
@@ -243,7 +277,17 @@ function MatchupCard({
             </div>
           </div>
           <div className="team-spread">
-            {homeSpread === 0 ? 'Off' : (homeSpread > 0 ? `+${homeSpread}` : homeSpread)}
+            {homeSpread === 0 ? 'Off' : (
+              <>
+                {spreadArrow}
+                {homeSpread > 0 ? `+${homeSpread}` : homeSpread}
+              </>
+            )}
+            {homeSpreadOpen !== undefined && homeSpreadOpen !== null && homeSpreadOpen !== homeSpread && (
+              <span style={{ color: '#adb5bd', fontSize: '0.95em', marginLeft: 6 }}>
+                ({homeSpreadOpen > 0 ? `+${homeSpreadOpen}` : homeSpreadOpen})
+              </span>
+            )}
           </div>
         </div>
         {showHomeGames && (
@@ -272,7 +316,14 @@ function MatchupCard({
           </div>
         )}
 
-        <div className="spread-ou">O/U: {overUnder}</div>
+        <div className="spread-ou">
+          O/U: {ouArrow}{overUnder}
+          {overUnderOpen !== undefined && overUnderOpen !== null && overUnderOpen !== overUnder && (
+            <span style={{ color: '#adb5bd', fontSize: '0.95em', marginLeft: 6 }}>
+              ({overUnderOpen})
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="pick-buttons-row" style={{ marginTop: 'auto' }}>

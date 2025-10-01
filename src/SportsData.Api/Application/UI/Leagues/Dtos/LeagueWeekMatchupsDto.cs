@@ -44,9 +44,11 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public int HomeConferenceLosses { get; set; }
 
             // Odds
-            public decimal? AwaySpread { get; set; }
-            public decimal? HomeSpread { get; set; }
-            public decimal? OverUnder { get; set; }
+            public string? SpreadCurrentDetails { get; set; }
+            public decimal? SpreadCurrent { get; set; }
+            public decimal? SpreadOpen { get; set; }
+            public decimal? OverUnderCurrent { get; set; }
+            public decimal? OverUnderOpen { get; set; }
 
             // Venue
             public string Venue { get; set; } = default!;

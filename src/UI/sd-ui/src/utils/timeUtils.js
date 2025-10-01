@@ -1,3 +1,4 @@
+
 import { DateTime } from "luxon";
 
 /**
@@ -25,4 +26,16 @@ export function formatToEasternTime(dateStr, format = "MMM d @ h:mm a") {
 
   const timeLabel = dtEt.toFormat("h:mm a");
   return `${dateLabel} @ ${timeLabel}`;
+}
+
+/**
+ * Formats a UTC ISO datetime string as M/D (e.g., 8/30)
+ * @param {string} dateStr - ISO 8601 date string in UTC
+ * @returns {string} - Formatted string like "8/30"
+ */
+export function formatToMonthDay(dateStr) {
+  const dtUtc = DateTime.fromISO(dateStr, { zone: "utc" });
+  if (!dtUtc.isValid) return "-";
+  const dtEt = dtUtc.setZone("America/New_York");
+  return dtEt.toFormat("M/d");
 }

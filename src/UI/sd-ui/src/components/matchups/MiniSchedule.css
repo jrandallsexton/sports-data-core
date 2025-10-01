@@ -1,0 +1,81 @@
+/* MiniSchedule: improved contrast and less white */
+.mini-schedule {
+  margin: 8px 0 0 0;
+  background: #23252a;
+  border-radius: 12px;
+  border: 1.5px solid #2a2d33;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.18);
+  padding: 12px 14px;
+  color: #f8f9fa;
+}
+.mini-schedule table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.97rem;
+  background: transparent;
+  color: inherit;
+}
+.mini-schedule th, .mini-schedule td {
+  padding: 6px 10px;
+  text-align: left;
+}
+.mini-schedule th {
+  font-weight: 700;
+  background: #2a2d33;
+  color: #61dafb;
+  border-bottom: 1.5px solid #23252a;
+}
+.mini-schedule tr:nth-child(even) {
+  background: #23252a;
+}
+.mini-schedule tr:nth-child(odd) {
+  background: #282b31;
+}
+.mini-schedule tr:hover td {
+  background: #2a2d33;
+}
+.result-win {
+  color: #00c853;
+  font-weight: 600;
+}
+.result-loss {
+  color: #ff1744;
+  font-weight: 600;
+}
+.result-tbd {
+  color: #adb5bd;
+}
+.result-link {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.result-link.result-win {
+  color: #00c853 !important;
+}
+.result-link.result-loss {
+  color: #ff1744 !important;
+}
+.mini-schedule-icon-btn {
+  background: #e3e6ee;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 2px;
+  transition: background 0.15s;
+  padding: 0;
+}
+.mini-schedule-icon-btn:hover {
+  background: #cfd8dc;
+}
+.mini-schedule-icon {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+  user-select: none;
+}

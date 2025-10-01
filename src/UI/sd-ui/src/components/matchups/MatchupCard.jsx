@@ -1,11 +1,12 @@
 import "./MatchupCard.css";
-import { FaChartLine, FaLock, FaCheckCircle, FaTimes, FaClipboardList } from "react-icons/fa";
+import { FaChartLine, FaLock, FaCheckCircle, FaTimes, FaClipboardList, FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { Bot } from 'lucide-react'
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
 import { useState, useEffect } from "react";
 import apiWrapper from "../../api/apiWrapper";
 import TeamComparison from "../teams/TeamComparison";
+import MiniSchedule from "./MiniSchedule";
 
 function MatchupCard({
   matchup,
@@ -108,6 +109,42 @@ function MatchupCard({
     return pickResult ? `pick-${pickResult}` : ""; // Green/red based on result
   };
 
+  const [showAwayGames, setShowAwayGames] = useState(false);
+  const [showHomeGames, setShowHomeGames] = useState(false);
+  // State for real schedule data
+  const [awaySchedule, setAwaySchedule] = useState([]);
+  const [homeSchedule, setHomeSchedule] = useState([]);
+  const [awayLoading, setAwayLoading] = useState(false);
+  const [homeLoading, setHomeLoading] = useState(false);
+  const [awayError, setAwayError] = useState(null);
+  const [homeError, setHomeError] = useState(null);
+
+  // Fetch last 5 games for away team
+  useEffect(() => {
+    if (!showAwayGames) return;
+    setAwayLoading(true);
+    setAwayError(null);
+    apiWrapper.TeamCard.getBySlugAndSeason(matchup.awaySlug, seasonYear)
+      .then(res => {
+        setAwaySchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
+      })
+      .catch(() => setAwayError("Failed to load schedule"))
+      .finally(() => setAwayLoading(false));
+  }, [showAwayGames, matchup.awaySlug, seasonYear]);
+
+  // Fetch last 5 games for home team
+  useEffect(() => {
+    if (!showHomeGames) return;
+    setHomeLoading(true);
+    setHomeError(null);
+    apiWrapper.TeamCard.getBySlugAndSeason(matchup.homeSlug, seasonYear)
+      .then(res => {
+        setHomeSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
+      })
+      .catch(() => setHomeError("Failed to load schedule"))
+      .finally(() => setHomeLoading(false));
+  }, [showHomeGames, matchup.homeSlug, seasonYear]);
+
   return (
     <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${getCardBorderClass()}`}
          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -134,16 +171,35 @@ function MatchupCard({
                   {matchup.away}
                 </Link>
               </div>
-              <div className="team-record">
+              <div className="team-record" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>
                   {matchup.awayWins}-{matchup.awayLosses} ({matchup.awayConferenceWins}-{matchup.awayConferenceLosses})
                 </span>
+                <button
+                  className="mini-schedule-icon-btn"
+                  aria-label={showAwayGames ? "Hide last 5 games" : "Show last 5 games"}
+                  onClick={() => setShowAwayGames(v => !v)}
+                  style={{ marginLeft: 4 }}
+                >
+                  {showAwayGames ? (
+                    <FaSearchMinus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Hide last 5 games" />
+                  ) : (
+                    <FaSearchPlus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Show last 5 games" />
+                  )}
+                </button>
               </div>
+              {showAwayGames && (
+                awayLoading ? (
+                  <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
+                ) : awayError ? (
+                  <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{awayError}</div>
+                ) : (
+                  <MiniSchedule schedule={awaySchedule} seasonYear={seasonYear} />
+                )
+              )}
             </div>
           </div>
         </div>
-
-        <div className="at-divider">at</div>
 
         {/* Home Team Row */}
         <div className="team-row">
@@ -167,11 +223,32 @@ function MatchupCard({
                   {matchup.home}
                 </Link>
               </div>
-              <div className="team-record">
+              <div className="team-record" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>
                   {matchup.homeWins}-{matchup.homeLosses} ({matchup.homeConferenceWins}-{matchup.homeConferenceLosses})
                 </span>
+                <button
+                  className="mini-schedule-icon-btn"
+                  aria-label={showHomeGames ? "Hide last 5 games" : "Show last 5 games"}
+                  onClick={() => setShowHomeGames(v => !v)}
+                  style={{ marginLeft: 4 }}
+                >
+                  {showHomeGames ? (
+                    <FaSearchMinus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Hide last 5 games" />
+                  ) : (
+                    <FaSearchPlus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Show last 5 games" />
+                  )}
+                </button>
               </div>
+              {showHomeGames && (
+                homeLoading ? (
+                  <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
+                ) : homeError ? (
+                  <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{homeError}</div>
+                ) : (
+                  <MiniSchedule schedule={homeSchedule} seasonYear={seasonYear} />
+                )
+              )}
             </div>
           </div>
           <div className="team-spread">

@@ -1,0 +1,27 @@
+.mini-schedule-drill-icon-btn {
+  background: #2a2d33;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 4px;
+  color: #61dafb;
+  transition: background 0.15s;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0;
+}
+.mini-schedule-drill-icon-btn:hover {
+  background: #374151;
+}
+.mini-schedule-drilldown-row {
+  background: #23252a !important;
+}
+.mini-schedule-drilldown-cell {
+  padding: 0;
+  border: none;
+}

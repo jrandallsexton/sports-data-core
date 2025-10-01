@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./InsightDialog.css";
 import { useUserDto } from "../../contexts/UserContext";
+import { formatToEasternTime } from "../../utils/timeUtils";
 
 function InsightDialog({
   isOpen,
@@ -94,6 +95,11 @@ function InsightDialog({
                 <h3>
                   sportDeets<span className="tm-symbol">™</span> Prediction
                 </h3>
+                {matchup.generatedUtc && (
+                  <div style={{ fontSize: '0.98em', color: '#adb5bd', marginBottom: 6 }}>
+                    <strong>Generated:</strong> {formatToEasternTime(matchup.generatedUtc)}
+                  </div>
+                )}
                 <p>{matchup.prediction || "Prediction not available."}</p>
 
                 {/* Additional prediction details */}

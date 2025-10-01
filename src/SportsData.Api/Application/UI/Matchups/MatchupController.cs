@@ -67,7 +67,8 @@ namespace SportsData.Api.Application.UI.Matchups
                 AtsWinner = atsWinner,
                 AwayScore = preview.AwayScore,
                 HomeScore = preview.HomeScore,
-                VegasImpliedScore = implied
+                VegasImpliedScore = implied,
+                GeneratedUtc = preview.CreatedUtc
             });
         }
     }

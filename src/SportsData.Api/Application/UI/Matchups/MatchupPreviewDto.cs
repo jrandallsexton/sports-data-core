@@ -21,5 +21,7 @@
         public int? HomeScore { get; set; }
 
         public string? VegasImpliedScore { get; set; }
+
+        public DateTime GeneratedUtc { get; set; }
     }
 }

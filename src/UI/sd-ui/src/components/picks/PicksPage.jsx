@@ -198,6 +198,7 @@ function PicksPage() {
         awayScore: preview.awayScore,
         homeScore: preview.homeScore,
         vegasImpliedScore: preview.vegasImpliedScore,
+        generatedUtc: preview.generatedUtc
       }));
     } catch (error) {
       console.error("Error fetching insight preview:", error);

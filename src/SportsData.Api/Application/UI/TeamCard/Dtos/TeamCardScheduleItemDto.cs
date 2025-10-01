@@ -10,6 +10,8 @@ public class TeamCardScheduleItemDto
 
     public string Opponent { get; set; } = default!;
 
+    public string OpponentShortName { get; set; } = default!;
+
     public string OpponentSlug { get; set; } = default!;
 
     public string Location { get; set; } = default!;

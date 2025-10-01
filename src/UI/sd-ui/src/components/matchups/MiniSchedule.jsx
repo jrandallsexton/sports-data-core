@@ -65,7 +65,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
                 <td>{formatToMonthDay(game.date)}</td>
                 <td style={{ display: 'flex', alignItems: 'center' }}>
                   <Link to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${seasonYear}`} className="team-link">
-                    {game.opponent}
+                    {game.opponentShortName}
                   </Link>
                   {game.opponentSlug && (
                     <button

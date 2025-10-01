@@ -188,18 +188,18 @@ function MatchupCard({
                   )}
                 </button>
               </div>
-              {showAwayGames && (
-                awayLoading ? (
-                  <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
-                ) : awayError ? (
-                  <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{awayError}</div>
-                ) : (
-                  <MiniSchedule schedule={awaySchedule} seasonYear={seasonYear} />
-                )
-              )}
             </div>
           </div>
         </div>
+        {showAwayGames && (
+          awayLoading ? (
+            <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
+          ) : awayError ? (
+            <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{awayError}</div>
+          ) : (
+            <MiniSchedule schedule={awaySchedule} seasonYear={seasonYear} />
+          )
+        )}
 
         {/* Home Team Row */}
         <div className="team-row">
@@ -240,21 +240,21 @@ function MatchupCard({
                   )}
                 </button>
               </div>
-              {showHomeGames && (
-                homeLoading ? (
-                  <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
-                ) : homeError ? (
-                  <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{homeError}</div>
-                ) : (
-                  <MiniSchedule schedule={homeSchedule} seasonYear={seasonYear} />
-                )
-              )}
             </div>
           </div>
           <div className="team-spread">
             {homeSpread === 0 ? 'Off' : (homeSpread > 0 ? `+${homeSpread}` : homeSpread)}
           </div>
         </div>
+        {showHomeGames && (
+          homeLoading ? (
+            <div style={{padding:4, fontSize:'0.95em'}}>Loading…</div>
+          ) : homeError ? (
+            <div style={{padding:4, color:'red', fontSize:'0.95em'}}>{homeError}</div>
+          ) : (
+            <MiniSchedule schedule={homeSchedule} seasonYear={seasonYear} />
+          )
+        )}
 
         {/* Game Result - show final score if game is complete */}
         {matchup.isComplete ? (

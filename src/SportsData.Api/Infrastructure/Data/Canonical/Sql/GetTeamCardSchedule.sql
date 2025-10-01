@@ -6,6 +6,10 @@
         WHEN fAway."Slug" = @Slug THEN fHome."DisplayName"
         ELSE fAway."DisplayName"
     END AS "Opponent",
+    	CASE
+        WHEN fAway."Slug" = @Slug THEN fHome."DisplayNameShort"
+        ELSE fAway."DisplayNameShort"
+    END AS "OpponentShortName",
     CASE
         WHEN fAway."Slug" = @Slug THEN fHome."Slug"
         ELSE fAway."Slug"

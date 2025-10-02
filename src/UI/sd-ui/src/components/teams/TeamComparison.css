@@ -59,6 +59,43 @@
     padding: 1rem 0.5rem 1rem 0.5rem;
     margin-top: 2vw;
   }
+  .team-comparison-table {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stat-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.98rem;
+    margin-bottom: 0.7rem;
+    min-width: max-content;
+  }
+  .stat-value.left, .stat-value.right {
+    min-width: 70px;
+    font-size: 1.05rem;
+    padding: 0.3rem 0.2rem;
+    width: auto;
+    max-width: 100vw;
+    word-break: break-word;
+    white-space: normal;
+    overflow-x: visible;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .stat-category {
+    min-width: 80px !important;
+    width: auto !important;
+    max-width: none !important;
+    text-align: center;
+    font-size: 0.97rem;
+    padding: 0.1rem 0;
+    overflow: visible;
+    text-overflow: initial;
+    white-space: normal;
+  }
 }
 
 .team-comparison-header {

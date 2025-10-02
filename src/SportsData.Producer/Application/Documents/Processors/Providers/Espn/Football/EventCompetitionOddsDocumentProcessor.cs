@@ -74,6 +74,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         }
 
         var competition = await _db.Competitions
+            .AsNoTracking()
             .Include(x => x.Contest)
             .FirstOrDefaultAsync(x => x.Id == competitionId);
 
@@ -133,7 +134,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
 
         await _db.CompetitionOdds.AddAsync(incoming);
         await _db.SaveChangesAsync();
-
+        
         // Publish after success
         if (existing is null)
         {
@@ -143,7 +144,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         else
         {
             await _bus.Publish(new ContestOddsUpdated(
-                competition.Contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+                competition.Contest.Id, "ContestOddsUpdated", command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
         }
 
         _logger.LogInformation("Odds upserted (hard replace). comp={CompId} provider={Prov} oddsId={OddsId}",

@@ -63,12 +63,12 @@
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 --where c."Id" = @ContestId
 where c."Id" = '96a0895f-729c-4ba3-c446-6af6e267a6dd' --) t;
--- https://api-dev.sportdeets.com/ui/matchup/96a0895f-729c-4ba3-c446-6af6e267a6dd/preview
--- select * from public."Contest" where "Id" = '96a0895f-729c-4ba3-c446-6af6e267a6dd'
--- SELECT * from "Competition" where "ContestId" = '96a0895f-729c-4ba3-c446-6af6e267a6dd'
--- SELECT * from "Competition" where "Id" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
-select * from public."CompetitionOdds" where "CompetitionId" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
-select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = 'b77a7510-4a7a-6f2b-1755-96924c34495a'
+-- https://api-dev.sportdeets.com/ui/matchup/e890f3f7-a063-0132-04af-913076ae2a99/preview
+-- select * from public."Contest" where "Id" = 'e890f3f7-a063-0132-04af-913076ae2a99'
+-- SELECT * from "Competition" where "ContestId" = 'e890f3f7-a063-0132-04af-913076ae2a99'
+-- SELECT * from "Competition" where "Id" = '6102a620-1ebb-2d9c-964c-a573f629254e'
+select * from public."CompetitionOdds" where "CompetitionId" = '6102a620-1ebb-2d9c-964c-a573f629254e'
+select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = '584d97ce-5b9a-a397-5f83-0986253fb2e9'
 
 select *
 from public."CompetitionOdds" CO

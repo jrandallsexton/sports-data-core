@@ -133,7 +133,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     SourceDataProvider: evt.SourceDataProvider,
                     DocumentType: evt.DocumentType,
                     ParentId: evt.ParentId,
-                    SeasonYear: evt.SeasonYear);
+                    SeasonYear: evt.SeasonYear,
+                    BypassCache: evt.BypassCache);
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;

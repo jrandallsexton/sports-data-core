@@ -48,7 +48,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
             services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
+
+            services.AddScoped<IStatFormattingService, StatFormattingService>();
             services.AddScoped<ITeamCardService, TeamCardService>();
+
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();
             services.AddScoped<MatchupScheduler>();

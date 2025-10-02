@@ -73,12 +73,13 @@ export default function TeamComparison({ open, onClose, teamA, teamB }) {
               const aVal = entry.displayValue ?? "-";
               const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
               const bVal = bEntry.displayValue ?? "-";
-              const statName = entry.statistic;
+              const statKey = entry.statisticKey;
+              const statLabel = entry.statisticValue;
               const favored = getFavored(aVal, bVal);
               return (
-                <div className="stat-row" key={statName}>
+                <div className="stat-row" key={statKey}>
                   <div className={`stat-value left${favored === "A" ? " favored" : ""}`}>{aVal}</div>
-                  <div className="stat-category">{statName}</div>
+                  <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
                   <div className={`stat-value right${favored === "B" ? " favored" : ""}`}>{bVal}</div>
                 </div>
               );

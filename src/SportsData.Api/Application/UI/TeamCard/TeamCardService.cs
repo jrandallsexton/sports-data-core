@@ -7,57 +7,52 @@ using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.UI.TeamCard
-{
-    public interface ITeamCardService
-    {
-        Task<Result<TeamCardDto?>> GetTeamCard(
-            GetTeamCardQuery query,
-            CancellationToken cancellationToken = default);
+namespace SportsData.Api.Application.UI.TeamCard;
 
-        Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId);
+public interface ITeamCardService
+{
+    Task<Result<TeamCardDto?>> GetTeamCard(GetTeamCardQuery query, CancellationToken cancellationToken = default);
+    Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId);
+}
+
+public class TeamCardService : ITeamCardService
+{
+    private readonly ILogger<TeamCardService> _logger;
+    private readonly IGetTeamCardQueryHandler _getTeamCardQueryHandler;
+    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IStatFormattingService _statFormatting;
+
+    public TeamCardService(
+        ILogger<TeamCardService> logger,
+        IGetTeamCardQueryHandler getTeamCardQueryHandler,
+        IProvideCanonicalData canonicalDataProvider,
+        IStatFormattingService statFormatting)
+    {
+        _logger = logger;
+        _getTeamCardQueryHandler = getTeamCardQueryHandler;
+        _canonicalDataProvider = canonicalDataProvider;
+        _statFormatting = statFormatting;
     }
 
-    public class TeamCardService : ITeamCardService
+    public async Task<Result<TeamCardDto?>> GetTeamCard(
+        GetTeamCardQuery query,
+        CancellationToken cancellationToken = default)
     {
-        private readonly ILogger<TeamCardService> _logger;
-        private readonly IGetTeamCardQueryHandler _getTeamCardQueryHandler;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        var result = await _getTeamCardQueryHandler.ExecuteAsync(query, cancellationToken);
 
-        public TeamCardService(
-            ILogger<TeamCardService> logger,
-            IGetTeamCardQueryHandler getTeamCardQueryHandler,
-            IProvideCanonicalData canonicalDataProvider)
-        {
-            _logger = logger;
-            _getTeamCardQueryHandler = getTeamCardQueryHandler;
-            _canonicalDataProvider = canonicalDataProvider;
-        }
+        if (result is not null) return new Success<TeamCardDto?>(result);
 
-        public async Task<Result<TeamCardDto?>> GetTeamCard(
-            GetTeamCardQuery query,
-            CancellationToken cancellationToken = default)
-        {
-            var result = await _getTeamCardQueryHandler.ExecuteAsync(query, cancellationToken);
+        _logger.LogError("Failed to get team card for query: {@Query}", query);
+        return new Failure<TeamCardDto?>(
+            null,
+            ResultStatus.NotFound,
+            [new ValidationFailure("TeamCard", "Team card not found")]);
+    }
 
-            if (result is not null)
-            {
-                return new Success<TeamCardDto?>(result);
-            }
-            else
-            {
-                _logger.LogError("Failed to get team card for query: {@Query}", query);
-                return new Failure<TeamCardDto?>(
-                    null,
-                    ResultStatus.NotFound,
-                    [new ValidationFailure("TeamCard", "Team card not found")]);
-            }
-        }
-
-        public async Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId)
-        {
-            return await _canonicalDataProvider
-                .GetFranchiseSeasonStatistics(franchiseSeasonId);
-        }
+    public async Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId)
+    {
+        var dto = await _canonicalDataProvider.GetFranchiseSeasonStatistics(franchiseSeasonId);
+        _statFormatting.ApplyFriendlyLabelsAndFormatting(dto);
+        return dto;
     }
 }

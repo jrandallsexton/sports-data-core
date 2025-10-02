@@ -1,3 +1,28 @@
+.stat-value {
+  position: relative;
+}
+
+.stat-value-centered {
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+
+.rank-abs-right {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: right;
+  white-space: nowrap;
+}
+/* Inline rank uses same style as stat-value for visibility */
+.rank-inline {
+  margin-left: 2px;
+  font-size: inherit;
+  color: inherit;
+  font-weight: inherit;
+}
  .team-comparison-dialog-backdrop {
    position: fixed;
    top: 0; left: 0; right: 0; bottom: 0;

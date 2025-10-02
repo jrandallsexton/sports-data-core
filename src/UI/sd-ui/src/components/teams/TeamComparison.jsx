@@ -70,17 +70,31 @@ export default function TeamComparison({ open, onClose, teamA, teamB }) {
         {selectedCategory && (
           <div className="team-comparison-table">
             {(statisticsA[selectedCategory] || []).map((entry, idx) => {
-              const aVal = entry.displayValue ?? "-";
               const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
-              const bVal = bEntry.displayValue ?? "-";
+              const favored = getFavored(entry.displayValue ?? "-", bEntry.displayValue ?? "-");
+              const aValContent = (
+                <>
+                  <span className="stat-value-centered">{entry.displayValue ?? "-"}</span>
+                  {entry.rank && entry.rank > 1 && (
+                    <span className="rank-inline rank-abs-right">(#{entry.rank})</span>
+                  )}
+                </>
+              );
+              const bValContent = (
+                <>
+                  <span className="stat-value-centered">{bEntry.displayValue ?? "-"}</span>
+                  {bEntry.rank && bEntry.rank > 1 && (
+                    <span className="rank-inline rank-abs-right">(#{bEntry.rank})</span>
+                  )}
+                </>
+              );
               const statKey = entry.statisticKey;
               const statLabel = entry.statisticValue;
-              const favored = getFavored(aVal, bVal);
               return (
                 <div className="stat-row" key={statKey}>
-                  <div className={`stat-value left${favored === "A" ? " favored" : ""}`}>{aVal}</div>
+                  <div className={`stat-value left${favored === "A" ? " favored" : ""}`}>{aValContent}</div>
                   <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
-                  <div className={`stat-value right${favored === "B" ? " favored" : ""}`}>{bVal}</div>
+                  <div className={`stat-value right${favored === "B" ? " favored" : ""}`}>{bValContent}</div>
                 </div>
               );
             })}

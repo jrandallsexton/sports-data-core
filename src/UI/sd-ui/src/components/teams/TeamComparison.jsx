@@ -72,29 +72,23 @@ export default function TeamComparison({ open, onClose, teamA, teamB }) {
             {(statisticsA[selectedCategory] || []).map((entry, idx) => {
               const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
               const favored = getFavored(entry.displayValue ?? "-", bEntry.displayValue ?? "-");
-              const aValContent = (
-                <>
-                  <span className="stat-value-centered">{entry.displayValue ?? "-"}</span>
-                  {entry.rank && entry.rank > 1 && (
-                    <span className="rank-inline rank-abs-right">(#{entry.rank})</span>
-                  )}
-                </>
-              );
-              const bValContent = (
-                <>
-                  <span className="stat-value-centered">{bEntry.displayValue ?? "-"}</span>
-                  {bEntry.rank && bEntry.rank > 1 && (
-                    <span className="rank-inline rank-abs-right">(#{bEntry.rank})</span>
-                  )}
-                </>
-              );
+              const aRankContent = entry.rank && entry.rank > 1 ? (
+                <span className="rank-inline">(#{entry.rank})</span>
+              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
+              const bRankContent = bEntry.rank && bEntry.rank > 1 ? (
+                <span className="rank-inline">(#{bEntry.rank})</span>
+              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
+              const aValContent = entry.displayValue ?? "-";
+              const bValContent = bEntry.displayValue ?? "-";
               const statKey = entry.statisticKey;
               const statLabel = entry.statisticValue;
               return (
                 <div className="stat-row" key={statKey}>
+                  <div className="stat-rank left-rank">{aRankContent}</div>
                   <div className={`stat-value left${favored === "A" ? " favored" : ""}`}>{aValContent}</div>
                   <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
                   <div className={`stat-value right${favored === "B" ? " favored" : ""}`}>{bValContent}</div>
+                  <div className="stat-rank right-rank">{bRankContent}</div>
                 </div>
               );
             })}

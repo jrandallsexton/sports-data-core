@@ -1,3 +1,49 @@
+.stat-value.left {
+  text-align: right;
+}
+.stat-value.right {
+  text-align: left;
+}
+.stat-rank.left-rank {
+  text-align: right;
+  justify-content: flex-end;
+}
+.stat-rank.right-rank {
+  text-align: left;
+  justify-content: flex-start;
+}
+/* Rank columns for TeamComparison stat rows */
+.stat-rank {
+  min-width: 28px;
+  max-width: 32px;
+  text-align: center;
+  color: #adb5bd;
+  font-size: 0.95em;
+  display: flex;
+  align-items: center;
+.stat-value.left {
+  text-align: right;
+}
+.stat-value.right {
+  text-align: left;
+}
+  justify-content: center;
+  padding: 0 2px;
+}
+.stat-rank.left-rank {
+  text-align: right;
+  justify-content: flex-end;
+}
+.stat-rank.right-rank {
+  text-align: left;
+  justify-content: flex-start;
+}
+.left-rank {
+  margin-right: 2px;
+}
+.right-rank {
+  margin-left: 2px;
+}
 .stat-value {
   position: relative;
 }
@@ -152,15 +198,54 @@
 }
 
 .stat-category {
-  flex: 0 0 120px;
+  flex: 1 1 60px;
+  min-width: 60px;
+  max-width: 220px;
   text-align: center;
   color: #adb5bd;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .stat-row {
+    min-width: 0;
+    font-size: 0.97rem;
+    gap: 0.2rem;
+  }
+  .stat-rank {
+    min-width: 18px;
+    max-width: 22px;
+    font-size: 0.91em;
+    padding: 0 1px;
+  }
+  .stat-value.left, .stat-value.right {
+    padding: 0.28rem 0.2rem;
+    font-size: 0.97rem;
+    max-width: 54px;
+    min-width: 32px;
+    width: 18vw;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-category {
+    min-width: 40px;
+    max-width: 90px;
+    font-size: 0.93rem;
+    padding: 0 2px;
+  }
+  .team-comparison-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .stat-value {
   flex: 1 1 0;
-  text-align: center;
+  text-align: left;
   font-weight: 600;
   background: #2a2d33;
   border-radius: 6px;

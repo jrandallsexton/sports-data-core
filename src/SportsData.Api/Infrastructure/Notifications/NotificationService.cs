@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-
+using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
@@ -11,7 +11,7 @@ namespace SportsData.Api.Infrastructure.Notifications;
 public interface INotificationService
 {
     Task<Response?> SendEmailAsync(string toEmail, string templateId, object templateData);
-    Task SendSmsAsync(string toPhoneNumber, string message);
+    Task<MessageResource> SendSmsAsync(string toPhoneNumber, string message);
 }
 
 
@@ -31,11 +31,11 @@ public class NotificationService : INotificationService
         _fromEmail = config.Value.Email.FromEmail;
         _fromName = "sportDeets";
 
-        //_twilioAccountSid = config["Twilio:AccountSid"];
-        //_twilioAuthToken = config["Twilio:AuthToken"];
-        //_twilioPhoneNumber = config["Twilio:PhoneNumber"];
+        _twilioAccountSid = "ACc5c3d4c5ffbc90aaf6f0c22eaa8d51b2";
+        _twilioAuthToken = "79dedee4b076b6a64607044fa122c866";
+        _twilioPhoneNumber = "786-828-6278";
 
-        //TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
+        TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
     }
 
     public async Task<Response?> SendEmailAsync(string toEmail, string templateId, object templateData)
@@ -48,9 +48,9 @@ public class NotificationService : INotificationService
         return response;
     }
 
-    public async Task SendSmsAsync(string toPhoneNumber, string message)
+    public async Task<MessageResource> SendSmsAsync(string toPhoneNumber, string message)
     {
-        await MessageResource.CreateAsync(
+        return await MessageResource.CreateAsync(
             to: new PhoneNumber(toPhoneNumber),
             from: new PhoneNumber(_twilioPhoneNumber),
             body: message

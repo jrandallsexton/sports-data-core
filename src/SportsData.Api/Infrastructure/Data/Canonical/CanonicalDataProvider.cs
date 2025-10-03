@@ -6,10 +6,10 @@ using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
-using SportsData.Core.Extensions;
+using SportsData.Core.Dtos.Canonical;
 
 using System.Data;
-
+using SportsData.Core.Infrastructure.Clients.Producer;
 using static SportsData.Api.Application.UI.Rankings.Dtos.RankingsByPollIdByWeekDto;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
@@ -56,15 +56,18 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         private readonly IDbConnection _connection;
         private readonly ILogger<CanonicalDataProvider> _logger;
         private readonly CanonicalDataQueryProvider _queryProvider;
+        private readonly IProvideProducers _producerClient;
 
         public CanonicalDataProvider(
             ILogger<CanonicalDataProvider> logger,
             IDbConnection connection,
-            CanonicalDataQueryProvider queryProvider)
+            CanonicalDataQueryProvider queryProvider,
+            IProvideProducers producerClient)
         {
             _logger = logger;
             _connection = connection;
             _queryProvider = queryProvider;
+            _producerClient = producerClient;
         }
 
         public async Task<TeamCardDto?> GetTeamCard(
@@ -430,67 +433,9 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
         {
-            var gameInfo = GetContestOverviewGameInfo(contestId);
-            var quarterScores = GetContestOverviewQuarterScores(contestId);
-            var probabilityPoints = GetContestOverviewWinProbabilityPoints(contestId);
-            var playLog = GetContestOverviewPlayLog(contestId);
-
-            var data = await File.ReadAllTextAsync("c:\\temp\\MockContestOverviewDto_LSU_Florida_Week4.json");
-            var dto = data.FromJson<ContestOverviewDto>();
+            var dto = await _producerClient.GetContestOverviewByContestId(contestId);
 
             return dto ?? throw new Exception("Not found");
-        }
-
-        private async Task<GameInfoDto> GetContestOverviewGameInfo(Guid contestId)
-        {
-            var sql = _queryProvider.GetContestOverviewGameOverview();
-
-            var result = await _connection.QuerySingleOrDefaultAsync<GameInfoDto>(
-                sql,
-                new { ContestId = contestId },
-                commandType: CommandType.Text
-            );
-
-            return result ?? throw new Exception("Not found");
-        }
-
-        private async Task<List<QuarterScoreDto>> GetContestOverviewQuarterScores(Guid competitionId)
-        {
-            var sql = _queryProvider.GetContestResultsByContestIds();
-
-            var results = await _connection.QueryAsync<QuarterScoreDto>(
-                sql,
-                new { competitionId = competitionId },
-                commandType: CommandType.Text
-            );
-
-            return results.ToList();
-        }
-
-        private async Task<List<WinProbabilityPointDto>> GetContestOverviewWinProbabilityPoints(Guid competitionId)
-        {
-            var sql = _queryProvider.GetContestOverviewWinProbabilityPoints();
-
-            var results = await _connection.QueryAsync<WinProbabilityPointDto>(
-                sql,
-                new { competitionId = competitionId },
-                commandType: CommandType.Text
-            );
-
-            return results.ToList();
-        }
-
-        private async Task<List<PlayDto>> GetContestOverviewPlayLog(Guid competitionId)
-        {
-            var sql = _queryProvider.GetContestOverviewPlayLog();
-
-            var results = await _connection.QueryAsync<PlayDto>(
-                sql,
-                new { competitionId = competitionId },
-                commandType: CommandType.Text
-            );
-
-            return results.ToList();
         }
     }
 }

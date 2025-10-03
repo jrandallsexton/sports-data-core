@@ -227,21 +227,23 @@ namespace SportsData.Producer.Application.Contests.Overview
             var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeason!.Franchise!.Id;
             var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeason!.Franchise!.Id;
 
-            var dto = new ContestOverviewDto();
-            dto.Header = await GetGameHeaderAsync(contestId);
-            dto.Leaders = await GetGameLeadersAsync(contestId);
+            var dto = new ContestOverviewDto
+            {
+                Header = await GetGameHeaderAsync(contestId),
+                Leaders = await GetGameLeadersAsync(contestId),
+                WinProbability = await GetWinProbabilityAsync(contestId),
+                PlayLog = await GetPlayLogAsync(
+                    contestId,
+                    awayTeamSlug,
+                    homeTeamSlug,
+                    awayTeamFranchiseSeasonId,
+                    homeTeamFranchiseSeasonId),
+                TeamStats = await GetTeamStatsAsync(contestId),
+                Info = await GetGameInfoAsync(contestId)
+            };
+
             dto.Summary = await GetNarrativeSummaryAsync(contestId);
-            dto.WinProbability = await GetWinProbabilityAsync(contestId);
 
-            dto.PlayLog = await GetPlayLogAsync(
-                contestId,
-                awayTeamSlug,
-                homeTeamSlug,
-                awayTeamFranchiseSeasonId,
-                homeTeamFranchiseSeasonId);
-
-            dto.TeamStats = await GetTeamStatsAsync(contestId);
-            dto.Info = await GetGameInfoAsync(contestId);
             dto.MatchupAnalysis = await GetMatchupAnalysisAsync(contestId);
 
             return dto;

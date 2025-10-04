@@ -130,8 +130,9 @@ function MatchupCard({
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
+  // TEMPORARY: Allow picks up to 1 hour after kickoff
   const startTime = new Date(matchup.startDateUtc);
-  const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
+  const lockTime = new Date(startTime.getTime() + 60 * 60 * 1000); // add 1 hour
   const isLocked = now > lockTime;
 
   const getCardBorderClass = () => {

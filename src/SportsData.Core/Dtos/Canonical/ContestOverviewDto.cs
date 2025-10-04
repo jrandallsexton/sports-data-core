@@ -91,8 +91,12 @@ namespace SportsData.Core.Dtos.Canonical
     public class PlayDto
     {
         public int Ordinal { get; set; }
+
         public int Quarter { get; set; }
+
         public string? Team { get; set; }
+
+        public Guid FranchiseSeasonId { get; set; }
 
         public string? Description { get; set; }
 

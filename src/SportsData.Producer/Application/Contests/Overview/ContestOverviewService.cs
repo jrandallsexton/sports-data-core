@@ -99,18 +99,18 @@ namespace SportsData.Producer.Application.Contests.Overview
                     .Where(l => l.Stats.Any(s => s.FranchiseSeasonId == l.Competition.Contest.HomeTeamFranchiseSeasonId))
                     .Select(l => new StatLeaderDto
                     {
-                        Category = l.Category,
-                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.FullName,
-                        StatLine = l.StatLine
+                        Category = l.LeaderCategory.Name,
+                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.DisplayName,
+                        StatLine = l.Stats.FirstOrDefault()?.DisplayValue
                     })
                     .ToList(),
                 AwayLeaders = leaders
                     .Where(l => l.Stats.Any(s => s.FranchiseSeasonId == l.Competition.Contest.AwayTeamFranchiseSeasonId))
                     .Select(l => new StatLeaderDto
                     {
-                        Category = l.Category,
-                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.FullName,
-                        StatLine = l.StatLine
+                        Category = l.LeaderCategory.DisplayName,
+                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.DisplayName,
+                        StatLine = l.Stats.FirstOrDefault()?.DisplayValue
                     })
                     .ToList()
             };
@@ -120,20 +120,20 @@ namespace SportsData.Producer.Application.Contests.Overview
         {
             var probabilities = await _dbContext.CompetitionProbabilities
                 .Where(p => p.Competition.ContestId == contestId)
-                .OrderBy(p => p.TimeStampUtc)
+                .OrderBy(p => p.CreatedUtc)
                 .ToListAsync();
 
             return new WinProbabilityDto
             {
                 Points = probabilities.Select(p => new WinProbabilityPointDto
                 {
-                    GameClock = p.GameClock,
-                    HomeWinPercent = (int)(p.HomeWinProbability * 100),
-                    AwayWinPercent = (int)(p.AwayWinProbability * 100),
-                    Quarter = p.Quarter
+                    GameClock = p.Play?.ClockDisplayValue,
+                    HomeWinPercent = (int)(p.HomeWinPercentage * 100),
+                    AwayWinPercent = (int)(p.AwayWinPercentage * 100),
+                    Quarter = p.Play!.PeriodNumber
                 }).ToList(),
-                FinalHomeWinPercent = (int)(probabilities.LastOrDefault()?.HomeWinProbability * 100 ?? 0),
-                FinalAwayWinPercent = (int)(probabilities.LastOrDefault()?.AwayWinProbability * 100 ?? 0)
+                FinalHomeWinPercent = (int)(probabilities.LastOrDefault()?.HomeWinPercentage * 100 ?? 0),
+                FinalAwayWinPercent = (int)(probabilities.LastOrDefault()?.AwayWinPercentage * 100 ?? 0)
             };
         }
 
@@ -154,6 +154,7 @@ namespace SportsData.Producer.Application.Contests.Overview
             {
                 Ordinal = x,
                 Quarter = p.PeriodNumber,
+                FranchiseSeasonId = p.TeamFranchiseSeasonId,
                 Team = p.TeamFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
                 Description = p.Text,
                 TimeRemaining = p.ClockDisplayValue,
@@ -166,34 +167,39 @@ namespace SportsData.Producer.Application.Contests.Overview
         {
             var stats = await _dbContext.CompetitionCompetitorStatistics
                 .Include(s => s.CompetitionCompetitor)
-                .Where(s => s.CompetitionCompetitor.Competition.ContestId == contestId)
+                .Where(s => s.CompetitionCompetitor!.Competition.ContestId == contestId)
                 .ToListAsync();
 
             return new TeamStatsSectionDto
             {
-                HomeTeam = new TeamStatBlockDto
-                {
-                    Stats = stats
-                        .Where(s => s.CompetitionCompetitor.HomeAway == "home")
-                        .ToDictionary(s => s.Category, s => s.Value.ToString())
-                },
-                AwayTeam = new TeamStatBlockDto
-                {
-                    Stats = stats
-                        .Where(s => s.CompetitionCompetitor.HomeAway == "away")
-                        .ToDictionary(s => s.Category, s => s.Value.ToString())
-                }
+                //HomeTeam = new TeamStatBlockDto
+                //{
+                //    Stats = stats
+                //        .Where(s => s.CompetitionCompetitor.HomeAway == "home")
+                //        .ToDictionary(s => s.Categories, s => s.Value.ToString())
+                //},
+                //AwayTeam = new TeamStatBlockDto
+                //{
+                //    Stats = stats
+                //        .Where(s => s.CompetitionCompetitor.HomeAway == "away")
+                //        .ToDictionary(s => s.Category, s => s.Value.ToString())
+                //}
             };
         }
 
         private async Task<GameInfoDto?> GetGameInfoAsync(Guid contestId)
         {
             var contest = await _dbContext.Contests
+                .AsNoTracking()
                 .Include(c => c.Venue)
-                .ThenInclude(v => v!.Images.FirstOrDefault())
+                .ThenInclude(v => v!.Images
+                    .OrderBy(i => i.CreatedUtc)   // or .OrderByDescending(i => i.IsPrimary)
+                    .Take(1))                     // 👈 allowed in Include
                 .FirstOrDefaultAsync(c => c.Id == contestId);
 
-            if (contest == null) return null;
+            if (contest is null) return null;
+
+            var img = contest.Venue?.Images?.FirstOrDefault();
 
             return new GameInfoDto
             {
@@ -202,7 +208,7 @@ namespace SportsData.Producer.Application.Contests.Overview
                 Venue = contest.Venue?.Name,
                 VenueCity = contest.Venue?.City,
                 VenueState = contest.Venue?.State,
-                VenueImageUrl = contest.Venue?.Images?.FirstOrDefault()?.Uri.OriginalString,
+                VenueImageUrl = img?.Uri?.OriginalString,
                 Attendance = 0
             };
         }
@@ -242,9 +248,9 @@ namespace SportsData.Producer.Application.Contests.Overview
                 Info = await GetGameInfoAsync(contestId)
             };
 
-            dto.Summary = await GetNarrativeSummaryAsync(contestId);
+            //dto.Summary = await GetNarrativeSummaryAsync(contestId);
 
-            dto.MatchupAnalysis = await GetMatchupAnalysisAsync(contestId);
+            //dto.MatchupAnalysis = await GetMatchupAnalysisAsync(contestId);
 
             return dto;
         }

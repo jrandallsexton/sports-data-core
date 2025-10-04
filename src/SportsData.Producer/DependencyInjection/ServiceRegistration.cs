@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Images;
@@ -66,6 +67,8 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IUpdateContests, ContestUpdateProcessor>();
             services.AddScoped<ContestUpdateJob>();
+
+            services.AddScoped<IContestOverviewService, ContestOverviewService>();
 
             return services;
         }

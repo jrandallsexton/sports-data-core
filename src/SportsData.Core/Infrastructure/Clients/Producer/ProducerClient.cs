@@ -23,8 +23,8 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public ProducerClient(
             ILogger<ProducerClient> logger,
-            IHttpClientFactory clientFactory) :
-            base(HttpClients.ProducerClient, clientFactory)
+            HttpClient httpClient) :
+            base(httpClient)
         {
             _logger = logger;
         }

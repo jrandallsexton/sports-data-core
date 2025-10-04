@@ -230,8 +230,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
             var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
 
-            var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeason!.Franchise!.Id;
-            var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeason!.Franchise!.Id;
+            var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
+            var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
 
             var dto = new ContestOverviewDto
             {

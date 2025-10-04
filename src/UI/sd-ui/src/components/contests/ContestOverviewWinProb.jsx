@@ -27,10 +27,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-function getGradientId(teamKey) {
-  return `${teamKey}-color-gradient`;
-}
-
 export default function ContestOverviewWinProb({ winProbability, homeTeam, awayTeam }) {
   // Debug: log the team colors
 

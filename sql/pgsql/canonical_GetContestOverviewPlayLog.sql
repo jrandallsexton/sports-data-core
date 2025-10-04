@@ -22,16 +22,16 @@ SELECT * from public."CompetitionCompetitorStatisticCategories" where "Competiti
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '1da7d0e2-c0af-4399-9d4a-6b36ed92a567' order by "Name"
 SELECT * from public."CompetitionCompetitor" where "CompetitionId" = 'cbd0708c-b707-8cc5-bd09-d84856f24d2d'
 
-UPDATE "CompetitionCompetitorStatistics" s
-SET "CompetitionCompetitorId" = cc."Id"
-FROM "CompetitionCompetitor" cc
-WHERE s."CompetitionCompetitorId" IS NULL
-  AND cc."FranchiseSeasonId" = s."FranchiseSeasonId"
-  AND cc."CompetitionId"      = s."CompetitionId";
+-- UPDATE "CompetitionCompetitorStatistics" s
+-- SET "CompetitionCompetitorId" = cc."Id"
+-- FROM "CompetitionCompetitor" cc
+-- WHERE s."CompetitionCompetitorId" IS NULL
+--   AND cc."FranchiseSeasonId" = s."FranchiseSeasonId"
+--   AND cc."CompetitionId"      = s."CompetitionId";
 
-  SELECT COUNT(*) AS remaining_nulls
-FROM "CompetitionCompetitorStatistics"
-WHERE "CompetitionCompetitorId" IS NULL;
+--   SELECT COUNT(*) AS remaining_nulls
+-- FROM "CompetitionCompetitorStatistics"
+-- WHERE "CompetitionCompetitorId" IS NULL;
 -- WITH plays AS (
 --   SELECT cp."Type", cp."Text", cp."SequenceNumber"
 --   FROM public."CompetitionPlay" cp

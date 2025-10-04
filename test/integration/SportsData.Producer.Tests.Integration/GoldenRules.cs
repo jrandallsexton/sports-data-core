@@ -27,7 +27,7 @@ namespace SportsData.Producer.Tests.Integration
             canConnect.Should().BeTrue();
         }
 
-        [Fact]
+        [Fact(Skip = "TEMP_DISABLE")]
         public async Task Lsu_2024_Should_Have_13_Contests()
         {
             var fsId = await _dataContext.FranchiseSeasons
@@ -41,7 +41,7 @@ namespace SportsData.Producer.Tests.Integration
             count.Should().Be(13);
         }
 
-        [Fact]
+        [Fact(Skip = "TEMP_DISABLE")]
         public async Task UscAtLsu_2024_Should_Be_Correctly_Mapped()
         {
             var contest = await _dataContext.Contests

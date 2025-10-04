@@ -2,7 +2,7 @@
   c."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" as "StartDateUtc",
-  replace(cs."StatusDescription", ' ', '') AS "Status",  
+  COALESCE(replace(cs."StatusDescription", ' ', ''), 'Scheduled') AS "Status",  
 
   v."Name" as "Venue",
   v."City" as "VenueCity",

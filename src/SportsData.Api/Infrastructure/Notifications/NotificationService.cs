@@ -34,7 +34,6 @@ public class NotificationService : INotificationService
         //_twilioAuthToken = config.Value.Sms.AuthToken;
         //_twilioPhoneNumber = config.Value.Sms.PhoneNumber;
 
-        TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
     }
 
     public async Task<Response?> SendEmailAsync(string toEmail, string templateId, object templateData)

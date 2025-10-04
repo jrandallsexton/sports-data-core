@@ -6,10 +6,8 @@ import ContestOverviewHeader from "./ContestOverviewHeader";
 import ContestOverviewLeaders from "./ContestOverviewLeaders";
 import ContestOverviewPlaylog from "./ContestOverviewPlaylog";
 import ContestOverviewTeamStats from "./ContestOverviewTeamStats";
-import ContestOverviewSummary from "./ContestOverviewSummary";
 import ContestOverviewWinProb from "./ContestOverviewWinProb";
 import ContestOverviewInfo from "./ContestOverviewInfo";
-import ContestOverviewAnalysis from "./ContestOverviewAnalysis";
 
 export default function ContestOverview() {
   const { contestId } = useParams();

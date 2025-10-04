@@ -30,28 +30,9 @@ public class NotificationService : INotificationService
         _sendGridApiKey = config.Value.Email.ApiKey;
         _fromEmail = config.Value.Email.FromEmail;
         _fromName = "sportDeets";
-
-// Remove hardcoded defaults on the fields
--    private readonly string _twilioAccountSid = string.Empty;
--    private readonly string _twilioAuthToken = string.Empty;
-    private readonly string _twilioAccountSid;
-    private readonly string _twilioAuthToken;
-    private readonly string _twilioPhoneNumber;
-
- public NotificationService(IOptions<NotificationConfig> config)
- {
-     _sendGridApiKey = config.Value.Email.ApiKey;
-     _fromEmail = config.Value.Email.FromEmail;
-     _fromName = "sportDeets";
-
--        _twilioAccountSid = "ACc5c3d4c5ffbc90aaf6f0c22eaa8d51b2";
--        _twilioAuthToken = "79dedee4b076b6a64607044fa122c866";
-        _twilioAccountSid = config.Value.Sms.AccountSid;
-        _twilioAuthToken = config.Value.Sms.AuthToken;
-        _twilioPhoneNumber = config.Value.Sms.PhoneNumber;
-
-     TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
- }
+        //_twilioAccountSid = config.Value.Sms.AccountSid;
+        //_twilioAuthToken = config.Value.Sms.AuthToken;
+        //_twilioPhoneNumber = config.Value.Sms.PhoneNumber;
 
         TwilioClient.Init(_twilioAccountSid, _twilioAuthToken);
     }

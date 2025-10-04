@@ -178,6 +178,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
                 {
                     //matchup.StartDateUtc = canonical.StartDateUtc;
+                    matchup.Status = canonical.Status;
 
                     // Away team
                     matchup.Away = canonical.Away;

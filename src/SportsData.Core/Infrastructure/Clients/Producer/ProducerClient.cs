@@ -39,9 +39,14 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             return venue?.Value;
         }
 
-        public Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
+        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
         {
-            throw new NotImplementedException();
+            var response = await HttpClient.GetAsync($"contest/{contestId}/overview");
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var overview = tmp.FromJson<ContestOverviewDto>();
+
+            return overview ?? new ContestOverviewDto();
         }
     }
 }

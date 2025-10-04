@@ -29,6 +29,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using SportsData.Core.Infrastructure.Clients.Producer;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -275,12 +276,12 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            //services
-            //    .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-            //    {
-            //        c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
-            //    })
-            //    .AddPolicyHandlerFromRegistry("HttpRetry");
+            services
+                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
+                {
+                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
+                })
+                .AddPolicyHandlerFromRegistry("HttpRetry");
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

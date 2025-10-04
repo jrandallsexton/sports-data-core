@@ -86,54 +86,103 @@ namespace SportsData.Producer.Application.Contests.Overview
 
         private async Task<GameLeadersDto> GetGameLeadersAsync(Guid contestId)
         {
-            var leaders = await _dbContext.CompetitionLeaders
-                .Include(l => l.Stats)
-                .ThenInclude(s => s.AthleteSeason)
-                .ThenInclude(a => a.Athlete)
+            // 1) Get the home/away FranchiseSeasonIds once.
+            var ids = await _dbContext.Contests
+                .AsNoTracking()
+                .Where(c => c.Id == contestId)
+                .Select(c => new
+                {
+                    Home = c.HomeTeamFranchiseSeasonId,
+                    Away = c.AwayTeamFranchiseSeasonId
+                })
+                .FirstOrDefaultAsync();
+
+            if (ids is null)
+                return new GameLeadersDto { HomeLeaders = [], AwayLeaders = [] };
+
+            // 2) Pull leaders with their top stat projected server-side.
+            //    No Include/ThenInclude needed; we only select the fields we need.
+            var rows = await _dbContext.CompetitionLeaders
+                .AsNoTracking()
                 .Where(l => l.Competition.ContestId == contestId)
+                .Select(l => new
+                {
+                    Category = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
+                    TopStat = l.Stats
+                        // Pick your ordering if you have one; otherwise drop OrderBy
+                        //.OrderBy(s => s.Rank)               // example if exists
+                        //.ThenBy(s => s.SortOrder)           // example if exists
+                        .Select(s => new
+                        {
+                            s.FranchiseSeasonId,
+                            PlayerName = s.AthleteSeason.Athlete.DisplayName,
+                            StatLine = s.DisplayValue
+                        })
+                        .FirstOrDefault()
+                })
                 .ToListAsync();
+
+            // 3) Split into home/away using the projected TopStat (may be null).
+            var home = rows
+                .Where(x => x.TopStat != null && x.TopStat.FranchiseSeasonId == ids.Home)
+                .Select(x => new StatLeaderDto
+                {
+                    Category = x.Category,
+                    PlayerName = x.TopStat!.PlayerName,
+                    StatLine = x.TopStat!.StatLine
+                })
+                .ToList();
+
+            var away = rows
+                .Where(x => x.TopStat != null && x.TopStat.FranchiseSeasonId == ids.Away)
+                .Select(x => new StatLeaderDto
+                {
+                    Category = x.Category,
+                    PlayerName = x.TopStat!.PlayerName,
+                    StatLine = x.TopStat!.StatLine
+                })
+                .ToList();
 
             return new GameLeadersDto
             {
-                HomeLeaders = leaders
-                    .Where(l => l.Stats.Any(s => s.FranchiseSeasonId == l.Competition.Contest.HomeTeamFranchiseSeasonId))
-                    .Select(l => new StatLeaderDto
-                    {
-                        Category = l.LeaderCategory.Name,
-                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.DisplayName,
-                        StatLine = l.Stats.FirstOrDefault()?.DisplayValue
-                    })
-                    .ToList(),
-                AwayLeaders = leaders
-                    .Where(l => l.Stats.Any(s => s.FranchiseSeasonId == l.Competition.Contest.AwayTeamFranchiseSeasonId))
-                    .Select(l => new StatLeaderDto
-                    {
-                        Category = l.LeaderCategory.DisplayName,
-                        PlayerName = l.Stats.FirstOrDefault()?.AthleteSeason.Athlete.DisplayName,
-                        StatLine = l.Stats.FirstOrDefault()?.DisplayValue
-                    })
-                    .ToList()
+                HomeLeaders = home,
+                AwayLeaders = away
             };
         }
 
+
         private async Task<WinProbabilityDto> GetWinProbabilityAsync(Guid contestId)
         {
-            var probabilities = await _dbContext.CompetitionProbabilities
+            var rows = await _dbContext.CompetitionProbabilities
+                .AsNoTracking()
                 .Where(p => p.Competition.ContestId == contestId)
                 .OrderBy(p => p.CreatedUtc)
+                .Select(p => new
+                {
+                    p.HomeWinPercentage,                // 0..1
+                    p.AwayWinPercentage,                // 0..1
+                    GameClock = p.Play != null ? p.Play.ClockDisplayValue : null,
+                    Quarter = p.Play != null ? (int?)p.Play.PeriodNumber : null
+                })
                 .ToListAsync();
+
+            static int ToPct(double? v) => v.HasValue ? (int)Math.Round(v.Value * 100) : 0;
+
+            var points = rows.Select(r => new WinProbabilityPointDto
+            {
+                GameClock = r.GameClock,
+                Quarter = r.Quarter!.Value,
+                HomeWinPercent = ToPct(r.HomeWinPercentage),
+                AwayWinPercent = ToPct(r.AwayWinPercentage)
+            }).ToList();
+
+            var last = rows.Count > 0 ? rows[^1] : null;
 
             return new WinProbabilityDto
             {
-                Points = probabilities.Select(p => new WinProbabilityPointDto
-                {
-                    GameClock = p.Play?.ClockDisplayValue,
-                    HomeWinPercent = (int)(p.HomeWinPercentage * 100),
-                    AwayWinPercent = (int)(p.AwayWinPercentage * 100),
-                    Quarter = p.Play!.PeriodNumber
-                }).ToList(),
-                FinalHomeWinPercent = (int)(probabilities.LastOrDefault()?.HomeWinPercentage * 100 ?? 0),
-                FinalAwayWinPercent = (int)(probabilities.LastOrDefault()?.AwayWinPercentage * 100 ?? 0)
+                Points = points,
+                FinalHomeWinPercent = last != null ? ToPct(last.HomeWinPercentage) : 0,
+                FinalAwayWinPercent = last != null ? ToPct(last.AwayWinPercentage) : 0
             };
         }
 

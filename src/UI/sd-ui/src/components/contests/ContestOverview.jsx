@@ -32,13 +32,13 @@ export default function ContestOverview() {
 
   if (loading) return <div>Loading contest overview...</div>;
   if (error) return <div>Error loading contest overview.</div>;
-  if (!data || !data.data || !data.data.header) {
+  const dto = data?.data || data;
+  if (!dto || !dto.header) {
     return <div>No contest data available. (Debug: {JSON.stringify(data)})</div>;
   }
 
-  const { header } = data.data;
+  const { header, info, leaders, playLog, teamStats, winProbability } = dto;
   const { homeTeam, awayTeam, quarterScores } = header;
-  const { leaders, scoringSummary, teamStats, matchupAnalysis, summary, winProbability, info } = data.data;
 
   return (
     <div className="contest-overview-container">
@@ -46,16 +46,17 @@ export default function ContestOverview() {
       <div className="contest-overview-grid">
         <div className="contest-overview-col">
           <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
-          <ContestOverviewPlaylog scoringSummary={scoringSummary} />
+          <ContestOverviewPlaylog playLog={playLog} />
         </div>
         <div className="contest-overview-col">
           <ContestOverviewTeamStats homeTeam={homeTeam} awayTeam={awayTeam} teamStats={teamStats} />
-          <ContestOverviewSummary summary={summary} />
+          {/* If summary and matchupAnalysis are still present in the new DTO, pass them here. Otherwise, remove these lines. */}
+          {/* <ContestOverviewSummary summary={summary} /> */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
         </div>
         <div className="contest-overview-col">
           <ContestOverviewInfo info={info} />
-          <ContestOverviewAnalysis matchupAnalysis={matchupAnalysis} />
+          {/* <ContestOverviewAnalysis matchupAnalysis={matchupAnalysis} /> */}
         </div>
       </div>
     </div>

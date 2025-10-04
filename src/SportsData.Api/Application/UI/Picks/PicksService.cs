@@ -76,8 +76,8 @@ namespace SportsData.Api.Application.UI.Picks
                 .FirstOrDefaultAsync(m => m.ContestId == request.ContestId, cancellationToken)
                     ?? throw new InvalidOperationException("Matchup not found for the specified contest");
 
-            if (matchup.IsLocked())
-                throw new InvalidOperationException("This contest is locked and cannot be picked.");
+            //if (matchup.IsLocked())
+            //    throw new InvalidOperationException("This contest is locked and cannot be picked.");
 
             if (request.PickType == UserPickType.OverUnder && request.OverUnder == OverUnderPick.None)
             {

@@ -11,6 +11,8 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 {
     public required Guid CompetitionId { get; set; }
 
+    public Competition Competition { get; set; } = null!;
+
     public required Guid FranchiseSeasonId { get; set; }
 
     public string? Type { get; set; }
@@ -27,6 +29,8 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
     public bool Winner { get; set; }
 
     public int? CuratedRankCurrent { get; set; }
+
+    public ICollection<CompetitionCompetitorStatistic> Statistics { get; set; } = [];
 
     public ICollection<CompetitionCompetitorLineScore> LineScores { get; set; } = [];
 
@@ -51,33 +55,62 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
                 .HasMaxLength(10);
 
             builder.Property(x => x.CuratedRankCurrent);
+            builder.Property(x => x.Order).IsRequired();
+            builder.Property(x => x.Winner).IsRequired();
+            builder.Property(x => x.Points);
+            builder.Property(x => x.CompetitionId).IsRequired();
+            builder.Property(x => x.FranchiseSeasonId).IsRequired();
 
-            builder.Property(x => x.Order)
-                .IsRequired();
-
-            builder.Property(x => x.Winner)
-                .IsRequired();
-
-            builder.Property(x => x.CompetitionId)
-                .IsRequired();
-
-            builder.Property(x => x.FranchiseSeasonId)
-                .IsRequired();
-
-            builder.HasOne<Competition>()
-                .WithMany(x => x.Competitors)
-                .HasForeignKey(x => x.CompetitionId)
+            // FK: Competition (parent) -> Competitors (children)
+            builder.HasOne(cc => cc.Competition)
+                .WithMany(c => c.Competitors)
+                .HasForeignKey(cc => cc.CompetitionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // FK: FranchiseSeason (reference) -> Competitors
+            // Prefer Restrict so deleting a FranchiseSeason doesn't cascade a wave into contests
+            builder.HasOne<FranchiseSeason>()
+                .WithMany()
+                .HasForeignKey(x => x.FranchiseSeasonId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Children: LineScores
             builder.HasMany(x => x.LineScores)
                 .WithOne(x => x.CompetitionCompetitor)
                 .HasForeignKey(x => x.CompetitionCompetitorId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Children: Scores
             builder.HasMany(x => x.Scores)
                 .WithOne(x => x.CompetitionCompetitor)
                 .HasForeignKey(x => x.CompetitionCompetitorId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // NEW: Children: Statistics
+            builder.HasMany(x => x.Statistics)
+                .WithOne(x => x.CompetitionCompetitor)
+                .HasForeignKey(x => x.CompetitionCompetitorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ExternalIds (assuming FK property CompetitionCompetitorId on the child)
+            builder.HasMany(x => x.ExternalIds)
+                .WithOne(x => x.CompetitionCompetitor)
+                .HasForeignKey(x => x.CompetitionCompetitorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Indexes
+            builder.HasIndex(x => x.CompetitionId);
+            builder.HasIndex(x => x.FranchiseSeasonId);
+
+            // Uniqueness within a competition:
+            // - exactly one 'home' and one 'away'
+            builder.HasIndex(x => new { x.CompetitionId, x.HomeAway })
+                   .IsUnique();
+
+            // - stable ordering (0/1 or 1/2) per competition
+            builder.HasIndex(x => new { x.CompetitionId, x.Order })
+                   .IsUnique();
         }
     }
+
 }

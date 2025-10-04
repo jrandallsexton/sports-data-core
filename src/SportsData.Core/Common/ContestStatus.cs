@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SportsData.Core.Common
+﻿namespace SportsData.Core.Common
 {
     public enum ContestStatus
     {
@@ -15,6 +9,8 @@ namespace SportsData.Core.Common
         Ongoing = 4,
         Postponed = 5,
         Scheduled = 6,
-        Suspended = 7
+        Suspended = 7,
+        Final = 8,
+        InProgress = 9
     }
 }

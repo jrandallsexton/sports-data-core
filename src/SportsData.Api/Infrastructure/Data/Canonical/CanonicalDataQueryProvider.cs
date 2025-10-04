@@ -15,7 +15,7 @@ public class CanonicalDataQueryProvider
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
         "GetTeamSeasons.sql",
-        "GetContestOverviewGameOverview.sql",
+        "GetContestOverviewGameInfo.sql",
         "GetContestOverviewQuarterScores.sql",
         "GetContestOverviewWinProbabilityPoints.sql",
         "GetContestOverviewPlayLog.sql",
@@ -58,7 +58,7 @@ public class CanonicalDataQueryProvider
 
     public string GetCurrentAndLastWeekSeasonWeeks() => Get("GetCurrentAndLastWeekSeasonWeeks.sql");
 
-    public string GetContestOverviewGameOverview() => Get("GetContestOverviewGameOverview.sql");
+    public string GetContestOverviewGameInfo() => Get("GetContestOverviewGameInfo.sql");
 
     public string GetContestOverviewQuarterScores() => Get("GetContestOverviewQuarterScores.sql");
 

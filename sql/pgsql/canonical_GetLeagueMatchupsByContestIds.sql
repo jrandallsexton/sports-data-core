@@ -2,6 +2,7 @@ SELECT
   c."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" as "StartDateUtc",
+  cs."StatusDescription" as "Status",
 
   v."Name" as "Venue",
   v."City" as "VenueCity",
@@ -49,6 +50,7 @@ SELECT
 FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
+LEFT JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
 LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
 

@@ -150,9 +150,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.FormatOvertimeSlug).HasMaxLength(50);
                 builder.Property(x => x.FormatRegulationClock).HasPrecision(10, 2);
 
-                builder.HasMany(x => x.Competitors)
-                    .WithOne()
-                    .HasForeignKey(x => x.CompetitionId)
+                builder.HasMany(c => c.Competitors)
+                    .WithOne(cc => cc.Competition)        // <-- bind the inverse explicitly
+                    .HasForeignKey(cc => cc.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.Notes)

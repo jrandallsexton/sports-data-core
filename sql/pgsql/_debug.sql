@@ -51,7 +51,7 @@ where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
 
 select * from public."Contest" where "Id" = 'cbd1f3e5-9547-9e5f-e7a6-64530cb575a5'
 select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
-select * from public."Competition" where "ContestId" = 'f34db581-7d43-6ccb-4fb9-18e395107e13'
+select * from public."Competition" where "ContestId" = '2bdcdede-e853-c469-f98a-59d4a1269ed1'
 
 select * from public."CompetitionCompetitorStatistics"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
@@ -64,7 +64,8 @@ select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCom
 
 select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'
 
-select * from public."CompetitionStatus" where "CompetitionId" = '65ea0c60-4e44-b36b-c5bf-33971f677728'
+select * from public."CompetitionStatus" where "CompetitionId" = 'd0c23fa1-ad50-c95b-5110-fcff717fde78'
+select * from public."CompetitionStatus" where "StatusDescription" = 'In Progress'
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
 select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
 select * from public."Venue"

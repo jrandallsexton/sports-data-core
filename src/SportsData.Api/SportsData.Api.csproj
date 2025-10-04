@@ -14,7 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameOverview.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
@@ -35,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameOverview.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameInfo.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />

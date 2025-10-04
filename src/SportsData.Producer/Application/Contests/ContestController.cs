@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests.Overview;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -9,12 +11,15 @@ namespace SportsData.Producer.Application.Contests
     [ApiController]
     public class ContestController : ControllerBase
     {
-
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IContestOverviewService _contestOverviewService;   
 
-        public ContestController(IProvideBackgroundJobs backgroundJobProvider)
+        public ContestController(
+            IProvideBackgroundJobs backgroundJobProvider,
+            IContestOverviewService contestOverviewService)
         {
             _backgroundJobProvider = backgroundJobProvider;
+            _contestOverviewService = contestOverviewService;
         }
 
         [HttpPost]
@@ -40,6 +45,20 @@ namespace SportsData.Producer.Application.Contests
                 Guid.NewGuid());
             _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
             return Ok(new { Message = $"Contest {contestId} enrichment initiated." });
+        }
+
+        [HttpGet("{id}/overview")]
+        public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
+        {
+            try
+            {
+                var contest = await _contestOverviewService.GetContestOverviewByContestId(id);
+                return Ok(contest);
+            }
+            catch (ArgumentException)
+            {
+                return NotFound();
+            }
         }
     }
 }

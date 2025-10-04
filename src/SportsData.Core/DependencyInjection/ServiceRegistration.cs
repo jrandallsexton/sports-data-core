@@ -276,12 +276,12 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            services
-                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-                {
-                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
-                })
-                .AddPolicyHandlerFromRegistry("HttpRetry");
+            //services
+            //    .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
+            //    {
+            //        c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
+            //    })
+            //    .AddPolicyHandlerFromRegistry("HttpRetry");
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

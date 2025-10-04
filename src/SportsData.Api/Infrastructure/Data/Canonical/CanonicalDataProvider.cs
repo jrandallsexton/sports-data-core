@@ -56,18 +56,17 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         private readonly IDbConnection _connection;
         private readonly ILogger<CanonicalDataProvider> _logger;
         private readonly CanonicalDataQueryProvider _queryProvider;
-        private readonly IProvideProducers _producerClient;
+        //private readonly IProvideProducers _producerClient;
 
         public CanonicalDataProvider(
             ILogger<CanonicalDataProvider> logger,
             IDbConnection connection,
-            CanonicalDataQueryProvider queryProvider,
-            IProvideProducers producerClient)
+            CanonicalDataQueryProvider queryProvider)
         {
             _logger = logger;
             _connection = connection;
             _queryProvider = queryProvider;
-            _producerClient = producerClient;
+            //_producerClient = producerClient;
         }
 
         public async Task<TeamCardDto?> GetTeamCard(
@@ -433,9 +432,10 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
         {
-            var dto = await _producerClient.GetContestOverviewByContestId(contestId);
+            return new ContestOverviewDto();
+            //var dto = await _producerClient.GetContestOverviewByContestId(contestId);
 
-            return dto ?? throw new Exception("Not found");
+            //return dto ?? throw new Exception("Not found");
         }
     }
 }

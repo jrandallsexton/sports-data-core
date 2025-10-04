@@ -432,6 +432,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
         {
+            await Task.Delay(1);
             return new ContestOverviewDto();
             //var dto = await _producerClient.GetContestOverviewByContestId(contestId);
 

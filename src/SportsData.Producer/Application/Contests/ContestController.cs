@@ -50,8 +50,15 @@ namespace SportsData.Producer.Application.Contests
         [HttpGet("{id}/overview")]
         public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
         {
-            var contest = await _contestOverviewService.GetContestOverviewByContestId(id);
-            return Ok(contest);
+            try
+            {
+                var contest = await _contestOverviewService.GetContestOverviewByContestId(id);
+                return Ok(contest);
+            }
+            catch (ArgumentException)
+            {
+                return NotFound();
+            }
         }
     }
 }

@@ -62,7 +62,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        services.AddHangfire(config, builder.Environment.ApplicationName, mode, 20);
+        services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
 
         // Add messaging via MassTransit using Outbox pattern
         //services.AddMessaging<BaseDataContext, TeamSportDataContext, FootballDataContext>(config, [

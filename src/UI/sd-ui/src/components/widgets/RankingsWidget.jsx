@@ -12,7 +12,7 @@ function RankingsWidget() {
       setLoading(true);
       setError(null);
       try {
-        const apiResult = await apiWrapper.Rankings.getCurrentRankings(2025, 6);
+        const apiResult = await apiWrapper.Rankings.getCurrentRankings(2025, 7);
         setPoll(apiResult?.data || apiResult);
       } catch (err) {
         setError("Failed to load rankings");
@@ -25,7 +25,7 @@ function RankingsWidget() {
 
   return (
     <div className="rankings-widget">
-      <h2>AP Top 25 - Week 6</h2>
+      <h2>AP Top 25 - Week 7</h2>
       {loading ? (
         <div>Loading rankings...</div>
       ) : error ? (

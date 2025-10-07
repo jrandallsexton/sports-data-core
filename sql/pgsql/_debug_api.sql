@@ -1,6 +1,6 @@
 
-select * from public."MatchupPreview" where "ContestId" = 'a30f78b5-3d66-6d76-88d2-47d3349863d5'
--- https://api-dev.sportdeets.com/ui/matchup/6fafd6ee-c474-4b7e-d822-cd3348c52467/preview
+select * from public."MatchupPreview" where "ContestId" = '8b0f8da2-4fa8-c797-73f1-000c14d82e1d' and "RejectedUtc" is null order by "CreatedUtc" desc
+-- http://localhost:5262/ui/matchup/8b0f8da2-4fa8-c797-73f1-000c14d82e1d/preview
 --update "MatchupPreview" set "RejectedUtc" = '2025-09-10 13:39:08.011918+00' where "Id" = 'a97f5e56-6849-4087-8e80-d3d618048ec0'
 update public."MatchupPreview" set
 "PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
@@ -28,22 +28,15 @@ select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7
 -- https://api-dev.sportdeets.com/ui/matchup//preview
 select *
 from public."PickemGroupMatchup"
---where
+where
   --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
-  --"SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and
+  "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
   --"ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
 order by "StartDateUtc" desc
 
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 12:00:00-04' WHERE "ContestId" = '043b7478-ac11-403a-19e5-39c35b095337'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '14ede6f6-88cb-8dc1-78a3-491707bab7e7'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 12:00:00-04' WHERE "ContestId" = '26695c7c-be12-d78d-1560-bf649dde791e'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '31138ab2-801d-0e43-8a1c-6b921701d950'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '4bc09728-f73d-ab83-ca3c-8f943f2f2800'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 15:30:00-04' WHERE "ContestId" = '4be038bd-b397-c2cf-3f15-04fb80275f3f'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:00:00-04' WHERE "ContestId" = '765ecabd-cf17-9a72-8643-aa7c91c4e566'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:45:00-04' WHERE "ContestId" = 'a38eb870-6cee-bffa-173c-9dc831608132'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 19:30:00-04' WHERE "ContestId" = 'e1a886a3-adb9-9cd0-5c38-8391a6ac624d'
---update public."PickemGroupMatchup" set "StartDateUtc" = '2025-09-27 16:15:00-04' WHERE "ContestId" = 'ef9045f3-0346-d153-baee-b97231badda1'
+-- FIX DEV - 07 OCT 2025
+-- remove all scoring for week 6
+-- update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 6
 
 -- https://api-dev.sportdeets.com/ui/matchup/ef9045f3-0346-d153-baee-b97231badda1/preview
 
@@ -59,13 +52,12 @@ order by "StartDateUtc" desc
 select * from public."User"
 select * from public."UserPick"
 where
-  "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and
-  "Week" = 3 
-  and
-  "PickemGroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
+  "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 ORDER BY "CreatedUtc" desc
 
 --update public."UserPick" set "PickType" = 2
+--update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 3
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'

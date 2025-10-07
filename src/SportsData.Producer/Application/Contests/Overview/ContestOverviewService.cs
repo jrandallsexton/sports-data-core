@@ -86,7 +86,7 @@ namespace SportsData.Producer.Application.Contests.Overview
 
         private async Task<GameLeadersDto> GetGameLeadersAsync(Guid contestId)
         {
-            // 1) Get the home/away FranchiseSeasonIds once.
+            // 1) Resolve home/away FranchiseSeasonIds for this contest.
             var ids = await _dbContext.Contests
                 .AsNoTracking()
                 .Where(c => c.Id == contestId)
@@ -98,60 +98,128 @@ namespace SportsData.Producer.Application.Contests.Overview
                 .FirstOrDefaultAsync();
 
             if (ids is null)
-                return new GameLeadersDto { HomeLeaders = [], AwayLeaders = [] };
+                return new GameLeadersDto { Categories = new List<LeaderCategoryDto>() };
 
-            // 2) Pull leaders with their top stat projected server-side.
-            //    No Include/ThenInclude needed; we only select the fields we need.
-            var rows = await _dbContext.CompetitionLeaders
+            // 2) Pull a flat list of leader rows (EF-friendly). No Include/ThenInclude needed.
+            var flat = await _dbContext.CompetitionLeaders
                 .AsNoTracking()
                 .Where(l => l.Competition.ContestId == contestId)
-                .Select(l => new
+                .SelectMany(l => l.Stats.Select(s => new FlatLeaderRow
                 {
-                    Category = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
-                    TopStat = l.Stats
-                        // Pick your ordering if you have one; otherwise drop OrderBy
-                        //.OrderBy(s => s.Rank)               // example if exists
-                        //.ThenBy(s => s.SortOrder)           // example if exists
-                        .Select(s => new
-                        {
-                            s.FranchiseSeasonId,
-                            PlayerName = s.AthleteSeason.Athlete.DisplayName,
-                            StatLine = s.DisplayValue
-                        })
-                        .FirstOrDefault()
-                })
+                    CategoryId = l.LeaderCategory.Name,
+                    CategoryName = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
+                    Abbr = null,   // map if you have l.LeaderCategory.Abbreviation
+                    Unit = null,   // map if you have l.LeaderCategory.Unit
+                    DisplayOrder = 0,      // map if you have l.LeaderCategory.DisplayOrder
+
+                    FranchiseSeasonId = s.FranchiseSeasonId,
+                    PlayerName =
+                        (s.AthleteSeason != null && s.AthleteSeason.Athlete != null
+                            ? (s.AthleteSeason.Athlete.ShortName ?? s.AthleteSeason.Athlete.DisplayName)
+                            : null)
+                        ?? "Unknown"
+                    ,
+                    StatLine = s.DisplayValue,
+                    Numeric = null,   // map if you have a numeric primary value
+                    Rank = 1       // map if you have s.Rank (lower = better)
+                }))
                 .ToListAsync();
 
-            // 3) Split into home/away using the projected TopStat (may be null).
-            var home = rows
-                .Where(x => x.TopStat != null && x.TopStat.FranchiseSeasonId == ids.Home)
-                .Select(x => new StatLeaderDto
+            // 3) Group by category and build category-centric leaders with home/away arrays (ties allowed).
+            var categories = flat
+                .GroupBy(r => new { r.CategoryId, r.CategoryName, r.Abbr, r.Unit, r.DisplayOrder })
+                .Select(g =>
                 {
-                    Category = x.Category,
-                    PlayerName = x.TopStat!.PlayerName,
-                    StatLine = x.TopStat!.StatLine
+                    var homeStats = g.Where(r => r.FranchiseSeasonId == ids.Home);
+                    var awayStats = g.Where(r => r.FranchiseSeasonId == ids.Away);
+
+                    var homeLeaders = SelectTopWithTies(homeStats);
+                    var awayLeaders = SelectTopWithTies(awayStats);
+
+                    return new LeaderCategoryDto
+                    {
+                        CategoryId = g.Key.CategoryId,
+                        CategoryName = g.Key.CategoryName,
+                        Abbr = g.Key.Abbr,
+                        Unit = g.Key.Unit,
+                        DisplayOrder = g.Key.DisplayOrder,
+                        Home = new TeamLeadersDto { Leaders = homeLeaders },
+                        Away = new TeamLeadersDto { Leaders = awayLeaders }
+                    };
                 })
+                .OrderBy(c => c.DisplayOrder)
+                .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            var away = rows
-                .Where(x => x.TopStat != null && x.TopStat.FranchiseSeasonId == ids.Away)
-                .Select(x => new StatLeaderDto
-                {
-                    Category = x.Category,
-                    PlayerName = x.TopStat!.PlayerName,
-                    StatLine = x.TopStat!.StatLine
-                })
-                .ToList();
-
-            return new GameLeadersDto
-            {
-                HomeLeaders = home,
-                AwayLeaders = away
-            };
+            return new GameLeadersDto { Categories = categories };
         }
 
+        /// <summary>
+        /// Strongly-typed projection row used for grouping/selection (EF-safe).
+        /// </summary>
+        private sealed class FlatLeaderRow
+        {
+            // Category metadata
+            public string CategoryId { get; set; } = null!;
+            public string CategoryName { get; set; } = null!;
+            public string? Abbr { get; set; }
+            public string? Unit { get; set; }
+            public int DisplayOrder { get; set; }
 
-        private async Task<WinProbabilityDto> GetWinProbabilityAsync(Guid contestId)
+            // Player/leader data
+            public Guid FranchiseSeasonId { get; set; }
+            public string PlayerName { get; set; } = null!;
+            public string? StatLine { get; set; }
+            public decimal? Numeric { get; set; }
+            public int Rank { get; set; } = 1;
+        }
+
+        /// <summary>
+        /// Picks the top leader(s) from a sequence, allowing ties.
+        /// If you later map Rank/Numeric, the ordering and tie rule will be stronger.
+        /// </summary>
+        private static List<PlayerLeaderDto> SelectTopWithTies(IEnumerable<FlatLeaderRow> rows)
+        {
+            var list = rows.ToList();
+            if (list.Count == 0) return new List<PlayerLeaderDto>();
+
+            // Order: lower Rank first, then higher Numeric, then PlayerName (stable).
+            var ordered = list
+                .OrderBy(r => r.Rank)
+                .ThenByDescending(r => r.Numeric ?? decimal.MinValue)
+                .ThenBy(r => r.PlayerName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var top = ordered[0];
+
+            // Tie rule:
+            //  1) If Numeric exists, tie on equal Numeric
+            //  2) Else fall back to equal StatLine (case-insensitive)
+            IEnumerable<FlatLeaderRow> winners = top.Numeric.HasValue
+                ? ordered.Where(r => r.Numeric == top.Numeric)
+                : ordered.Where(r => string.Equals(r.StatLine, top.StatLine, StringComparison.OrdinalIgnoreCase));
+
+            // Map to PlayerLeaderDto (extend when you have PlayerId, Position, Jersey, Headshot, etc.).
+            return winners.Select(w => new PlayerLeaderDto
+            {
+                PlayerId = null,        // map if available
+                PlayerName = w.PlayerName,
+                Position = null,        // map if available
+                Jersey = null,        // map if available
+                TeamId = null,        // map if useful
+                Value = w.Numeric,
+                StatLine = w.StatLine,
+                Rank = 1,
+                HeadshotUrl = null
+            }).ToList();
+        }
+
+        private async Task<WinProbabilityDto> GetWinProbabilityAsync(
+            Guid contestId,
+            string awayTeamSlug,
+            string homeTeamSlug,
+            string awayTeamColor,
+            string homeTeamColor)
         {
             var rows = await _dbContext.CompetitionProbabilities
                 .AsNoTracking()
@@ -180,26 +248,33 @@ namespace SportsData.Producer.Application.Contests.Overview
 
             return new WinProbabilityDto
             {
+                AwayTeamSlug = awayTeamSlug,
+                HomeTeamSlug = homeTeamSlug,
+                AwayTeamColor = awayTeamColor,
+                HomeTeamColor = homeTeamColor,
                 Points = points,
                 FinalHomeWinPercent = last != null ? ToPct(last.HomeWinPercentage) : 0,
                 FinalAwayWinPercent = last != null ? ToPct(last.AwayWinPercentage) : 0
             };
         }
 
-        private async Task<List<PlayDto>> GetPlayLogAsync(
+        private async Task<PlayLogDto> GetPlayLogAsync(
             Guid contestId,
             string awayTeamSlug,
             string homeTeamSlug,
+            Uri awayTeamUri,
+            Uri homeTeamUri,
             Guid awayTeamFranchiseSeasonId,
             Guid homeTeamFranchiseSeasonId)
         {
             var plays = await _dbContext.CompetitionPlays
+                .AsNoTracking()
                 .Include(p => p.Competition)
                 .Where(p => p.Competition.ContestId == contestId)
                 .OrderBy(p => p.SequenceNumber)
                 .ToListAsync();
 
-            return plays.Select((p,x) => new PlayDto
+            var playDtos = plays.Select((p,x) => new PlayDto
             {
                 Ordinal = x,
                 Quarter = p.PeriodNumber,
@@ -210,6 +285,15 @@ namespace SportsData.Producer.Application.Contests.Overview
                 IsScoringPlay = p.ScoringPlay,
                 IsKeyPlay = p.Priority
             }).ToList();
+
+            return new PlayLogDto()
+            {
+                AwayTeamSlug = awayTeamSlug,
+                HomeTeamSlug = homeTeamSlug,
+                AwayTeamLogoUrl = awayTeamUri.OriginalString,
+                HomeTeamLogoUrl = homeTeamUri.OriginalString,
+                Plays = playDtos
+            };
         }
 
         private async Task<TeamStatsSectionDto> GetTeamStatsAsync(Guid contestId)
@@ -240,7 +324,7 @@ namespace SportsData.Producer.Application.Contests.Overview
         {
             var contest = await _dbContext.Contests
                 .AsNoTracking()
-                .Include(c => c.Venue)
+                .Include(navigationPropertyPath: c => c.Venue)
                 .ThenInclude(v => v!.Images
                     .OrderBy(i => i.CreatedUtc)   // or .OrderByDescending(i => i.IsPrimary)
                     .Take(1))                     // 👈 allowed in Include
@@ -266,11 +350,17 @@ namespace SportsData.Producer.Application.Contests.Overview
         {
             // Fetch basic contest info to get team slugs and franchise season IDs
             var contest = await _dbContext.Contests
+                .AsNoTracking()
                 .Include(x => x.Competitions)
                 .Include(x => x.AwayTeamFranchiseSeason!)
                 .ThenInclude(x => x.Franchise)
+                .ThenInclude(x => x.Logos)
                 .Include(x => x.HomeTeamFranchiseSeason!)
                 .ThenInclude(x => x.Franchise)
+                .ThenInclude(x => x.Logos).Include(contest => contest.AwayTeamFranchiseSeason!)
+                .ThenInclude(franchiseSeason => franchiseSeason.Logos!)
+                .Include(contest => contest.HomeTeamFranchiseSeason!)
+                .ThenInclude(franchiseSeason => franchiseSeason.Logos!)
                 .FirstOrDefaultAsync(c => c.Id == contestId);
 
             if (contest is null)
@@ -279,6 +369,12 @@ namespace SportsData.Producer.Application.Contests.Overview
             var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
             var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
 
+            var awayTeamColor = contest.AwayTeamFranchiseSeason!.Franchise.ColorCodeHex;
+            var homeTeamColor = contest.HomeTeamFranchiseSeason!.Franchise.ColorCodeHex;
+
+            var awayTeamLogoUri = contest.AwayTeamFranchiseSeason!.Logos!.First().Uri;
+            var homeTeamLogoUri = contest.HomeTeamFranchiseSeason!.Logos!.First().Uri;
+
             var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
             var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
 
@@ -286,11 +382,19 @@ namespace SportsData.Producer.Application.Contests.Overview
             {
                 Header = await GetGameHeaderAsync(contestId),
                 Leaders = await GetGameLeadersAsync(contestId),
-                WinProbability = await GetWinProbabilityAsync(contestId),
+                WinProbability = await GetWinProbabilityAsync(
+                    contestId,
+                    awayTeamSlug,
+                    homeTeamSlug,
+                    awayTeamColor,
+                    homeTeamColor
+                    ),
                 PlayLog = await GetPlayLogAsync(
                     contestId,
                     awayTeamSlug,
                     homeTeamSlug,
+                    awayTeamLogoUri,
+                    homeTeamLogoUri,
                     awayTeamFranchiseSeasonId,
                     homeTeamFranchiseSeasonId),
                 TeamStats = await GetTeamStatsAsync(contestId),

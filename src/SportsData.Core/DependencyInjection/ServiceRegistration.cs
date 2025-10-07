@@ -253,7 +253,6 @@ namespace SportsData.Core.DependencyInjection
             services.AddHttpClient();
 
             /* ESPN */
-
             services.Configure<EspnApiClientConfig>(
                 configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
             );
@@ -262,7 +261,6 @@ namespace SportsData.Core.DependencyInjection
                 .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
-
             /* End ESPN */
 
             // Register single-mode services
@@ -276,12 +274,15 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            //services
-            //    .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-            //    {
-            //        c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
-            //    })
-            //    .AddPolicyHandlerFromRegistry("HttpRetry");
+            services
+                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
+                {
+                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
+                    c.Timeout = TimeSpan.FromSeconds(15);
+                    c.DefaultRequestVersion = HttpVersion.Version20;
+                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                })
+                .AddPolicyHandlerFromRegistry("HttpRetry");
 
             // VenueClient is handled via factory instead
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

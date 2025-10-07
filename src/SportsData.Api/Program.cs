@@ -159,10 +159,10 @@ namespace SportsData.Api
 
             services.AddMessaging<AppDataContext>(config,
             [
+                typeof(ContestStartTimeUpdatedHandler),
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                typeof(PreviewGeneratedHandler),
-                typeof(ContestStartTimeUpdatedHandler)
+                typeof(PreviewGeneratedHandler)
             ]);
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];

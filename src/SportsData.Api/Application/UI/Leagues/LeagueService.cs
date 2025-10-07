@@ -163,7 +163,7 @@ namespace SportsData.Api.Application.UI.Leagues
             var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
 
             var previews = await _dbContext.MatchupPreviews
-                .Where(x => contestIds.Contains(x.ContestId))
+                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
@@ -235,8 +235,12 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.OverUnderResult = canonical.OverUnderResult;
                     matchup.CompletedUtc = canonical.CompletedUtc;
 
-                    var preview = previews.FirstOrDefault(x => x.ContestId == matchup.ContestId &&
-                                                               x.RejectedUtc == null);
+                    var preview = previews
+                        .Where(x => x.ContestId == matchup.ContestId &&
+                                    x.RejectedUtc == null)
+                        .OrderByDescending(x => x.CreatedUtc)
+                        .FirstOrDefault();
+
                     if (preview != null)
                     {
                         if (league.PickType == PickType.StraightUp)

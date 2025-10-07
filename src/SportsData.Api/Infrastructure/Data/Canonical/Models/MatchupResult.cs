@@ -14,6 +14,8 @@
 
         public int HomeScore { get; set; }
 
+        public double? Spread { get; set; }
+
         public Guid WinnerFranchiseSeasonId { get; set; }
 
         public Guid? SpreadWinnerFranchiseSeasonId { get; set; } // nullable if there was no spread

@@ -44,17 +44,14 @@ export default function ContestOverview() {
       <div className="contest-overview-grid">
         <div className="contest-overview-col">
           <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
-          <ContestOverviewPlaylog playLog={playLog} />
         </div>
         <div className="contest-overview-col">
           <ContestOverviewTeamStats homeTeam={homeTeam} awayTeam={awayTeam} teamStats={teamStats} />
-          {/* If summary and matchupAnalysis are still present in the new DTO, pass them here. Otherwise, remove these lines. */}
-          {/* <ContestOverviewSummary summary={summary} /> */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
+          <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">
-          <ContestOverviewInfo info={info} />
-          {/* <ContestOverviewAnalysis matchupAnalysis={matchupAnalysis} /> */}
+          <ContestOverviewPlaylog playLog={playLog} />
         </div>
       </div>
     </div>

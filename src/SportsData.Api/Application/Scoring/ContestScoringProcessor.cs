@@ -37,13 +37,7 @@ namespace SportsData.Api.Application.Scoring
         public async Task Process(ScoreContestCommand command)
         {
             var result = await _canonicalData.GetMatchupResult(command.ContestId);
-
-            if (result is null)
-            {
-                _logger.LogError("Result not found");
-                return;
-            }
-
+            
             // canonical data has the true spread winner, but that is based on the final spread
             // our matchups were generated with the opening spread, so we need to adjust
             // we cannot score picks based on the final spread
@@ -82,9 +76,16 @@ namespace SportsData.Api.Application.Scoring
                 {
                     try
                     {
+                        // TODO: Make this a league option (LockSpreadAtPick, DoNotLockSpreadPicks)
+                        //_pickScoringService.ScorePick(
+                        //    group,
+                        //    group.Weeks.First().Matchups.First().HomeSpread,
+                        //    pick,
+                        //    result);
+
                         _pickScoringService.ScorePick(
                             group,
-                            group.Weeks.First().Matchups.First(),
+                            result.Spread,
                             pick,
                             result);
                     }

@@ -129,6 +129,7 @@ namespace SportsData.Api.Application.Admin
                         .AsNoTracking()
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.RejectedUtc == null)
+                        .OrderByDescending(x => x.CreatedUtc)
                         .FirstOrDefaultAsync();
 
                     // no preview? skip it

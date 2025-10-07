@@ -1,22 +1,31 @@
--- SELECT json_agg(row_to_json(t))
--- FROM (
+SELECT json_agg(row_to_json(t))
+FROM (
     select
         cp."SequenceNumber" as "Ordinal",
         cp."PeriodNumber" as "Quarter",
         f."Name" as "Team",
+        cp."StartDown" as "Down",
+        cp."StartDistance" as "ToGo",
+        cp."EndYardsToEndzone" as "YardsToEndzone",
+        cp."StartYardLine" as "YardLine",
+        cp."EndYardLine" as "EndYardLine",
+        pt."Name" as "PlayType",
         cp."Text" as "Description",
+        cp."StatYardage" as "Yards",
         cp."ClockDisplayValue" as "TimeRemaining",
         cp."ScoringPlay" as "IsScoringPlay",
         cp."Priority" as "IsKeyPlay"
     from public."CompetitionPlay" cp
+    left join public."lkPlayType" pt on pt."Id" = cp."Type"
     inner join public."Competition" co on co."Id" = cp."CompetitionId"
     inner join public."Contest" c on c."Id" = co."ContestId"
     inner join public."FranchiseSeason" fs on fs."Id" = cp."StartTeamFranchiseSeasonId"
     inner join public."Franchise" f on f."Id" = fs."FranchiseId"
     where co."ContestId" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
     order by cp."SequenceNumber"
---) t;
---select * from public."CompetitionPlay" where "Text" like '%LSU%'
+) t;
+--select * from public."CompetitionPlay" where "Text" like '%LSU%' order by "CompetitionId", "SequenceNumber"
+select * from public."lkPlayType" order by "Name"
 SELECT * from public."CompetitionCompetitorStatistics" where "CompetitionId" = 'cbd0708c-b707-8cc5-bd09-d84856f24d2d'
 SELECT * from public."CompetitionCompetitorStatisticCategories" where "CompetitionCompetitorStatisticId" = 'd7e2f37e-02b4-9917-99e3-21197acbf638'
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '1da7d0e2-c0af-4399-9d4a-6b36ed92a567' order by "Name"
@@ -76,5 +85,8 @@ SELECT * from public."CompetitionCompetitor" where "CompetitionId" = 'cbd0708c-b
 -- LEFT JOIN known k ON k.code = ac."Type"
 -- WHERE k.code IS NULL
 -- ORDER BY ac."Type";
+
+
+
 
 

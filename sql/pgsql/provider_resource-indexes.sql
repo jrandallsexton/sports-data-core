@@ -1,6 +1,8 @@
 select "LastPageIndex", "TotalPageCount", * from public."ResourceIndex" where "IsRecurring" is false order by "Ordinal"
 select * from public."ResourceIndex" where "IsRecurring" is false and "LastCompletedUtc" is null order by "Ordinal"
 
+select * from public."ResourceIndex" where "IsRecurring" is true order by "Ordinal"
+
 --update public."ResourceIndex" set "ProcessingInstanceId" = null, "ProcessingStartedUtc" = null, "IsQueued" = false, "LastCompletedUtc" = null where "Id" = '8683b877-ca76-4c17-97ab-0fe3e8eec350'
 
 select * from public."ResourceIndex" order by "Ordinal"

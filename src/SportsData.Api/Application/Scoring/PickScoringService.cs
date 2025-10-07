@@ -7,7 +7,7 @@ public class PickScoringService : IPickScoringService
 {
     public void ScorePick(
         PickemGroup group,
-        PickemGroupMatchup matchup,
+        double? spread,
         PickemGroupUserPick pick,
         MatchupResult result)
     {
@@ -22,7 +22,7 @@ public class PickScoringService : IPickScoringService
                 break;
 
             case PickType.AgainstTheSpread:
-                ScoreAgainstSpread(pick, matchup, result, now);
+                ScoreAgainstSpread(pick, spread, result, now);
                 pick.WasAgainstSpread = true;
                 break;
 
@@ -55,7 +55,7 @@ public class PickScoringService : IPickScoringService
 
     private void ScoreAgainstSpread(
         PickemGroupUserPick pick,
-        PickemGroupMatchup matchup,
+        double? spread,
         MatchupResult result,
         DateTime now)
     {
@@ -65,10 +65,8 @@ public class PickScoringService : IPickScoringService
             return;
         }
 
-        var homeSpread = matchup.HomeSpread;
-
         // If no spread was provided or is zero, fall back to straight up scoring
-        if (!homeSpread.HasValue || homeSpread.Value == 0)
+        if (!spread.HasValue || spread.Value == 0)
         {
             ScoreStraightUp(pick, result, now);
             return;
@@ -79,10 +77,10 @@ public class PickScoringService : IPickScoringService
 
         Guid? spreadWinnerId = null;
 
-        if (homeSpread.Value < 0)
+        if (spread.Value < 0)
         {
             // Home team was favored: adjust home score
-            var adjustedHomeScore = homeScore + homeSpread.Value;
+            var adjustedHomeScore = homeScore + spread.Value;
 
             if (adjustedHomeScore > awayScore)
                 spreadWinnerId = result.HomeFranchiseSeasonId;
@@ -93,7 +91,7 @@ public class PickScoringService : IPickScoringService
         else
         {
             // Away team was favored: adjust away score
-            var adjustedAwayScore = awayScore + (-homeSpread.Value);
+            var adjustedAwayScore = awayScore + (-spread.Value);
 
             if (adjustedAwayScore > homeScore)
                 spreadWinnerId = result.AwayFranchiseSeasonId;

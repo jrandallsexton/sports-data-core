@@ -27,18 +27,19 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function ContestOverviewWinProb({ winProbability, homeTeam, awayTeam }) {
-  // Debug: log the team colors
 
-  // Use fixed colors for chart and legend
-  const HOME_COLOR = '#4FC3F7'; // Light blue used in other CSS files
-  const AWAY_COLOR = 'yellow';
+export default function ContestOverviewWinProb({ winProbability }) {
+  // Use colors and slugs from winProbability DTO
+  const HOME_COLOR = `#${winProbability.homeTeamColor?.replace(/^#/, '') || '000000'}`;
+  const AWAY_COLOR = `#${winProbability.awayTeamColor?.replace(/^#/, '') || 'ff5f05'}`;
+  const HOME_LABEL = winProbability.homeTeamSlug || 'Home';
+  const AWAY_LABEL = winProbability.awayTeamSlug || 'Away';
 
   const chartData = winProbability.points.map(pt => ({
     quarter: pt.quarter,
     clock: pt.gameClock,
-    Home: pt.homeWinPercent,
-    Away: pt.awayWinPercent
+    [HOME_LABEL]: pt.homeWinPercent,
+    [AWAY_LABEL]: pt.awayWinPercent
   }));
 
   // Get unique quarters for X axis ticks
@@ -63,12 +64,12 @@ export default function ContestOverviewWinProb({ winProbability, homeTeam, awayT
               <Legend
                 payload={[
                   {
-                    value: 'Home',
+                    value: HOME_LABEL,
                     type: 'line',
                     color: HOME_COLOR,
                   },
                   {
-                    value: 'Away',
+                    value: AWAY_LABEL,
                     type: 'line',
                     color: AWAY_COLOR,
                   },
@@ -80,22 +81,22 @@ export default function ContestOverviewWinProb({ winProbability, homeTeam, awayT
               {/* Remove gradients, use solid fill for color visibility */}
               <Area
                 type="monotone"
-                dataKey="Home"
+                dataKey={HOME_LABEL}
                 stroke={HOME_COLOR}
                 fill={HOME_COLOR}
                 fillOpacity={0.18}
-                name="Home"
+                name={HOME_LABEL}
                 dot={false}
                 strokeWidth={3}
                 activeDot={{ r: 5, fill: HOME_COLOR, stroke: '#fff', strokeWidth: 2 }}
               />
               <Area
                 type="monotone"
-                dataKey="Away"
+                dataKey={AWAY_LABEL}
                 stroke={AWAY_COLOR}
                 fill={AWAY_COLOR}
                 fillOpacity={0.18}
-                name="Away"
+                name={AWAY_LABEL}
                 dot={false}
                 strokeWidth={3}
                 activeDot={{ r: 5, fill: AWAY_COLOR, stroke: '#fff', strokeWidth: 2 }}

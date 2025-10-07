@@ -7,7 +7,7 @@ public interface IPickScoringService
 {
     void ScorePick(
         PickemGroup group,
-        PickemGroupMatchup matchup,
+        double? spread,
         PickemGroupUserPick pick,
         MatchupResult result);
 }

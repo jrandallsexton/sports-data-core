@@ -1,4 +1,5 @@
 import React from "react";
+import { formatToEasternTime } from "../../utils/timeUtils";
 import "./ContestOverview.css";
 
 export default function ContestOverviewInfo({ info }) {
@@ -26,11 +27,12 @@ export default function ContestOverviewInfo({ info }) {
           {info.venueState && (
             <li className="contest-info-item"><span className="contest-info-label">State:</span> <span className="contest-info-value">{info.venueState}</span></li>
           )}
-          {info.venueImageUrl && (
-            <li className="contest-info-item"><span className="contest-info-label">Image:</span> <img src={info.venueImageUrl} alt="Venue" style={{ maxWidth: 120, maxHeight: 80, borderRadius: 6 }} /></li>
-          )}
+          {/* Venue image will be shown after the list */}
           {info.startDateUtc && (
-            <li className="contest-info-item"><span className="contest-info-label">Start Time (UTC):</span> <span className="contest-info-value">{info.startDateUtc}</span></li>
+            <li className="contest-info-item">
+              <span className="contest-info-label">Start Time (ET):</span> 
+              <span className="contest-info-value">{formatToEasternTime(info.startDateUtc)}</span>
+            </li>
           )}
           {info.attendance !== undefined && (
             <li className="contest-info-item"><span className="contest-info-label">Attendance:</span> <span className="contest-info-value">{info.attendance}</span></li>
@@ -39,6 +41,15 @@ export default function ContestOverviewInfo({ info }) {
             <li className="contest-info-item"><span className="contest-info-label">Broadcast:</span> <span className="contest-info-value">{info.broadcast}</span></li>
           )}
         </ul>
+        {info.venueImageUrl && (
+          <div style={{ marginTop: 8, textAlign: 'center', width: '100%' }}>
+            <img 
+              src={info.venueImageUrl} 
+              alt="Venue" 
+              style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', maxHeight: 220, marginBottom: 0, paddingBottom: 0 }} 
+            />
+          </div>
+        )}
       </div>
     </div>
   );

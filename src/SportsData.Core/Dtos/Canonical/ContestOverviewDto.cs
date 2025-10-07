@@ -15,13 +15,26 @@ namespace SportsData.Core.Dtos.Canonical
 
         public WinProbabilityDto? WinProbability { get; set; }
 
-        public List<PlayDto>? PlayLog { get; set; }
+        public PlayLogDto? PlayLog { get; set; }
 
         public TeamStatsSectionDto? TeamStats { get; set; }
 
         public GameInfoDto? Info { get; set; }
 
         //public MatchupAnalysisDto? MatchupAnalysis { get; set; } // Optional: Postgame insights
+    }
+
+    public class PlayLogDto
+    {
+        public required string AwayTeamSlug { get; set; }
+
+        public required string HomeTeamSlug { get; set; }
+
+        public required string AwayTeamLogoUrl { get; set; }
+
+        public required string HomeTeamLogoUrl { get; set; }
+
+        public List<PlayDto>? Plays { get; set; }
     }
 
     public class GameHeaderDto
@@ -58,20 +71,66 @@ namespace SportsData.Core.Dtos.Canonical
         public int? FinalScore { get; set; } // Optional if in-progress
     }
 
-    public class GameLeadersDto
+    public sealed class GameLeadersDto
     {
-        public List<StatLeaderDto>? HomeLeaders { get; set; }
-        public List<StatLeaderDto>? AwayLeaders { get; set; }
+        /// <summary>One item per stat category (e.g., Passing Yards, Rushing TDs), each with home/away leaders.</summary>
+        public List<LeaderCategoryDto> Categories { get; set; } = new();
     }
 
-    public class StatLeaderDto
+    public sealed class LeaderCategoryDto
     {
-        public string? Category { get; set; } // Passing, Rushing, etc.
+        /// <summary>Stable key you control (e.g., "passingYds", "rushingTd"). Avoid tying UI logic to display strings.</summary>
+        public string CategoryId { get; set; } = null!;
 
-        public string? PlayerName { get; set; }
+        /// <summary>Human-readable display (e.g., "Passing Yards").</summary>
+        public string CategoryName { get; set; } = null!;
 
-        public string? StatLine { get; set; } // e.g. "21/33, 295 YDS, 3 TD"
+        /// <summary>Optional short label for chips/columns (e.g., "PY").</summary>
+        public string? Abbr { get; set; }
+
+        /// <summary>Optional unit hint (e.g., "yds", "td").</summary>
+        public string? Unit { get; set; }
+
+        /// <summary>Controls UI ordering across categories.</summary>
+        public int DisplayOrder { get; set; }
+
+        /// <summary>Leaders for the home team in this category. Keep as an array to support ties.</summary>
+        public TeamLeadersDto Home { get; set; } = new();
+
+        /// <summary>Leaders for the away team in this category. Keep as an array to support ties.</summary>
+        public TeamLeadersDto Away { get; set; } = new();
     }
+
+    public sealed class TeamLeadersDto
+    {
+        /// <summary>Zero, one, or many leaders (ties). Empty list means “no leader” (e.g., no punts).</summary>
+        public List<PlayerLeaderDto> Leaders { get; set; } = new();
+    }
+
+    public sealed class PlayerLeaderDto
+    {
+        /// <summary>Stable athlete id if available (preferred for routing/headshots).</summary>
+        public string? PlayerId { get; set; }
+
+        public string PlayerName { get; set; } = null!;
+        public string? Position { get; set; }
+        public string? Jersey { get; set; }
+
+        /// <summary>Stable team id/slug in case you need routing or badges.</summary>
+        public string? TeamId { get; set; }
+
+        /// <summary>Sortable numeric for the category’s primary metric (e.g., 287 for passing yards).</summary>
+        public decimal? Value { get; set; }
+
+        /// <summary>Pre-formatted display line (e.g., "23/34, 287 yds, 2 TD, 1 INT").</summary>
+        public string? StatLine { get; set; }
+
+        /// <summary>1-based rank within the team for this category. Equal ranks indicate a tie.</summary>
+        public int Rank { get; set; } = 1;
+
+        public string? HeadshotUrl { get; set; }
+    }
+
 
     //public class NarrativeSummaryDto
     //{
@@ -81,6 +140,14 @@ namespace SportsData.Core.Dtos.Canonical
 
     public class WinProbabilityDto
     {
+        public required string AwayTeamSlug { get; set; }
+
+        public required string HomeTeamSlug { get; set; }
+
+        public required string AwayTeamColor { get; set; }
+
+        public required string HomeTeamColor { get; set; }
+
         public List<WinProbabilityPointDto>? Points { get; set; }
 
         public int? FinalHomeWinPercent { get; set; }

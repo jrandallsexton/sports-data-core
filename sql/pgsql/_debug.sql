@@ -28,8 +28,9 @@ order by "Name"
 
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c'
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
+select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda' where "ShortHeadline" = '2025 AP Poll: Week 6'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '11c6a599-b698-3d3d-8283-74e0c604555c' where "ShortHeadline" = '2025 AP Poll: Week 7'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"
@@ -47,11 +48,17 @@ select
   c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
   c."FinalizedUtc"
 from public."Contest" c
-where c."Id" = 'f1444005-a1eb-6476-8a4a-dd6650be654e'
+where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+-- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
-select * from public."Contest" where "Id" = 'cbd1f3e5-9547-9e5f-e7a6-64530cb575a5'
+select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+--update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+
+-- FIX DEV - 07 OCT 2025
+-- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
+
 select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
-select * from public."Competition" where "ContestId" = '2bdcdede-e853-c469-f98a-59d4a1269ed1'
+select * from public."Competition" where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select * from public."CompetitionCompetitorStatistics"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
@@ -62,8 +69,11 @@ order by "Name"
 
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '0c5d0ca5-802c-4087-9bcf-75b85e90383a' order by "Name"
 
-select * from public."CompetitionOdds" where "CompetitionId" = 'a9ea7891-6306-6fa4-f217-5a7e6f2162fc'
-
+select * from public."CompetitionOdds" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e'
+select * from public."CompetitionTeamOdds" where "CompetitionOddsId" = '3d893e38-5b96-f677-833e-fc1bd5f23e64'
+select * from public."CompetitionLeader"
+select * from public."lkLeaderCategory" order by "Name"
+select * from public."CompetitionLeaderStat"
 select * from public."CompetitionStatus" where "CompetitionId" = 'd0c23fa1-ad50-c95b-5110-fcff717fde78'
 select * from public."CompetitionStatus" where "StatusDescription" = 'In Progress'
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"

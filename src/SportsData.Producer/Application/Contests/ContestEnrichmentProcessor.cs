@@ -51,7 +51,8 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
                     .ThenInclude(comp => comp.ExternalIds)
-                    .Include(c => c.Odds)
+                    .Include(c => c.Odds.Where(o => o.ProviderId == "58"))
+                    .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
                     .Where(c => c.ContestId == command.ContestId)
                     .FirstOrDefaultAsync();
@@ -91,20 +92,20 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                await _bus.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(status.Ref),
-                    ParentId: contest.Id.ToString(),
-                    Uri: new Uri(competitionExternalId.SourceUrl),
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: competition.Contest.SeasonYear,
-                    DocumentType: DocumentType.EventCompetition,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
-                    BypassCache: true
-                ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
-                await _dataContext.SaveChangesAsync();
+                //await _bus.Publish(new DocumentRequested(
+                //    Id: HashProvider.GenerateHashFromUri(status.Ref),
+                //    ParentId: contest.Id.ToString(),
+                //    Uri: new Uri(competitionExternalId.SourceUrl),
+                //    Sport: Sport.FootballNcaa,
+                //    SeasonYear: competition.Contest.SeasonYear,
+                //    DocumentType: DocumentType.EventCompetition,
+                //    SourceDataProvider: SourceDataProvider.Espn,
+                //    CorrelationId: command.CorrelationId,
+                //    CausationId: CausationId.Producer.ContestEnrichmentProcessor,
+                //    BypassCache: true
+                //));
+                //await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                //await _dataContext.SaveChangesAsync();
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {

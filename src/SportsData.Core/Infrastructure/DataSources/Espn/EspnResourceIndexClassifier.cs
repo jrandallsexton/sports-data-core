@@ -11,6 +11,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             "broadcasts",
             "leaders",
             "predictor",
+            "score",
+            "situation",
             "statistics",
             "status"
         };

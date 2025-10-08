@@ -7,7 +7,10 @@ using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
@@ -15,6 +18,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
     {
         Task<VenueDto?> GetVenue(string id);
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
+        Task RefreshContestByContestId(Guid contestId);
     }
 
     public class ProducerClient : ClientBase, IProvideProducers
@@ -47,6 +51,13 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             var overview = tmp.FromJson<ContestOverviewDto>();
 
             return overview ?? new ContestOverviewDto();
+        }
+
+        public async Task RefreshContestByContestId(Guid contestId)
+        {
+            var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync($"contest/{contestId}/update", content);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

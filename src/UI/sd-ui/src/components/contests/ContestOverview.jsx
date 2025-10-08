@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useUserDto } from "../../contexts/UserContext";
+import ContestApi from "../../api/contestApi";
+import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
 import "./ContestOverview.css";
@@ -14,6 +17,10 @@ export default function ContestOverview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { userDto } = useUserDto();
+  const isAdmin = userDto?.isAdmin;
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -38,6 +45,19 @@ export default function ContestOverview() {
   const { header, info, leaders, playLog, teamStats, winProbability } = dto;
   const { homeTeam, awayTeam, quarterScores } = header;
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setRefreshError(null);
+    try {
+      await ContestApi.refresh(contestId);
+  toast.success("Contest refresh request submitted.");
+    } catch (err) {
+      setRefreshError("Failed to refresh contest.");
+  toast.error("Failed to submit refresh request.");
+    }
+    setRefreshing(false);
+  };
+
   return (
     <div className="contest-overview-container">
       <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} />
@@ -54,6 +74,18 @@ export default function ContestOverview() {
           <ContestOverviewPlaylog playLog={playLog} />
         </div>
       </div>
+      {isAdmin && (
+        <div style={{ marginTop: 32, textAlign: "center" }}>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer" }}
+          >
+            {refreshing ? "Refreshing..." : "Refresh Contest"}
+          </button>
+          {refreshError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshError}</div>}
+        </div>
+      )}
     </div>
   );
 }

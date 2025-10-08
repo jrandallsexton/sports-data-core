@@ -33,7 +33,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, winnerId)
             .Create();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -58,7 +58,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, Guid.NewGuid())
             .Create();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeFalse();
         pick.PointsAwarded.Should().Be(0);
@@ -92,7 +92,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.HomeScore, 24)
             .Create();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -122,7 +122,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, winnerId)
             .Create();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -151,7 +151,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .With(r => r.WinnerFranchiseSeasonId, winnerId)
             .Create();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeTrue();
         pick.PointsAwarded.Should().Be(1);
@@ -174,7 +174,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.ScorePick(group, matchup, pick, result);
+        _sut.ScorePick(group, matchup.HomeSpread, pick, result);
 
         pick.IsCorrect.Should().BeFalse();
         pick.PointsAwarded.Should().Be(0);
@@ -193,7 +193,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var pick = Fixture.Create<PickemGroupUserPick>();
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.Invoking(s => s.ScorePick(group, matchup, pick, result))
+        _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
             .Should().NotThrow();
     }
 
@@ -209,7 +209,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var pick = Fixture.Create<PickemGroupUserPick>();
         var result = Fixture.Create<MatchupResult>();
 
-        _sut.Invoking(s => s.ScorePick(group, matchup, pick, result))
+        _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
             .Should().Throw<InvalidOperationException>()
             .WithMessage("*Unsupported PickType*");
     }

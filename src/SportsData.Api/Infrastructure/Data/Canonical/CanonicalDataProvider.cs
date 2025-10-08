@@ -49,6 +49,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks();
 
         Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
+
+        Task RefreshContestByContestId(Guid contestId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -236,6 +238,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             );
 
             return results.ToList();
+        }
+
+        public async Task RefreshContestByContestId(Guid contestId)
+        {
+            await _producerClient.RefreshContestByContestId(contestId);
         }
 
         public async Task<List<Matchup>> GetMatchupsForCurrentWeek()

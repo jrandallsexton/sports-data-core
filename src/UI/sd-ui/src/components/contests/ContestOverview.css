@@ -2,16 +2,18 @@
 
 .contest-overview-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 0 12px 24px 12px;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .contest-overview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-  margin-top: 32px;
+  grid-template-columns: 1.58fr 1fr 1.58fr;
+  gap: 12px;
+  /* margin-top: 32px; */
+  width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -29,6 +31,21 @@
   max-width: 100%;
   flex: 1 1 0;
   box-sizing: border-box;
+}
+
+/* Center column max width and centering */
+.contest-overview-col:nth-child(2) {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Remove all constraints for left and right columns so they expand */
+.contest-overview-col:nth-child(1),
+.contest-overview-col:nth-child(3) {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .contest-week-status {

@@ -22,5 +22,12 @@ namespace SportsData.Api.Application.UI.Contest
             var contest = await _contestService.GetContestOverviewByContestId(id);
             return Ok(contest);
         }
+
+        [HttpPost("{id}/refresh")]
+        public async Task<ActionResult<ContestOverviewDto>> RefreshContestById([FromRoute] Guid id)
+        {
+            await _contestService.RefreshContestByContestId(id);
+            return Accepted(id);
+        }
     }
 }

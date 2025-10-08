@@ -1,6 +1,6 @@
 ﻿select
     C."Id" AS "ContestId",
-	C."Week" AS "Week",
+	sw."Number" AS "Week",
 	C."StartDateUtc" AS "Date",	
 	CASE
         WHEN fAway."Slug" = @Slug THEN fHome."DisplayName"
@@ -29,6 +29,7 @@
     END AS "WasWinner"
 
 from public."Contest" C
+inner join public."SeasonWeek" SW on SW."Id" = C."SeasonWeekId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"	
 inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"

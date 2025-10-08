@@ -6,6 +6,7 @@ namespace SportsData.Api.Application.UI.Contest
     public interface IContestService
     {
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
+        Task RefreshContestByContestId(Guid contestId);
     }
 
     public class ContestService : IContestService
@@ -23,5 +24,10 @@ namespace SportsData.Api.Application.UI.Contest
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId) =>
             await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
+
+        public async Task RefreshContestByContestId(Guid contestId)
+        {
+            await _canonicalDataProvider.RefreshContestByContestId(contestId);
+        }
     }
 }

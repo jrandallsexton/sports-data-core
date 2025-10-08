@@ -59,6 +59,7 @@ select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef
 
 select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
 select * from public."Competition" where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+select * from public."CompetitionProbability" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e' order by "SequenceNumber"
 
 select * from public."CompetitionCompetitorStatistics"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'

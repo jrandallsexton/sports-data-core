@@ -84,7 +84,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             scoring.Verify(s =>
                 s.ScorePick(
                     It.Is<PickemGroup>(g => g.Id == groupId),
-                    It.IsAny<PickemGroupMatchup>(),
+                    It.IsAny<double?>(),
                     It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
                     result),
                 Times.Once);
@@ -116,7 +116,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         Mocker.GetMock<IPickScoringService>()
             .Verify(x => x.ScorePick(
                     It.IsAny<PickemGroup>(),
-                    It.IsAny<PickemGroupMatchup>(),
+                    It.IsAny<double?>(),
                     It.IsAny<PickemGroupUserPick>(),
                     It.IsAny<MatchupResult>()),
             Times.Never);
@@ -157,7 +157,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         Mocker.GetMock<IPickScoringService>()
             .Verify(x => x.ScorePick(
                     It.IsAny<PickemGroup>(),
-                    It.IsAny<PickemGroupMatchup>(),
+                    It.IsAny<double?>(),
                     It.IsAny<PickemGroupUserPick>(),
                     It.IsAny<MatchupResult>()),
             Times.Never);

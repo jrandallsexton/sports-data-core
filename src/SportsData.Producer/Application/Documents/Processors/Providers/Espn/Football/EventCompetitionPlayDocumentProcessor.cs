@@ -88,6 +88,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException("ParentId must be a valid Guid.");
             }
 
+            Guid? competitionDriveId = null;
+            
+            if (command.PropertyBag.TryGetValue("CompetitionDriveId", out var value))
+            {
+                if (Guid.TryParse(value, out var driveId))
+                {
+                    competitionDriveId = driveId;
+                }
+            }
+
             var competition = await _dataContext.Competitions
                 .Include(c => c.Status)
                 .AsNoTracking()
@@ -124,11 +134,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     command,
                     externalDto,
                     competition,
+                    competitionDriveId,
                     franchiseSeasonId.Value);
             }
             else
             {
-                await ProcessUpdate(command, externalDto, entity);
+                await ProcessUpdate(
+                    command,
+                    externalDto,
+                    competitionDriveId,
+                    entity);
             }
         }
 
@@ -136,6 +151,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             ProcessDocumentCommand command,
             EspnEventCompetitionPlayDto externalDto,
             Competition competition,
+            Guid? competitionDriveId,
             Guid franchiseSeasonId)
         {
             var startTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
@@ -148,7 +164,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 _externalRefIdentityGenerator,
                 command.CorrelationId,
                 competition.Id,
-                null,
+                competitionDriveId,
                 franchiseSeasonId,
                 startTeamFranchiseSeasonId);
 
@@ -173,10 +189,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
             EspnEventCompetitionPlayDto externalDto,
+            Guid? competitionDriveId,
             CompetitionPlay entity)
         {
-            _logger.LogWarning("Update detected; not implemented. {@Command}", command);
-            await Task.Delay(100);
+            entity.DriveId = competitionDriveId;
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

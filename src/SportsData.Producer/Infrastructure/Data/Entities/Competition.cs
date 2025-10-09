@@ -101,7 +101,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionPlay> Plays { get; set; } = [];
 
-        public ICollection<Drive> Drives { get; set; } = [];
+        public ICollection<CompetitionDrive> Drives { get; set; } = [];
 
         public ICollection<CompetitionBroadcast> Broadcasts { get; set; } = [];
 
@@ -128,6 +128,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
 
         public ICollection<CompetitionOdds> Odds { get; set; } = [];
+
+        public ICollection<CompetitionSituation> Situations { get; set; } = [];
 
         public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 

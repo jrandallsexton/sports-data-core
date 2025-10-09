@@ -150,10 +150,12 @@
   margin-bottom: 0.5rem;
 }
 
+
 .contest-leaders-row {
-  display: flex;
-  gap: 2rem;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 160px 1fr;
+  gap: 0.5rem;
+  align-items: center;
   max-width: 100%;
   min-width: 0;
 }
@@ -164,7 +166,11 @@
   overflow-wrap: break-word;
   word-break: break-word;
   box-sizing: border-box;
-  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 8px;
 }
 .contest-leader-item {
   min-width: 0;
@@ -192,6 +198,11 @@
 
 .contest-leader-category {
   font-weight: 500;
+  text-align: center;
+  width: 100%;
+  min-width: 120px;
+  max-width: 160px;
+  margin: 0 auto;
 }
 
 .contest-leader-statline {

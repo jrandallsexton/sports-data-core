@@ -5,17 +5,17 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class DriveExternalId : ExternalId
+    public class CompetitionDriveExternalId : ExternalId
     {
         public Guid DriveId { get; set; }
 
-        public Drive Drive { get; set; } = null!;
+        public CompetitionDrive Drive { get; set; } = null!;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<DriveExternalId>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionDriveExternalId>
         {
-            public void Configure(EntityTypeBuilder<DriveExternalId> builder)
+            public void Configure(EntityTypeBuilder<CompetitionDriveExternalId> builder)
             {
-                builder.ToTable(nameof(DriveExternalId));
+                builder.ToTable(nameof(CompetitionDriveExternalId));
                 builder.HasKey(t => t.Id);
                 builder.HasOne(t => t.Drive)
                        .WithMany(cd => cd.ExternalIds)

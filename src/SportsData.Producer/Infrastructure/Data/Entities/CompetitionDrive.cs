@@ -6,7 +6,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Drive : CanonicalEntityBase<Guid>
+    public class CompetitionDrive : CanonicalEntityBase<Guid>
     {
         public Competition Competition { get; set; } = null!;
 
@@ -151,15 +151,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionPlay> Plays { get; set; } = new List<CompetitionPlay>();
         
-        public ICollection<DriveExternalId> ExternalIds { get; set; } = new List<DriveExternalId>();
+        public ICollection<CompetitionDriveExternalId> ExternalIds { get; set; } = new List<CompetitionDriveExternalId>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<Drive>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionDrive>
         {
-            public void Configure(EntityTypeBuilder<Drive> builder)
+            public void Configure(EntityTypeBuilder<CompetitionDrive> builder)
             {
-                builder.ToTable(nameof(Drive));
+                builder.ToTable(nameof(CompetitionDrive));
                 builder.HasKey(x => x.Id);
                 builder.Property(x => x.Description).IsRequired().HasMaxLength(250);
                 builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(20);

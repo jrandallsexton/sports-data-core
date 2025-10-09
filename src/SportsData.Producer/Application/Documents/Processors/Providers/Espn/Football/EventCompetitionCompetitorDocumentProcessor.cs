@@ -171,6 +171,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             command.CorrelationId);
 
         await _dataContext.CompetitionCompetitors.AddAsync(canonicalEntity);
+        await _dataContext.SaveChangesAsync();
 
         await ProcessScores(canonicalEntity.Id, dto, command);
 
@@ -185,8 +186,6 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         // TODO: ProcessRecord
 
         // TODO: ProcessRanks
-
-        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessScores(
@@ -197,12 +196,12 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         if (externalProviderDto.Score?.Ref is null)
             return;
 
-        var identity = _externalRefIdentityGenerator.Generate(externalProviderDto.Score.Ref);
+        var competitorScoreIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Score.Ref);
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            Id: identity.CanonicalId.ToString(),
+            Id: competitorScoreIdentity.UrlHash,
             ParentId: competitionCompetitorId.ToString(),
-            Uri: externalProviderDto.Score.Ref.ToCleanUri(),
+            Uri: new Uri(competitorScoreIdentity.CleanUrl),
             Sport: Sport.FootballNcaa,
             SeasonYear: command.Season,
             DocumentType: DocumentType.EventCompetitionCompetitorScore,
@@ -220,12 +219,12 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         if (externalProviderDto.Linescores?.Ref is null)
             return;
 
-        var identity = _externalRefIdentityGenerator.Generate(externalProviderDto.Linescores.Ref);
+        var lineScoresIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Linescores.Ref);
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            Id: identity.CanonicalId.ToString(),
+            Id: lineScoresIdentity.UrlHash,
             ParentId: competitionCompetitorId.ToString(),
-            Uri: externalProviderDto.Linescores.Ref.ToCleanUri(),
+            Uri: new Uri(lineScoresIdentity.CleanUrl),
             Sport: Sport.FootballNcaa,
             SeasonYear: command.Season,
             DocumentType: DocumentType.EventCompetitionCompetitorLineScore,

@@ -88,23 +88,14 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
     public async Task WhenParentIdIsMissing_ShouldThrow()
     {
         // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
         var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorScore.json");
 
         var command = CreateCommand(json, null);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
-    }
-
-    [Fact]
-    public async Task WhenCompetitionCompetitorDoesNotExist_ShouldThrow()
-    {
-        // Arrange
-        var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorScore.json");
-
-        var command = CreateCommand(json, Guid.NewGuid().ToString());
+        command.ParentId = null;
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));

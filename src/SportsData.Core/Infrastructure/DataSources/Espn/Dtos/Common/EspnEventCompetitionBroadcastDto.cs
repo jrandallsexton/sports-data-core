@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
@@ -117,10 +119,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string Type { get; set; }
     }
 
-    public class EspnEventCompetitionBroadcastItemMedia
+    public class EspnEventCompetitionBroadcastItemMedia : IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("id")]
         public string Id { get; set; }

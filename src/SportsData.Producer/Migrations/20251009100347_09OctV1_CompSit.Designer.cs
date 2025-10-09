@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251009100347_09OctV1_CompSit")]
+    partial class _09OctV1_CompSit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2475,206 +2478,6 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionCompetitorStatisticStats");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDrive", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CompetitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<string>("DisplayResult")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("EndClockDisplayValue")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<double?>("EndClockValue")
-                        .HasColumnType("double precision");
-
-                    b.Property<int?>("EndDistance")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("EndDown")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("EndDownDistanceText")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<Guid?>("EndFranchiseSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("EndPeriodNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("EndPeriodType")
-                        .HasColumnType("text");
-
-                    b.Property<string>("EndShortDownDistanceText")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("EndText")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("EndYardLine")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("EndYardsToEndzone")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsScore")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("OffensivePlays")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Ordinal")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Result")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("SequenceNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("ShortDisplayResult")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("SourceDescription")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("SourceId")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("StartClockDisplayValue")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<double?>("StartClockValue")
-                        .HasColumnType("double precision");
-
-                    b.Property<int?>("StartDistance")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("StartDown")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("StartDownDistanceText")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<Guid?>("StartFranchiseSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("StartPeriodNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("StartPeriodType")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StartShortDownDistanceText")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("StartText")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("StartYardLine")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("StartYardsToEndzone")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TimeElapsedDisplay")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<double?>("TimeElapsedValue")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("Yards")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompetitionId");
-
-                    b.ToTable("CompetitionDrive", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDriveExternalId", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DriveId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Provider")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SourceUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SourceUrlHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DriveId");
-
-                    b.ToTable("CompetitionDriveExternalId", (string)null);
-                });
-
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionExternalId", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4112,6 +3915,206 @@ namespace SportsData.Producer.Migrations
                     b.HasIndex("ContestId");
 
                     b.ToTable("ContestLink");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("DisplayResult")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EndClockDisplayValue")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double?>("EndClockValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("EndDistance")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("EndDown")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EndDownDistanceText")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid?>("EndFranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("EndPeriodNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EndPeriodType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EndShortDownDistanceText")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EndText")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("EndYardLine")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("EndYardsToEndzone")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsScore")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OffensivePlays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Result")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SequenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ShortDisplayResult")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SourceDescription")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SourceId")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StartClockDisplayValue")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double?>("StartClockValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("StartDistance")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StartDown")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StartDownDistanceText")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid?>("StartFranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("StartPeriodNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StartPeriodType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StartShortDownDistanceText")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StartText")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("StartYardLine")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StartYardsToEndzone")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TimeElapsedDisplay")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double?>("TimeElapsedValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Yards")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.ToTable("Drive", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.DriveExternalId", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DriveId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceUrlHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriveId");
+
+                    b.ToTable("DriveExternalId", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Franchise", b =>
@@ -7082,28 +7085,6 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("CompetitionCompetitorStatisticCategory");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDrive", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
-                        .WithMany("Drives")
-                        .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Competition");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDriveExternalId", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDrive", "Drive")
-                        .WithMany("ExternalIds")
-                        .HasForeignKey("DriveId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Drive");
-                });
-
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionExternalId", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
@@ -7209,7 +7190,7 @@ namespace SportsData.Producer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDrive", "Drive")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Drive", "Drive")
                         .WithMany("Plays")
                         .HasForeignKey("DriveId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -7411,6 +7392,28 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("Contest");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithMany("Drives")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Competition");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.DriveExternalId", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Drive", "Drive")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("DriveId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Drive");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.FranchiseExternalId", b =>
@@ -8055,13 +8058,6 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Stats");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionDrive", b =>
-                {
-                    b.Navigation("ExternalIds");
-
-                    b.Navigation("Plays");
-                });
-
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionLeader", b =>
                 {
                     b.Navigation("Stats");
@@ -8103,6 +8099,13 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("ExternalIds");
 
                     b.Navigation("Links");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Drive", b =>
+                {
+                    b.Navigation("ExternalIds");
+
+                    b.Navigation("Plays");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Franchise", b =>

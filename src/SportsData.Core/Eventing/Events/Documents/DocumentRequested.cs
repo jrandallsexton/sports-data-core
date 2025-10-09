@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Collections.Generic;
 using SportsData.Core.Common;
 
 namespace SportsData.Core.Eventing.Events.Documents;
@@ -14,5 +14,5 @@ public record DocumentRequested(
     SourceDataProvider SourceDataProvider,
     Guid CorrelationId,
     Guid CausationId,
-    bool BypassCache = false
+    Dictionary<string, string>? PropertyBag = null
 ) : EventBase(CorrelationId, CausationId);

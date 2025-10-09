@@ -1,15 +1,17 @@
 ﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
+
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnEventCompetitionPlayDto
+    public class EspnEventCompetitionPlayDto : IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         /// <summary>
         /// ESPN Id (likely delete)

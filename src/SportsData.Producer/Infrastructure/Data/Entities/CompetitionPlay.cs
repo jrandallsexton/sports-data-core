@@ -14,7 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid CompetitionId { get; set; }
 
-        public Drive? Drive { get; set; }
+        public CompetitionDrive? Drive { get; set; }
 
         public Guid? DriveId { get; set; }
 
@@ -83,6 +83,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
 
         public ICollection<CompetitionPlayExternalId> ExternalIds { get; set; } = [];
+
+        public ICollection<CompetitionSituation> SituationsAsLastPlay { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

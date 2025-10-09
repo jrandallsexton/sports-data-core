@@ -66,8 +66,7 @@ namespace SportsData.Producer.Application.Contests
                 DocumentType: DocumentType.Event,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.ContestUpdateProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.ContestUpdateProcessor
             ));
             await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
             await _dataContext.SaveChangesAsync();

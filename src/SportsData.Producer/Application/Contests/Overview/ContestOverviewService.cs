@@ -324,6 +324,7 @@ namespace SportsData.Producer.Application.Contests.Overview
         {
             var contest = await _dbContext.Contests
                 .AsNoTracking()
+                .Include(c => c.Competitions)
                 .Include(navigationPropertyPath: c => c.Venue)
                 .ThenInclude(v => v!.Images
                     .OrderBy(i => i.CreatedUtc)   // or .OrderByDescending(i => i.IsPrimary)
@@ -342,7 +343,7 @@ namespace SportsData.Producer.Application.Contests.Overview
                 VenueCity = contest.Venue?.City,
                 VenueState = contest.Venue?.State,
                 VenueImageUrl = img?.Uri?.OriginalString,
-                Attendance = 0
+                Attendance = contest.Competitions.FirstOrDefault()?.Attendance
             };
         }
 

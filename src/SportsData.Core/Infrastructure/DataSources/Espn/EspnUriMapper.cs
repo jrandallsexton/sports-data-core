@@ -70,6 +70,45 @@ public static class EspnUriMapper
         return new Uri(uriString);
     }
 
+    public static Uri CompetitionCompetitorScoreRefToCompetitionCompetitorRef(Uri competitionCompetitorScoreRef)
+    {
+        if (competitionCompetitorScoreRef is null)
+            throw new ArgumentNullException(nameof(competitionCompetitorScoreRef));
+
+        var segments = competitionCompetitorScoreRef.Segments;
+
+        // locate /events/{eventId}
+        var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
+        if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionCompetitorScoreRef));
+
+        // locate /competitions/{competitionId} AFTER events/{id}
+        var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
+        if (compIdx < 0 || compIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionCompetitorScoreRef));
+
+        // locate /competitors/{competitorId} AFTER competitions/{id}
+        var competitorIdx = Array.FindIndex(segments, compIdx + 2, s => s.Equals("competitors/", StringComparison.OrdinalIgnoreCase));
+        if (competitorIdx < 0 || competitorIdx + 1 >= segments.Length)
+            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", nameof(competitionCompetitorScoreRef));
+
+        // normalize segment names; keep IDs as-is
+        var prefix = string.Concat(segments.Take(evtIdx));           // everything before "events/"
+        var eventsSeg = "events/";
+        var eventIdSeg = segments[evtIdx + 1].TrimEnd('/');
+
+        var competitions = "competitions/";
+        var competitionId = segments[compIdx + 1].TrimEnd('/');
+
+        var competitors = "competitors/";
+        var competitorId = segments[competitorIdx + 1].TrimEnd('/');
+
+        var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionId}/{competitors}{competitorId}";
+        var uriString = $"{competitionCompetitorScoreRef.Scheme}://{competitionCompetitorScoreRef.Authority}{path}".TrimEnd('/');
+
+        return new Uri(uriString);
+    }
+
     public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)
     {
         if (competitionLeadersRef == null)

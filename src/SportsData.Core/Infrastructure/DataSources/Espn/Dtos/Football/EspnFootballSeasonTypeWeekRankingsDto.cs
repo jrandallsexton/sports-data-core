@@ -63,6 +63,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
 
     public class Groups
     {
+        // TODO: Change this to EspnLinkDto once I have time to ensure no breakages
         [JsonPropertyName("$ref")]
         public string Ref { get; set; }
     }
@@ -262,10 +263,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public string DisplayValue { get; set; }
     }
 
-    public class EspnFootballSeasonTypeWeekRankingsSeasonType
+    public class EspnFootballSeasonTypeWeekRankingsSeasonType : IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("id")]
         public string Id { get; set; }
@@ -331,10 +332,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football
         public List<EspnFootballSeasonTypeWeekRankingsSeasonTypesItem> Items { get; set; }
     }
 
-    public class EspnFootballSeasonTypeWeekRankingsSeasonTypesItemWeek
+    public class EspnFootballSeasonTypeWeekRankingsSeasonTypesItemWeek : IHasRef
     {
         [JsonPropertyName("$ref")]
-        public string Ref { get; set; }
+        public Uri Ref { get; set; }
 
         [JsonPropertyName("number")]
         public int Number { get; set; }

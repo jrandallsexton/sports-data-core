@@ -8,6 +8,7 @@ using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Images;
+using SportsData.Producer.Application.SeasonWeek;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -69,6 +70,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<ContestUpdateJob>();
 
             services.AddScoped<IContestOverviewService, ContestOverviewService>();
+
+            services.AddScoped<ISeasonWeekService, SeasonWeekService>();
 
             return services;
         }

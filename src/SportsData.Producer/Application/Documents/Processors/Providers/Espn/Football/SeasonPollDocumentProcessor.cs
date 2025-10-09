@@ -119,8 +119,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.SeasonTypeWeekRankings,
                     SourceDataProvider: SourceDataProvider.Espn,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
                 ));
             }
 

@@ -70,6 +70,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionProbability> CompetitionProbabilities { get; set; }
 
+        public DbSet<CompetitionSituation> CompetitionSituations { get; set; }
+
         public DbSet<CompetitionStatus> CompetitionStatuses { get; set; }
 
         public DbSet<CompetitionStatusExternalId> CompetitionStatusExternalIds { get; set; }
@@ -78,8 +80,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
         
 
-        public DbSet<Drive> Drives { get; set; }
-        public DbSet<DriveExternalId> DriveExternalIds { get; set; }
+        public DbSet<CompetitionDrive> Drives { get; set; }
+        public DbSet<CompetitionDriveExternalId> DriveExternalIds { get; set; }
 
         public DbSet<Franchise> Franchises { get; set; }
         public DbSet<FranchiseExternalId> FranchiseExternalIds { get; set; }
@@ -171,14 +173,16 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionProbability.EntityConfiguration());
 
+            modelBuilder.ApplyConfiguration(new CompetitionSituation.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionStatusExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new Drive.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new DriveExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseExternalId.EntityConfiguration());

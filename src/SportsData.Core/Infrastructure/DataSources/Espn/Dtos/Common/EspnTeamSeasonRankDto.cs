@@ -57,10 +57,10 @@ public class EspnTeamSeasonRankDto : IHasRef
     public EspnTeamSeasonRankDetail Rank { get; set; }
 }
 
-public class EspnTeamSeasonRankItem
+public class EspnTeamSeasonRankItem : IHasRef
 {
     [JsonPropertyName("$ref")]
-    public string Ref { get; set; }
+    public Uri Ref { get; set; }
 
     [JsonPropertyName("id")]
     public string Id { get; set; }
@@ -300,10 +300,10 @@ public class EspnTeamSeasonRankSeasonType : IHasRef
     public string Slug { get; set; }
 }
 
-public class EspnTeamSeasonRankSeasonTypeTypes
+public class EspnTeamSeasonRankSeasonTypeTypes : IHasRef
 {
     [JsonPropertyName("$ref")]
-    public string Ref { get; set; }
+    public Uri Ref { get; set; }
 
     [JsonPropertyName("count")]
     public int Count { get; set; }

@@ -100,8 +100,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 DocumentType: DocumentType.Athlete,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor,
-                BypassCache: command.AttemptCount > 1
+                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
             await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();

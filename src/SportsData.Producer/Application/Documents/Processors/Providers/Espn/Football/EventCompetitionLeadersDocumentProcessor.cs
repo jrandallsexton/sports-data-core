@@ -201,8 +201,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.AthleteSeason,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
                 ));
 
                 throw new ExternalDocumentNotSourcedException($"Missing AthleteSeason for ref {athleteDto.Ref}");

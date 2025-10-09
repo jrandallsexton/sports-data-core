@@ -178,7 +178,7 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                var finalScoringPlay = plays.Items
+                var finalScoringPlay = plays?.Items?
                     .Where(x => x.ScoringPlay)
                     .TakeLast(1)
                     .FirstOrDefault();
@@ -211,7 +211,7 @@ namespace SportsData.Producer.Application.Contests
                 }
 
                 contest.FinalizedUtc = DateTime.UtcNow; // TODO: Inject IProvideDateTimes
-                contest.EndDateUtc = plays.Items.Last().Wallclock;
+                contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
                 // were there odds on this game?
                 var odds = competition.Odds?.FirstOrDefault();

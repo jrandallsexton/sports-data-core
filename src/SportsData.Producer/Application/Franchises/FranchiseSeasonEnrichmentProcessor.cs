@@ -165,8 +165,7 @@ namespace SportsData.Producer.Application.Franchises
                 DocumentType: DocumentType.TeamSeason,
                 SourceDataProvider: SourceDataProvider.Espn,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor
             ));
             await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
             await _dataContext.SaveChangesAsync();

@@ -1,10 +1,9 @@
-﻿using MassTransit;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -147,12 +146,52 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             await _dataContext.Drives.AddAsync(entity);
             await _dataContext.SaveChangesAsync();
+
+            if (externalDto.Plays?.Items != null)
+            {
+                foreach (var play in externalDto.Plays.Items)
+                {
+                    var playIdentity = _externalRefIdentityGenerator.Generate(play.Ref);
+
+                    // if we have the play, link it to the drive
+                    var playEntity = await _dataContext.CompetitionPlays
+                        .FirstOrDefaultAsync(x => x.Id == playIdentity.CanonicalId);
+
+                    if (playEntity != null)
+                    {
+                        playEntity.DriveId = entity.Id;
+                    }
+                    else
+                    {
+                        // do we want to request sourcing?
+                        await _publishEndpoint.Publish(new DocumentRequested(
+                            Id: playIdentity.UrlHash,
+                            ParentId: competitionId.ToString(),
+                            Uri: new Uri(playIdentity.CleanUrl),
+                            Sport: command.Sport,
+                            SeasonYear: command.Season!.Value,
+                            DocumentType: DocumentType.Season,
+                            SourceDataProvider: SourceDataProvider.Espn,
+                            CorrelationId: command.CorrelationId,
+                            CausationId: CausationId.Producer.GroupSeasonDocumentProcessor,
+                            PropertyBag: new Dictionary<string, string>()
+                            {
+                                { "CompetitionDriveId", entity.Id.ToString()}
+                            }
+                        ));
+
+                        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    }
+
+                    await _dataContext.SaveChangesAsync();
+                }
+            }
         }
 
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
             object externalDto,
-            Drive entity)
+            CompetitionDrive entity)
         {
             // TODO: Implement update logic if necessary
             await Task.Delay(100);

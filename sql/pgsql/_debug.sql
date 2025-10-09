@@ -52,6 +52,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 -- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
 select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 --update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 -- FIX DEV - 07 OCT 2025

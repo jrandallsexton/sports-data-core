@@ -36,4 +36,6 @@ public class ProcessDocumentCommand(
     public Uri? OriginalUri { get; init; } = originalUri;
 
     public int AttemptCount { get; init; } = attemptCount;
+
+    public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
 }

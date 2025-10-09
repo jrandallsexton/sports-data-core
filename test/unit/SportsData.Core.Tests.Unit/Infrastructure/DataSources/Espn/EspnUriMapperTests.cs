@@ -262,5 +262,34 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
             result.Should().Be(expected);
         }
+
+        [Theory]
+        [InlineData(
+            // standard with query (your example)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171/scores/1?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171")]
+        [InlineData(
+            // no query
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171/scores/1",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171")]
+        [InlineData(
+            // mixed casing on segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401767736/Competitions/401767736/Competitors/171/Scores/1",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171")]
+        [InlineData(
+            // trailing slash + extra segments (ignored)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171/scores/1/stats/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401767736/competitions/401767736/competitors/171")]
+        public void CompetitionCompetitorScoreRefToCompetitionCompetitorRef_Should_Trim_To_CompetitionCompetitorUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionCompetitorScoreRefToCompetitionCompetitorRef(input);
+
+            result.Should().Be(expected);
+        }
     }
 }

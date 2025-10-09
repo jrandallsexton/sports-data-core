@@ -4,9 +4,9 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-public static class DriveExtensions
+public static class CompetitionDriveExtensions
 {
-    public static Drive AsEntity(
+    public static CompetitionDrive AsEntity(
         this EspnEventCompetitionDriveDto dto,
         Guid correlationId,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -19,7 +19,7 @@ public static class DriveExtensions
 
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-        return new Drive
+        return new CompetitionDrive
         {
             Id = identity.CanonicalId,
             CreatedUtc = DateTime.UtcNow,
@@ -62,9 +62,9 @@ public static class DriveExtensions
             TimeElapsedDisplay = dto.TimeElapsed?.DisplayValue,
             TimeElapsedValue = dto.TimeElapsed?.Value,
             Yards = dto.Yards,
-            ExternalIds = new List<DriveExternalId>
+            ExternalIds = new List<CompetitionDriveExternalId>
             {
-                new DriveExternalId
+                new CompetitionDriveExternalId
                 {
                     Id = Guid.NewGuid(),
                     Value = identity.UrlHash,

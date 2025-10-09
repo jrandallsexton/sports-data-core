@@ -58,5 +58,5 @@ public class EspnEventCompetitionDriveDto : IHasRef
     public EspnEventCompetitionDriveSourceDto Source { get; set; }
 
     [JsonPropertyName("plays")]
-    public EspnEventCompetitionPlaysDto Plays { get; set; }
+    public EspnEventCompetitionPlaysDto? Plays { get; set; }
 }

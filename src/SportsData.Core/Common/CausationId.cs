@@ -44,6 +44,7 @@ namespace SportsData.Core.Common
             public static Guid VenueCreatedDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001D");
             public static Guid VenueDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001E");
             public static Guid EventCompetitionPlayDocumentProcessor = new Guid("10000200-0000-0000-0000-00000000001E");
+            public static Guid EventCompetitionSituationDocumentProcessor = new Guid("10000400-0000-0000-0000-00000000001E");
         }
 
 

@@ -126,8 +126,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.SeasonTypeWeek,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
                     ));
 
                     await _dataContext.OutboxPings.AddAsync(new OutboxPing());
@@ -190,8 +189,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.TeamSeason,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
                     ));
                 }
 
@@ -257,8 +255,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.TeamSeason,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
             ));
         }
 

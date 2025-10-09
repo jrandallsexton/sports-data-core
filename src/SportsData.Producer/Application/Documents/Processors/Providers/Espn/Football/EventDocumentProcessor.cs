@@ -221,8 +221,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetition,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventDocumentProcessor
                 ));
             }
         }
@@ -283,8 +282,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.Venue,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.EventDocumentProcessor
                     ));
                 }
             }
@@ -410,8 +408,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetition,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventDocumentProcessor
                 ));
 
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());

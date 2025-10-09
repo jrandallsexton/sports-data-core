@@ -26,5 +26,5 @@ public class EspnEventCompetitionPlaysDto : IHasRef
     public int PageCount { get; set; }
 
     [JsonPropertyName("items")]
-    public List<EspnEventCompetitionPlayDto> Items { get; set; }
+    public List<EspnEventCompetitionPlayDto>? Items { get; set; }
 }

@@ -49,7 +49,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, Guid.NewGuid())
             .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Drives, new List<Drive>())
+            .With(x => x.Drives, new List<CompetitionDrive>())
             .Create();
         await FootballDataContext.Competitions.AddAsync(competition);
 
@@ -122,7 +122,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, Guid.NewGuid())
             .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Drives, new List<Drive>())
+            .With(x => x.Drives, new List<CompetitionDrive>())
             .Create();
         await FootballDataContext.Competitions.AddAsync(competition);
 
@@ -158,7 +158,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         await FootballDataContext.SaveChangesAsync();
 
         var correlationId = Guid.NewGuid();
-        var existingDrive = Fixture.Build<Drive>()
+        var existingDrive = Fixture.Build<CompetitionDrive>()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.Description, "Existing drive")
             .With(x => x.SequenceNumber, "1")
@@ -168,7 +168,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             .Create();
 
         var driveIdentity = generator.Generate(DriveUrl);
-        existingDrive.ExternalIds = new List<DriveExternalId>
+        existingDrive.ExternalIds = new List<CompetitionDriveExternalId>
         {
             new()
             {

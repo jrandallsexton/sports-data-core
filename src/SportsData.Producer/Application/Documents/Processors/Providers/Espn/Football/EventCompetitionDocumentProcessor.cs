@@ -236,8 +236,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionCompetitor,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
             }
         }
@@ -264,13 +263,31 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
         }
 
-        private static async Task ProcessSituation(
+        private async Task<bool> ProcessSituation(
             ProcessDocumentCommand command,
             EspnEventCompetitionDto externalDto,
             Competition competition)
         {
-            // TODO: Implement update logic if necessary
-            await Task.Delay(100);
+            if (externalDto.Situation?.Ref is not null)
+            {
+                var situationIdentity = _externalRefIdentityGenerator.Generate(externalDto.Situation.Ref);
+
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: situationIdentity.UrlHash,
+                    ParentId: competition.Id.ToString(),
+                    Uri: new Uri(situationIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionSituation,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+                ));
+
+                return true;
+            }
+
+            return false;
         }
 
         private async Task ProcessStatus(
@@ -293,8 +310,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionStatus,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -315,8 +331,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionOdds,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -337,8 +352,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionBroadcast,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -359,8 +373,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionPlay,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -381,8 +394,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionLeaders,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -428,8 +440,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionPrediction,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -450,8 +461,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionProbability,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -472,8 +482,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionPowerIndex,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -494,8 +503,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 DocumentType: DocumentType.EventCompetitionDrive,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                BypassCache: true
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
             ));
         }
 
@@ -529,25 +537,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 raiseEvents = true;
             }
 
-            if (dto.Situation?.Ref is not null)
-            {
-                var situationIdentity = _externalRefIdentityGenerator.Generate(dto.Situation.Ref);
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: situationIdentity.UrlHash,
-                    ParentId: competition.Id.ToString(),
-                    Uri: new Uri(situationIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionSituation,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
-                ));
-
-                raiseEvents = true;
-            }
+            raiseEvents = raiseEvents || await ProcessSituation(command, dto, competition);
 
             if (dto.Status?.Ref is not null)
             {
@@ -561,8 +551,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionStatus,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -581,8 +570,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionOdds,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
 
                 raiseEvents = true;
@@ -600,8 +588,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionBroadcast,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -618,8 +605,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionPlay,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -636,8 +622,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionLeaders,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -655,8 +640,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionPrediction,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -673,8 +657,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionProbability,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -691,8 +674,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionPowerIndex,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -709,8 +691,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     DocumentType: DocumentType.EventCompetitionDrive,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                    BypassCache: true
+                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 ));
                 raiseEvents = true;
             }
@@ -732,8 +713,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.EventCompetitionCompetitorScore,
                         SourceDataProvider: command.SourceDataProvider,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                     ));
                     raiseEvents = true;
                 }
@@ -752,8 +732,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.EventCompetitionCompetitorLineScore,
                         SourceDataProvider: command.SourceDataProvider,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                     ));
                     raiseEvents = true;
                 }
@@ -771,8 +750,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                         DocumentType: DocumentType.EventCompetitionCompetitorStatistics,
                         SourceDataProvider: command.SourceDataProvider,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                        BypassCache: true
+                        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                     ));
                     raiseEvents = true;
                 }
@@ -789,8 +767,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 //        DocumentType: DocumentType.EventCompetitionLeaders,
                 //        SourceDataProvider: command.SourceDataProvider,
                 //        CorrelationId: command.CorrelationId,
-                //        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor,
-                //        BypassCache: true
+                //        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
                 //    ));
                 //}
             }

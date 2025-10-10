@@ -15,7 +15,8 @@ public sealed class StatFormattingService : IStatFormattingService
     private sealed record CategoryConfig(
         Dictionary<string, string> FriendlyMap,
         HashSet<string> PercentKeys,
-        HashSet<string> PreferPerGameForCounts);
+        HashSet<string> PreferPerGameForCounts,
+        HashSet<string> LowerIsBetterKeys);
 
     // ===== Defensive ============================================================
     private static readonly CategoryConfig Defensive = new(
@@ -64,6 +65,12 @@ public sealed class StatFormattingService : IStatFormattingService
             "tackles","soloTackles","assistTackles","tacklesForLoss","sacks","qbHurries",
             "passesDefended","passesBrokenUp","interceptions","fumblesForced","fumblesRecovered",
             "defensiveTouchdowns","safeties"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Allowed/first downs: lower is better for defense
+            "thirdDownConvAllowedPct","redZoneAllowedPct","defensiveFirstDowns"
+            // Note: defensive interceptions are takeaways → higher is better, so omitted.
         }
     );
 
@@ -95,6 +102,11 @@ public sealed class StatFormattingService : IStatFormattingService
         PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase)
         {
             "firstDowns","penalties","turnovers","takeaways","giveaways","fumbles","fumblesLost"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Bad things for a team: fewer is better
+            "penalties","penaltyYards","turnovers","giveaways","fumbles","fumblesLost","totalPenalties","totalPenaltyYards"
         }
     );
 
@@ -120,7 +132,6 @@ public sealed class StatFormattingService : IStatFormattingService
             ["extraPointPct"] = "XP %",
             ["extraPoints"] = "XP Made",              // alias
             ["extraPointsBlocked"] = "XP Blocked",
-            ["twoPointKickConvs"] = "2-Pt Kick (Made)",     // rare/alias
 
             // Kickoffs
             ["kickoffs"] = "Kickoffs",
@@ -137,14 +148,20 @@ public sealed class StatFormattingService : IStatFormattingService
         },
         PercentKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-        "fieldGoalPct","extraPointPct"
+            "fieldGoalPct","extraPointPct"
         },
         PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase)
         {
-        "fieldGoalsMade","fieldGoalsAttempted",
-        "extraPointsMade","extraPointsAttempted",
-        "kickoffs","kickoffTouchbacks","kickoffOutOfBounds",
-        "onsideKickAttempts","onsideKickRecoveries"
+            "fieldGoalsMade","fieldGoalsAttempted",
+            "extraPointsMade","extraPointsAttempted",
+            "kickoffs","kickoffTouchbacks","kickoffOutOfBounds",
+            "onsideKickAttempts","onsideKickRecoveries"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Negative outcomes for kickers/kickoffs
+            "extraPointsBlocked","kickoffOutOfBounds"
+            // (Kickoff touchbacks are generally good → not included.)
         }
     );
 
@@ -168,6 +185,10 @@ public sealed class StatFormattingService : IStatFormattingService
         PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase)
         {
             "havocPlays","explosivePlays","pointsOffTurnovers"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // None by default; these are generally positive when higher.
         }
     );
 
@@ -177,7 +198,7 @@ public sealed class StatFormattingService : IStatFormattingService
         {
             ["ESPNQBRating"] = "Team QBR (ESPN)",
             ["QBRating"] = "Passer Rating",
-            ["avgGain"] = "Yards/Attempt",
+            ["avgGain"] = "Avg Gain",
             ["yardsPerPassAttempt"] = "Yards/Attempt",
             ["netYardsPerPassAttempt"] = "Net Yards/Att",
             ["yardsPerCompletion"] = "Yards/Completion",
@@ -217,6 +238,11 @@ public sealed class StatFormattingService : IStatFormattingService
         {
             "completions","passingAttempts","interceptions","sacks",
             "passingTouchdowns","totalPoints","totalTouchdowns"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Offensive negatives
+            "interceptions","interceptionPct","sacks","sackYardsLost","drops","dropPct"
         }
     );
 
@@ -230,13 +256,13 @@ public sealed class StatFormattingService : IStatFormattingService
 
             // Distance / averages
             ["puntAverage"] = "Punt Avg",
-            ["grossPuntAverage"] = "Punt Avg",              // alias
+            ["grossPuntAverage"] = "Punt Avg",          // alias
             ["netPuntAverage"] = "Net Punt Avg",
-            ["avgPuntDistance"] = "Punt Avg",              // alias
+            ["avgPuntDistance"] = "Punt Avg",           // alias
 
             // Yardage
             ["puntYards"] = "Punt Yards",
-            ["grossPuntYards"] = "Punt Yards",            // alias
+            ["grossPuntYards"] = "Punt Yards",          // alias
             ["netPuntYards"] = "Net Punt Yards",
 
             // Long / hang time
@@ -245,14 +271,14 @@ public sealed class StatFormattingService : IStatFormattingService
 
             // Placement
             ["puntsInside20"] = "Inside 20",
-            ["puntsInsideTwenty"] = "Inside 20",             // alias
+            ["puntsInsideTwenty"] = "Inside 20",        // alias
             ["puntsDowned"] = "Downed",
             ["fairCatches"] = "Fair Catches",
-            ["puntsFairCaught"] = "Fair Catches",          // alias
+            ["puntsFairCaught"] = "Fair Catches",       // alias
 
             // Outcomes
             ["touchbacks"] = "Touchbacks",
-            ["puntTouchbacks"] = "Touchbacks",            // alias
+            ["puntTouchbacks"] = "Touchbacks",          // alias
             ["blockedPunts"] = "Blocked Punts",
 
             // Misc
@@ -264,6 +290,11 @@ public sealed class StatFormattingService : IStatFormattingService
         {
             "punts","puntAttempts","puntsInside20","puntsInsideTwenty","puntsDowned",
             "fairCatches","puntsFairCaught","touchbacks","puntTouchbacks","blockedPunts"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Negative punting outcomes
+            "touchbacks","puntTouchbacks","blockedPunts"
         }
     );
 
@@ -279,11 +310,11 @@ public sealed class StatFormattingService : IStatFormattingService
             ["receivingYards"] = "Rec Yards",
             ["receivingYardsPerGame"] = "Rec Yds/G",
             ["yardsPerReception"] = "Yards/Reception",
-            ["yardsPerCatch"] = "Yards/Reception",   // alias seen in some feeds
+            ["yardsPerCatch"] = "Yards/Reception",   // alias
 
             // YAC / Air
             ["receivingYardsAfterCatch"] = "YAC (team)",
-            ["yardsAfterCatch"] = "YAC (team)",        // alias
+            ["yardsAfterCatch"] = "YAC (team)",      // alias
             ["receivingYardsAtCatch"] = "Air Yds (team)",
             ["yardsAtCatch"] = "Air Yds (team)",     // alias
 
@@ -301,17 +332,21 @@ public sealed class StatFormattingService : IStatFormattingService
             ["dropPct"] = "Drop %",
             ["drops"] = "Drops",
 
-            // Misc sometimes grouped under receiving by feeds
+            // Misc
             ["miscYards"] = "Misc Yds",
             ["teamGamesPlayed"] = "Games"
         },
         PercentKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-        "catchPct","receptionPct","dropPct"
+            "catchPct","receptionPct","dropPct"
         },
         PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase)
         {
-        "receptions","targets","receivingTouchdowns"
+            "receptions","targets","receivingTouchdowns"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            "drops","dropPct"
         }
     );
 
@@ -347,6 +382,10 @@ public sealed class StatFormattingService : IStatFormattingService
         {
             "kickReturns","kickReturnTouchdowns","puntReturns","puntReturnTouchdowns",
             "puntReturnFairCatches","returnFumbles","returnFumblesLost"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            "returnFumbles","returnFumblesLost"
         }
     );
 
@@ -388,6 +427,10 @@ public sealed class StatFormattingService : IStatFormattingService
         PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase)
         {
             "rushingAttempts","rushingTouchdowns","totalPoints","totalTouchdowns"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            "rushingFumbles","rushingFumblesLost","stuffs","stuffYardsLost"
         }
     );
 
@@ -412,22 +455,26 @@ public sealed class StatFormattingService : IStatFormattingService
         {
             "totalTouchdowns","passingTouchdowns","rushingTouchdowns",
             "receivingTouchdowns","defensiveTouchdowns","specialTeamsTouchdowns","twoPointConvs"
+        },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
+        {
+            // None: these are all generally positive when higher.
         }
     );
 
-    // Add to the registry:
+    // Registry
     private static readonly Dictionary<string, CategoryConfig> Categories = new(StringComparer.OrdinalIgnoreCase)
     {
         ["passing"] = Passing,
         ["rushing"] = Rushing,
-        ["receiving"] = Receiving,     // if added earlier
-        ["punting"] = Punting,       // if added earlier
-        ["kicking"] = Kicking,       // if added earlier
-        ["defensive"] = Defensive,     // ← NEW
-        ["returning"] = Returning,     // ← NEW
-        ["general"] = General,       // ← NEW
-        ["miscellaneous"] = Miscellaneous, // ← NEW
-        ["scoring"] = Scoring        // ← NEW
+        ["receiving"] = Receiving,
+        ["punting"] = Punting,
+        ["kicking"] = Kicking,
+        ["defensive"] = Defensive,
+        ["returning"] = Returning,
+        ["general"] = General,
+        ["miscellaneous"] = Miscellaneous,
+        ["scoring"] = Scoring
     };
 
     // ---- public API ---------------------------------------------------------
@@ -447,6 +494,9 @@ public sealed class StatFormattingService : IStatFormattingService
 
                 e.StatisticKey = rawKey;
                 e.StatisticValue = cfg.FriendlyMap.TryGetValue(rawKey, out var label) ? label : HumanizeKey(rawKey);
+
+                // NEW: set polarity for TeamComparison logic
+                e.IsNegativeAttribute = cfg.LowerIsBetterKeys.Contains(rawKey);
 
                 e.DisplayValue = FormatValue(
                     displayValue: e.DisplayValue,
@@ -471,8 +521,8 @@ public sealed class StatFormattingService : IStatFormattingService
         string? displayValue,
         string? perGameDisplayValue,
         string rawKey,
-        HashSet<string> percentKeys,
-        HashSet<string> preferPerGame)
+        ISet<string> percentKeys,
+        ISet<string> preferPerGame)
     {
         var chosen = (preferPerGame.Contains(rawKey) && !string.IsNullOrWhiteSpace(perGameDisplayValue))
             ? perGameDisplayValue
@@ -480,18 +530,26 @@ public sealed class StatFormattingService : IStatFormattingService
 
         if (string.IsNullOrWhiteSpace(chosen)) return "—";
 
-        if (percentKeys.Contains(rawKey))
-            return AppendPercent(chosen);
+        // If percent key, handle as percent (supports both 0–1 and 0–100 inputs)
+        bool isPercent = percentKeys.Contains(rawKey);
 
-        if (decimal.TryParse(chosen, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+        if (decimal.TryParse(chosen.Trim(), NumberStyles.Float | NumberStyles.AllowThousands,
+                CultureInfo.InvariantCulture, out var d))
         {
-            var isIntLike = Math.Abs(d % 1) < 0.0001m;
+            if (isPercent)
+            {
+                var pct = d <= 1m ? d * 100m : d;
+                return pct.ToString("0.#", CultureInfo.InvariantCulture) + "%"; // up to 1 decimal
+            }
+
+            var isIntLike = decimal.Remainder(d, 1m) == 0m;
             return isIntLike
-                ? string.Format(CultureInfo.InvariantCulture, "{0:N0}", d)
-                : d.ToString("0.1", CultureInfo.InvariantCulture);
+                ? d.ToString("0", CultureInfo.InvariantCulture)     // no thousands separators
+                : d.ToString("0.#", CultureInfo.InvariantCulture);  // up to 1 decimal
         }
 
-        return chosen;
+        // Fallback: treat as text; if percent, just append %
+        return isPercent ? chosen.Trim() + "%" : chosen.Trim();
     }
 
     private static string AppendPercent(string s)
@@ -504,10 +562,13 @@ public sealed class StatFormattingService : IStatFormattingService
     private static string HumanizeKey(string key)
     {
         var words = System.Text.RegularExpressions.Regex.Replace(key, "(?<=[a-z])([A-Z])", " $1");
+        words = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(words);
         words = words.Replace("Pct", " %")
                      .Replace("Yds", " Yds")
                      .Replace("Td", " TD")
+                     .Replace("Touchdowns", " TDs")
+                     .Replace("Touchdown", " TD")
                      .Replace("Int", " INT");
-        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(words);
+        return words;
     }
 }

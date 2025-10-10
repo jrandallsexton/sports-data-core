@@ -231,4 +231,13 @@ public class LeagueController : ApiControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("{id}/previews/{weekId}/generate")]
+    public async Task<IActionResult> GenerateMatchupPreviews(
+        [FromRoute] Guid id,
+        [FromRoute] int weekId)
+    {
+        var correlationId = await _iLeagueService.GenerateLeagueWeekPreviews(id, weekId);
+        return Accepted(new { correlationId });
+    }
 }

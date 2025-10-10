@@ -69,6 +69,18 @@ select * from public."CompetitionCompetitorStatisticCategories"
 where "CompetitionCompetitorStatisticId" = '78ea9a07-9bfb-0397-caeb-be0c26d1ee50'
 order by "Name"
 
+    SELECT fssc."Name" AS "Category",
+        fss."Name" AS "StatisticKey",
+        fss."Name" AS "StatisticValue",
+        fss."DisplayValue",
+        fss."PerGameValue",
+        fss."PerGameDisplayValue",
+        fss."Rank"
+    from public."FranchiseSeasonStatisticCategory" fssc
+    inner join public."FranchiseSeasonStatistic" fss on fss."FranchiseSeasonStatisticCategoryId" = fssc."Id"
+    where fssc."FranchiseSeasonId" = '2bb15a4f-652a-1a5f-3060-dcc3355bac93'
+    order by "Category", "StatisticKey"
+
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '0c5d0ca5-802c-4087-9bcf-75b85e90383a' order by "Name"
 
 select * from public."CompetitionOdds" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e'

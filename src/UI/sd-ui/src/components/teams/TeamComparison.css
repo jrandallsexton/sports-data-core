@@ -247,15 +247,10 @@
   flex: 1 1 0;
   text-align: left;
   font-weight: 600;
-  background: #2a2d33;
   border-radius: 6px;
   padding: 0.4rem 0.7rem;
 }
 
-.stat-value.favored {
-  background: #61dafb;
-  color: #23272f;
-}
 
 .close-btn {
   margin: 0 auto;

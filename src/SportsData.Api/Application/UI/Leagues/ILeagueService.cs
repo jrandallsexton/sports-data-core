@@ -25,4 +25,6 @@ public interface ILeagueService
     Task<LeagueWeekOverviewDto> GetLeagueWeekOverview(
         Guid leagueId,
         int week);
+
+    Task<Guid> GenerateLeagueWeekPreviews(Guid leagueId, int weekId);
 }

@@ -416,6 +416,8 @@ function MatchupCard({
           onClose={handleCloseComparison}
           teamA={comparisonData.teamA}
           teamB={comparisonData.teamB}
+          teamAColor={matchup.awayColor}
+          teamBColor={matchup.homeColor}
         />
       )
     )}

@@ -13,3 +13,5 @@ FROM pg_stat_activity GROUP BY datname ORDER BY conns DESC;
 -- By user
 SELECT usename, count(*) AS conns
 FROM pg_stat_activity GROUP BY usename ORDER BY conns DESC;
+
+

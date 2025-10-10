@@ -15,6 +15,7 @@
             public double? PerGameValue { get; set; }
             public string? PerGameDisplayValue { get; set; }
             public int? Rank { get; set; }
+            public bool IsNegativeAttribute { get; set; }
         }
     }
 }

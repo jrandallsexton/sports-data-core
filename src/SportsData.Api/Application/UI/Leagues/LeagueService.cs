@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
@@ -10,6 +11,7 @@ using SportsData.Api.Application.UI.Picks;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.UI.Leagues
 {
@@ -21,6 +23,7 @@ namespace SportsData.Api.Application.UI.Leagues
         private readonly ICreateLeagueCommandHandler _handler;
         private readonly IJoinLeagueCommandHandler _joinLeagueHandler;
         private readonly IPickService _pickService;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public LeagueService(
             ILogger<LeagueService> logger,
@@ -28,7 +31,8 @@ namespace SportsData.Api.Application.UI.Leagues
             IProvideCanonicalData canonicalDataProvider,
             ICreateLeagueCommandHandler handler,
             IJoinLeagueCommandHandler joinLeagueHandler,
-            IPickService pickService)
+            IPickService pickService,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dbContext = dbContext;
@@ -36,6 +40,7 @@ namespace SportsData.Api.Application.UI.Leagues
             _handler = handler;
             _joinLeagueHandler = joinLeagueHandler;
             _pickService = pickService;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task<Guid> CreateAsync(
@@ -186,6 +191,7 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
                     matchup.AwayLogoUri = canonical.AwayLogoUri;
                     matchup.AwaySlug = canonical.AwaySlug;
+                    matchup.AwayColor = canonical.AwayColor;
                     matchup.AwayWins = canonical.AwayWins;
                     matchup.AwayLosses = canonical.AwayLosses;
                     matchup.AwayConferenceWins = canonical.AwayConferenceWins;
@@ -198,6 +204,7 @@ namespace SportsData.Api.Application.UI.Leagues
                     matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
                     matchup.HomeLogoUri = canonical.HomeLogoUri;
                     matchup.HomeSlug = canonical.HomeSlug;
+                    matchup.HomeColor = canonical.HomeColor;
                     matchup.HomeWins = canonical.HomeWins;
                     matchup.HomeLosses = canonical.HomeLosses;
                     matchup.HomeConferenceWins = canonical.HomeConferenceWins;
@@ -407,6 +414,33 @@ namespace SportsData.Api.Application.UI.Leagues
             }
 
             return result;
+        }
+
+        public async Task<Guid> GenerateLeagueWeekPreviews(Guid leagueId, int weekNumber)
+        {
+            var contestIds = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(x => x.GroupId == leagueId && x.SeasonWeek == weekNumber)
+                .Select(x => x.ContestId)
+                .ToListAsync();
+
+            foreach (var contestId in contestIds)
+            {
+                var previewExists = await _dbContext.MatchupPreviews
+                    .Where(x => x.ContestId == contestId && x.RejectedUtc == null)
+                    .AnyAsync();
+
+                if (previewExists)
+                    continue;
+
+                var cmd = new GenerateMatchupPreviewsCommand
+                {
+                    ContestId = contestId
+                };
+                _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
+            }
+
+            return leagueId;
         }
     }
 }

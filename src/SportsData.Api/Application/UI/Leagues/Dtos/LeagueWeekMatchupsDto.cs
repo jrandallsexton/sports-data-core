@@ -26,6 +26,7 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public Guid AwayFranchiseSeasonId { get; set; }
             public string AwayLogoUri { get; set; } = null!;
             public string AwaySlug { get; set; } = default!;
+            public string AwayColor { get; set; } = default!;
             public int? AwayRank { get; set; }
             public int AwayWins { get; set; }
             public int AwayLosses { get; set; }
@@ -37,6 +38,7 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public Guid HomeFranchiseSeasonId { get; set; }
             public string HomeLogoUri { get; set; } = null!;
             public string HomeSlug { get; set; } = default!;
+            public string HomeColor { get; set; } = default!;
             public int? HomeRank { get; set; }
             public int HomeWins { get; set; }
             public int HomeLosses { get; set; }

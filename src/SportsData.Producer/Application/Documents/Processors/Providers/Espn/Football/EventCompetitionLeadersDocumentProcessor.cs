@@ -176,19 +176,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (cache.TryGetValue(key, out var cachedId))
                 return cachedId;
 
-            var resolvedId = await _dataContext.TryResolveFromDtoRefAsync(
-                athleteDto,
-                command.SourceDataProvider,
-                () => _dataContext.AthleteSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger
-            );
+            var athleteSeasonIdentity = _externalIdentityGenerator.Generate(athleteDto.Ref);
 
-            if (resolvedId is null)
+            var athleteSeason = await _dataContext.AthleteSeasons
+                .Include(x => x.ExternalIds)
+                .Where(s => s.ExternalIds.Any(e =>
+                    e.Provider == command.SourceDataProvider &&
+                    e.Value == athleteSeasonIdentity.UrlHash))
+                .FirstOrDefaultAsync();
+
+            if (athleteSeason is null)
             {
                 var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
                 var athleteIdentity = _externalIdentityGenerator.Generate(athleteRef);
-
-                var athleteSeasonIdentity = _externalIdentityGenerator.Generate(athleteDto.Ref);
 
                 _logger.LogWarning("AthleteSeason not found for hash {Hash}, requesting source.", athleteSeasonIdentity.UrlHash);
 
@@ -207,8 +207,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new ExternalDocumentNotSourcedException($"Missing AthleteSeason for ref {athleteDto.Ref}");
             }
 
-            cache[key] = resolvedId.Value;
-            return resolvedId.Value;
+            cache[key] = athleteSeason.Id;
+            return athleteSeason.Id;
         }
 
         private async Task<Guid> ResolveFranchiseSeasonIdAsync(

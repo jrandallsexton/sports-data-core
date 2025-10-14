@@ -11,6 +11,7 @@
         Scheduled = 6,
         Suspended = 7,
         Final = 8,
-        InProgress = 9
+        InProgress = 9,
+        Halftime = 10
     }
 }

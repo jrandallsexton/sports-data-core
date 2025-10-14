@@ -170,7 +170,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                             Uri: new Uri(playIdentity.CleanUrl),
                             Sport: command.Sport,
                             SeasonYear: command.Season!.Value,
-                            DocumentType: DocumentType.Season,
+                            DocumentType: DocumentType.EventCompetitionPlay,
                             SourceDataProvider: SourceDataProvider.Espn,
                             CorrelationId: command.CorrelationId,
                             CausationId: CausationId.Producer.GroupSeasonDocumentProcessor,

@@ -14,4 +14,4 @@ FROM pg_stat_activity GROUP BY datname ORDER BY conns DESC;
 SELECT usename, count(*) AS conns
 FROM pg_stat_activity GROUP BY usename ORDER BY conns DESC;
 
-
+SELECT pg_size_pretty(pg_database_size(datname)) AS size, datname FROM pg_database ORDER BY pg_database_size(datname) DESC;

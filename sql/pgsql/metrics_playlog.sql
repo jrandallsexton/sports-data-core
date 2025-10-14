@@ -20,8 +20,16 @@
     inner join public."Contest" c on c."Id" = co."ContestId"
     inner join public."FranchiseSeason" fs on fs."Id" = cp."StartTeamFranchiseSeasonId"
     inner join public."Franchise" f on f."Id" = fs."FranchiseId"
-    where co."ContestId" = 'b6cde160-f48d-9d51-784b-56bf4adb990a'
+    where co."ContestId" = '37b87b09-3599-2e50-1f49-790d7d3c69d5'
     order by cp."SequenceNumber"
+
+
+    select * from public."CompetitionPlay"
+    where "CompetitionId" = '37b87b09-3599-2e50-1f49-790d7d3c69d5' and "StartTeamFranchiseSeasonId" != "TeamFranchiseSeasonId"
+    and "Type" != 12 and "Type" != 52 and "Type" != 53
+    order by "SequenceNumber"
+
+    
 
 --     WITH base AS (
 --   SELECT

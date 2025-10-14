@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Infrastructure.Data.Common
 {
@@ -26,6 +27,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CoachRecordStat> CoachRecordStats { get; set; }
 
         public DbSet<CoachSeason> CoachSeasons { get; set; }
+
+        public DbSet<CompetitionMetric> CompetitionMetrics { get; set; }
 
         public DbSet<Competition> Competitions { get; set; }
 

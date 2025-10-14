@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
 {
-    public class CompetitionMetric
+    public class CompetitionMetric : CanonicalEntityBase<Guid>
     {
         public Guid CompetitionId { get; set; }
 
@@ -18,6 +19,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
         public decimal PointsPerDrive { get; set; }
         public decimal ThirdFourthRate { get; set; }
         public decimal? RzTdRate { get; set; }
+        public decimal? RzScoreRate { get; set; }
 
         // Defense (opponent perspective)
         public decimal OppYpp { get; set; }
@@ -26,6 +28,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
         public decimal OppPointsPerDrive { get; set; }
         public decimal OppThirdFourthRate { get; set; }
         public decimal? OppRzTdRate { get; set; }
+        public decimal? OppScoreTdRate { get; set; }
 
         // ST / Discipline
         public decimal NetPunt { get; set; }

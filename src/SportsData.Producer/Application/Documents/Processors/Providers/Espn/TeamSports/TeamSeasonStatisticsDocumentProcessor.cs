@@ -51,6 +51,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
                 }
 
                 var dto = command.Document.FromJson<EspnTeamSeasonStatisticsDto>();
+
+                // we are going to need to check the number of games played to ensure we do not overwrite the latest stats with an older snapshot
+
+
                 if (dto?.Splits?.Categories == null || dto.Splits.Categories.Count == 0)
                 {
                     _logger.LogWarning("No categories found in document for FranchiseSeason {Id}", franchiseSeasonId);

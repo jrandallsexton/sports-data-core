@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -51,11 +52,14 @@ namespace SportsData.Producer.Application.Competitions
 
             var homeMetric = new CompetitionMetric();
             homeMetric.Ypp = CalculateYpp(homeFranchiseSeasonId, plays);
+
+            throw new NotImplementedByDesignException();
         }
 
         private decimal CalculateYpp(Guid franchiseSeasonId, List<CompetitionPlay> plays)
         {
             // TODO: Implement Yards Per Play calculation logic
+            throw new NotImplementedByDesignException();
         }
     }
 }

@@ -158,10 +158,10 @@ namespace SportsData.Core.DependencyInjection
 
             services.AddHangfireServer(serverOptions =>
             {
-                // https://codeopinion.com/scaling-hangfire-process-more-jobs-concurrently/
-                serverOptions.WorkerCount = maxWorkers ?? Environment.ProcessorCount * 2;
-                
+                // Use maxWorkers if specified, otherwise use the higher value between 20 and processor count * 2
+                serverOptions.WorkerCount = maxWorkers ?? Math.Max(20, Environment.ProcessorCount * 2);
             });
+            
             return services;
         }
 

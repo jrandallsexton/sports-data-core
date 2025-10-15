@@ -10,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -109,11 +110,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventDto externalDto,
             int seasonYear)
         {
-            var seasonPhaseId = await _dataContext.TryResolveFromDtoRefAsync(
+            var seasonPhaseId = await _dataContext.ResolveIdAsync<
+                SeasonPhase, SeasonPhaseExternalId>(
                 externalDto.SeasonType,
                 command.SourceDataProvider,
-                () => _dataContext.SeasonPhases.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.SeasonPhases,
+                externalIdsNav: "ExternalIds",
+                key: sp => sp.Id);
 
             if (seasonPhaseId is null)
             {
@@ -259,11 +262,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (venue != null)
             {
                 // Resolve VenueId via SourceUrlHash
-                var venueId = await _dataContext.TryResolveFromDtoRefAsync(
+                var venueId = await _dataContext.ResolveIdAsync<
+                    Venue, VenueExternalId>(
                     venue,
                     command.SourceDataProvider,
-                    () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-                    _logger);
+                    () => _dataContext.Venues,
+                    externalIdsNav: "ExternalIds",
+                    key: v => v.Id);
 
                 if (venueId != null)
                 {
@@ -298,11 +303,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "home");
 
-            var homeTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var homeTeamFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 homeTeam.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
             if (homeTeamFranchiseSeasonId == null)
             {
@@ -333,11 +340,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 .Competitions.First()
                 .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "away");
 
-            var awayTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var awayTeamFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 awayTeam.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
             if (awayTeamFranchiseSeasonId == null)
             {

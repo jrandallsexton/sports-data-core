@@ -73,17 +73,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var competitionId = await GetCompetitionId(command);
 
-            var startFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 externalDto.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
-            var endFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var endFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 externalDto.EndTeam,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var entity = await _dataContext.Drives

@@ -136,11 +136,13 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (dto.Venue?.Ref is not null)
         {
-            var venueId = await _dataContext.TryResolveFromDtoRefAsync(
+            var venueId = await _dataContext.ResolveIdAsync<
+                Venue, VenueExternalId>(
                 dto.Venue,
                 command.SourceDataProvider,
-                () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.Venues,
+                externalIdsNav: "ExternalIds",
+                key: v => v.Id);
 
             if (venueId != null)
             {

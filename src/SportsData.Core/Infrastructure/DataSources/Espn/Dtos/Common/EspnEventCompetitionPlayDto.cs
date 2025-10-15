@@ -104,10 +104,16 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public DateTime Modified { get; set; }
 
         /// <summary>
-        /// FranchiseSeason Id of the team that made the play
+        /// team that started the play
         /// </summary>
         [JsonPropertyName("team")]
         public EspnLinkDto Team { get; set; }
+
+        /// <summary>
+        /// team that had possession at the end of the play
+        /// </summary>
+        [JsonPropertyName("endTeam")]
+        public EspnLinkDto EndTeam { get; set; }
 
         /// <summary>
         /// Athletes involved in the play
@@ -151,10 +157,25 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("statYardage")]
         public int StatYardage { get; set; }
 
+        [JsonPropertyName("teamParticipants")]
+        public List<TeamParticipant> TeamParticipants { get; set; }
+
         [JsonPropertyName("scoringType")]
         public EspnEventCompetitionPlayScoringTypeDto ScoringType { get; set; }
 
         [JsonPropertyName("pointAfterAttempt")]
         public EspnEventCompetitionPlayPointAfterAttemptDto PointAfterAttempt { get; set; }
+    }
+
+    public class TeamParticipant
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        [JsonPropertyName("order")]
+        public int Order { get; set; }
+
+        [JsonPropertyName("team")]
+        public EspnLinkDto Team { get; set; }
     }
 }

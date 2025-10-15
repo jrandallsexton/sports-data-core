@@ -89,11 +89,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
 
             // Resolve FranchiseSeasonId from Team ref
-            var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 dto.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
             if (franchiseSeasonId is null)
             {

@@ -119,11 +119,14 @@ public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (dto.Parent is not null)
         {
-            parentId = await _dataContext.TryResolveFromDtoRefAsync(
+            parentId = await _dataContext.ResolveIdAsync<
+                AthletePosition, AthletePositionExternalId>(
                 dto.Parent,
                 command.SourceDataProvider,
-                () => _dataContext.AthletePositions.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.AthletePositions,
+                externalIdsNav: "ExternalIds",
+                key: p => p.Id,
+                CancellationToken.None);
 
             if (parentId is null)
             {

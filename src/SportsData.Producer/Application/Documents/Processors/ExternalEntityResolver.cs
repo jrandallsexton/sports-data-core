@@ -1,55 +1,94 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
 
-using SportsData.Core.Common;
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Common; // SourceDataProvider
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
-using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts; // IHasRef
 
-namespace SportsData.Producer.Application.Documents.Processors;
+using SDExternalId = SportsData.Producer.Infrastructure.Data.Common.ExternalId;
 
-public static class ExternalEntityResolver
+public static class ExternalEntityResolverExtensions
 {
-    public static async Task<Guid?> TryResolveEntityIdAsync<TEntity>(
-        this DbContext db,
-        Uri refUrl,
-        SourceDataProvider provider,
-        Func<IQueryable<TEntity>> querySelector,
-        Func<TEntity, IEnumerable<ExternalId>> externalIdsSelector,
-        ILogger? logger) where TEntity : class
-    {
-        var urlHash = HashProvider.GenerateHashFromUri(refUrl);
-
-        var entities = await querySelector().ToListAsync();
-
-        var entity = entities.FirstOrDefault(e =>
-            externalIdsSelector(e).Any(x =>
-                x.Provider == provider &&
-                x.SourceUrlHash == urlHash));
-
-        if (entity != null)
-            return (Guid?)entity.GetType().GetProperty("Id")?.GetValue(entity);
-
-        logger?.LogInformation("Could not resolve {Entity} from ref: {Ref}", typeof(TEntity).Name, refUrl);
-        return null;
-    }
-
-    public static async Task<Guid?> TryResolveFromDtoRefAsync<TEntity>(
+    /// <summary>
+    /// Single resolve: dtoRef -> Guid?
+    /// Pushes filter to SQL via EXISTS on the ExternalIds navigation.
+    /// </summary>
+    public static Task<Guid?> ResolveIdAsync<TEntity, TExternalId>(
         this DbContext db,
         IHasRef dtoRef,
         SourceDataProvider provider,
-        Func<IQueryable<TEntity>> querySelector,
-        ILogger? logger)
-        where TEntity : class, IHasExternalIds
+        Func<IQueryable<TEntity>> set,             // e.g. () => db.Set<TEntity>()
+        string externalIdsNav = "ExternalIds",     // your nav name on TEntity
+        Expression<Func<TEntity, Guid>>? key = null,
+        CancellationToken ct = default)
+        where TEntity : class
+        where TExternalId : SDExternalId
     {
-        if (dtoRef?.Ref is null)
-            return null;
+        if (dtoRef?.Ref is null) return Task.FromResult<Guid?>(null);
+        var hash = HashProvider.GenerateHashFromUri(dtoRef.Ref);
+        return db.ResolveIdByHashAsync<TEntity, TExternalId>(hash, provider, set, externalIdsNav, key, ct);
+    }
 
-        return await db.TryResolveEntityIdAsync(
-            dtoRef.Ref,
-            provider,
-            querySelector,
-            entity => entity.GetExternalIds(),
-            logger);
+    /// <summary>
+    /// Batch resolve: many refs -> { hash -> Guid } in one round-trip.
+    /// Uses entity's "Id" as the key (no keySelector to keep it translatable).
+    /// </summary>
+    public static async Task<Dictionary<string, Guid>> ResolveIdsAsync<TEntity, TExternalId>(
+        this DbContext db,
+        IEnumerable<IHasRef> dtoRefs,
+        SourceDataProvider provider,
+        Func<IQueryable<TEntity>> set,
+        string externalIdsNav = "ExternalIds",
+        CancellationToken ct = default)
+        where TEntity : class
+        where TExternalId : SDExternalId
+    {
+        var hashes = dtoRefs
+            .Where(r => r?.Ref != null)
+            .Select(r => HashProvider.GenerateHashFromUri(r!.Ref))
+            .Distinct()
+            .ToArray();
+
+        if (hashes.Length == 0)
+            return new Dictionary<string, Guid>();
+
+        // We assume a Guid primary key named "Id".
+        Expression<Func<TEntity, Guid>> keySel = e => EF.Property<Guid>(e, "Id");
+
+        return await set().AsNoTracking()
+            .Where(e =>
+                EF.Property<IEnumerable<TExternalId>>(e, externalIdsNav)
+                  .Any(x => x.Provider == provider && hashes.Contains(x.SourceUrlHash)))
+            .SelectMany(e =>
+                EF.Property<IEnumerable<TExternalId>>(e, externalIdsNav)
+                  .Where(x => x.Provider == provider && hashes.Contains(x.SourceUrlHash))
+                  .Select(x => new { x.SourceUrlHash, Id = EF.Property<Guid>(e, "Id") }))
+            .ToDictionaryAsync(k => k.SourceUrlHash, v => v.Id, ct);
+    }
+
+    // ---- private core (hash path) ----
+
+    private static async Task<Guid?> ResolveIdByHashAsync<TEntity, TExternalId>(
+        this DbContext db,
+        string hash,
+        SourceDataProvider provider,
+        Func<IQueryable<TEntity>> set,
+        string externalIdsNav,
+        Expression<Func<TEntity, Guid>>? key,
+        CancellationToken ct)
+        where TEntity : class
+        where TExternalId : SDExternalId
+    {
+        var keySel = key ?? (e => EF.Property<Guid>(e, "Id"));
+
+        var id = await set().AsNoTracking()
+            .Where(e =>
+                EF.Property<IEnumerable<TExternalId>>(e, externalIdsNav)
+                  .Any(x => x.Provider == provider && x.SourceUrlHash == hash))
+            .Select(keySel)
+            .SingleOrDefaultAsync(ct);
+
+        return id == Guid.Empty ? (Guid?)null : id;
     }
 }

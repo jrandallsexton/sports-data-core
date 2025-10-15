@@ -12,8 +12,9 @@ public static class CompetitionPlayExtensions
         Guid correlationId,
         Guid competitionId,
         Guid? driveId,
-        Guid teamFranchiseSeasonId,
-        Guid? startTeamFranchiseSeasonId = null)
+        Guid? startFranchiseSeasonId,
+        Guid? endFranchiseSeasonId
+        )
     {
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
@@ -30,6 +31,7 @@ public static class CompetitionPlayExtensions
             DriveId = driveId,
             EndDistance = dto.End?.Distance,
             EndDown = dto.End?.Down,
+            EndFranchiseSeasonId = endFranchiseSeasonId,
             EndYardLine = dto.End?.YardLine,
             EndYardsToEndzone = dto.End?.YardsToEndzone,
             EspnId = dto.Id,
@@ -44,11 +46,10 @@ public static class CompetitionPlayExtensions
             ShortText = dto.ShortText,
             StartDistance = dto.Start?.Distance,
             StartDown = dto.Start?.Down,
-            StartTeamFranchiseSeasonId = startTeamFranchiseSeasonId,
+            StartFranchiseSeasonId = startFranchiseSeasonId,
             StartYardLine = dto.Start?.YardLine,
             StartYardsToEndzone = dto.Start?.YardsToEndzone,
             StatYardage = dto.StatYardage,
-            TeamFranchiseSeasonId = teamFranchiseSeasonId,
             Text = dto.Text ?? "UNK", // TODO: This popped up as null in some data; need to investigate
             Type = dto.Type?.Id is null ? PlayType.Unknown: Enum.Parse<PlayType>(dto.Type.Id),
             TypeId = dto.Type?.Id is null ? "9999" : dto.Type.Id,

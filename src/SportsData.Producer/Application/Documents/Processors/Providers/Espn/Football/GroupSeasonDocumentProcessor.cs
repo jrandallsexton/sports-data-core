@@ -98,11 +98,13 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
         // seasonRef
         if (dto.Season?.Ref is not null)
         {
-            var seasonId = await _dataContext.TryResolveFromDtoRefAsync(
+            var seasonId = await _dataContext.ResolveIdAsync<
+                Season, SeasonExternalId>(
                 dto.Season,
                 command.SourceDataProvider,
-                () => _dataContext.Seasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.Seasons,
+                externalIdsNav: "ExternalIds",
+                key: s => s.Id);
 
             if (seasonId is null)
             {
@@ -129,11 +131,13 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
         // handle parent
         if (dto.Parent?.Ref is not null)
         {
-            var parentId = await _dataContext.TryResolveFromDtoRefAsync(
+            var parentId = await _dataContext.ResolveIdAsync<
+                GroupSeason, GroupSeasonExternalId>(
                 dto.Parent,
                 command.SourceDataProvider,
-                () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.GroupSeasons,
+                externalIdsNav: "ExternalIds",
+                key: gs => gs.Id);
 
             if (parentId is null)
             {

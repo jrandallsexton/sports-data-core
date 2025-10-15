@@ -27,9 +27,15 @@ public class EspnEventCompetitionDriveDto : IHasRef
     [JsonPropertyName("endTeam")]
     public EspnLinkDto EndTeam { get; set; }
 
+    /// <summary>
+    /// team that is on offense for this drive
+    /// </summary>
     [JsonPropertyName("start")]
     public EspnEventCompetitionDriveStartDto Start { get; set; }
 
+    /// <summary>
+    /// 
+    /// </summary>
     [JsonPropertyName("end")]
     public EspnEventCompetitionDriveEndDto End { get; set; }
 

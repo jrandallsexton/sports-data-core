@@ -278,8 +278,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             {
                 Ordinal = x,
                 Quarter = p.PeriodNumber,
-                FranchiseSeasonId = p.TeamFranchiseSeasonId,
-                Team = p.TeamFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
+                FranchiseSeasonId = p.StartFranchiseSeasonId.HasValue ? p.StartFranchiseSeasonId.Value : Guid.Empty,
+                Team = p.StartFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
                 Description = p.Text,
                 TimeRemaining = p.ClockDisplayValue,
                 IsScoringPlay = p.ScoringPlay,

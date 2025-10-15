@@ -9,6 +9,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -186,11 +187,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
-            var venueId = await _dataContext.TryResolveFromDtoRefAsync(
+            var venueId = await _dataContext.ResolveIdAsync<
+                Venue, VenueExternalId>(
                 venue,
                 command.SourceDataProvider,
-                () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.Venues,
+                externalIdsNav: "ExternalIds",
+                key: v => v.Id);
 
             if (venueId != null)
             {

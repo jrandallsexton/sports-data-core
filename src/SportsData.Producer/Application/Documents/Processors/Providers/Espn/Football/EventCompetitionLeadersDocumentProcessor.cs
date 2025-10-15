@@ -221,14 +221,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (cache.TryGetValue(key, out var cachedId))
                 return cachedId;
 
-            var resolvedId = await _dataContext.TryResolveFromDtoRefAsync(
+            var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
                 teamDto,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger
-            );
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id,
+                CancellationToken.None);
 
-            if (resolvedId is null)
+            if (franchiseSeasonId is null)
             {
                 var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(teamDto.Ref);
                 var franchiseIdentity = _externalIdentityGenerator.Generate(franchiseRef);
@@ -252,8 +254,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new ExternalDocumentNotSourcedException($"Missing FranchiseSeason for ref {teamDto.Ref}");
             }
 
-            cache[key] = resolvedId.Value;
-            return resolvedId.Value;
+            cache[key] = franchiseSeasonId.Value;
+            return franchiseSeasonId.Value;
         }
     }
 }

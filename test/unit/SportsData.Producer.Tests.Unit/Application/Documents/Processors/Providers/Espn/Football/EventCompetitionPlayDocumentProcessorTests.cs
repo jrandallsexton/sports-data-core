@@ -134,8 +134,8 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         play.StartYardLine.Should().Be(65);
         play.EndYardLine.Should().Be(23);
         play.StartDown.Should().Be(1);
-        play.StartTeamFranchiseSeasonId.Should().Be(returnTeamId);
-        play.TeamFranchiseSeasonId.Should().Be(startTeamId);
+        play.StartFranchiseSeasonId.Should().Be(returnTeamId);
+        play.EndFranchiseSeasonId.Should().Be(startTeamId);
         play.ClockValue.Should().Be(900);
         play.ClockDisplayValue.Should().Be("15:00");
         play.Text.Should().Be("Michael Lantz kickoff for 58 yds , Zavion Thomas return for 16 yds to the LSU 23");

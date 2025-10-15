@@ -1,10 +1,9 @@
 ﻿using AutoFixture;
-using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
-using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 using Xunit;
@@ -14,7 +13,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors;
 public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolverTests>
 {
     [Fact]
-    public async Task TryResolveEntityIdAsync_ReturnsId_WhenUrlHashMatches()
+    public async Task ResolveIdAsync_ReturnsId_WhenUrlHashMatches()
     {
         // Arrange
         var venue = Fixture.Build<Venue>()
@@ -40,13 +39,16 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         FootballDataContext.Venues.Add(venue);
         await FootballDataContext.SaveChangesAsync();
 
+        // Use a dto that implements IHasRef (resolver expects this)
+        var dtoRef = new EspnResourceIndexItem { Ref = refUrl, Id = "123" };
+
         // Act
-        var result = await FootballDataContext.TryResolveEntityIdAsync(
-            refUrl,
+        var result = await FootballDataContext.ResolveIdAsync<Venue, VenueExternalId>(
+            dtoRef,
             SourceDataProvider.Espn,
             () => FootballDataContext.Venues,
-            v => v.ExternalIds,
-            null);
+            externalIdsNav: "ExternalIds",
+            key: v => v.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -54,7 +56,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
     }
 
     [Fact]
-    public async Task TryResolveFromDtoRefAsync_ReturnsId_WhenRefMatches()
+    public async Task ResolveIdAsync_ReturnsId_WhenRefMatches()
     {
         // Arrange
         var venue = Fixture.Build<Venue>()
@@ -72,6 +74,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             SourceUrlHash = hash,
             Value = hash,
             Venue = venue,
+            VenueId = venue.Id,
             SourceUrl = refUrl.ToCleanUrl()
         };
 
@@ -79,18 +82,15 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
         FootballDataContext.Venues.Add(venue);
         await FootballDataContext.SaveChangesAsync();
 
-        var dtoRef = new EspnResourceIndexItem
-        {
-            Ref = refUrl,
-            Id = "456"
-        };
+        var dtoRef = new EspnResourceIndexItem { Ref = refUrl, Id = "456" };
 
         // Act
-        var result = await FootballDataContext.TryResolveFromDtoRefAsync(
+        var result = await FootballDataContext.ResolveIdAsync<Venue, VenueExternalId>(
             dtoRef,
             SourceDataProvider.Espn,
-            () => FootballDataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-            null);
+            () => FootballDataContext.Venues,
+            externalIdsNav: "ExternalIds",
+            key: v => v.Id);
 
         // Assert
         Assert.NotNull(result);

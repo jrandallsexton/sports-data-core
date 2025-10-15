@@ -30,8 +30,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 Distance = dto.Distance,
                 YardLine = dto.YardLine,
                 IsRedZone = dto.IsRedZone,
-                HomeTimeouts = dto.HomeTimeouts,
-                AwayTimeouts = dto.AwayTimeouts
+                HomeTimeouts = dto.HomeTimeouts < 0 ? 0 : dto.HomeTimeouts, // actual issue found from ESPN data
+                AwayTimeouts = dto.AwayTimeouts < 0 ? 0 : dto.AwayTimeouts,
             };
         }
     }

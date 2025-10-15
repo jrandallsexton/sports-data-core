@@ -129,11 +129,13 @@ public class SeasonFutureDocumentProcessor : IProcessDocuments
                     continue;
                 }
 
-                var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+                var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+                    FranchiseSeason, FranchiseSeasonExternalId>(
                     bookDto.Team,
                     command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year).Include(x => x.ExternalIds).AsNoTracking(),
-                    _logger);
+                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year),
+                    externalIdsNav: "ExternalIds",
+                    key: fs => fs.Id);
 
                 if (!franchiseSeasonId.HasValue)
                 {

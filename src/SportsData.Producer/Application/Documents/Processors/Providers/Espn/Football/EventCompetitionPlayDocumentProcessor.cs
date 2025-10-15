@@ -109,17 +109,21 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
             }
 
-            var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                externalDto.Team,
+            var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
+                externalDto.Start.Team,
                 command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
-            if (franchiseSeasonId is null)
-            {
-                _logger.LogError("FranchiseSeason could not be resolved from DTO reference: {@DtoRef}", externalDto.Team?.Ref);
-                throw new InvalidOperationException("FranchiseSeason could not be resolved from DTO reference.");
-            }
+            var endFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+                FranchiseSeason, FranchiseSeasonExternalId>(
+                externalDto.End.Team,
+                command.SourceDataProvider,
+                () => _dataContext.FranchiseSeasons,
+                externalIdsNav: "ExternalIds",
+                key: fs => fs.Id);
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
             var entity = await _dataContext.CompetitionPlays
@@ -135,7 +139,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     externalDto,
                     competition,
                     competitionDriveId,
-                    franchiseSeasonId.Value);
+                    startFranchiseSeasonId,
+                    endFranchiseSeasonId);
             }
             else
             {
@@ -143,7 +148,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     command,
                     externalDto,
                     competitionDriveId,
-                    entity);
+                    entity,
+                    startFranchiseSeasonId,
+                    endFranchiseSeasonId);
             }
         }
 
@@ -152,21 +159,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             EspnEventCompetitionPlayDto externalDto,
             Competition competition,
             Guid? competitionDriveId,
-            Guid franchiseSeasonId)
+            Guid? startFranchiseSeasonId,
+            Guid? endFranchiseSeasonId)
         {
-            var startTeamFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
-                externalDto.Start.Team,
-                command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
-
             var play = externalDto.AsEntity(
                 _externalRefIdentityGenerator,
                 command.CorrelationId,
                 competition.Id,
                 competitionDriveId,
-                franchiseSeasonId,
-                startTeamFranchiseSeasonId);
+                startFranchiseSeasonId,
+                endFranchiseSeasonId);
 
             // if the competition is underway,
             // broadcast a CompetitionPlayCompleted event
@@ -190,8 +192,12 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             ProcessDocumentCommand command,
             EspnEventCompetitionPlayDto externalDto,
             Guid? competitionDriveId,
-            CompetitionPlay entity)
+            CompetitionPlay entity,
+            Guid? startFranchiseSeasonId,
+            Guid? endFranchiseSeasonId)
         {
+            entity.StartFranchiseSeasonId = startFranchiseSeasonId;
+            entity.EndFranchiseSeasonId = endFranchiseSeasonId;
             entity.DriveId = competitionDriveId;
             await _dataContext.SaveChangesAsync();
         }

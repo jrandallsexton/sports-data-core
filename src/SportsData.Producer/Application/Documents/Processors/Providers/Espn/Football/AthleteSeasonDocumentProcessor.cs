@@ -184,11 +184,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         var positionIdentity = _externalRefIdentityGenerator.Generate(dto.Position.Ref);
 
-        var positionId = await _dataContext.TryResolveFromDtoRefAsync(
+        var positionId = await _dataContext.ResolveIdAsync<
+            AthletePosition, AthletePositionExternalId>(
             dto.Position,
             command.SourceDataProvider,
-            () => _dataContext.AthletePositions.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.AthletePositions,
+            externalIdsNav: "ExternalIds",
+            key: p => p.Id);
 
         if (positionId.HasValue)
             return positionId.Value;

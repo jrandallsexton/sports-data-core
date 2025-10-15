@@ -191,8 +191,8 @@ namespace SportsData.Producer.Application.Competitions
                 if (!inTrip) continue;
 
                 // inside a trip, watch for THIS offense scoring a TD (rush/pass)
-                if (p.StartTeamFranchiseSeasonId.HasValue
-                    && p.StartTeamFranchiseSeasonId.Value == franchiseSeasonId)
+                if (p.StartFranchiseSeasonId.HasValue
+                    && p.StartFranchiseSeasonId.Value == franchiseSeasonId)
                 {
                     if (p.Type == PlayType.RushingTouchdown || p.Type == PlayType.PassingTouchdown)
                     {
@@ -201,8 +201,8 @@ namespace SportsData.Producer.Application.Competitions
                 }
 
                 // trip ends when the OTHER offense takes a scrimmage snap that stands
-                if (p.StartTeamFranchiseSeasonId.HasValue
-                    && p.StartTeamFranchiseSeasonId.Value != franchiseSeasonId
+                if (p.StartFranchiseSeasonId.HasValue
+                    && p.StartFranchiseSeasonId.Value != franchiseSeasonId
                     && p.StartDown is >= 1 and <= 4
                     && IsOffensiveScrimmageType(p.Type)
                     && !(!string.IsNullOrEmpty(p.Text) && p.Text.Contains("NO PLAY", StringComparison.OrdinalIgnoreCase)))
@@ -250,8 +250,8 @@ namespace SportsData.Producer.Application.Competitions
                 if (!inTrip) continue;
 
                 // scoring for THIS offense during the trip
-                if (p.StartTeamFranchiseSeasonId.HasValue
-                    && p.StartTeamFranchiseSeasonId.Value == franchiseSeasonId)
+                if (p.StartFranchiseSeasonId.HasValue
+                    && p.StartFranchiseSeasonId.Value == franchiseSeasonId)
                 {
                     if (p.Type == PlayType.RushingTouchdown || p.Type == PlayType.PassingTouchdown)
                         tripScored = true;
@@ -261,8 +261,8 @@ namespace SportsData.Producer.Application.Competitions
                 }
 
                 // trip ends when the OTHER offense takes a scrimmage snap that stands
-                if (p.StartTeamFranchiseSeasonId.HasValue
-                    && p.StartTeamFranchiseSeasonId.Value != franchiseSeasonId
+                if (p.StartFranchiseSeasonId.HasValue
+                    && p.StartFranchiseSeasonId.Value != franchiseSeasonId
                     && p.StartDown is >= 1 and <= 4
                     && IsOffensiveScrimmageType(p.Type)
                     && !(p.Text?.Contains("NO PLAY", StringComparison.OrdinalIgnoreCase) == true))
@@ -289,8 +289,8 @@ namespace SportsData.Producer.Application.Competitions
 
         // which team is on offense at the snap? (null means unknown → not this offense)
         private static bool IsOffense(CompetitionPlay p, Guid franchiseSeasonId)
-            => p.StartTeamFranchiseSeasonId.HasValue
-               && p.StartTeamFranchiseSeasonId.Value == franchiseSeasonId;
+            => p.StartFranchiseSeasonId.HasValue
+               && p.StartFranchiseSeasonId.Value == franchiseSeasonId;
 
         // helper: which play types count as *offensive scrimmage snaps* for team metrics?
         private static bool IsOffensiveScrimmageType(PlayType t)

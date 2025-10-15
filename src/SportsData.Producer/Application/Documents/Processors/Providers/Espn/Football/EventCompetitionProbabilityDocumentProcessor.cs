@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
@@ -70,11 +71,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 return;
             }
 
-            var competitionId = await _dataContext.TryResolveFromDtoRefAsync(
+            var competitionId = await _dataContext.ResolveIdAsync<
+                Competition, CompetitionExternalId>(
                 dto.Competition,
                 command.SourceDataProvider,
-                () => _dataContext.Competitions.Include(x => x.ExternalIds).AsNoTracking(),
-                _logger);
+                () => _dataContext.Competitions,
+                externalIdsNav: "ExternalIds",
+                key: c => c.Id);
+
 
             if (competitionId is null || competitionId == Guid.Empty)
             {
@@ -86,11 +90,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (!string.IsNullOrEmpty(dto.Play?.Ref?.ToString()))
             {
-                playId = await _dataContext.TryResolveFromDtoRefAsync(
+                playId = await _dataContext.ResolveIdAsync<
+                    CompetitionPlay, CompetitionPlayExternalId>(
                     dto.Play,
                     command.SourceDataProvider,
-                    () => _dataContext.CompetitionPlays.Include(x => x.ExternalIds).AsNoTracking(),
-                    _logger);
+                    () => _dataContext.CompetitionPlays,
+                    externalIdsNav: "ExternalIds",
+                    key: p => p.Id);
             }
 
             var newEntity = dto.AsEntity(

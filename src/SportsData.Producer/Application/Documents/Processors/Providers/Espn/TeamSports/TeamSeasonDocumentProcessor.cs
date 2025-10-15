@@ -150,11 +150,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // Resolve VenueId via SourceUrlHash
-        canonicalEntity.VenueId = await _dataContext.TryResolveFromDtoRefAsync(
+        canonicalEntity.VenueId = await _dataContext.ResolveIdAsync<
+            Venue, VenueExternalId>(
             dto.Venue,
             command.SourceDataProvider,
-            () => _dataContext.Venues.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.Venues,
+            externalIdsNav: "ExternalIds",
+            key: v => v.Id);
+
 
         if (dto.Groups?.Ref is null)
         {
@@ -163,11 +166,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         }
 
         // Resolve GroupId via SourceUrlHash
-        canonicalEntity.GroupSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+        canonicalEntity.GroupSeasonId = await _dataContext.ResolveIdAsync<
+            GroupSeason, GroupSeasonExternalId>(
             dto.Groups,
             command.SourceDataProvider,
-            () => _dataContext.GroupSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.GroupSeasons,
+            externalIdsNav: "ExternalIds",
+            key: gs => gs.Id);
 
         if (canonicalEntity.GroupSeasonId is null)
         {

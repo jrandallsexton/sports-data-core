@@ -130,11 +130,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");
         }
 
-        var franchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+        var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+            FranchiseSeason, FranchiseSeasonExternalId>(
             dto.Team,
             command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
 
         if (franchiseSeasonId is null)
         {

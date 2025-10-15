@@ -58,8 +58,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime Modified { get; set; }
 
-        public Guid TeamFranchiseSeasonId { get; set; } // FK to FranchiseSeason
-
         public int? StartDown { get; set; }
 
         public int? StartDistance { get; set; }
@@ -68,7 +66,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? StartYardsToEndzone { get; set; }
 
-        public Guid? StartTeamFranchiseSeasonId { get; set; }
+        public Guid? StartFranchiseSeasonId { get; set; }
+
+        public Guid? EndFranchiseSeasonId { get; set; } // FK to FranchiseSeason
 
         public int? EndDown { get; set; }
 
@@ -95,18 +95,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable(nameof(CompetitionPlay));
                 builder.HasKey(x => x.Id);
 
-                builder.Property(x => x.EspnId).IsRequired().HasMaxLength(32);
-                builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(32);
-                builder.Property(x => x.TypeId).IsRequired().HasMaxLength(32);
-                builder.Property(x => x.Text).IsRequired().HasMaxLength(1024);
-                builder.Property(x => x.ShortText).HasMaxLength(256);
                 builder.Property(x => x.AlternativeText).HasMaxLength(1024);
-                builder.Property(x => x.ShortAlternativeText).HasMaxLength(256);
                 builder.Property(x => x.ClockDisplayValue).HasMaxLength(32);
-                builder.Property(x => x.Modified).IsRequired();
-                builder.Property(x => x.TeamFranchiseSeasonId).IsRequired();
-                builder.Property(x => x.DriveId).IsRequired(false); // Nullable FK
                 builder.Property(x => x.CompetitionId).IsRequired();
+                builder.Property(x => x.DriveId).IsRequired(false); // Nullable FK
+                builder.Property(x => x.EspnId).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.Modified).IsRequired();
+                builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.ShortAlternativeText).HasMaxLength(256);
+                builder.Property(x => x.ShortText).HasMaxLength(256);
+                builder.Property(x => x.Text).IsRequired().HasMaxLength(1024);
+                builder.Property(x => x.TypeId).IsRequired().HasMaxLength(32);
 
                 builder.Property(x => x.Type)
                     .IsRequired()

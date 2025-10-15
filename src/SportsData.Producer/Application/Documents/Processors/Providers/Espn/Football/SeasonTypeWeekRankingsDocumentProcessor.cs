@@ -278,11 +278,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                 var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
 
-                var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                var franchiseSeasonId = await dataContext.ResolveIdAsync<
+                    FranchiseSeason, FranchiseSeasonExternalId>(
                     entry.Team!,
                     command.SourceDataProvider,
-                    () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                    logger);
+                    () => dataContext.FranchiseSeasons,
+                    externalIdsNav: "ExternalIds",
+                    key: fs => fs.Id);
 
                 if (franchiseSeasonId.HasValue)
                 {
@@ -304,11 +306,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
 
-                    var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                    var franchiseSeasonId = await dataContext.ResolveIdAsync<
+                        FranchiseSeason, FranchiseSeasonExternalId>(
                         entry.Team!,
                         command.SourceDataProvider,
-                        () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                        logger);
+                        () => dataContext.FranchiseSeasons,
+                        externalIdsNav: "ExternalIds",
+                        key: fs => fs.Id);
 
                     if (franchiseSeasonId.HasValue)
                     {
@@ -331,11 +335,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     var teamIdentity = externalRefIdentityGenerator.Generate(teamRef);
 
-                    var franchiseSeasonId = await dataContext.TryResolveFromDtoRefAsync(
+                    var franchiseSeasonId = await dataContext.ResolveIdAsync<
+                        FranchiseSeason, FranchiseSeasonExternalId>(
                         entry.Team!,
                         command.SourceDataProvider,
-                        () => dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-                        logger);
+                        () => dataContext.FranchiseSeasons,
+                        externalIdsNav: "ExternalIds",
+                        key: fs => fs.Id);
 
                     if (franchiseSeasonId.HasValue)
                     {

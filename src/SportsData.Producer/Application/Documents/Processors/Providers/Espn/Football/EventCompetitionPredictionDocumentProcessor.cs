@@ -79,17 +79,21 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
             return;
         }
 
-        var homeFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+        var homeFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+            FranchiseSeason, FranchiseSeasonExternalId>(
             dto.HomeTeam.Team,
             command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
 
-        var awayFranchiseSeasonId = await _dataContext.TryResolveFromDtoRefAsync(
+        var awayFranchiseSeasonId = await _dataContext.ResolveIdAsync<
+            FranchiseSeason, FranchiseSeasonExternalId>(
             dto.AwayTeam.Team,
             command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons.Include(x => x.ExternalIds).AsNoTracking(),
-            _logger);
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
 
         if (homeFranchiseSeasonId is null || awayFranchiseSeasonId is null)
         {

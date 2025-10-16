@@ -90,14 +90,15 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
             .Include(o => o.ExternalIds)
             .Include(o => o.Teams)
             .Include(o => o.Links)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(o => o.Id == identity.CanonicalId);
 
         if (existing is null)
         {
             existing = await _db.CompetitionOdds
-                .Include(o => o.ExternalIds)
                 .Include(o => o.Teams)
-                .Include(o => o.Links)
+                .Include(o => o.Links).Include(competitionOdds => competitionOdds.ExternalIds)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x =>
                     x.ExternalIds.Any(e => e.SourceUrlHash == command.UrlHash &&
                                            e.Provider == command.SourceDataProvider));

@@ -85,7 +85,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var competition = await _dataContext.Competitions
                 .Include(x => x.ExternalIds)
-                .Include(x => x.Leaders).ThenInclude(x => x.Stats)
+                .Include(x => x.Leaders)
+                .ThenInclude(x => x.Stats)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == competitionId);
 
             if (competition is null)

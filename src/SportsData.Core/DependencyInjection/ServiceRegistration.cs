@@ -29,6 +29,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using SportsData.Core.Infrastructure.Clients.Producer;
 
 namespace SportsData.Core.DependencyInjection
@@ -66,6 +67,9 @@ namespace SportsData.Core.DependencyInjection
             {
                 options.EnableSensitiveDataLogging();
                 options.UseNpgsql(connString);
+                options.ConfigureWarnings(w =>
+                    w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
+
             });
 
             return services;

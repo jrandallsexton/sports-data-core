@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0 8px;
   box-sizing: border-box;
 }
 
@@ -461,8 +461,8 @@
 }
 
 .contest-section {
-  margin: 12px 0 8px 0;
-  padding: 10px 12px;
+  margin: 0 0 8px 0;
+  padding: 4px 8px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   border: 1px solid #23272f;

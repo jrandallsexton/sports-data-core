@@ -61,12 +61,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 // -------- Check constraints (PostgreSQL-friendly) --------
                 builder.ToTable(t =>
                 {
-                    // 1..4 downs
-                    t.HasCheckConstraint("CK_CompetitionSituation_Down", "\"Down\" BETWEEN 1 AND 4");
+                    // -1|0..4 downs (-1|0 = no down, 1-4 = valid downs) -1|0 at end of game
+                    t.HasCheckConstraint("CK_CompetitionSituation_Down", "\"Down\" BETWEEN -1 AND 4");
                     // 0..100 yard line (covers goal line/touchback edges)
                     t.HasCheckConstraint("CK_CompetitionSituation_YardLine", "\"YardLine\" BETWEEN 0 AND 100");
                     // Distance >= 0
-                    t.HasCheckConstraint("CK_CompetitionSituation_Distance", "\"Distance\" >= 0");
+                    t.HasCheckConstraint("CK_CompetitionSituation_Distance", "\"Distance\" >= -110");
                     // Timeouts >= 0 (tighten to 0..3 if you want to enforce NCAA max)
                     t.HasCheckConstraint("CK_CompetitionSituation_AwayTimeouts", "\"AwayTimeouts\" >= 0");
                     t.HasCheckConstraint("CK_CompetitionSituation_HomeTimeouts", "\"HomeTimeouts\" >= 0");

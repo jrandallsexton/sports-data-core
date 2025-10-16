@@ -239,7 +239,7 @@ namespace SportsData.Producer.Application.Contests.Overview
             var points = rows.Select(r => new WinProbabilityPointDto
             {
                 GameClock = r.GameClock,
-                Quarter = r.Quarter!.Value,
+                Quarter = r.Quarter.HasValue ? r.Quarter.Value : 0,
                 HomeWinPercent = ToPct(r.HomeWinPercentage),
                 AwayWinPercent = ToPct(r.AwayWinPercentage)
             }).ToList();
@@ -322,29 +322,28 @@ namespace SportsData.Producer.Application.Contests.Overview
 
         private async Task<GameInfoDto?> GetGameInfoAsync(Guid contestId)
         {
-            var contest = await _dbContext.Contests
+            return await _dbContext.Contests
                 .AsNoTracking()
-                .Include(c => c.Competitions)
-                .Include(navigationPropertyPath: c => c.Venue)
-                .ThenInclude(v => v!.Images
-                    .OrderBy(i => i.CreatedUtc)   // or .OrderByDescending(i => i.IsPrimary)
-                    .Take(1))                     // 👈 allowed in Include
-                .FirstOrDefaultAsync(c => c.Id == contestId);
-
-            if (contest is null) return null;
-
-            var img = contest.Venue?.Images?.FirstOrDefault();
-
-            return new GameInfoDto
-            {
-                StartDateUtc = contest.StartDateUtc,
-                Broadcast = string.Empty,
-                Venue = contest.Venue?.Name,
-                VenueCity = contest.Venue?.City,
-                VenueState = contest.Venue?.State,
-                VenueImageUrl = img?.Uri?.OriginalString,
-                Attendance = contest.Competitions.FirstOrDefault()?.Attendance
-            };
+                .Where(c => c.Id == contestId)
+                .Select(c => new GameInfoDto
+                {
+                    StartDateUtc = c.StartDateUtc,
+                    Broadcast = string.Empty,
+                    Venue = c.Venue != null ? c.Venue.Name : null,
+                    VenueCity = c.Venue != null ? c.Venue.City : null,
+                    VenueState = c.Venue != null ? c.Venue.State : null,
+                    VenueImageUrl = c.Venue != null
+                        ? c.Venue.Images
+                            .OrderBy(i => i.CreatedUtc)
+                            .Select(i => i.Uri.OriginalString)
+                            .FirstOrDefault()
+                        : null,
+                    Attendance = c.Competitions
+                        .OrderBy(comp => comp.Date)
+                        .Select(comp => comp.Attendance)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
@@ -358,10 +357,12 @@ namespace SportsData.Producer.Application.Contests.Overview
                 .ThenInclude(x => x.Logos)
                 .Include(x => x.HomeTeamFranchiseSeason!)
                 .ThenInclude(x => x.Franchise)
-                .ThenInclude(x => x.Logos).Include(contest => contest.AwayTeamFranchiseSeason!)
-                .ThenInclude(franchiseSeason => franchiseSeason.Logos!)
-                .Include(contest => contest.HomeTeamFranchiseSeason!)
-                .ThenInclude(franchiseSeason => franchiseSeason.Logos!)
+                .ThenInclude(x => x.Logos)
+                .Include(x => x.AwayTeamFranchiseSeason!)
+                .ThenInclude(x => x.Logos!)
+                .Include(x => x.HomeTeamFranchiseSeason!)
+                .ThenInclude(x => x.Logos!)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == contestId);
 
             if (contest is null)

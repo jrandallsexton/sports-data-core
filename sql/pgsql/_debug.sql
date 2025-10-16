@@ -37,6 +37,9 @@ select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
 
+
+
+
 select
   c."Id" as "ContestId",
   c."AwayTeamFranchiseSeasonId",
@@ -56,7 +59,7 @@ select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef
 
 select count(*) from public."CompetitionProbability"
 select count(*) from public."CompetitionSituation"
-select * from public."CompetitionPlay"
+select count(*) from public."CompetitionPlay"
 select count(*) from public."CompetitionDrive"
 
 -- delete from public."CompetitionProbability"

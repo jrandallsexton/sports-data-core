@@ -106,9 +106,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
 
             var entity = await _dataContext.Competitions
-                .Include(x => x.ExternalIds)
                 .Include(c => c.Competitors)
                 .ThenInclude(c => c.ExternalIds)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x =>
                     x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
                                            z.Provider == command.SourceDataProvider));

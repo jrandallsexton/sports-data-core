@@ -48,6 +48,7 @@ public class UserService : IUserService
             .Include(x => x.GroupMemberships)
             .ThenInclude(m => m.Group)
             .ThenInclude(g => g.Weeks)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (user is null)

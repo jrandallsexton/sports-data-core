@@ -94,6 +94,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var existing = await _dataContext.CompetitionCompetitorStatistics
                 .Include(x => x.Categories)
                 .ThenInclude(x => x.Stats)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x =>
                     x.CompetitionId == competition.Id &&
                     x.FranchiseSeasonId == franchiseSeason.Id);

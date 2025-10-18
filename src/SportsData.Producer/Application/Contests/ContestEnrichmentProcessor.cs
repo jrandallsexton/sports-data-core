@@ -55,6 +55,7 @@ namespace SportsData.Producer.Application.Contests
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
                     .Where(c => c.ContestId == command.ContestId)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync();
 
                 if (competition is null)

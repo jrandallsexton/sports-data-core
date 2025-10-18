@@ -64,6 +64,7 @@ namespace SportsData.Api.Application.Scoring
                     .ThenInclude(w => w.Matchups.Where(m => m.ContestId == result.ContestId))
                     .Where(g => g.Id == kvp.Key)
                     .AsNoTracking()
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync();
 
                 if (group is null)

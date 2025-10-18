@@ -32,8 +32,8 @@ namespace SportsData.Producer.Application.Documents
 
                 if (context.Message.AttemptCount >= maxAttempts)
                 {
-                    _logger.LogError("Maximum retry attempts ({Max}) reached for document {Id}. Dropping message.",
-                        maxAttempts, context.Message.Id);
+                    _logger.LogError("Maximum retry attempts ({Max}) reached for document. Dropping message. {@Message}",
+                        maxAttempts, context.Message);
                     return;
                 }
 

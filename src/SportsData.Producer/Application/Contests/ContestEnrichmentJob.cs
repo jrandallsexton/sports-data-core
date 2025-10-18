@@ -64,7 +64,7 @@ namespace SportsData.Producer.Application.Contests
                     .ToListAsync();
 
                 // spawn a job to finalize each
-                foreach (var contest in contests.Take(1))
+                foreach (var contest in contests)
                 {
                     var cmd = new EnrichContestCommand(contest.Id, Guid.NewGuid());
                     _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));

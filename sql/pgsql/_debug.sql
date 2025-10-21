@@ -30,7 +30,7 @@ select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69
 select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
 select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'd670d829-84b1-ed39-d288-a0fdd36f472f' where "ShortHeadline" = '2025 AP Poll: Week 8'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '44adcee8-cc6a-a714-84f9-672dd6f151ee' where "ShortHeadline" = '2025 AP Poll: Week 9'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"

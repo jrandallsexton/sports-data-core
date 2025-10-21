@@ -111,6 +111,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                     .Include(x => x.Rankings)
                     .ThenInclude(r => r.ExternalIds)
                     .Where(x => x.Id == seasonWeekIdentity.CanonicalId)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync();
 
                 if (seasonWeek == null)

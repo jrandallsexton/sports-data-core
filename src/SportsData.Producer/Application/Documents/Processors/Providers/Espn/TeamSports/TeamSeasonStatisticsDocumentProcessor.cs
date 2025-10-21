@@ -42,6 +42,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
                 var franchiseSeason = await _dataContext.FranchiseSeasons
                     .Include(f => f.Statistics)
                     .ThenInclude(c => c.Stats)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(f => f.Id == franchiseSeasonId);
 
                 if (franchiseSeason == null)

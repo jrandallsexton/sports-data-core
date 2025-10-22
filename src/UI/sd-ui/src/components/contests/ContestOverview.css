@@ -68,17 +68,17 @@
   align-items: center;
   min-width: 120px;
   max-width: 160px;
-  gap: 4px;
-}
-
-.contest-team-logo {
+.contest-team-logo-wrap {
   width: 48px;
   height: 48px;
-  object-fit: contain;
-  margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff; /* white background looks best for most logos */
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #ccc;
 }
-
-.contest-team-name {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 2px;
@@ -218,12 +218,6 @@
   margin-bottom: 0.5rem;
 }
 
-.contest-scoring-summary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .contest-scoring-summary-item {
   display: flex;
   align-items: center;
@@ -233,6 +227,24 @@
   padding: 0.5rem 1rem;
   color: #f8f9fa;
   font-size: 1rem;
+}
+
+.contest-scoring-summary-logo-wrap {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff; /* white background looks best for most logos */
+  border-radius: 6px;
+  padding: 3px;
+  margin-right: 8px;
+  flex: 0 0 auto;
+  border: 1px solid #ccc;
+}
+
+.contest-scoring-summary-logo {
+  display: block;
 }
 
 .contest-scoring-summary-quarter {
@@ -595,6 +607,18 @@
   height: 40px;
   object-fit: contain;
   margin-bottom: 0;
+}
+
+.contest-team-logo-wrap {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid #ccc;
 }
 .contest-boxscore-table-wrapper.compact {
   min-width: 180px;

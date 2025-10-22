@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -262,8 +263,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             Guid contestId,
             string awayTeamSlug,
             string homeTeamSlug,
-            Uri awayTeamUri,
-            Uri homeTeamUri,
+            Uri? awayTeamLogoUri,
+            Uri? homeTeamLogoUri,
             Guid awayTeamFranchiseSeasonId,
             Guid homeTeamFranchiseSeasonId)
         {
@@ -290,8 +291,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             {
                 AwayTeamSlug = awayTeamSlug,
                 HomeTeamSlug = homeTeamSlug,
-                AwayTeamLogoUrl = awayTeamUri.OriginalString,
-                HomeTeamLogoUrl = homeTeamUri.OriginalString,
+                AwayTeamLogoUrl = awayTeamLogoUri is null ? string.Empty : awayTeamLogoUri.OriginalString,
+                HomeTeamLogoUrl = homeTeamLogoUri is null ? string.Empty : homeTeamLogoUri.OriginalString,
                 Plays = playDtos
             };
         }
@@ -374,8 +375,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             var awayTeamColor = contest.AwayTeamFranchiseSeason!.Franchise.ColorCodeHex;
             var homeTeamColor = contest.HomeTeamFranchiseSeason!.Franchise.ColorCodeHex;
 
-            var awayTeamLogoUri = contest.AwayTeamFranchiseSeason!.Logos!.First().Uri;
-            var homeTeamLogoUri = contest.HomeTeamFranchiseSeason!.Logos!.First().Uri;
+            var awayTeamLogoUri = contest.AwayTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
+            var homeTeamLogoUri = contest.HomeTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
 
             var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
             var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;

@@ -709,7 +709,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     await _publishEndpoint.Publish(new DocumentRequested(
                         Id: scoreIdentity.UrlHash,
-                        ParentId: competition.Id.ToString(),
+                        ParentId: competitorIdentity.CanonicalId.ToString(),
                         Uri: new Uri(scoreIdentity.CleanUrl),
                         Sport: command.Sport,
                         SeasonYear: command.Season,

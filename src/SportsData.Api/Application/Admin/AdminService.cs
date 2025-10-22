@@ -1,13 +1,13 @@
-﻿using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Extensions;
 
-using static SportsData.Api.Application.Admin.AdminService;
+using System.Text.Json.Serialization;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -21,9 +21,11 @@ namespace SportsData.Api.Application.Admin
 
         Task<Guid> UpsertMatchupPreview(string jsonContent);
 
-        Task<Guid> RejectMatchupPreview(RejectMatchupPreviewCommand command);
+        Task<Guid> RejectMatchupPreview(AdminService.RejectMatchupPreviewCommand command);
 
-        Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command);
+        Task<Guid> ApproveMatchupPreview(AdminService.ApproveMatchupPreviewCommand command);
+
+        Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
     }
 
     public class AdminService : IAdminService
@@ -32,17 +34,20 @@ namespace SportsData.Api.Application.Admin
         private readonly AppDataContext _dataContext;
         private readonly IProvideCanonicalData _canonicalData;
         private readonly ILeagueService _leagueService;
+        private readonly IProvideCanonicalAdminData _canonicalAdminData;
 
         public AdminService(
             ILogger<AdminService> logger,
             AppDataContext dataContext,
             IProvideCanonicalData canonicalData,
-            ILeagueService leagueService)
+            ILeagueService leagueService,
+            IProvideCanonicalAdminData canonicalAdminData)
         {
             _logger = logger;
             _dataContext = dataContext;
             _canonicalData = canonicalData;
             _leagueService = leagueService;
+            _canonicalAdminData = canonicalAdminData;
         }
 
         public async Task RefreshAiExistence(Guid correlationId)
@@ -328,6 +333,19 @@ namespace SportsData.Api.Application.Admin
             await _dataContext.SaveChangesAsync();
 
             return preview.Id;
+        }
+
+        public async Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors()
+        {
+            try
+            {
+                return await _canonicalAdminData.GetCompetitionsWithoutCompetitors();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get competitions without competitors");
+                throw;
+            }
         }
 
         public class RejectMatchupPreviewCommand

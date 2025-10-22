@@ -1,6 +1,9 @@
 
+select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
+select * from public."AthleteExternalId" where "AthleteId" = '839ab5ca-a490-92d2-2e22-31478ff032b0'
+
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
-select * from public."FranchiseSeason" where "Slug" = 'texas-tech-red-raiders'
+select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
 select * from public."Franchise"
 select * from public."AthletePosition"
 /* Season Roster */
@@ -37,7 +40,43 @@ select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
 
+select con."Id", con."Name" from public."Contest" con
+inner join public."Competition" comp on comp."ContestId" = con."Id"
+where con."StartDateUtc" < now() and comp."Id" not in (select distinct "CompetitionId" from public."CompetitionPlay") and con."Name" like '%LSU%'
+order by con."StartDateUtc"
 
+select con."Id", con."Name", comp."Id" as "CompId" from public."Contest" con
+inner join public."Competition" comp on comp."ContestId" = con."Id"
+where con."Id" = '7f39067b-40bb-aa0b-225d-7670409d1003'
+select * from public."CompetitionPlay" cp where cp."CompetitionId" = 'eda0c287-0d48-4715-4405-51414c3a416b'
+
+SELECT 
+    con."Id" AS "ContestId",
+    con."Name" AS "ContestName",
+    con."StartDateUtc",
+    comp."Id" AS "CompetitionId",
+    COUNT(cp."Id") AS "PlayCount",
+    MAX(cp."Text") AS "LastPlayText"
+FROM public."Competition" comp
+JOIN public."Contest" con ON con."Id" = comp."ContestId"
+LEFT JOIN public."CompetitionPlay" cp ON cp."CompetitionId" = comp."Id"
+WHERE con."StartDateUtc" < now()  -- ⏰ Only games that should have started
+GROUP BY con."Id", con."Name", con."StartDateUtc", comp."Id"
+HAVING COUNT(cp."Id") <= 10
+ORDER BY con."StartDateUtc";
+
+SELECT COUNT(*) AS "AffectedCompetitionCount"
+FROM (
+    SELECT comp."Id"
+    FROM public."Competition" comp
+    JOIN public."Contest" con ON con."Id" = comp."ContestId"
+    LEFT JOIN public."CompetitionPlay" cp ON cp."CompetitionId" = comp."Id"
+    WHERE con."StartDateUtc" < now()
+    GROUP BY comp."Id"
+    HAVING COUNT(cp."Id") <= 10
+) AS sub;
+
+select * from public."CompetitionLeaderStat"
 
 
 select
@@ -92,7 +131,7 @@ order by "Name"
         fss."Rank"
     from public."FranchiseSeasonStatisticCategory" fssc
     inner join public."FranchiseSeasonStatistic" fss on fss."FranchiseSeasonStatisticCategoryId" = fssc."Id"
-    where fssc."FranchiseSeasonId" = '2bb15a4f-652a-1a5f-3060-dcc3355bac93'
+    where fssc."FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
     order by "Category", "StatisticKey"
 
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '0c5d0ca5-802c-4087-9bcf-75b85e90383a' order by "Name"

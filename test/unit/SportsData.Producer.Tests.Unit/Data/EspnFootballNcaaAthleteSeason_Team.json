@@ -1,0 +1,41 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/-48520?lang=en&region=us",
+  "id": "-48520",
+  "uid": "s:20~l:23~a:-48520",
+  "type": "football",
+  "firstName": "",
+  "lastName": "Team",
+  "fullName": " Team",
+  "displayName": " Team",
+  "shortName": "Team",
+  "birthPlace": {},
+  "slug": "team",
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/0?lang=en&region=us",
+    "id": "0",
+    "name": "Unknown",
+    "displayName": "Unknown",
+    "abbreviation": "-",
+    "leaf": false
+  },
+  "injuries": [],
+  "linked": false,
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/-48520/notes?lang=en&region=us"
+  },
+  "experience": {
+    "years": 0,
+    "displayValue": "--",
+    "abbreviation": "--"
+  },
+  "active": false,
+  "eventLog": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/-48520/eventlog?lang=en&region=us"
+  },
+  "status": {
+    "id": "2",
+    "name": "Inactive",
+    "type": "inactive",
+    "abbreviation": "Inactive"
+  }
+}

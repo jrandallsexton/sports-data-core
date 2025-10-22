@@ -58,6 +58,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         {
             var externalDto = command.Document.FromJson<EspnEventCompetitionPlayDto>();
 
+            
             if (externalDto is null)
             {
                 _logger.LogError("Failed to deserialize document to EspnEventCompetitionPlayDto. {@Command}", command);

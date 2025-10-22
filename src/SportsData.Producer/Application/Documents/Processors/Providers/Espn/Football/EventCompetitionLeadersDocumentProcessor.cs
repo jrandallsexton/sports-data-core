@@ -192,7 +192,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
                 var athleteIdentity = _externalIdentityGenerator.Generate(athleteRef);
 
-                _logger.LogWarning("AthleteSeason not found for hash {Hash}, requesting source.", athleteSeasonIdentity.UrlHash);
+                _logger.LogWarning("AthleteSeason not found: {Url}, requesting source.", athleteSeasonIdentity.CleanUrl);
 
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: athleteSeasonIdentity.UrlHash,

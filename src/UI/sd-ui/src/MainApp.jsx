@@ -26,6 +26,8 @@ import Leagues from "./components/leagues/Leagues";
 import AutoJoinRedirect from "./components/signup/AutoJoinRedirect";
 import LeagueDiscoverPage from "components/leagues/LeagueDiscoverPage";
 import ContestOverview from "./components/contests/ContestOverview";
+import AdminPage from "./components/admin/AdminPage";
+import AdminRoute from "./routes/AdminRoute";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -134,6 +136,14 @@ function MainApp() {
             <Route
               path="/sport/football/ncaa/contest/:contestId"
               element={<ContestOverview />}
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              }
             />
             <Route
               path="*"

@@ -1,0 +1,42 @@
+.admin-page {
+  padding: 18px;
+}
+.admin-header h1 {
+  margin: 0 0 4px 0;
+}
+.admin-subtitle {
+  color: #9aa0a6;
+  margin-bottom: 12px;
+}
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 12px;
+}
+.admin-card {
+  background: #23272f;
+  color: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #343a40;
+}
+.admin-card.large {
+  grid-column: 1 / 2;
+}
+.admin-card.sidebar {
+  grid-column: 2 / 3;
+}
+.placeholder {
+  padding: 12px;
+  color: #b0b3b8;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+  min-height: 84px;
+}
+
+@media (max-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-card.sidebar { grid-column: auto; }
+}

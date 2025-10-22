@@ -61,12 +61,14 @@ export default function ContestOverviewPlaylog({ playLog }) {
                   return (
                     <div key={idx} className="contest-scoring-summary-item">
                       {logoUrl && (
-                        <img
-                          src={logoUrl}
-                          alt={play.team}
-                          className="contest-scoring-summary-logo"
-                          style={{ width: 28, height: 28, objectFit: 'contain', marginRight: 8, verticalAlign: 'middle' }}
-                        />
+                        <div className="contest-scoring-summary-logo-wrap">
+                          <img
+                            src={logoUrl}
+                            alt={play.team}
+                            className="contest-scoring-summary-logo"
+                            style={{ width: 20, height: 20, objectFit: 'contain', verticalAlign: 'middle' }}
+                          />
+                        </div>
                       )}
                       <span className="contest-scoring-summary-desc">{play.description}</span>
                       <span className="contest-scoring-summary-time">{play.timeRemaining}</span>

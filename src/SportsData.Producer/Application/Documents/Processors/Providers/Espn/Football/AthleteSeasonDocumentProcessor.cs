@@ -92,7 +92,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             _logger.LogWarning("Athlete not found. Raising DocumentRequested. {@Identity} {cmdRef}", athleteIdentity, dto.Ref);
 
             await _publishEndpoint.Publish(new DocumentRequested(
-                Id: athleteIdentity.CanonicalId.ToString(),
+                Id: athleteIdentity.UrlHash,
                 ParentId: null,
                 Uri: new Uri(athleteIdentity.CleanUrl),
                 Sport: command.Sport,

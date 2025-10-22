@@ -163,6 +163,21 @@ namespace SportsData.Api.Application.Admin
         {
             return Ok(await _adminService.GetMatchupPreview(contestId));
         }
+
+        [HttpGet]
+        [Route("errors/competitions-without-competitors")]
+        public async Task<IActionResult> GetCompetitionsWithoutCompetitors()
+        {
+            try 
+            {
+                var result = await _adminService.GetCompetitionsWithoutCompetitors();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 
     public class GenerateUrlIdentityCommand

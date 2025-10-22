@@ -45,6 +45,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IPickService, PickService>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
+            services.AddSingleton<CanonicalDataQueryProvider>();
+            services.AddScoped<IProvideCanonicalAdminData, CanonicalAdminDataProvider>();
+            services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
             services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
@@ -55,7 +58,6 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();
             services.AddScoped<MatchupScheduler>();
-            services.AddSingleton<CanonicalDataQueryProvider>();
             services.AddSingleton<MatchupPreviewPromptProvider>();
             services.AddScoped<ContestScoringJob>();
 

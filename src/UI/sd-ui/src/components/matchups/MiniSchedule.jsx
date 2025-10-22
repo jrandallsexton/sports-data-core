@@ -19,7 +19,7 @@ function getResultClass(game) {
 
 export default function MiniSchedule({ schedule = [], seasonYear }) {
   // TODO: create new endpoint that only returns completed games
-  const games = schedule.slice(0, 6);
+  const games = schedule.slice(0, 7);
   // Drilldown state: which row is open, and its data
   const [drillIndex, setDrillIndex] = useState(null);
   const [drillSchedule, setDrillSchedule] = useState([]);

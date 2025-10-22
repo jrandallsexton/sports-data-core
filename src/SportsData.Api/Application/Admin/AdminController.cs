@@ -14,6 +14,7 @@ namespace SportsData.Api.Application.Admin
 {
     [ApiController]
     [Route("[controller]")]
+    [AdminApiToken]
     public class AdminController : ControllerBase
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;

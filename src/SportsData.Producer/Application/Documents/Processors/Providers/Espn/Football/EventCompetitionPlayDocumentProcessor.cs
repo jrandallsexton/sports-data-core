@@ -57,7 +57,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         private async Task ProcessInternal(ProcessDocumentCommand command)
         {
             var externalDto = command.Document.FromJson<EspnEventCompetitionPlayDto>();
-
             
             if (externalDto is null)
             {
@@ -74,19 +73,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!command.Season.HasValue)
             {
                 _logger.LogError("Command must have a SeasonYear defined");
-                throw new InvalidOperationException("SeasonYear must be defined in the command.");
+                return;
             }
 
             if (string.IsNullOrEmpty(command.ParentId))
             {
                 _logger.LogError("Command must have a ParentId defined for the CompetitionId");
-                throw new InvalidOperationException("ParentId must be defined in the command.");
+                return;
             }
 
             if (!Guid.TryParse(command.ParentId, out var competitionId))
             {
                 _logger.LogError("CompetitionId could not be parsed");
-                throw new InvalidOperationException("ParentId must be a valid Guid.");
+                return;
             }
 
             Guid? competitionDriveId = null;

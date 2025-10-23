@@ -59,7 +59,7 @@ namespace SportsData.Producer.Application.Contests
 
             await _bus.Publish(new DocumentRequested(
                 Id: contestIdentity.UrlHash,
-                ParentId: command.ContestId.ToString(),
+                ParentId: null,
                 Uri: new Uri(contestIdentity.CleanUrl),
                 Sport: command.Sport,
                 SeasonYear: command.SeasonYear,

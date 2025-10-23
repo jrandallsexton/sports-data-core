@@ -69,55 +69,6 @@ namespace SportsData.Api.Application.Admin
         }
 
         [HttpPost]
-        [Route("matchup/{contestId}/preview/{previewId}/approve")]
-        public async Task<IActionResult> ApproveContestPreview([FromRoute] Guid contestId, [FromRoute] Guid previewId)
-        {
-            var userId = HttpContext.GetCurrentUserId();
-
-            var cmd = new ApproveMatchupPreviewCommand
-            {
-                PreviewId = previewId,
-                ContestId = contestId,
-                ApprovedByUserId = userId
-            };
-
-            var approvalResult = await _adminService.ApproveMatchupPreview(cmd);
-
-            if (approvalResult != previewId)
-            {
-                return BadRequest();
-            }
-
-            return Ok(approvalResult);
-        }
-
-        [HttpPost]
-        [Authorize]
-        [Route("matchup/{contestId}/preview/reject")]
-        public async Task<IActionResult> RejectContestPreview([FromBody] RejectMatchupPreviewCommand command)
-        {
-            var userId = HttpContext.GetCurrentUserId();
-
-            command.RejectedByUserId = userId;
-
-            var rejectionResult = await _adminService.RejectMatchupPreview(command);
-
-            if (rejectionResult != command.PreviewId)
-            {
-                return BadRequest();
-            }
-
-            var cmd = new GenerateMatchupPreviewsCommand
-            {
-                ContestId = command.ContestId
-            };
-
-            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
-
-            return Accepted(new { cmd.CorrelationId });
-        }
-
-        [HttpPost]
         [Route("matchup/preview/{contestId}")]
         public async Task<IActionResult> UpsertContestPreview(
             [FromRoute] Guid contestId,

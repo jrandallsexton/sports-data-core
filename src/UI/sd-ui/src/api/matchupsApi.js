@@ -1,4 +1,4 @@
-// src/api/matchups.js
+// src/api/matchupsApi.js
 import apiClient from "./apiClient";
 
 const MatchupsApi = {
@@ -11,15 +11,6 @@ const MatchupsApi = {
   resetPreviewByContestId: (contestId) =>
     apiClient.post(
       `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset`
-    ),
-  rejectPreviewByContestId: (contestId, command) =>
-    apiClient.post(
-      `/admin/matchup/${encodeURIComponent(contestId)}/preview/reject`,
-      command
-    ),
-  approvePreviewByContestId: (contestId, previewId) =>
-    apiClient.post(
-      `/admin/matchup/${encodeURIComponent(contestId)}/preview/${encodeURIComponent(previewId)}/approve`
     )
 };
 

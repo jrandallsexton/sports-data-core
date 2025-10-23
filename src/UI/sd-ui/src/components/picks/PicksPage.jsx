@@ -215,7 +215,7 @@ function PicksPage() {
         ContestId,
         RejectionNote,
       });
-      await apiWrapper.Matchups.rejectPreviewByContestId(ContestId, {
+      await apiWrapper.Previews.rejectPreviewByContestId(PreviewId, {
         PreviewId,
         ContestId,
         RejectionNote,
@@ -229,7 +229,7 @@ function PicksPage() {
 
   async function handleApprovePreview(contestId, previewId) {
     try {
-      await apiWrapper.Matchups.approvePreviewByContestId(contestId, previewId);
+      await apiWrapper.Previews.approvePreviewByContestId(previewId);
       toast.success("Preview approved.");
     } catch (error) {
       console.error("Error approving preview:", error);

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
@@ -20,10 +20,6 @@ namespace SportsData.Api.Application.Admin
         Task<string> GetMatchupPreview(Guid contestId);
 
         Task<Guid> UpsertMatchupPreview(string jsonContent);
-
-        Task<Guid> RejectMatchupPreview(AdminService.RejectMatchupPreviewCommand command);
-
-        Task<Guid> ApproveMatchupPreview(AdminService.ApproveMatchupPreviewCommand command);
 
         Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
     }
@@ -273,68 +269,6 @@ namespace SportsData.Api.Application.Admin
             return preview.ContestId;
         }
 
-        public async Task<Guid> RejectMatchupPreview(RejectMatchupPreviewCommand command)
-        {
-            var user = await _dataContext.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == command.RejectedByUserId);
-
-            if (user is null)
-            {
-                throw new InvalidOperationException("User not found");
-            }
-
-            //if (!user.)
-            //{
-            //    throw new UnauthorizedAccessException("User is not an admin");
-            //}
-
-            var preview = await _dataContext.MatchupPreviews
-                .FirstOrDefaultAsync(x => x.Id == command.PreviewId &&
-                                          x.ContestId == command.ContestId);
-
-            if (preview is null)
-                throw new InvalidOperationException("Preview not found.");
-
-            preview.RejectedUtc = DateTime.UtcNow;
-            preview.RejectionNote = command.RejectionNote;
-            preview.ModifiedBy = command.RejectedByUserId;
-
-            await _dataContext.SaveChangesAsync();
-
-            return preview.Id;
-        }
-
-        public async Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command)
-        {
-            var user = await _dataContext.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == command.ApprovedByUserId);
-
-            if (user is null)
-            {
-                throw new InvalidOperationException("User not found");
-            }
-
-            //if (!user.IsAdmin)
-            //{
-            //    throw new UnauthorizedAccessException("User is not an admin");
-            //}
-            var preview = await _dataContext.MatchupPreviews
-                .FirstOrDefaultAsync(x => x.Id == command.PreviewId &&
-                                          x.ContestId == command.ContestId);
-
-            if (preview is null)
-                throw new InvalidOperationException("Preview not found.");
-
-            preview.ApprovedUtc = DateTime.UtcNow;
-            preview.ModifiedBy = command.ApprovedByUserId;
-
-            await _dataContext.SaveChangesAsync();
-
-            return preview.Id;
-        }
-
         public async Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors()
         {
             try
@@ -366,9 +300,6 @@ namespace SportsData.Api.Application.Admin
         {
             [JsonPropertyName("previewId")]
             public Guid PreviewId { get; set; }
-
-            [JsonPropertyName("contestId")]
-            public Guid ContestId { get; set; }
 
             public Guid ApprovedByUserId { get; set; }
         }

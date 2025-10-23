@@ -68,6 +68,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IContestService, ContestService>();
             services.AddScoped<IRankingsService, RankingsService>();
 
+            services.AddScoped<IPreviewService, PreviewService>();
+
             return services;
         }
 

@@ -43,11 +43,6 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
 
-        if (evt.DocumentType == DocumentType.EventCompetitionPlay)
-        {
-            _logger.LogError("PLAY requested: {URI}", evt.Uri.OriginalString);
-        }
-
         var uri = evt.Uri;
 
         if (EspnResourceIndexClassifier.IsResourceIndex(uri))

@@ -79,11 +79,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
             }
 
-            var exists = await _dataContext.CompetitionCompetitors
+            var competitionCompetitorExists = await _dataContext.CompetitionCompetitors
                 .AsNoTracking()
                 .AnyAsync(x => x.Id == competitionCompetitorId);
 
-            if (!exists)
+            if (!competitionCompetitorExists)
             {
                 var competitionCompetitorRef =
                     EspnUriMapper.CompetitionCompetitorScoreRefToCompetitionCompetitorRef(dto.Ref);
@@ -113,13 +113,31 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");
             }
 
-            var entity = dto.AsEntity(
-                competitionCompetitorId,
-                _externalRefIdentityGenerator,
-                command.SourceDataProvider,
-                command.CorrelationId);
+            var scoreIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-            await _dataContext.CompetitionCompetitorScores.AddAsync(entity);
+            var score = await _dataContext.CompetitionCompetitorScores
+                .Where(x => x.Id == scoreIdentity.CanonicalId)
+                .FirstOrDefaultAsync();
+
+            if (score != null)
+            {
+                score.Value = dto.Value;
+                score.DisplayValue = dto.DisplayValue;
+                score.ModifiedBy = command.CorrelationId;
+                score.ModifiedUtc = DateTime.UtcNow;
+                score.SourceDescription = dto.Source?.Description ?? score.SourceDescription;
+            }
+            else
+            {
+                var entity = dto.AsEntity(
+                    competitionCompetitorId,
+                    _externalRefIdentityGenerator,
+                    command.SourceDataProvider,
+                    command.CorrelationId);
+
+                await _dataContext.CompetitionCompetitorScores.AddAsync(entity);
+            }
+
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Persisted score for Competitor {Id}", competitionCompetitorId);

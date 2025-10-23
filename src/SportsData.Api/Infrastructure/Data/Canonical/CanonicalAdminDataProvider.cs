@@ -9,6 +9,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical;
 public interface IProvideCanonicalAdminData
 {
     Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
+    Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
 }
 
 public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
@@ -39,6 +40,22 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch competitions without competitors");
+            throw;
+        }
+    }
+
+    public async Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays()
+    {
+        var sql = _queryProvider.GetCompetitionsWithoutPlays();
+
+        try
+        {
+            var results = await _connection.QueryAsync<CompetitionWithoutPlaysDto>(sql);
+            return results.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch competitions without plays");
             throw;
         }
     }

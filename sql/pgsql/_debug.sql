@@ -47,8 +47,8 @@ order by con."StartDateUtc"
 
 select con."Id", con."Name", comp."Id" as "CompId" from public."Contest" con
 inner join public."Competition" comp on comp."ContestId" = con."Id"
-where con."Id" = '7f39067b-40bb-aa0b-225d-7670409d1003'
-select * from public."CompetitionPlay" cp where cp."CompetitionId" = 'eda0c287-0d48-4715-4405-51414c3a416b'
+where con."Id" = '93401ef8-139a-00aa-76bb-320c1918aac9'
+select * from public."CompetitionPlay" cp where cp."CompetitionId" = 'b710d758-8425-8997-219f-f819a8708925'
 
 SELECT 
     con."Id" AS "ContestId",
@@ -112,7 +112,10 @@ select count(*) from public."CompetitionDrive"
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
 select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
-select * from public."Competition" where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+select * from public."Competition" where "ContestId" = 'd8e40731-fd15-f115-7d85-34cc5fadf4ff'
+select * from public."CompetitionPlay" where "CompetitionId" = 'b710d758-8425-8997-219f-f819a8708925' order by "SequenceNumber"
+
+select * from public."CompetitionBroadcast"
 select * from public."CompetitionProbability" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e' order by "SequenceNumber"
 
 select * from public."CompetitionCompetitorStatistics"
@@ -134,6 +137,8 @@ order by "Name"
     where fssc."FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
     order by "Category", "StatisticKey"
 
+select * from public."CompetitionCompetitorScores" where "CompetitionCompetitorId" = 'ffebeea8-fa17-ec5a-4798-2836b05cf54f'
+select * from public."CompetitionCompetitorScores" order by "CompetitionCompetitorId"
 select * from public."CompetitionCompetitorStatisticStats" where "CompetitionCompetitorStatisticCategoryId" = '0c5d0ca5-802c-4087-9bcf-75b85e90383a' order by "Name"
 
 select * from public."CompetitionOdds" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e'

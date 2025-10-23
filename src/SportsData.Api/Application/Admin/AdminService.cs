@@ -22,6 +22,8 @@ namespace SportsData.Api.Application.Admin
         Task<Guid> UpsertMatchupPreview(string jsonContent);
 
         Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
+        
+        Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
     }
 
     public class AdminService : IAdminService
@@ -278,6 +280,19 @@ namespace SportsData.Api.Application.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without competitors");
+                throw;
+            }
+        }
+
+        public async Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays()
+        {
+            try
+            {
+                return await _canonicalAdminData.GetCompetitionsWithoutPlays();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get competitions without plays");
                 throw;
             }
         }

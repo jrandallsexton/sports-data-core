@@ -2,10 +2,26 @@
   padding: 18px;
 }
 .admin-header h1 {
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
+  /* Match card h2 styling used elsewhere: light-blue title, larger, bold, with underline */
+  color: #61dafb;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding-left: 2px;
+  border-bottom: 1.5px solid #61dafb;
+  padding-bottom: 0.4rem;
 }
 .admin-subtitle {
   color: #9aa0a6;
+  margin-bottom: 12px;
+}
+.admin-header {
+  background: #23272f;
+  color: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #343a40;
   margin-bottom: 12px;
 }
 .admin-grid {

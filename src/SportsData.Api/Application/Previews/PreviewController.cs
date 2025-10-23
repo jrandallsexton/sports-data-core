@@ -9,7 +9,7 @@ using static SportsData.Api.Application.Admin.AdminService;
 namespace SportsData.Api.Application.Previews
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("preview")]
     public class PreviewController : ControllerBase
     {
         private readonly IPreviewService _previewService;

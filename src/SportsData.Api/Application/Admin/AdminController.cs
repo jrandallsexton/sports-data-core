@@ -1,19 +1,15 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Extensions;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
 
-using static SportsData.Api.Application.Admin.AdminService;
-
 namespace SportsData.Api.Application.Admin
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("admin")]
     [AdminApiToken]
     public class AdminController : ControllerBase
     {
@@ -123,6 +119,21 @@ namespace SportsData.Api.Application.Admin
             try 
             {
                 var result = await _adminService.GetCompetitionsWithoutCompetitors();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("errors/competitions-without-plays")]
+        public async Task<IActionResult> GetCompetitionsWithoutPlays()
+        {
+            try 
+            {
+                var result = await _adminService.GetCompetitionsWithoutPlays();
                 return Ok(result);
             }
             catch (Exception ex)

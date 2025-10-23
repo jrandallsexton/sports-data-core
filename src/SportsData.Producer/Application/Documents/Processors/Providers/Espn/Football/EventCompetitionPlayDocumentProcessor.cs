@@ -42,6 +42,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                    }))
             {
                 _logger.LogInformation("Processing EventDocument with {@Command}", command);
+                _logger.LogError("PLAY processing {@Command}", command);
                 try
                 {
                     await ProcessInternal(command);

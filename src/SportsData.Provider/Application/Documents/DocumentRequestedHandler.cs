@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
@@ -42,6 +42,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private async Task ConsumeInternal(DocumentRequested evt)
     {
         _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
+
+        if (evt.DocumentType == DocumentType.EventCompetitionPlay)
+        {
+            _logger.LogError("PLAY requested: {URI}", evt.Uri.OriginalString);
+        }
 
         var uri = evt.Uri;
 

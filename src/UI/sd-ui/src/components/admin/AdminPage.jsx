@@ -71,21 +71,27 @@ export default function AdminPage() {
       <AdminHeader />
 
       <div className="admin-grid">
-        <CompetitionsWithoutCompetitors items={items} loading={loading} error={error} />
+        <div className="admin-main">
+          {/* Top widgets: place System Health and Recent Errors side-by-side */}
+          <div className="admin-top-widgets">
+            <SystemHealth />
+            <RecentErrors />
+          </div>
 
-        <SystemHealth />
+          <CompetitionsWithoutCompetitors items={items} loading={loading} error={error} />
+        </div>
 
-        <CompetitionsWithoutPlays
-          playsItems={playsItems}
-          playsLoading={playsLoading}
-          playsError={playsError}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          handleChangePage={handleChangePage}
-          handleChangeRowsPerPage={handleChangeRowsPerPage}
-        />
-
-        <RecentErrors />
+        <div className="admin-plays">
+          <CompetitionsWithoutPlays
+            playsItems={playsItems}
+            playsLoading={playsLoading}
+            playsError={playsError}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            handleChangePage={handleChangePage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+          />
+        </div>
       </div>
     </div>
   );

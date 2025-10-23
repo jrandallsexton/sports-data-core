@@ -26,15 +26,15 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
       ) : (
         <>
           <TableContainer component={Paper} sx={{ background: '#23272f', color: '#f8f9fa' }}>
-            <Table aria-label="competitions-without-plays">
+            <Table aria-label="competitions-without-plays" sx={{ minWidth: 920, tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>CompetitionId</TableCell>
-                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>ContestId</TableCell>
-                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>ContestName</TableCell>
-                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>StartDateUtc</TableCell>
-                  <TableCell align="right" sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>PlayCount</TableCell>
-                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)' }}>LastPlayText</TableCell>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>CompetitionId</TableCell>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>ContestId</TableCell>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 340 }}>ContestName</TableCell>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>StartDateUtc</TableCell>
+                  <TableCell align="right" sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 80 }}>PlayCount</TableCell>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 200 }}>LastPlayText</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -55,27 +55,27 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
 
                   return (
                     <TableRow key={it.competitionId ?? it.contestId} hover sx={{ '& td': { color: '#f8f9fa', borderBottom: '1px solid rgba(255,255,255,0.04)' } }}>
-                      <TableCell>{it.competitionId}</TableCell>
-                      <TableCell>{it.contestId}</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.competitionId}</TableCell>
+                      <TableCell sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.contestId}</TableCell>
+                      <TableCell sx={{ width: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {it.contestId && it.contestName ? (
                           <a
                             href={`/app/sport/football/ncaa/contest/${it.contestId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ color: '#61dafb', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            style={{ color: '#61dafb', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}
                             aria-label={`Open contest ${it.contestName} in new tab`}
                           >
-                            <span>{it.contestName}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100%' }}>{it.contestName}</span>
                             <FiExternalLink style={{ fontSize: '0.9em' }} />
                           </a>
                         ) : (
                           it.contestName ?? '-'
                         )}
                       </TableCell>
-                      <TableCell>{startDisplay}</TableCell>
-                      <TableCell align="right">{playCount}</TableCell>
-                      <TableCell>{it.lastPlayText ?? '-'}</TableCell>
+                      <TableCell sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{startDisplay}</TableCell>
+                      <TableCell align="right" sx={{ width: 80 }}>{playCount}</TableCell>
+                      <TableCell sx={{ width: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.lastPlayText ?? '-'}</TableCell>
                     </TableRow>
                   );
                 })}

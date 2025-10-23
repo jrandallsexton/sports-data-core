@@ -28,6 +28,36 @@
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 12px;
+  /* explicit grid areas to guarantee placement: main content, sidebar (stacked), plays area below */
+  grid-template-areas:
+    "main sidebar"
+    "plays sidebar";
+}
+
+.admin-sidebar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  grid-area: sidebar;
+}
+
+.admin-main {
+  grid-area: main;
+}
+
+.admin-plays {
+  grid-area: plays;
+}
+
+/* Top-row widgets container: place SystemHealth and RecentErrors side-by-side */
+.admin-top-widgets {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 900px) {
+  .admin-top-widgets { flex-direction: column; }
 }
 .admin-card {
   background: #23272f;

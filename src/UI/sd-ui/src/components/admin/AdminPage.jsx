@@ -57,6 +57,20 @@ export default function AdminPage() {
     return () => { cancelled = true; };
   }, []);
 
+  // Extracted loader so child components can request a refresh without reloading the whole page
+  const loadPlays = async () => {
+    setPlaysLoading(true);
+    setPlaysError(null);
+    try {
+      const res = await apiWrapper.Admin.getCompetitionsWithoutPlays();
+      setPlaysItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
+    } catch (err) {
+      setPlaysError(err.message || 'Failed to fetch plays dataset');
+    } finally {
+      setPlaysLoading(false);
+    }
+  };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -90,6 +104,7 @@ export default function AdminPage() {
             rowsPerPage={rowsPerPage}
             handleChangePage={handleChangePage}
             handleChangeRowsPerPage={handleChangeRowsPerPage}
+            refreshPlays={loadPlays}
           />
         </div>
       </div>

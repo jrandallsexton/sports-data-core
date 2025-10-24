@@ -50,35 +50,6 @@ inner join public."Competition" comp on comp."ContestId" = con."Id"
 where con."Id" = '93401ef8-139a-00aa-76bb-320c1918aac9'
 select * from public."CompetitionPlay" cp where cp."CompetitionId" = 'b710d758-8425-8997-219f-f819a8708925'
 
-SELECT 
-    con."Id" AS "ContestId",
-    con."Name" AS "ContestName",
-    con."StartDateUtc",
-    comp."Id" AS "CompetitionId",
-    COUNT(cp."Id") AS "PlayCount",
-    MAX(cp."Text") AS "LastPlayText"
-FROM public."Competition" comp
-JOIN public."Contest" con ON con."Id" = comp."ContestId"
-LEFT JOIN public."CompetitionPlay" cp ON cp."CompetitionId" = comp."Id"
-WHERE con."StartDateUtc" < now()  -- ⏰ Only games that should have started
-GROUP BY con."Id", con."Name", con."StartDateUtc", comp."Id"
-HAVING COUNT(cp."Id") <= 10
-ORDER BY con."StartDateUtc";
-
-SELECT COUNT(*) AS "AffectedCompetitionCount"
-FROM (
-    SELECT comp."Id"
-    FROM public."Competition" comp
-    JOIN public."Contest" con ON con."Id" = comp."ContestId"
-    LEFT JOIN public."CompetitionPlay" cp ON cp."CompetitionId" = comp."Id"
-    WHERE con."StartDateUtc" < now()
-    GROUP BY comp."Id"
-    HAVING COUNT(cp."Id") <= 10
-) AS sub;
-
-select * from public."CompetitionLeaderStat"
-
-
 select
   c."Id" as "ContestId",
   c."AwayTeamFranchiseSeasonId",
@@ -93,7 +64,6 @@ from public."Contest" c
 where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 -- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
-select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select count(*) from public."CompetitionProbability"

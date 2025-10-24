@@ -7,16 +7,29 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import TablePagination from '@mui/material/TablePagination';
-import { FiExternalLink } from 'react-icons/fi';
+import { FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import './AdminPage.css';
 
-export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading, playsError, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage }) {
+export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading, playsError, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, refreshPlays }) {
   return (
     <section className="admin-card">
-      <h3>
-        Competitions Without Plays
-        {!playsLoading && !playsError ? <span> ({playsItems.length})</span> : null}
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <h3 style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>
+          Competitions Without Plays
+          {!playsLoading && !playsError ? <span> ({playsItems.length})</span> : null}
+        </h3>
+        <div style={{ flex: '0 0 auto' }}>
+          {playsLoading ? (
+            <CircularProgress size={18} thickness={6} color="inherit" />
+          ) : (
+            <IconButton aria-label="Refresh plays" size="small" onClick={() => { if (typeof refreshPlays === 'function') refreshPlays(); }} sx={{ color: '#61dafb', ml: 1 }}>
+              <FiRefreshCw />
+            </IconButton>
+          )}
+        </div>
+      </div>
       {playsLoading ? (
         <div className="placeholder">Loading</div>
       ) : playsError ? (

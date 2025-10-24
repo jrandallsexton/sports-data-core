@@ -6,6 +6,8 @@ const AdminApi = {
     apiClient.get('/admin/errors/competitions-without-competitors'),
   getCompetitionsWithoutPlays: () =>
     apiClient.get('/admin/errors/competitions-without-plays'),
+  getCompetitionsWithoutDrives: () =>
+    apiClient.get('/admin/errors/competitions-without-drives'),
 };
 
 export default AdminApi;

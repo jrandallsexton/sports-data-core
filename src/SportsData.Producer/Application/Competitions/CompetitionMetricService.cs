@@ -7,7 +7,12 @@ using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Application.Competitions
 {
-    public class CompetitionMetricService
+    public interface ICompetitionMetricService
+    {
+        Task CalculateCompetitionMetrics(Guid competitionId);
+    }
+
+    public class CompetitionMetricService : ICompetitionMetricService
     {
         private readonly ILogger<CompetitionMetricService> _logger;
         private readonly TeamSportDataContext _dataContext;
@@ -32,6 +37,7 @@ namespace SportsData.Producer.Application.Competitions
                 .Include(x => x.Drives.OrderBy(y => y.SequenceNumber))
                 .ThenInclude(d => d.Plays.OrderBy(p => p.SequenceNumber))
                 .Include(x => x.Plays.OrderBy(p => p.SequenceNumber))
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == competitionId);
 
             if (competition == null)
@@ -44,6 +50,7 @@ namespace SportsData.Producer.Application.Competitions
             var homeFranchiseSeasonId = competition.Contest.HomeTeamFranchiseSeasonId;
 
             var (awayMetric, homeMetric) = CalculateMetrics(
+                competitionId,
                 competition.Plays.ToList(),
                 awayFranchiseSeasonId,
                 homeFranchiseSeasonId);
@@ -54,30 +61,71 @@ namespace SportsData.Producer.Application.Competitions
         }
 
         private (CompetitionMetric, CompetitionMetric) CalculateMetrics(
+            Guid competitionId,
             List<CompetitionPlay> plays,
             Guid awayFranchiseSeasonId,
             Guid homeFranchiseSeasonId)
         {
             var awayMetric = new CompetitionMetric
             {
+                CompetitionId = competitionId,
+                FranchiseSeasonId = awayFranchiseSeasonId,
+                Season = DateTime.UtcNow.Year, // TODO: Get from competition/contest
                 Ypp = CalculateYpp(awayFranchiseSeasonId, plays),
                 SuccessRate = CalculateSuccessRate(awayFranchiseSeasonId, plays),
                 ExplosiveRate = CalculateExplosiveRate(awayFranchiseSeasonId, plays),
                 ThirdFourthRate = CalculateThirdFourthConversionRate(awayFranchiseSeasonId, plays),
                 PointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
                 RzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
-                RzScoreRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays)
+                RzScoreRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
+                // Opponent metrics (from home team's perspective)
+                OppYpp = CalculateYpp(homeFranchiseSeasonId, plays),
+                OppSuccessRate = CalculateSuccessRate(homeFranchiseSeasonId, plays),
+                OppExplosiveRate = CalculateExplosiveRate(homeFranchiseSeasonId, plays),
+                OppPointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+                OppThirdFourthRate = CalculateThirdFourthConversionRate(homeFranchiseSeasonId, plays),
+                OppRzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
+                OppScoreTdRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
+                // Special teams / Discipline (TODO)
+                NetPunt = 0m,
+                FgPctShrunk = 0m,
+                FieldPosDiff = 0m,
+                TurnoverMarginPerDrive = 0m,
+                PenaltyYardsPerPlay = 0m,
+                // Bookkeeping
+                ComputedUtc = DateTime.UtcNow,
+                InputsHash = null
             };
 
             var homeMetric = new CompetitionMetric
             {
+                CompetitionId = competitionId,
+                FranchiseSeasonId = homeFranchiseSeasonId,
+                Season = DateTime.UtcNow.Year, // TODO: Get from competition/contest
                 Ypp = CalculateYpp(homeFranchiseSeasonId, plays),
                 SuccessRate = CalculateSuccessRate(homeFranchiseSeasonId, plays),
                 ExplosiveRate = CalculateExplosiveRate(homeFranchiseSeasonId, plays),
                 ThirdFourthRate = CalculateThirdFourthConversionRate(homeFranchiseSeasonId, plays),
                 PointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
                 RzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
-                RzScoreRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays)
+                RzScoreRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
+                // Opponent metrics (from away team's perspective)
+                OppYpp = CalculateYpp(awayFranchiseSeasonId, plays),
+                OppSuccessRate = CalculateSuccessRate(awayFranchiseSeasonId, plays),
+                OppExplosiveRate = CalculateExplosiveRate(awayFranchiseSeasonId, plays),
+                OppPointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+                OppThirdFourthRate = CalculateThirdFourthConversionRate(awayFranchiseSeasonId, plays),
+                OppRzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
+                OppScoreTdRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
+                // Special teams / Discipline (TODO)
+                NetPunt = 0m,
+                FgPctShrunk = 0m,
+                FieldPosDiff = 0m,
+                TurnoverMarginPerDrive = 0m,
+                PenaltyYardsPerPlay = 0m,
+                // Bookkeeping
+                ComputedUtc = DateTime.UtcNow,
+                InputsHash = null
             };
 
             return (awayMetric, homeMetric);
@@ -153,7 +201,7 @@ namespace SportsData.Producer.Application.Competitions
         }
 
         // PPD from plays only (ordered). We infer drives by contiguous offensive scrimmage snaps by the same offense.
-        // homeFsId / awayFsId are used to select the team’s score on each play.
+        // homeFsId / awayFsId are used to select the team's score on each play.
         // PPD from plays only (ordered). We infer drives by contiguous offensive scrimmage snaps
         // by the same offense. homeFsId/awayFsId are used to read the correct scoreboard.
         private decimal CalculatePointsPerDrive(
@@ -308,7 +356,7 @@ namespace SportsData.Producer.Application.Competitions
                    || t == PlayType.Safety;
         }
 
-        // full filter for “counts toward offense’s snaps”
+        // full filter for "counts toward offense's snaps"
         private static bool IsOffensiveScrimmageSnap(CompetitionPlay p, Guid franchiseSeasonId)
         {
             if (!IsOffense(p, franchiseSeasonId)) return false;

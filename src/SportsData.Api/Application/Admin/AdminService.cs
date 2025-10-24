@@ -24,6 +24,8 @@ namespace SportsData.Api.Application.Admin
         Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
         
         Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
+        
+        Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives();
     }
 
     public class AdminService : IAdminService
@@ -293,6 +295,19 @@ namespace SportsData.Api.Application.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without plays");
+                throw;
+            }
+        }
+
+        public async Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives()
+        {
+            try
+            {
+                return await _canonicalAdminData.GetCompetitionsWithoutDrives();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get competitions without drives");
                 throw;
             }
         }

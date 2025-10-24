@@ -10,6 +10,7 @@ public interface IProvideCanonicalAdminData
 {
     Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
     Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
+    Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives();
 }
 
 public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
@@ -56,6 +57,22 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch competitions without plays");
+            throw;
+        }
+    }
+
+    public async Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives()
+    {
+        var sql = _queryProvider.GetCompetitionsWithoutDrives();
+
+        try
+        {
+            var results = await _connection.QueryAsync<CompetitionWithoutDrivesDto>(sql);
+            return results.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch competitions without drives");
             throw;
         }
     }

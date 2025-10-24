@@ -81,9 +81,28 @@ select count(*) from public."CompetitionDrive"
 -- FIX DEV - 07 OCT 2025
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
-select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"
-select * from public."Competition" where "ContestId" = 'd8e40731-fd15-f115-7d85-34cc5fadf4ff'
-select * from public."CompetitionPlay" where "CompetitionId" = 'b710d758-8425-8997-219f-f819a8708925' order by "SequenceNumber"
+select * from public."Contest" where "Id" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
+select * from public."Competition" where "ContestId" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
+select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
+select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
+select * from public."CompetitionMetric"
+--delete from public."CompetitionMetric"
+
+SELECT json_agg(row_to_json(cm))
+FROM (
+    select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
+) cm;
+
+SELECT json_agg(row_to_json(cm))
+FROM (
+    select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
+) cm;
+
+SELECT json_agg(row_to_json(cm))
+FROM (
+    SELECT * FROM public."CompetitionMetric"
+) cm;
+
 
 select * from public."CompetitionBroadcast"
 select * from public."CompetitionProbability" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e' order by "SequenceNumber"

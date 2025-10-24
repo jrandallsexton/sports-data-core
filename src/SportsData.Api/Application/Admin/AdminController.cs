@@ -141,6 +141,21 @@ namespace SportsData.Api.Application.Admin
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet]
+        [Route("errors/competitions-without-drives")]
+        public async Task<IActionResult> GetCompetitionsWithoutDrives()
+        {
+            try 
+            {
+                var result = await _adminService.GetCompetitionsWithoutDrives();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 
     public class GenerateUrlIdentityCommand

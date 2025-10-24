@@ -4,6 +4,7 @@ import apiWrapper from '../../api/apiWrapper';
 import AdminHeader from './AdminHeader';
 import CompetitionsWithoutCompetitors from './CompetitionsWithoutCompetitors';
 import CompetitionsWithoutPlays from './CompetitionsWithoutPlays';
+import CompetitionsWithoutDrives from './CompetitionsWithoutDrives';
 import SystemHealth from './SystemHealth';
 import RecentErrors from './RecentErrors';
 
@@ -14,8 +15,13 @@ export default function AdminPage() {
   const [playsLoading, setPlaysLoading] = useState(false);
   const [playsError, setPlaysError] = useState(null);
   const [playsItems, setPlaysItems] = useState([]);
+  const [drivesLoading, setDrivesLoading] = useState(false);
+  const [drivesError, setDrivesError] = useState(null);
+  const [drivesItems, setDrivesItems] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [pageDrives, setPageDrives] = useState(0);
+  const [rowsPerPageDrives, setRowsPerPageDrives] = useState(5);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +77,38 @@ export default function AdminPage() {
     }
   };
 
+  // Load competitions without drives (separate dataset)
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setDrivesLoading(true);
+      setDrivesError(null);
+      try {
+        const res = await apiWrapper.Admin.getCompetitionsWithoutDrives();
+        if (!cancelled) setDrivesItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
+      } catch (err) {
+        if (!cancelled) setDrivesError(err.message || 'Failed to fetch drives dataset');
+      } finally {
+        if (!cancelled) setDrivesLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const loadDrives = async () => {
+    setDrivesLoading(true);
+    setDrivesError(null);
+    try {
+      const res = await apiWrapper.Admin.getCompetitionsWithoutDrives();
+      setDrivesItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
+    } catch (err) {
+      setDrivesError(err.message || 'Failed to fetch drives dataset');
+    } finally {
+      setDrivesLoading(false);
+    }
+  };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -78,6 +116,15 @@ export default function AdminPage() {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleChangePageDrives = (event, newPage) => {
+    setPageDrives(newPage);
+  };
+
+  const handleChangeRowsPerPageDrives = (event) => {
+    setRowsPerPageDrives(parseInt(event.target.value, 10));
+    setPageDrives(0);
   };
 
   return (
@@ -105,6 +152,16 @@ export default function AdminPage() {
             handleChangePage={handleChangePage}
             handleChangeRowsPerPage={handleChangeRowsPerPage}
             refreshPlays={loadPlays}
+          />
+          <CompetitionsWithoutDrives
+            items={drivesItems}
+            loading={drivesLoading}
+            error={drivesError}
+            page={pageDrives}
+            rowsPerPage={rowsPerPageDrives}
+            handleChangePage={handleChangePageDrives}
+            handleChangeRowsPerPage={handleChangeRowsPerPageDrives}
+            refresh={loadDrives}
           />
         </div>
       </div>

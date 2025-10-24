@@ -163,6 +163,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderStat.EntityConfiguration());
 
+            modelBuilder.ApplyConfiguration(new CompetitionMetric.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionOddsExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionTeamOdds.EntityConfiguration());

@@ -12,34 +12,35 @@ import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import './AdminPage.css';
 
-export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading, playsError, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, refreshPlays }) {
+export default function CompetitionsWithoutDrives({ items = [], loading, error, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, refresh }) {
   return (
     <section className="admin-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h3 style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>
-          Competitions Without Plays
-          {!playsLoading && !playsError ? <span> ({playsItems.length})</span> : null}
+          Competitions Without Drives
+          {!loading && !error ? <span> ({items.length})</span> : null}
         </h3>
         <div style={{ flex: '0 0 auto' }}>
-          {playsLoading ? (
+          {loading ? (
             <CircularProgress size={18} thickness={6} color="inherit" />
           ) : (
-            <IconButton aria-label="Refresh plays" size="small" onClick={() => { if (typeof refreshPlays === 'function') refreshPlays(); }} sx={{ color: '#61dafb', ml: 1 }}>
+            <IconButton aria-label="Refresh drives" size="small" onClick={() => { if (typeof refresh === 'function') refresh(); }} sx={{ color: '#61dafb', ml: 1 }}>
               <FiRefreshCw />
             </IconButton>
           )}
         </div>
       </div>
-      {playsLoading ? (
+
+      {loading ? (
         <div className="placeholder">Loading</div>
-      ) : playsError ? (
-        <div className="placeholder">Error: {String(playsError)}</div>
-      ) : playsItems.length === 0 ? (
+      ) : error ? (
+        <div className="placeholder">Error: {String(error)}</div>
+      ) : items.length === 0 ? (
         <div className="placeholder">No items found.</div>
       ) : (
         <>
           <TableContainer component={Paper} sx={{ background: '#23272f', color: '#f8f9fa' }}>
-            <Table aria-label="competitions-without-plays" sx={{ minWidth: 920, tableLayout: 'fixed' }}>
+            <Table aria-label="competitions-without-drives" sx={{ minWidth: 920, tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>CompetitionId</TableCell>
@@ -47,10 +48,11 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 340 }}>ContestName</TableCell>
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>StartDateUtc</TableCell>
                   <TableCell align="right" sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 80 }}>PlayCount</TableCell>
+                  <TableCell align="right" sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 80 }}>PlaysWithDriveId</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {playsItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((it) => {
+                {items.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((it) => {
                   const start = it.startDateUtc;
                   const isSentinel = typeof start === 'string' && start.startsWith('0001-01-01');
                   let startDisplay = '-';
@@ -64,6 +66,7 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
                   }
 
                   const playCount = typeof it.playCount === 'number' ? it.playCount : Number(it.playCount || 0);
+                  const drivesWithId = typeof it.playsWithDriveId === 'number' ? it.playsWithDriveId : Number(it.playsWithDriveId || 0);
 
                   return (
                     <TableRow key={it.competitionId ?? it.contestId} hover sx={{ '& td': { color: '#f8f9fa', borderBottom: '1px solid rgba(255,255,255,0.04)' } }}>
@@ -87,6 +90,7 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
                       </TableCell>
                       <TableCell sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{startDisplay}</TableCell>
                       <TableCell align="right" sx={{ width: 80 }}>{playCount}</TableCell>
+                      <TableCell align="right" sx={{ width: 80 }}>{drivesWithId}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -95,7 +99,7 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
           </TableContainer>
           <TablePagination
             component="div"
-            count={playsItems.length}
+            count={items.length}
             page={page}
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}

@@ -107,7 +107,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             }
             else
             {
-                await ProcessUpdate(command, externalDto, entity);
+                await ProcessUpdate(
+                    command,
+                    competitionId,
+                    externalDto,
+                    entity);
             }
         }
 
@@ -151,6 +155,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             await _dataContext.Drives.AddAsync(entity);
             await _dataContext.SaveChangesAsync();
 
+            await ProcessPlays(
+                command,
+                competitionId,
+                externalDto,
+                entity);
+        }
+
+        private async Task ProcessPlays(
+            ProcessDocumentCommand command,
+            Guid competitionId,
+            EspnEventCompetitionDriveDto externalDto,
+            CompetitionDrive drive)
+        {
             if (externalDto.Plays?.Items != null)
             {
                 foreach (var play in externalDto.Plays.Items)
@@ -163,7 +180,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
                     if (playEntity != null)
                     {
-                        playEntity.DriveId = entity.Id;
+                        playEntity.DriveId = drive.Id;
                     }
                     else
                     {
@@ -180,7 +197,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                             CausationId: CausationId.Producer.GroupSeasonDocumentProcessor,
                             PropertyBag: new Dictionary<string, string>()
                             {
-                                { "CompetitionDriveId", entity.Id.ToString()}
+                                { "CompetitionDriveId", drive.Id.ToString()}
                             }
                         ));
 
@@ -194,11 +211,15 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         private async Task ProcessUpdate(
             ProcessDocumentCommand command,
-            object externalDto,
+            Guid competitionId,
+            EspnEventCompetitionDriveDto externalDto,
             CompetitionDrive entity)
         {
-            // TODO: Implement update logic if necessary
-            await Task.Delay(100);
+            await ProcessPlays(
+                command,
+                competitionId,
+                externalDto,
+                entity);
         }
     }
 }

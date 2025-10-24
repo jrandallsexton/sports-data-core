@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251024131851_24OctV2_Metrics")]
+    partial class _24OctV2_Metrics
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5492,10 +5495,11 @@ namespace SportsData.Producer.Migrations
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Metrics.CompetitionMetric", b =>
                 {
-                    b.Property<Guid>("CompetitionId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("FranchiseSeasonId")
+                    b.Property<Guid>("CompetitionId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("ComputedUtc")
@@ -5508,23 +5512,19 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("ExplosiveRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("FgPctShrunk")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("FieldPosDiff")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
+                        .HasColumnType("numeric");
 
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("FranchiseSeasonId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("InputsHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
@@ -5533,77 +5533,59 @@ namespace SportsData.Producer.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("NetPunt")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("OppExplosiveRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("OppPointsPerDrive")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("OppRzTdRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("OppScoreTdRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("OppSuccessRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("OppThirdFourthRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("OppYpp")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("PenaltyYardsPerPlay")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("PointsPerDrive")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("RzScoreRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("RzTdRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<int>("Season")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("SuccessRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("ThirdFourthRate")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("TurnoverMarginPerDrive")
-                        .HasPrecision(6, 3)
-                        .HasColumnType("numeric(6,3)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("Ypp")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric");
 
-                    b.HasKey("CompetitionId", "FranchiseSeasonId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("Season", "FranchiseSeasonId");
-
-                    b.ToTable("CompetitionMetric", (string)null);
+                    b.ToTable("CompetitionMetrics");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.OutboxPing", b =>

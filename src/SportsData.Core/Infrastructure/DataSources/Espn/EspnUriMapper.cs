@@ -190,6 +190,42 @@ public static class EspnUriMapper
         return new Uri(uriString);
     }
 
+    public static Uri CompetitionRefToCompetitionDrivesRef(Uri competitionRef, int limit = 25)
+    {
+        if (competitionRef == null)
+            throw new ArgumentNullException(nameof(competitionRef));
+
+        var s = competitionRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / events / {eventId} / competitions / {competitionId}[?qs]
+        var eventsIndex = Array.IndexOf(parts, "events");
+        var competitionsIndex = Array.IndexOf(parts, "competitions");
+
+        if (eventsIndex < 0 || competitionsIndex < 0 || competitionsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN Competition ref format: {competitionRef}");
+
+        // Extract competitionId (strip query if present)
+        var competitionIdPart = parts[competitionsIndex + 1];
+        var q = competitionIdPart.IndexOf('?');
+        var competitionId = q >= 0 ? competitionIdPart[..q] : competitionIdPart;
+
+        if (string.IsNullOrWhiteSpace(competitionId) || !competitionId.All(char.IsDigit))
+            throw new InvalidOperationException($"Missing or invalid competition id in ref: {competitionRef}");
+
+        // Append "plays" after competition ID
+        var baseParts = parts.Take(competitionsIndex + 2).Append("drives");
+        var path = string.Join('/', baseParts);
+
+        // Preserve existing query and append ?limit= or &limit=
+        var existingQuery = competitionRef.Query; // includes leading "?" if present
+        var limitQuery = string.IsNullOrWhiteSpace(existingQuery)
+            ? $"?limit={limit}"
+            : $"{existingQuery}&limit={limit}";
+
+        return new Uri(path + limitQuery, UriKind.Absolute);
+    }
+
     public static Uri CompetitionRefToCompetitionPlaysRef(Uri competitionRef, int limit = 25)
     {
         if (competitionRef == null)

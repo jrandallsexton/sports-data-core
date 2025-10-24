@@ -3,6 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
@@ -72,6 +73,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IContestOverviewService, ContestOverviewService>();
 
             services.AddScoped<ISeasonWeekService, SeasonWeekService>();
+
+            services.AddScoped<ICompetitionMetricService, CompetitionMetricService>();
+            services.AddScoped<ICompetitionService, CompetitionService>();
 
             return services;
         }

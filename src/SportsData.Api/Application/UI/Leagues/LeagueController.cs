@@ -121,6 +121,7 @@ public class LeagueController : ApiControllerBase
             return Ok(new { Message = "Successfully joined the league." });
         }
 
+        // TODO: refactor common failure handling
         if (result is Failure<Guid?> failure)
         {
             return result.Status switch

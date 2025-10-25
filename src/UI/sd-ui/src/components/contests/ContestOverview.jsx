@@ -8,9 +8,10 @@ import "./ContestOverview.css";
 import ContestOverviewHeader from "./ContestOverviewHeader";
 import ContestOverviewLeaders from "./ContestOverviewLeaders";
 import ContestOverviewPlaylog from "./ContestOverviewPlaylog";
-import ContestOverviewTeamStats from "./ContestOverviewTeamStats";
+// ContestOverviewTeamStats temporarily removed until teamStats DTO is available
 import ContestOverviewWinProb from "./ContestOverviewWinProb";
 import ContestOverviewInfo from "./ContestOverviewInfo";
+import ContestOverviewMetrics from "./ContestOverviewMetrics";
 
 export default function ContestOverview() {
   const { contestId } = useParams();
@@ -42,7 +43,7 @@ export default function ContestOverview() {
     return <div>No contest data available. (Debug: {JSON.stringify(data)})</div>;
   }
 
-  const { header, info, leaders, playLog, teamStats, winProbability } = dto;
+  const { header, info, leaders, playLog, winProbability, homeMetrics, awayMetrics } = dto;
   const { homeTeam, awayTeam, quarterScores } = header;
 
   const handleRefresh = async () => {
@@ -66,8 +67,9 @@ export default function ContestOverview() {
           <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
         </div>
         <div className="contest-overview-col">
-          <ContestOverviewTeamStats homeTeam={homeTeam} awayTeam={awayTeam} teamStats={teamStats} />
+          {/* Win probability moved up until TeamStats is available */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
+          <ContestOverviewMetrics homeMetrics={homeMetrics} awayMetrics={awayMetrics} homeName={homeTeam?.displayName} awayName={awayTeam?.displayName} />
           <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">

@@ -20,6 +20,8 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
             public ContestStatus Status { get; set; }
 
+            public string? Broadcasts { get; set; }
+
             // Teams
             public string Away { get; set; } = default!;
             public string AwayShort { get; set; } = default!;

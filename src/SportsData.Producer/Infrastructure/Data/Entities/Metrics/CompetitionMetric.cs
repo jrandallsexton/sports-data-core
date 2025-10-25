@@ -20,6 +20,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
         public decimal ThirdFourthRate { get; set; }
         public decimal? RzTdRate { get; set; }
         public decimal? RzScoreRate { get; set; }
+        public decimal TimePossRatio { get; set; }
 
         // Defense (opponent perspective)
         public decimal OppYpp { get; set; }
@@ -62,6 +63,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
                 b.Property(x => x.ThirdFourthRate).HasPrecision(5, 4);
                 b.Property(x => x.RzTdRate).HasPrecision(5, 4);
                 b.Property(x => x.RzScoreRate).HasPrecision(5, 4);
+                b.Property(x => x.TimePossRatio).HasPrecision(5, 2);
 
                 b.Property(x => x.OppSuccessRate).HasPrecision(5, 4);
                 b.Property(x => x.OppExplosiveRate).HasPrecision(5, 4);

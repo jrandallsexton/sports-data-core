@@ -2,7 +2,9 @@
   c."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" as "StartDateUtc",
-  replace(cs."StatusDescription", ' ', '') AS "Status",  
+  replace(cs."StatusDescription", ' ', '') AS "Status",
+
+STRING_AGG(cb."TypeShortName" || ':' || cb."Station", ', ') AS "Broadcasts",
 
   v."Name" as "Venue",
   v."City" as "VenueCity",
@@ -52,6 +54,7 @@
 FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
+LEFT JOIN public."CompetitionBroadcast" cb on cb."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
 LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
@@ -87,4 +90,30 @@ LEFT  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId
 LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
 WHERE c."Id" = ANY(@ContestIds)
+
+GROUP BY
+  c."SeasonWeekId",
+  c."Id",
+  c."StartDateUtc",
+  cs."StatusDescription",
+  v."Name", v."City", v."State",
+
+  fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id", flAway."Uri", fAway."Slug",
+  fsrdAway."Current", gsAway."Slug",
+  fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
+
+    fAway."Abbreviation", fAway."ColorCodeHex",
+  fHome."Abbreviation", fHome."ColorCodeHex",
+
+
+  fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id", flHome."Uri", fHome."Slug",
+  fsrdHome."Current", gsHome."Slug",
+  fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
+
+  co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",
+  cto."SpreadPointsOpen", co."TotalPointsOpen",
+  c."AwayScore", c."HomeScore", c."WinnerFranchiseId", c."SpreadWinnerFranchiseId",
+  c."OverUnder", c."EndDateUtc"
+
+
 ORDER BY c."StartDateUtc", fHome."Slug";

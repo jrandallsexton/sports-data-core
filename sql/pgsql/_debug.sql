@@ -84,8 +84,9 @@ select count(*) from public."CompetitionDrive"
 select * from public."Contest" where "Id" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
 select * from public."Competition" where "ContestId" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
 select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
-select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
-select * from public."CompetitionMetric"
+select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' and "Type" = 8 order by "SequenceNumber"::int
+select * from public."CompetitionMetric" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346'
+select count(*) from public."CompetitionMetric"
 --delete from public."CompetitionMetric"
 
 SELECT json_agg(row_to_json(cm))

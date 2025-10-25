@@ -30,6 +30,15 @@ namespace SportsData.Producer.Application.Competitions
         }
 
         [HttpPost]
+        [Route("metrics/generate")]
+        public IActionResult RefreshCompetitionMetrics()
+        {
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMetrics());
+
+            return Accepted(new { Message = $"Competition metric generation initiated." });
+        }
+
+        [HttpPost]
         [Route("{competitionId}/drives/refresh")]
         public async Task<IActionResult> RefreshDrives([FromRoute] Guid competitionId)
         {

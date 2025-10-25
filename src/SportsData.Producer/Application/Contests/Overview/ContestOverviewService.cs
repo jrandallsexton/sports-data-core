@@ -3,6 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Application.Contests.Overview
 {
@@ -369,6 +370,8 @@ namespace SportsData.Producer.Application.Contests.Overview
             if (contest is null)
                 throw new ArgumentException($"Contest with ID {contestId} not found.");
 
+            var competitionId = contest.Competitions.First().Id;
+
             var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
             var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
 
@@ -380,6 +383,8 @@ namespace SportsData.Producer.Application.Contests.Overview
 
             var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
             var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
+
+            var metrics = await GetCompetitionMetricsAsync(competitionId, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
 
             var dto = new ContestOverviewDto
             {
@@ -401,7 +406,9 @@ namespace SportsData.Producer.Application.Contests.Overview
                     awayTeamFranchiseSeasonId,
                     homeTeamFranchiseSeasonId),
                 TeamStats = await GetTeamStatsAsync(contestId),
-                Info = await GetGameInfoAsync(contestId)
+                Info = await GetGameInfoAsync(contestId),
+                AwayMetrics = metrics.Item1,
+                HomeMetrics = metrics.Item2
             };
 
             //dto.Summary = await GetNarrativeSummaryAsync(contestId);
@@ -410,5 +417,53 @@ namespace SportsData.Producer.Application.Contests.Overview
 
             return dto;
         }
+
+        private async Task<(CompetitionMetricDto?, CompetitionMetricDto?)> GetCompetitionMetricsAsync(
+            Guid competitionId, Guid awayFranchiseSeasonId, Guid homeFranchiseSeasonId)
+        {
+            var competitionMetrics = await _dbContext.CompetitionMetrics
+                .Where(x => x.CompetitionId == competitionId)
+                .ToListAsync();
+
+            if (competitionMetrics.Count != 2)
+            {
+                return (null, null);
+            }
+
+            var awayMetrics = competitionMetrics.First(x => x.FranchiseSeasonId == awayFranchiseSeasonId);
+            var homeMetrics = competitionMetrics.First(x => x.FranchiseSeasonId == homeFranchiseSeasonId);
+
+            return (awayMetrics.ToDto(), homeMetrics.ToDto());
+        }
+    }
+
+    public static class MetricExtensions
+    {
+        public static CompetitionMetricDto ToDto(this CompetitionMetric metric) => new()
+        {
+            CompetitionId = metric.CompetitionId,
+            FranchiseSeasonId = metric.FranchiseSeasonId,
+            Season = metric.Season,
+            Ypp = metric.Ypp,
+            SuccessRate = metric.SuccessRate,
+            ExplosiveRate = metric.ExplosiveRate,
+            PointsPerDrive = metric.PointsPerDrive,
+            ThirdFourthRate = metric.ThirdFourthRate,
+            RzTdRate = metric.RzTdRate,
+            RzScoreRate = metric.RzScoreRate,
+            TimePossRatio = metric.TimePossRatio,
+            OppYpp = metric.OppYpp,
+            OppSuccessRate = metric.OppSuccessRate,
+            OppExplosiveRate = metric.OppExplosiveRate,
+            OppPointsPerDrive = metric.OppPointsPerDrive,
+            OppThirdFourthRate = metric.OppThirdFourthRate,
+            OppRzTdRate = metric.OppRzTdRate,
+            OppScoreTdRate = metric.OppScoreTdRate,
+            NetPunt = metric.NetPunt,
+            FgPctShrunk = metric.FgPctShrunk,
+            FieldPosDiff = metric.FieldPosDiff,
+            TurnoverMarginPerDrive = metric.TurnoverMarginPerDrive,
+            PenaltyYardsPerPlay = metric.PenaltyYardsPerPlay
+        };
     }
 }

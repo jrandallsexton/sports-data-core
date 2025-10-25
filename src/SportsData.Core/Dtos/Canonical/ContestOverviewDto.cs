@@ -21,6 +21,10 @@ namespace SportsData.Core.Dtos.Canonical
 
         public GameInfoDto? Info { get; set; }
 
+        public CompetitionMetricDto? AwayMetrics { get; set; }
+
+        public CompetitionMetricDto? HomeMetrics { get; set; }
+
         //public MatchupAnalysisDto? MatchupAnalysis { get; set; } // Optional: Postgame insights
     }
 
@@ -231,4 +235,38 @@ namespace SportsData.Core.Dtos.Canonical
     //    public string? WhereItWasRight { get; set; }
     //    public string? WhereItWasWrong { get; set; }
     //}
+
+    public class CompetitionMetricDto
+    {
+        public Guid CompetitionId { get; set; }
+        public Guid FranchiseSeasonId { get; set; }
+        public int Season { get; set; }
+
+        // Offense
+        public decimal Ypp { get; set; }
+        public decimal SuccessRate { get; set; }
+        public decimal ExplosiveRate { get; set; }
+        public decimal PointsPerDrive { get; set; }
+        public decimal ThirdFourthRate { get; set; }
+        public decimal? RzTdRate { get; set; }
+        public decimal? RzScoreRate { get; set; }
+        public decimal TimePossRatio { get; set; }
+
+        // Defense (opponent)
+        public decimal OppYpp { get; set; }
+        public decimal OppSuccessRate { get; set; }
+        public decimal OppExplosiveRate { get; set; }
+        public decimal OppPointsPerDrive { get; set; }
+        public decimal OppThirdFourthRate { get; set; }
+        public decimal? OppRzTdRate { get; set; }
+        public decimal? OppScoreTdRate { get; set; }
+
+        // Special Teams / Discipline
+        public decimal NetPunt { get; set; }
+        public decimal FgPctShrunk { get; set; }
+        public decimal FieldPosDiff { get; set; }
+        public decimal TurnoverMarginPerDrive { get; set; }
+        public decimal PenaltyYardsPerPlay { get; set; }
+    }
+
 }

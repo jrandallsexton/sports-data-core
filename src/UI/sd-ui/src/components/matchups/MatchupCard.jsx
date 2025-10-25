@@ -313,7 +313,8 @@ function MatchupCard({
           </div>
         ) : (
           <div className="game-time-location">
-            {gameTime} | {venue} | {location}
+            <div>{gameTime} | {matchup.broadcasts}</div>
+            <div>{venue} | {location}</div>
           </div>
         )}
 

@@ -7,6 +7,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -15,6 +16,7 @@ namespace SportsData.Producer.Application.Competitions
     public interface ICompetitionService
     {
         Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId);
+        Task RefreshCompetitionMetrics();
     }
 
     public class CompetitionService : ICompetitionService
@@ -22,15 +24,18 @@ namespace SportsData.Producer.Application.Competitions
         private readonly TeamSportDataContext _dataContext;
         private readonly IEventBus _eventBus;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public CompetitionService(
             TeamSportDataContext dbContext,
             IEventBus eventBus,
-            IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _dataContext = dbContext;
             _eventBus = eventBus;
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId)
@@ -70,10 +75,10 @@ namespace SportsData.Producer.Application.Competitions
                 Id: drivesIdentity.UrlHash,
                 ParentId: competitionId.ToString(),
                 Uri: new Uri(drivesIdentity.CleanUrl),
-                Sport: Sport.FootballNcaa,
-                SeasonYear: 2025,
+                Sport: Sport.FootballNcaa, // TODO: remove hard-coding
+                SeasonYear: 2025, // TODO: remove hard-coding
                 DocumentType: DocumentType.EventCompetitionDrive,
-                SourceDataProvider: SourceDataProvider.Espn,
+                SourceDataProvider: SourceDataProvider.Espn, // TODO: remove hard-coding
                 CorrelationId: Guid.NewGuid(),
                 CausationId: CausationId.Producer.CompetitionService
             ));
@@ -82,6 +87,26 @@ namespace SportsData.Producer.Application.Competitions
             await _dataContext.SaveChangesAsync();
 
             return new Success<Guid>(competitionId, ResultStatus.Accepted);
+        }
+
+        public async Task RefreshCompetitionMetrics()
+        {
+            var contests = await _dataContext.Contests
+                .Include(x => x.Competitions)
+                .Where(c => c.FinalizedUtc != null)
+                .OrderBy(c => c.StartDateUtc)
+                .ToListAsync();
+
+            foreach (var contest in contests)
+            {
+                var competitionId = contest.Competitions.FirstOrDefault()?.Id;
+
+                if (competitionId == null)
+                    continue;
+
+                _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
+                    p.CalculateCompetitionMetrics(competitionId.Value));
+            }
         }
     }
 }

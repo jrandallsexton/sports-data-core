@@ -184,6 +184,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 {
                     //matchup.StartDateUtc = canonical.StartDateUtc;
                     matchup.Status = canonical.Status;
+                    matchup.Broadcasts = canonical.Broadcasts;
 
                     // Away team
                     matchup.Away = canonical.Away;

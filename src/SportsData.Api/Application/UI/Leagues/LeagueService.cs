@@ -376,7 +376,7 @@ namespace SportsData.Api.Application.UI.Leagues
                     _logger.LogError("Matchup could not be found");
                     throw new Exception("Matchup could not be found");
                 }
-
+                canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= DateTime.UtcNow;
                 canonicalContest.AwaySpread = (decimal?)matchup.AwaySpread;
                 canonicalContest.HomeSpread = (decimal?)matchup.HomeSpread;
                 canonicalContest.WinnerFranchiseSeasonId = canonicalContest.AwayScore > canonicalContest.HomeScore

@@ -6,6 +6,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical.Models
     {
         public DateTime StartDateUtc { get; set; }
         public Guid ContestId { get; set; }
+        public bool IsLocked { get; set; }
 
         // Teams
         public string AwayShort { get; set; } = default!;

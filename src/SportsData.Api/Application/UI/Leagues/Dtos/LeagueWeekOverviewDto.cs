@@ -18,6 +18,7 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         {
             StartDateUtc = baseDto.StartDateUtc;
             ContestId = baseDto.ContestId;
+            IsLocked = baseDto.IsLocked;
 
             // Teams
             AwayShort = baseDto.AwayShort;

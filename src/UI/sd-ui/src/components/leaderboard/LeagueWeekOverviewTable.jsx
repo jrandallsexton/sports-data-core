@@ -37,7 +37,7 @@ function LeagueWeekOverviewTable({ overview }) {
         </thead>
         <tbody>
           {contests.map(contest => {
-            const isLocked = !!contest.finalizedUtc;
+            const isLocked = !!contest.isLocked;
             if (!isLocked) return null;
             return (
               <tr key={contest.contestId}>

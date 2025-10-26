@@ -105,12 +105,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (dto.Season.Type.Week is not null)
             {
-                var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Week.Ref);
+                // Note: ESPN publishes the poll at the end of the week
+                // Example: Week 9 poll is published on the Sunday after Week 9 games
+                // therefore we use it for Week 10
+                // TODO:  At the end of the season, correct this data and adjust for next season
                 var seasonWeek = await _dataContext.SeasonWeeks
+                    .Include(x => x.Season)
                     .Include(x => x.ExternalIds)
                     .Include(x => x.Rankings)
                     .ThenInclude(r => r.ExternalIds)
-                    .Where(x => x.Id == seasonWeekIdentity.CanonicalId)
+                    .Where(x => x.Season!.Year == command.Season!.Value && x.Number == dto.Season.Type.Week.Number + 1)
                     .AsSplitQuery()
                     .FirstOrDefaultAsync();
 

@@ -59,7 +59,7 @@ namespace SportsData.Core.DependencyInjection
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
-            var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}";
+            var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode};Include Error Detail=true;";
 
             Console.WriteLine($"using: {connString}");
 

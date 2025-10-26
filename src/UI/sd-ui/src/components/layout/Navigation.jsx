@@ -86,7 +86,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
           <tbody>
             <tr>
               <td>
-                <NavLink to="/app/" className="nav-link" end>
+                <NavLink to="/app/" className="nav-link home-nav-link" end>
                   <FaHome className="nav-icon" />
                   <span>Home</span>
                 </NavLink>

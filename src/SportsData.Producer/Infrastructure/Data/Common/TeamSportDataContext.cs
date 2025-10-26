@@ -91,6 +91,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseLogo> FranchiseLogos { get; set; }
 
+        public DbSet<FranchiseSeasonMetric> FranchiseSeasonMetrics { get; set; }
+
         public DbSet<FranchiseSeason> FranchiseSeasons { get; set; }
 
         public DbSet<FranchiseSeasonAward> FranchiseSeasonAwards { get; set; }
@@ -201,6 +203,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAwardWinner.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonLogo.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonMetric.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
 

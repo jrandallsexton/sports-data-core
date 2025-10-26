@@ -22,7 +22,7 @@ namespace SportsData.Producer.Application.Competitions
 
         [HttpPost]
         [Route("{competitionId}/metrics/generate")]
-        public IActionResult UpdateCompetition([FromRoute] Guid competitionId)
+        public IActionResult GenerateMetrics([FromRoute] Guid competitionId)
         {
             _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p => p.CalculateCompetitionMetrics(competitionId));
 

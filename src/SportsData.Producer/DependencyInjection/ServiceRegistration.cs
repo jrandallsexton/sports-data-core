@@ -8,6 +8,7 @@ using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
+using SportsData.Producer.Application.FranchiseSeasons;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.SeasonWeek;
 using SportsData.Producer.Infrastructure.Data;
@@ -74,8 +75,10 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<ISeasonWeekService, SeasonWeekService>();
 
-            services.AddScoped<ICompetitionMetricService, CompetitionMetricService>();
+            services.AddScoped<ICompetitionMetricService, CompetitionMetricsService>();
             services.AddScoped<ICompetitionService, CompetitionService>();
+
+            services.AddScoped<IFranchiseSeasonMetricsService, FranchiseSeasonMetricsService>();
 
             return services;
         }

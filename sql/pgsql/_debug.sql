@@ -3,7 +3,7 @@ select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941b
 select * from public."AthleteExternalId" where "AthleteId" = '839ab5ca-a490-92d2-2e22-31478ff032b0'
 
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
-select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
+select * from public."FranchiseSeason" where "GroupSeasonId" = '59e30a3c-b1cd-098e-cf76-9c4ac2441427'
 select * from public."Franchise"
 select * from public."AthletePosition"
 /* Season Roster */
@@ -30,10 +30,19 @@ where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 order by "Name"
 
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c'
-select * from public."GroupSeason" where "Id" = '7ff6fb28-dd1a-dd42-28d1-45a4a4bda516'
+
+select * from public."GroupSeason" where "Id" = '845eb718-b58a-bf9e-fa90-5de861c60325' -- SEC
+select * from public."GroupSeason" where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07' -- FBS (I-A)
+select * from public."GroupSeason" where "Id" = '3437b85c-ba19-181e-af1e-c8b30a28dff6' -- NCAA Division I
+select * from public."GroupSeason" where "Id" = 'acb492db-a8c1-71ed-3ffb-f9f1d2398195' -- NCAA Football
+
+select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2025
+
+select * from public."GroupSeason" where "ParentId" is null
+select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '44adcee8-cc6a-a714-84f9-672dd6f151ee' where "ShortHeadline" = '2025 AP Poll: Week 9'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d' where "ShortHeadline" = '2025 AP Poll: Week 10'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"
@@ -151,3 +160,11 @@ select * from public."CompetitionPrediction"
 select * from public."CompetitionPredictionValue"
 select * from public."PredictionMetric" order by "Name"
 --delete from public."PredictionMetric"
+
+select f."Slug", fsm.* from public."FranchiseSeasonMetric" fsm
+inner join public."FranchiseSeason" fs on fs."Id" = fsm."FranchiseSeasonId"
+inner join public."Franchise" f on f."Id" = fs."FranchiseId"
+where fsm."OppPointsPerDrive" > fsm."PointsPerDrive"
+order by "PointsPerDrive"
+
+

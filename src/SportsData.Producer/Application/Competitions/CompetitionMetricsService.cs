@@ -12,19 +12,18 @@ namespace SportsData.Producer.Application.Competitions
         Task CalculateCompetitionMetrics(Guid competitionId);
     }
 
-    public class CompetitionMetricService : ICompetitionMetricService
+    public class CompetitionMetricsService : ICompetitionMetricService
     {
-        private readonly ILogger<CompetitionMetricService> _logger;
+        private readonly ILogger<CompetitionMetricsService> _logger;
         private readonly TeamSportDataContext _dataContext;
 
-        public CompetitionMetricService(
-            ILogger<CompetitionMetricService> logger,
+        public CompetitionMetricsService(
+            ILogger<CompetitionMetricsService> logger,
             TeamSportDataContext dataContext)
         {
             _logger = logger;
             _dataContext = dataContext;
         }
-
 
         public async Task CalculateCompetitionMetrics(Guid competitionId)
         {

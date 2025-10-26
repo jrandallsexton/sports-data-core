@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 
 namespace SportsData.Producer.Tests.Unit.Application.Competitions
 {
-    public class CompetitionMetricServiceTests : ProducerTestBase<CompetitionMetricService>
+    public class CompetitionMetricServiceTests : ProducerTestBase<CompetitionMetricsService>
     {
         private readonly ITestOutputHelper _output;
 
@@ -133,7 +133,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         {
             // Arrange
             var nonExistentCompetitionId = Guid.NewGuid();
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(nonExistentCompetitionId);
@@ -149,7 +149,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (competition, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -171,7 +171,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -204,7 +204,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -237,7 +237,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -270,7 +270,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -299,7 +299,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -335,7 +335,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);
@@ -380,7 +380,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             // Arrange
             var competitionId = Guid.NewGuid();
             var (_, homeTeamId, awayTeamId) = await SeedCompetitionWithRealGameDataAsync(competitionId);
-            var sut = Mocker.CreateInstance<CompetitionMetricService>();
+            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
 
             // Act
             await sut.CalculateCompetitionMetrics(competitionId);

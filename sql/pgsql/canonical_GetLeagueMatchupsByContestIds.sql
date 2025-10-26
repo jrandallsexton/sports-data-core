@@ -4,7 +4,7 @@ SELECT
   c."StartDateUtc" as "StartDateUtc",
   cs."StatusDescription" as "Status",
 
-  STRING_AGG(cb."TypeShortName" || ':' || cb."Station", ', ') AS "Broadcasts",
+  STRING_AGG(cb."TypeShortName" || ':' || cb."MediaName", ', ') AS "Broadcasts",
 
   v."Name" as "Venue",
   v."City" as "VenueCity",
@@ -115,6 +115,7 @@ ORDER BY c."StartDateUtc", fHome."Slug";
 
 -- SELECT * from "Competition" where "ContestId" = '295474a7-a45c-85ae-b95d-9c7902b0744e'
 --select * from public."CompetitionBroadcast" where "CompetitionId" = '0c911932-8ca0-c341-83a4-f84c269a463d'
+select * from public."CompetitionBroadcast" where "Station" = '6936478' or "Station" = 'SEC Network'
 -- SELECT * from "Competition" where "Id" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
 --select * from public."CompetitionOdds" where "CompetitionId" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
 --select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = 'b77a7510-4a7a-6f2b-1755-96924c34495a'

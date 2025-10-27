@@ -6,7 +6,9 @@
 FROM public."Season" s
 JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
 JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
-WHERE sp."Name" = 'Regular Season'
-  AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
+WHERE
+  sp."Name" = 'Regular Season' AND
+  sw."StartDate" <= NOW() AND
+  sw."EndDate" > NOW()
 ORDER BY sw."StartDate"
 LIMIT 1;

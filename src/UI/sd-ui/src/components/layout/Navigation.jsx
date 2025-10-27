@@ -8,7 +8,8 @@ import {
   FaCog,
   FaSignOutAlt,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaRocket
 } from "react-icons/fa";
 import './Navigation.css';
 
@@ -32,6 +33,10 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
             <NavLink to="/app/" className="nav-link" end onClick={handleNavLinkClick}>
               <FaHome className="nav-icon" />
               <span>Home</span>
+            </NavLink>
+            <NavLink to="/app/warroom" className="nav-link" onClick={handleNavLinkClick}>
+              <FaRocket className="nav-icon" />
+              <span>War Room</span>
             </NavLink>
             <NavLink to="/app/picks" className="nav-link" onClick={handleNavLinkClick}>
               <FaFootballBall className="nav-icon" />
@@ -92,6 +97,12 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                 </NavLink>
               </td>
               <td>
+                <NavLink to="/app/warroom" className="nav-link">
+                  <FaRocket className="nav-icon" />
+                  <span>War Room</span>
+                </NavLink>
+              </td>
+              <td>
                 <NavLink to="/app/picks" className="nav-link">
                   <FaFootballBall className="nav-icon" />
                   <span>Picks</span>
@@ -109,17 +120,15 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                   <span>Message Board</span>
                 </NavLink>
               </td>
-              <td>
-                <NavLink to="/app/settings" className="nav-link">
-                  <FaCog className="nav-icon" />
-                  <span>Settings</span>
-                </NavLink>
-              </td>
             </tr>
           </tbody>
         </table>
       </div>
       <div className="nav-actions">
+        <NavLink to="/app/settings" className="nav-link">
+          <FaCog className="nav-icon" />
+          <span>Settings</span>
+        </NavLink>
         <button className="nav-link logout-button" onClick={onSignOut}>
           <FaSignOutAlt className="nav-icon" />
           <span>Sign Out</span>

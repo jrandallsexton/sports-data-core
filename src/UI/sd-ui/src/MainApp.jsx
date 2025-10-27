@@ -12,6 +12,7 @@ import PicksPage from "./components/picks/PicksPage.jsx";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
 import MessageBoardPage from "./components/messageboard/MessageboardPage.jsx";
 import HomePage from "./components/home/HomePage.jsx";
+import WarRoomPage from "./components/warRoom/WarRoomPage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
@@ -109,6 +110,7 @@ function MainApp() {
           <Routes>
             <Route index element={<HomePage />} />
             <Route path="/picks/:leagueId?" element={<PicksPage />} />
+            <Route path="/warroom" element={<WarRoomPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/messageboard" element={<MessageBoardPage />} />
             <Route path="/settings" element={<SettingsPage />} />

@@ -1,0 +1,89 @@
+.war-room-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #fff;
+}
+
+.war-room-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.war-room-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #61dafb;
+  font-weight: bold;
+}
+
+.war-room-header p {
+  font-size: 1.2rem;
+  color: #adb5bd;
+  margin: 0;
+}
+
+.war-room-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.widget-placeholder {
+  background-color: #23272f;
+  border: 2px dashed #61dafb;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.widget-placeholder h3 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #61dafb;
+}
+
+.widget-placeholder p {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: #adb5bd;
+}
+
+.widget-placeholder ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.widget-placeholder li {
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  color: #fff;
+  border-bottom: 1px solid #333;
+}
+
+.widget-placeholder li:last-child {
+  border-bottom: none;
+}
+
+.widget-placeholder li:before {
+  content: "🚀";
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .war-room-page {
+    padding: 1rem;
+  }
+  
+  .war-room-header h1 {
+    font-size: 2rem;
+  }
+  
+  .widget-placeholder {
+    padding: 2rem;
+  }
+}

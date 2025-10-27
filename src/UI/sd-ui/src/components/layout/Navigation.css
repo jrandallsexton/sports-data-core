@@ -43,13 +43,25 @@
 }
 
 .nav-links table {
-  width: 100%;
-  border-collapse: collapse;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.nav-links tbody {
+  display: flex;
+  align-items: center;
+}
+
+.nav-links tr {
+  display: flex;
+  align-items: center;
 }
 
 .nav-links td {
-  padding: 0 5px;
+  padding: 0;
   white-space: nowrap;
+  width: auto;
 }
 
 .nav-link {

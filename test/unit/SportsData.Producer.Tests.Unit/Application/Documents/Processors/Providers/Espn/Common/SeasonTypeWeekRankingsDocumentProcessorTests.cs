@@ -193,6 +193,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .OmitAutoProperties()
                 .With(x => x.Id, seasonId)
                 .With(x => x.Name, "2025 NCAA Football Season")
+                .With(x => x.Year, 2025)
                 .Create();
 
             var seasonPhase = Fixture.Build<SeasonPhase>()
@@ -212,6 +213,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var seasonWeek = Fixture.Build<SeasonWeek>()
                 .OmitAutoProperties()
                 .With(x => x.Id, seasonWeekIdentity.CanonicalId)
+                .With(x => x.Number, 2)
                 .With(x => x.SeasonId, seasonId)
                 .With(x => x.SeasonPhaseId, seasonPhaseId)
                 .With(x => x.SeasonPhase, seasonPhase)

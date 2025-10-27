@@ -4,7 +4,7 @@
   c."StartDateUtc" as "StartDateUtc",
   replace(cs."StatusDescription", ' ', '') AS "Status",
 
-STRING_AGG(cb."TypeShortName" || ':' || cb."MediaName", ', ') AS "Broadcasts",
+  STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
 
   v."Name" as "Venue",
   v."City" as "VenueCity",

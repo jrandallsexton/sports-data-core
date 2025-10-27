@@ -7,7 +7,7 @@ WITH next_week AS (
   JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
   JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
   WHERE sp."Name" = 'Regular Season'
-    AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
+    AND sw."StartDate" <= NOW() and sw."EndDate" > NOW()
   ORDER BY sw."StartDate"
   LIMIT 1
 )
@@ -54,5 +54,5 @@ left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."Franchise
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = nw."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 WHERE
-  c."StartDateUtc" >= CURRENT_DATE and fHome."Slug" = 'lsu-tigers'
+  c."StartDateUtc" >= NOW() --and fHome."Slug" = 'lsu-tigers'
 ORDER BY "StartDateUtc", fHome."Slug"

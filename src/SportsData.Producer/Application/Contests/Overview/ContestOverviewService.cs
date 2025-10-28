@@ -226,7 +226,7 @@ namespace SportsData.Producer.Application.Contests.Overview
             var rows = await _dbContext.CompetitionProbabilities
                 .AsNoTracking()
                 .Where(p => p.Competition.ContestId == contestId)
-                .OrderByDescending(p => p.SequenceNumber)
+                .OrderBy(p => p.SequenceNumber)
                 .Select(p => new
                 {
                     p.HomeWinPercentage,                // 0..1

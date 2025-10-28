@@ -123,15 +123,29 @@
 
 @media (max-width: 600px) {
   .rankings-widget {
-    padding: 0 2px;
+    padding: 0 !important;
+  }
+  .rankings-widget h2 {
+    padding-left: 0.5rem !important;
+    margin-bottom: 0.8rem;
   }
   .rankings-table {
     font-size: 0.91rem;
+    margin-top: 10px !important;
+    width: 100% !important;
+    min-width: 100% !important;
   }
   .rankings-table th, .rankings-table td {
     max-width: 60px;
-    padding: 0.3em 0.2em;
+    padding: 0.2em 0.1em !important;
     font-size: 0.91em;
+  }
+  .rankings-table th:first-child, .rankings-table td:first-child {
+    padding-left: 0.1em !important;
+    padding-right: 0.1em !important;
+  }
+  .rankings-table th:nth-child(2), .rankings-table td:nth-child(2) {
+    padding-left: 0.2em !important;
   }
   .rankings-table th {
     font-size: 0.93em;

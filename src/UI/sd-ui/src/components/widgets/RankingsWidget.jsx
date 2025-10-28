@@ -43,7 +43,6 @@ function RankingsWidget() {
             <table
               className="rankings-table"
               key={idx}
-              style={{ width: 340, minWidth: 240 }}
             >
               <thead>
                 <tr>

@@ -41,7 +41,3 @@ This document provides context, conventions, and best practices for working with
 - All projects target .NET 9 and use C# 13 features.
 - Use `HashProvider.UrlHash` for consistent external ID hashing.
 - Register all new entity configurations in the appropriate `DbContext`.
-
----
-*Update this file as the solution evolves or as new best practices emerge.*
-*•	Document complex processor flows in your LLM-Guidelines or code comments.*

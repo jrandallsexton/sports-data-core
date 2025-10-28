@@ -19,6 +19,33 @@
   margin-bottom: 1.5rem;
 }
 
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.conference-filter {
+  background-color: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.conference-filter:focus {
+  outline: none;
+  border-color: #61dafb;
+}
+
+.conference-filter option {
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
 .show-all-btn {
   background-color: #61dafb;
   color: #1a1d23;
@@ -51,7 +78,7 @@
   border-collapse: collapse;
   background-color: #1a1d23;
   font-size: 0.85rem;
-  min-width: 2400px; /* Much wider table for all columns */
+  min-width: 1944px; /* Reduced from 2160px (10% reduction) */
 }
 
 .metrics-table thead {
@@ -70,7 +97,7 @@
   white-space: pre-line;
   user-select: none;
   line-height: 1.2;
-  min-width: 60px;
+  min-width: 49px; /* Reduced from 54px (10% reduction) */
   vertical-align: top;
 }
 
@@ -81,6 +108,11 @@
 
 .metrics-table th.sortable:hover {
   background-color: #333;
+}
+
+.metrics-table th.conference-header {
+  cursor: default;
+  color: #a0a0a0;
 }
 
 .metrics-table td {
@@ -94,9 +126,22 @@
 .metrics-table .team-name {
   font-weight: 500;
   color: #fff;
-  min-width: 120px;
-  font-size: 0.85rem;
-  text-align: center;
+  min-width: 68px; /* Reduced from 90px (25% reduction) */
+  font-size: 0.8rem;
+  text-align: left;
+  padding-left: 12px;
+}
+
+.metrics-table .team-link {
+  color: #61dafb;
+  text-decoration: none;
+  font-weight: 100;
+  transition: color 0.2s ease;
+}
+
+.metrics-table .team-link:hover {
+  color: #4fa8c5;
+  text-decoration: underline;
 }
 
 .metrics-table .even-row {

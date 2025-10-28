@@ -9,6 +9,7 @@ function FranchiseMetricsGrid() {
   const [sortBy, setSortBy] = useState('franchiseName');
   const [sortOrder, setSortOrder] = useState('asc');
   const [showAll, setShowAll] = useState(false);
+  const [selectedConference, setSelectedConference] = useState('all');
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -53,8 +54,17 @@ function FranchiseMetricsGrid() {
     }
   });
 
-  // Show only top 10 by default, all if showAll is true
-  const displayedMetrics = showAll ? sortedMetrics : sortedMetrics.slice(0, 10);
+  // Filter by conference first, then apply sorting
+  const filteredMetrics = selectedConference === 'all' 
+    ? sortedMetrics 
+    : sortedMetrics.filter(team => team.conference === selectedConference);
+
+  // Show only top 10 by default when showing all conferences, show all when conference is filtered
+  const shouldShowAll = showAll || selectedConference !== 'all';
+  const displayedMetrics = shouldShowAll ? filteredMetrics : filteredMetrics.slice(0, 10);
+
+  // Get unique conferences for dropdown
+  const conferences = [...new Set(metrics.map(team => team.conference).filter(Boolean))].sort();
 
   const formatValue = (value, key) => {
     // Handle null/undefined values
@@ -108,12 +118,31 @@ function FranchiseMetricsGrid() {
     <div className="franchise-metrics-grid">
       <div className="metrics-header">
         <h2>Franchise Season Metrics (2025)</h2>
-        <button 
-          className="show-all-btn"
-          onClick={() => setShowAll(!showAll)}
-        >
-          {showAll ? 'Show 10' : 'Show All'}
-        </button>
+        <div className="header-controls">
+          <select 
+            value={selectedConference} 
+            onChange={(e) => setSelectedConference(e.target.value)}
+            className="conference-filter"
+          >
+            <option value="all">All Conferences</option>
+            {conferences.map(conference => (
+              <option key={conference} value={conference}>
+                {conference}
+              </option>
+            ))}
+          </select>
+          <button 
+            className="show-all-btn"
+            onClick={() => setShowAll(!showAll)}
+            disabled={selectedConference !== 'all'}
+            style={{ 
+              opacity: selectedConference !== 'all' ? 0.5 : 1,
+              cursor: selectedConference !== 'all' ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {showAll ? 'Show 10' : 'Show All'}
+          </button>
+        </div>
       </div>
       <div className="metrics-table-container">
         <table className="metrics-table">
@@ -122,12 +151,11 @@ function FranchiseMetricsGrid() {
               <th onClick={() => handleSort('franchiseName')} className="sortable">
                 Team {getSortIcon('franchiseName')}
               </th>
-              <th onClick={() => handleSort('conference')} className="sortable">
-                Conference {getSortIcon('conference')}
-              </th>
-              <th onClick={() => handleSort('gamesPlayed')} className="sortable">
-                GP {getSortIcon('gamesPlayed')}
-              </th>
+              {selectedConference === 'all' && (
+                <th className="conference-header">
+                  Conference
+                </th>
+              )}
               <th onClick={() => handleSort('ypp')} className="sortable">
                 YPP {getSortIcon('ypp')}
               </th>
@@ -193,9 +221,19 @@ function FranchiseMetricsGrid() {
           <tbody>
             {displayedMetrics.map((team, index) => (
               <tr key={team.franchiseSlug} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-                <td className="team-name">{team.franchiseName}</td>
-                <td>{team.conference || '-'}</td>
-                <td>{formatValue(team.gamesPlayed, 'gamesPlayed')}</td>
+                <td className="team-name">
+                  <a
+                    href={`/app/sport/football/ncaa/team/${team.franchiseSlug}/2025`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="team-link"
+                  >
+                    {team.franchiseName}
+                  </a>
+                </td>
+                {selectedConference === 'all' && (
+                  <td>{team.conference || '-'}</td>
+                )}
                 <td>{formatValue(team.ypp, 'ypp')}</td>
                 <td>{formatValue(team.successRate, 'successRate')}</td>
                 <td>{formatValue(team.explosiveRate, 'explosiveRate')}</td>
@@ -223,9 +261,10 @@ function FranchiseMetricsGrid() {
       </div>
       {metrics.length > 0 && (
         <div className="metrics-summary">
-          Showing {displayedMetrics.length} of {metrics.length} teams
-          {!showAll && metrics.length > 10 && (
-            <span className="top-ten-note"> (10)</span>
+          Showing {displayedMetrics.length} of {filteredMetrics.length} teams
+          {selectedConference !== 'all' && ` in ${selectedConference}`}
+          {!shouldShowAll && filteredMetrics.length > 10 && (
+            <span className="top-ten-note"> (top 10)</span>
           )}
         </div>
       )}

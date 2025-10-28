@@ -10,6 +10,7 @@ import Conferences from "./conferenceApi";
 import Rankings  from "./rankingsApi";
 import Contest from "./contestApi";
 import Admin from "./adminApi";
+import Analytics from "./analyticsApi";
 
 const apiWrapper = {
   Matchups,
@@ -24,6 +25,7 @@ const apiWrapper = {
   Rankings,
   Contest,
   Admin,
+  Analytics
 };
 
 export default apiWrapper;

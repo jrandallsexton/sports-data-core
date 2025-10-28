@@ -1,4 +1,5 @@
 import React from 'react';
+import FranchiseMetricsGrid from './FranchiseMetricsGrid';
 import './WarRoomPage.css';
 
 function WarRoomPage() {
@@ -10,14 +11,16 @@ function WarRoomPage() {
       </div>
       
       <div className="war-room-content">
+        <FranchiseMetricsGrid />
+        
         <div className="widget-placeholder">
-          <h3>Coming Soon</h3>
-          <p>User-customizable widgets for:</p>
+          <h3>More Widgets Coming Soon</h3>
+          <p>Additional customizable widgets for:</p>
           <ul>
             <li>Yards Per Carry (Top 10)</li>
-            <li>Points per Game</li>
-            <li>Advanced Team Statistics</li>
-            <li>Performance Analytics</li>
+            <li>Red Zone Efficiency</li>
+            <li>Third Down Conversions</li>
+            <li>Turnover Analysis</li>
           </ul>
         </div>
       </div>

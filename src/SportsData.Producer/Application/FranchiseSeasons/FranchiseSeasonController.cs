@@ -1,19 +1,29 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Competitions;
 
 namespace SportsData.Producer.Application.FranchiseSeasons
-{  
+{
+    [Route("api/franchise-season")]
     public class FranchiseSeasonController : ControllerBase
     {
-
+        private readonly IFranchiseSeasonMetricsService _franchiseSeasonMetricsService;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public FranchiseSeasonController(
+            IFranchiseSeasonMetricsService franchiseSeasonMetricsService,
             IProvideBackgroundJobs backgroundJobProvider)
         {
+            _franchiseSeasonMetricsService = franchiseSeasonMetricsService;
             _backgroundJobProvider = backgroundJobProvider;
+        }
+
+        [HttpGet]
+        [Route("{seasonYear}/metrics")]
+        public async Task<IActionResult> GetFranchiseSeasonMetrics(int seasonYear)
+        {
+            var metrics = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
+            return Ok(metrics);
         }
 
         [HttpPost]

@@ -91,13 +91,21 @@ select count(*) from public."CompetitionDrive"
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
 select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
-select * from public."Competition" where "ContestId" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
-select * from public."CompetitionProbability" where "CompetitionId" = 'be17ed21-7431-fbd0-d88e-7827425a77ca' order by "SequenceNumber"::int
+select * from public."Competition" where "ContestId" = 'd3bb6a1d-b968-0b6d-d3c5-45e7e48cfdfd'
+
+select * from public."CompetitionProbability" where "CompetitionId" = 'af18ebe5-033d-a056-84c5-8358f412685f' order by "SequenceNumber"::int
+
+select cp.* from public."CompetitionProbability" cp
+inner join public."CompetitionPlay" cpl on cpl."Id" = cp."PlayId"
+where cp."CompetitionId" = 'af18ebe5-033d-a056-84c5-8358f412685f'
+order by cpl."ClockValue"::int desc
 
 select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int
 select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' and "Type" = 8 order by "SequenceNumber"::int
 select * from public."CompetitionMetric" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346'
 select count(*) from public."CompetitionMetric"
+select * from public."FranchiseSeasonMetric"
+select * from public."GroupSeason" order by "Name"
 --delete from public."CompetitionMetric"
 
 SELECT json_agg(row_to_json(cm))

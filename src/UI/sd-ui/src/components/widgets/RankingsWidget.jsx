@@ -47,7 +47,10 @@ function RankingsWidget() {
             >
               <thead>
                 <tr>
-                  <th>Rank</th>
+                  <th>
+                    <span className="rank-header-desktop">Rank</span>
+                    <span className="rank-header-mobile">Rk</span>
+                  </th>
                   <th>Team</th>
                   <th>Record</th>
                   <th>Points</th>

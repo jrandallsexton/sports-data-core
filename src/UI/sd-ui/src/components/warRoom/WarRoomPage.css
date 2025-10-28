@@ -1,8 +1,10 @@
 .war-room-page {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 20px;
   color: #fff;
+  box-sizing: border-box;
 }
 
 .war-room-header {
@@ -25,9 +27,8 @@
 
 .war-room-content {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .widget-placeholder {

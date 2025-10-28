@@ -6,6 +6,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Middleware.Health;
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
     {
         Task<VenueDto?> GetVenue(string id);
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
+        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear);
         Task RefreshContestByContestId(Guid contestId);
     }
 
@@ -31,6 +33,15 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             base(httpClient)
         {
             _logger = logger;
+        }
+
+        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear)
+        {
+            var response = await HttpClient.GetAsync($"franchise-season/{seasonYear}/metrics");
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var metrics = tmp.FromJson<List<FranchiseSeasonMetricsDto>>();
+            return metrics ?? new List<FranchiseSeasonMetricsDto>();
         }
 
         public async Task<VenueDto?> GetVenue(string id)

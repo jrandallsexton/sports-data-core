@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -12,6 +13,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
     {
         Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command);
         Task GenerateFranchiseSeasonMetrics(Guid franchiseSeasonId, int seasonYear);
+        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);
     }
 
     public class FranchiseSeasonMetricsService : IFranchiseSeasonMetricsService
@@ -28,6 +30,48 @@ namespace SportsData.Producer.Application.FranchiseSeasons
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+        }
+
+        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
+        {
+            var metrics = await _dataContext.FranchiseSeasonMetrics
+                .Include(fsm => fsm.FranchiseSeason)
+                    .ThenInclude(fs => fs.Franchise)
+                .Include(fsm => fsm.FranchiseSeason)
+                    .ThenInclude(fs => fs.GroupSeason)
+                .Where(fsm => fsm.Season == seasonYear)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var dtos = metrics.Select(fsm => new FranchiseSeasonMetricsDto()
+            {
+                Conference = fsm.FranchiseSeason.GroupSeason?.Slug,
+                ExplosiveRate = fsm.ExplosiveRate,
+                FgPctShrunk = fsm.FgPctShrunk,
+                FieldPosDiff = fsm.FieldPosDiff,
+                FranchiseName = fsm.FranchiseSeason.Franchise.DisplayNameShort,
+                FranchiseSlug = fsm.FranchiseSeason.Franchise.Slug,
+                GamesPlayed = fsm.GamesPlayed,
+                NetPunt = fsm.NetPunt,
+                OppExplosiveRate = fsm.OppExplosiveRate,
+                OppPointsPerDrive = fsm.OppPointsPerDrive,
+                OppRzTdRate = fsm.OppRzTdRate,
+                OppSuccessRate = fsm.OppSuccessRate,
+                OppThirdFourthRate = fsm.OppThirdFourthRate,
+                OppYpp = fsm.OppYpp,
+                PenaltyYardsPerPlay = fsm.PenaltyYardsPerPlay,
+                PointsPerDrive = fsm.PointsPerDrive,
+                RzScoreRate = fsm.RzScoreRate,
+                RzTdRate = fsm.RzTdRate,
+                SeasonYear = seasonYear,
+                SuccessRate = fsm.SuccessRate,
+                ThirdFourthRate = fsm.ThirdFourthRate,
+                TimePossRatio = fsm.TimePossRatio,
+                TurnoverMarginPerDrive = fsm.TurnoverMarginPerDrive,
+                Ypp = fsm.Ypp
+            }).ToList();
+
+            return dtos;
         }
 
         public async Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command)

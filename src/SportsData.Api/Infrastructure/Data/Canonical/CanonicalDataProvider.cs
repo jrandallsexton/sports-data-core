@@ -26,6 +26,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         Task<SeasonWeek?> GetCurrentSeasonWeek();
 
+        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);
+
         Task<List<Matchup>> GetMatchupsForCurrentWeek();
 
         Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds);
@@ -70,6 +72,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             _connection = connection;
             _queryProvider = queryProvider;
             _producerClient = producerClient;
+        }
+
+        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
+        {
+            return await _producerClient.GetFranchiseSeasonMetrics(seasonYear);
         }
 
         public async Task<TeamCardDto?> GetTeamCard(

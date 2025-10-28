@@ -83,6 +83,25 @@
   background-color: #333;
 }
 
+/* Responsive rank header text */
+.rank-header-mobile {
+  display: none;
+}
+
+.rank-header-desktop {
+  display: inline;
+}
+
+@media (max-width: 600px) {
+  .rank-header-desktop {
+    display: none;
+  }
+  
+  .rank-header-mobile {
+    display: inline;
+  }
+}
+
 @media (max-width: 1200px) {
   .rankings-table {
     font-size: 0.97rem;

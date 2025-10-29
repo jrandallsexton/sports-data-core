@@ -9,7 +9,7 @@ function ContestOverviewVideo({ mediaItems }) {
   }
 
   const currentVideo = mediaItems[selectedVideoIndex];
-  const playlistItems = mediaItems.slice(1, 5); // Items 1-4 for playlist
+  //const playlistItems = mediaItems.slice(1, 5); // Items 1-4 for playlist
   const showPlaylist = mediaItems.length > 1; // Show playlist if more than 1 video
 
   const handleVideoSelect = (index) => {

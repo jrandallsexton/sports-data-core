@@ -49,7 +49,7 @@ function ContestOverviewVideo({ mediaItems }) {
       {/* Playlist - show all videos when multiple exist */}
       {showPlaylist && (
         <div className="video-playlist">
-          <h4 className="playlist-title">All Videos</h4>
+          <h4 className="playlist-title">Related Videos</h4>
           <div className="playlist-items">
             {mediaItems.slice(0, 5).map((video, index) => {
               const isSelected = selectedVideoIndex === index;

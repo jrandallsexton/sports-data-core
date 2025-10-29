@@ -24,7 +24,8 @@ namespace SportsData.Producer.Application.Competitions
         [Route("{competitionId}/metrics/generate")]
         public IActionResult GenerateMetrics([FromRoute] Guid competitionId)
         {
-            _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p => p.CalculateCompetitionMetrics(competitionId));
+            _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
+                p.CalculateCompetitionMetrics(competitionId));
 
             return Accepted(new { Message = $"Competition {competitionId} metric generation initiated." });
         }
@@ -63,6 +64,27 @@ namespace SportsData.Producer.Application.Competitions
             }
 
             return StatusCode(500); // fallback safety
+        }
+
+        [HttpPost]
+        [Route("{competitionId}/media/refresh")]
+        public Task<IActionResult> RefreshMedia([FromRoute] Guid competitionId)
+        {
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId));
+
+            return Task.FromResult<IActionResult>(
+                Accepted(new { Message = $"Competition media generation initiated." }));
+        }
+
+        [HttpPost]
+        [Route("media/refresh")]
+        public Task<IActionResult> RefreshMedia()
+        {
+            // TODO: Remove hard-coding
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(2025));
+
+            return Task.FromResult<IActionResult>(
+                Accepted(new { Message = $"Competition media generation initiated." }));
         }
     }
 }

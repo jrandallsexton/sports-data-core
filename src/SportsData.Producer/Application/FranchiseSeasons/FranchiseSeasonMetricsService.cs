@@ -3,8 +3,8 @@
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Application.FranchiseSeasons
@@ -21,15 +21,18 @@ namespace SportsData.Producer.Application.FranchiseSeasons
         private readonly ILogger<FranchiseSeasonMetricsService> _logger;
         private readonly TeamSportDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IGroupSeasonsService _groupSeasonsService;
 
         public FranchiseSeasonMetricsService(
             ILogger<FranchiseSeasonMetricsService> logger,
             TeamSportDataContext dataContext,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IGroupSeasonsService groupSeasonsService)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+            _groupSeasonsService = groupSeasonsService;
         }
 
         public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
@@ -76,27 +79,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
 
         public async Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command)
         {
-            var groupSeasons = await _dataContext.GroupSeasons
-                .Where(gs => gs.SeasonYear == command.SeasonYear)
-                .AsNoTracking()
-                .ToListAsync();
-
-            // Get all FBS roots (may be duplicates due to ESPN data)
-            var fbsRoots = groupSeasons
-                .Where(gs => gs.Slug == "fbs-i-a")
-                .ToList();
-
-            if (!fbsRoots.Any())
-                throw new InvalidOperationException("FBS group root(s) not found.");
-
-            // Collect all descendant group IDs from all FBS roots
-            var fbsGroupIds = new HashSet<Guid>();
-            foreach (var root in fbsRoots)
-            {
-                var descendants = GetAllDescendantGroupIds(root.Id, groupSeasons);
-                foreach (var id in descendants)
-                    fbsGroupIds.Add(id);
-            }
+            var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
 
             var franchiseSeasons = await _dataContext.FranchiseSeasons
                 .Include(fs => fs.Franchise)
@@ -204,28 +187,6 @@ namespace SportsData.Producer.Application.FranchiseSeasons
             };
         }
 
-        private static HashSet<Guid> GetAllDescendantGroupIds(Guid rootId, List<GroupSeason> allGroups)
-        {
-            var result = new HashSet<Guid> { rootId };
-            var queue = new Queue<Guid>();
-            queue.Enqueue(rootId);
-
-            while (queue.Count > 0)
-            {
-                var currentId = queue.Dequeue();
-                var children = allGroups
-                    .Where(g => g.ParentId == currentId)
-                    .Select(g => g.Id);
-
-                foreach (var childId in children)
-                {
-                    if (result.Add(childId))
-                        queue.Enqueue(childId);
-                }
-            }
-
-            return result;
-        }
     }
 
     public class GenerateFranchiseSeasonMetricsCommand

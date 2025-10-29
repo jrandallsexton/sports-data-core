@@ -25,7 +25,25 @@ namespace SportsData.Core.Dtos.Canonical
 
         public CompetitionMetricDto? HomeMetrics { get; set; }
 
+        public List<MediaItemDto>? MediaItems { get; set; }
+
         //public MatchupAnalysisDto? MatchupAnalysis { get; set; } // Optional: Postgame insights
+    }
+
+    public class MediaItemDto
+    {
+        public string VideoId { get; set; } = null!; // e.g. "tOnedYAHqR8"
+        public string Title { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public string ChannelTitle { get; set; } = null!;
+        public DateTime PublishedUtc { get; set; }
+
+        public string ThumbnailUrl { get; set; } = null!;
+        public string ThumbnailMediumUrl { get; set; } = null!;
+        public string ThumbnailHighUrl { get; set; } = null!;
+
+        public string YouTubeUrl => $"https://www.youtube.com/watch?v={VideoId}";
+        public string EmbedUrl => $"https://www.youtube.com/embed/{VideoId}";
     }
 
     public class PlayLogDto

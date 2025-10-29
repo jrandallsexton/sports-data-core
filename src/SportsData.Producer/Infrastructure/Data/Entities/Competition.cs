@@ -131,6 +131,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionSituation> Situations { get; set; } = [];
 
+        public ICollection<CompetitionMedia> Media { get; set; } = [];
+
         public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -214,6 +216,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithOne(x => x.Competition)
                     .HasForeignKey<CompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Media)
+                    .WithOne()
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
     }

@@ -10,5 +10,6 @@
         public const string ProviderClient = "ProviderClient";
         public const string SeasonClient = "SeasonClient";
         public const string VenueClient = "VenueClient";
+        public const string YouTubeClient = "YouTubeClient";
     }
 }

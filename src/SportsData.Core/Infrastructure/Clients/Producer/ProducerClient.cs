@@ -11,8 +11,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
     public interface IProvideProducers : IProvideHealthChecks

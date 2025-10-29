@@ -19,11 +19,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid HomeTeamFranchiseSeasonId { get; set; }
 
-        public FranchiseSeason? HomeTeamFranchiseSeason { get; set; }
+        public FranchiseSeason HomeTeamFranchiseSeason { get; set; } = null!;
 
         public Guid AwayTeamFranchiseSeasonId { get; set; }
 
-        public FranchiseSeason? AwayTeamFranchiseSeason { get; set; }
+        public FranchiseSeason AwayTeamFranchiseSeason { get; set; } = null!;
 
         public required DateTime StartDateUtc { get; set; }
 

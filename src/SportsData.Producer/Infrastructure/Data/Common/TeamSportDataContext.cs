@@ -30,6 +30,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionMetric> CompetitionMetrics { get; set; }
 
+        public DbSet<CompetitionMedia> CompetitionMedia { get; set; }
+
         public DbSet<Competition> Competitions { get; set; }
 
         public DbSet<CompetitionCompetitor> CompetitionCompetitors { get; set; }
@@ -164,6 +166,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderStat.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CompetitionMedia.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionMetric.EntityConfiguration());
 

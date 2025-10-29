@@ -3,8 +3,10 @@ using Hangfire.PostgreSql;
 using Hangfire.Tags.PostgreSql;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -18,7 +20,9 @@ using SportsData.Core.Config;
 using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
+using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Providers.Espn;
@@ -29,8 +33,6 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using SportsData.Core.Infrastructure.Clients.Producer;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -266,6 +268,22 @@ namespace SportsData.Core.DependencyInjection
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             /* End ESPN */
+
+            /* YouTube */
+            services.Configure<YouTubeClientConfig>(
+                configuration.GetSection("CommonConfig:YouTubeClientConfig"));
+
+            services
+                .AddHttpClient<IProvideYouTube, YouTubeHttpClient>(HttpClients.YouTubeClient,(sp, c) =>
+                {
+                    var config = sp.GetRequiredService<IOptions<YouTubeClientConfig>>().Value;
+                    c.BaseAddress = new Uri("https://youtube.googleapis.com/youtube/v3/");
+                    c.Timeout = TimeSpan.FromSeconds(15);
+                    c.DefaultRequestVersion = HttpVersion.Version20;
+                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                })
+                .AddPolicyHandlerFromRegistry("HttpRetry");
+            /* End YouTube */
 
             // Register single-mode services
             services

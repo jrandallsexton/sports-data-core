@@ -1,0 +1,194 @@
+.contest-overview-video {
+  background-color: #23272f;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #fff;
+}
+
+.contest-overview-video h3 {
+  margin: 0 0 1rem 0;
+  color: #61dafb;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  background-color: #1a1d23;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.video-info {
+  margin-top: 1rem;
+}
+
+.video-title {
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.video-channel {
+  margin: 0 0 0.5rem 0;
+  color: #61dafb;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.video-description {
+  margin: 0;
+  color: #adb5bd;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  /* Limit description to 3 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Video Playlist Styles */
+.video-playlist {
+  margin-top: 1.5rem;
+  border-top: 1px solid #333;
+  padding-top: 1rem;
+}
+
+.playlist-title {
+  margin: 0 0 1rem 0;
+  color: #61dafb;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.playlist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background-color: #1a1d23;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.playlist-item:hover {
+  background-color: #2a2d35;
+  transform: translateY(-1px);
+}
+
+.playlist-item.active {
+  background-color: #2a2d35;
+  border: 1px solid #61dafb;
+}
+
+.playlist-thumbnail {
+  width: 60px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.playlist-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.playlist-video-title {
+  margin: 0 0 0.25rem 0;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+  /* Limit to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.playlist-video-channel {
+  margin: 0;
+  color: #adb5bd;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.playing-indicator {
+  color: #61dafb;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments for playlist */
+@media (max-width: 768px) {
+  .playlist-thumbnail {
+    width: 50px;
+    height: 38px;
+  }
+  
+  .playlist-video-title {
+    font-size: 0.8rem;
+  }
+  
+  .playlist-video-channel {
+    font-size: 0.7rem;
+  }
+  
+  .playlist-item {
+    padding: 0.4rem;
+    gap: 0.5rem;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .contest-overview-video {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .contest-overview-video h3 {
+    font-size: 1.1rem;
+  }
+  
+  .video-title {
+    font-size: 0.95rem;
+  }
+  
+  .video-channel {
+    font-size: 0.85rem;
+  }
+  
+  .video-description {
+    font-size: 0.8rem;
+  }
+}

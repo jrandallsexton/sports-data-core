@@ -6,10 +6,14 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SportsData.Producer.Application.Competitions
 {
@@ -17,6 +21,8 @@ namespace SportsData.Producer.Application.Competitions
     {
         Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId);
         Task RefreshCompetitionMetrics();
+        Task RefreshCompetitionMedia(int seasonYear);
+        Task RefreshCompetitionMedia(Guid competitionId);
     }
 
     public class CompetitionService : ICompetitionService
@@ -25,17 +31,23 @@ namespace SportsData.Producer.Application.Competitions
         private readonly IEventBus _eventBus;
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IProvideYouTube _youTubeProvider;
+        private readonly IGroupSeasonsService _groupSeasonsService;
 
         public CompetitionService(
             TeamSportDataContext dbContext,
             IEventBus eventBus,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IProvideYouTube youTubeProvider,
+            IGroupSeasonsService groupSeasonsService)
         {
             _dataContext = dbContext;
             _eventBus = eventBus;
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _backgroundJobProvider = backgroundJobProvider;
+            _youTubeProvider = youTubeProvider;
+            _groupSeasonsService = groupSeasonsService;
         }
 
         public async Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId)
@@ -106,6 +118,79 @@ namespace SportsData.Producer.Application.Competitions
 
                 _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
                     p.CalculateCompetitionMetrics(competitionId.Value));
+            }
+        }
+
+        public async Task RefreshCompetitionMedia(int seasonYear)
+        {
+            var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(seasonYear);
+
+            var competitionIds = await _dataContext.Competitions
+                .Include(c => c.Contest)
+                .ThenInclude(contest => contest.AwayTeamFranchiseSeason)
+                .Include(c => c.Contest)
+                .ThenInclude(contest => contest.HomeTeamFranchiseSeason)
+                .AsNoTracking()
+                .Where(c => c.Contest.FinalizedUtc != null &&
+                            !c.Media.Any() &&
+                            (fbsGroupIds.Contains(c.Contest.AwayTeamFranchiseSeason.GroupSeasonId!.Value) ||
+                             fbsGroupIds.Contains(c.Contest.HomeTeamFranchiseSeason.GroupSeasonId!.Value)))
+                .OrderByDescending(x => x.Contest.StartDateUtc)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            foreach (var competitionId in competitionIds)
+            {
+                // enqueue Hangfire job here
+                _backgroundJobProvider.Enqueue<ICompetitionService>(p =>
+                    p.RefreshCompetitionMedia(competitionId));
+            }
+        }
+
+        public async Task RefreshCompetitionMedia(Guid competitionId)
+        {
+            var competition = await _dataContext.Competitions
+                .Include(x => x.Contest)
+                .FirstOrDefaultAsync(c => c.Id == competitionId);
+
+            if (competition is null)
+                return;
+
+            var searchTerm = $"{competition.Contest.Name} {competition.Contest.SeasonYear} Highlights";
+
+            var youTubeResults = await _youTubeProvider.Search(searchTerm);
+
+            if (youTubeResults != null && youTubeResults.Items.Any())
+            {
+                foreach (var mediaEntity in youTubeResults.Items.Select(ytResult => new CompetitionMedia()
+                         {
+                             Id = Guid.NewGuid(),
+                             AwayFranchiseSeasonId = competition.Contest.AwayTeamFranchiseSeasonId,
+                             ChannelId = ytResult.Snippet.ChannelId,
+                             ChannelTitle = ytResult.Snippet.ChannelTitle,
+                             CompetitionId = competition.Id,
+                             CreatedBy = Guid.Empty,
+                             CreatedUtc = DateTime.UtcNow,
+                             Description = ytResult.Snippet.Description,
+                             HomeFranchiseSeasonId = competition.Contest.HomeTeamFranchiseSeasonId,
+                             PublishedUtc = ytResult.Snippet.PublishedAt,
+                             ThumbnailDefaultHeight = ytResult.Snippet.Thumbnails.Default.Height,
+                             ThumbnailDefaultUrl = ytResult.Snippet.Thumbnails.Default.Url,
+                             ThumbnailDefaultWidth = ytResult.Snippet.Thumbnails.Default.Width,
+                             ThumbnailHighHeight = ytResult.Snippet.Thumbnails.High.Height,
+                             ThumbnailHighUrl = ytResult.Snippet.Thumbnails.High.Url,
+                             ThumbnailHighWidth = ytResult.Snippet.Thumbnails.High.Width,
+                             ThumbnailMediumHeight = ytResult.Snippet.Thumbnails.Medium.Height,
+                             ThumbnailMediumUrl = ytResult.Snippet.Thumbnails.Medium.Url,
+                             ThumbnailMediumWidth = ytResult.Snippet.Thumbnails.Medium.Width,
+                             Title = ytResult.Snippet.Title,
+                             VideoId = ytResult.Id.VideoId
+                         }))
+                {
+                    _dataContext.CompetitionMedia.Add(mediaEntity);
+                }
+
+                await _dataContext.SaveChangesAsync();
             }
         }
     }

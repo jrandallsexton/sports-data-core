@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System;
 using System.IO;

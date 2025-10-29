@@ -4,6 +4,7 @@ using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.Clients.AI;
+using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -32,17 +33,17 @@ namespace SportsData.Api.Application.Admin
 
         [HttpPost]
         [Route("generate-url-identity")]
-        public IActionResult GenerateUrlIdentity([FromBody] GenerateUrlIdentityCommand command)
+        public Task<IActionResult> GenerateUrlIdentity([FromBody] GenerateUrlIdentityCommand command)
         {
             if (string.IsNullOrWhiteSpace(command.Url))
             {
-                return BadRequest("URL cannot be empty.");
+                return Task.FromResult<IActionResult>(BadRequest("URL cannot be empty."));
             }
             // Here you would typically generate a unique identity based on the URL.
             // For simplicity, we will just return the URL as is.
             var identity = _externalRefIdentityGenerator.Generate(command.Url);
 
-            return Ok(identity);
+            return Task.FromResult<IActionResult>(Ok(identity));
         }
 
         [HttpPost]

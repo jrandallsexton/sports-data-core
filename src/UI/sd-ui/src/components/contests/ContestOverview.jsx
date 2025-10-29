@@ -10,6 +10,7 @@ import ContestOverviewLeaders from "./ContestOverviewLeaders";
 import ContestOverviewPlaylog from "./ContestOverviewPlaylog";
 // ContestOverviewTeamStats temporarily removed until teamStats DTO is available
 import ContestOverviewWinProb from "./ContestOverviewWinProb";
+import ContestOverviewVideo from "./ContestOverviewVideo";
 import ContestOverviewInfo from "./ContestOverviewInfo";
 import ContestOverviewMetrics from "./ContestOverviewMetrics";
 
@@ -43,7 +44,7 @@ export default function ContestOverview() {
     return <div>No contest data available. (Debug: {JSON.stringify(data)})</div>;
   }
 
-  const { header, info, leaders, playLog, winProbability, homeMetrics, awayMetrics } = dto;
+  const { header, info, leaders, playLog, winProbability, homeMetrics, awayMetrics, mediaItems } = dto;
   const { homeTeam, awayTeam, quarterScores } = header;
 
   const handleRefresh = async () => {
@@ -67,6 +68,8 @@ export default function ContestOverview() {
           <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />
         </div>
         <div className="contest-overview-col">
+          {/* Video component above Win Probability */}
+          <ContestOverviewVideo mediaItems={mediaItems} />
           {/* Win probability moved up until TeamStats is available */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
           <ContestOverviewMetrics homeMetrics={homeMetrics} awayMetrics={awayMetrics} homeName={homeTeam?.displayName} awayName={awayTeam?.displayName} />

@@ -408,7 +408,8 @@ namespace SportsData.Producer.Application.Contests.Overview
                 TeamStats = await GetTeamStatsAsync(contestId),
                 Info = await GetGameInfoAsync(contestId),
                 AwayMetrics = metrics.Item1,
-                HomeMetrics = metrics.Item2
+                HomeMetrics = metrics.Item2,
+                MediaItems = await GetMedia(competitionId)
             };
 
             //dto.Summary = await GetNarrativeSummaryAsync(contestId);
@@ -417,6 +418,30 @@ namespace SportsData.Producer.Application.Contests.Overview
 
             return dto;
         }
+
+        private async Task<List<MediaItemDto>> GetMedia(Guid competitionId)
+        {
+            var media = await _dbContext.CompetitionMedia
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId)
+                .OrderBy(m => m.CreatedUtc) // you can change this later
+                .Select(m => new MediaItemDto
+                {
+                    VideoId = m.VideoId,
+                    Title = m.Title,
+                    Description = m.Description,
+                    ChannelTitle = m.ChannelTitle,
+                    PublishedUtc = m.PublishedUtc,
+
+                    ThumbnailUrl = m.ThumbnailDefaultUrl,
+                    ThumbnailMediumUrl = m.ThumbnailMediumUrl,
+                    ThumbnailHighUrl = m.ThumbnailHighUrl
+                })
+                .ToListAsync();
+
+            return media;
+        }
+
 
         private async Task<(CompetitionMetricDto?, CompetitionMetricDto?)> GetCompetitionMetricsAsync(
             Guid competitionId, Guid awayFranchiseSeasonId, Guid homeFranchiseSeasonId)

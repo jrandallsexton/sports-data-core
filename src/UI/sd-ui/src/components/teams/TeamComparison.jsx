@@ -299,7 +299,27 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
             onClick={() => setActiveTab('statistics')}
             style={getMainTabStyling('statistics', activeTab === 'statistics')}
           >
-            Statistics ({totalFavoredA}:{totalFavoredB})
+            <div className="main-tab-content">
+              <div className="tab-text">Statistics ({totalFavoredA}:{totalFavoredB})</div>
+              {(totalFavoredA > 0 || totalFavoredB > 0) && (
+                <div className="tab-gradient-bar">
+                  <div 
+                    className="gradient-segment team-a"
+                    style={{
+                      width: `${(totalFavoredA / (totalFavoredA + totalFavoredB)) * 100}%`,
+                      backgroundColor: normAColor
+                    }}
+                  ></div>
+                  <div 
+                    className="gradient-segment team-b"
+                    style={{
+                      width: `${(totalFavoredB / (totalFavoredA + totalFavoredB)) * 100}%`,
+                      backgroundColor: normBColor
+                    }}
+                  ></div>
+                </div>
+              )}
+            </div>
           </button>
           <button
             className={`main-tab ${activeTab === 'metrics' ? 'active' : ''}`}

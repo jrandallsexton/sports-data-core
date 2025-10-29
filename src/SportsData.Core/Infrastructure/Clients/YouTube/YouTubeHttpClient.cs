@@ -37,7 +37,7 @@ namespace SportsData.Core.Infrastructure.Clients.YouTube
             var url = $"{_config.BaseUrl}/search?part=snippet" +
                       $"&q={HttpUtility.UrlEncode(query)}" +
                       $"&channelId={_config.DefaultChannelId}" +
-                      $"&type=video&order=date&maxResults=5" +
+                      $"&type=video&maxResults=5" +
                       $"&key={_config.ApiKey}";
 
             var response = await HttpClient.GetAsync(url);

@@ -3,6 +3,7 @@ import './ContestOverviewVideo.css';
 
 function ContestOverviewVideo({ mediaItems }) {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+  const [userHasSelected, setUserHasSelected] = useState(false);
 
   if (!mediaItems || mediaItems.length === 0) {
     return null; // Don't render anything if no videos are available
@@ -14,7 +15,13 @@ function ContestOverviewVideo({ mediaItems }) {
 
   const handleVideoSelect = (index) => {
     setSelectedVideoIndex(index);
+    setUserHasSelected(true); // Mark that user has actively selected a video
   };
+
+  // Only add autoplay if user has actively selected a video
+  const embedUrl = userHasSelected 
+    ? `${currentVideo.embedUrl}?autoplay=1&origin=${window.location.origin}&enablejsapi=1`
+    : `${currentVideo.embedUrl}?origin=${window.location.origin}&enablejsapi=1`;
 
   return (
     <div className="contest-overview-video">
@@ -22,7 +29,7 @@ function ContestOverviewVideo({ mediaItems }) {
       <div className="video-container">
         <iframe
           key={currentVideo.videoId} // Force iframe reload when video changes
-          src={`${currentVideo.embedUrl}?autoplay=1&origin=${window.location.origin}&enablejsapi=1`}
+          src={embedUrl}
           title={currentVideo.title}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

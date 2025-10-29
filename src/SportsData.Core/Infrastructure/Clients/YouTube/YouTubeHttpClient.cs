@@ -32,6 +32,8 @@ namespace SportsData.Core.Infrastructure.Clients.YouTube
 
         public async Task<YouTubeSearchResultDto?> Search(string query)
         {
+            _logger.LogInformation("YouTube query {Query}", HttpUtility.UrlEncode(query));
+
             var url = $"{_config.BaseUrl}/search?part=snippet" +
                       $"&q={HttpUtility.UrlEncode(query)}" +
                       $"&channelId={_config.DefaultChannelId}" +
@@ -43,6 +45,8 @@ namespace SportsData.Core.Infrastructure.Clients.YouTube
 
             var json = await response.Content.ReadAsStringAsync();
             var result = json.FromJson<YouTubeSearchResultDto>();
+
+            _logger.LogInformation("YouTube response {@Response}", result);
 
             return result;
         }

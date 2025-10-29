@@ -56,8 +56,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.HasIndex(x => x.VideoId).IsUnique();
-
                 builder.Property(x => x.VideoId).HasMaxLength(64);
                 builder.Property(x => x.ChannelId).HasMaxLength(64);
                 builder.Property(x => x.ChannelTitle).HasMaxLength(256);

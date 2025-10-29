@@ -1,3 +1,56 @@
+/* Main tabs styling */
+.main-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+  border-bottom: 2px solid #343a40;
+  padding-bottom: 0.5rem;
+}
+
+.main-tab {
+  padding: 0.75rem 2rem;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: #adb5bd;
+  font-weight: 500;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.main-tab.active {
+  background: #61dafb;
+  color: #23272f;
+  font-weight: bold;
+  transform: translateY(-2px);
+}
+
+.main-tab:hover:not(.active) {
+  background: #2a2d33;
+  color: #f8f9fa;
+}
+
+.tab-content {
+  min-height: 300px;
+}
+
+@media (max-width: 600px) {
+  .main-tabs {
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .main-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+}
+
 .stat-value.left {
   text-align: right;
 }
@@ -163,9 +216,11 @@
   width: 54px;
   height: 54px;
   object-fit: contain;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  background: #fff !important;
+  border-radius: 8px !important;
+  border: 1px solid #ccc !important;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .team-name {

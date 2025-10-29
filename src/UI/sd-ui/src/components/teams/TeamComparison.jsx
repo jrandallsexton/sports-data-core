@@ -14,6 +14,9 @@ import "./TeamComparisonTabs.css";
  * The stats prop is the full API response, just like TeamStatistics.
  */
 export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor = '#61dafb', teamBColor = '#61dafb' }) {
+  // Main tab state
+  const [activeTab, setActiveTab] = useState('statistics');
+  
   // Helper: choose light or dark text based on background color
   const getContrastTextColor = (bgColor) => {
     let color = bgColor;
@@ -73,6 +76,108 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
   const categories = Object.keys(statisticsA);
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || "");
 
+  // Helper to render the Statistics tab content
+  const renderStatisticsTab = () => {
+    return (
+      <>
+        <div className="team-comparison-tabs">
+          {categories.map(cat => {
+            // Count favored stats for each team in this category
+            const statsA = statisticsA[cat] || [];
+            const statsB = statisticsB[cat] || [];
+            let favoredA = 0, favoredB = 0;
+            for (let i = 0; i < Math.max(statsA.length, statsB.length); i++) {
+              const entryA = statsA[i] || {};
+              const entryB = statsB[i] || {};
+              const favored = getFavored(entryA.displayValue ?? '-', entryB.displayValue ?? '-', entryA, entryB);
+              if (favored === 'A') favoredA++;
+              if (favored === 'B') favoredB++;
+            }
+            let tabBg = '';
+            let tabColor = '';
+            if (favoredA > favoredB) {
+              tabBg = (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor));
+              tabColor = getContrastTextColor(normAColor);
+            } else if (favoredB > favoredA) {
+              tabBg = (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor));
+              tabColor = getContrastTextColor(normBColor);
+            } else {
+              tabBg = '#343a40';
+              tabColor = '#fff';
+            }
+            return (
+              <button
+                key={cat}
+                className={`team-comparison-tab${selectedCategory === cat ? " selected" : ""}`}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  background: tabBg,
+                  color: tabColor,
+                  borderRadius: 6,
+                  fontWeight: selectedCategory === cat ? 'bold' : undefined,
+                  position: 'relative',
+                  zIndex: selectedCategory === cat ? 2 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: selectedCategory === cat ? 6 : 0
+                }}
+              >
+                {selectedCategory === cat && (
+                  <span style={{fontSize:'1.1em', verticalAlign:'middle'}}>★</span>
+                )}
+                {cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:{favoredB})
+              </button>
+            );
+          })}
+        </div>
+        {selectedCategory && (
+          <div className="team-comparison-table">
+            {(statisticsA[selectedCategory] || []).map((entry, idx) => {
+              const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
+              const favored = getFavored(entry.displayValue ?? "-", bEntry.displayValue ?? "-", entry, bEntry);
+              const aRankContent = entry.rank && entry.rank > 1 ? (
+                <span className="rank-inline">(#{entry.rank})</span>
+              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
+              const bRankContent = bEntry.rank && bEntry.rank > 1 ? (
+                <span className="rank-inline">(#{bEntry.rank})</span>
+              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
+              const aValContent = entry.displayValue ?? "-";
+              const bValContent = bEntry.displayValue ?? "-";
+              const statKey = entry.statisticKey;
+              const statLabel = entry.statisticValue;
+              return (
+                <div className="stat-row" key={statKey}>
+                  <div className="stat-rank left-rank">{aRankContent}</div>
+                  <div
+                    className={`stat-value left${favored === "A" ? " favored" : ""}`}
+                    style={favored === "A" ? { background: (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor)), borderRadius: 6, color: getContrastTextColor(normAColor) } : {}}
+                  >{aValContent}</div>
+                  <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
+                  <div
+                    className={`stat-value right${favored === "B" ? " favored" : ""}`}
+                    style={favored === "B" ? { background: (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor)), borderRadius: 6, color: getContrastTextColor(normBColor) } : {}}
+                  >{bValContent}</div>
+                  <div className="stat-rank right-rank">{bRankContent}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // Helper to render the Metrics tab content
+  const renderMetricsTab = () => {
+    return (
+      <div className="metrics-placeholder">
+        <p style={{ textAlign: 'center', color: '#adb5bd', fontSize: '1.1rem', padding: '2rem' }}>
+          Metrics data will be displayed here once the data is available.
+        </p>
+      </div>
+    );
+  };
+
   if (!open) return null;
 
   // Helper to determine which team is favored (higher value wins by default)
@@ -93,6 +198,51 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
       }
     }
     return null;
+  };
+
+  // Calculate overall team favorability across all statistics for main tab coloring
+  const calculateOverallFavorability = () => {
+    let totalFavoredA = 0, totalFavoredB = 0;
+    
+    categories.forEach(cat => {
+      const statsA = statisticsA[cat] || [];
+      const statsB = statisticsB[cat] || [];
+      for (let i = 0; i < Math.max(statsA.length, statsB.length); i++) {
+        const entryA = statsA[i] || {};
+        const entryB = statsB[i] || {};
+        const favored = getFavored(entryA.displayValue ?? '-', entryB.displayValue ?? '-', entryA, entryB);
+        if (favored === 'A') totalFavoredA++;
+        if (favored === 'B') totalFavoredB++;
+      }
+    });
+    
+    return { totalFavoredA, totalFavoredB };
+  };
+
+  const { totalFavoredA, totalFavoredB } = calculateOverallFavorability();
+
+  // Get main tab styling based on overall favorability
+  const getMainTabStyling = (tabType, isActive) => {
+    if (!isActive) return {}; // Only apply styling to active tabs
+    
+    if (tabType === 'statistics') {
+      if (totalFavoredA > totalFavoredB) {
+        return {
+          background: (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor)),
+          color: getContrastTextColor(normAColor)
+        };
+      } else if (totalFavoredB > totalFavoredA) {
+        return {
+          background: (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor)),
+          color: getContrastTextColor(normBColor)
+        };
+      }
+    }
+    // Default styling for neutral/metrics tabs or when teams are tied
+    return {
+      background: '#61dafb', // Use default active color
+      color: '#23272f'
+    };
   };
 
   // Helper to get muted color (simple alpha blend)
@@ -141,89 +291,31 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
             <div className="team-name">{teamB.name}</div>
           </div>
         </div>
-        <div className="team-comparison-tabs">
-          {categories.map(cat => {
-            // Count favored stats for each team in this category
-            const statsA = statisticsA[cat] || [];
-            const statsB = statisticsB[cat] || [];
-            let favoredA = 0, favoredB = 0;
-            for (let i = 0; i < Math.max(statsA.length, statsB.length); i++) {
-              const entryA = statsA[i] || {};
-              const entryB = statsB[i] || {};
-              const favored = getFavored(entryA.displayValue ?? '-', entryB.displayValue ?? '-', entryA, entryB);
-              if (favored === 'A') favoredA++;
-              if (favored === 'B') favoredB++;
-            }
-            let tabBg = '';
-            let tabColor = '';
-            if (favoredA > favoredB) {
-              tabBg = (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor));
-              tabColor = getContrastTextColor(normAColor);
-            } else if (favoredB > favoredA) {
-              tabBg = (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor));
-              tabColor = getContrastTextColor(normBColor);
-            } else {
-              tabBg = '#343a40';
-              tabColor = '#fff';
-            }
-            return (
-              <button
-                key={cat}
-                className={`team-comparison-tab${selectedCategory === cat ? " selected" : ""}`}
-                onClick={() => setSelectedCategory(cat)}
-                style={{
-                  background: tabBg,
-                  color: tabColor,
-                  borderRadius: 6,
-                  fontWeight: selectedCategory === cat ? 'bold' : undefined,
-                  position: 'relative',
-                  zIndex: selectedCategory === cat ? 2 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: selectedCategory === cat ? 6 : 0
-                }}
-              >
-                {selectedCategory === cat && (
-                  <span style={{fontSize:'1.1em', verticalAlign:'middle'}}>★</span>
-                )}
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </button>
-            );
-          })}
+        
+        {/* Main tabs */}
+        <div className="main-tabs">
+          <button
+            className={`main-tab ${activeTab === 'statistics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('statistics')}
+            style={getMainTabStyling('statistics', activeTab === 'statistics')}
+          >
+            Statistics ({totalFavoredA}:{totalFavoredB})
+          </button>
+          <button
+            className={`main-tab ${activeTab === 'metrics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('metrics')}
+            style={getMainTabStyling('metrics', activeTab === 'metrics')}
+          >
+            Metrics
+          </button>
         </div>
-        {selectedCategory && (
-          <div className="team-comparison-table">
-            {(statisticsA[selectedCategory] || []).map((entry, idx) => {
-              const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
-              const favored = getFavored(entry.displayValue ?? "-", bEntry.displayValue ?? "-", entry, bEntry);
-              const aRankContent = entry.rank && entry.rank > 1 ? (
-                <span className="rank-inline">(#{entry.rank})</span>
-              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
-              const bRankContent = bEntry.rank && bEntry.rank > 1 ? (
-                <span className="rank-inline">(#{bEntry.rank})</span>
-              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
-              const aValContent = entry.displayValue ?? "-";
-              const bValContent = bEntry.displayValue ?? "-";
-              const statKey = entry.statisticKey;
-              const statLabel = entry.statisticValue;
-              return (
-                <div className="stat-row" key={statKey}>
-                  <div className="stat-rank left-rank">{aRankContent}</div>
-                  <div
-                    className={`stat-value left${favored === "A" ? " favored" : ""}`}
-                    style={favored === "A" ? { background: (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor)), borderRadius: 6, color: getContrastTextColor(normAColor) } : {}}
-                  >{aValContent}</div>
-                  <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
-                  <div
-                    className={`stat-value right${favored === "B" ? " favored" : ""}`}
-                    style={favored === "B" ? { background: (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor)), borderRadius: 6, color: getContrastTextColor(normBColor) } : {}}
-                  >{bValContent}</div>
-                  <div className="stat-rank right-rank">{bRankContent}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+
+        {/* Tab content */}
+        <div className="tab-content">
+          {activeTab === 'statistics' && renderStatisticsTab()}
+          {activeTab === 'metrics' && renderMetricsTab()}
+        </div>
+
         <button className="close-btn" onClick={onClose}>Close</button>
       </div>
     </div>

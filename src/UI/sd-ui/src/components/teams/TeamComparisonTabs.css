@@ -1,19 +1,22 @@
 .team-comparison-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.2rem;
   justify-content: center;
 }
 .team-comparison-tab {
-  padding: 0.4rem 1.1rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 6px 6px 0 0;
   background: #23272f;
   color: #adb5bd;
   font-weight: 500;
+  font-size: 0.95rem;
   cursor: pointer;
   border: none;
   outline: none;
   transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
 }
 .team-comparison-tab.selected {
   background: #61dafb;

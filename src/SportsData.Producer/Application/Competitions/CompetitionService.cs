@@ -22,7 +22,7 @@ namespace SportsData.Producer.Application.Competitions
         Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId);
         Task RefreshCompetitionMetrics();
         Task RefreshCompetitionMedia(int seasonYear);
-        Task RefreshCompetitionMedia(Guid competitionId);
+        Task RefreshCompetitionMedia(Guid competitionId, bool removeExisting = false);
     }
 
     public class CompetitionService : ICompetitionService
@@ -143,12 +143,20 @@ namespace SportsData.Producer.Application.Competitions
             {
                 // enqueue Hangfire job here
                 _backgroundJobProvider.Enqueue<ICompetitionService>(p =>
-                    p.RefreshCompetitionMedia(competitionId));
+                    p.RefreshCompetitionMedia(competitionId, false));
             }
         }
 
-        public async Task RefreshCompetitionMedia(Guid competitionId)
+        public async Task RefreshCompetitionMedia(Guid competitionId, bool removeExisting = false)
         {
+
+            if (removeExisting)
+            {
+                await _dataContext.CompetitionMedia
+                    .Where(cm => cm.CompetitionId == competitionId)
+                    .ExecuteDeleteAsync();
+            }
+
             var competition = await _dataContext.Competitions
                 .Include(x => x.Contest)
                 .FirstOrDefaultAsync(c => c.Id == competitionId);

@@ -70,7 +70,7 @@ namespace SportsData.Producer.Application.Competitions
         [Route("{competitionId}/media/refresh")]
         public Task<IActionResult> RefreshMedia([FromRoute] Guid competitionId)
         {
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId));
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId, true));
 
             return Task.FromResult<IActionResult>(
                 Accepted(new { Message = $"Competition media generation initiated." }));

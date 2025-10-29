@@ -118,14 +118,37 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
                   position: 'relative',
                   zIndex: selectedCategory === cat ? 2 : 1,
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: selectedCategory === cat ? 6 : 0
+                  gap: selectedCategory === cat ? 4 : 3,
+                  minHeight: '42px',
+                  padding: '0.4rem 0.7rem'
                 }}
               >
-                {selectedCategory === cat && (
-                  <span style={{fontSize:'1.1em', verticalAlign:'middle'}}>★</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: selectedCategory === cat ? 6 : 0 }}>
+                  {selectedCategory === cat && (
+                    <span style={{fontSize:'1.1em', verticalAlign:'middle'}}>★</span>
+                  )}
+                  <span>{cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:{favoredB})</span>
+                </div>
+                {(favoredA > 0 || favoredB > 0) && (
+                  <div className="category-gradient-bar">
+                    <div 
+                      className="gradient-segment team-a"
+                      style={{
+                        width: `${(favoredA / (favoredA + favoredB)) * 100}%`,
+                        backgroundColor: normAColor
+                      }}
+                    ></div>
+                    <div 
+                      className="gradient-segment team-b"
+                      style={{
+                        width: `${(favoredB / (favoredA + favoredB)) * 100}%`,
+                        backgroundColor: normBColor
+                      }}
+                    ></div>
+                  </div>
                 )}
-                {cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:{favoredB})
               </button>
             );
           })}

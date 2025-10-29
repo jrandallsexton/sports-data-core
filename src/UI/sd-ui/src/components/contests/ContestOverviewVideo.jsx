@@ -22,12 +22,13 @@ function ContestOverviewVideo({ mediaItems }) {
       <div className="video-container">
         <iframe
           key={currentVideo.videoId} // Force iframe reload when video changes
-          src={`${currentVideo.embedUrl}?autoplay=1`} // Add autoplay parameter
+          src={`${currentVideo.embedUrl}?autoplay=1&origin=${window.location.origin}&enablejsapi=1`}
           title={currentVideo.title}
           frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           className="video-iframe"
+          referrerPolicy="strict-origin-when-cross-origin"
         ></iframe>
       </div>
       <div className="video-info">

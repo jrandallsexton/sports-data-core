@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Gallery.css';
 
 function Gallery() {
@@ -97,29 +97,19 @@ function Gallery() {
     setSelectedImageIndex(null);
   };
 
-  const goToNext = () => {
+  const isVideo = (item) => item.type === 'video';
+
+  const goToNext = useCallback(() => {
     if (selectedImageIndex !== null) {
       setSelectedImageIndex((selectedImageIndex + 1) % media.length);
     }
-  };
+  }, [selectedImageIndex, media.length]);
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
     if (selectedImageIndex !== null) {
       setSelectedImageIndex((selectedImageIndex - 1 + media.length) % media.length);
     }
-  };
-
-  const isVideo = (item) => item.type === 'video';
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      closeLightbox();
-    } else if (e.key === 'ArrowRight') {
-      goToNext();
-    } else if (e.key === 'ArrowLeft') {
-      goToPrevious();
-    }
-  };
+  }, [selectedImageIndex, media.length]);
 
   // Touch handlers for mobile swipe
   const minSwipeDistance = 50;
@@ -149,11 +139,19 @@ function Gallery() {
   // Keyboard navigation effect
   useEffect(() => {
     if (selectedImageIndex !== null) {
-      const handleGlobalKeyDown = (e) => handleKeyDown(e);
+      const handleGlobalKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          closeLightbox();
+        } else if (e.key === 'ArrowRight') {
+          goToNext();
+        } else if (e.key === 'ArrowLeft') {
+          goToPrevious();
+        }
+      };
       window.addEventListener('keydown', handleGlobalKeyDown);
       return () => window.removeEventListener('keydown', handleGlobalKeyDown);
     }
-  }, [selectedImageIndex]);
+  }, [selectedImageIndex, goToNext, goToPrevious]);
 
   return (
     <div className="gallery-page">

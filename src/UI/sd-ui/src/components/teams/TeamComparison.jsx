@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import "./TeamComparison.css";
 import "./TeamComparisonTabs.css";
 
-
 /**
  * TeamComparison Dialog
  * Props:
@@ -13,47 +12,65 @@ import "./TeamComparisonTabs.css";
  *
  * The stats prop is the full API response, just like TeamStatistics.
  */
-export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor = '#61dafb', teamBColor = '#61dafb' }) {
+export default function TeamComparison({
+  open,
+  onClose,
+  teamA,
+  teamB,
+  teamAColor = "#61dafb",
+  teamBColor = "#61dafb",
+}) {
   // Main tab state
-  const [activeTab, setActiveTab] = useState('statistics');
-  
+  const [activeTab, setActiveTab] = useState("statistics");
+
   // Helper: choose light or dark text based on background color
   const getContrastTextColor = (bgColor) => {
     let color = bgColor;
-    if (typeof color === 'string' && color.length === 6 && !color.startsWith('#')) {
+    if (
+      typeof color === "string" &&
+      color.length === 6 &&
+      !color.startsWith("#")
+    ) {
       color = `#${color}`;
     }
-    if (color.startsWith('#')) {
-      let hex = color.replace('#', '');
+    if (color.startsWith("#")) {
+      let hex = color.replace("#", "");
       if (hex.length === 3) {
-        hex = hex.split('').map(x => x + x).join('');
+        hex = hex
+          .split("")
+          .map((x) => x + x)
+          .join("");
       }
       if (hex.length === 6) {
-        const r = parseInt(hex.substring(0,2), 16);
-        const g = parseInt(hex.substring(2,4), 16);
-        const b = parseInt(hex.substring(4,6), 16);
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
         // Relative luminance formula
         const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        return luminance < 128 ? '#fff' : '#23272f';
+        return luminance < 128 ? "#fff" : "#23272f";
       }
     }
     // For rgb(a) colors
-    if (color.startsWith('rgb')) {
+    if (color.startsWith("rgb")) {
       const vals = color.match(/\d+/g);
       if (vals && vals.length >= 3) {
         const r = parseInt(vals[0], 10);
         const g = parseInt(vals[1], 10);
         const b = parseInt(vals[2], 10);
         const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        return luminance < 128 ? '#fff' : '#23272f';
+        return luminance < 128 ? "#fff" : "#23272f";
       }
     }
     // Default to dark text
-    return '#23272f';
+    return "#23272f";
   };
   // Normalize color: prepend # if missing for hex
   const normalizeColor = (color) => {
-    if (typeof color === 'string' && color.length === 6 && !color.startsWith('#')) {
+    if (
+      typeof color === "string" &&
+      color.length === 6 &&
+      !color.startsWith("#")
+    ) {
       return `#${color}`;
     }
     return color;
@@ -61,18 +78,27 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
   const normAColor = normalizeColor(teamAColor);
   const normBColor = normalizeColor(teamBColor);
   // Debug: log normalized color props
-  console.log('TeamComparison colors:', { teamAColor, teamBColor, normAColor, normBColor });
+  console.log("TeamComparison colors:", {
+    teamAColor,
+    teamBColor,
+    normAColor,
+    normBColor,
+  });
   // Prevent background scroll when dialog is open
   useEffect(() => {
     if (open) {
       const original = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = original; };
+      return () => {
+        document.body.style.overflow = original;
+      };
     }
   }, [open]);
   // Use the same logic as TeamStatistics
-  const statisticsA = teamA.stats?.data?.statistics || teamA.stats?.statistics || {};
-  const statisticsB = teamB.stats?.data?.statistics || teamB.stats?.statistics || {};
+  const statisticsA =
+    teamA.stats?.data?.statistics || teamA.stats?.statistics || {};
+  const statisticsB =
+    teamB.stats?.data?.statistics || teamB.stats?.statistics || {};
   const categories = Object.keys(statisticsA);
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || "");
 
@@ -81,70 +107,95 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
     return (
       <>
         <div className="team-comparison-tabs">
-          {categories.map(cat => {
+          {categories.map((cat) => {
             // Count favored stats for each team in this category
             const statsA = statisticsA[cat] || [];
             const statsB = statisticsB[cat] || [];
-            let favoredA = 0, favoredB = 0;
+            let favoredA = 0,
+              favoredB = 0;
             for (let i = 0; i < Math.max(statsA.length, statsB.length); i++) {
               const entryA = statsA[i] || {};
               const entryB = statsB[i] || {};
-              const favored = getFavored(entryA.displayValue ?? '-', entryB.displayValue ?? '-', entryA, entryB);
-              if (favored === 'A') favoredA++;
-              if (favored === 'B') favoredB++;
+              const favored = getFavored(
+                entryA.displayValue ?? "-",
+                entryB.displayValue ?? "-",
+                entryA,
+                entryB
+              );
+              if (favored === "A") favoredA++;
+              if (favored === "B") favoredB++;
             }
-            let tabBg = '';
-            let tabColor = '';
+            let tabBg = "";
+            let tabColor = "";
             if (favoredA > favoredB) {
-              tabBg = (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor));
+              tabBg = /^#|rgb/.test(normAColor)
+                ? normAColor
+                : getMutedColor(normAColor);
               tabColor = getContrastTextColor(normAColor);
             } else if (favoredB > favoredA) {
-              tabBg = (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor));
+              tabBg = /^#|rgb/.test(normBColor)
+                ? normBColor
+                : getMutedColor(normBColor);
               tabColor = getContrastTextColor(normBColor);
             } else {
-              tabBg = '#343a40';
-              tabColor = '#fff';
+              tabBg = "#343a40";
+              tabColor = "#fff";
             }
             return (
               <button
                 key={cat}
-                className={`team-comparison-tab${selectedCategory === cat ? " selected" : ""}`}
+                className={`team-comparison-tab${
+                  selectedCategory === cat ? " selected" : ""
+                }`}
                 onClick={() => setSelectedCategory(cat)}
                 style={{
                   background: tabBg,
                   color: tabColor,
                   borderRadius: 6,
-                  fontWeight: selectedCategory === cat ? 'bold' : undefined,
-                  position: 'relative',
+                  fontWeight: selectedCategory === cat ? "bold" : undefined,
+                  position: "relative",
                   zIndex: selectedCategory === cat ? 2 : 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   gap: selectedCategory === cat ? 4 : 3,
-                  minHeight: '42px',
-                  padding: '0.4rem 0.7rem'
+                  minHeight: "42px",
+                  padding: "0.4rem 0.7rem",
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: selectedCategory === cat ? 6 : 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: selectedCategory === cat ? 6 : 0,
+                  }}
+                >
                   {selectedCategory === cat && (
-                    <span style={{fontSize:'1.1em', verticalAlign:'middle'}}>★</span>
+                    <span
+                      style={{ fontSize: "1.1em", verticalAlign: "middle" }}
+                    >
+                      ★
+                    </span>
                   )}
-                  <span>{cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:{favoredB})</span>
+                  <span>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:
+                    {favoredB})
+                  </span>
                 </div>
                 {(favoredA > 0 || favoredB > 0) && (
                   <div className="category-gradient-bar">
-                    <div 
+                    <div
                       className="gradient-segment team-a"
                       style={{
                         width: `${(favoredA / (favoredA + favoredB)) * 100}%`,
-                        backgroundColor: normAColor
+                        backgroundColor: normAColor,
                       }}
                     ></div>
-                    <div 
+                    <div
                       className="gradient-segment team-b"
                       style={{
                         width: `${(favoredB / (favoredA + favoredB)) * 100}%`,
-                        backgroundColor: normBColor
+                        backgroundColor: normBColor,
                       }}
                     ></div>
                   </div>
@@ -157,13 +208,24 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
           <div className="team-comparison-table">
             {(statisticsA[selectedCategory] || []).map((entry, idx) => {
               const bEntry = (statisticsB[selectedCategory] || [])[idx] || {};
-              const favored = getFavored(entry.displayValue ?? "-", bEntry.displayValue ?? "-", entry, bEntry);
-              const aRankContent = entry.rank && entry.rank > 1 ? (
-                <span className="rank-inline">(#{entry.rank})</span>
-              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
-              const bRankContent = bEntry.rank && bEntry.rank > 1 ? (
-                <span className="rank-inline">(#{bEntry.rank})</span>
-              ) : <span style={{ width: 0, display: 'inline-block' }}></span>;
+              const favored = getFavored(
+                entry.displayValue ?? "-",
+                bEntry.displayValue ?? "-",
+                entry,
+                bEntry
+              );
+              const aRankContent =
+                entry.rank && entry.rank > 1 ? (
+                  <span className="rank-inline">(#{entry.rank})</span>
+                ) : (
+                  <span style={{ width: 0, display: "inline-block" }}></span>
+                );
+              const bRankContent =
+                bEntry.rank && bEntry.rank > 1 ? (
+                  <span className="rank-inline">(#{bEntry.rank})</span>
+                ) : (
+                  <span style={{ width: 0, display: "inline-block" }}></span>
+                );
               const aValContent = entry.displayValue ?? "-";
               const bValContent = bEntry.displayValue ?? "-";
               const statKey = entry.statisticKey;
@@ -172,14 +234,54 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
                 <div className="stat-row" key={statKey}>
                   <div className="stat-rank left-rank">{aRankContent}</div>
                   <div
-                    className={`stat-value left${favored === "A" ? " favored" : ""}`}
-                    style={favored === "A" ? { background: (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor)), borderRadius: 6, color: getContrastTextColor(normAColor) } : {}}
-                  >{aValContent}</div>
-                  <div className="stat-category" style={{ width: 480, minWidth: 360, maxWidth: 660, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{statLabel}</div>
+                    className={`stat-value left${
+                      favored === "A" ? " favored" : ""
+                    }`}
+                    style={
+                      favored === "A"
+                        ? {
+                            background: /^#|rgb/.test(normAColor)
+                              ? normAColor
+                              : getMutedColor(normAColor),
+                            borderRadius: 6,
+                            color: getContrastTextColor(normAColor),
+                          }
+                        : {}
+                    }
+                  >
+                    {aValContent}
+                  </div>
                   <div
-                    className={`stat-value right${favored === "B" ? " favored" : ""}`}
-                    style={favored === "B" ? { background: (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor)), borderRadius: 6, color: getContrastTextColor(normBColor) } : {}}
-                  >{bValContent}</div>
+                    className="stat-category"
+                    style={{
+                      width: 480,
+                      minWidth: 360,
+                      maxWidth: 660,
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {statLabel}
+                  </div>
+                  <div
+                    className={`stat-value right${
+                      favored === "B" ? " favored" : ""
+                    }`}
+                    style={
+                      favored === "B"
+                        ? {
+                            background: /^#|rgb/.test(normBColor)
+                              ? normBColor
+                              : getMutedColor(normBColor),
+                            borderRadius: 6,
+                            color: getContrastTextColor(normBColor),
+                          }
+                        : {}
+                    }
+                  >
+                    {bValContent}
+                  </div>
                   <div className="stat-rank right-rank">{bRankContent}</div>
                 </div>
               );
@@ -194,7 +296,14 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
   const renderMetricsTab = () => {
     return (
       <div className="metrics-placeholder">
-        <p style={{ textAlign: 'center', color: '#adb5bd', fontSize: '1.1rem', padding: '2rem' }}>
+        <p
+          style={{
+            textAlign: "center",
+            color: "#adb5bd",
+            fontSize: "1.1rem",
+            padding: "2rem",
+          }}
+        >
           Metrics data will be displayed here once the data is available.
         </p>
       </div>
@@ -210,7 +319,8 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
     const aNum = parseFloat(a);
     const bNum = parseFloat(b);
     // Use isNegativeAttribute from either entry (prefer A, fallback to B)
-    const isNegative = aEntry.isNegativeAttribute ?? bEntry.isNegativeAttribute ?? false;
+    const isNegative =
+      aEntry.isNegativeAttribute ?? bEntry.isNegativeAttribute ?? false;
     if (!isNaN(aNum) && !isNaN(bNum)) {
       if (isNegative) {
         if (aNum < bNum) return "A";
@@ -225,20 +335,26 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
 
   // Calculate overall team favorability across all statistics for main tab coloring
   const calculateOverallFavorability = () => {
-    let totalFavoredA = 0, totalFavoredB = 0;
-    
-    categories.forEach(cat => {
+    let totalFavoredA = 0,
+      totalFavoredB = 0;
+
+    categories.forEach((cat) => {
       const statsA = statisticsA[cat] || [];
       const statsB = statisticsB[cat] || [];
       for (let i = 0; i < Math.max(statsA.length, statsB.length); i++) {
         const entryA = statsA[i] || {};
         const entryB = statsB[i] || {};
-        const favored = getFavored(entryA.displayValue ?? '-', entryB.displayValue ?? '-', entryA, entryB);
-        if (favored === 'A') totalFavoredA++;
-        if (favored === 'B') totalFavoredB++;
+        const favored = getFavored(
+          entryA.displayValue ?? "-",
+          entryB.displayValue ?? "-",
+          entryA,
+          entryB
+        );
+        if (favored === "A") totalFavoredA++;
+        if (favored === "B") totalFavoredB++;
       }
     });
-    
+
     return { totalFavoredA, totalFavoredB };
   };
 
@@ -247,54 +363,64 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
   // Get main tab styling based on overall favorability
   const getMainTabStyling = (tabType, isActive) => {
     if (!isActive) return {}; // Only apply styling to active tabs
-    
-    if (tabType === 'statistics') {
+
+    if (tabType === "statistics") {
       if (totalFavoredA > totalFavoredB) {
         return {
-          background: (/^#|rgb/.test(normAColor) ? normAColor : getMutedColor(normAColor)),
-          color: getContrastTextColor(normAColor)
+          background: /^#|rgb/.test(normAColor)
+            ? normAColor
+            : getMutedColor(normAColor),
+          color: getContrastTextColor(normAColor),
         };
       } else if (totalFavoredB > totalFavoredA) {
         return {
-          background: (/^#|rgb/.test(normBColor) ? normBColor : getMutedColor(normBColor)),
-          color: getContrastTextColor(normBColor)
+          background: /^#|rgb/.test(normBColor)
+            ? normBColor
+            : getMutedColor(normBColor),
+          color: getContrastTextColor(normBColor),
         };
       }
     }
     // Default styling for neutral/metrics tabs or when teams are tied
     return {
-      background: '#61dafb', // Use default active color
-      color: '#23272f'
+      background: "#61dafb", // Use default active color
+      color: "#23272f",
     };
   };
 
   // Helper to get muted color (simple alpha blend)
   const getMutedColor = (color) => {
-    if (!color) return '#61dafb33';
+    if (!color) return "#61dafb33";
     // If hex, convert to rgba with alpha
-    if (color.startsWith('#')) {
+    if (color.startsWith("#")) {
       // Support #RRGGBB and #RGB
-      let hex = color.replace('#', '');
+      let hex = color.replace("#", "");
       if (hex.length === 3) {
-        hex = hex.split('').map(x => x + x).join('');
+        hex = hex
+          .split("")
+          .map((x) => x + x)
+          .join("");
       }
       if (hex.length === 6) {
-        const r = parseInt(hex.substring(0,2), 16);
-        const g = parseInt(hex.substring(2,4), 16);
-        const b = parseInt(hex.substring(4,6), 16);
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
         return `rgba(${r},${g},${b},0.18)`;
       }
       // Fallback for other hex formats
       return color;
     }
     // If rgb(a), reduce alpha
-    if (color.startsWith('rgb')) {
+    if (color.startsWith("rgb")) {
       // If already rgba, replace alpha
-      if (color.startsWith('rgba')) {
-        return color.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgba($1,$2,$3,0.18)');
+      if (color.startsWith("rgba")) {
+        return color.replace(
+          /rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/,
+          "rgba($1,$2,$3,0.18)"
+        );
       }
       // If rgb, add alpha
-      return color.replace(/rgb\(([^)]+)\)/, 'rgba($1,0.18)');
+      return color.replace(/rgb\(([^)]+)\)/, "rgba($1,0.18)");
     }
     // Otherwise, use color as-is
     return color;
@@ -302,64 +428,86 @@ export default function TeamComparison({ open, onClose, teamA, teamB, teamAColor
 
   return (
     <div className="team-comparison-dialog-backdrop" onClick={onClose}>
-      <div className="team-comparison-dialog" onClick={e => e.stopPropagation()}>
-        <div className="team-comparison-header">
-          <div className="team-col">
-            <img src={teamA.logoUri} alt={teamA.name} className="team-logo" />
-            <div className="team-name">{teamA.name}</div>
-          </div>
-          <div className="vs-col">vs</div>
-          <div className="team-col">
-            <img src={teamB.logoUri} alt={teamB.name} className="team-logo" />
-            <div className="team-name">{teamB.name}</div>
-          </div>
-        </div>
-        
-        {/* Main tabs */}
-        <div className="main-tabs">
-          <button
-            className={`main-tab ${activeTab === 'statistics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('statistics')}
-            style={getMainTabStyling('statistics', activeTab === 'statistics')}
-          >
-            <div className="main-tab-content">
-              <div className="tab-text">Statistics ({totalFavoredA}:{totalFavoredB})</div>
-              {(totalFavoredA > 0 || totalFavoredB > 0) && (
-                <div className="tab-gradient-bar">
-                  <div 
-                    className="gradient-segment team-a"
-                    style={{
-                      width: `${(totalFavoredA / (totalFavoredA + totalFavoredB)) * 100}%`,
-                      backgroundColor: normAColor
-                    }}
-                  ></div>
-                  <div 
-                    className="gradient-segment team-b"
-                    style={{
-                      width: `${(totalFavoredB / (totalFavoredA + totalFavoredB)) * 100}%`,
-                      backgroundColor: normBColor
-                    }}
-                  ></div>
-                </div>
-              )}
+      <div
+        className="team-comparison-dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="team-comparison-content">
+          <div className="team-comparison-header">
+            <div className="team-col">
+              <img src={teamA.logoUri} alt={teamA.name} className="team-logo" />
+              <div className="team-name">{teamA.name}</div>
             </div>
-          </button>
-          <button
-            className={`main-tab ${activeTab === 'metrics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('metrics')}
-            style={getMainTabStyling('metrics', activeTab === 'metrics')}
-          >
-            Metrics
-          </button>
+            <div className="vs-col">vs</div>
+            <div className="team-col">
+              <img src={teamB.logoUri} alt={teamB.name} className="team-logo" />
+              <div className="team-name">{teamB.name}</div>
+            </div>
+          </div>
+
+          {/* Main tabs */}
+          <div className="main-tabs">
+            <button
+              className={`main-tab ${
+                activeTab === "statistics" ? "active" : ""
+              }`}
+              onClick={() => setActiveTab("statistics")}
+              style={getMainTabStyling(
+                "statistics",
+                activeTab === "statistics"
+              )}
+            >
+              <div className="main-tab-content">
+                <div className="tab-text">
+                  Statistics ({totalFavoredA}:{totalFavoredB})
+                </div>
+                {(totalFavoredA > 0 || totalFavoredB > 0) && (
+                  <div className="tab-gradient-bar">
+                    <div
+                      className="gradient-segment team-a"
+                      style={{
+                        width: `${
+                          (totalFavoredA / (totalFavoredA + totalFavoredB)) *
+                          100
+                        }%`,
+                        backgroundColor: normAColor,
+                      }}
+                    ></div>
+                    <div
+                      className="gradient-segment team-b"
+                      style={{
+                        width: `${
+                          (totalFavoredB / (totalFavoredA + totalFavoredB)) *
+                          100
+                        }%`,
+                        backgroundColor: normBColor,
+                      }}
+                    ></div>
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              className={`main-tab ${activeTab === "metrics" ? "active" : ""}`}
+              onClick={() => setActiveTab("metrics")}
+              style={getMainTabStyling("metrics", activeTab === "metrics")}
+            >
+              Metrics
+            </button>
+          </div>
+
+          {/* Tab content */}
+          <div className="tab-content">
+            {activeTab === "statistics" && renderStatisticsTab()}
+            {activeTab === "metrics" && renderMetricsTab()}
+          </div>
         </div>
 
-        {/* Tab content */}
-        <div className="tab-content">
-          {activeTab === 'statistics' && renderStatisticsTab()}
-          {activeTab === 'metrics' && renderMetricsTab()}
+        <div className="team-comparison-footer">
+          <button className="close-btn" onClick={onClose}>
+            Close
+          </button>
         </div>
-
-        <button className="close-btn" onClick={onClose}>Close</button>
       </div>
     </div>
   );

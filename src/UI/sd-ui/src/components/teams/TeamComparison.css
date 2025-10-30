@@ -194,7 +194,7 @@
    background: #23272f;
    border-radius: 14px;
    box-shadow: 0 4px 32px rgba(0,0,0,0.25);
-   padding: 2rem 2.5rem 1.5rem 2.5rem;
+   padding: 0;
    min-width: 340px;
    max-width: 90vw;
    max-height: 90vh;
@@ -203,18 +203,41 @@
    position: relative;
    display: flex;
    flex-direction: column;
-   gap: 1.5rem;
-   overflow-y: auto;
    margin-top: 3vh;
+}
+
+.team-comparison-content {
+   padding: 2rem 2.5rem 0 2.5rem;
+   flex: 1;
+   overflow-y: auto;
+   display: flex;
+   flex-direction: column;
+   gap: 1.5rem;
+}
+
+.team-comparison-footer {
+   padding: 1rem 2.5rem 1.5rem 2.5rem;
+   border-top: 1px solid #343a40;
+   background: #23272f;
+   border-radius: 0 0 14px 14px;
+   flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
   .team-comparison-dialog {
     max-width: 98vw;
     min-width: 0;
-    padding: 1rem 0.5rem 1rem 0.5rem;
-    margin-top: 2vw;
+    margin-top: 2vh;
   }
+  
+  .team-comparison-content {
+    padding: 1rem 0.5rem 0 0.5rem;
+  }
+  
+  .team-comparison-footer {
+    padding: 0.75rem 0.5rem 1rem 0.5rem;
+  }
+  
   .team-comparison-table {
     width: 100%;
     overflow-x: auto;
@@ -365,9 +388,11 @@
 
 
 .close-btn {
+  display: block;
+  width: 100%;
+  max-width: 200px;
   margin: 0 auto;
-  margin-top: 1.5rem;
-  padding: 0.5rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
   border: none;
   background: #61dafb;

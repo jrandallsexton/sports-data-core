@@ -75,7 +75,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
-select * from public."Competition" where "ContestId" = 'f8112f9a-1c5f-2c72-2c20-d49c467c1a58'
+select * from public."Competition" where "ContestId" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
 select * from public."CompetitionMedia"
 
 select count(*) from public."CompetitionProbability"

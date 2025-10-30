@@ -14,6 +14,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
         Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command);
         Task GenerateFranchiseSeasonMetrics(Guid franchiseSeasonId, int seasonYear);
         Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);
+        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
     }
 
     public class FranchiseSeasonMetricsService : IFranchiseSeasonMetricsService
@@ -75,6 +76,53 @@ namespace SportsData.Producer.Application.FranchiseSeasons
             }).ToList();
 
             return dtos;
+        }
+
+        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        {
+            var metric = await _dataContext.FranchiseSeasonMetrics
+                .Include(fsm => fsm.FranchiseSeason)
+                    .ThenInclude(fs => fs.Franchise)
+                .Include(fsm => fsm.FranchiseSeason)
+                    .ThenInclude(fs => fs.GroupSeason)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(fsm => fsm.FranchiseSeasonId == franchiseSeasonId);
+
+            if (metric == null)
+            {
+                _logger.LogWarning("No FranchiseSeasonMetric found for FranchiseSeasonId: {FranchiseSeasonId}", franchiseSeasonId);
+                throw new InvalidOperationException($"FranchiseSeasonMetric not found for FranchiseSeasonId: {franchiseSeasonId}");
+            }
+
+            var dto = new FranchiseSeasonMetricsDto()
+            {
+                Conference = metric.FranchiseSeason.GroupSeason?.Slug,
+                ExplosiveRate = metric.ExplosiveRate,
+                FgPctShrunk = metric.FgPctShrunk,
+                FieldPosDiff = metric.FieldPosDiff,
+                FranchiseName = metric.FranchiseSeason.Franchise.DisplayNameShort,
+                FranchiseSlug = metric.FranchiseSeason.Franchise.Slug,
+                GamesPlayed = metric.GamesPlayed,
+                NetPunt = metric.NetPunt,
+                OppExplosiveRate = metric.OppExplosiveRate,
+                OppPointsPerDrive = metric.OppPointsPerDrive,
+                OppRzTdRate = metric.OppRzTdRate,
+                OppSuccessRate = metric.OppSuccessRate,
+                OppThirdFourthRate = metric.OppThirdFourthRate,
+                OppYpp = metric.OppYpp,
+                PenaltyYardsPerPlay = metric.PenaltyYardsPerPlay,
+                PointsPerDrive = metric.PointsPerDrive,
+                RzScoreRate = metric.RzScoreRate,
+                RzTdRate = metric.RzTdRate,
+                SeasonYear = metric.Season,
+                SuccessRate = metric.SuccessRate,
+                ThirdFourthRate = metric.ThirdFourthRate,
+                TimePossRatio = metric.TimePossRatio,
+                TurnoverMarginPerDrive = metric.TurnoverMarginPerDrive,
+                Ypp = metric.Ypp
+            };
+
+            return dto;
         }
 
         public async Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command)

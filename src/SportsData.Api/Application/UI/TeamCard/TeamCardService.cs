@@ -6,6 +6,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Application.UI.TeamCard;
 
@@ -13,6 +14,7 @@ public interface ITeamCardService
 {
     Task<Result<TeamCardDto?>> GetTeamCard(GetTeamCardQuery query, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId);
+    Task<FranchiseSeasonMetricsDto> GetTeamMetrics(Guid franchiseSeasonId);
 }
 
 public class TeamCardService : ITeamCardService
@@ -53,6 +55,12 @@ public class TeamCardService : ITeamCardService
     {
         var dto = await _canonicalDataProvider.GetFranchiseSeasonStatistics(franchiseSeasonId);
         _statFormatting.ApplyFriendlyLabelsAndFormatting(dto);
+        return dto;
+    }
+
+    public async Task<FranchiseSeasonMetricsDto> GetTeamMetrics(Guid franchiseSeasonId)
+    {
+        var dto = await _canonicalDataProvider.GetFranchiseSeasonMetrics(franchiseSeasonId);
         return dto;
     }
 }

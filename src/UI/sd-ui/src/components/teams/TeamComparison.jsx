@@ -294,18 +294,244 @@ export default function TeamComparison({
 
   // Helper to render the Metrics tab content
   const renderMetricsTab = () => {
+    // Check if metrics data is available
+    if (!teamA?.metrics || !teamB?.metrics) {
+      return (
+        <div className="metrics-placeholder">
+          <p
+            style={{
+              textAlign: "center",
+              color: "#adb5bd",
+              fontSize: "1.1rem",
+              padding: "2rem",
+            }}
+          >
+            Metrics data is not available for comparison.
+          </p>
+        </div>
+      );
+    }
+
+    const metricsData = [
+      {
+        category: "Offensive Efficiency",
+        metrics: [
+          { 
+            label: "Yards Per Play", 
+            keyA: "ypp", 
+            keyB: "ypp",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: true
+          },
+          { 
+            label: "Success Rate", 
+            keyA: "successRate", 
+            keyB: "successRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          },
+          { 
+            label: "Explosive Play Rate", 
+            keyA: "explosiveRate", 
+            keyB: "explosiveRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          },
+          { 
+            label: "Points Per Drive", 
+            keyA: "pointsPerDrive", 
+            keyB: "pointsPerDrive",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: true
+          },
+          { 
+            label: "3rd/4th Down Rate", 
+            keyA: "thirdFourthRate", 
+            keyB: "thirdFourthRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          }
+        ]
+      },
+      {
+        category: "Red Zone Efficiency",
+        metrics: [
+          { 
+            label: "Red Zone TD Rate", 
+            keyA: "rzTdRate", 
+            keyB: "rzTdRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          },
+          { 
+            label: "Red Zone Score Rate", 
+            keyA: "rzScoreRate", 
+            keyB: "rzScoreRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          }
+        ]
+      },
+      {
+        category: "Defensive Metrics",
+        metrics: [
+          { 
+            label: "Opp Yards Per Play", 
+            keyA: "oppYpp", 
+            keyB: "oppYpp",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: false
+          },
+          { 
+            label: "Opp Success Rate", 
+            keyA: "oppSuccessRate", 
+            keyB: "oppSuccessRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: false
+          },
+          { 
+            label: "Opp Explosive Rate", 
+            keyA: "oppExplosiveRate", 
+            keyB: "oppExplosiveRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: false
+          },
+          { 
+            label: "Opp Points Per Drive", 
+            keyA: "oppPointsPerDrive", 
+            keyB: "oppPointsPerDrive",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: false
+          },
+          { 
+            label: "Opp 3rd/4th Down Rate", 
+            keyA: "oppThirdFourthRate", 
+            keyB: "oppThirdFourthRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: false
+          },
+          { 
+            label: "Opp Red Zone TD Rate", 
+            keyA: "oppRzTdRate", 
+            keyB: "oppRzTdRate",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: false
+          }
+        ]
+      },
+      {
+        category: "Game Control",
+        metrics: [
+          { 
+            label: "Time Possession Ratio", 
+            keyA: "timePossRatio", 
+            keyB: "timePossRatio",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          },
+          { 
+            label: "Field Position Differential", 
+            keyA: "fieldPosDiff", 
+            keyB: "fieldPosDiff",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: true
+          },
+          { 
+            label: "Turnover Margin Per Drive", 
+            keyA: "turnoverMarginPerDrive", 
+            keyB: "turnoverMarginPerDrive",
+            format: (val) => val?.toFixed(3) || "0.000",
+            higherIsBetter: true
+          }
+        ]
+      },
+      {
+        category: "Special Teams",
+        metrics: [
+          { 
+            label: "Net Punting", 
+            keyA: "netPunt", 
+            keyB: "netPunt",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: true
+          },
+          { 
+            label: "Field Goal %", 
+            keyA: "fgPctShrunk", 
+            keyB: "fgPctShrunk",
+            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            higherIsBetter: true
+          },
+          { 
+            label: "Penalty Yards Per Play", 
+            keyA: "penaltyYardsPerPlay", 
+            keyB: "penaltyYardsPerPlay",
+            format: (val) => val?.toFixed(2) || "0.00",
+            higherIsBetter: false
+          }
+        ]
+      }
+    ];
+
+    const getMetricFavored = (metric, valA, valB) => {
+      if (valA == null || valB == null) return null;
+      
+      if (metric.higherIsBetter) {
+        return valA > valB ? 'A' : valB > valA ? 'B' : null;
+      } else {
+        return valA < valB ? 'A' : valB < valA ? 'B' : null;
+      }
+    };
+
     return (
-      <div className="metrics-placeholder">
-        <p
-          style={{
-            textAlign: "center",
-            color: "#adb5bd",
-            fontSize: "1.1rem",
-            padding: "2rem",
-          }}
-        >
-          Metrics data will be displayed here once the data is available.
-        </p>
+      <div className="metrics-content">
+        <div className="metrics-table">
+          {metricsData.map((category, categoryIndex) => 
+            category.metrics.map((metric, metricIndex) => {
+              const valA = teamA.metrics[metric.keyA];
+              const valB = teamB.metrics[metric.keyB];
+              const favored = getMetricFavored(metric, valA, valB);
+
+              return (
+                <div key={`${categoryIndex}-${metricIndex}`} className="stat-row">
+                  <div className="stat-rank left-rank"></div>
+                  <div 
+                    className={`stat-value left ${favored === 'A' ? 'favored' : ''}`}
+                    style={{
+                      backgroundColor: favored === 'A' ? normAColor : 'transparent',
+                      color: favored === 'A' ? getContrastTextColor(normAColor) : '#f8f9fa'
+                    }}
+                  >
+                    {metric.format(valA)}
+                  </div>
+                  <div 
+                    className="stat-category"
+                    style={{
+                      width: 480,
+                      minWidth: 360,
+                      maxWidth: 660,
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {metric.label}
+                  </div>
+                  <div 
+                    className={`stat-value right ${favored === 'B' ? 'favored' : ''}`}
+                    style={{
+                      backgroundColor: favored === 'B' ? normBColor : 'transparent',
+                      color: favored === 'B' ? getContrastTextColor(normBColor) : '#f8f9fa'
+                    }}
+                  >
+                    {metric.format(valB)}
+                  </div>
+                  <div className="stat-rank right-rank"></div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     );
   };
@@ -358,7 +584,61 @@ export default function TeamComparison({
     return { totalFavoredA, totalFavoredB };
   };
 
+  const calculateMetricsFavorability = () => {
+    if (!teamA?.metrics || !teamB?.metrics) {
+      return { metricsFavoredA: 0, metricsFavoredB: 0 };
+    }
+
+    let metricsFavoredA = 0,
+      metricsFavoredB = 0;
+
+    // Define all metrics with their comparison logic
+    const metricsToCompare = [
+      // Offensive metrics (higher is better)
+      { key: "ypp", higherIsBetter: true },
+      { key: "successRate", higherIsBetter: true },
+      { key: "explosiveRate", higherIsBetter: true },
+      { key: "pointsPerDrive", higherIsBetter: true },
+      { key: "thirdFourthRate", higherIsBetter: true },
+      { key: "rzTdRate", higherIsBetter: true },
+      { key: "rzScoreRate", higherIsBetter: true },
+      // Defensive metrics (lower is better for opponent stats)
+      { key: "oppYpp", higherIsBetter: false },
+      { key: "oppSuccessRate", higherIsBetter: false },
+      { key: "oppExplosiveRate", higherIsBetter: false },
+      { key: "oppPointsPerDrive", higherIsBetter: false },
+      { key: "oppThirdFourthRate", higherIsBetter: false },
+      { key: "oppRzTdRate", higherIsBetter: false },
+      // Game control metrics
+      { key: "timePossRatio", higherIsBetter: true },
+      { key: "fieldPosDiff", higherIsBetter: true },
+      { key: "turnoverMarginPerDrive", higherIsBetter: true },
+      // Special teams metrics
+      { key: "netPunt", higherIsBetter: true },
+      { key: "fgPctShrunk", higherIsBetter: true },
+      { key: "penaltyYardsPerPlay", higherIsBetter: false }
+    ];
+
+    metricsToCompare.forEach((metric) => {
+      const valA = teamA.metrics[metric.key];
+      const valB = teamB.metrics[metric.key];
+      
+      if (valA != null && valB != null) {
+        if (metric.higherIsBetter) {
+          if (valA > valB) metricsFavoredA++;
+          else if (valB > valA) metricsFavoredB++;
+        } else {
+          if (valA < valB) metricsFavoredA++;
+          else if (valB < valA) metricsFavoredB++;
+        }
+      }
+    });
+
+    return { metricsFavoredA, metricsFavoredB };
+  };
+
   const { totalFavoredA, totalFavoredB } = calculateOverallFavorability();
+  const { metricsFavoredA, metricsFavoredB } = calculateMetricsFavorability();
 
   // Get main tab styling based on overall favorability
   const getMainTabStyling = (tabType, isActive) => {
@@ -380,8 +660,24 @@ export default function TeamComparison({
           color: getContrastTextColor(normBColor),
         };
       }
+    } else if (tabType === "metrics") {
+      if (metricsFavoredA > metricsFavoredB) {
+        return {
+          background: /^#|rgb/.test(normAColor)
+            ? normAColor
+            : getMutedColor(normAColor),
+          color: getContrastTextColor(normAColor),
+        };
+      } else if (metricsFavoredB > metricsFavoredA) {
+        return {
+          background: /^#|rgb/.test(normBColor)
+            ? normBColor
+            : getMutedColor(normBColor),
+          color: getContrastTextColor(normBColor),
+        };
+      }
     }
-    // Default styling for neutral/metrics tabs or when teams are tied
+    // Default styling for neutral tabs or when teams are tied
     return {
       background: "#61dafb", // Use default active color
       color: "#23272f",
@@ -492,7 +788,27 @@ export default function TeamComparison({
               onClick={() => setActiveTab("metrics")}
               style={getMainTabStyling("metrics", activeTab === "metrics")}
             >
-              Metrics
+              <div className="main-tab-content">
+                <div className="tab-text">Metrics ({metricsFavoredA}:{metricsFavoredB})</div>
+                {(metricsFavoredA > 0 || metricsFavoredB > 0) && (
+                  <div className="tab-gradient-bar">
+                    <div 
+                      className="gradient-segment team-a"
+                      style={{
+                        width: `${(metricsFavoredA / (metricsFavoredA + metricsFavoredB)) * 100}%`,
+                        backgroundColor: normAColor
+                      }}
+                    ></div>
+                    <div 
+                      className="gradient-segment team-b"
+                      style={{
+                        width: `${(metricsFavoredB / (metricsFavoredA + metricsFavoredB)) * 100}%`,
+                        backgroundColor: normBColor
+                      }}
+                    ></div>
+                  </div>
+                )}
+              </div>
             </button>
           </div>
 

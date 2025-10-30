@@ -19,10 +19,18 @@ namespace SportsData.Producer.Application.FranchiseSeasons
         }
 
         [HttpGet]
-        [Route("{seasonYear}/metrics")]
-        public async Task<IActionResult> GetFranchiseSeasonMetrics(int seasonYear)
+        [Route("seasonYear/{seasonYear}/metrics")]
+        public async Task<IActionResult> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
         {
             var metrics = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
+            return Ok(metrics);
+        }
+
+        [HttpGet]
+        [Route("id/{franchiseSeasonId}/metrics")]
+        public async Task<IActionResult> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        {
+            var metrics = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId);
             return Ok(metrics);
         }
 

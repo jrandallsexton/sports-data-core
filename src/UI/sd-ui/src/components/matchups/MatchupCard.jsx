@@ -25,20 +25,24 @@ function MatchupCard({
     setComparisonLoading(true);
     setShowComparison(true);
     try {
-      const [awayRes, homeRes] = await Promise.all([
+      const [awayRes, homeRes, awayMetrics, homeMetrics] = await Promise.all([
         apiWrapper.TeamCard.getStatistics(matchup.awaySlug, 2025, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getStatistics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId)
+        apiWrapper.TeamCard.getStatistics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId),
+        apiWrapper.TeamCard.getMetrics(matchup.awaySlug, 2025, matchup.awayFranchiseSeasonId),
+        apiWrapper.TeamCard.getMetrics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId)
       ]);
       setComparisonData({
         teamA: {
           name: matchup.away,
           logoUri: matchup.awayLogoUri,
-          stats: awayRes.data
+          stats: awayRes.data,
+          metrics: awayMetrics.data
         },
         teamB: {
           name: matchup.home,
           logoUri: matchup.homeLogoUri,
-          stats: homeRes.data
+          stats: homeRes.data,
+          metrics: homeMetrics.data
         }
       });
     } catch (e) {
@@ -405,7 +409,8 @@ function MatchupCard({
       </div>
     {/* TeamComparison Dialog */}
     {showComparison && (
-      comparisonLoading || !comparisonData || !comparisonData.teamA || !comparisonData.teamB || !comparisonData.teamA.stats || !comparisonData.teamB.stats ? (
+      comparisonLoading || !comparisonData || !comparisonData.teamA ||!comparisonData.teamB ||
+      !comparisonData.teamA.stats || !comparisonData.teamB.stats || !comparisonData.teamA.metrics || !comparisonData.teamB.metrics ? (
         <div className="team-comparison-dialog-backdrop">
           <div className="team-comparison-dialog" style={{textAlign: 'center', padding: '2rem'}}>
             Loading team comparison...

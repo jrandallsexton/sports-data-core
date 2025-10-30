@@ -18,6 +18,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         Task<VenueDto?> GetVenue(string id);
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
         Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear);
+        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
         Task RefreshContestByContestId(Guid contestId);
     }
 
@@ -35,11 +36,20 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear)
         {
-            var response = await HttpClient.GetAsync($"franchise-season/{seasonYear}/metrics");
+            var response = await HttpClient.GetAsync($"franchise-season/seasonYear/{seasonYear}/metrics");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var metrics = tmp.FromJson<List<FranchiseSeasonMetricsDto>>();
             return metrics ?? new List<FranchiseSeasonMetricsDto>();
+        }
+
+        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        {
+            var response = await HttpClient.GetAsync($"franchise-season/id/{franchiseSeasonId}/metrics");
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var metrics = tmp.FromJson<FranchiseSeasonMetricsDto>();
+            return metrics ?? new FranchiseSeasonMetricsDto();
         }
 
         public async Task<VenueDto?> GetVenue(string id)

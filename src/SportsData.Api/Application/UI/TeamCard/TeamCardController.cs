@@ -62,5 +62,21 @@ namespace SportsData.Api.Application.UI.TeamCard
                 franchiseSeasonId);
             return Ok(stats);
         }
+
+        [HttpGet("metrics")]
+        public async Task<IActionResult> GetTeamMetrics(
+            string sport,
+            string league,
+            string slug,
+            int seasonYear,
+            [FromQuery] Guid franchiseSeasonId,
+            [FromServices] ITeamCardService service,
+            CancellationToken cancellationToken)
+        {
+            // TODO: Rework this to get the franchiseSeasonId from the other parameters
+            var stats = await service.GetTeamMetrics(
+                franchiseSeasonId);
+            return Ok(stats);
+        }
     }
 }

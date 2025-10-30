@@ -53,6 +53,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
 
         Task RefreshContestByContestId(Guid contestId);
+
+        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetrics(Guid franchiseSeasonId);
     }
 
     public class CanonicalDataProvider : IProvideCanonicalData
@@ -443,6 +445,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             };
 
             return dto;
+        }
+
+        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetrics(Guid franchiseSeasonId)
+        {
+            return await _producerClient.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId);
         }
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)

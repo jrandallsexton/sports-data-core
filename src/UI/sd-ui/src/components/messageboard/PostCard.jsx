@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FaThumbsUp, FaThumbsDown, FaReply } from "react-icons/fa";
 
-function PostCard({ post, onReply, onReact, parentId = null }) {
+function PostCard({ post, onReply, onReact, parentId = null, isReadOnly = false }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [popLike, setPopLike] = useState(false);
@@ -68,12 +68,15 @@ function PostCard({ post, onReply, onReact, parentId = null }) {
           className="reply-icon-button"
           onClick={() => setShowReplyForm((s) => !s)}
           aria-label={showReplyForm ? "Cancel reply" : "Reply"}
+          disabled={isReadOnly}
+          title={isReadOnly ? "Read-only mode" : ""}
         >
           <FaReply />
         </button>
         <button
           className="reply-text-button"
           onClick={() => setShowReplyForm((s) => !s)}
+          disabled={isReadOnly}
         >
           {showReplyForm ? "Cancel" : "Reply"}
         </button>
@@ -82,9 +85,10 @@ function PostCard({ post, onReply, onReact, parentId = null }) {
         <button
           className={`reaction-button ${userReaction === "like" ? "liked" : ""}`}
           onClick={() => handleReaction("like")}
-          disabled={reactPending}
+          disabled={reactPending || isReadOnly}
           aria-pressed={userReaction === "like"}
           aria-label="Like"
+          title={isReadOnly ? "Read-only mode" : ""}
         >
           <FaThumbsUp style={{ marginRight: 4 }} />
           <span className={`reaction-count ${popLike ? "pop" : ""}`}>{likes}</span>
@@ -94,16 +98,17 @@ function PostCard({ post, onReply, onReact, parentId = null }) {
         <button
           className={`reaction-button ${userReaction === "dislike" ? "disliked" : ""}`}
           onClick={() => handleReaction("dislike")}
-          disabled={reactPending}
+          disabled={reactPending || isReadOnly}
           aria-pressed={userReaction === "dislike"}
           aria-label="Dislike"
+          title={isReadOnly ? "Read-only mode" : ""}
         >
           <FaThumbsDown style={{ marginRight: 4 }} />
           <span className={`reaction-count ${popDislike ? "pop" : ""}`}>{dislikes}</span>
         </button>
       </div>
 
-      {showReplyForm && (
+      {showReplyForm && !isReadOnly && (
         <div className="reply-form">
           <textarea
             placeholder="Write your reply..."
@@ -130,6 +135,7 @@ function PostCard({ post, onReply, onReact, parentId = null }) {
             onReply={onReply}
             onReact={onReact}
             parentId={post.id}
+            isReadOnly={isReadOnly}
           />
         ))}
       </div>

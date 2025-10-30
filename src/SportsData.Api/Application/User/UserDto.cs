@@ -21,7 +21,9 @@ namespace SportsData.Api.Application.User
 
         public IList<UserLeagueMembership> Leagues { get; set; } = [];
 
-        public bool IsAdmin { get; set; } = false;
+        public bool IsAdmin { get; set; }
+
+        public bool IsReadOnly { get; set; }
 
         public class UserLeagueMembership
         {

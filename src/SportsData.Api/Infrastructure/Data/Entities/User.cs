@@ -27,7 +27,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool IsSynthetic { get; set; }
 
-        public bool IsPanelPersona { get; set; } = false;
+        public bool IsPanelPersona { get; set; }
+
+        public bool IsAdmin { get; set; }
+
+        public bool IsReadOnly { get; set; }
 
         public ICollection<PickemGroupMember> GroupMemberships { get; set; } = [];
 

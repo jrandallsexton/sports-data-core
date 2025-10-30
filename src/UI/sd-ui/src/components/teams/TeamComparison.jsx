@@ -485,7 +485,7 @@ export default function TeamComparison({
 
     return (
       <div className="metrics-content">
-        <div className="metrics-table">
+        <div className="team-comparison-metrics-table">
           {metricsData.map((category, categoryIndex) => 
             category.metrics.map((metric, metricIndex) => {
               const valA = teamA.metrics[metric.keyA];

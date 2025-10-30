@@ -418,7 +418,7 @@
   overflow-x: auto;
 }
 
-.metrics-table {
+.team-comparison-metrics-table {
   display: flex;
   flex-direction: column;
   min-width: 100%;

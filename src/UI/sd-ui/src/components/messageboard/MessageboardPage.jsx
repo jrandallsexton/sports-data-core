@@ -380,6 +380,8 @@ function MessageBoardPage() {
     return mappedOp;
   }
 
+  const isReadOnly = userDto?.isReadOnly;
+
   return (
     <div className="message-board">
       {/* League Selector */}
@@ -395,15 +397,17 @@ function MessageBoardPage() {
       <div className="new-post-form">
         <textarea
           placeholder={
-            selectedLeagueId !== "all" ? "Start a new conversation..." : "Select a specific league to post"
+            isReadOnly 
+              ? "Read-only mode - posting disabled"
+              : selectedLeagueId !== "all" ? "Start a new conversation..." : "Select a specific league to post"
           }
           value={newPostContent}
           onChange={(e) => setNewPostContent(e.target.value)}
-          disabled={selectedLeagueId === "all"}
+          disabled={selectedLeagueId === "all" || isReadOnly}
         />
         <button
           onClick={handleNewPost}
-          disabled={selectedLeagueId === "all" || !newPostContent.trim()}
+          disabled={selectedLeagueId === "all" || !newPostContent.trim() || isReadOnly}
         >
           Post
         </button>
@@ -417,6 +421,7 @@ function MessageBoardPage() {
             post={post}
             onReply={handleReply}
             onReact={handleReaction}
+            isReadOnly={isReadOnly}
           />
         ))}
 

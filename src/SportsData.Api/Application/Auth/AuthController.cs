@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
-using Microsoft.Extensions.Logging;
+
 using SportsData.Api.Application.User;
+using SportsData.Api.Infrastructure.Data;
+
+using System.Security.Claims;
 
 namespace SportsData.Api.Application.Auth
 {

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import apiWrapper from "../../api/apiWrapper";
 import TeamComparison from "../teams/TeamComparison";
 import MiniSchedule from "./MiniSchedule";
+import { useUserDto } from "../../contexts/UserContext";
 
 function MatchupCard({
   matchup,
@@ -17,6 +18,7 @@ function MatchupCard({
   isInsightUnlocked,
   isFadingOut = false
 }) {
+  const { userDto } = useUserDto();
   // State for TeamComparison dialog
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonLoading, setComparisonLoading] = useState(false);
@@ -134,10 +136,10 @@ function MatchupCard({
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
-  // Picks are locked 5 minutes prior to kickoff
+  // Picks are locked 5 minutes prior to kickoff OR if user is read-only
   const startTime = new Date(matchup.startDateUtc);
   const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
-  const isLocked = now > lockTime;
+  const isLocked = now > lockTime || userDto?.isReadOnly;
 
   const getCardBorderClass = () => {
     if (!matchup.isComplete) return ""; // No border for incomplete games
@@ -343,6 +345,7 @@ function MatchupCard({
               onPick(matchup, matchup.awayFranchiseSeasonId);
             }}
             disabled={isLocked}
+            title={userDto?.isReadOnly ? "Read-only mode" : ""}
           >
             {/* Always show checkmark if selected, unless game is complete and incorrect */}
             {isAwaySelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}
@@ -393,6 +396,7 @@ function MatchupCard({
               onPick(matchup, matchup.homeFranchiseSeasonId);
             }}
             disabled={isLocked}
+            title={userDto?.isReadOnly ? "Read-only mode" : ""}
           >
             {/* Always show checkmark if selected, unless game is complete and incorrect */}
             {isHomeSelected && (!pickResult || pickResult === 'correct') && <FaCheckCircle className="pick-result-icon" />}

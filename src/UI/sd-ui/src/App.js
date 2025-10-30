@@ -16,6 +16,7 @@ import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import ErrorPage from "components/common/ErrorPage"; // ✅ reusable component
+import Gallery from "./components/gallery/Gallery";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import PrivateRoute from "./routes/PrivateRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -66,6 +67,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/maintenance" element={<MaintenancePage />} />
           <Route
             path="/app/*"

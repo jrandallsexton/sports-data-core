@@ -224,29 +224,40 @@ namespace SportsData.Producer.Application.Contests.Overview
             string homeTeamColor)
         {
             var rows = await _dbContext.CompetitionProbabilities
+                .Include(x => x.Play)
                 .AsNoTracking()
                 .Where(p => p.Competition.ContestId == contestId)
                 .OrderBy(p => p.SequenceNumber)
                 .Select(p => new
                 {
-                    p.HomeWinPercentage,                // 0..1
-                    p.AwayWinPercentage,                // 0..1
-                    GameClock = p.Play != null ? p.Play.ClockDisplayValue : null,
-                    Quarter = p.Play != null ? (int?)p.Play.PeriodNumber : null
+                    p.HomeWinPercentage,
+                    p.AwayWinPercentage,
+                    p.SequenceNumber,
+                    Play = p.Play != null
+                        ? new
+                        {
+                            p.Play.ClockDisplayValue,
+                            p.Play.PeriodNumber
+                        }
+                        : null
                 })
                 .ToListAsync();
 
+            var ordered = rows
+                .OrderBy(p => int.TryParse(p.SequenceNumber, out var val) ? val : int.MaxValue)
+                .ToList();
+
             static int ToPct(double? v) => v.HasValue ? (int)Math.Round(v.Value * 100) : 0;
 
-            var points = rows.Select(r => new WinProbabilityPointDto
+            var points = ordered.Select(r => new WinProbabilityPointDto
             {
-                GameClock = r.GameClock,
-                Quarter = r.Quarter.HasValue ? r.Quarter.Value : 0,
+                GameClock = r.Play?.ClockDisplayValue,
+                Quarter = r.Play?.PeriodNumber ?? 0,
                 HomeWinPercent = ToPct(r.HomeWinPercentage),
                 AwayWinPercent = ToPct(r.AwayWinPercentage)
             }).ToList();
 
-            var last = rows.Count > 0 ? rows[^1] : null;
+            var last = ordered.LastOrDefault();
 
             return new WinProbabilityDto
             {
@@ -255,8 +266,8 @@ namespace SportsData.Producer.Application.Contests.Overview
                 AwayTeamColor = awayTeamColor,
                 HomeTeamColor = homeTeamColor,
                 Points = points,
-                FinalHomeWinPercent = last != null ? ToPct(last.HomeWinPercentage) : 0,
-                FinalAwayWinPercent = last != null ? ToPct(last.AwayWinPercentage) : 0
+                FinalHomeWinPercent = ToPct(last?.HomeWinPercentage),
+                FinalAwayWinPercent = ToPct(last?.AwayWinPercentage)
             };
         }
 

@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit.Initializers;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests.Overview;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -12,14 +17,17 @@ namespace SportsData.Producer.Application.Contests
     public class ContestController : ControllerBase
     {
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IContestOverviewService _contestOverviewService;   
+        private readonly IContestOverviewService _contestOverviewService;
+        private readonly TeamSportDataContext _dataContext;
 
         public ContestController(
             IProvideBackgroundJobs backgroundJobProvider,
-            IContestOverviewService contestOverviewService)
+            IContestOverviewService contestOverviewService,
+            TeamSportDataContext dataContext)
         {
             _backgroundJobProvider = backgroundJobProvider;
             _contestOverviewService = contestOverviewService;
+            _dataContext = dataContext;
         }
 
         [HttpPost]
@@ -59,6 +67,19 @@ namespace SportsData.Producer.Application.Contests
             {
                 return NotFound();
             }
+        }
+
+        [HttpPost("{id}/media/refresh")]
+        public async Task<ActionResult> RefreshContestMediaById([FromRoute] Guid id)
+        {
+            // get the competitionId
+            var competitionId = await _dataContext.Competitions
+                .Where(c => c.ContestId == id)
+                .FirstAsync()
+                .Select(x => x.Id);
+
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId, true));
+            return Accepted(id);
         }
     }
 }

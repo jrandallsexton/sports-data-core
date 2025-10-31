@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useUserDto } from "../../contexts/UserContext";
-import ContestApi from "../../api/contestApi";
 import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
@@ -23,6 +22,8 @@ export default function ContestOverview() {
   const isAdmin = userDto?.isAdmin;
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState(null);
+  const [refreshingMedia, setRefreshingMedia] = useState(false);
+  const [refreshMediaError, setRefreshMediaError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -51,13 +52,26 @@ export default function ContestOverview() {
     setRefreshing(true);
     setRefreshError(null);
     try {
-      await ContestApi.refresh(contestId);
-  toast.success("Contest refresh request submitted.");
+      await apiWrapper.Contest.refresh(contestId);
+      toast.success("Contest refresh request submitted.");
     } catch (err) {
       setRefreshError("Failed to refresh contest.");
-  toast.error("Failed to submit refresh request.");
+      toast.error("Failed to submit refresh request.");
     }
     setRefreshing(false);
+  };
+
+  const handleRefreshMedia = async () => {
+    setRefreshingMedia(true);
+    setRefreshMediaError(null);
+    try {
+      await apiWrapper.Contest.refreshMedia(contestId);
+      toast.success("Media refresh request submitted.");
+    } catch (err) {
+      setRefreshMediaError("Failed to refresh media.");
+      toast.error("Failed to submit media refresh request.");
+    }
+    setRefreshingMedia(false);
   };
 
   return (
@@ -89,6 +103,15 @@ export default function ContestOverview() {
             {refreshing ? "Refreshing..." : "Refresh Contest"}
           </button>
           {refreshError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshError}</div>}
+          
+          <button
+            onClick={handleRefreshMedia}
+            disabled={refreshingMedia}
+            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer", marginTop: 16 }}
+          >
+            {refreshingMedia ? "Refreshing..." : "Refresh Media"}
+          </button>
+          {refreshMediaError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshMediaError}</div>}
         </div>
       )}
     </div>

@@ -54,6 +54,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         Task RefreshContestByContestId(Guid contestId);
 
+        Task RefreshContestMediaByContestId(Guid contestId);
+
         Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetrics(Guid franchiseSeasonId);
     }
 
@@ -252,6 +254,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         public async Task RefreshContestByContestId(Guid contestId)
         {
             await _producerClient.RefreshContestByContestId(contestId);
+        }
+
+        public async Task RefreshContestMediaByContestId(Guid contestId)
+        {
+            await _producerClient.RefreshContestMediaByContestId(contestId);
         }
 
         public async Task<List<Matchup>> GetMatchupsForCurrentWeek()

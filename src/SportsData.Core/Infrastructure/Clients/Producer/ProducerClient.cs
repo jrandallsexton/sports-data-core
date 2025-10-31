@@ -20,6 +20,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear);
         Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
         Task RefreshContestByContestId(Guid contestId);
+        Task RefreshContestMediaByContestId(Guid contestId);
     }
 
     public class ProducerClient : ClientBase, IProvideProducers
@@ -76,6 +77,13 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         {
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
             var response = await HttpClient.PostAsync($"contest/{contestId}/update", content);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task RefreshContestMediaByContestId(Guid contestId)
+        {
+            var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync($"contest/{contestId}/media/refresh", content);
             response.EnsureSuccessStatusCode();
         }
     }

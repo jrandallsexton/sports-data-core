@@ -52,8 +52,8 @@ namespace SportsData.Api.Application.UI.Matchups
                 ? canonical.Away
                 : canonical.Home;
 
-            var implied = (matchup is { HomeSpread: not null, OverUnder: not null })
-                ? VegasScoreHelper.CalculateImpliedScore(matchup.HomeSpread.Value, matchup.OverUnder.Value)
+            var implied = (canonical is { HomeSpread: not null, OverUnder: not null })
+                ? VegasScoreHelper.CalculateImpliedScore(canonical.HomeSpread.Value, canonical.OverUnder.Value)
                 : string.Empty;
 
             return Ok(new MatchupPreviewDto()

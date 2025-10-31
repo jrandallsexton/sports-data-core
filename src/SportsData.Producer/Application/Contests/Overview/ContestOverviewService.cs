@@ -62,7 +62,8 @@ namespace SportsData.Producer.Application.Contests.Overview
                     DisplayName = homeTeamSeason?.Franchise?.Name,
                     LogoUrl = homeTeamSeason?.Logos?.FirstOrDefault()?.Uri.OriginalString,
                     ColorPrimary = homeTeamSeason?.Franchise?.ColorCodeHex,
-                    FinalScore = contest.HomeScore
+                    FinalScore = contest.HomeScore,
+                    Slug = homeTeamSeason!.Franchise!.Slug
                 },
                 AwayTeam = new TeamScoreDto
                 {
@@ -70,7 +71,8 @@ namespace SportsData.Producer.Application.Contests.Overview
                     DisplayName = awayTeamSeason?.Franchise?.Name,
                     LogoUrl = awayTeamSeason?.Logos?.FirstOrDefault()?.Uri.OriginalString,
                     ColorPrimary = awayTeamSeason?.Franchise?.ColorCodeHex,
-                    FinalScore = contest.AwayScore
+                    FinalScore = contest.AwayScore,
+                    Slug = awayTeamSeason!.Franchise!.Slug
                 },
                 QuarterScores = quarterScores
                     .GroupBy(ls => ls.Period)

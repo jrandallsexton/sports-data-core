@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./ContestOverview.css";
 
 export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor }) {
@@ -34,7 +35,12 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
         <div className="contest-team-logo-wrap" style={awayTeamColor ? { background: normAwayBg, borderColor: 'rgba(255,255,255,0.06)' } : {}}>
           <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
         </div>
-        <div className="contest-team-name contest-header-team-name">{awayTeam.displayName}</div>
+        <Link 
+          to={`/app/sport/football/ncaa/team/${awayTeam.slug}/2025`}
+          className="contest-team-name contest-header-team-name contest-team-link"
+        >
+          {awayTeam.displayName}
+        </Link>
         <div className="contest-team-score contest-header-team-score-away">{awayTotal}</div>
         {/* Box Score Table */}
         <div className="contest-boxscore-table-wrapper compact">
@@ -69,7 +75,12 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
         </div>
         {/* Home Side */}
         <div className="contest-team-score contest-header-team-score-home">{homeTotal}</div>
-        <div className="contest-team-name contest-header-team-name">{homeTeam.displayName}</div>
+        <Link 
+          to={`/app/sport/football/ncaa/team/${homeTeam.slug}/2025`}
+          className="contest-team-name contest-header-team-name contest-team-link"
+        >
+          {homeTeam.displayName}
+        </Link>
         <div className="contest-team-logo-wrap" style={homeTeamColor ? { background: normHomeBg, borderColor: 'rgba(255,255,255,0.06)' } : {}}>
           <img src={homeTeam.logoUrl} alt={homeTeam.displayName} className="contest-team-logo" />
         </div>

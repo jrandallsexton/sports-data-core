@@ -608,6 +608,17 @@
   min-width: 80px;
   text-align: center;
 }
+
+.contest-team-link {
+  text-decoration: none;
+  color: #61dafb;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.contest-team-link:hover {
+  color: #4fa8c5;
+  text-shadow: 0 0 8px rgba(97, 218, 251, 0.5);
+}
 .contest-header-team-score-away,
 .contest-header-team-score-home {
   font-size: 1.35rem;

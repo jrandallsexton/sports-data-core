@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Infrastructure.Data.Canonical.Models
+﻿using SportsData.Core.Dtos.Canonical;
+
+namespace SportsData.Api.Infrastructure.Data.Canonical.Models
 {
     public class MatchupForPreviewDto
     {
@@ -22,6 +24,7 @@
         public int AwayConferenceWins { get; set; }
         public int AwayConferenceLosses { get; set; }
         public FranchiseSeasonModelStatsDto? AwayStats { get; set; }
+        public FranchiseSeasonMetricsDto? AwayMetrics { get; set; }
         public List<FranchiseSeasonCompetitionResultDto>? AwayCompetitionResults { get; set; }
 
         public Guid HomeFranchiseSeasonId { get; set; }
@@ -34,6 +37,7 @@
         public int HomeConferenceWins { get; set; }
         public int HomeConferenceLosses { get; set; }
         public FranchiseSeasonModelStatsDto? HomeStats { get; set; }
+        public FranchiseSeasonMetricsDto? HomeMetrics { get; set; }
         public List<FranchiseSeasonCompetitionResultDto>? HomeCompetitionResults { get; set; }
 
         public string? Spread { get; set; }             // co."Details"

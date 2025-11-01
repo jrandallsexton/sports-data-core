@@ -18,7 +18,7 @@ export default function useSignalRClient({
       .configureLogging(signalR.LogLevel.Information)
       .build();
 
-    connection.on("PreviewCompleted", onPreviewCompleted);
+    connection.on("PreviewGenerated", onPreviewCompleted);
 
     connection
       .start()

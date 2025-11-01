@@ -54,6 +54,23 @@
 .insight-button.insight-reviewed svg {
   color: #ffc107;
 }
+
+.insight-button.insight-admin-missing {
+  background-color: #2a2d33;
+  color: #ff1744;
+  border: 2px solid #ff1744;
+  box-shadow: 0 0 6px 1px rgba(255, 23, 68, 0.2);
+}
+
+.insight-button.insight-admin-missing svg {
+  color: #ff1744;
+}
+
+.insight-button.insight-admin-missing:hover {
+  background-color: #3a3d43;
+  border-color: #ff1744;
+}
+
 .matchup-card {
   background-color: #1c1e22;
   color: #f8f9fa;

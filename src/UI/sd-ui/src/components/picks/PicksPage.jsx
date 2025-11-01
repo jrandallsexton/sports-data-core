@@ -171,6 +171,18 @@ function PicksPage() {
   }
 
   async function handleViewInsight(matchup) {
+    // If no preview available and user is admin, trigger preview generation
+    if (!matchup.isPreviewAvailable && userDto?.isAdmin) {
+      try {
+        await apiWrapper.Admin.resetPreview(matchup.contestId);
+        toast.success("Preview generation initiated. Please refresh in a moment.");
+      } catch (error) {
+        console.error("Error resetting preview:", error);
+        toast.error("Failed to initiate preview generation.");
+      }
+      return;
+    }
+
     setSelectedMatchup({
       ...matchup,
       insightText: "",

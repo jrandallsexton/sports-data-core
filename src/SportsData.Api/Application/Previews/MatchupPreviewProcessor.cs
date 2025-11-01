@@ -11,6 +11,7 @@ using SportsData.Core.Eventing.Events.Previews;
 using SportsData.Core.Infrastructure.Clients.AI;
 
 using System.Text.Json;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Application.Previews
 {
@@ -51,6 +52,18 @@ namespace SportsData.Api.Application.Previews
                 .GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
             matchup.HomeStats = await _canonicalDataProvider
                 .GetFranchiseSeasonStatsForPreview(matchup.HomeFranchiseSeasonId);
+
+            matchup.AwayMetrics = await _canonicalDataProvider
+                .GetFranchiseSeasonMetrics(matchup.AwayFranchiseSeasonId);
+            matchup.HomeMetrics = await _canonicalDataProvider
+                .GetFranchiseSeasonMetrics(matchup.HomeFranchiseSeasonId);
+
+            if (matchup.AwayMetrics is null || matchup.HomeMetrics is null)
+            {
+                // Both or nothing
+                matchup.AwayMetrics = null;
+                matchup.HomeMetrics = null;
+            }
 
             //matchup.AwayCompetitionResults = await _canonicalDataProvider
             //    .GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(matchup.AwayFranchiseSeasonId);
@@ -180,7 +193,8 @@ namespace SportsData.Api.Application.Previews
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId,
                 PromptVersion = promptData.PromptName,
-                IterationsRequired = attempt
+                IterationsRequired = attempt,
+                UsedMetrics = matchup.AwayMetrics != null
             };
 
             await _dataContext.MatchupPreviews.AddAsync(preview);

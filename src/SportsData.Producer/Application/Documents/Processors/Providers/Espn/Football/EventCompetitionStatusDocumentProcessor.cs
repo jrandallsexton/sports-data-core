@@ -84,6 +84,7 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
 
         var existing = await _dataContext.CompetitionStatuses
             .Include(x => x.ExternalIds)
+            .Include(x => x.Competition)
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
 
         if (existing is not null)

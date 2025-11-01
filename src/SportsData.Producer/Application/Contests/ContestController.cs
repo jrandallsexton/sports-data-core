@@ -85,11 +85,9 @@ namespace SportsData.Producer.Application.Contests
         [HttpPost("{id}/replay")]
         public IActionResult ReplayContestById([FromRoute] Guid id)
         {
-            //var cmd = new ReplayContestCommand(
-            //    id,
-            //    Guid.NewGuid());
-            //_backgroundJobProvider.Enqueue<IReplayContests>(p => p.Process(cmd));
-            return Ok(new { Message = $"Contest {id} replay initiated." });
+            var correlationId = Guid.NewGuid();
+            _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, CancellationToken.None));
+            return Ok(new { Message = correlationId });
         }
     }
 }

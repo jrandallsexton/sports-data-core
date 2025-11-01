@@ -7,7 +7,15 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
-    public class ContestReplayService
+    public interface IContestReplayService
+    {
+        Task ReplayContest(
+            Guid contestId,
+            Guid correlationId,
+            CancellationToken ct = default);
+    }
+
+    public class ContestReplayService : IContestReplayService
     {
         private readonly ILogger<ContestReplayService> _logger;
         private readonly TeamSportDataContext _dataContext;
@@ -45,13 +53,39 @@ namespace SportsData.Producer.Application.Contests
             await _eventBus.Publish(new ContestStatusChanged(
                 contestId,
                 ContestStatus.InProgress.ToString(),
+                "0","15:00", 0, 0, contest.AwayTeamFranchiseSeasonId,
                 correlationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
 
             var competition = await _dataContext.Competitions
                 .Include(x => x.Plays)
-                .FirstOrDefaultAsync(c => c.Id == contestId, ct);
+                .FirstOrDefaultAsync(c => c.ContestId == contestId, ct);
+
+            if (competition is null)
+            {
+                _logger.LogError("Contest not found");
+                return;
+            }
+
+            var plays = competition.Plays.ToList().OrderBy(x => int.Parse(x.SequenceNumber));
+
+            foreach (var play in plays)
+            {
+                await _eventBus.Publish(new ContestStatusChanged(
+                    contestId,
+                    ContestStatus.InProgress.ToString(),
+                    play.PeriodNumber.ToString(),
+                    play.ClockDisplayValue ?? "UNK",
+                    play.AwayScore,
+                    play.HomeScore,
+                    play.StartFranchiseSeasonId,
+                    correlationId,
+                    CausationId.Producer.EventCompetitionStatusDocumentProcessor
+                ), ct);
+
+                await Task.Delay(1000, ct);
+            }
         }
     }
 }

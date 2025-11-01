@@ -22,6 +22,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { LeagueProvider } from "./contexts/LeagueContext";
+import { ContestUpdatesProvider } from "./contexts/ContestUpdatesContext";
 import { setGlobalApiErrorHandler } from "api/apiClient";
 import MaintenancePage from "./components/maintenance/MaintenancePage";
 
@@ -91,9 +92,11 @@ function App() {
       <AuthProvider>
         <UserProvider>
           <LeagueProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
+            <ContestUpdatesProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </ContestUpdatesProvider>
           </LeagueProvider>
         </UserProvider>
       </AuthProvider>

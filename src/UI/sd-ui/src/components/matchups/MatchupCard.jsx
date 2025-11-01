@@ -146,6 +146,11 @@ function MatchupCard({
           broadcasts={matchup.broadcasts}
           venue={venue}
           location={location}
+          period={matchup.period}
+          clock={matchup.clock}
+          awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
+          homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
+          possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
         />
 
         <div className="spread-ou">

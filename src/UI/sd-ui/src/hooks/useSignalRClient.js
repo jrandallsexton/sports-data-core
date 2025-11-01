@@ -6,6 +6,7 @@ export default function useSignalRClient({
   userId,
   leagueId,
   onPreviewCompleted,
+  onContestStatusUpdated,
 }) {
   const connectionRef = useRef(null);
 
@@ -19,6 +20,11 @@ export default function useSignalRClient({
       .build();
 
     connection.on("PreviewGenerated", onPreviewCompleted);
+    
+    // Register handler for contest status updates (live game data)
+    if (onContestStatusUpdated) {
+      connection.on("ContestStatusChanged", onContestStatusUpdated);
+    }
 
     connection
       .start()
@@ -36,7 +42,7 @@ export default function useSignalRClient({
     return () => {
       connection.stop();
     };
-  }, [userId, leagueId, onPreviewCompleted]);
+  }, [userId, leagueId, onPreviewCompleted, onContestStatusUpdated]);
 
   return connectionRef.current;
 }

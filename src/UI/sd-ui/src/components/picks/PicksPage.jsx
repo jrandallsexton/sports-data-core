@@ -1,9 +1,10 @@
 import "./PicksPage.css";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
+import { useContestUpdates } from "../../contexts/ContestUpdatesContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
@@ -38,6 +39,29 @@ function PicksPage() {
   const [fadingOut, setFadingOut] = useState([]);
 
   const leagues = Object.values(userDto?.leagues || {});
+
+  // Get contest updates for live game data
+  const { getContestUpdate } = useContestUpdates();
+
+  // Merge live updates with matchups
+  const enrichedMatchups = useMemo(() => {
+    return matchups.map(matchup => {
+      const liveUpdate = getContestUpdate(matchup.contestId);
+      if (liveUpdate) {
+        // Merge live data, overriding static matchup data
+        return {
+          ...matchup,
+          status: liveUpdate.status,
+          awayScore: liveUpdate.awayScore,
+          homeScore: liveUpdate.homeScore,
+          period: liveUpdate.period,
+          clock: liveUpdate.clock,
+          possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId
+        };
+      }
+      return matchup;
+    });
+  }, [matchups, getContestUpdate]);
 
   // Select default league on load or when leagues change
   useEffect(() => {
@@ -267,17 +291,17 @@ function PicksPage() {
     return <p>You are not part of any leagues yet.</p>;
   }
 
-  const totalGames = matchups.length;
+  const totalGames = enrichedMatchups.length;
   const picksMade = Object.keys(userPicks).filter(
     (id) => userPicks[id] !== null && userPicks[id] !== undefined
   ).length;
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
   const visibleMatchups = hidePicked
-    ? matchups.filter(
+    ? enrichedMatchups.filter(
         (m) => !userPicks[m.contestId] || fadingOut.includes(m.contestId)
       )
-    : matchups;
+    : enrichedMatchups;
 
   return (
     <div className="picks-page-container">

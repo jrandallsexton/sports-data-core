@@ -214,10 +214,48 @@
   letter-spacing: 1px;
 }
 
+.live-indicator {
+  color: #ff1744;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.game-clock {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #adb5bd;
+  margin: 0 8px;
+}
+
 .score-display {
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.possession-indicator {
+  font-size: 0.9rem;
+  animation: bounce-football 1s ease-in-out infinite;
+}
+
+@keyframes bounce-football {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .pick-distribution {

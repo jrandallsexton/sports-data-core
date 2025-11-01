@@ -22,13 +22,7 @@ namespace SportsData.Api.Application.Events
 
             await _hubContext.Clients
                 .All // ← simple, global broadcast for now
-                .SendAsync(nameof(ContestStatusChanged), new
-                {
-                    msg.ContestId,
-                    msg.Status,
-                    msg.CorrelationId,
-                    msg.CausationId
-                });
+                .SendAsync("ContestStatusChanged", msg);
         }
     }
 }

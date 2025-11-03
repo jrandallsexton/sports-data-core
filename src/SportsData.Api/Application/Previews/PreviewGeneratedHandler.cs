@@ -22,7 +22,7 @@ public class PreviewGeneratedHandler : IConsumer<PreviewGenerated>
 
         await _hubContext.Clients
             .All // ← simple, global broadcast for now
-            .SendAsync("PreviewCompleted", new
+            .SendAsync(nameof(PreviewGenerated), new
             {
                 msg.ContestId,
                 msg.Message,

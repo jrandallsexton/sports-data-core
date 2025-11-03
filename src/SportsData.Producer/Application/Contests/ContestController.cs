@@ -81,5 +81,34 @@ namespace SportsData.Producer.Application.Contests
             _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId, true));
             return Accepted(id);
         }
+
+        [HttpPost("{id}/replay")]
+        public IActionResult ReplayContestById([FromRoute] Guid id)
+        {
+            var correlationId = Guid.NewGuid();
+            _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, CancellationToken.None));
+            return Ok(new { Message = correlationId });
+        }
+
+        [HttpPost("{contestId}/broadcast")]
+        public async Task<IActionResult> BroadcastContest([FromRoute] Guid contestId)
+        {
+            var competition = await _dataContext
+                .Competitions.Where(x => x.ContestId == contestId)
+                .FirstOrDefaultAsync();
+
+            if (competition == null)
+                return NotFound();
+
+            var command = new BroadcastFootballCompetitionCommand()
+            {
+                CompetitionId = competition.Id,
+                ContestId = contestId,
+                CorrelationId = contestId
+            };
+
+            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command));
+            return Ok(new { Message = contestId });
+        }
     }
 }

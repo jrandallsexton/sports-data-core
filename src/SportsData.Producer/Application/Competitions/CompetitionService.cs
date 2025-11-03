@@ -13,14 +13,12 @@ using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-
 namespace SportsData.Producer.Application.Competitions
 {
     public interface ICompetitionService
     {
         Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId);
-        Task RefreshCompetitionMetrics();
+        Task RefreshCompetitionMetrics(int seasonYear);
         Task RefreshCompetitionMedia(int seasonYear);
         Task RefreshCompetitionMedia(Guid competitionId, bool removeExisting = false);
     }
@@ -33,6 +31,8 @@ namespace SportsData.Producer.Application.Competitions
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IProvideYouTube _youTubeProvider;
         private readonly IGroupSeasonsService _groupSeasonsService;
+
+        private const int ExpectedCompetitionMetricsCount = 2; // both teams should have metrics
 
         public CompetitionService(
             TeamSportDataContext dbContext,
@@ -101,23 +101,28 @@ namespace SportsData.Producer.Application.Competitions
             return new Success<Guid>(competitionId, ResultStatus.Accepted);
         }
 
-        public async Task RefreshCompetitionMetrics()
+        public async Task RefreshCompetitionMetrics(int seasonYear)
         {
             var contests = await _dataContext.Contests
                 .Include(x => x.Competitions)
-                .Where(c => c.FinalizedUtc != null)
+                .ThenInclude(comp => comp.Metrics)
+                .Where(c => c.FinalizedUtc != null && c.SeasonYear == seasonYear)
                 .OrderBy(c => c.StartDateUtc)
+                .AsSplitQuery()
                 .ToListAsync();
 
             foreach (var contest in contests)
             {
-                var competitionId = contest.Competitions.FirstOrDefault()?.Id;
+                var competition = contest.Competitions.FirstOrDefault();
 
-                if (competitionId == null)
+                if (competition is null)
+                    continue;
+
+                if (competition.Metrics.Count == ExpectedCompetitionMetricsCount)
                     continue;
 
                 _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
-                    p.CalculateCompetitionMetrics(competitionId.Value));
+                    p.CalculateCompetitionMetrics(competition.Id));
             }
         }
 

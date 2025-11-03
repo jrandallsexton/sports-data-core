@@ -54,6 +54,23 @@
 .insight-button.insight-reviewed svg {
   color: #ffc107;
 }
+
+.insight-button.insight-admin-missing {
+  background-color: #2a2d33;
+  color: #ff1744;
+  border: 2px solid #ff1744;
+  box-shadow: 0 0 6px 1px rgba(255, 23, 68, 0.2);
+}
+
+.insight-button.insight-admin-missing svg {
+  color: #ff1744;
+}
+
+.insight-button.insight-admin-missing:hover {
+  background-color: #3a3d43;
+  border-color: #ff1744;
+}
+
 .matchup-card {
   background-color: #1c1e22;
   color: #f8f9fa;
@@ -197,10 +214,102 @@
   letter-spacing: 1px;
 }
 
+.live-indicator {
+  color: #ff1744;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.game-clock {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #adb5bd;
+  margin: 0 8px;
+}
+
 .score-display {
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.possession-indicator {
+  font-size: 0.9rem;
+  animation: bounce-football 1s ease-in-out infinite;
+}
+
+@keyframes bounce-football {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Scoring Play Animation */
+.game-result.scoring-play {
+  animation: score-pulse 2s ease-in-out;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes score-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+  }
+}
+
+.score-display.score-flash {
+  animation: flash-score 2s ease-in-out;
+  font-weight: 700;
+}
+
+@keyframes flash-score {
+  0%, 100% {
+    color: #fff;
+    text-shadow: none;
+  }
+  50% {
+    color: #ffd700;
+    text-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00;
+  }
+}
+
+.touchdown-indicator {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
+  animation: slide-in 0.5s ease-out;
+  margin-top: 4px;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pick-distribution {

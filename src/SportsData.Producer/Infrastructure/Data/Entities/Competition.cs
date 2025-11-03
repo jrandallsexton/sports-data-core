@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
+using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
@@ -133,6 +134,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionMedia> Media { get; set; } = [];
 
+        public ICollection<CompetitionMetric> Metrics { get; set; } = [];
+
         public ICollection<CompetitionExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -222,6 +225,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                builder.HasMany(x => x.Metrics)
+                    .WithOne(x => x.Competition)
+                    .OnDelete(DeleteBehavior.Cascade);
             }
         }
     }

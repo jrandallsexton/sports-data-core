@@ -33,7 +33,7 @@ function FranchiseMetricsGrid() {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(column);
-      setSortOrder('asc');
+      setSortOrder('desc');
     }
   };
 
@@ -156,6 +156,9 @@ function FranchiseMetricsGrid() {
                   Conference
                 </th>
               )}
+              <th onClick={() => handleSort('gamesPlayed')} className="sortable">
+                GP {getSortIcon('gamesPlayed')}
+              </th>
               <th onClick={() => handleSort('ypp')} className="sortable">
                 YPP {getSortIcon('ypp')}
               </th>
@@ -234,6 +237,7 @@ function FranchiseMetricsGrid() {
                 {selectedConference === 'all' && (
                   <td>{team.conference || '-'}</td>
                 )}
+                <td>{formatValue(team.gamesPlayed, 'gamesPlayed')}</td>
                 <td>{formatValue(team.ypp, 'ypp')}</td>
                 <td>{formatValue(team.successRate, 'successRate')}</td>
                 <td>{formatValue(team.explosiveRate, 'explosiveRate')}</td>

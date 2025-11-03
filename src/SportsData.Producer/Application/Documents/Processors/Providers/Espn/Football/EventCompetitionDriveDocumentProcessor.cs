@@ -73,6 +73,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var competitionId = await GetCompetitionId(command);
 
+            if (competitionId is null)
+            {
+                return;
+            }
+
             var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
                 FranchiseSeason, FranchiseSeasonExternalId>(
                 externalDto.Team,
@@ -101,7 +106,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 await ProcessNewEntity(
                     command,
                     externalDto,
-                    competitionId,
+                    competitionId!.Value,
                     startFranchiseSeasonId,
                     endFranchiseSeasonId);
             }
@@ -109,18 +114,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 await ProcessUpdate(
                     command,
-                    competitionId,
+                    competitionId!.Value,
                     externalDto,
                     entity);
             }
         }
 
-        private async Task<Guid> GetCompetitionId(ProcessDocumentCommand command)
+        private async Task<Guid?> GetCompetitionId(ProcessDocumentCommand command)
         {
             if (!Guid.TryParse(command.ParentId, out var competitionId))
             {
                 _logger.LogError("CompetitionId could not be parsed");
-                throw new InvalidOperationException("ParentId must be a valid Guid.");
+                return null;
             }
 
             var competitionExists = await _dataContext.Competitions
@@ -130,7 +135,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!competitionExists)
             {
                 _logger.LogError("Competition not found for {CompetitionId}", competitionId);
-                throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+                return null;
             }
 
             return competitionId;

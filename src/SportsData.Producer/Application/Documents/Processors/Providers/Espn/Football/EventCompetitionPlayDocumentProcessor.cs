@@ -126,11 +126,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 key: fs => fs.Id);
 
             // Determine if this entity exists. Do NOT trust that it says it is a new document!
+            //var entity = await _dataContext.CompetitionPlays
+            //    .Include(x => x.ExternalIds)
+            //    .FirstOrDefaultAsync(x =>
+            //        x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
+            //                               z.Provider == command.SourceDataProvider));
+            var playIdentity = _externalRefIdentityGenerator.Generate(externalDto.Ref);
+
             var entity = await _dataContext.CompetitionPlays
                 .Include(x => x.ExternalIds)
-                .FirstOrDefaultAsync(x =>
-                    x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
-                                           z.Provider == command.SourceDataProvider));
+                .FirstOrDefaultAsync(x => x.Id == playIdentity.CanonicalId);
 
             if (entity is null)
             {

@@ -42,7 +42,7 @@ select * from public."GroupSeason" where "ParentId" is null
 select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d' where "ShortHeadline" = '2025 AP Poll: Week 10'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' where "ShortHeadline" = '2025 AP Poll: Week 11'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"
@@ -73,9 +73,19 @@ from public."Contest" c
 where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 -- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
-select * from public."Contest" where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+    select * from public."Contest" where "Id" = 'f5dc3da3-e13e-4322-b485-c64a2500ce5f'
 
-select * from public."Competition" where "ContestId" = 'ae76ab76-87a9-4440-d05a-cb8f4b5863b0'
+select * from public."Competition" where "ContestId" = '672c2b6b-639d-e1fd-08e0-57872a85ae1c'
+select * from public."CompetitionStatus" where "CompetitionId" = 'ec7d6034-05db-88d7-9ab1-9f657a2b5955'
+
+select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
+select * from public."CompetitionPlay" where "CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by "SequenceNumber"::int
+
+select play."PeriodNumber", play."ClockDisplayValue", prob.* from public."CompetitionProbability" prob
+left join public."CompetitionPlay" play on play."Id" = prob."PlayId"
+where prob."CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by prob."SequenceNumber"::int
+
+--delete from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50'
 select * from public."CompetitionMedia"
 
 select count(*) from public."CompetitionProbability"

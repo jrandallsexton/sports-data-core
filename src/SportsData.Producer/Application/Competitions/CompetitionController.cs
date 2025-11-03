@@ -34,7 +34,7 @@ namespace SportsData.Producer.Application.Competitions
         [Route("metrics/generate")]
         public IActionResult RefreshCompetitionMetrics()
         {
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMetrics());
+            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMetrics(2025)); // TODO: Remove this hard-coded value
 
             return Accepted(new { Message = $"Competition metric generation initiated." });
         }

@@ -8,6 +8,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
     {
         public Guid CompetitionId { get; set; }
 
+        public Competition Competition { get; set; } = null!;
+
         public Guid FranchiseSeasonId { get; set; }
 
         public int Season { get; set; }
@@ -79,6 +81,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
                 b.Property(x => x.PenaltyYardsPerPlay).HasPrecision(5, 2);
 
                 b.Property(x => x.InputsHash).HasMaxLength(64);
+
+                b.HasOne(x => x.Competition)
+                    .WithMany(x => x.Metrics)
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
     }

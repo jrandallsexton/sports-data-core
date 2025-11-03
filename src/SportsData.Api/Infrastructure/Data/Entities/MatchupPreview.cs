@@ -32,12 +32,13 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public string? ValidationErrors { get; set; }
 
         public string? PromptVersion { get; set; }
-
         public DateTime? ApprovedUtc { get; set; }
 
         public DateTime? RejectedUtc { get; set; }
 
         public string? RejectionNote { get; set; }
+
+        public bool UsedMetrics { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreview>
         {

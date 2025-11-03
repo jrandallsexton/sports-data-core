@@ -6,6 +6,7 @@ import Navigation from "./components/layout/Navigation";
 import "./MainApp.css";
 import useSignalRClient from "hooks/useSignalRClient";
 import { setGlobalApiErrorHandler } from "api/apiClient";
+import { useContestUpdates } from "./contexts/ContestUpdatesContext";
 
 import ErrorPage from "components/common/ErrorPage";
 import PicksPage from "./components/picks/PicksPage.jsx";
@@ -79,10 +80,17 @@ function MainApp() {
     setShowWelcome(false);
   };
 
+  // Get contest updates handler from context
+  const { handleStatusUpdate } = useContestUpdates();
+
   useSignalRClient({
     onPreviewCompleted: (data) => {
       toast.success(data.message);
       //refreshMatchups(); // or setState to trigger re-render
+    },
+    onContestStatusUpdated: (data) => {
+      console.log('📡 Contest status update received:', data);
+      handleStatusUpdate(data);
     },
   });
 

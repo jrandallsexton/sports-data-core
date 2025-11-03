@@ -47,6 +47,16 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            var competition = await _dataContext.Competitions
+                .Include(x => x.Plays)
+                .FirstOrDefaultAsync(c => c.ContestId == contestId, ct);
+
+            if (competition is null)
+            {
+                _logger.LogError("Contest not found");
+                return;
+            }
+
             contest.FinalizedUtc = null;
             await _dataContext.SaveChangesAsync(ct);
 
@@ -58,16 +68,6 @@ namespace SportsData.Producer.Application.Contests
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
 
-            var competition = await _dataContext.Competitions
-                .Include(x => x.Plays)
-                .FirstOrDefaultAsync(c => c.ContestId == contestId, ct);
-
-            if (competition is null)
-            {
-                _logger.LogError("Contest not found");
-                return;
-            }
-
             var plays = competition.Plays.ToList().OrderBy(x => int.Parse(x.SequenceNumber));
 
             foreach (var play in plays)
@@ -75,7 +75,7 @@ namespace SportsData.Producer.Application.Contests
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
                     ContestStatus.InProgress.ToString(),
-                    $"Q{play.PeriodNumber.ToString()}",
+                    $"Q{play.PeriodNumber}",
                     play.ClockDisplayValue ?? "UNK",
                     play.AwayScore,
                     play.HomeScore,

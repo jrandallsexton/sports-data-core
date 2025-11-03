@@ -17,8 +17,17 @@ export const usePickLocking = (startDateUtc, isReadOnly) => {
     return () => clearInterval(interval);
   }, []);
 
+  if (!startDateUtc) {
+    return { isLocked: isReadOnly, lockTime: null };
+  }
+
   // Picks are locked 5 minutes prior to kickoff OR if user is read-only
   const startTime = new Date(startDateUtc);
+
+  if (isNaN(startTime.getTime())) {
+    return { isLocked: isReadOnly, lockTime: null };
+  }
+
   const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000); // subtract 5 minutes
   const isLocked = now > lockTime || isReadOnly;
 

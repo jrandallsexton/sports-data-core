@@ -4,9 +4,10 @@ import apiWrapper from '../api/apiWrapper';
 /**
  * Custom hook to manage team comparison dialog state and data fetching
  * @param {object} matchup - Matchup data object
+ * @param {number} seasonYear - Season year for the comparison data
  * @returns {object} { showComparison, comparisonLoading, comparisonData, handleOpenComparison, handleCloseComparison }
  */
-export const useTeamComparison = (matchup) => {
+export const useTeamComparison = (matchup, seasonYear) => {
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
@@ -17,10 +18,10 @@ export const useTeamComparison = (matchup) => {
 
     try {
       const [awayRes, homeRes, awayMetrics, homeMetrics] = await Promise.all([
-        apiWrapper.TeamCard.getStatistics(matchup.awaySlug, 2025, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getStatistics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId),
-        apiWrapper.TeamCard.getMetrics(matchup.awaySlug, 2025, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getMetrics(matchup.homeSlug, 2025, matchup.homeFranchiseSeasonId)
+        apiWrapper.TeamCard.getStatistics(matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
+        apiWrapper.TeamCard.getStatistics(matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
+        apiWrapper.TeamCard.getMetrics(matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
+        apiWrapper.TeamCard.getMetrics(matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId)
       ]);
 
       setComparisonData({

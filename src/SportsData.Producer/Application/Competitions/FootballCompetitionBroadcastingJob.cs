@@ -236,7 +236,7 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
         _logger.LogDebug("publish {Type} document for {Uri}", type, refUri);
         await _publishEndpoint.Publish(new DocumentRequested (
             Id: Guid.NewGuid().ToString(),
-            ParentId: null,
+            ParentId: parentId,
             Uri: refUri,
             Sport: Sport.FootballNcaa,
             SeasonYear: 2025,

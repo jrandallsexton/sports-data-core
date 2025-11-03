@@ -95,7 +95,10 @@ namespace SportsData.Producer.Application.Contests
         {
             var competition = await _dataContext
                 .Competitions.Where(x => x.ContestId == contestId)
-                .FirstAsync();
+                .FirstOrDefaultAsync();
+
+            if (competition == null)
+                return NotFound();
 
             var command = new BroadcastFootballCompetitionCommand()
             {

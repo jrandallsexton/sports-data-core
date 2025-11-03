@@ -68,7 +68,7 @@ namespace SportsData.Producer.Application.Contests
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
 
-            var plays = competition.Plays.ToList().OrderBy(x => int.Parse(x.SequenceNumber));
+            var plays = competition.Plays.OrderBy(x => int.Parse(x.SequenceNumber)).ToList();
 
             foreach (var play in plays)
             {

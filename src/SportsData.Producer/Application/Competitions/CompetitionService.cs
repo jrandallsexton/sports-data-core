@@ -32,6 +32,8 @@ namespace SportsData.Producer.Application.Competitions
         private readonly IProvideYouTube _youTubeProvider;
         private readonly IGroupSeasonsService _groupSeasonsService;
 
+        private const int ExpectedCompetitionMetricsCount = 2; // both teams should have metrics
+
         public CompetitionService(
             TeamSportDataContext dbContext,
             IEventBus eventBus,
@@ -116,7 +118,7 @@ namespace SportsData.Producer.Application.Competitions
                 if (competition is null)
                     continue;
 
-                if (competition.Metrics.Count == 2)
+                if (competition.Metrics.Count == ExpectedCompetitionMetricsCount)
                     continue;
 
                 _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>

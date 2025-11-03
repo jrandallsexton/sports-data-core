@@ -18,7 +18,7 @@ namespace SportsData.Producer.Application.Competitions
     public interface ICompetitionService
     {
         Task<Result<Guid>> RefreshCompetitionDrives(Guid competitionId);
-        Task RefreshCompetitionMetrics();
+        Task RefreshCompetitionMetrics(int seasonYear);
         Task RefreshCompetitionMedia(int seasonYear);
         Task RefreshCompetitionMedia(Guid competitionId, bool removeExisting = false);
     }
@@ -101,12 +101,12 @@ namespace SportsData.Producer.Application.Competitions
             return new Success<Guid>(competitionId, ResultStatus.Accepted);
         }
 
-        public async Task RefreshCompetitionMetrics()
+        public async Task RefreshCompetitionMetrics(int seasonYear)
         {
             var contests = await _dataContext.Contests
                 .Include(x => x.Competitions)
                 .ThenInclude(comp => comp.Metrics)
-                .Where(c => c.FinalizedUtc != null)
+                .Where(c => c.FinalizedUtc != null && c.SeasonYear == seasonYear)
                 .OrderBy(c => c.StartDateUtc)
                 .AsSplitQuery()
                 .ToListAsync();

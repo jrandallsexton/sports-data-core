@@ -10,6 +10,7 @@ namespace SportsData.Core.Eventing.Events.Contests
         int AwayScore,
         int HomeScore,
         Guid? PossessionFranchiseSeasonId,
+        bool IsScoringPlay,
         Guid CorrelationId,
         Guid CausationId) : EventBase(CorrelationId, CausationId);
 }

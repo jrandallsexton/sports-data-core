@@ -81,7 +81,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             if (!Guid.TryParse(command.ParentId, out var competitionId))
             {
                 _logger.LogError("ParentId must be a valid Guid for CompetitionId");
-                throw new InvalidOperationException("Invalid ParentId for CompetitionId");
+                return;
             }
 
             Guid? lastPlayId = null;

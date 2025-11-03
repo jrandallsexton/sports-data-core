@@ -15,6 +15,7 @@
  * @param {string} props.awayFranchiseSeasonId - Away team franchise season ID
  * @param {string} props.homeFranchiseSeasonId - Home team franchise season ID
  * @param {string} props.possessionFranchiseSeasonId - Team with possession ID
+ * @param {boolean} props.isScoringPlay - Whether this update is for a scoring play
  */
 function GameStatus({
   status,
@@ -30,7 +31,8 @@ function GameStatus({
   clock,
   awayFranchiseSeasonId,
   homeFranchiseSeasonId,
-  possessionFranchiseSeasonId
+  possessionFranchiseSeasonId,
+  isScoringPlay
 }) {
   if (status === 'Final') {
     return (
@@ -50,17 +52,20 @@ function GameStatus({
     const homeHasPossession = possessionFranchiseSeasonId === homeFranchiseSeasonId;
 
     return (
-      <div className="game-result">
+      <div className={`game-result ${isScoringPlay ? 'scoring-play' : ''}`}>
         <div className="final-score">
           <span className="result-label live-indicator">LIVE</span>
           {period && clock && (
             <span className="game-clock">{period} - {clock}</span>
           )}
-          <span className="score-display">
+          <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
             {awayHasPossession && <span className="possession-indicator">🏈</span>}
             {awayShort} {awayScore} - {homeScore} {homeShort}
             {homeHasPossession && <span className="possession-indicator">🏈</span>}
           </span>
+          {isScoringPlay && (
+            <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+          )}
         </div>
       </div>
     );

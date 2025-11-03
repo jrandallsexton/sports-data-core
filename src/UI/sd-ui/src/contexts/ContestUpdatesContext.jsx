@@ -31,9 +31,23 @@ export const ContestUpdatesProvider = ({ children }) => {
         awayScore: data.awayScore,
         homeScore: data.homeScore,
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
+        isScoringPlay: data.isScoringPlay || false,
         lastUpdated: Date.now()
       }
     }));
+
+    // Auto-clear scoring play flag after animation duration
+    if (data.isScoringPlay) {
+      setTimeout(() => {
+        setContests(prev => ({
+          ...prev,
+          [data.contestId]: {
+            ...prev[data.contestId],
+            isScoringPlay: false
+          }
+        }));
+      }, 2000); // Clear after 2 seconds
+    }
   }, []);
 
   /**

@@ -85,6 +85,8 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IContestReplayService, ContestReplayService>();
 
+            services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionBroadcastingJob>();
+
             return services;
         }
 

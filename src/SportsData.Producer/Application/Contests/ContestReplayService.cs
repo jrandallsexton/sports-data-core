@@ -53,7 +53,7 @@ namespace SportsData.Producer.Application.Contests
             await _eventBus.Publish(new ContestStatusChanged(
                 contestId,
                 ContestStatus.InProgress.ToString(),
-                "0","15:00", 0, 0, contest.AwayTeamFranchiseSeasonId,
+                "0","15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
                 correlationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
@@ -75,11 +75,12 @@ namespace SportsData.Producer.Application.Contests
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
                     ContestStatus.InProgress.ToString(),
-                    play.PeriodNumber.ToString(),
+                    $"Q{play.PeriodNumber.ToString()}",
                     play.ClockDisplayValue ?? "UNK",
                     play.AwayScore,
                     play.HomeScore,
                     play.StartFranchiseSeasonId,
+                    play.ScoringPlay,
                     correlationId,
                     CausationId.Producer.EventCompetitionStatusDocumentProcessor
                 ), ct);

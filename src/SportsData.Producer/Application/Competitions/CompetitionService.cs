@@ -1,5 +1,5 @@
 ﻿using FluentValidation.Results;
-
+using Hangfire.PostgreSql.Properties;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -105,19 +105,24 @@ namespace SportsData.Producer.Application.Competitions
         {
             var contests = await _dataContext.Contests
                 .Include(x => x.Competitions)
+                .ThenInclude(comp => comp.Metrics)
                 .Where(c => c.FinalizedUtc != null)
                 .OrderBy(c => c.StartDateUtc)
+                .AsSplitQuery()
                 .ToListAsync();
 
             foreach (var contest in contests)
             {
-                var competitionId = contest.Competitions.FirstOrDefault()?.Id;
+                var competition = contest.Competitions.FirstOrDefault();
 
-                if (competitionId == null)
+                if (competition is null)
+                    continue;
+
+                if (competition.Metrics.Count == 2)
                     continue;
 
                 _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
-                    p.CalculateCompetitionMetrics(competitionId.Value));
+                    p.CalculateCompetitionMetrics(competition.Id));
             }
         }
 

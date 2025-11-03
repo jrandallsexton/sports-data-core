@@ -13,8 +13,20 @@ update public."MatchupPreview" set
 "PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
 */
 
-select * from public."MatchupPreview" where "ContestId" = '5188a7dc-79f2-387b-d283-d1c58b0f3eae' -- "CreatedUtc" > '2025-09-01 00:00:00.000000-04' order by "CreatedUtc" desc
+select * from public."MatchupPreview" where "ContestId" = 'e2758932-b9d5-a450-fe56-5911e9756f43' order by "CreatedUtc" desc
 select * from public."PickemGroup" where "IsPublic" = true
+select * from public."UserPick" where "Week" = 10 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+
+-- FIX DEV - 02 NOV 2025
+-- delete from public."UserPick" where "Week" = 10 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813';
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = 'd731cc7f-a671-e41e-5568-0b817ef911b2' where "Id" = 'aa6d0112-c543-4804-a1bf-165048bc79fb'; -- Memphis correction
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = 'a8dd1b64-3c64-d24c-30aa-10e01fa7cc66' where "Id" = '68f2771e-12ca-4179-9091-b1d8e5043afa'; -- NotreDame correction
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = 'c808465b-42c7-ddb7-9439-9f6e88a69b15', "RejectedUtc" = null  where "Id" = '125bc8ed-38c7-447c-9b04-5000269e1b08'; -- Michigan correction
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = '4dca16cb-464c-49f1-9b67-faff2e3d0b40' where "Id" = '866c0b89-a346-48d1-9f03-1da786632c00'; -- TN correction
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = '4dca16cb-464c-49f1-9b67-faff2e3d0b40' where "Id" = '3bb46636-cedf-4301-8794-2ff1af32b276'; -- TN correction
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = '366444ef-e37c-b0b1-816e-572e8cac7965' where "Id" = 'd8365bff-3ace-433d-b7fa-8057521eca81'; -- Utah
+-- update public."MatchupPreview" set "PredictedSpreadWinner" = 'c3d0d4bc-3417-32e2-f579-9f71db71a9dd', "RejectedUtc" = null  where "Id" = 'e98ecaa6-9f46-4efd-9805-f5de6487d829'; -- Auburn correction
+-- update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 10;
 
 select g."Id", u."DisplayName" as "Commissioner", g."Name", g."Description", g."RankingFilter", g."PickType", g."UseConfidencePoints", g."DropLowWeeksCount"
 from public."PickemGroup" g
@@ -23,7 +35,7 @@ where g."IsPublic" = true
 
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
-select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
+select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' order by "SeasonWeek"
 select * from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
 --delete from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
 -- https://api-dev.sportdeets.com/ui/matchup//preview

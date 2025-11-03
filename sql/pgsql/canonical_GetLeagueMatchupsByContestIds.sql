@@ -2,19 +2,20 @@ SELECT
   c."SeasonWeekId" as "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" as "StartDateUtc",
-  cs."StatusDescription" as "Status",
+  replace(cs."StatusDescription", ' ', '') AS "Status",
 
-  STRING_AGG(cb."TypeShortName" || ':' || cb."MediaName", ', ') AS "Broadcasts",
+  STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
 
   v."Name" as "Venue",
   v."City" as "VenueCity",
   v."State" as "VenueState",
   
   fAway."DisplayName" as "Away",
-  fAway."DisplayNameShort" as "AwayShort",
+  fAway."Abbreviation" as "AwayShort",
   fsAway."Id" as "AwayFranchiseSeasonId",
   flAway."Uri" as "AwayLogoUri",
   fAway."Slug" as "AwaySlug",
+  fAway."ColorCodeHex" as "AwayColor",
   fsrdAway."Current" as "AwayRank",
   gsAway."Slug" as "AwayConferenceSlug",
   fsAway."Wins" as "AwayWins",
@@ -23,10 +24,11 @@ SELECT
   fsAway."ConferenceLosses" as "AwayConferenceLosses",
   
   fHome."DisplayName" as "Home",
-  fHome."DisplayNameShort" as "HomeShort",
+  fHome."Abbreviation" as "HomeShort",
   fsHome."Id" as "HomeFranchiseSeasonId",
   flHome."Uri" as "HomeLogoUri",  
   fHome."Slug" as "HomeSlug",
+  fHome."ColorCodeHex" as "HomeColor",
   fsrdHome."Current" as "HomeRank",
   gsHome."Slug" as "HomeConferenceSlug",
   fsHome."Wins" as "HomeWins",
@@ -53,8 +55,7 @@ FROM public."Contest" c
 INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionBroadcast" cb on cb."CompetitionId" = comp."Id"
-
-LEFT JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
+LEFT  JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
 LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
 
@@ -70,8 +71,8 @@ LEFT JOIN LATERAL (
 ) flAway ON TRUE
 
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
-left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
-left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+LEFT  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
+LEFT  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
@@ -85,10 +86,10 @@ LEFT JOIN LATERAL (
 ) flHome ON TRUE
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
-left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+LEFT  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
+LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = '2b0f4cd5-cd25-2283-4879-7574a10700fa' -- ANY(@ContestIds)
+WHERE c."Id" = 'ee11ed43-9a77-9e87-73c4-5ce6ca312ae5'
 
 GROUP BY
   c."SeasonWeekId",
@@ -101,6 +102,10 @@ GROUP BY
   fsrdAway."Current", gsAway."Slug",
   fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
 
+    fAway."Abbreviation", fAway."ColorCodeHex",
+  fHome."Abbreviation", fHome."ColorCodeHex",
+
+
   fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id", flHome."Uri", fHome."Slug",
   fsrdHome."Current", gsHome."Slug",
   fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
@@ -110,12 +115,13 @@ GROUP BY
   c."AwayScore", c."HomeScore", c."WinnerFranchiseId", c."SpreadWinnerFranchiseId",
   c."OverUnder", c."EndDateUtc"
 
+
 ORDER BY c."StartDateUtc", fHome."Slug";
 
 
 -- SELECT * from "Competition" where "ContestId" = '295474a7-a45c-85ae-b95d-9c7902b0744e'
 --select * from public."CompetitionBroadcast" where "CompetitionId" = '0c911932-8ca0-c341-83a4-f84c269a463d'
-select * from public."CompetitionBroadcast" where "Station" = '6936478' or "Station" = 'SEC Network'
+--select * from public."CompetitionBroadcast" where "Station" = '6936478' or "Station" = 'SEC Network'
 -- SELECT * from "Competition" where "Id" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
 --select * from public."CompetitionOdds" where "CompetitionId" = '95cf4eb4-08e5-814b-e20b-e19cceccef84'
 --select * from public."CompetitionTeamOdds" WHERE "CompetitionOddsId" = 'b77a7510-4a7a-6f2b-1755-96924c34495a'

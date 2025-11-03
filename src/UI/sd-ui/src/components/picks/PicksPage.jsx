@@ -56,7 +56,8 @@ function PicksPage() {
           homeScore: liveUpdate.homeScore,
           period: liveUpdate.period,
           clock: liveUpdate.clock,
-          possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId
+          possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId,
+          isScoringPlay: liveUpdate.isScoringPlay
         };
       }
       return matchup;

@@ -151,6 +151,7 @@ function MatchupCard({
           awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
+          isScoringPlay={matchup.isScoringPlay}
         />
 
         <div className="spread-ou">

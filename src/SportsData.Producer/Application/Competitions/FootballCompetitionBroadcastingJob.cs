@@ -1,27 +1,39 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Competitions;
 
-public class FootballCompetitionBroadcastingJob
+public interface IFootballCompetitionBroadcastingJob
+{
+    Task ExecuteAsync(BroadcastFootballCompetitionCommand command);
+}
+
+public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcastingJob
 {
     private readonly ILogger<FootballCompetitionBroadcastingJob> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly HttpClient _httpClient;
+    private readonly IEventBus _publishEndpoint;
 
     public FootballCompetitionBroadcastingJob(
         ILogger<FootballCompetitionBroadcastingJob> logger,
         FootballDataContext dataContext,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IEventBus publishEndpoint
+        )
     {
         _logger = logger;
         _dataContext = dataContext;
         _httpClient = httpClientFactory.CreateClient(); // default client
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task ExecuteAsync(BroadcastFootballCompetitionCommand command)
@@ -37,7 +49,8 @@ public class FootballCompetitionBroadcastingJob
                 .Include(c => c.ExternalIds)
                 .Include(c => c.Competitors)
                 .ThenInclude(p => p.ExternalIds)
-                .Where(c => c.Id == command.CorrelationId && c.ContestId == command.ContestId)
+                .Where(c => c.Id == command.CompetitionId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             if (competition == null)
@@ -208,13 +221,32 @@ public class FootballCompetitionBroadcastingJob
         });
     }
 
-    private async Task PublishDocumentRequestAsync(Uri refUri, DocumentType type, BroadcastFootballCompetitionCommand command)
+    private async Task PublishDocumentRequestAsync(
+        Uri refUri,
+        DocumentType type,
+        BroadcastFootballCompetitionCommand command)
     {
-        await Task.Delay(100);
-        _logger.LogDebug("Would publish {Type} document for {Uri}", type, refUri);
-        // await _publishEndpoint.Publish(new DocumentRequested(...));
-        // await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-        // await _dataContext.SaveChangesAsync();
+        var parentId = type is
+            DocumentType.EventCompetitionProbability or
+            DocumentType.EventCompetitionDrive or
+            DocumentType.EventCompetitionSituation
+            ? command.CompetitionId.ToString()
+            : null;
+
+        _logger.LogDebug("publish {Type} document for {Uri}", type, refUri);
+        await _publishEndpoint.Publish(new DocumentRequested (
+            Id: Guid.NewGuid().ToString(),
+            ParentId: null,
+            Uri: refUri,
+            Sport: Sport.FootballNcaa,
+            SeasonYear: 2025,
+            DocumentType: type,
+            SourceDataProvider : SourceDataProvider.Espn,
+            CorrelationId: command.CorrelationId,
+            CausationId: command.CorrelationId
+            ));
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
     }
 }
 

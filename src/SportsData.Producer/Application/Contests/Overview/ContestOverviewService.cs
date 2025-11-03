@@ -295,7 +295,7 @@ namespace SportsData.Producer.Application.Contests.Overview
                 Quarter = p.PeriodNumber,
                 FranchiseSeasonId = p.EndFranchiseSeasonId.HasValue ? p.EndFranchiseSeasonId.Value : Guid.Empty,
                 Team = p.EndFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
-                Description = p.Text,
+                Description = p.ShortAlternativeText ?? p.Text,
                 TimeRemaining = p.ClockDisplayValue,
                 IsScoringPlay = p.ScoringPlay,
                 IsKeyPlay = p.Priority

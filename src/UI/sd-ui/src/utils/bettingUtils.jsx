@@ -5,9 +5,14 @@
  * @returns {JSX.Element|null} Arrow indicator or null if no movement
  */
 export const calculateSpreadArrow = (current, open) => {
+  // Guard against null/undefined/NaN values
   if (
+    current === undefined ||
+    current === null ||
     open === undefined ||
     open === null ||
+    !Number.isFinite(Number(current)) ||
+    !Number.isFinite(Number(open)) ||
     current === open
   ) {
     return null;
@@ -34,10 +39,16 @@ export const calculateSpreadArrow = (current, open) => {
  * @returns {JSX.Element|null} Arrow indicator or null if no movement
  */
 export const calculateOverUnderArrow = (current, open) => {
+  // Guard against null/undefined/NaN values and special cases
   if (
+    current === undefined ||
+    current === null ||
     open === undefined ||
     open === null ||
     current === 'Off' ||
+    current === 'TBD' ||
+    !Number.isFinite(Number(current)) ||
+    !Number.isFinite(Number(open)) ||
     current === open
   ) {
     return null;
@@ -58,11 +69,11 @@ export const calculateOverUnderArrow = (current, open) => {
  * Get CSS class for card border based on game status and pick result
  * @param {string} status - Game status ('Final', 'InProgress', 'Scheduled')
  * @param {object} userPickResult - User pick result object
- * @param {string} pickResult - Pick result ('correct', 'incorrect', or null)
  * @param {string} userPickFranchiseSeasonId - Legacy pick ID
+ * @param {string} pickResult - Pick result ('correct', 'incorrect', or null)
  * @returns {string} CSS class name
  */
-export const getPickResultClass = (status, userPickResult, pickResult, userPickFranchiseSeasonId) => {
+export const getPickResultClass = (status, userPickResult, userPickFranchiseSeasonId, pickResult) => {
   if (status !== 'Final') return ""; // No border for non-final games
   
   // Check if user made a pick (either in new or old format)

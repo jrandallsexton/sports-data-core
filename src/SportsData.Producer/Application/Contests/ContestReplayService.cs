@@ -53,7 +53,7 @@ namespace SportsData.Producer.Application.Contests
 
             if (competition is null)
             {
-                _logger.LogError("Contest not found");
+                _logger.LogError("Competition not found");
                 return;
             }
 

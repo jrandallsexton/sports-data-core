@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 
 namespace SportsData.Producer.Application.FranchiseSeasons
@@ -20,28 +22,30 @@ namespace SportsData.Producer.Application.FranchiseSeasons
 
         [HttpGet]
         [Route("seasonYear/{seasonYear}/metrics")]
-        public async Task<IActionResult> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
+        public async Task<ActionResult<List<FranchiseSeasonMetricsDto>>> GetFranchiseSeasonMetricsBySeasonYear([FromRoute] int seasonYear)
         {
-            var metrics = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
-            return Ok(metrics);
+            var result = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
+            return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("id/{franchiseSeasonId}/metrics")]
-        public async Task<IActionResult> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
         {
-            var metrics = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId);
-            return Ok(metrics);
+            var result = await _franchiseSeasonMetricsService
+                .GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId);
+
+            return result.ToActionResult();
         }
 
         [HttpPost]
-        [Route("metrics/generate")]
-        public IActionResult RefreshCompetitionMetrics()
+        [Route("seasonYeat/{seasonYear}/metrics/generate")]
+        public IActionResult RefreshCompetitionMetrics([FromRoute] int seasonYear)
         {
             var cmd = new GenerateFranchiseSeasonMetricsCommand()
             {
                 CorrelationId = Guid.NewGuid(),
-                SeasonYear = 2025, // TODO: remove hard-coding
+                SeasonYear = seasonYear,
                 Sport = Core.Common.Sport.FootballNcaa // TODO: remove hard-coding
             };
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.Contest
 {
@@ -19,8 +20,8 @@ namespace SportsData.Api.Application.UI.Contest
         [HttpGet("{id}/overview")]
         public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
         {
-            var contest = await _contestService.GetContestOverviewByContestId(id);
-            return Ok(contest);
+            var result = await _contestService.GetContestOverviewByContestId(id);
+            return result.ToActionResult();
         }
 
         [HttpPost("{id}/refresh")]

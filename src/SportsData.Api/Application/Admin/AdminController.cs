@@ -39,8 +39,7 @@ namespace SportsData.Api.Application.Admin
             {
                 return Task.FromResult<IActionResult>(BadRequest("URL cannot be empty."));
             }
-            // Here you would typically generate a unique identity based on the URL.
-            // For simplicity, we will just return the URL as is.
+
             var identity = _externalRefIdentityGenerator.Generate(command.Url);
 
             return Task.FromResult<IActionResult>(Ok(identity));

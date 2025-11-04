@@ -1,11 +1,12 @@
 ﻿using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Application.UI.Contest
 {
     public interface IContestService
     {
-        Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
+        Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId);
         Task RefreshContestByContestId(Guid contestId);
         Task RefreshContestMediaByContestId(Guid contestId);
     }
@@ -23,8 +24,11 @@ namespace SportsData.Api.Application.UI.Contest
             _canonicalDataProvider = canonicalDataProvider;
         }
 
-        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId) =>
-            await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
+        public async Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId)
+        {
+            var result = await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
+            return new Success<ContestOverviewDto>(result);
+        }
 
         public async Task RefreshContestByContestId(Guid contestId)
         {

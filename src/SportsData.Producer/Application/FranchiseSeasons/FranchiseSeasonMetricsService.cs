@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentValidation.Results;
+
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -13,8 +15,8 @@ namespace SportsData.Producer.Application.FranchiseSeasons
     {
         Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command);
         Task GenerateFranchiseSeasonMetrics(Guid franchiseSeasonId, int seasonYear);
-        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);
-        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
+        Task<Result<List<FranchiseSeasonMetricsDto>>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);
+        Task<Result<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
     }
 
     public class FranchiseSeasonMetricsService : IFranchiseSeasonMetricsService
@@ -36,7 +38,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
             _groupSeasonsService = groupSeasonsService;
         }
 
-        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
+        public async Task<Result<List<FranchiseSeasonMetricsDto>>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
         {
             var metrics = await _dataContext.FranchiseSeasonMetrics
                 .Include(fsm => fsm.FranchiseSeason)
@@ -75,10 +77,10 @@ namespace SportsData.Producer.Application.FranchiseSeasons
                 Ypp = fsm.Ypp
             }).ToList();
 
-            return dtos;
+            return new Success<List<FranchiseSeasonMetricsDto>>(dtos);
         }
 
-        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        public async Task<Result<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
         {
             var metric = await _dataContext.FranchiseSeasonMetrics
                 .Include(fsm => fsm.FranchiseSeason)
@@ -90,8 +92,14 @@ namespace SportsData.Producer.Application.FranchiseSeasons
 
             if (metric == null)
             {
-                _logger.LogWarning("No FranchiseSeasonMetric found for FranchiseSeasonId: {FranchiseSeasonId}", franchiseSeasonId);
-                throw new InvalidOperationException($"FranchiseSeasonMetric not found for FranchiseSeasonId: {franchiseSeasonId}");
+                _logger.LogError("No FranchiseSeasonMetric found for FranchiseSeasonId: {FranchiseSeasonId}", franchiseSeasonId);
+                return new Failure<FranchiseSeasonMetricsDto>(
+                    value: default!,
+                    status: ResultStatus.NotFound,
+                    errors:
+                    [
+                        new ValidationFailure(nameof(franchiseSeasonId), "No metrics found for this franchise season.")
+                    ]);
             }
 
             var dto = new FranchiseSeasonMetricsDto()
@@ -122,7 +130,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
                 Ypp = metric.Ypp
             };
 
-            return dto;
+            return new Success<FranchiseSeasonMetricsDto>(dto);
         }
 
         public async Task GenerateFranchiseSeasonMetrics(GenerateFranchiseSeasonMetricsCommand command)

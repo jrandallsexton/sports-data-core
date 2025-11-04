@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace SportsData.Api.Application.Admin;
 
@@ -29,19 +27,9 @@ public class AdminApiTokenAttribute : Attribute, IAuthorizationFilter
         // If no valid admin token, check for authenticated user with admin role
         if (context.HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            // Here you can check for admin role/claims from Firebase
-            // This would be based on how you store admin status in Firebase
             var firebaseUid = context.HttpContext.User.FindFirst("user_id")?.Value;
             if (!string.IsNullOrEmpty(firebaseUid))
             {
-                // TODO: Add your admin check here, for example:
-                // var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                // if (await userService.IsAdminAsync(firebaseUid))
-                // {
-                //     return;
-                // }
-                
-                // For now, just check if the user exists (you'll want to add proper admin checking)
                 return;
             }
         }

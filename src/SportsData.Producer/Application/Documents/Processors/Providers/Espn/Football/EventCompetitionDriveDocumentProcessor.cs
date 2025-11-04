@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -75,6 +75,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (competitionId is null)
             {
+                _logger.LogError("CompetitionId could not be determined");
                 return;
             }
 

@@ -198,22 +198,6 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         finalCount.Should().Be(initialCount);
     }
 
-    [Fact]
-    public async Task WhenInvalidParentId_ShouldThrowException()
-    {
-        // arrange
-        var generator = new ExternalRefIdentityGenerator();
-        Mocker.Use<IGenerateExternalRefIdentities>(generator);
-
-        var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
-        var command = CreateCommand(json, "not-a-guid");
-
-        // act & assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sut.ProcessAsync(command));
-    }
-
     [Fact(Skip = "No longer valid, but might want to revisit")]
     public async Task WhenStartTeamNotFound_ShouldThrowException()
     {

@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Infrastructure.Data;
-
-using static SportsData.Api.Application.Admin.AdminService;
 
 namespace SportsData.Api.Application.Previews
 {

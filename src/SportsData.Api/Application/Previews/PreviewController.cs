@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Extensions;
 using SportsData.Core.Processing;
-
-using static SportsData.Api.Application.Admin.AdminService;
 
 namespace SportsData.Api.Application.Previews
 {

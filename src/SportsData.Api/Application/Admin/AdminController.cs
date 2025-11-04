@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.AI;
-using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -12,7 +15,7 @@ namespace SportsData.Api.Application.Admin
     [ApiController]
     [Route("admin")]
     [AdminApiToken]
-    public class AdminController : ControllerBase
+    public class AdminController : ApiControllerBase
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideAiCommunication _ai;
@@ -66,16 +69,19 @@ namespace SportsData.Api.Application.Admin
 
         [HttpPost]
         [Route("matchup/preview/{contestId}")]
-        public async Task<IActionResult> UpsertContestPreview(
+        public async Task<ActionResult<Guid>> UpsertContestPreview(
             [FromRoute] Guid contestId,
             [FromBody] string matchupPreview)
         {
             var result = await _adminService.UpsertMatchupPreview(matchupPreview);
 
-            if (result == contestId)
-                return Created();
-            else
+            if (result.IsSuccess && result.Value == contestId)
+                return Created($"/admin/matchup/preview/{contestId}", new { contestId });
+
+            if (result.IsSuccess)
                 return BadRequest("The provided preview does not match the specified contest ID.");
+
+            return result.ToActionResult();
         }
 
         [HttpPost]
@@ -107,54 +113,34 @@ namespace SportsData.Api.Application.Admin
 
         [HttpGet]
         [Route("matchup/preview/{contestId}")]
-        public async Task<IActionResult> GetAiPreview([FromRoute] Guid contestId)
+        public async Task<ActionResult<string>> GetAiPreview([FromRoute] Guid contestId)
         {
-            return Ok(await _adminService.GetMatchupPreview(contestId));
+            var result = await _adminService.GetMatchupPreview(contestId);
+            return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-competitors")]
-        public async Task<IActionResult> GetCompetitionsWithoutCompetitors()
+        public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors()
         {
-            try 
-            {
-                var result = await _adminService.GetCompetitionsWithoutCompetitors();
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
+            var result = await _adminService.GetCompetitionsWithoutCompetitors();
+            return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-plays")]
-        public async Task<IActionResult> GetCompetitionsWithoutPlays()
+        public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays()
         {
-            try 
-            {
-                var result = await _adminService.GetCompetitionsWithoutPlays();
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
+            var result = await _adminService.GetCompetitionsWithoutPlays();
+            return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-drives")]
-        public async Task<IActionResult> GetCompetitionsWithoutDrives()
+        public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives()
         {
-            try 
-            {
-                var result = await _adminService.GetCompetitionsWithoutDrives();
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
+            var result = await _adminService.GetCompetitionsWithoutDrives();
+            return result.ToActionResult();
         }
     }
 

@@ -1,3 +1,5 @@
+using FluentValidation.Results;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues;
@@ -5,6 +7,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
 using System.Text.Json.Serialization;
@@ -17,15 +20,15 @@ namespace SportsData.Api.Application.Admin
 
         Task AuditAi(Guid correlationId);
 
-        Task<string> GetMatchupPreview(Guid contestId);
+        Task<Result<string>> GetMatchupPreview(Guid contestId);
 
-        Task<Guid> UpsertMatchupPreview(string jsonContent);
+        Task<Result<Guid>> UpsertMatchupPreview(string jsonContent);
 
-        Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
+        Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors();
         
-        Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
+        Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays();
         
-        Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives();
+        Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives();
     }
 
     public class AdminService : IAdminService
@@ -248,98 +251,160 @@ namespace SportsData.Api.Application.Admin
             _logger.LogCritical($"!!! {errorCount} of {previews.Count} AI previews have issues with FranchiseSeasonId !!!");
         }
 
-        public async Task<string> GetMatchupPreview(Guid contestId)
+        public async Task<Result<string>> GetMatchupPreview(Guid contestId)
         {
-            var preview = await _dataContext.MatchupPreviews
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.ContestId == contestId);
-
-            if (preview is null)
+            if (contestId == Guid.Empty)
             {
-                throw new InvalidOperationException("No preview found for the specified contest.");
+                return new Failure<string>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(contestId), "Contest ID cannot be empty")]);
             }
 
-            return preview.ToJson();
+            try
+            {
+                var preview = await _dataContext.MatchupPreviews
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.ContestId == contestId);
+
+                if (preview is null)
+                {
+                    _logger.LogWarning("No preview found for contest {ContestId}", contestId);
+                    return new Failure<string>(
+                        default!,
+                        ResultStatus.NotFound,
+                        [new ValidationFailure(nameof(contestId), "No preview found for the specified contest")]);
+                }
+
+                return new Success<string>(preview.ToJson());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving matchup preview for contest {ContestId}", contestId);
+                return new Failure<string>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(contestId), $"Error retrieving preview: {ex.Message}")]);
+            }
         }
 
-        public async Task<Guid> UpsertMatchupPreview(string jsonContent)
+        public async Task<Result<Guid>> UpsertMatchupPreview(string jsonContent)
         {
-            var preview = jsonContent.FromJson<MatchupPreview>();
+            if (string.IsNullOrWhiteSpace(jsonContent))
+            {
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(jsonContent), "JSON content cannot be empty")]);
+            }
 
-            if (preview is null)
-                throw new InvalidOperationException("Invalid preview content.");
+            try
+            {
+                var preview = jsonContent.FromJson<MatchupPreview>();
 
-            var existing = await _dataContext.MatchupPreviews
-                .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId);
+                if (preview is null)
+                {
+                    _logger.LogWarning("Invalid preview content provided");
+                    return new Failure<Guid>(
+                        default,
+                        ResultStatus.Validation,
+                        [new ValidationFailure(nameof(jsonContent), "Invalid preview content")]);
+                }
 
-            if (existing is not null)
-                _dataContext.MatchupPreviews.Remove(existing);
+                var existing = await _dataContext.MatchupPreviews
+                    .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId);
 
-            await _dataContext.MatchupPreviews.AddAsync(preview);
-            await _dataContext.SaveChangesAsync();
+                if (existing is not null)
+                    _dataContext.MatchupPreviews.Remove(existing);
 
-            return preview.ContestId;
+                await _dataContext.MatchupPreviews.AddAsync(preview);
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation("Upserted matchup preview for contest {ContestId}", preview.ContestId);
+
+                return new Success<Guid>(preview.ContestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error upserting matchup preview");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(jsonContent), $"Error upserting preview: {ex.Message}")]);
+            }
         }
 
-        public async Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors()
+        public async Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors()
         {
             try
             {
-                return await _canonicalAdminData.GetCompetitionsWithoutCompetitors();
+                var result = await _canonicalAdminData.GetCompetitionsWithoutCompetitors();
+                return new Success<List<CompetitionWithoutCompetitorsDto>>(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without competitors");
-                throw;
+                return new Failure<List<CompetitionWithoutCompetitorsDto>>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("competitions", $"Error retrieving competitions without competitors: {ex.Message}")]);
             }
         }
 
-        public async Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays()
+        public async Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays()
         {
             try
             {
-                return await _canonicalAdminData.GetCompetitionsWithoutPlays();
+                var result = await _canonicalAdminData.GetCompetitionsWithoutPlays();
+                return new Success<List<CompetitionWithoutPlaysDto>>(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without plays");
-                throw;
+                return new Failure<List<CompetitionWithoutPlaysDto>>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("competitions", $"Error retrieving competitions without plays: {ex.Message}")]);
             }
         }
 
-        public async Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives()
+        public async Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives()
         {
             try
             {
-                return await _canonicalAdminData.GetCompetitionsWithoutDrives();
+                var result = await _canonicalAdminData.GetCompetitionsWithoutDrives();
+                return new Success<List<CompetitionWithoutDrivesDto>>(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without drives");
-                throw;
+                return new Failure<List<CompetitionWithoutDrivesDto>>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("competitions", $"Error retrieving competitions without drives: {ex.Message}")]);
             }
         }
+    }
 
-        public class RejectMatchupPreviewCommand
-        {
-            [JsonPropertyName("previewId")]
-            public Guid PreviewId { get; set; }
+    public class RejectMatchupPreviewCommand
+    {
+        [JsonPropertyName("previewId")]
+        public Guid PreviewId { get; set; }
 
-            [JsonPropertyName("contestId")]
-            public Guid ContestId { get; set; }
+        [JsonPropertyName("contestId")]
+        public Guid ContestId { get; set; }
 
-            [JsonPropertyName("rejectionNote")]
-            public required string RejectionNote { get; set; }
+        [JsonPropertyName("rejectionNote")]
+        public required string RejectionNote { get; set; }
 
-            public Guid RejectedByUserId { get; set; }
-        }
+        public Guid RejectedByUserId { get; set; }
+    }
 
-        public class ApproveMatchupPreviewCommand
-        {
-            [JsonPropertyName("previewId")]
-            public Guid PreviewId { get; set; }
+    public class ApproveMatchupPreviewCommand
+    {
+        [JsonPropertyName("previewId")]
+        public Guid PreviewId { get; set; }
 
-            public Guid ApprovedByUserId { get; set; }
-        }
+        public Guid ApprovedByUserId { get; set; }
     }
 }

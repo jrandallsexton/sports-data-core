@@ -3,13 +3,15 @@ using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Leaderboard.Dtos;
 using SportsData.Api.Extensions;
+using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.Leaderboard;
 
 [ApiController]
 [Route("ui/leaderboard")]
 [Authorize]
-public class LeaderboardController : ControllerBase
+public class LeaderboardController : ApiControllerBase
 {
     private readonly ILeaderboardService _leaderboardService;
 
@@ -24,10 +26,10 @@ public class LeaderboardController : ControllerBase
         [FromRoute] Guid groupId,
         CancellationToken cancellationToken)
     {
-        var leaderboard = await _leaderboardService
+        var result = await _leaderboardService
             .GetLeaderboardAsync(groupId, cancellationToken);
 
-        return Ok(leaderboard);
+        return result.ToActionResult();
     }
 
     [HttpGet("widget")]
@@ -37,9 +39,9 @@ public class LeaderboardController : ControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var leaderboardWidget = await _leaderboardService
+        var result = await _leaderboardService
             .GetLeaderboardWidgetForUser(userId, 2025, cancellationToken);
 
-        return Ok(leaderboardWidget);
+        return result.ToActionResult();
     }
 }

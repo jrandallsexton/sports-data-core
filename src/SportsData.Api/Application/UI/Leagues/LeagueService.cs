@@ -444,10 +444,18 @@ namespace SportsData.Api.Application.UI.Leagues
 
             foreach (var member in league.Members.OrderBy(x => x.UserId))
             {
-                var userPicks = await _pickService
+                var userPicksResult = await _pickService
                     .GetUserPicksByGroupAndWeek(member.UserId, leagueId, week, CancellationToken.None);
 
-                result.UserPicks.AddRange(userPicks);
+                if (userPicksResult.IsSuccess)
+                {
+                    result.UserPicks.AddRange(userPicksResult.Value);
+                }
+                else
+                {
+                    _logger.LogWarning("Could not retrieve user picks for user {UserId} in league {LeagueId} week {Week}", 
+                        member.UserId, leagueId, week);
+                }
             }
 
             return new Success<LeagueWeekOverviewDto>(result);

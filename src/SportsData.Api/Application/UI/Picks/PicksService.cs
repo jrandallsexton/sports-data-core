@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SportsData.Core.Common;
+using FluentValidation.Results;
 
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Application.UI.Picks.PicksPage;
@@ -10,30 +12,30 @@ namespace SportsData.Api.Application.UI.Picks
 {
     public interface IPickService
     {
-        Task SubmitPickAsync(
+        Task<Result<Guid>> SubmitPickAsync(
             Guid userId,
             SubmitUserPickRequest request,
             CancellationToken cancellationToken);
 
-        Task<List<UserPickDto>> GetUserPicksByGroupAndWeek(
+        Task<Result<List<UserPickDto>>> GetUserPicksByGroupAndWeek(
             Guid userId,
             Guid groupId,
             int weekNumber,
             CancellationToken cancellationToken);
 
-        Task<PickRecordWidgetDto> GetPickRecordWidget(
+        Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
             CancellationToken cancellationToken);
 
-        Task<PickRecordWidgetDto> GetPickRecordWidgetForSynthetic(
+        Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
             CancellationToken cancellationToken);
 
-        Task<List<PickAccuracyByWeekDto>> GetPickAccuracyByWeek(
+        Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(
             Guid userId,
             CancellationToken cancellationToken);
 
-        Task<PickAccuracyByWeekDto> GetPickAccuracyByWeekForSynthetic(
+        Task<Result<PickAccuracyByWeekDto>> GetPickAccuracyByWeekForSynthetic(
             Guid userId,
             CancellationToken cancellationToken);
     }
@@ -57,31 +59,49 @@ namespace SportsData.Api.Application.UI.Picks
             _getUserPicksQueryHandler = getUserPicksQueryHandler;
         }
 
-        public async Task SubmitPickAsync(
+        public async Task<Result<Guid>> SubmitPickAsync(
             Guid userId,
             SubmitUserPickRequest request,
             CancellationToken cancellationToken)
         {
-
             // Validate that the PickemGroup exists and supports this PickType
             var group = await _dataContext.PickemGroups
-                .FirstOrDefaultAsync(g => g.Id == request.PickemGroupId, cancellationToken)
-                    ?? throw new InvalidOperationException("Pickem group not found.");
+                .FirstOrDefaultAsync(g => g.Id == request.PickemGroupId, cancellationToken);
+
+            if (group is null)
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(request.PickemGroupId), "Pickem group not found.")]);
 
             //if ((group.PickTypesAllowed & request.PickType) == 0)
-            //    throw new InvalidOperationException("This pick type is not allowed in the selected league.");
+            //    return new Failure<Guid>(
+            //        default,
+            //        ResultStatus.Validation,
+            //        [new ValidationFailure(nameof(request.PickType), "This pick type is not allowed in the selected league.")]);
 
             // Optional: Validate the contest exists and isn't locked
             var matchup = await _dataContext.PickemGroupMatchups
-                .FirstOrDefaultAsync(m => m.ContestId == request.ContestId, cancellationToken)
-                    ?? throw new InvalidOperationException("Matchup not found for the specified contest");
+                .FirstOrDefaultAsync(m => m.ContestId == request.ContestId, cancellationToken);
+
+            if (matchup is null)
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(request.ContestId), "Matchup not found for the specified contest")]);
 
             if (matchup.IsLocked())
-                throw new InvalidOperationException("This contest is locked and cannot be picked.");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.ContestId), "This contest is locked and cannot be picked.")]);
 
             if (request.PickType == UserPickType.OverUnder && request.OverUnder == OverUnderPick.None)
             {
-                throw new InvalidOperationException("PickType is OverUnder, but selection not provided");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.OverUnder), "PickType is OverUnder, but selection not provided")]);
             }
 
             // Dispatch command
@@ -103,9 +123,11 @@ namespace SportsData.Api.Application.UI.Picks
             };
 
             await _handler.Handle(command, cancellationToken);
+
+            return new Success<Guid>(request.ContestId);
         }
 
-        public async Task<List<UserPickDto>> GetUserPicksByGroupAndWeek(
+        public async Task<Result<List<UserPickDto>>> GetUserPicksByGroupAndWeek(
             Guid userId,
             Guid groupId,
             int weekNumber,
@@ -118,7 +140,8 @@ namespace SportsData.Api.Application.UI.Picks
                 WeekNumber = weekNumber
             };
 
-            return await _getUserPicksQueryHandler.GetUserPicksByGroupAndWeek(query, cancellationToken);
+            var result = await _getUserPicksQueryHandler.GetUserPicksByGroupAndWeek(query, cancellationToken);
+            return new Success<List<UserPickDto>>(result);
         }
 
         public async Task<List<UserPickDto>> GetUserPicksByGroup(
@@ -148,11 +171,10 @@ namespace SportsData.Api.Application.UI.Picks
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<PickRecordWidgetDto> GetPickRecordWidget(
+        public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
             CancellationToken cancellationToken)
         {
-
             var widget = new PickRecordWidgetDto
             {
                 SeasonYear = 2025
@@ -202,19 +224,30 @@ namespace SportsData.Api.Application.UI.Picks
 
             widget.Items = widget.Items.OrderBy(x => x.LeagueName).ToList();
 
-            return widget;
+            return new Success<PickRecordWidgetDto>(widget);
         }
 
-        public async Task<PickRecordWidgetDto> GetPickRecordWidgetForSynthetic(
+        public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
             CancellationToken cancellationToken)
         {
-            var synthetic = await _dataContext.Users.Where(u => u.IsSynthetic).FirstOrDefaultAsync(cancellationToken);
+            var synthetic = await _dataContext.Users
+                .Where(u => u.IsSynthetic)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            return await GetPickRecordWidget(synthetic!.Id, cancellationToken);
+            if (synthetic is null)
+            {
+                _logger.LogError("Synthetic user not found");
+                return new Failure<PickRecordWidgetDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure("synthetic", "Synthetic user not found.")]);
+            }
+
+            return await GetPickRecordWidget(synthetic.Id, cancellationToken);
         }
 
-        public async Task<List<PickAccuracyByWeekDto>> GetPickAccuracyByWeek(
+        public async Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(
             Guid userId,
             CancellationToken cancellationToken)
         {
@@ -282,10 +315,11 @@ namespace SportsData.Api.Application.UI.Picks
                 dtos.Add(dto);
             }
 
-            return dtos.OrderBy(dto => dto.LeagueName).ToList();
+            var result = dtos.OrderBy(dto => dto.LeagueName).ToList();
+            return new Success<List<PickAccuracyByWeekDto>>(result);
         }
 
-        public async Task<PickAccuracyByWeekDto> GetPickAccuracyByWeekForSynthetic(
+        public async Task<Result<PickAccuracyByWeekDto>> GetPickAccuracyByWeekForSynthetic(
             Guid userId,
             CancellationToken cancellationToken)
         {
@@ -294,7 +328,13 @@ namespace SportsData.Api.Application.UI.Picks
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (synthetic == null)
-                throw new InvalidOperationException("Synthetic user not found.");
+            {
+                _logger.LogError("Synthetic user not found");
+                return new Failure<PickAccuracyByWeekDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure("synthetic", "Synthetic user not found.")]);
+            }
 
             var userLeagueIds = await _dataContext.PickemGroupMembers
                 .AsNoTracking()
@@ -331,7 +371,7 @@ namespace SportsData.Api.Application.UI.Picks
                 })
                 .ToList();
 
-            return new PickAccuracyByWeekDto
+            var result = new PickAccuracyByWeekDto
             {
                 UserId = synthetic.Id,
                 UserName = synthetic.DisplayName,
@@ -340,7 +380,8 @@ namespace SportsData.Api.Application.UI.Picks
                 WeeklyAccuracy = groupedByWeek,
                 OverallAccuracyPercent = 0 // intentionally unused
             };
-        }
 
+            return new Success<PickAccuracyByWeekDto>(result);
+        }
     }
 }

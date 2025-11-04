@@ -116,10 +116,9 @@ public class PickServiceTests : ApiTestBase<PickService>
         };
 
         // Act
-        var act = () => service.SubmitPickAsync(userId, request, CancellationToken.None);
+        var result = await service.SubmitPickAsync(userId, request, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("This contest is locked and cannot be picked.");
+        result.IsSuccess.Should().BeFalse();
     }
 }

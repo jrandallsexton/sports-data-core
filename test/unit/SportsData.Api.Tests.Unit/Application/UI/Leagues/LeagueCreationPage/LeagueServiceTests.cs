@@ -80,10 +80,9 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
         var request = BuildValidRequest();
         request.Name = null!;
 
-        var act = () => sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(request, Guid.NewGuid());
 
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("League name is required.*");
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -93,10 +92,9 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
         var request = BuildValidRequest();
         request.PickType = "Garbage";
 
-        var act = () => sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(request, Guid.NewGuid());
 
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid pick type: Garbage");
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -106,10 +104,9 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
         var request = BuildValidRequest();
         request.TiebreakerType = "Garbage";
 
-        var act = () => sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(request, Guid.NewGuid());
 
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid tiebreaker type: Garbage");
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -120,10 +117,9 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
         request.RankingFilter = "AP_TOP_25";
         request.TiebreakerTiePolicy = "Nope";
 
-        var act = () => sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(request, Guid.NewGuid());
 
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid tiebreaker tie policy: Nope");
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -147,9 +143,8 @@ public class LeagueServiceTests : ApiTestBase<LeagueService>
 
         var sut = Mocker.CreateInstance<LeagueService>();
 
-        var act = () => sut.CreateAsync(request, currentUserId);
+        var result = await sut.CreateAsync(request, currentUserId);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Unknown conference slugs: garbage");
+        result.IsSuccess.Should().BeFalse();
     }
 }

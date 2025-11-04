@@ -43,27 +43,42 @@ namespace SportsData.Api.Application.UI.Leagues
             _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task<Guid> CreateAsync(
+        public async Task<Result<Guid>> CreateAsync(
             CreateLeagueRequest request,
             Guid currentUserId,
             CancellationToken cancellationToken = default)
         {
             // === Validation ===
             if (string.IsNullOrWhiteSpace(request.Name))
-                throw new ArgumentException("League name is required.");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.Name), "League name is required.")]);
 
             // === Enum Resolution ===
             if (!Enum.TryParse<PickType>(request.PickType, ignoreCase: true, out var pickType))
-                throw new ArgumentException($"Invalid pick type: {request.PickType}");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.PickType), $"Invalid pick type: {request.PickType}")]);
 
             if (!Enum.TryParse<TiebreakerType>(request.TiebreakerType, ignoreCase: true, out var tiebreakerType))
-                throw new ArgumentException($"Invalid tiebreaker type: {request.TiebreakerType}");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.TiebreakerType), $"Invalid tiebreaker type: {request.TiebreakerType}")]);
 
             if (!Enum.TryParse<TeamRankingFilter>(request.RankingFilter, ignoreCase: true, out var rankingFilter))
-                throw new ArgumentException($"Invalid ranking filter: {request.RankingFilter}");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.RankingFilter), $"Invalid ranking filter: {request.RankingFilter}")]);
 
             if (!Enum.TryParse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true, out var tiebreakerTiePolicy))
-                throw new ArgumentException($"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.TiebreakerTiePolicy), $"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}")]);
 
             // === Canonical Resolution ===
             var conferenceIds = request.ConferenceSlugs.Count > 0
@@ -78,7 +93,10 @@ namespace SportsData.Api.Application.UI.Leagues
                 .ToList();
 
             if (unresolved.Any())
-                throw new InvalidOperationException($"Unknown conference slugs: {string.Join(", ", unresolved)}");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.ConferenceSlugs), $"Unknown conference slugs: {string.Join(", ", unresolved)}")]);
 
             // === Build Command ===
             var command = new CreateLeagueCommand
@@ -99,7 +117,8 @@ namespace SportsData.Api.Application.UI.Leagues
                 DropLowWeeksCount = request.DropLowWeeksCount
             };
 
-            return await _handler.ExecuteAsync(command, cancellationToken);
+            var leagueId = await _handler.ExecuteAsync(command, cancellationToken);
+            return new Success<Guid>(leagueId);
         }
 
         public async Task<Result<Guid?>> JoinLeague(
@@ -114,16 +133,14 @@ namespace SportsData.Api.Application.UI.Leagues
             if (league is null)
                 return new Failure<Guid?>(
                     leagueId,
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure(nameof(leagueId), "League Not Found")]
-                );
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), "League not found")]);
 
             if (league.Members.Any(m => m.UserId == userId))
                 return new Failure<Guid?>(
                     leagueId,
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure(nameof(leagueId), "User is already a member of this league")]
-                );
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(userId), "User is already a member of this league")]);
 
             var command = new JoinLeagueCommand()
             {
@@ -139,11 +156,10 @@ namespace SportsData.Api.Application.UI.Leagues
                 return new Failure<Guid?>(
                     leagueId,
                     ResultStatus.BadRequest,
-                    [new ValidationFailure(nameof(leagueId), "Could not join league due to an unknown error")]
-                );
+                    [new ValidationFailure(nameof(leagueId), "Could not join league due to an unknown error")]);
         }
 
-        public async Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(
+        public async Task<Result<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeekAsync(
             Guid userId,
             Guid leagueId,
             int week,
@@ -151,8 +167,13 @@ namespace SportsData.Api.Application.UI.Leagues
         {
             var league = await _dbContext.PickemGroups
                 .AsNoTracking()
-                .Where(x => x.Id == leagueId)
-                .FirstAsync(cancellationToken: cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == leagueId, cancellationToken: cancellationToken);
+
+            if (league is null)
+                return new Failure<LeagueWeekMatchupsDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), "League not found")]);
 
             var matchups = await _dbContext.PickemGroupMatchups
                 .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
@@ -269,31 +290,37 @@ namespace SportsData.Api.Application.UI.Leagues
                 }
             }
 
-            return new LeagueWeekMatchupsDto
+            var result = new LeagueWeekMatchupsDto
             {
                 PickType = league!.PickType,
                 SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
                 WeekNumber = week,
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
+
+            return new Success<LeagueWeekMatchupsDto>(result);
         }
 
-        public async Task<Guid> DeleteLeague(
+        public async Task<Result<Guid>> DeleteLeague(
             Guid userId,
             Guid leagueId,
             CancellationToken cancellationToken = default)
         {
-            // ensure the user is the commissioner of the league
-
             var league = await _dbContext.PickemGroups
                 .Include(g => g.Members)
                 .FirstOrDefaultAsync(g => g.Id == leagueId, cancellationToken: cancellationToken);
 
             if (league is null)
-                throw new InvalidOperationException($"League with ID {leagueId} not found.");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), $"League with ID {leagueId} not found.")]);
 
             if (league.CommissionerUserId != userId)
-                throw new InvalidOperationException($"User {userId} is not the commissioner of league {leagueId}.");
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Unauthorized,
+                    [new ValidationFailure(nameof(userId), $"User {userId} is not the commissioner of league {leagueId}.")]);
 
             // Remove all members
             _dbContext.PickemGroupMembers.RemoveRange(league.Members);
@@ -311,10 +338,10 @@ namespace SportsData.Api.Application.UI.Leagues
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return leagueId;
+            return new Success<Guid>(leagueId);
         }
 
-        public async Task<List<PublicLeagueDto>> GetPublicLeagues(Guid userId)
+        public async Task<Result<List<PublicLeagueDto>>> GetPublicLeagues(Guid userId)
         {
             var leagues = await _dbContext.PickemGroups
                 .Include(g => g.CommissionerUser)
@@ -322,7 +349,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 .Where(g => g.IsPublic && !g.Members.Any(x => x.UserId == userId))
                 .ToListAsync();
 
-            return leagues.Select(x => new PublicLeagueDto
+            var result = leagues.Select(x => new PublicLeagueDto
             {
                 Id = x.Id,
                 Name = x.Name,
@@ -333,9 +360,11 @@ namespace SportsData.Api.Application.UI.Leagues
                 UseConfidencePoints = x.UseConfidencePoints,
                 DropLowWeeksCount = x.DropLowWeeksCount ?? 0
             }).ToList();
+
+            return new Success<List<PublicLeagueDto>>(result);
         }
 
-        public async Task<LeagueWeekOverviewDto> GetLeagueWeekOverview(
+        public async Task<Result<LeagueWeekOverviewDto>> GetLeagueWeekOverview(
             Guid leagueId,
             int week)
         {
@@ -345,7 +374,10 @@ namespace SportsData.Api.Application.UI.Leagues
                 .FirstOrDefaultAsync(g => g.Id == leagueId);
 
             if (league is null)
-                throw new InvalidOperationException($"League with ID {leagueId} not found.");
+                return new Failure<LeagueWeekOverviewDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), $"League with ID {leagueId} not found.")]);
 
             var matchups = await _dbContext.PickemGroupMatchups
                 .AsNoTracking()
@@ -373,9 +405,13 @@ namespace SportsData.Api.Application.UI.Leagues
 
                 if (matchup is null)
                 {
-                    _logger.LogError("Matchup could not be found");
-                    throw new Exception("Matchup could not be found");
+                    _logger.LogError("Matchup could not be found for contest {ContestId}", canonicalContest.ContestId);
+                    return new Failure<LeagueWeekOverviewDto>(
+                        default!,
+                        ResultStatus.BadRequest,
+                        [new ValidationFailure(nameof(canonicalContest.ContestId), "Matchup could not be found")]);
                 }
+                
                 canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= DateTime.UtcNow;
                 canonicalContest.AwaySpread = (decimal?)matchup.AwaySpread;
                 canonicalContest.HomeSpread = (decimal?)matchup.HomeSpread;
@@ -414,11 +450,21 @@ namespace SportsData.Api.Application.UI.Leagues
                 result.UserPicks.AddRange(userPicks);
             }
 
-            return result;
+            return new Success<LeagueWeekOverviewDto>(result);
         }
 
-        public async Task<Guid> GenerateLeagueWeekPreviews(Guid leagueId, int weekNumber)
+        public async Task<Result<Guid>> GenerateLeagueWeekPreviews(Guid leagueId, int weekNumber)
         {
+            var league = await _dbContext.PickemGroups
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.Id == leagueId);
+
+            if (league is null)
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), $"League with ID {leagueId} not found.")]);
+
             var contestIds = await _dbContext.PickemGroupMatchups
                 .AsNoTracking()
                 .Where(x => x.GroupId == leagueId && x.SeasonWeek == weekNumber)
@@ -441,7 +487,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
             }
 
-            return leagueId;
+            return new Success<Guid>(leagueId);
         }
     }
 }

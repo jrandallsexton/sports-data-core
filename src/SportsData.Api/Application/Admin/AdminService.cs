@@ -112,8 +112,16 @@ namespace SportsData.Api.Application.Admin
             foreach (var group in allGroups)
             {
                 // get the matchups for the group
-                var groupMatchups = await _leagueService
+                var groupMatchupsResult = await _leagueService
                         .GetMatchupsForLeagueWeekAsync(synthetic.Id, group.Id, currentWeek.WeekNumber, CancellationToken.None);
+
+                if (!groupMatchupsResult.IsSuccess)
+                {
+                    _logger.LogWarning("Could not get matchups for group {GroupId}", group.Id);
+                    continue;
+                }
+
+                var groupMatchups = groupMatchupsResult.Value;
 
                 // iterate each group matchup
                 foreach (var matchup in groupMatchups.Matchups)

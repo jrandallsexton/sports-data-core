@@ -6,25 +6,25 @@ namespace SportsData.Api.Application.UI.Leagues;
 
 public interface ILeagueService
 {
-    Task<Guid> CreateAsync(CreateLeagueRequest request, Guid currentUserId,
+    Task<Result<Guid>> CreateAsync(CreateLeagueRequest request, Guid currentUserId,
         CancellationToken cancellationToken = default);
 
     Task<Result<Guid?>> JoinLeague(Guid leagueId, Guid userId,
         CancellationToken cancellationToken = default);
 
-    Task<LeagueWeekMatchupsDto> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week,
+    Task<Result<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeekAsync(Guid userId, Guid leagueId, int week,
         CancellationToken cancellationToken = default);
 
-    Task<Guid> DeleteLeague(
+    Task<Result<Guid>> DeleteLeague(
         Guid userId,
         Guid leagueId,
         CancellationToken cancellationToken = default);
 
-    Task<List<PublicLeagueDto>> GetPublicLeagues(Guid userId);
+    Task<Result<List<PublicLeagueDto>>> GetPublicLeagues(Guid userId);
 
-    Task<LeagueWeekOverviewDto> GetLeagueWeekOverview(
+    Task<Result<LeagueWeekOverviewDto>> GetLeagueWeekOverview(
         Guid leagueId,
         int week);
 
-    Task<Guid> GenerateLeagueWeekPreviews(Guid leagueId, int weekId);
+    Task<Result<Guid>> GenerateLeagueWeekPreviews(Guid leagueId, int weekId);
 }

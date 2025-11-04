@@ -10,6 +10,7 @@ using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.Leagues;
 
@@ -36,13 +37,16 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Create([FromBody] CreateLeagueRequest request)
+    public async Task<ActionResult<Guid>> Create([FromBody] CreateLeagueRequest request)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var leagueId = await _iLeagueService.CreateAsync(request, userId);
+        var result = await _iLeagueService.CreateAsync(request, userId);
 
-        return CreatedAtAction(nameof(GetById), new { id = leagueId }, new { id = leagueId });
+        if (result.IsSuccess)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
     }
     
     [HttpGet("{id}")]
@@ -107,7 +111,7 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost("{id}/join")]
     [Authorize]
-    public async Task<IActionResult> JoinLeague(string id)
+    public async Task<ActionResult<Guid?>> JoinLeague(string id)
     {
         if (!Guid.TryParse(id, out var leagueId))
             return BadRequest("Invalid league ID format.");
@@ -116,25 +120,7 @@ public class LeagueController : ApiControllerBase
 
         var result = await _iLeagueService.JoinLeague(leagueId, userId);
 
-        if (result.IsSuccess)
-        {
-            return Ok(new { Message = "Successfully joined the league." });
-        }
-
-        // TODO: refactor common failure handling
-        if (result is Failure<Guid?> failure)
-        {
-            return result.Status switch
-            {
-                ResultStatus.Validation => BadRequest(new { failure.Errors }),
-                ResultStatus.NotFound => NotFound(new { failure.Errors }),
-                ResultStatus.Unauthorized => Unauthorized(new { failure.Errors }),
-                ResultStatus.Forbid => Forbid(),
-                _ => StatusCode(500, new { failure.Errors })
-            };
-        }
-
-        return StatusCode(500); // fallback safety
+        return result.ToActionResult();
     }
 
     [HttpGet("{id}/matchups/{week}")]
@@ -145,34 +131,23 @@ public class LeagueController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
         var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(
+    public async Task<ActionResult<Guid>> Delete(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        try
-        {
-            await _iLeagueService.DeleteLeague(userId, id, cancellationToken);
+        var result = await _iLeagueService.DeleteLeague(userId, id, cancellationToken);
+        
+        if (result.IsSuccess)
             return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+
+        return result.ToActionResult();
     }
 
     [HttpPost("{id}/invite")]
@@ -215,30 +190,32 @@ public class LeagueController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var leagues = await _iLeagueService.GetPublicLeagues(userId);
+        var result = await _iLeagueService.GetPublicLeagues(userId);
 
-        return Ok(leagues);
+        return result.ToActionResult();
     }
 
     [HttpGet("{id}/overview/{week}")]
     [Authorize]
-    public async Task<IActionResult> GetLeagueWeekOverview(
+    public async Task<ActionResult<LeagueWeekOverviewDto>> GetLeagueWeekOverview(
         [FromRoute] Guid id,
         [FromRoute] int week)
     {
-        var userId = HttpContext.GetCurrentUserId();
-
         var result = await _iLeagueService.GetLeagueWeekOverview(id, week);
 
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpPost("{id}/previews/{weekId}/generate")]
-    public async Task<IActionResult> GenerateMatchupPreviews(
+    public async Task<ActionResult<Guid>> GenerateMatchupPreviews(
         [FromRoute] Guid id,
         [FromRoute] int weekId)
     {
-        var correlationId = await _iLeagueService.GenerateLeagueWeekPreviews(id, weekId);
-        return Accepted(new { correlationId });
+        var result = await _iLeagueService.GenerateLeagueWeekPreviews(id, weekId);
+        
+        if (result.IsSuccess)
+            return Accepted(new { correlationId = result.Value });
+
+        return result.ToActionResult();
     }
 }

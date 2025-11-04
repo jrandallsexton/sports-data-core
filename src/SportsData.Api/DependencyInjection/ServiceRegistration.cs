@@ -11,6 +11,7 @@ using SportsData.Api.Application.UI.Leaderboard;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
+using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Application.UI.Messageboard;
 using SportsData.Api.Application.UI.Picks;
 using SportsData.Api.Application.UI.Picks.PicksPage;
@@ -40,6 +41,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
             services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
             services.AddScoped<ILeagueService, LeagueService>();
+            services.AddScoped<IMatchupService, MatchupService>();
             services.AddScoped<IMessageboardService, MessageboardService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IPickService, PickService>();

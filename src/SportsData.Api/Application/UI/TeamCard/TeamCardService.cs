@@ -13,8 +13,8 @@ namespace SportsData.Api.Application.UI.TeamCard;
 public interface ITeamCardService
 {
     Task<Result<TeamCardDto?>> GetTeamCard(GetTeamCardQuery query, CancellationToken cancellationToken = default);
-    Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId);
-    Task<FranchiseSeasonMetricsDto> GetTeamMetrics(Guid franchiseSeasonId);
+    Task<Result<FranchiseSeasonStatisticDto>> GetTeamStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<Result<FranchiseSeasonMetricsDto>> GetTeamMetrics(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
 }
 
 public class TeamCardService : ITeamCardService
@@ -51,16 +51,78 @@ public class TeamCardService : ITeamCardService
             [new ValidationFailure("TeamCard", "Team card not found")]);
     }
 
-    public async Task<FranchiseSeasonStatisticDto> GetTeamStatistics(Guid franchiseSeasonId)
+    public async Task<Result<FranchiseSeasonStatisticDto>> GetTeamStatistics(
+        Guid franchiseSeasonId,
+        CancellationToken cancellationToken = default)
     {
-        var dto = await _canonicalDataProvider.GetFranchiseSeasonStatistics(franchiseSeasonId);
-        _statFormatting.ApplyFriendlyLabelsAndFormatting(dto);
-        return dto;
+        if (franchiseSeasonId == Guid.Empty)
+        {
+            return new Failure<FranchiseSeasonStatisticDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(franchiseSeasonId), "Franchise season ID cannot be empty")]);
+        }
+
+        try
+        {
+            var dto = await _canonicalDataProvider.GetFranchiseSeasonStatistics(franchiseSeasonId);
+
+            if (dto == null)
+            {
+                _logger.LogWarning("No statistics found for franchise season {FranchiseSeasonId}", franchiseSeasonId);
+                return new Failure<FranchiseSeasonStatisticDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(franchiseSeasonId), "Statistics not found for this franchise season")]);
+            }
+
+            _statFormatting.ApplyFriendlyLabelsAndFormatting(dto);
+            return new Success<FranchiseSeasonStatisticDto>(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving statistics for franchise season {FranchiseSeasonId}", franchiseSeasonId);
+            return new Failure<FranchiseSeasonStatisticDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(franchiseSeasonId), $"Error retrieving statistics: {ex.Message}")]);
+        }
     }
 
-    public async Task<FranchiseSeasonMetricsDto> GetTeamMetrics(Guid franchiseSeasonId)
+    public async Task<Result<FranchiseSeasonMetricsDto>> GetTeamMetrics(
+        Guid franchiseSeasonId,
+        CancellationToken cancellationToken = default)
     {
-        var dto = await _canonicalDataProvider.GetFranchiseSeasonMetrics(franchiseSeasonId);
-        return dto;
+        if (franchiseSeasonId == Guid.Empty)
+        {
+            return new Failure<FranchiseSeasonMetricsDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(franchiseSeasonId), "Franchise season ID cannot be empty")]);
+        }
+
+        try
+        {
+            var dto = await _canonicalDataProvider.GetFranchiseSeasonMetrics(franchiseSeasonId);
+
+            if (dto == null)
+            {
+                _logger.LogWarning("No metrics found for franchise season {FranchiseSeasonId}", franchiseSeasonId);
+                return new Failure<FranchiseSeasonMetricsDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(franchiseSeasonId), "Metrics not found for this franchise season")]);
+            }
+
+            return new Success<FranchiseSeasonMetricsDto>(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving metrics for franchise season {FranchiseSeasonId}", franchiseSeasonId);
+            return new Failure<FranchiseSeasonMetricsDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(franchiseSeasonId), $"Error retrieving metrics: {ex.Message}")]);
+        }
     }
 }

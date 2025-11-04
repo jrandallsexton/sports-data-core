@@ -2,7 +2,10 @@
 
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.TeamCard
 {
@@ -11,7 +14,7 @@ namespace SportsData.Api.Application.UI.TeamCard
     public class TeamCardController : ApiControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetTeamCard(
+        public async Task<ActionResult<TeamCardDto?>> GetTeamCard(
             string sport,
             string league,
             string slug,
@@ -29,26 +32,11 @@ namespace SportsData.Api.Application.UI.TeamCard
 
             var result = await service.GetTeamCard(query, cancellationToken);
 
-            if (result.IsSuccess)
-                return Ok(result.Value);
-
-            if (result is Failure<TeamCardDto?> failure)
-            {
-                return result.Status switch
-                {
-                    ResultStatus.Validation => BadRequest(new { failure.Errors }),
-                    ResultStatus.NotFound => NotFound(new { failure.Errors }),
-                    ResultStatus.Unauthorized => Unauthorized(new { failure.Errors }),
-                    ResultStatus.Forbid => Forbid(),
-                    _ => StatusCode(500, new { failure.Errors })
-                };
-            }
-
-            return StatusCode(500); // fallback safety
+            return result.ToActionResult();
         }
 
         [HttpGet("statistics")]
-        public async Task<IActionResult> GetTeamStatistics(
+        public async Task<ActionResult<FranchiseSeasonStatisticDto>> GetTeamStatistics(
             string sport,
             string league,
             string slug,
@@ -58,13 +46,12 @@ namespace SportsData.Api.Application.UI.TeamCard
             CancellationToken cancellationToken)
         {
             // TODO: Rework this to get the franchiseSeasonId from the other parameters
-            var stats = await service.GetTeamStatistics(
-                franchiseSeasonId);
-            return Ok(stats);
+            var result = await service.GetTeamStatistics(franchiseSeasonId, cancellationToken);
+            return result.ToActionResult();
         }
 
         [HttpGet("metrics")]
-        public async Task<IActionResult> GetTeamMetrics(
+        public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetTeamMetrics(
             string sport,
             string league,
             string slug,
@@ -74,9 +61,8 @@ namespace SportsData.Api.Application.UI.TeamCard
             CancellationToken cancellationToken)
         {
             // TODO: Rework this to get the franchiseSeasonId from the other parameters
-            var stats = await service.GetTeamMetrics(
-                franchiseSeasonId);
-            return Ok(stats);
+            var result = await service.GetTeamMetrics(franchiseSeasonId, cancellationToken);
+            return result.ToActionResult();
         }
     }
 }

@@ -336,18 +336,23 @@ namespace SportsData.Api.Application.UI.Picks
                     [new ValidationFailure("synthetic", "Synthetic user not found.")]);
             }
 
-            var userLeagueIds = await _dataContext.PickemGroupMembers
-                .AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .Select(x => x.PickemGroupId)
-                .ToListAsync(cancellationToken);
+            //var userLeagueIds = await _dataContext.PickemGroupMembers
+            //    .AsNoTracking()
+            //    .Where(x => x.UserId == userId)
+            //    .Select(x => x.PickemGroupId)
+            //    .ToListAsync(cancellationToken);
+
+            //var syntheticPicks = await _dataContext.UserPicks
+            //    .AsNoTracking()
+            //    .Where(p =>
+            //        userLeagueIds.Contains(p.PickemGroupId) &&
+            //        p.UserId == synthetic.Id &&
+            //        p.PointsAwarded != null)
+            //    .ToListAsync(cancellationToken);
 
             var syntheticPicks = await _dataContext.UserPicks
                 .AsNoTracking()
-                .Where(p =>
-                    userLeagueIds.Contains(p.PickemGroupId) &&
-                    p.UserId == synthetic.Id &&
-                    p.PointsAwarded != null)
+                .Where(p => p.PointsAwarded != null)
                 .ToListAsync(cancellationToken);
 
             var groupedByWeek = syntheticPicks

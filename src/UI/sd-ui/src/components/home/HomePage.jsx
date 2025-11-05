@@ -14,6 +14,7 @@ import { useUserDto } from "../../contexts/UserContext";
 import apiWrapper from "../../api/apiWrapper.js";
 import SystemNews from "./SystemNews";
 import RankingsWidget from "../widgets/RankingsWidget";
+import LeagueMembership from "./LeagueMembership";
 
 function HomePage() {
   const [pickGroups, setPickGroups] = useState([]); // Array of league DTOs
@@ -56,9 +57,19 @@ function HomePage() {
 
   console.log("userDto:", userDto);
 
+  // Determine if user is new (no leagues joined yet)
+  const isNewUser = !userDto?.leagues || userDto.leagues.length === 0;
+
   return (
     <div className="home-page">
       <SystemNews />
+
+      {/* Show LeagueMembership at top for new users as CTA */}
+      {isNewUser && (
+        <section className="card-section">
+          <LeagueMembership />
+        </section>
+      )}
 
       <section className="card-section">
         <div className="card">
@@ -72,25 +83,15 @@ function HomePage() {
         <AiRecordWidget />
       </section>
 
-      {/* Tips and News */}
+      {/* Show LeagueMembership in original position for existing users */}
+      {!isNewUser && (
+        <section className="card-section">
+          <LeagueMembership />
+        </section>
+      )}
+
       <section className="card-section">
-        <div className="card">
-          <h2>Pick'em Leagues</h2>
-          <p>Create or join a private league to compete with friends.</p>
-          <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-            <Link to="/app/league/create" className="card-link">
-              Create a League
-            </Link>
-            <Link to="/app/league/discover" className="card-link">
-              Join a League
-            </Link>
-            {userDto?.leagues?.length > 0 && (
-              <Link to="/app/league" className="card-link">
-                My Leagues
-              </Link>
-            )}
-          </div>
-        </div>
+        {/* Tips and News */}
         <div className="card">
           <TipWeekWidget />
         </div>

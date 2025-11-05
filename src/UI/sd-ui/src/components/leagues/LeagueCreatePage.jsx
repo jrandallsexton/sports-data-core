@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper.js";
+import { useUserDto } from "../../contexts/UserContext";
 
 import "./LeagueCreatePage.css";
 
@@ -18,10 +19,11 @@ const LeagueCreatePage = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [dropLowWeeksCount, setDropLowWeeksCount] = useState(0);
-    const [allConferences, setAllConferences] = useState([]);
+  const [allConferences, setAllConferences] = useState([]);
   const [fbsOnly, setFbsOnly] = useState(true);
 
   const navigate = useNavigate();
+  const { refreshUserDto } = useUserDto();
 
   useEffect(() => {
     const fetchConferences = async () => {
@@ -72,6 +74,7 @@ const LeagueCreatePage = () => {
 
     try {
       const response = await LeaguesApi.createLeague(payload);
+      await refreshUserDto(); // Refresh user DTO to update leagues array
       navigate(`/app/league/${response.id}`);
     } catch (error) {
       console.error("Failed to create league:", error);

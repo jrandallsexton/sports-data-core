@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import UsersApi from '../api/usersApi';
 import { useAuth } from './AuthContext';
 
@@ -9,32 +9,43 @@ export const UserProvider = ({ children }) => {
   const [userDto, setUserDto] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const loadUserDto = async () => {
+    if (!user) {
+      setUserDto(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await UsersApi.getCurrentUser();
+      setUserDto(response.data);
+    } catch (err) {
+      console.error('Failed to load user DTO:', err);
+      setUserDto(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshUserDto = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const response = await UsersApi.getCurrentUser();
+      setUserDto(response.data);
+    } catch (err) {
+      console.error('Failed to refresh user DTO:', err);
+    }
+  }, [user]);
+
   useEffect(() => {
-    const loadUserDto = async () => {
-      if (!user) {
-        setUserDto(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await UsersApi.getCurrentUser();
-        setUserDto(response.data);
-      } catch (err) {
-        console.error('Failed to load user DTO:', err);
-        setUserDto(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (!authLoading) {
       loadUserDto();
     }
   }, [user, authLoading]);
 
   return (
-    <UserContext.Provider value={{ userDto, loading }}>
+    <UserContext.Provider value={{ userDto, loading, refreshUserDto }}>
       {children}
     </UserContext.Provider>
   );

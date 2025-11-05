@@ -1,17 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import LeaguesApi from "../../api/leagues/leaguesApi";
+import { useUserDto } from "../../contexts/UserContext";
 
 function AutoJoinRedirect() {
   const { leagueId } = useParams();
   const navigate = useNavigate();
+  const { refreshUserDto } = useUserDto();
+  const hasAttemptedJoin = useRef(false);
 
   useEffect(() => {
+    // Prevent double execution in StrictMode or due to re-renders
+    if (hasAttemptedJoin.current) return;
+    hasAttemptedJoin.current = true;
+
     const joinLeague = async () => {
       try {
         await LeaguesApi.joinLeague(leagueId); // assumes POST /api/leagues/{id}/join
-        toast.success("You’ve joined the league!");
+        await refreshUserDto(); // Refresh user DTO to update leagues array
+        toast.success("You've joined the league!");
         navigate(`/app/league/${leagueId}`);
       } catch (error) {
         console.error("Join failed:", error);
@@ -28,7 +36,7 @@ function AutoJoinRedirect() {
     };
 
     joinLeague();
-  }, [leagueId, navigate]);
+  }, [leagueId, navigate, refreshUserDto]);
 
   return <div className="route-loading">Joining league...</div>;
 }

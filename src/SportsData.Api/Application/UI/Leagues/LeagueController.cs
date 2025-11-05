@@ -58,6 +58,7 @@ public class LeagueController : ApiControllerBase
             .Include(x => x.Members)
             .ThenInclude(m => m.User)
             .AsNoTracking()
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (league is null)

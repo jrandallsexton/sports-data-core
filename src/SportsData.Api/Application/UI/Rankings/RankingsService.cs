@@ -9,7 +9,8 @@ namespace SportsData.Api.Application.UI.Rankings
 {
     public interface IRankingsService
     {
-        Task<Result<RankingsByPollIdByWeekDto>> GetRankingsByPollWeek(int seasonYear, int week, CancellationToken ct);
+        Task<Result<Dictionary<string, RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(int seasonYear, int week, CancellationToken ct);
+        Task<Result<RankingsByPollIdByWeekDto>> GetRankingsByPollWeek(int seasonYear, int week, string poll, CancellationToken ct);
     }
 
     public class RankingsService : IRankingsService
@@ -28,11 +29,40 @@ namespace SportsData.Api.Application.UI.Rankings
             _dataContext = dataContext;
         }
 
+        public async Task<Result<Dictionary<string, RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(int seasonYear, int week, CancellationToken ct)
+        {
+            var values = new Dictionary<string, RankingsByPollIdByWeekDto>();
+
+            var cfp = await GetRankingsByPollWeek(seasonYear, week, "cfp", ct);
+            if (cfp.IsSuccess)
+            {
+                values.Add($"College Football Playoff - Week {week}", cfp.Value);
+            }
+
+            var ap = await GetRankingsByPollWeek(seasonYear, week, "ap", ct);
+            if (ap.IsSuccess)
+            {
+                values.Add($"AP Top 25 - Week {week}", ap.Value);
+            }
+
+            var coaches = await GetRankingsByPollWeek(seasonYear, week, "usa", ct);
+            if (coaches.IsSuccess)
+            {
+                values.Add($"Coaches Poll - Week {week}", coaches.Value);
+            }
+
+            return new Success<Dictionary<string, RankingsByPollIdByWeekDto>>(values);
+
+        }
+
         public async Task<Result<RankingsByPollIdByWeekDto>> GetRankingsByPollWeek(
             int seasonYear,
             int seasonWeek,
+            string poll,
             CancellationToken ct)
         {
+            poll = string.IsNullOrEmpty(poll) ? "ap" : poll.ToLowerInvariant();
+
             if (seasonYear is < 1900 or > 2100)
             {
                 return new Failure<RankingsByPollIdByWeekDto>(
@@ -52,7 +82,7 @@ namespace SportsData.Api.Application.UI.Rankings
             try
             {
                 var rankings = await _canonicalDataProvider.GetRankingsByPollIdByWeek(
-                    "ap", seasonYear, seasonWeek);
+                    poll, seasonYear, seasonWeek);
 
                 if (rankings == null)
                 {

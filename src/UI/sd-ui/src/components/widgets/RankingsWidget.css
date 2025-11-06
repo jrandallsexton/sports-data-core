@@ -21,6 +21,51 @@
   margin-top: 0;
 }
 
+/* Rankings Tabs */
+.rankings-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #333;
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+
+.rankings-tab {
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.rankings-tab:hover {
+  color: #61dafb;
+  background: rgba(97, 218, 251, 0.05);
+}
+
+.rankings-tab.active {
+  color: #61dafb;
+  border-bottom-color: #61dafb;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .rankings-tabs {
+    gap: 0.25rem;
+  }
+  
+  .rankings-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
 .rankings-widget > div[style*="display: flex"] {
   display: flex !important;
   gap: 2rem;

@@ -23,9 +23,9 @@ public class PicksController : ApiControllerBase
     [HttpGet("{sport}/{season}/{week}")]
     [Authorize]
     public async Task<IActionResult> GetPicksForWeek(
-        [FromQuery] Sport sport,
-        [FromQuery] int seasonYear,
-        [FromQuery] int weekNumber)
+        [FromRoute] Sport sport,
+        [FromRoute] int season,
+        [FromRoute] int week)
     {
         var userId = HttpContext.GetCurrentUserId();
         await Task.Delay(100);

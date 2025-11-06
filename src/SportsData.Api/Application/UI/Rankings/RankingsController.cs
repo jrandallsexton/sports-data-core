@@ -20,7 +20,7 @@ namespace SportsData.Api.Application.UI.Rankings
         }
 
         [HttpGet("{seasonYear}/week/{week}")]
-        public async Task<ActionResult<Dictionary<string, RankingsByPollIdByWeekDto>>> GetPolls(
+        public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPolls(
             [FromRoute] int seasonYear,
             [FromRoute] int week,
             CancellationToken cancellationToken)

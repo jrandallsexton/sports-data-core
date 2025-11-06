@@ -4,7 +4,7 @@ import "./RankingsWidget.css";
 
 function RankingsWidget() {
   const [pollsData, setPollsData] = useState(null);
-  const [activeTab, setActiveTab] = useState(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,12 +15,8 @@ function RankingsWidget() {
       try {
         const apiResult = await apiWrapper.Rankings.getCurrentRankings(2025, 11);
         const data = apiResult?.data || apiResult;
-        setPollsData(data);
-        
-        // Set first poll as active tab
-        if (data && Object.keys(data).length > 0) {
-          setActiveTab(Object.keys(data)[0]);
-        }
+        setPollsData(Array.isArray(data) ? data : []);
+        setActiveTabIndex(0);
       } catch (err) {
         setError("Failed to load rankings");
       } finally {
@@ -30,7 +26,18 @@ function RankingsWidget() {
     fetchRankings();
   }, []);
 
-  const activePoll = activeTab && pollsData ? pollsData[activeTab] : null;
+  const activePoll = pollsData && pollsData[activeTabIndex] ? pollsData[activeTabIndex] : null;
+
+  // Generate tab label from poll data
+  const getTabLabel = (poll) => {
+    const pollNames = {
+      'cfp': 'CFP',
+      'ap': 'AP Top 25',
+      'coaches': 'Coaches Poll'
+    };
+    const name = pollNames[poll.pollName] || poll.pollName.toUpperCase();
+    return `${name}`;
+  };
 
   return (
     <div className="rankings-widget">
@@ -39,17 +46,17 @@ function RankingsWidget() {
         <div>Loading rankings...</div>
       ) : error ? (
         <div className="error">{error}</div>
-      ) : pollsData && Object.keys(pollsData).length > 0 ? (
+      ) : pollsData && pollsData.length > 0 ? (
         <>
           {/* Tabs */}
           <div className="rankings-tabs">
-            {Object.keys(pollsData).map((pollKey) => (
+            {pollsData.map((poll, index) => (
               <button
-                key={pollKey}
-                className={`rankings-tab ${activeTab === pollKey ? "active" : ""}`}
-                onClick={() => setActiveTab(pollKey)}
+                key={index}
+                className={`rankings-tab ${activeTabIndex === index ? "active" : ""}`}
+                onClick={() => setActiveTabIndex(index)}
               >
-                {pollKey}
+                {getTabLabel(poll)}
               </button>
             ))}
           </div>
@@ -77,8 +84,8 @@ function RankingsWidget() {
                       </th>
                       <th>Team</th>
                       <th>Record</th>
-                      <th>Points</th>
-                      <th>1st</th>
+                      {activePoll.hasPoints && <th>Points</th>}
+                      {activePoll.hasFirstPlaceVotes && <th>1st</th>}
                       <th>Trend</th>
                     </tr>
                   </thead>
@@ -113,12 +120,14 @@ function RankingsWidget() {
                           <td>
                             {team.wins}-{team.losses}
                           </td>
-                          <td>{team.points}</td>
-                          <td>
-                            {team.firstPlaceVotes > 0
-                              ? team.firstPlaceVotes
-                              : ""}
-                          </td>
+                          {activePoll.hasPoints && <td>{team.points}</td>}
+                          {activePoll.hasFirstPlaceVotes && (
+                            <td>
+                              {team.firstPlaceVotes > 0
+                                ? team.firstPlaceVotes
+                                : ""}
+                            </td>
+                          )}
                           <td>{team.trend}</td>
                         </tr>
                       ))}

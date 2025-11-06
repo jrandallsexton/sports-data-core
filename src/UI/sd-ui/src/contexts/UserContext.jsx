@@ -9,7 +9,7 @@ export const UserProvider = ({ children }) => {
   const [userDto, setUserDto] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserDto = async () => {
+  const loadUserDto = useCallback(async () => {
     if (!user) {
       setUserDto(null);
       setLoading(false);
@@ -25,7 +25,7 @@ export const UserProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const refreshUserDto = useCallback(async () => {
     if (!user) return;
@@ -42,7 +42,7 @@ export const UserProvider = ({ children }) => {
     if (!authLoading) {
       loadUserDto();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, loadUserDto]);
 
   return (
     <UserContext.Provider value={{ userDto, loading, refreshUserDto }}>

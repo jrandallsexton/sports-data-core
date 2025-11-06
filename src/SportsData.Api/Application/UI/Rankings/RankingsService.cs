@@ -33,10 +33,10 @@ namespace SportsData.Api.Application.UI.Rankings
         {
             var values = new List<RankingsByPollIdByWeekDto>();
 
-            var coaches = await GetRankingsByPollWeek(seasonYear, week, "usa", ct);
-            if (coaches.IsSuccess)
+            var cfp = await GetRankingsByPollWeek(seasonYear, week, "cfp", ct);
+            if (cfp.IsSuccess)
             {
-                values.Add(coaches.Value);
+                values.Add(cfp.Value);
             }
 
             var ap = await GetRankingsByPollWeek(seasonYear, week, "ap", ct);
@@ -45,14 +45,13 @@ namespace SportsData.Api.Application.UI.Rankings
                 values.Add(ap.Value);
             }
 
-            var cfp = await GetRankingsByPollWeek(seasonYear, week, "cfp", ct);
-            if (cfp.IsSuccess)
+            var coaches = await GetRankingsByPollWeek(seasonYear, week, "usa", ct);
+            if (coaches.IsSuccess)
             {
-                values.Add(cfp.Value);
+                values.Add(coaches.Value);
             }
 
             return new Success<List<RankingsByPollIdByWeekDto>>(values);
-
         }
 
         public async Task<Result<RankingsByPollIdByWeekDto>> GetRankingsByPollWeek(
@@ -106,12 +105,12 @@ namespace SportsData.Api.Application.UI.Rankings
                         rankings.HasPoints = true;
                         break;
                     case "usa":
-                        rankings.PollName = $"College Football Playoffs - Week {seasonWeek}";
-                        break;
-                    case "cfp":
                         rankings.PollName = $"Coaches Poll - Week {seasonWeek}";
                         rankings.HasFirstPlaceVotes = true;
                         rankings.HasPoints = true;
+                        break;
+                    case "cfp":
+                        rankings.PollName = $"College Football Playoffs - Week {seasonWeek}";
                         break;
                 }
 

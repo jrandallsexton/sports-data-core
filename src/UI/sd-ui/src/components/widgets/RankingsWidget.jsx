@@ -26,7 +26,7 @@ function RankingsWidget() {
     fetchRankings();
   }, []);
 
-  const activePoll = pollsData && pollsData[activeTabIndex] ? pollsData[activeTabIndex] : null;
+  const activePoll = pollsData && pollsData.length > activeTabIndex ? pollsData[activeTabIndex] : null;
 
   // Generate tab label from poll data
   const getTabLabel = (poll) => {

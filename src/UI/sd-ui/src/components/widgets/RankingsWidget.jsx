@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import apiWrapper from "../../api/apiWrapper";
+import CFPBracket from "./CFPBracket";
 import "./RankingsWidget.css";
 
 function RankingsWidget() {
@@ -30,13 +31,43 @@ function RankingsWidget() {
 
   // Generate tab label from poll data
   const getTabLabel = (poll) => {
-    const pollNames = {
-      'cfp': 'CFP',
-      'ap': 'AP Top 25',
-      'coaches': 'Coaches Poll'
+    return poll.pollName;
+  };
+
+  // Generate mock bracket from top 12 rankings for CFP
+  const generateMockBracket = (entries) => {
+    if (!entries || entries.length < 12) return null;
+
+    // Get top 12 teams
+    const top12 = entries.slice(0, 12);
+
+    return {
+      firstRound: [
+        { seed1: 12, team1: top12[11], seed2: 5, team2: top12[4], winner: null },
+        { seed1: 9, team1: top12[8], seed2: 8, team2: top12[7], winner: null },
+        { seed1: 11, team1: top12[10], seed2: 6, team2: top12[5], winner: null },
+        { seed1: 10, team1: top12[9], seed2: 7, team2: top12[6], winner: null }
+      ],
+      quarterfinals: [
+        { seed1: 4, team1: top12[3], seed2: null, team2: null, winner: null }, // 4 vs 12v5 winner
+        { seed1: 1, team1: top12[0], seed2: null, team2: null, winner: null }, // 1 vs 9v8 winner
+        { seed1: 3, team1: top12[2], seed2: null, team2: null, winner: null }, // 3 vs 11v6 winner
+        { seed1: 2, team1: top12[1], seed2: null, team2: null, winner: null }  // 2 vs 10v7 winner
+      ],
+      semifinals: [
+        { seed1: null, team1: null, seed2: null, team2: null, winner: null },
+        { seed1: null, team1: null, seed2: null, team2: null, winner: null }
+      ],
+      championship: {
+        seed1: null,
+        team1: null,
+        seed2: null,
+        team2: null,
+        winner: null,
+        location: "Miami Gardens, Florida",
+        date: "Jan 19"
+      }
     };
-    const name = pollNames[poll.pollName] || poll.pollName.toUpperCase();
-    return `${name}`;
   };
 
   return (
@@ -63,64 +94,59 @@ function RankingsWidget() {
 
           {/* Active Poll Content */}
           {activePoll && activePoll.entries ? (
-            <div
-              style={{
-                display: "flex",
-                gap: "2rem",
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              {[0, 13].map((start, idx) => (
-                <table
-                  className="rankings-table"
-                  key={idx}
-                >
-                  <thead>
-                    <tr>
-                      <th>
-                        <span className="rank-header-desktop">Rank</span>
-                        <span className="rank-header-mobile">Rk</span>
-                      </th>
-                      <th>Team</th>
+            <div className={`rankings-content ${activePoll.pollId === 'cfp' ? 'cfp-layout' : ''}`}>
+              {/* Rankings Table */}
+              <div className="rankings-table-container">
+                {[0, 13].map((start, idx) => (
+                  <table
+                    className="rankings-table"
+                    key={idx}
+                  >
+                    <thead>
+                      <tr>
+                        <th>
+                          <span className="rank-header-desktop">Rank</span>
+                          <span className="rank-header-mobile">Rk</span>
+                        </th>
+                        <th>Team</th>
                       <th>Record</th>
                       {activePoll.hasPoints && <th>Points</th>}
                       {activePoll.hasFirstPlaceVotes && <th>1st</th>}
-                      <th>Trend</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activePoll.entries
-                      .slice(start, start + (idx === 0 ? 13 : 12))
-                      .map((team, i) => (
-                        <tr key={team.franchiseSeasonId || i}>
-                          <td>{team.rank}</td>
-                          <td>
-                            {team.franchiseLogoUrl && (
-                              <img
-                                src={team.franchiseLogoUrl}
-                                alt={team.franchiseName || "Logo"}
-                                style={{
-                                  width: 20,
-                                  height: 20,
-                                  objectFit: "contain",
-                                  marginRight: 6,
-                                  verticalAlign: "middle",
-                                }}
-                              />
-                            )}
-                            <a
-                              href={`/app/sport/football/ncaa/team/${team.franchiseSlug || ''}/2025`}
-                              className="team-link"
-                              style={{ color: '#61dafb', textDecoration: 'underline', fontWeight: 500 }}
-                            >
-                              {team.franchiseName || "Unknown"}
-                            </a>
-                          </td>
-                          <td>
-                            {team.wins}-{team.losses}
-                          </td>
-                          {activePoll.hasPoints && <td>{team.points}</td>}
+                      {activePoll.hasTrends && <th>Trend</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activePoll.entries
+                        .slice(start, start + (idx === 0 ? 13 : 12))
+                        .map((team, i) => (
+                          <tr key={team.franchiseSeasonId || i}>
+                            <td>{team.rank}</td>
+                            <td>
+                              {team.franchiseLogoUrl && (
+                                <img
+                                  src={team.franchiseLogoUrl}
+                                  alt={team.franchiseName || "Logo"}
+                                  style={{
+                                    width: 20,
+                                    height: 20,
+                                    objectFit: "contain",
+                                    marginRight: 6,
+                                    verticalAlign: "middle",
+                                  }}
+                                />
+                              )}
+                              <a
+                                href={`/app/sport/football/ncaa/team/${team.franchiseSlug || ''}/2025`}
+                                className="team-link"
+                                style={{ color: '#61dafb', textDecoration: 'underline', fontWeight: 500 }}
+                              >
+                                {team.franchiseName || "Unknown"}
+                              </a>
+                            </td>
+                            <td>
+                              {team.wins}-{team.losses}
+                            </td>
+                            {activePoll.hasPoints && <td>{team.points}</td>}
                           {activePoll.hasFirstPlaceVotes && (
                             <td>
                               {team.firstPlaceVotes > 0
@@ -128,12 +154,20 @@ function RankingsWidget() {
                                 : ""}
                             </td>
                           )}
-                          <td>{team.trend}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              ))}
+                          {activePoll.hasTrends && <td>{team.trend}</td>}
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                ))}
+              </div>
+
+              {/* CFP Bracket (only for CFP poll) */}
+              {activePoll.pollId === 'cfp' && (
+                <div className="cfp-bracket-container">
+                  <CFPBracket bracket={activePoll.bracket || generateMockBracket(activePoll.entries)} />
+                </div>
+              )}
             </div>
           ) : (
             <div>No entries available for this poll.</div>

@@ -4,9 +4,13 @@
     {
         public required string PollName { get; set; }
 
+        public required string PollId { get; set; }
+
         public bool HasPoints { get; set; }
 
         public bool HasFirstPlaceVotes { get; set; }
+
+        public bool HasTrends { get; set; }
 
         public int SeasonYear { get; set; }
 

@@ -390,6 +390,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             var result = new RankingsByPollIdByWeekDto()
             {
                 PollName = pollType,
+                PollId = pollType,
                 SeasonYear = seasonYear,
                 Week = weekNumber,
                 PollDateUtc = entries.FirstOrDefault()?.PollDateUtc ?? DateTime.MinValue,

@@ -66,6 +66,49 @@
   }
 }
 
+/* Rankings content container */
+.rankings-content {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* CFP two-column layout */
+.rankings-content.cfp-layout {
+  display: grid;
+  grid-template-columns: 45% 55%;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.rankings-table-container {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.cfp-bracket-container {
+  width: 100%;
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 1400px) {
+  .rankings-content.cfp-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .cfp-bracket-container {
+    min-height: auto;
+  }
+}
+
 .rankings-widget > div[style*="display: flex"] {
   display: flex !important;
   gap: 2rem;

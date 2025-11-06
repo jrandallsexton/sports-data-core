@@ -97,17 +97,21 @@ namespace SportsData.Api.Application.UI.Rankings
                     _logger.LogInformation("Rankings found but no entries for season {SeasonYear} week {Week}", seasonYear, seasonWeek);
                 }
 
+                rankings.PollId = poll;
+
                 switch (poll)
                 {
                     case "ap":
                         rankings.PollName = $"AP Top 25 - Week {seasonWeek}";
                         rankings.HasFirstPlaceVotes = true;
                         rankings.HasPoints = true;
+                        rankings.HasTrends = true;
                         break;
                     case "usa":
                         rankings.PollName = $"Coaches Poll - Week {seasonWeek}";
                         rankings.HasFirstPlaceVotes = true;
                         rankings.HasPoints = true;
+                        rankings.HasTrends = true;
                         break;
                     case "cfp":
                         rankings.PollName = $"College Football Playoffs - Week {seasonWeek}";

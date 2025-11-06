@@ -112,7 +112,7 @@ function RankingsWidget() {
                       <th>Record</th>
                       {activePoll.hasPoints && <th>Points</th>}
                       {activePoll.hasFirstPlaceVotes && <th>1st</th>}
-                      {activePoll.hasTrends && <th>Trend</th>}
+                      {activePoll.hasTrends && <th>&Delta;</th>}
                       </tr>
                     </thead>
                     <tbody>

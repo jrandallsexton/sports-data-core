@@ -1,81 +1,88 @@
+WITH next_week AS (
+  SELECT sw."Id" AS "SeasonWeekId",
+         sw."Number" AS "WeekNumber",
+         s."Id" AS "SeasonId",
+         s."Year" AS "SeasonYear"
+  FROM public."Season" s
+  JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
+  JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
+  WHERE sp."Name" = 'Regular Season'
+    AND sw."StartDate" <= NOW()
+    AND sw."EndDate" > NOW()
+  ORDER BY sw."StartDate"
+  LIMIT 1
+)
+
 SELECT
-    comp."Id" AS "CompetitionId",
-    sw."Number" AS "WeekNumber",
+  con."Id" AS "ContestId",
+  comp."Id" AS "CompetitionId",
+  nw."WeekNumber",
 
-    con."HomeTeamFranchiseSeasonId",
-    con."AwayTeamFranchiseSeasonId",
+  con."HomeTeamFranchiseSeasonId",
+  con."AwayTeamFranchiseSeasonId",
 
-    cm_home."FranchiseSeasonId" AS "HomeFranchiseSeasonId",
-    cm_home."Ypp" AS "HomeYpp",
-    cm_home."SuccessRate" AS "HomeSuccessRate",
-    cm_home."ExplosiveRate" AS "HomeExplosiveRate",
-    cm_home."PointsPerDrive" AS "HomePointsPerDrive",
-    cm_home."ThirdFourthRate" AS "HomeThirdFourthRate",
-    cm_home."RzTdRate" AS "HomeRzTdRate",
-    cm_home."RzScoreRate" AS "HomeRzScoreRate",
-    cm_home."TimePossRatio" AS "HomeTimePossRatio",
-    cm_home."OppYpp" AS "HomeOppYpp",
-    cm_home."OppSuccessRate" AS "HomeOppSuccessRate",
-    cm_home."OppExplosiveRate" AS "HomeOppExplosiveRate",
-    cm_home."OppPointsPerDrive" AS "HomeOppPointsPerDrive",
-    cm_home."OppThirdFourthRate" AS "HomeOppThirdFourthRate",
-    cm_home."OppRzTdRate" AS "HomeOppRzTdRate",
-    cm_home."OppScoreTdRate" AS "HomeOppScoreTdRate",
-    cm_home."NetPunt" AS "HomeNetPunt",
-    cm_home."FgPctShrunk" AS "HomeFgPctShrunk",
-    cm_home."FieldPosDiff" AS "HomeFieldPosDiff",
-    cm_home."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
-    cm_home."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
+  fsm_home."FranchiseSeasonId" AS "HomeFranchiseSeasonId",
+  fsm_home."Ypp" AS "HomeYpp",
+  fsm_home."SuccessRate" AS "HomeSuccessRate",
+  fsm_home."ExplosiveRate" AS "HomeExplosiveRate",
+  fsm_home."PointsPerDrive" AS "HomePointsPerDrive",
+  fsm_home."ThirdFourthRate" AS "HomeThirdFourthRate",
+  fsm_home."RzTdRate" AS "HomeRzTdRate",
+  fsm_home."RzScoreRate" AS "HomeRzScoreRate",
+  fsm_home."TimePossRatio" AS "HomeTimePossRatio",
+  fsm_home."OppYpp" AS "HomeOppYpp",
+  fsm_home."OppSuccessRate" AS "HomeOppSuccessRate",
+  fsm_home."OppExplosiveRate" AS "HomeOppExplosiveRate",
+  fsm_home."OppPointsPerDrive" AS "HomeOppPointsPerDrive",
+  fsm_home."OppThirdFourthRate" AS "HomeOppThirdFourthRate",
+  fsm_home."OppRzTdRate" AS "HomeOppRzTdRate",
+  fsm_home."OppScoreTdRate" AS "HomeOppScoreTdRate",
+  fsm_home."NetPunt" AS "HomeNetPunt",
+  fsm_home."FgPctShrunk" AS "HomeFgPctShrunk",
+  fsm_home."FieldPosDiff" AS "HomeFieldPosDiff",
+  fsm_home."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
+  fsm_home."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
 
-    cm_away."FranchiseSeasonId" AS "AwayFranchiseSeasonId",
-    cm_away."Ypp" AS "AwayYpp",
-    cm_away."SuccessRate" AS "AwaySuccessRate",
-    cm_away."ExplosiveRate" AS "AwayExplosiveRate",
-    cm_away."PointsPerDrive" AS "AwayPointsPerDrive",
-    cm_away."ThirdFourthRate" AS "AwayThirdFourthRate",
-    cm_away."RzTdRate" AS "AwayRzTdRate",
-    cm_away."RzScoreRate" AS "AwayRzScoreRate",
-    cm_away."TimePossRatio" AS "AwayTimePossRatio",
-    cm_away."OppYpp" AS "AwayOppYpp",
-    cm_away."OppSuccessRate" AS "AwayOppSuccessRate",
-    cm_away."OppExplosiveRate" AS "AwayOppExplosiveRate",
-    cm_away."OppPointsPerDrive" AS "AwayOppPointsPerDrive",
-    cm_away."OppThirdFourthRate" AS "AwayOppThirdFourthRate",
-    cm_away."OppRzTdRate" AS "AwayOppRzTdRate",
-    cm_away."OppScoreTdRate" AS "AwayOppScoreTdRate",
-    cm_away."NetPunt" AS "AwayNetPunt",
-    cm_away."FgPctShrunk" AS "AwayFgPctShrunk",
-    cm_away."FieldPosDiff" AS "AwayFieldPosDiff",
-    cm_away."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
-    cm_away."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
+  fsm_away."FranchiseSeasonId" AS "AwayFranchiseSeasonId",
+  fsm_away."Ypp" AS "AwayYpp",
+  fsm_away."SuccessRate" AS "AwaySuccessRate",
+  fsm_away."ExplosiveRate" AS "AwayExplosiveRate",
+  fsm_away."PointsPerDrive" AS "AwayPointsPerDrive",
+  fsm_away."ThirdFourthRate" AS "AwayThirdFourthRate",
+  fsm_away."RzTdRate" AS "AwayRzTdRate",
+  fsm_away."RzScoreRate" AS "AwayRzScoreRate",
+  fsm_away."TimePossRatio" AS "AwayTimePossRatio",
+  fsm_away."OppYpp" AS "AwayOppYpp",
+  fsm_away."OppSuccessRate" AS "AwayOppSuccessRate",
+  fsm_away."OppExplosiveRate" AS "AwayOppExplosiveRate",
+  fsm_away."OppPointsPerDrive" AS "AwayOppPointsPerDrive",
+  fsm_away."OppThirdFourthRate" AS "AwayOppThirdFourthRate",
+  fsm_away."OppRzTdRate" AS "AwayOppRzTdRate",
+  fsm_away."OppScoreTdRate" AS "AwayOppScoreTdRate",
+  fsm_away."NetPunt" AS "AwayNetPunt",
+  fsm_away."FgPctShrunk" AS "AwayFgPctShrunk",
+  fsm_away."FieldPosDiff" AS "AwayFieldPosDiff",
+  fsm_away."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
+  fsm_away."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
 
-    con."HomeScore",
-    con."AwayScore",
+  NULL AS "HomeScore",
+  NULL AS "AwayScore",
+  NULL AS "Winner",
 
-    CASE
-        WHEN con."HomeScore" > con."AwayScore" THEN 'HOME'
-        WHEN con."AwayScore" > con."HomeScore" THEN 'AWAY'
-        ELSE 'TIE'
-    END AS "Winner",
+  odds."Spread"
 
-    odds."Spread"
-
-FROM public."Contest" con
+FROM next_week nw
+JOIN public."Contest" con ON con."SeasonWeekId" = nw."SeasonWeekId"
 JOIN public."Competition" comp ON comp."ContestId" = con."Id"
 
-JOIN public."SeasonWeek" sw ON sw."Id" = con."SeasonWeekId"
+JOIN public."FranchiseSeasonMetric" fsm_home
+  ON fsm_home."FranchiseSeasonId" = con."HomeTeamFranchiseSeasonId"
 
--- Join both metrics
-JOIN public."CompetitionMetric" cm_home ON cm_home."CompetitionId" = comp."Id"
-    AND cm_home."FranchiseSeasonId" = con."HomeTeamFranchiseSeasonId"
+JOIN public."FranchiseSeasonMetric" fsm_away
+  ON fsm_away."FranchiseSeasonId" = con."AwayTeamFranchiseSeasonId"
 
-JOIN public."CompetitionMetric" cm_away ON cm_away."CompetitionId" = comp."Id"
-    AND cm_away."FranchiseSeasonId" = con."AwayTeamFranchiseSeasonId"
-
--- Join odds from provider 58
 LEFT JOIN public."CompetitionOdds" odds
-    ON odds."CompetitionId" = comp."Id" AND odds."ProviderId" = '58'
+  ON odds."CompetitionId" = comp."Id" AND odds."ProviderId" = '58'
 
--- Only completed games
-WHERE con."HomeScore" IS NOT NULL AND con."AwayScore" IS NOT NULL
-ORDER BY sw."Number";
+WHERE con."StartDateUtc" >= NOW()
+ORDER BY con."StartDateUtc";

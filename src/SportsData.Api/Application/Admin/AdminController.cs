@@ -3,12 +3,16 @@
 using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Application.UI.Picks;
+using SportsData.Api.Application.UI.Picks.PicksPage;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
+
+using System.Threading;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -21,17 +25,20 @@ namespace SportsData.Api.Application.Admin
         private readonly IProvideAiCommunication _ai;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAdminService _adminService;
+        private readonly IPickService _userPickService;
 
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideAiCommunication ai,
             IProvideBackgroundJobs backgroundJobProvider,
-            IAdminService adminService)
+            IAdminService adminService,
+            IPickService userPickService)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _ai = ai;
             _backgroundJobProvider = backgroundJobProvider;
             _adminService = adminService;
+            _userPickService = userPickService;
         }
 
         [HttpPost]
@@ -141,6 +148,23 @@ namespace SportsData.Api.Application.Admin
         {
             var result = await _adminService.GetCompetitionsWithoutDrives();
             return result.ToActionResult();
+        }
+
+        [HttpPost]
+        [Route("ai-picks/{syntheticId}")]
+        public async Task<IActionResult> PostBulkPicks(
+            [FromRoute] string syntheticId,
+            [FromBody] List<SubmitUserPickRequest> picks)
+        {
+            var userId = Guid.Parse(syntheticId);
+
+            var allSucceeded = true;
+            foreach (var pick in picks)
+            {
+                await _userPickService.SubmitPickAsync(userId, pick, CancellationToken.None);
+            }
+
+            return Ok(allSucceeded);
         }
     }
 

@@ -80,6 +80,7 @@ select * from public."UserPick" where "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2
 select * from public."User"
 --update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true where "Id" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+--update public."User" set "DisplayName" = 'MetricBot', "IsSynthetic" = true where "Id" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44'
 select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *

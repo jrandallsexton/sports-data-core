@@ -42,7 +42,7 @@ select * from public."GroupSeason" where "ParentId" is null
 select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' where "ShortHeadline" = '2025 AP Poll: Week 11'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 11'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
 
 select * from public."Season"

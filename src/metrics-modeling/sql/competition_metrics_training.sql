@@ -1,4 +1,5 @@
 SELECT
+    con."Id" AS "ContestId",
     comp."Id" AS "CompetitionId",
     sw."Number" AS "WeekNumber",
 

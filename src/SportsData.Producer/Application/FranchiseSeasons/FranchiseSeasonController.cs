@@ -21,14 +21,6 @@ namespace SportsData.Producer.Application.FranchiseSeasons
         }
 
         [HttpGet]
-        [Route("seasonYear/{seasonYear}/metrics")]
-        public async Task<ActionResult<List<FranchiseSeasonMetricsDto>>> GetFranchiseSeasonMetricsBySeasonYear([FromRoute] int seasonYear)
-        {
-            var result = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
-            return result.ToActionResult();
-        }
-
-        [HttpGet]
         [Route("id/{franchiseSeasonId}/metrics")]
         public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
         {
@@ -38,8 +30,16 @@ namespace SportsData.Producer.Application.FranchiseSeasons
             return result.ToActionResult();
         }
 
+        [HttpGet]
+        [Route("seasonYear/{seasonYear}/metrics")]
+        public async Task<ActionResult<List<FranchiseSeasonMetricsDto>>> GetFranchiseSeasonMetricsBySeasonYear([FromRoute] int seasonYear)
+        {
+            var result = await _franchiseSeasonMetricsService.GetFranchiseSeasonMetricsBySeasonYear(seasonYear);
+            return result.ToActionResult();
+        }
+
         [HttpPost]
-        [Route("seasonYeat/{seasonYear}/metrics/generate")]
+        [Route("seasonYear/{seasonYear}/metrics/generate")]
         public IActionResult RefreshCompetitionMetrics([FromRoute] int seasonYear)
         {
             var cmd = new GenerateFranchiseSeasonMetricsCommand()
@@ -51,7 +51,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons
 
             _backgroundJobProvider.Enqueue<IFranchiseSeasonMetricsService>(p => p.GenerateFranchiseSeasonMetrics(cmd));
 
-            return Accepted(new { Message = $"FranchiseSeason metric generation initiated." });
+            return Accepted(cmd.CorrelationId);
         }
     }
 }

@@ -206,6 +206,28 @@
   gap: 4px;
 }
 
+.final-score-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.final-score-link:hover {
+  opacity: 0.8;
+}
+
+.final-score-link:hover .result-label {
+  color: #61dafb;
+}
+
+.final-score-link:hover .score-display {
+  color: #61dafb;
+}
+
 .result-label {
   font-size: 0.75rem;
   font-weight: 600;

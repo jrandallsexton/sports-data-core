@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 /**
  * GameStatus component - displays game status (Final, Live, or Scheduled)
  * @param {object} props
@@ -16,6 +18,7 @@
  * @param {string} props.homeFranchiseSeasonId - Home team franchise season ID
  * @param {string} props.possessionFranchiseSeasonId - Team with possession ID
  * @param {boolean} props.isScoringPlay - Whether this update is for a scoring play
+ * @param {string} props.contestId - Contest ID for linking to contest overview
  */
 function GameStatus({
   status,
@@ -32,16 +35,34 @@ function GameStatus({
   awayFranchiseSeasonId,
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
-  isScoringPlay
+  isScoringPlay,
+  contestId
 }) {
   if (status === 'Final') {
+    const scoreContent = (
+      <>
+        <span className="result-label">FINAL:</span>
+        <span className="score-display">
+          {awayShort} {awayScore} - {homeScore} {homeShort}
+        </span>
+      </>
+    );
+
     return (
       <div className="game-result">
         <div className="final-score">
-          <span className="result-label">FINAL:</span>
-          <span className="score-display">
-            {awayShort} {awayScore} - {homeScore} {homeShort}
-          </span>
+          {contestId ? (
+            <Link
+              to={`/app/sport/football/ncaa/contest/${contestId}`}
+              className="final-score-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {scoreContent}
+            </Link>
+          ) : (
+            scoreContent
+          )}
         </div>
       </div>
     );

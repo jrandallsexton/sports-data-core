@@ -153,6 +153,7 @@ function MatchupCard({
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
           isScoringPlay={matchup.isScoringPlay}
+          contestId={matchup.contestId}
         />
 
         <div className="spread-ou">

@@ -1,3 +1,4 @@
+# predict_ats.py
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
@@ -10,7 +11,7 @@ df_train = df_train.dropna(subset=["HomeScore", "AwayScore", "Spread"]).copy()
 df_train["Margin"] = df_train["HomeScore"] - df_train["AwayScore"]
 df_train["CoveredSpread"] = (df_train["Margin"] > df_train["Spread"]).astype(int)
 
-# === Filter ties where margin == spread — technically a push ===
+# === Filter out pushes (margin == spread) ===
 df_train = df_train[df_train["Margin"] != df_train["Spread"]].copy()
 
 # === Features ===
@@ -42,24 +43,18 @@ model.fit(X_train, y_train)
 # === Predict ===
 X_predict = df_predict[feature_cols].fillna(0)
 df_predict["PredictedLabel"] = model.predict(X_predict)
-df_predict["SpreadProbability"] = model.predict_proba(X_predict)[:, 1]  # prob that HOME covers
+df_predict["HomeCoverProbability"] = model.predict_proba(X_predict)[:, 1]  # P(home covers)
 df_predict["ModelVersion"] = "MetricBot-v1.0.0"
 
-# === Map winner ===
-df_predict["WinnerFranchiseSeasonId"] = df_predict.apply(
-    lambda row: row["HomeFranchiseSeasonId"] if row["PredictedLabel"] == 1 else row["AwayFranchiseSeasonId"],
-    axis=1
-)
-
-# === Save output ===
-output_cols = [
+# === Save raw predictions ===
+raw_output_cols = [
     "ContestId",
-    "WinnerFranchiseSeasonId",
-    "SpreadProbability",
+    "HomeFranchiseSeasonId",
+    "AwayFranchiseSeasonId",
     "PredictedLabel",
+    "HomeCoverProbability",
     "ModelVersion"
 ]
+df_predict[raw_output_cols].to_csv("./data/predictions_ats_raw.csv", index=False)
 
-df_predict[output_cols].to_csv("./data/predictions_ats_raw.csv", index=False)
-
-print("✅ ATS predictions written to ./data/predictions_ats_raw.csv")
+print("✅ Raw ATS predictions written to ./data/predictions_ats_raw.csv")

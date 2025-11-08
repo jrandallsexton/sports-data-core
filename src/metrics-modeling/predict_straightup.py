@@ -1,3 +1,4 @@
+# predict_straightup.py
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
@@ -39,7 +40,7 @@ model.fit(X_train, y_train)
 X_predict = df_predict[feature_cols].fillna(0)
 
 df_predict["PredictedLabel"] = model.predict(X_predict)
-df_predict["WinProbability"] = model.predict_proba(X_predict)[:, 1]  # probability that HOME wins
+df_predict["WinProbability"] = model.predict_proba(X_predict)[:, 1]  # P(HOME wins)
 df_predict["ModelVersion"] = "MetricBot-v1.0.0"
 
 # === Save raw predictions ===
@@ -51,7 +52,6 @@ output_cols = [
     "WinProbability",
     "ModelVersion"
 ]
-
 df_predict[output_cols].to_csv("./data/predictions_straightup_raw.csv", index=False)
 
-print("✅ Straight-up predictions written to ./data/predictions_straightup_raw.csv")
+print("✅ Straight‑up raw predictions written to ./data/predictions_straightup_raw.csv")

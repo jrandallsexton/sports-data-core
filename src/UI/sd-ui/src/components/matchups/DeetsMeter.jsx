@@ -11,12 +11,17 @@ const DeetsMeter = ({ predictions, homeFranchiseSeasonId, awayFranchiseSeasonId 
     if (!prediction) return null;
 
     const isHomeFavored = prediction.winnerFranchiseSeasonId === homeFranchiseSeasonId;
-    const probability = prediction.winProbability;
+    const winProbability = prediction.winProbability;
+
+    // The winProbability is for the winnerFranchiseSeasonId team
+    // Calculate percentages for away (left) and home (right)
+    const homePercentage = isHomeFavored ? Math.round(winProbability * 100) : Math.round((1 - winProbability) * 100);
+    const awayPercentage = 100 - homePercentage;
 
     return {
       isHomeFavored,
-      probability,
-      displayPercentage: Math.round(probability * 100)
+      awayPercentage,
+      homePercentage
     };
   };
 
@@ -26,16 +31,11 @@ const DeetsMeter = ({ predictions, homeFranchiseSeasonId, awayFranchiseSeasonId 
   const renderMeter = (data, label) => {
     if (!data) return null;
 
-    const { isHomeFavored, probability, displayPercentage } = data;
-
-    // Calculate gradient position (0-100%)
-    // Away is on left, Home is on right
-    const awayPercentage = isHomeFavored ? (100 - displayPercentage) : displayPercentage;
-    const homePercentage = 100 - awayPercentage;
+    const { awayPercentage, homePercentage } = data;
 
     return (
-      <div className="deetsometer-row">
-        <div className="deetsometer-meter">
+      <div className="deetsmeter-row">
+        <div className="deetsmeter-meter">
           <div className="meter-gradient" style={{
             background: `linear-gradient(to right, 
               var(--away-color, #444) 0%, 
@@ -67,10 +67,12 @@ const DeetsMeter = ({ predictions, homeFranchiseSeasonId, awayFranchiseSeasonId 
   }
 
   return (
-    <div className="deetsometer">
-      <div className="deetsometer-header">deetsMeter™</div>
-      {renderMeter(straightUpData, 'SU')}
-      {renderMeter(atsData, 'ATS')}
+    <div className="deetsmeter">
+      <div className="deetsmeter-header">deetsMeter™</div>
+      <div className="deetsmeter-meters">
+        {renderMeter(straightUpData, 'SU')}
+        {renderMeter(atsData, 'ATS')}
+      </div>
     </div>
   );
 };

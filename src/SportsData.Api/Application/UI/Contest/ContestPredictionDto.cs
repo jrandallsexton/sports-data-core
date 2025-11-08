@@ -8,7 +8,7 @@ public class ContestPredictionDto
 
     public Guid WinnerFranchiseSeasonId { get; set; }
 
-    public decimal? WinProbability { get; set; }
+    public decimal WinProbability { get; set; }
 
     public PickType PredictionType { get; set; }
 

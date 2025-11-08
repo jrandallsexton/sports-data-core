@@ -54,4 +54,4 @@ output_cols = [
 ]
 df_predict[output_cols].to_csv("./data/predictions_straightup_raw.csv", index=False)
 
-print("✅ Straight‑up raw predictions written to ./data/predictions_straightup_raw.csv")
+print("✅ Straight-up raw predictions written to ./data/predictions_straightup_raw.csv")

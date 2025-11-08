@@ -91,7 +91,7 @@
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
-  .deetsometer {
+  .deetsmeter {
     gap: 0.5rem;
   }
 
@@ -104,7 +104,7 @@
     font-size: 0.75rem;
   }
 
-  .deetsometer-label {
+  .meter-label {
     font-size: 0.7rem;
   }
 }

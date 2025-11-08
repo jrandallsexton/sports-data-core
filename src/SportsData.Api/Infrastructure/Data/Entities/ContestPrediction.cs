@@ -12,7 +12,7 @@ public class ContestPrediction : CanonicalEntityBase<Guid>
 
     public Guid WinnerFranchiseSeasonId { get; set; }
 
-    public decimal? WinProbability { get; set; }
+    public decimal WinProbability { get; set; } = 0;
 
     public PickType PredictionType { get; set; }
 
@@ -34,7 +34,7 @@ public class ContestPrediction : CanonicalEntityBase<Guid>
 
             builder.Property(x => x.WinProbability)
                 .HasPrecision(5, 4)
-                .IsRequired(false);
+                .IsRequired();
 
             builder.Property(x => x.PredictionType)
                 .HasConversion<int>() // Store enum as integer

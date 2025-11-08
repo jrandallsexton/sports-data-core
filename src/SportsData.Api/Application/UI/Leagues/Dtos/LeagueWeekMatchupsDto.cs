@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Common;
+﻿using SportsData.Api.Application.UI.Contest;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Dtos
 {
@@ -15,6 +16,8 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         public class MatchupForPickDto
         {
             public Guid ContestId { get; set; }
+
+            public List<ContestPredictionDto> Predictions { get; set; } = [];
 
             public DateTime StartDateUtc { get; set; }
 

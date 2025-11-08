@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Previews;
+using SportsData.Api.Application.UI.Contest;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
@@ -188,6 +189,11 @@ namespace SportsData.Api.Application.UI.Leagues
 
             var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
 
+            var predictions = await _dbContext.ContestPredictions
+                .Where(x => contestIds.Contains(x.ContestId))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
             var previews = await _dbContext.MatchupPreviews
                 .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
                 .AsNoTracking()
@@ -287,6 +293,20 @@ namespace SportsData.Api.Application.UI.Leagues
 
                     matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
                                                                   x is { ApprovedUtc: not null, RejectedUtc: null });
+
+                    var contestPredictions = predictions.Where(x => x.ContestId == matchup.ContestId);
+
+                    foreach (var prediction in contestPredictions)
+                    {
+                        matchup.Predictions.Add(new ContestPredictionDto()
+                        {
+                            ContestId = prediction.ContestId,
+                            ModelVersion = prediction.ModelVersion,
+                            PredictionType = prediction.PredictionType,
+                            WinProbability = prediction.WinProbability,
+                            WinnerFranchiseSeasonId = prediction.WinnerFranchiseSeasonId
+                        });
+                    }
                 }
             }
 

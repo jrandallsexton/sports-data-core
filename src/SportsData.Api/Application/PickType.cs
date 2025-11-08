@@ -4,9 +4,9 @@
     public enum PickType
     {
         None = 0,
-        StraightUp = 1,           // 1
-        AgainstTheSpread = 2,     // 2
-        OverUnder = 3             // 4 (future use)
+        StraightUp = 1,
+        AgainstTheSpread = 2,
+        OverUnder = 3
     }
 
     // TODO: Move usage of this to PickType

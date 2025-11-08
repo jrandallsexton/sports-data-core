@@ -68,6 +68,8 @@ where
   "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 ORDER BY "CreatedUtc" desc
 
+select * from public."ContestPrediction"
+delete from public."ContestPrediction"
 --update public."UserPick" set "PickType" = 2
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 

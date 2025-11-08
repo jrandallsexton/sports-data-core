@@ -12,6 +12,7 @@ import TeamRow from "./TeamRow";
 import GameStatus from "./GameStatus";
 import PickButton from "./PickButton";
 import { SpreadDisplay, OverUnderDisplay } from "./BettingDisplays";
+import DeetsMeter from "./DeetsMeter";
 
 function MatchupCard({
   matchup,
@@ -160,6 +161,13 @@ function MatchupCard({
             overUnderOpen={matchup.overUnderOpen}
           />
         </div>
+
+        {/* DeetsMeter - AI Prediction Meters */}
+        <DeetsMeter
+          predictions={matchup.predictions}
+          homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
+          awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
+        />
       </div>
 
       <div className="pick-buttons-row" style={{ marginTop: 'auto' }}>

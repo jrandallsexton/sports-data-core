@@ -52,7 +52,7 @@ function TeamSchedule({ schedule, seasonYear }) {
                 </td>
                 <td>{game.location}</td>
                 <td className={getResultClass(game)}>
-                  {game.finalizedUtc && game.contestId ? (
+                  {game.contestId ? (
                     <Link
                       to={`/app/sport/football/ncaa/contest/${game.contestId}`}
                       className="result-link"

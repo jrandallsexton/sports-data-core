@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Api.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    partial class AppDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251108122436_08Nov_ConPredict")]
+    partial class _08Nov_ConPredict
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -219,7 +222,7 @@ namespace SportsData.Api.Migrations
                     b.Property<int>("PredictionType")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("WinProbability")
+                    b.Property<decimal?>("WinProbability")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
 

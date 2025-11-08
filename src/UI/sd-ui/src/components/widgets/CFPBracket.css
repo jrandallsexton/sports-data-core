@@ -103,8 +103,8 @@
   flex: 1;
 }
 
-/* Connector lines between rounds */
-.bracket-round::after {
+/* Connector lines between matchups */
+.bracket-matchup::after {
   content: '';
   position: absolute;
   right: -1rem;
@@ -115,7 +115,7 @@
   transform: translateY(-50%);
 }
 
-.bracket-round.championship::after {
+.bracket-round.championship .bracket-matchup::after {
   display: none;
 }
 
@@ -125,19 +125,23 @@
 }
 
 .bracket-round.quarterfinals {
-  justify-content: space-around;
+  justify-content: flex-start;
 }
 
 .bracket-round.quarterfinals .bracket-matchup {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .bracket-round.semifinals {
-  justify-content: space-around;
+  justify-content: flex-start;
 }
 
-.bracket-round.semifinals .bracket-matchup {
-  margin-bottom: 4rem;
+.bracket-round.semifinals .bracket-matchup:first-child {
+  margin-top: calc(2 * (90px + 1rem));
+}
+
+.bracket-round.semifinals .bracket-matchup:last-child {
+  margin-top: calc(2 * (90px + 1rem));
 }
 
 .bracket-round.championship {

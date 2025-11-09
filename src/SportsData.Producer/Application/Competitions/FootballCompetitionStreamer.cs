@@ -13,18 +13,22 @@ namespace SportsData.Producer.Application.Competitions;
 
 public interface IFootballCompetitionBroadcastingJob
 {
-    Task ExecuteAsync(BroadcastFootballCompetitionCommand command);
+    Task ExecuteAsync(StreamFootballCompetitionCommand command);
 }
 
-public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcastingJob
+/// <summary>
+/// this class is responsible for live-action updates for canonical data
+/// and broadcasting those changes to downstream systems
+/// </summary>
+public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
 {
-    private readonly ILogger<FootballCompetitionBroadcastingJob> _logger;
+    private readonly ILogger<FootballCompetitionStreamer> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly HttpClient _httpClient;
     private readonly IEventBus _publishEndpoint;
 
-    public FootballCompetitionBroadcastingJob(
-        ILogger<FootballCompetitionBroadcastingJob> logger,
+    public FootballCompetitionStreamer(
+        ILogger<FootballCompetitionStreamer> logger,
         FootballDataContext dataContext,
         IHttpClientFactory httpClientFactory,
         IEventBus publishEndpoint
@@ -36,7 +40,7 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
         _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ExecuteAsync(BroadcastFootballCompetitionCommand command)
+    public async Task ExecuteAsync(StreamFootballCompetitionCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -102,7 +106,6 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
             StartPollingWorkers(competitionDto, command);
 
             await PollWhileInProgressAsync(statusUri);
-
         }
     }
 
@@ -114,7 +117,9 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();
-            return json.FromJson<EspnEventCompetitionDto>();
+            var result = json.FromJson<EspnEventCompetitionDto>();
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -163,7 +168,7 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
         }
     }
 
-    private void StartPollingWorkers(EspnEventCompetitionDto competitionDto, BroadcastFootballCompetitionCommand command)
+    private void StartPollingWorkers(EspnEventCompetitionDto competitionDto, StreamFootballCompetitionCommand command)
     {
         var refs = new[]
         {
@@ -224,7 +229,7 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
     private async Task PublishDocumentRequestAsync(
         Uri refUri,
         DocumentType type,
-        BroadcastFootballCompetitionCommand command)
+        StreamFootballCompetitionCommand command)
     {
         var parentId = type is
             DocumentType.EventCompetitionProbability or
@@ -248,11 +253,4 @@ public class FootballCompetitionBroadcastingJob : IFootballCompetitionBroadcasti
         await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
     }
-}
-
-public class BroadcastFootballCompetitionCommand
-{
-    public Guid ContestId { get; set; }
-    public Guid CompetitionId { get; set; }
-    public Guid CorrelationId { get; init; }
 }

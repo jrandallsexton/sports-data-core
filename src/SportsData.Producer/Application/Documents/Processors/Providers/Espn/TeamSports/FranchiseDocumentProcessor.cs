@@ -210,6 +210,7 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)
             .Include(x => x.Logos)
+            .AsSplitQuery()
             .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                     z.Provider == command.SourceDataProvider));
         if (!franchise.Logos.Any())

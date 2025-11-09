@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251109011215_08NovV1_CompStream")]
+    partial class _08NovV1_CompStream
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -876,6 +879,11 @@ namespace SportsData.Producer.Migrations
 
                     b.Property<Guid>("SeasonWeekId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

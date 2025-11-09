@@ -3,10 +3,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
-    /// <summary>
-    /// this class is responsible for live-action updates for canonical data
-    /// and broadcasting those changes to downstream systems
-    /// </summary>
+
     public class CompetitionBroadcastProcessor
     {
         private readonly ILogger<CompetitionBroadcastProcessor> _logger;

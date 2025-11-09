@@ -1,8 +1,8 @@
 ﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
 
-public class TeamCardNewsItemDto
+public record TeamCardNewsItemDto
 {
-    public required string Title { get; set; }
+    public required string Title { get; init; }
 
-    public required string Link { get; set; }
+    public required string Link { get; init; }
 }

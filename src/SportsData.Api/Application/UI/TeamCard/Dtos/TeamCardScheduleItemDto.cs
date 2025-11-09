@@ -1,28 +1,28 @@
 ﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
 
-public class TeamCardScheduleItemDto
+public record TeamCardScheduleItemDto
 {
-    public Guid ContestId { get; set; }
+    public Guid ContestId { get; init; }
 
-    public int Week { get; set; }
+    public int Week { get; init; }
 
-    public DateTime Date { get; set; } = default!;
+    public DateTime Date { get; init; }
 
-    public string Opponent { get; set; } = default!;
+    public string Opponent { get; init; } = default!;
 
-    public string OpponentShortName { get; set; } = default!;
+    public string OpponentShortName { get; init; } = default!;
 
-    public string OpponentSlug { get; set; } = default!;
+    public string OpponentSlug { get; init; } = default!;
 
-    public string Location { get; set; } = default!;
+    public string Location { get; init; } = default!;
 
-    public string LocationType { get; set; } = default!;
+    public string LocationType { get; init; } = default!;
 
-    public DateTime? FinalizedUtc { get; set; }
+    public DateTime? FinalizedUtc { get; init; }
 
-    public int? AwayScore { get; set; }
+    public int? AwayScore { get; init; }
 
-    public int? HomeScore { get; set; }
+    public int? HomeScore { get; init; }
 
-    public bool WasWinner { get; set; }
+    public bool WasWinner { get; init; }
 }

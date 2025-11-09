@@ -1,26 +1,26 @@
 ﻿namespace SportsData.Api.Application.UI.Picks.Dtos
 {
-    public class PickRecordWidgetDto
+    public record PickRecordWidgetDto
     {
-        public int SeasonYear { get; set; }
+        public int SeasonYear { get; init; }
 
-        public int AsOfWeek { get; set; }
+        public int AsOfWeek { get; init; }
 
-        public List<PickRecordWidgetItem> Items { get; set; } = [];
+        public List<PickRecordWidgetItem> Items { get; init; } = [];
 
-        public class PickRecordWidgetItem
+        public record PickRecordWidgetItem
         {
-            public Guid LeagueId { get; set; }
+            public Guid LeagueId { get; init; }
 
-            public required string LeagueName { get; set; }
+            public required string LeagueName { get; init; }
 
-            public int Correct { get; set; }
+            public int Correct { get; init; }
 
-            public int Incorrect { get; set; }
+            public int Incorrect { get; init; }
 
-            public int? Pushes { get; set; }
+            public int? Pushes { get; init; }
 
-            public double Accuracy { get; set; }
+            public double Accuracy { get; init; }
         }
     }
 }

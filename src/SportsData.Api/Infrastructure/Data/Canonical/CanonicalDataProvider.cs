@@ -108,15 +108,15 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
                     return null;
 
                 var seasons = (await _connection.QueryAsync<int>(seasonsSql, new { Slug = query.Slug })).ToList();
-                teamCard.SeasonYears = seasons;
-
                 var schedule = (await _connection.QueryAsync<TeamCardScheduleItemDto>(
                     scheduleSql,
                     parameters)).ToList();
 
-                teamCard.Schedule = schedule;
-
-                return teamCard;
+                return teamCard with 
+                { 
+                    SeasonYears = seasons,
+                    Schedule = schedule
+                };
             }
             catch (Exception ex)
             {

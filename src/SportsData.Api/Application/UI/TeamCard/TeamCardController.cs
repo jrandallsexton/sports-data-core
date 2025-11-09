@@ -14,6 +14,7 @@ namespace SportsData.Api.Application.UI.TeamCard
     public class TeamCardController : ApiControllerBase
     {
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TeamCardDto))]
         public async Task<ActionResult<TeamCardDto?>> GetTeamCard(
             string sport,
             string league,
@@ -36,6 +37,7 @@ namespace SportsData.Api.Application.UI.TeamCard
         }
 
         [HttpGet("statistics")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FranchiseSeasonStatisticDto))]
         public async Task<ActionResult<FranchiseSeasonStatisticDto>> GetTeamStatistics(
             string sport,
             string league,
@@ -51,6 +53,7 @@ namespace SportsData.Api.Application.UI.TeamCard
         }
 
         [HttpGet("metrics")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FranchiseSeasonMetricsDto))]
         public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetTeamMetrics(
             string sport,
             string league,

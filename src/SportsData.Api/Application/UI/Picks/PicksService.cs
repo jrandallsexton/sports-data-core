@@ -25,10 +25,12 @@ namespace SportsData.Api.Application.UI.Picks
 
         Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken);
 
         Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken);
 
         Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(
@@ -173,6 +175,7 @@ namespace SportsData.Api.Application.UI.Picks
 
         public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken)
         {
             var groupIds = await _dataContext.PickemGroupMembers
@@ -222,7 +225,7 @@ namespace SportsData.Api.Application.UI.Picks
 
             var widget = new PickRecordWidgetDto
             {
-                SeasonYear = 2025,
+                SeasonYear = seasonYear,
                 AsOfWeek = asOfWeek,
                 Items = items.OrderBy(x => x.LeagueName).ToList()
             };
@@ -232,6 +235,7 @@ namespace SportsData.Api.Application.UI.Picks
 
         public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken)
         {
             var synthetic = await _dataContext.Users
@@ -247,7 +251,7 @@ namespace SportsData.Api.Application.UI.Picks
                     [new ValidationFailure("synthetic", "Synthetic user not found.")]);
             }
 
-            return await GetPickRecordWidget(synthetic.Id, cancellationToken);
+            return await GetPickRecordWidget(synthetic.Id, seasonYear, cancellationToken);
         }
 
         public async Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(

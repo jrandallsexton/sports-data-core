@@ -13,6 +13,7 @@ namespace SportsData.Producer.Infrastructure.Data
         public Competition Competition { get; set; } = null!;
 
         public Guid SeasonWeekId { get; set; }
+        public SeasonWeek SeasonWeek { get; set; } = null!;
 
         public DateTime ScheduledTimeUtc { get; set; }
 
@@ -81,6 +82,12 @@ namespace SportsData.Producer.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.SeasonWeek)
+                    .WithMany()
+                    .HasForeignKey(x => x.SeasonWeekId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
     }

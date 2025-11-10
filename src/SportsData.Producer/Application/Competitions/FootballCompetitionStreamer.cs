@@ -50,10 +50,11 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
             _logger.LogInformation("Broadcasting job started for {@command}", command);
 
             var competition = await _dataContext.Competitions
+                .Include(c => c.Contest)
                 .Include(c => c.ExternalIds)
                 .Include(c => c.Competitors)
                 .ThenInclude(p => p.ExternalIds)
-                .Where(c => c.Id == command.CompetitionId)
+                .Where(c => c.Id == command.CompetitionId && c.Contest.IsFinal == false)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 

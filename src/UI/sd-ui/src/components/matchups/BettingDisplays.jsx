@@ -47,3 +47,46 @@ export function OverUnderDisplay({ overUnder, overUnderOpen }) {
     </div>
   );
 }
+
+/**
+ * SpreadAndOverUnderDisplay component - displays both spread and over/under together
+ * @param {object} props
+ * @param {number} props.spread - Current spread value
+ * @param {number} props.spreadOpen - Opening spread value
+ * @param {number|string} props.overUnder - Current O/U value
+ * @param {number} props.overUnderOpen - Opening O/U value
+ */
+export function SpreadAndOverUnderDisplay({ spread, spreadOpen, overUnder, overUnderOpen }) {
+  const spreadArrow = calculateSpreadArrow(spread, spreadOpen);
+  const overUnderValue = (overUnder === null || overUnder === 0 || overUnder === 'TBD') ? 'Off' : overUnder;
+  const ouArrow = calculateOverUnderArrow(overUnderValue, overUnderOpen);
+  
+  const spreadValue = (spread === null || spread === 0 || spread === 'TBD') ? 'Off' : spread;
+  
+  return (
+    <div className="spread-ou">
+      <span className="spread-display">
+        {spreadValue === 'Off' ? 'Off' : (
+          <>
+            {spreadArrow}
+            {spread > 0 ? `+${spread}` : spread}
+          </>
+        )}
+        {spreadValue !== 'Off' && spreadOpen !== undefined && spreadOpen !== null && spreadOpen !== spread && (
+          <span style={{ color: '#adb5bd', fontSize: '0.95em', marginLeft: 6 }}>
+            ({spreadOpen > 0 ? `+${spreadOpen}` : spreadOpen})
+          </span>
+        )}
+      </span>
+      <span className="ou-separator"> | </span>
+      <span className="ou-display">
+        {ouArrow}{overUnderValue}
+        {overUnderOpen !== undefined && overUnderOpen !== null && overUnderOpen !== overUnderValue && (
+          <span style={{ color: '#adb5bd', fontSize: '0.95em', marginLeft: 6 }}>
+            ({overUnderOpen})
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}

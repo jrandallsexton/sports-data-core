@@ -11,7 +11,7 @@ import { useTeamComparison } from "../../hooks/useTeamComparison";
 import TeamRow from "./TeamRow";
 import GameStatus from "./GameStatus";
 import PickButton from "./PickButton";
-import { SpreadDisplay, OverUnderDisplay } from "./BettingDisplays";
+import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import DeetsMeter from "./DeetsMeter";
 
 function MatchupCard({
@@ -128,12 +128,14 @@ function MatchupCard({
           schedule={homeSchedule}
           loading={homeLoading}
           error={homeError}
-          spreadDisplay={
-            <SpreadDisplay
-              spread={matchup.spreadCurrent}
-              spreadOpen={matchup.spreadOpen}
-            />
-          }
+        />
+
+        {/* Spread and Over/Under */}
+        <SpreadAndOverUnderDisplay
+          spread={matchup.spreadCurrent}
+          spreadOpen={matchup.spreadOpen}
+          overUnder={matchup.overUnderCurrent}
+          overUnderOpen={matchup.overUnderOpen}
         />
 
         {/* Game Status */}
@@ -155,13 +157,6 @@ function MatchupCard({
           isScoringPlay={matchup.isScoringPlay}
           contestId={matchup.contestId}
         />
-
-        <div className="spread-ou">
-          <OverUnderDisplay
-            overUnder={matchup.overUnderCurrent}
-            overUnderOpen={matchup.overUnderOpen}
-          />
-        </div>
 
         {/* DeetsMeter - AI Prediction Meters */}
         <DeetsMeter

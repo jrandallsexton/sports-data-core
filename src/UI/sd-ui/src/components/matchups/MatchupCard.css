@@ -383,11 +383,27 @@
 }
 
 .spread-ou {
-  text-align: center;
-  /* margin-top: 1rem; */
-  /* margin-bottom: 0; */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   font-weight: bold;
   color: #61dafb;
+}
+
+.spread-display {
+  text-align: right;
+  padding-right: 0.5rem;
+  white-space: nowrap;
+}
+
+.ou-separator {
+  color: #adb5bd;
+}
+
+.ou-display {
+  text-align: left;
+  padding-left: 0.5rem;
+  white-space: nowrap;
 }
 
 .pick-buttons {

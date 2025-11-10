@@ -19,7 +19,6 @@ import MiniSchedule from "./MiniSchedule";
  * @param {array} props.schedule - Schedule data array
  * @param {boolean} props.loading - Schedule loading state
  * @param {string} props.error - Schedule error message
- * @param {JSX.Element} props.spreadDisplay - Spread display element (home team only)
  */
 function TeamRow({
   teamName,
@@ -35,8 +34,7 @@ function TeamRow({
   onToggleSchedule,
   schedule,
   loading,
-  error,
-  spreadDisplay
+  error
 }) {
   return (
     <>
@@ -79,7 +77,6 @@ function TeamRow({
                   )}
                 </button>
               </div>
-              {spreadDisplay && <div className="team-spread">{spreadDisplay}</div>}
             </div>
           </div>
         </div>

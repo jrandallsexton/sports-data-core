@@ -20,21 +20,20 @@ function LeagueWeekOverviewTable({ overview }) {
   });
 
   return (
-    <div className="leaderboard-container">
-      <table className="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Game</th>
-            {users.map(user => (
-              <th key={user.userId}>
-                {user.user === "StatBot" && (
-                  <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
-                )}
-                {user.user}
-              </th>
-            ))}
-          </tr>
-        </thead>
+    <table className="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Game</th>
+          {users.map(user => (
+            <th key={user.userId}>
+              {user.user === "StatBot" && (
+                <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
+              )}
+              {user.user}
+            </th>
+          ))}
+        </tr>
+      </thead>
         <tbody>
           {contests.map(contest => {
             const isLocked = !!contest.isLocked;
@@ -112,7 +111,6 @@ function LeagueWeekOverviewTable({ overview }) {
           </tr>
         </tbody>
       </table>
-    </div>
   );
 }
 

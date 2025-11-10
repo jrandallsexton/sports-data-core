@@ -2,6 +2,8 @@
   max-width: 1800px;
   margin: 0 auto;
   padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .leaderboard-table {

@@ -61,26 +61,28 @@ function TeamRow({
                 {teamName}
               </Link>
             </div>
-            <div className="team-record" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>
-                {wins}-{losses} ({confWins}-{confLosses})
-              </span>
-              <button
-                className="mini-schedule-icon-btn"
-                aria-label={showSchedule ? "Hide last 5 games" : "Show last 5 games"}
-                onClick={onToggleSchedule}
-                style={{ marginLeft: 4 }}
-              >
-                {showSchedule ? (
-                  <FaSearchMinus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Hide last 5 games" />
-                ) : (
-                  <FaSearchPlus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Show last 5 games" />
-                )}
-              </button>
+            <div className="team-record-row">
+              <div className="team-record">
+                <span>
+                  {wins}-{losses} ({confWins}-{confLosses})
+                </span>
+                <button
+                  className="mini-schedule-icon-btn"
+                  aria-label={showSchedule ? "Hide last 5 games" : "Show last 5 games"}
+                  onClick={onToggleSchedule}
+                  style={{ marginLeft: 4 }}
+                >
+                  {showSchedule ? (
+                    <FaSearchMinus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Hide last 5 games" />
+                  ) : (
+                    <FaSearchPlus style={{ fontSize: '1.1em', verticalAlign: 'middle' }} aria-label="Show last 5 games" />
+                  )}
+                </button>
+              </div>
+              {spreadDisplay && <div className="team-spread">{spreadDisplay}</div>}
             </div>
           </div>
         </div>
-        {spreadDisplay && <div className="team-spread">{spreadDisplay}</div>}
       </div>
       {showSchedule && (
         loading ? (

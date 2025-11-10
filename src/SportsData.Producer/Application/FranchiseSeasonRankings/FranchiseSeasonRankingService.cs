@@ -74,7 +74,7 @@ namespace SportsData.Producer.Application.FranchiseSeasonRankings
                 .Select(x => new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto()
                 {
                     FranchiseLogoUrl = x.FranchiseSeason.Logos.ToList().First().Uri.OriginalString,
-                    FranchiseName = x.Franchise.Name,
+                    FranchiseName = x.Franchise.DisplayNameShort,
                     FranchiseSlug = x.Franchise.Slug,
                     Rank = x.Rank.Current,
                     FirstPlaceVotes = x.Rank.FirstPlaceVotes,

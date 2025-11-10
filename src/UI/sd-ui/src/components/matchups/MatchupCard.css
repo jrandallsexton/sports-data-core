@@ -109,12 +109,15 @@
   border-radius: 8px;
   background-color: #2a2d33;
   margin-bottom: 0.5rem;
+  gap: 1rem;
 }
 
 .team-info {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .matchup-logo {
@@ -131,6 +134,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .team-name-row {
@@ -142,6 +147,7 @@
 .team-ranking {
   font-weight: bold;
   color: #61dafb;
+  flex-shrink: 0;
 }
 
 .team-link {
@@ -155,9 +161,17 @@
   color: var(--accent-color, #6c63ff);
 }
 
+.team-record-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
 .team-record {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.9rem;
   color: #adb5bd;
 }
@@ -166,6 +180,8 @@
   font-weight: bold;
   font-size: 1.2rem;
   color: #61dafb;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .at-divider {

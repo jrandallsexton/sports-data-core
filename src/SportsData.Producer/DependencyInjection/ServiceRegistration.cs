@@ -8,6 +8,7 @@ using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
+using SportsData.Producer.Application.FranchiseSeasonRankings;
 using SportsData.Producer.Application.FranchiseSeasons;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
@@ -86,6 +87,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IContestReplayService, ContestReplayService>();
 
             services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
+
+            services.AddScoped<IFranchiseSeasonRankingService, FranchiseSeasonRankingService>();
 
             return services;
         }

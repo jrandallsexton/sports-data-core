@@ -19,8 +19,19 @@ namespace SportsData.Api.Application.UI.Rankings
             _rankingsService = rankingsService;
         }
 
-        [HttpGet("{seasonYear}/week/{week}")]
+        [HttpGet("{seasonYear}")]
         public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPolls(
+            [FromRoute] int seasonYear,
+            CancellationToken cancellationToken)
+        {
+            var result = await _rankingsService.GetRankingsBySeasonYear(
+                seasonYear,
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("{seasonYear}/week/{week}")]
+        public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPollsBySeasonYearWeek(
             [FromRoute] int seasonYear,
             [FromRoute] int week,
             CancellationToken cancellationToken)

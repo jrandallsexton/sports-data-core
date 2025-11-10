@@ -14,7 +14,7 @@ function RankingsWidget() {
       setLoading(true);
       setError(null);
       try {
-        const apiResult = await apiWrapper.Rankings.getCurrentRankings(2025, 11);
+        const apiResult = await apiWrapper.Rankings.getSeasonRankings(2025);
         const data = apiResult?.data || apiResult;
         setPollsData(Array.isArray(data) ? data : []);
         setActiveTabIndex(0);

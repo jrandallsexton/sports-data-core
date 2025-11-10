@@ -21,6 +21,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
         Task RefreshContestByContestId(Guid contestId);
         Task RefreshContestMediaByContestId(Guid contestId);
+        Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear);
     }
 
     public class ProducerClient : ClientBase, IProvideProducers
@@ -41,7 +42,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var metrics = tmp.FromJson<List<FranchiseSeasonMetricsDto>>();
-            return metrics ?? new List<FranchiseSeasonMetricsDto>();
+            return metrics ?? [];
         }
 
         public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
@@ -85,6 +86,15 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
             var response = await HttpClient.PostAsync($"contest/{contestId}/media/refresh", content);
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear)
+        {
+            var response = await HttpClient.GetAsync($"franchise-season-ranking/seasonYear/{seasonYear}");
+            response.EnsureSuccessStatusCode();
+            var tmp = await response.Content.ReadAsStringAsync();
+            var metrics = tmp.FromJson<List<FranchiseSeasonPollDto>>();
+            return metrics ?? [];
         }
     }
 }

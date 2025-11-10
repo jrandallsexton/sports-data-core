@@ -1,6 +1,7 @@
 ﻿using FluentValidation.Results;
 
 using SportsData.Api.Application.UI.Rankings.Dtos;
+using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
@@ -10,6 +11,7 @@ namespace SportsData.Api.Application.UI.Rankings
     {
         Task<Result<List<RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(int seasonYear, int week, CancellationToken ct);
         Task<Result<RankingsByPollIdByWeekDto>> GetRankingsByPollWeek(int seasonYear, int week, string poll, CancellationToken ct);
+        Task<Result<List<RankingsByPollIdByWeekDto>>> GetRankingsBySeasonYear(int seasonYear, CancellationToken ct);
     }
 
     public class RankingsService : IRankingsService
@@ -29,7 +31,10 @@ namespace SportsData.Api.Application.UI.Rankings
             _canonicalDataProvider = canonicalDataProvider;
         }
 
-        public async Task<Result<List<RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(int seasonYear, int week, CancellationToken ct)
+        public async Task<Result<List<RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(
+            int seasonYear,
+            int week,
+            CancellationToken ct)
         {
             var values = new List<RankingsByPollIdByWeekDto>();
 
@@ -130,6 +135,15 @@ namespace SportsData.Api.Application.UI.Rankings
                     ResultStatus.BadRequest,
                     [new ValidationFailure("rankings", $"Error retrieving rankings: {ex.Message}")]);
             }
+        }
+
+        public async Task<Result<List<RankingsByPollIdByWeekDto>>> GetRankingsBySeasonYear(int seasonYear, CancellationToken ct)
+        {
+            var polls = await _canonicalDataProvider.GetFranchiseSeasonRankings(seasonYear);
+
+            var dtos = polls.Select(poll => poll.ToRankingsByPollDto()).ToList();
+
+            return new Success<List<RankingsByPollIdByWeekDto>>(dtos);
         }
     }
 }

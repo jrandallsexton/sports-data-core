@@ -61,26 +61,26 @@ public class PicksController : ApiControllerBase
         return result.ToActionResult();
     }
 
-    [HttpGet("widget")]
+    [HttpGet("{season}/widget")]
     [Authorize]
-    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidget(
+    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidget([FromRoute] int season,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickRecordWidget(userId, cancellationToken);
+        var result = await _userPickService.GetPickRecordWidget(userId, season, cancellationToken);
 
         return result.ToActionResult();
     }
 
-    [HttpGet("widget/synthetic")]
+    [HttpGet("{season}/widget/synthetic")]
     [Authorize]
-    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
+    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic([FromRoute] int season,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickRecordWidgetForSynthetic(userId, cancellationToken);
+        var result = await _userPickService.GetPickRecordWidgetForSynthetic(userId, season, cancellationToken);
 
         return result.ToActionResult();
     }

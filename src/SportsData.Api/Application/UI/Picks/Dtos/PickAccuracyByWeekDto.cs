@@ -1,26 +1,26 @@
 ﻿namespace SportsData.Api.Application.UI.Picks.Dtos
 {
-    public class PickAccuracyByWeekDto
+    public record PickAccuracyByWeekDto
     {
-        public Guid UserId { get; set; }
+        public Guid UserId { get; init; }
 
-        public string UserName { get; set; } = default!;
+        public string UserName { get; init; } = default!;
 
-        public Guid LeagueId { get; set; }
+        public Guid LeagueId { get; init; }
 
-        public string LeagueName { get; set; } = default!;
+        public string LeagueName { get; init; } = default!;
 
-        public List<WeeklyAccuracyDto> WeeklyAccuracy { get; set; } = new();
+        public List<WeeklyAccuracyDto> WeeklyAccuracy { get; init; } = [];
 
-        public double OverallAccuracyPercent { get; set; }
+        public double OverallAccuracyPercent { get; init; }
 
-        public class WeeklyAccuracyDto
+        public record WeeklyAccuracyDto
         {
-            public int Week { get; set; }
-            public int CorrectPicks { get; set; }
-            public int TotalPicks { get; set; }
+            public int Week { get; init; }
+            public int CorrectPicks { get; init; }
+            public int TotalPicks { get; init; }
 
-            public double AccuracyPercent { get; set; }
+            public double AccuracyPercent { get; init; }
         }
     }
 }

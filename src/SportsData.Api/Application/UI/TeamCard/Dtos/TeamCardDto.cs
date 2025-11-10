@@ -1,46 +1,46 @@
 ﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
 
-public class TeamCardDto
+public record TeamCardDto
 {
-    public Guid FranchiseSeasonId { get; set; }
+    public Guid FranchiseSeasonId { get; init; }
 
-    public required string Slug { get; set; }
+    public required string Slug { get; init; }
 
-    public required string Name { get; set; }
+    public required string Name { get; init; }
 
-    public required string ShortName { get; set; }
+    public required string ShortName { get; init; }
 
-    public int? Ranking { get; set; }
+    public int? Ranking { get; init; }
 
-    public string? Division { get; set; } // TODO
+    public string? Division { get; init; } // TODO
 
-    public string? ConferenceName { get; set; }
+    public string? ConferenceName { get; init; }
 
-    public string? ConferenceShortName { get; set; }
+    public string? ConferenceShortName { get; init; }
 
-    public string? ConferenceSlug { get; set; }
+    public string? ConferenceSlug { get; init; }
 
-    public required string OverallRecord { get; set; }
+    public required string OverallRecord { get; init; }
 
-    public required string ConferenceRecord { get; set; }
+    public required string ConferenceRecord { get; init; }
 
-    public required string ColorPrimary { get; set; }
+    public required string ColorPrimary { get; init; }
 
-    public required string ColorSecondary { get; set; }
+    public required string ColorSecondary { get; init; }
 
-    public required string LogoUrl { get; set; }
+    public required string LogoUrl { get; init; }
 
-    public required string HelmetUrl { get; set; }
+    public required string HelmetUrl { get; init; }
 
-    public required string Location { get; set; }
+    public required string Location { get; init; }
 
-    public required string StadiumName { get; set; }
+    public required string StadiumName { get; init; }
 
-    public required int StadiumCapacity { get; set; }
+    public required int StadiumCapacity { get; init; }
 
-    public List<TeamCardNewsItemDto> News { get; set; } = [];
+    public List<TeamCardNewsItemDto> News { get; init; } = [];
 
-    public List<TeamCardScheduleItemDto> Schedule { get; set; } = [];
+    public List<TeamCardScheduleItemDto> Schedule { get; init; } = [];
 
-    public List<int> SeasonYears { get; set; } = [];
+    public List<int> SeasonYears { get; init; } = [];
 }

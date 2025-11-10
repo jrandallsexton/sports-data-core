@@ -85,7 +85,7 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IContestReplayService, ContestReplayService>();
 
-            services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionBroadcastingJob>();
+            services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
 
             return services;
         }
@@ -113,6 +113,11 @@ namespace SportsData.Producer.DependencyInjection
                 nameof(ContestUpdateJob),
                 job => job.ExecuteAsync(),
                 Cron.Daily);
+
+            recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
+                nameof(FootballCompetitionStreamScheduler),
+                job => job.Execute(),
+                "0 7 * * 0"); // Sunday at 07:00 UTC
 
             return services;
         }

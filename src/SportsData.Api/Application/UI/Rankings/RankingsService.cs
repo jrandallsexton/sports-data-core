@@ -1,7 +1,6 @@
 ﻿using FluentValidation.Results;
 
 using SportsData.Api.Application.UI.Rankings.Dtos;
-using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
@@ -17,35 +16,36 @@ namespace SportsData.Api.Application.UI.Rankings
     {
         private readonly ILogger<RankingsService> _logger;
         private readonly IProvideCanonicalData _canonicalDataProvider;
-        private readonly AppDataContext _dataContext;
+
+        private const string PollIdAp = "ap";
+        private const string PollIdCoaches = "usa";
+        private const string PollIdCfp = "cfp";
 
         public RankingsService(
             ILogger<RankingsService> logger,
-            IProvideCanonicalData canonicalDataProvider,
-            AppDataContext dataContext)
+            IProvideCanonicalData canonicalDataProvider)
         {
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
-            _dataContext = dataContext;
         }
 
         public async Task<Result<List<RankingsByPollIdByWeekDto>>> GetPollRankingsByPollWeek(int seasonYear, int week, CancellationToken ct)
         {
             var values = new List<RankingsByPollIdByWeekDto>();
 
-            var cfp = await GetRankingsByPollWeek(seasonYear, week, "cfp", ct);
+            var cfp = await GetRankingsByPollWeek(seasonYear, week, PollIdCfp, ct);
             if (cfp.IsSuccess)
             {
                 values.Add(cfp.Value);
             }
 
-            var ap = await GetRankingsByPollWeek(seasonYear, week, "ap", ct);
+            var ap = await GetRankingsByPollWeek(seasonYear, week, PollIdAp, ct);
             if (ap.IsSuccess)
             {
                 values.Add(ap.Value);
             }
 
-            var coaches = await GetRankingsByPollWeek(seasonYear, week, "usa", ct);
+            var coaches = await GetRankingsByPollWeek(seasonYear, week, PollIdCoaches, ct);
             if (coaches.IsSuccess)
             {
                 values.Add(coaches.Value);
@@ -60,7 +60,7 @@ namespace SportsData.Api.Application.UI.Rankings
             string poll,
             CancellationToken ct)
         {
-            poll = string.IsNullOrEmpty(poll) ? "ap" : poll.ToLowerInvariant();
+            poll = string.IsNullOrEmpty(poll) ? PollIdAp : poll.ToLowerInvariant();
 
             if (seasonYear is < 1900 or > 2100)
             {
@@ -97,26 +97,28 @@ namespace SportsData.Api.Application.UI.Rankings
                     _logger.LogInformation("Rankings found but no entries for season {SeasonYear} week {Week}", seasonYear, seasonWeek);
                 }
 
-                rankings.PollId = poll;
-
-                switch (poll)
+                rankings = poll switch
                 {
-                    case "ap":
-                        rankings.PollName = $"AP Top 25 - Week {seasonWeek}";
-                        rankings.HasFirstPlaceVotes = true;
-                        rankings.HasPoints = true;
-                        rankings.HasTrends = true;
-                        break;
-                    case "usa":
-                        rankings.PollName = $"Coaches Poll - Week {seasonWeek}";
-                        rankings.HasFirstPlaceVotes = true;
-                        rankings.HasPoints = true;
-                        rankings.HasTrends = true;
-                        break;
-                    case "cfp":
-                        rankings.PollName = $"College Football Playoffs - Week {seasonWeek}";
-                        break;
-                }
+                    PollIdAp => rankings with
+                    {
+                        PollName = $"AP Top 25 - Week {seasonWeek}",
+                        HasFirstPlaceVotes = true,
+                        HasPoints = true,
+                        HasTrends = true
+                    },
+                    PollIdCoaches => rankings with
+                    {
+                        PollName = $"Coaches Poll - Week {seasonWeek}",
+                        HasFirstPlaceVotes = true,
+                        HasPoints = true,
+                        HasTrends = true
+                    },
+                    PollIdCfp => rankings with
+                    {
+                        PollName = $"College Football Playoffs - Week {seasonWeek}"
+                    },
+                    _ => rankings
+                };
 
                 return new Success<RankingsByPollIdByWeekDto>(rankings);
             }

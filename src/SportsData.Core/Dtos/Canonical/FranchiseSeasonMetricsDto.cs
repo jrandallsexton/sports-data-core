@@ -2,42 +2,43 @@
 
 namespace SportsData.Core.Dtos.Canonical
 {
-    public class FranchiseSeasonMetricsDto
+    public record FranchiseSeasonMetricsDto
     {
-        public string FranchiseName { get; set; } = null!;
-        public string FranchiseSlug { get; set; } = null!;
+        public string FranchiseName { get; init; } = null!;
+        public string FranchiseSlug { get; init; } = null!;
 
-        public string? Conference { get; set; }
+        public string? Conference { get; init; }
 
-        public int SeasonYear { get; set; }
-        public int GamesPlayed { get; set; }
+        public int SeasonYear { get; init; }
+        public int GamesPlayed { get; init; }
 
         // Offense
-        public decimal Ypp { get; set; }
-        public decimal SuccessRate { get; set; }
-        public decimal ExplosiveRate { get; set; }
-        public decimal PointsPerDrive { get; set; }
-        public decimal ThirdFourthRate { get; set; }
-        public decimal? RzTdRate { get; set; }
-        public decimal? RzScoreRate { get; set; }
-        public decimal TimePossRatio { get; set; }
+        public decimal Ypp { get; init; }
+        public decimal SuccessRate { get; init; }
+        public decimal ExplosiveRate { get; init; }
+        public decimal PointsPerDrive { get; init; }
+        public decimal ThirdFourthRate { get; init; }
+        public decimal? RzTdRate { get; init; }
+        public decimal? RzScoreRate { get; init; }
+        public decimal TimePossRatio { get; init; }
 
-        // Defense (opponent metrics)
-        public decimal OppYpp { get; set; }
-        public decimal OppSuccessRate { get; set; }
-        public decimal OppExplosiveRate { get; set; }
-        public decimal OppPointsPerDrive { get; set; }
-        public decimal OppThirdFourthRate { get; set; }
-        public decimal? OppRzTdRate { get; set; }
-        public decimal? OppScoreTdRate { get; set; }
+        // Defense
+        public decimal OppYpp { get; init; }
+        public decimal OppSuccessRate { get; init; }
+        public decimal OppExplosiveRate { get; init; }
+        public decimal OppPointsPerDrive { get; init; }
+        public decimal OppThirdFourthRate { get; init; }
+        public decimal? OppRzTdRate { get; init; }
+        public decimal? OppScoreTdRate { get; init; }
 
         // ST / Discipline
-        public decimal NetPunt { get; set; }
-        public decimal FgPctShrunk { get; set; }
-        public decimal FieldPosDiff { get; set; }
-        public decimal TurnoverMarginPerDrive { get; set; }
-        public decimal PenaltyYardsPerPlay { get; set; }
+        public decimal NetPunt { get; init; }
+        public decimal FgPctShrunk { get; init; }
+        public decimal FieldPosDiff { get; init; }
+        public decimal TurnoverMarginPerDrive { get; init; }
+        public decimal PenaltyYardsPerPlay { get; init; }
     }
+
 
     public class MetricLegendDto
     {

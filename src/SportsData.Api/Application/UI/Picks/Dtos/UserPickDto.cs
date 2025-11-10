@@ -1,24 +1,24 @@
 ﻿namespace SportsData.Api.Application.UI.Picks.Dtos;
 
-public class UserPickDto
+public record UserPickDto
 {
-    public Guid UserId { get; set; }
+    public Guid UserId { get; init; }
 
-    public string? User { get; set; }
+    public string? User { get; init; }
 
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid ContestId { get; set; }
+    public Guid ContestId { get; init; }
 
-    public Guid FranchiseId { get; set; }
+    public Guid FranchiseId { get; init; }
 
-    public UserPickType PickType { get; set; }
+    public UserPickType PickType { get; init; }
 
-    public int? ConfidencePoints { get; set; }
+    public int? ConfidencePoints { get; init; }
 
-    public int? TiebreakerGuessTotal { get; set; }
+    public int? TiebreakerGuessTotal { get; init; }
 
-    public bool? IsCorrect { get; set; }
+    public bool? IsCorrect { get; init; }
 
-    public int? PointsAwarded { get; set; }
+    public int? PointsAwarded { get; init; }
 }

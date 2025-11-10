@@ -3,8 +3,6 @@
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest;
-using SportsData.Api.Application.UI.Picks;
-using SportsData.Api.Application.UI.Picks.PicksPage;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -163,16 +161,5 @@ namespace SportsData.Api.Application.Admin
 
             return BadRequest();
         }
-    }
-
-    public class GenerateUrlIdentityCommand
-    {
-        public string Url { get; set; } = string.Empty;
-    }
-
-    public class AiChatCommand
-    {
-        public required string Name { get; set; }
-        public required string Text { get; set; }
     }
 }

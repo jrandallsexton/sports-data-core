@@ -32,6 +32,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionMedia> CompetitionMedia { get; set; }
 
+        public DbSet<CompetitionStream> CompetitionStreams { get; set; }
+
         public DbSet<Competition> Competitions { get; set; }
 
         public DbSet<CompetitionCompetitor> CompetitionCompetitors { get; set; }
@@ -187,6 +189,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionStatusExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CompetitionStream.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());

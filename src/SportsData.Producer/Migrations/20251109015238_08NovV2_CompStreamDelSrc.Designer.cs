@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251109015238_08NovV2_CompStreamDelSrc")]
+    partial class _08NovV2_CompStreamDelSrc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -890,8 +893,6 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("CompetitionId")
                         .IsUnique();
-
-                    b.HasIndex("SeasonWeekId");
 
                     b.ToTable("CompetitionStream", (string)null);
                 });
@@ -7110,15 +7111,7 @@ namespace SportsData.Producer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonWeek", "SeasonWeek")
-                        .WithMany()
-                        .HasForeignKey("SeasonWeekId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Competition");
-
-                    b.Navigation("SeasonWeek");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatistic", b =>

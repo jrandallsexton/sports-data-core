@@ -25,10 +25,12 @@ namespace SportsData.Api.Application.UI.Picks
 
         Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken);
 
         Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken);
 
         Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(
@@ -173,18 +175,17 @@ namespace SportsData.Api.Application.UI.Picks
 
         public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidget(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken)
         {
-            var widget = new PickRecordWidgetDto
-            {
-                SeasonYear = 2025
-            };
-
             var groupIds = await _dataContext.PickemGroupMembers
                 .AsNoTracking()
                 .Where(x => x.UserId == userId)
                 .Select(x => x.PickemGroupId)
                 .ToListAsync(cancellationToken);
+
+            var items = new List<PickRecordWidgetDto.PickRecordWidgetItem>();
+            int asOfWeek = 0;
 
             foreach (var groupId in groupIds)
             {
@@ -194,9 +195,9 @@ namespace SportsData.Api.Application.UI.Picks
                     .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
                     .MaxAsync(p => (int?)p.Week, cancellationToken) ?? 0;
 
-                if (widget.AsOfWeek == 0)
+                if (asOfWeek == 0)
                 {
-                    widget.AsOfWeek = currentWeek;
+                    asOfWeek = currentWeek;
                 }
 
                 var group = await _dataContext.PickemGroups
@@ -219,16 +220,22 @@ namespace SportsData.Api.Application.UI.Picks
                     Accuracy = total > 0 ? Math.Round((double)correct / total, 2) : 0
                 };
 
-                widget.Items.Add(widgetItem);
+                items.Add(widgetItem);
             }
 
-            widget.Items = widget.Items.OrderBy(x => x.LeagueName).ToList();
+            var widget = new PickRecordWidgetDto
+            {
+                SeasonYear = seasonYear,
+                AsOfWeek = asOfWeek,
+                Items = items.OrderBy(x => x.LeagueName).ToList()
+            };
 
             return new Success<PickRecordWidgetDto>(widget);
         }
 
         public async Task<Result<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
             Guid userId,
+            int seasonYear,
             CancellationToken cancellationToken)
         {
             var synthetic = await _dataContext.Users
@@ -244,7 +251,7 @@ namespace SportsData.Api.Application.UI.Picks
                     [new ValidationFailure("synthetic", "Synthetic user not found.")]);
             }
 
-            return await GetPickRecordWidget(synthetic.Id, cancellationToken);
+            return await GetPickRecordWidget(synthetic.Id, seasonYear, cancellationToken);
         }
 
         public async Task<Result<List<PickAccuracyByWeekDto>>> GetPickAccuracyByWeek(

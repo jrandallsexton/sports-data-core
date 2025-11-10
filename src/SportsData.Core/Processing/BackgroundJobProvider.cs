@@ -10,29 +10,29 @@ namespace SportsData.Core.Processing
 {
     public interface IProvideBackgroundJobs
     {
-        void Enqueue<T>(Expression<Func<T, Task>> methodCall); //where T : IAmABackgroundJob<T>;
+        string Enqueue<T>(Expression<Func<T, Task>> methodCall); //where T : IAmABackgroundJob<T>;
 
-        void Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context);
+        string Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context);
 
-        void Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay);
+        string Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay);
     }
 
     public class BackgroundJobProvider : IProvideBackgroundJobs
     {
-        public void Enqueue<T>(Expression<Func<T, Task>> methodCall) //where T : IAmABackgroundJob<T>
+        public string Enqueue<T>(Expression<Func<T, Task>> methodCall) //where T : IAmABackgroundJob<T>
         {
-            BackgroundJob.Enqueue(methodCall);
+            return BackgroundJob.Enqueue(methodCall);
         }
 
-        public void Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context) //where T : IAmABackgroundJob<T>
+        public string Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context) //where T : IAmABackgroundJob<T>
         {
-            BackgroundJob.Enqueue(methodCall);
             context.AddTags("Testing");
+            return BackgroundJob.Enqueue(methodCall);
         }
 
-        public void Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay)
+        public string Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay)
         {
-            BackgroundJob.Schedule(methodCall, delay);
+            return BackgroundJob.Schedule(methodCall, delay);
         }
     }
 }

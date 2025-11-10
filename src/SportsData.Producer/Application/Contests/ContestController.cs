@@ -100,7 +100,7 @@ namespace SportsData.Producer.Application.Contests
             if (competition == null)
                 return NotFound();
 
-            var command = new BroadcastFootballCompetitionCommand()
+            var command = new StreamFootballCompetitionCommand()
             {
                 CompetitionId = competition.Id,
                 ContestId = contestId,

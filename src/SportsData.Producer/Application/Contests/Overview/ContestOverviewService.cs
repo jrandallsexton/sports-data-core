@@ -279,8 +279,7 @@ namespace SportsData.Producer.Application.Contests.Overview
             string homeTeamSlug,
             Uri? awayTeamLogoUri,
             Uri? homeTeamLogoUri,
-            Guid awayTeamFranchiseSeasonId,
-            Guid homeTeamFranchiseSeasonId)
+            Guid awayTeamFranchiseSeasonId)
         {
             var plays = await _dbContext.CompetitionPlays
                 .AsNoTracking()
@@ -416,8 +415,7 @@ namespace SportsData.Producer.Application.Contests.Overview
                     homeTeamSlug,
                     awayTeamLogoUri,
                     homeTeamLogoUri,
-                    awayTeamFranchiseSeasonId,
-                    homeTeamFranchiseSeasonId),
+                    awayTeamFranchiseSeasonId),
                 TeamStats = await GetTeamStatsAsync(contestId),
                 Info = await GetGameInfoAsync(contestId),
                 AwayMetrics = metrics.Item1,

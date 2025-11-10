@@ -125,6 +125,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
             var venue = await _dataContext.Venues
                 .Include(x => x.ExternalIds)
                 .Include(x => x.Images)
+                .AsSplitQuery()
                 .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                         z.Provider == command.SourceDataProvider));
             var updated = false;

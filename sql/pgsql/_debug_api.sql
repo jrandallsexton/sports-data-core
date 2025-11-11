@@ -1,5 +1,5 @@
 
-select * from public."MatchupPreview" where "ContestId" = '8b0f8da2-4fa8-c797-73f1-000c14d82e1d' and "RejectedUtc" is null order by "CreatedUtc" desc
+select * from public."MatchupPreview" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58' and "RejectedUtc" is null order by "CreatedUtc" desc
 -- http://localhost:5262/ui/matchup/8b0f8da2-4fa8-c797-73f1-000c14d82e1d/preview
 --update "MatchupPreview" set "RejectedUtc" = '2025-09-10 13:39:08.011918+00' where "Id" = 'a97f5e56-6849-4087-8e80-d3d618048ec0'
 update public."MatchupPreview" set
@@ -15,7 +15,8 @@ update public."MatchupPreview" set
 
 select * from public."MatchupPreview" where "ContestId" = 'e2758932-b9d5-a450-fe56-5911e9756f43' order by "CreatedUtc" desc
 select * from public."PickemGroup" where "IsPublic" = true
-select * from public."UserPick" where "Week" = 10 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+select * from public."UserPick" where "Week" = 11 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+--delete from public."UserPick" where "Week" = 11 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
 -- FIX DEV - 02 NOV 2025
 -- delete from public."UserPick" where "Week" = 10 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813';
@@ -33,17 +34,19 @@ from public."PickemGroup" g
 inner join public."User" u on u."Id" = g."CommissionerUserId"
 where g."IsPublic" = true
 
+select * from public."PickemGroup"
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' order by "SeasonWeek"
 select * from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
---delete from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
+--delete from public."PickemGroupWeek" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
+delete from public."PickemGroupMatchup" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
 -- https://api-dev.sportdeets.com/ui/matchup//preview
 select *
 from public."PickemGroupMatchup"
 where
   --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
-  "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
+  "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
   --"ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
 order by "StartDateUtc" desc
 
@@ -76,7 +79,7 @@ delete from public."ContestPrediction"
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 3
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
-select * from public."UserPick" where "UserId" = '49e3ef51-ed54-4fcc-893d-5b0df3f0f720' and "IsCorrect" is null
+select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 11
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 --delete from public."UserPick" where "Week" = 3
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2

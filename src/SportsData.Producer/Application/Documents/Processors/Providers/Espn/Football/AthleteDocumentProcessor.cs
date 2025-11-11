@@ -85,16 +85,16 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         var athleteIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-        var exists = await _dataContext.Athletes
+        var entity = await _dataContext.Athletes
             .Include(x => x.ExternalIds)
             .AsNoTracking()
-            .AnyAsync(x => x.ExternalIds.Any(z =>
+            .FirstOrDefaultAsync(x => x.ExternalIds.Any(z =>
                 z.Value == athleteIdentity.UrlHash &&
                 z.Provider == command.SourceDataProvider));
 
-        if (exists)
+        if (entity != null)
         {
-            await ProcessExisting(command, dto);
+            await ProcessExisting(command, entity, dto);
         }
         else
         {
@@ -323,8 +323,6 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 command.CorrelationId,
                 CausationId.Producer.AthleteDocumentProcessor));
         }
-
-        await Task.CompletedTask;
     }
 
 }

@@ -1,7 +1,7 @@
 
 select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
 select * from public."AthleteExternalId" where "AthleteId" = '839ab5ca-a490-92d2-2e22-31478ff032b0'
-
+select * from public."AthleteSeason"
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."FranchiseSeason" where "GroupSeasonId" = '59e30a3c-b1cd-098e-cf76-9c4ac2441427'
 select * from public."Franchise"
@@ -41,9 +41,11 @@ select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2
 select * from public."GroupSeason" where "ParentId" is null
 select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
-select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 11'
-select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = '654be351-4408-ebae-3b1b-c59cd4b6b39b'
+select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = '8bbb44a7-3cf9-2e22-1b91-65ac51a8bbea' and "Type" = 'ap'  order by "Date"
+select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AP Poll: Week 12'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 12'
+select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'd98f45f2-d348-24e4-09af-552972c79313'
 
 select * from public."Season"
 select * from public."SeasonPhase"
@@ -73,8 +75,9 @@ from public."Contest" c
 where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 -- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
-    select * from public."Contest" where "Id" = 'f5dc3da3-e13e-4322-b485-c64a2500ce5f'
+    select * from public."Contest" where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
+select * from public."CompetitionStream"
 select * from public."Competition" where "ContestId" = '672c2b6b-639d-e1fd-08e0-57872a85ae1c'
 select * from public."CompetitionStatus" where "CompetitionId" = 'ec7d6034-05db-88d7-9ab1-9f657a2b5955'
 
@@ -98,13 +101,14 @@ select count(*) from public."CompetitionDrive"
 -- delete from public."CompetitionPlay"
 -- delete from public."CompetitionDrive"
 
---update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
+--update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
 -- FIX DEV - 07 OCT 2025
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
 select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
-select * from public."Competition" where "ContestId" = 'd3bb6a1d-b968-0b6d-d3c5-45e7e48cfdfd'
+select * from public."Competition" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+select * from public."CompetitionOdds" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 
 select * from public."CompetitionProbability" where "CompetitionId" = 'af18ebe5-033d-a056-84c5-8358f412685f' order by "SequenceNumber"::int
 

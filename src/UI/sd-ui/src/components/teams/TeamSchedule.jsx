@@ -1,3 +1,4 @@
+// src/components/teams/TeamSchedule.jsx
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
 import "./TeamSchedule.css";

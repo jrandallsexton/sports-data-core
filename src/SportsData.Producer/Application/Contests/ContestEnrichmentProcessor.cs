@@ -1,15 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
@@ -25,17 +22,22 @@ namespace SportsData.Producer.Application.Contests
         private readonly FootballDataContext _dataContext;
         private readonly IProvideEspnApiData _espnProvider;
         private readonly IEventBus _bus;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        private const string ProviderIdEspnBet = "58";
 
         public ContestEnrichmentProcessor(
             ILogger<ContestEnrichmentProcessor> logger,
             FootballDataContext dataContext,
             IProvideEspnApiData espnProvider,
-            IEventBus bus)
+            IEventBus bus,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _espnProvider = espnProvider;
             _bus = bus;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Process(EnrichContestCommand command)
@@ -64,15 +66,6 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                var contest = await _dataContext.Contests
-                    .FirstOrDefaultAsync(x => x.Id == command.ContestId);
-
-                if (contest is null)
-                {
-                    _logger.LogError("Contest could not be loaded for provided contest id. {@Command}", command);
-                    return;
-                }
-
                 var competitionExternalId = competition.ExternalIds
                     .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
 
@@ -93,19 +86,21 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                await _bus.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(status.Ref),
-                    ParentId: contest.Id.ToString(),
-                    Uri: new Uri(competitionExternalId.SourceUrl),
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: competition.Contest.SeasonYear,
-                    DocumentType: DocumentType.EventCompetition,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.ContestEnrichmentProcessor
-                ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
-                await _dataContext.SaveChangesAsync();
+                //await _bus.Publish(new DocumentRequested(
+                //    Id: HashProvider.GenerateHashFromUri(status.Ref),
+                //    ParentId: contest.Id.ToString(),
+                //    Uri: new Uri(competitionExternalId.SourceUrl),
+                //    Sport: Sport.FootballNcaa,
+                //    SeasonYear: competition.Contest.SeasonYear,
+                //    DocumentType: DocumentType.EventCompetition,
+                //    SourceDataProvider: SourceDataProvider.Espn,
+                //    CorrelationId: command.CorrelationId,
+                //    CausationId: CausationId.Producer.ContestEnrichmentProcessor
+                //));
+                //await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+                //await _dataContext.SaveChangesAsync();
+
+                var contest = competition.Contest;
 
                 if (status.Type.Name != "STATUS_FINAL")
                 {
@@ -166,7 +161,7 @@ namespace SportsData.Producer.Application.Contests
                     contest.AwayScore = (int)awayScoreDto!.Value;
                     contest.HomeScore = (int)homeScoreDto!.Value;
 
-                    contest.FinalizedUtc = DateTime.UtcNow;
+                    contest.FinalizedUtc = _dateTimeProvider.UtcNow();
 
                     await _bus.Publish(
                         new ContestEnrichmentCompleted(
@@ -210,14 +205,14 @@ namespace SportsData.Producer.Application.Contests
                         awayFranchiseSeasonId;
                 }
 
-                contest.FinalizedUtc = DateTime.UtcNow; // TODO: Inject IProvideDateTimes
+                contest.FinalizedUtc = _dateTimeProvider.UtcNow();
                 contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
                 // were there odds on this game?
-                var odds = competition.Odds?.FirstOrDefault();
+                var odds = competition.Odds?.Where(x => x.ProviderId == ProviderIdEspnBet).FirstOrDefault();
 
                 // TODO: Later we might want to score each odd individually - or even see if they were updated
-                // Bit says they are indeed update post-game.  Will verify.
+                // they are indeed updated post-game.  Will verify.
                 if (odds != null)
                 {
                     if (odds.OverUnder.HasValue)
@@ -278,39 +273,5 @@ namespace SportsData.Producer.Application.Contests
                 _ => Guid.Empty
             };
         }
-
-        //private async Task<EspnEventCompetitionPlaysDto?> GetPlaysAsync(Uri uri)
-        //{
-        //    try
-        //    {
-        //        var response = await _httpClient.GetAsync(uri);
-        //        if (!response.IsSuccessStatusCode) return null;
-
-        //        var json = await response.Content.ReadAsStringAsync();
-        //        return json.FromJson<EspnEventCompetitionPlaysDto>();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Failed to get plays from {Uri}", uri);
-        //        return null;
-        //    }
-        //}
-
-        //private async Task<EspnEventCompetitionStatusDto?> GetStatusAsync(Uri uri)
-        //{
-        //    try
-        //    {
-        //        var response = await _httpClient.GetAsync(uri);
-        //        if (!response.IsSuccessStatusCode) return null;
-
-        //        var json = await response.Content.ReadAsStringAsync();
-        //        return json.FromJson<EspnEventCompetitionStatusDto>();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Failed to get status from {Uri}", uri);
-        //        return null;
-        //    }
-        //}
     }
 }

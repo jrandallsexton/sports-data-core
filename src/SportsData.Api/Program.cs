@@ -196,6 +196,8 @@ namespace SportsData.Api
                 });
             });
 
+            builder.Services.AddOutputCache();
+
             services.AddHealthChecksMaster<Program>(builder.Environment.ApplicationName);
 
             services.AddLocalServices(Sport.All);
@@ -211,6 +213,7 @@ namespace SportsData.Api
             app.UseMiddleware<FirebaseAuthenticationMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseOutputCache();
 
             await app.Services.ApplyMigrations<AppDataContext>();
 

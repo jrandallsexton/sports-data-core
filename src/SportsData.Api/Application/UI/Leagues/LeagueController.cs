@@ -112,7 +112,7 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost("{id}/join")]
     [Authorize]
-    public async Task<ActionResult<Guid?>> JoinLeague(string id)
+    public async Task<ActionResult<Guid?>> JoinLeague([FromRoute] string id)
     {
         if (!Guid.TryParse(id, out var leagueId))
             return BadRequest("Invalid league ID format.");

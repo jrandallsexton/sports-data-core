@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Core.Common;
@@ -19,6 +20,8 @@ namespace SportsData.Api.Application.UI.Rankings
             _rankingsService = rankingsService;
         }
 
+        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+        [OutputCache(Duration = 6000)]
         [HttpGet("{seasonYear}")]
         public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPolls(
             [FromRoute] int seasonYear,

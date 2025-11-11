@@ -303,28 +303,26 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
     private async Task ProcessExisting(
         ProcessDocumentCommand command,
+        Athlete entity,
         EspnFootballAthleteDto dto)
     {
-        // TODO: Implement update logic if needed
-        _logger.LogWarning("Athlete already exists for {Provider}. Skipping for now.", command.SourceDataProvider);
-
-        //if (dto.Headshot?.Href is not null)
-        //{
-        //    var imgId = Guid.NewGuid();
-        //    await _publishEndpoint.Publish(new ProcessImageRequest(
-        //        dto.Headshot.Href,
-        //        imgId,
-        //        entity.Id,
-        //        $"{entity.Id}-{imgId}.png",
-        //        command.Sport,
-        //        command.Season,
-        //        command.DocumentType,
-        //        command.SourceDataProvider,
-        //        0, 0,
-        //        null,
-        //        command.CorrelationId,
-        //        CausationId.Producer.AthleteDocumentProcessor));
-        //}
+        if (dto.Headshot?.Href is not null)
+        {
+            var imgId = Guid.NewGuid();
+            await _publishEndpoint.Publish(new ProcessImageRequest(
+                dto.Headshot.Href,
+                imgId,
+                entity.Id,
+                $"{entity.Id}-{imgId}.png",
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                0, 0,
+                null,
+                command.CorrelationId,
+                CausationId.Producer.AthleteDocumentProcessor));
+        }
 
         await Task.CompletedTask;
     }

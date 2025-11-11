@@ -32,6 +32,7 @@ public class LeaderboardController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("widget")]
     [Authorize]
     public async Task<ActionResult<LeaderboardWidgetDto>> GetLeaderboardWidget(

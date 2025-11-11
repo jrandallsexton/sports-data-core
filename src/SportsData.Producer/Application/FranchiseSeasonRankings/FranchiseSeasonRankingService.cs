@@ -22,7 +22,7 @@ namespace SportsData.Producer.Application.FranchiseSeasonRankings
 
         public async Task<Result<List<FranchiseSeasonPollDto>>> GetCurrentPolls(int seasonYear)
         {
-            var pollsToLoad = new List<string>(){"cfp", "ap", "usa"};
+            var pollsToLoad = new List<string> {"cfp", "ap", "usa"};
             var polls = new List<FranchiseSeasonPollDto>();
 
             foreach (var pollId in pollsToLoad)

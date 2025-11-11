@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
+using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.ResourceIndex
@@ -15,13 +17,35 @@ namespace SportsData.Provider.Application.ResourceIndex
         private readonly ILogger<ResourceIndexController> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IGenerateRoutingKeys _routingKeyGenerator = new RoutingKeyGenerator();
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ResourceIndexController(
             ILogger<ResourceIndexController> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _backgroundJobProvider = backgroundJobProvider;
+        }
+
+        [HttpPost("{id}/process")]
+        public async Task<IActionResult> ProcessResourceIndex([FromRoute] string id)
+        {
+            var indexId = Guid.Parse(id);
+            var resourceIndex = await _dataContext.ResourceIndexJobs
+                .Where(x => x.Id == indexId)
+                .FirstOrDefaultAsync();
+
+            if (resourceIndex == null)
+            {
+                return NotFound();
+            }
+
+            var jobDef = new DocumentJobDefinition(resourceIndex);
+            var result = _backgroundJobProvider.Enqueue<ResourceIndexJob>(x => x.ExecuteAsync(jobDef));
+
+            return Accepted(result);
         }
 
         [HttpPost("create", Name = "CreateResourceIndex")]

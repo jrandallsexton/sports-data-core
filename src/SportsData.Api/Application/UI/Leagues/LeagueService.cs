@@ -433,14 +433,12 @@ namespace SportsData.Api.Application.UI.Leagues
                 }
                 
                 canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= DateTime.UtcNow;
-                canonicalContest.AwaySpread = (decimal?)matchup.AwaySpread;
-                canonicalContest.HomeSpread = (decimal?)matchup.HomeSpread;
                 canonicalContest.WinnerFranchiseSeasonId = canonicalContest.AwayScore > canonicalContest.HomeScore
                     ? canonicalContest.AwayFranchiseSeasonId
                     : canonicalContest.HomeFranchiseSeasonId;
 
                 // Determine spread winner based on the matchup spread
-                if (matchup.AwaySpread.HasValue && matchup.HomeSpread.HasValue)
+                if (matchup is { AwaySpread: not null, HomeSpread: not null })
                 {
                     var spreadDifference = (canonicalContest.AwayScore + matchup.AwaySpread.Value) - canonicalContest.HomeScore;
                     if (spreadDifference > 0)

@@ -61,6 +61,7 @@ public class PicksController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("{season}/widget")]
     [Authorize]
     public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidget([FromRoute] int season,
@@ -73,6 +74,7 @@ public class PicksController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("{season}/widget/synthetic")]
     [Authorize]
     public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic([FromRoute] int season,
@@ -85,6 +87,7 @@ public class PicksController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("chart")]
     [Authorize]
     public async Task<ActionResult<List<PickAccuracyByWeekDto>>> GetPickAccuracyChart(
@@ -97,6 +100,7 @@ public class PicksController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("chart/synthetic")]
     [Authorize]
     public async Task<ActionResult<PickAccuracyByWeekDto>> GetPickAccuracyChartForSynthetic(

@@ -41,7 +41,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
     try {
       // Use current seasonYear for opponent
       const res = await import("../../api/apiWrapper").then(m => m.default.TeamCard.getBySlugAndSeason(opponentSlug, seasonYear));
-      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 8) : []);
+      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 10) : []);
     } catch (e) {
       setDrillError("Failed to load schedule");
     } finally {

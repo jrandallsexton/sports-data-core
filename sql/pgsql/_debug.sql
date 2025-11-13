@@ -1,5 +1,15 @@
 
 select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
+select count(*) from public."AthleteImage"
+
+select f."Slug", ath.*  from public."AthleteImage" ai
+inner join public."Athlete" ath on ath."Id" = ai."AthleteId"
+inner join public."AthleteSeason" ats on ats."AthleteId" = ath."Id"
+inner join public."FranchiseSeason" fs on fs."Id" = ats."FranchiseSeasonId"
+inner JOIN public."Franchise" f on f."Id" = fs."FranchiseId"
+where ath."IsActive" = true
+order by f."Slug", ath."LastName", ath."FirstName"
+
 select * from public."AthleteExternalId" where "AthleteId" = '839ab5ca-a490-92d2-2e22-31478ff032b0'
 select * from public."AthleteSeason"
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'

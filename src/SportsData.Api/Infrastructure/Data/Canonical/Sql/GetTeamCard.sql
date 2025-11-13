@@ -33,7 +33,9 @@ SELECT DISTINCT ON (F."Id")
 FROM
 	PUBLIC."Franchise" F
 	INNER JOIN PUBLIC."FranchiseSeason" FS on FS."FranchiseId" = F."Id"
-	left  join public."FranchiseSeasonRanking" fsr on fsr."FranchiseSeasonId" = FS."Id" and fsr."Type" = 'ap' and fsr."SeasonWeekId" = (select "SeasonWeekId" from next_week)
+	left  join public."FranchiseSeasonRanking" fsr on fsr."FranchiseSeasonId" = FS."Id" and
+		fsr."DefaultRanking" = true and fsr."Type" in ('ap', 'cfp') and
+		fsr."SeasonWeekId" = (select "SeasonWeekId" from next_week)
 	left  join public."FranchiseSeasonRankingDetail" fsrd on fsrd."FranchiseSeasonRankingId" = fsr."Id"
 	INNER JOIN PUBLIC."GroupSeason" GS ON GS."Id" = FS."GroupSeasonId"
 	LEFT JOIN PUBLIC."FranchiseLogo" FL ON FL."FranchiseId" = F."Id"

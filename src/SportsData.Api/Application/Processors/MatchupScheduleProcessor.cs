@@ -95,31 +95,31 @@ namespace SportsData.Api.Application.Processors
                 groupWeek.Matchups.Add(new PickemGroupMatchup()
                 {
                     Id = Guid.NewGuid(),
+                    AwayConferenceLosses = groupMatchup.AwayConferenceLosses,
+                    AwayConferenceWins = groupMatchup.AwayConferenceWins,
+                    AwayLosses = groupMatchup.AwayLosses,
+                    AwayRank = groupMatchup.AwayRank,
                     AwaySpread = groupMatchup.AwaySpread,
+                    AwayWins = groupMatchup.AwayWins,
                     ContestId = groupMatchup.ContestId,
                     CreatedBy = Guid.Empty,
                     CreatedUtc = DateTime.UtcNow,
                     GroupId = group.Id,
                     GroupWeek = groupWeek,
+                    HomeConferenceLosses = groupMatchup.HomeConferenceLosses,
+                    HomeConferenceWins = groupMatchup.HomeConferenceWins,
+                    HomeLosses = groupMatchup.HomeLosses,
+                    HomeRank = groupMatchup.HomeRank,
                     HomeSpread = groupMatchup.HomeSpread,
+                    HomeWins = groupMatchup.HomeWins,
                     OverOdds = groupMatchup.OverOdds,
                     OverUnder = groupMatchup.OverUnder,
                     SeasonWeek = command.SeasonWeek,
                     SeasonWeekId = groupMatchup.SeasonWeekId,
                     SeasonYear = command.SeasonYear,
                     Spread = groupMatchup.Spread,
-                    UnderOdds = groupMatchup.UnderOdds,
-                    AwayRank = groupMatchup.AwayRank,
-                    HomeRank = groupMatchup.HomeRank,
                     StartDateUtc = groupMatchup.StartDateUtc,
-                    AwayWins = groupMatchup.AwayWins,
-                    AwayLosses = groupMatchup.AwayLosses,
-                    AwayConferenceWins = groupMatchup.AwayConferenceWins,
-                    AwayConferenceLosses = groupMatchup.AwayConferenceLosses,
-                    HomeWins = groupMatchup.HomeWins,
-                    HomeLosses = groupMatchup.HomeLosses,
-                    HomeConferenceWins = groupMatchup.HomeConferenceWins,
-                    HomeConferenceLosses = groupMatchup.HomeConferenceLosses
+                    UnderOdds = groupMatchup.UnderOdds
                 });
             }
 

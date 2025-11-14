@@ -12,6 +12,8 @@ using SportsData.Core.Extensions;
 
 using System.Text.Json.Serialization;
 
+using Twilio.Annotations;
+
 namespace SportsData.Api.Application.Admin
 {
     public interface IAdminService
@@ -56,7 +58,9 @@ namespace SportsData.Api.Application.Admin
         public async Task RefreshAiExistence(Guid correlationId)
         {
             // get the current week
-            var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
+            //var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
+            var weeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
+            var currentWeek = weeks.Where(x => x.WeekNumber == 11).First()!;
 
             if (currentWeek is null)
             {
@@ -64,11 +68,11 @@ namespace SportsData.Api.Application.Admin
                 throw new Exception("Current week could not be found");
             }
 
-            // get the synthetic; there is only one now
-            var synthetic = await _dataContext.Users
+            // get the synthetics
+            var synthetics = await _dataContext.Users
                 .AsNoTracking()
                 .Where(u => u.IsSynthetic)
-                .FirstAsync();
+                .ToListAsync();
             
             // get all pickemGroups
             var allGroups = await _dataContext.PickemGroups
@@ -76,32 +80,35 @@ namespace SportsData.Api.Application.Admin
                 .Include(g => g.Members)
                 .ToListAsync();
 
-            var addedToGroupCount = 0;
-
-            // we need to make sure a synthetic exists in each league
-            foreach (var group in allGroups)
+            foreach (var synthetic in synthetics)
             {
-                var groupSynthetic = group.Members
-                    .FirstOrDefault(m => m.UserId == synthetic.Id);
+                var addedToGroupCount = 0;
 
-                if (groupSynthetic is not null)
-                    continue;
+                // we need to make sure a synthetic exists in each league
+                foreach (var group in allGroups)
+                {
+                    var groupSynthetic = group.Members
+                        .FirstOrDefault(m => m.UserId == synthetic.Id);
 
-                // add the synthetic to the group
-                await _dataContext.PickemGroupMembers.AddAsync(
-                    new PickemGroupMember()
-                    {
-                        PickemGroupId = group.Id,
-                        UserId = synthetic.Id,
-                        CreatedBy = group.CommissionerUserId,
-                        CreatedUtc = group.CreatedUtc,
-                        Role = LeagueRole.Member
-                    });
-                await _dataContext.SaveChangesAsync();
-                addedToGroupCount++;
+                    if (groupSynthetic is not null)
+                        continue;
+
+                    // add the synthetic to the group
+                    await _dataContext.PickemGroupMembers.AddAsync(
+                        new PickemGroupMember()
+                        {
+                            PickemGroupId = group.Id,
+                            UserId = synthetic.Id,
+                            CreatedBy = group.CommissionerUserId,
+                            CreatedUtc = group.CreatedUtc,
+                            Role = LeagueRole.Member
+                        });
+                    await _dataContext.SaveChangesAsync();
+                    addedToGroupCount++;
+                }
+
+                _logger.LogWarning("Added synthetic to {count} groups.", addedToGroupCount);
             }
-
-            _logger.LogWarning("Added synthetic to {count} groups.", addedToGroupCount);
 
             // now, for each league, we need to ensure the synthetic has submitted picks
             // those picks will be submitted based on previously-generated MatchupPreview records
@@ -112,11 +119,14 @@ namespace SportsData.Api.Application.Admin
                 .Include(g => g.Members)
                 .ToListAsync();
 
+            var statbotId = Guid.Parse("5fa4c116-1993-4f2b-9729-c50c62150813");
+
+            // Create picks for StatBot
             foreach (var group in allGroups)
             {
                 // get the matchups for the group
                 var groupMatchupsResult = await _leagueService
-                        .GetMatchupsForLeagueWeekAsync(synthetic.Id, group.Id, currentWeek.WeekNumber, CancellationToken.None);
+                        .GetMatchupsForLeagueWeekAsync(statbotId, group.Id, currentWeek.WeekNumber, CancellationToken.None);
 
                 if (!groupMatchupsResult.IsSuccess)
                 {
@@ -133,7 +143,7 @@ namespace SportsData.Api.Application.Admin
                     var synPick = await _dataContext.UserPicks
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.PickemGroupId == group.Id &&
-                                    x.UserId == synthetic.Id)
+                                    x.UserId == statbotId)
                         .FirstOrDefaultAsync();
 
                     // do we already have one?
@@ -155,10 +165,10 @@ namespace SportsData.Api.Application.Admin
                     // generate the synthetic's pick from the preview
                     synPick = new PickemGroupUserPick()
                     {
-                        UserId = synthetic.Id,
+                        UserId = statbotId,
                         ContestId = matchup.ContestId,
                         CreatedUtc = preview.CreatedUtc,
-                        CreatedBy = synthetic.Id,
+                        CreatedBy = statbotId,
                         FranchiseId = group.PickType == PickType.AgainstTheSpread
                             ? preview.PredictedSpreadWinner
                             : preview.PredictedStraightUpWinner,
@@ -178,6 +188,69 @@ namespace SportsData.Api.Application.Admin
                     {
                         synPick.FranchiseId = preview.PredictedStraightUpWinner;
                     }
+
+                    await _dataContext.UserPicks.AddAsync(synPick);
+                    await _dataContext.SaveChangesAsync();
+                }
+            }
+
+            var metricBotId = Guid.Parse("b210d677-19c3-4f26-ac4b-b2cc7ad58c44");
+
+            // Create picks for MetricBot
+            foreach (var group in allGroups)
+            {
+                // get the matchups for the group
+                var groupMatchupsResult = await _leagueService
+                    .GetMatchupsForLeagueWeekAsync(statbotId, group.Id, currentWeek.WeekNumber, CancellationToken.None);
+
+                if (!groupMatchupsResult.IsSuccess)
+                {
+                    _logger.LogWarning("Could not get matchups for group {GroupId}", group.Id);
+                    continue;
+                }
+
+                var groupMatchups = groupMatchupsResult.Value;
+
+                // iterate each group matchup
+                foreach (var matchup in groupMatchups.Matchups)
+                {
+                    // get the synthetic's pick
+                    var synPick = await _dataContext.UserPicks
+                        .Where(x => x.ContestId == matchup.ContestId &&
+                                    x.PickemGroupId == group.Id &&
+                                    x.UserId == metricBotId)
+                        .FirstOrDefaultAsync();
+
+                    // do we already have one?
+                    if (synPick is not null)
+                        continue;
+
+                    // get the previously-generated ContestPrediction
+                    var prediction = await _dataContext.ContestPredictions
+                        .AsNoTracking()
+                        .Where(x => x.ContestId == matchup.ContestId &&
+                                    x.PredictionType == group.PickType)
+                        .OrderByDescending(x => x.CreatedUtc)
+                        .FirstOrDefaultAsync();
+
+                    // no preview? skip it
+                    if (prediction is null)
+                        continue;
+
+                    // generate the synthetic's pick from the ContestPrediction
+                    synPick = new PickemGroupUserPick()
+                    {
+                        UserId = metricBotId,
+                        ContestId = matchup.ContestId,
+                        CreatedUtc = prediction.CreatedUtc,
+                        CreatedBy = metricBotId,
+                        FranchiseId = prediction.WinnerFranchiseSeasonId,
+                        PickemGroupId = group.Id,
+                        PickType = prediction.PredictionType == PickType.StraightUp ?
+                            UserPickType.StraightUp : UserPickType.AgainstTheSpread,
+                        Week = currentWeek.WeekNumber,
+                        TiebreakerType = TiebreakerType.TotalPoints
+                    };
 
                     await _dataContext.UserPicks.AddAsync(synPick);
                     await _dataContext.SaveChangesAsync();

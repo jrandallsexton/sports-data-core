@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 # === Load data ===
 df_train = pd.read_csv("./data/competition_metrics_full.csv")
-df_predict = pd.read_csv("./data/competition_metrics_week_11.csv")
+df_predict = pd.read_csv("./data/competition_metrics_week_12.csv")
 
 # === Derive ATS label (exclude nulls or ties against spread) ===
 df_train = df_train.dropna(subset=["HomeScore", "AwayScore", "Spread"]).copy()
@@ -43,7 +43,8 @@ model.fit(X_train, y_train)
 # === Predict ===
 X_predict = df_predict[feature_cols].fillna(0)
 df_predict["PredictedLabel"] = model.predict(X_predict)
-df_predict["HomeCoverProbability"] = model.predict_proba(X_predict)[:, 1]  # P(home covers)
+df_predict["HomeCoverProbability"] = model.predict_proba(X_predict)[:, 1]  # P(home covers)ls
+
 df_predict["ModelVersion"] = "MetricBot-v1.0.0"
 
 # === Save raw predictions ===

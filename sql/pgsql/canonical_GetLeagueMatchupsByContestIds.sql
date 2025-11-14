@@ -71,7 +71,9 @@ LEFT JOIN LATERAL (
 ) flAway ON TRUE
 
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
-LEFT  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and fsrAway."Type" = 'ap' and fsrAway."SeasonWeekId" = c."SeasonWeekId"
+  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
+        fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
+        fsrAway."SeasonWeekId" = c."SeasonWeekId"
 LEFT  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
@@ -86,10 +88,24 @@ LEFT JOIN LATERAL (
 ) flHome ON TRUE
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-LEFT  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and fsrHome."Type" = 'ap' and fsrHome."SeasonWeekId" = c."SeasonWeekId"
+  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
+        fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
+        fsrHome."SeasonWeekId" = c."SeasonWeekId"
 LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
-WHERE c."Id" = 'ee11ed43-9a77-9e87-73c4-5ce6ca312ae5'
+--WHERE c."Id" = 'ee11ed43-9a77-9e87-73c4-5ce6ca312ae5'
+WHERE c."Id" IN (
+  '016861cc-9cab-1296-c156-c6be3c46cadb',
+'24477be2-e202-7ce2-ef3b-4b71a9bc3b58',
+'39087234-df27-817d-7798-80190853a704',
+'4a41c8a6-bcc5-473a-f88b-d151a5c9aeea',
+'6fb9aa0a-720b-751a-a36f-d0e54fcaf1bf',
+'71bae14f-71b7-9554-65ee-028dc0912ad9',
+'7ba93dac-a490-f35b-e0d2-61c747391a31',
+'7d6edbc7-c777-abf1-b2c6-46a501996492',
+'ae646c2a-c263-3b8c-b8ad-16f24b38a8fc',
+'d9c160f7-bd11-28f9-f19d-2e14d6c3d8dd',
+'e9724378-b059-f6cb-4cd6-74d5416cbf3e')
 
 GROUP BY
   c."SeasonWeekId",

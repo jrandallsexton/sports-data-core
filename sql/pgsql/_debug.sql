@@ -51,8 +51,11 @@ select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2
 select * from public."GroupSeason" where "ParentId" is null
 select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
-select * from public."FranchiseSeasonRanking" where "FranchiseSeasonId" = '8bbb44a7-3cf9-2e22-1b91-65ac51a8bbea' and "Type" = 'ap'  order by "Date"
+select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
+
+update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
+
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AP Poll: Week 12'
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 12'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'd98f45f2-d348-24e4-09af-552972c79313'
@@ -117,6 +120,7 @@ select count(*) from public."CompetitionDrive"
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
 select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
+select * from public."Contest" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f'
 select * from public."Competition" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 select * from public."CompetitionOdds" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 
@@ -194,7 +198,7 @@ inner join public."Season" s on s."Id" = gs."SeasonId"
 where gs."Slug" = 'sec' and gs."SeasonYear" = 2025
 
 select * from public."CompetitionPrediction"
-select * from public."CompetitionPredictionValue"
+select * from public."CompetitionPredictionValue" where "CompetitionPredictionId" = '9e911c06-90b0-4080-a164-925ee89f8531'
 select * from public."PredictionMetric" order by "Name"
 --delete from public."PredictionMetric"
 

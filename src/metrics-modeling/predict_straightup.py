@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 # === Load training and prediction data ===
 df_train = pd.read_csv("./data/competition_metrics_full.csv")
-df_predict = pd.read_csv("./data/competition_metrics_week_11.csv")
+df_predict = pd.read_csv("./data/competition_metrics_week_12.csv")
 
 # === Filter & label training data ===
 df_train = df_train[df_train["Winner"].isin(["HOME", "AWAY"])].copy()

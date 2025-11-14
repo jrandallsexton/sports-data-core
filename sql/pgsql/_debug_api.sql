@@ -72,14 +72,14 @@ where
 ORDER BY "CreatedUtc" desc
 
 select * from public."ContestPrediction"
-delete from public."ContestPrediction"
+--delete from public."ContestPrediction"
 --update public."UserPick" set "PickType" = 2
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 3
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
-select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 11
+select * from public."UserPick" where "UserId" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44' and "Week" = 11
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 --delete from public."UserPick" where "Week" = 3
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2

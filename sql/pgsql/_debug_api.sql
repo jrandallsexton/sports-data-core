@@ -79,7 +79,7 @@ select * from public."ContestPrediction"
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 3
 
 --delete from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
-select * from public."UserPick" where "UserId" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44' and "Week" = 11
+select * from public."UserPick" where "UserId" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44' and "Week" = 12
 --delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
 --delete from public."UserPick" where "Week" = 3
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "Week" = 2

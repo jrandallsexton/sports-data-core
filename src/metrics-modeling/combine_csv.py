@@ -4,7 +4,7 @@ import pandas as pd
 df_train = pd.read_csv("./data/competition_metrics.csv")
 
 # Load week 11 (predictions only)
-df_week11 = pd.read_csv("./data/competition_metrics_week_11.csv")
+df_week11 = pd.read_csv("./data/competition_metrics_week_12.csv")
 
 # Add required columns to match training
 df_week11["HomeScore"] = None

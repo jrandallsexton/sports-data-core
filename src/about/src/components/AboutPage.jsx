@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './AboutPage.css';
 import OverviewSection from './sections/OverviewSection';
 import ArchitectureSection from './sections/ArchitectureSection';
@@ -11,7 +11,7 @@ import FutureEnhancementsSection from './sections/FutureEnhancementsSection';
 const AboutPage = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
-  const sections = [
+  const sections = useMemo(() => [
     { id: 'overview', label: 'Overview' },
     { id: 'architecture', label: 'Architecture' },
     { id: 'ai', label: 'AI & Predictive Insights' },
@@ -19,7 +19,7 @@ const AboutPage = () => {
     { id: 'data-quality', label: 'Data Quality' },
     { id: 'devops', label: 'DevOps & GitOps' },
     { id: 'future', label: 'Future Enhancements' }
-  ];
+  ], []);
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
@@ -35,7 +35,7 @@ const AboutPage = () => {
   };
 
   // Update active section based on scroll position
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       const navHeight = 70;
       const scrollPosition = window.scrollY + navHeight + 50;

@@ -11,8 +11,9 @@ export default function useSignalRClient({
   const connectionRef = useRef(null);
 
   useEffect(() => {
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:5262";
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://api-dev.sportdeets.com/hubs/notifications", {
+      .withUrl(`${apiBaseUrl}/hubs/notifications`, {
         withCredentials: true,
       })
       .withAutomaticReconnect()

@@ -35,6 +35,16 @@
   letter-spacing: 0.5px;
 }
 
+.about-title a {
+  color: #61dafb;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.about-title a:hover {
+  opacity: 0.8;
+}
+
 .tm-symbol {
   font-size: 0.6em;
   vertical-align: super;
@@ -238,6 +248,16 @@
 
 .about-footer p {
   margin: 0.5rem 0;
+}
+
+.about-footer a {
+  color: #61dafb;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.about-footer a:hover {
+  opacity: 0.8;
 }
 
 .footer-note {

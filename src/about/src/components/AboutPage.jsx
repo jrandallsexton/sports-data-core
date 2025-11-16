@@ -58,7 +58,11 @@ const AboutPage = () => {
       {/* Sticky Navigation */}
       <nav className="about-nav">
         <div className="about-nav-content">
-          <h1 className="about-title">sportDeets<span className="tm-symbol">™</span></h1>
+          <h1 className="about-title">
+            <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">
+              sportDeets<span className="tm-symbol">™</span>
+            </a>
+          </h1>
           <div className="about-nav-links">
             {sections.map(section => (
               <button
@@ -86,9 +90,11 @@ const AboutPage = () => {
 
       {/* Footer */}
       <footer className="about-footer">
-        <p>&copy; 2025 sportDeets<span className="tm-symbol">™</span>. Built with React, .NET, and Azure.</p>
+        <p>
+          &copy; 2025 <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a>. Built with React, .NET, and Azure.
+        </p>
         <p className="footer-note">
-          This portfolio showcases the technical architecture and capabilities of the sportDeets<span className="tm-symbol">™</span> platform.
+          This portfolio showcases the technical architecture and capabilities of the <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a> platform.
         </p>
       </footer>
     </div>

@@ -1,11 +1,7 @@
-name: Deploy React App to Azure Static Web App (Dev)
+name: Deploy React App to Azure Static Web App (Production)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/UI/sd-ui/**'  # Only trigger when frontend code changes
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   build_and_deploy:
@@ -29,12 +25,12 @@ jobs:
     - name: Build React app
       run: npm run build
       env:
-        REACT_APP_API_BASE_URL: https://api-dev.sportdeets.com
+        REACT_APP_API_BASE_URL: https://api.sportdeets.com
 
-    - name: Deploy to Azure Static Web App (Dev)
+    - name: Deploy to Azure Static Web App (Production)
       uses: Azure/static-web-apps-deploy@v1
       with:
-        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_SPORTDEETS }}
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         action: "upload"
         app_location: "src/UI/sd-ui"

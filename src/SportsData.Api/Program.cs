@@ -210,7 +210,8 @@ namespace SportsData.Api
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            app.UseHttpsRedirection();
+            // Don't redirect to HTTPS when behind a proxy (Front Door, Traefik)
+            // app.UseHttpsRedirection();
 
             app.UseCors("AllowFrontend");
 

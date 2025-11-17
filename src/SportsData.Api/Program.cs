@@ -187,7 +187,10 @@ namespace SportsData.Api
                 {
                     policy.WithOrigins(
                             "http://localhost:3000",
-                            "https://dev.sportdeets.com")
+                            "http://localhost:3001",
+                            "https://dev.sportdeets.com",
+                            "https://sportdeets.com",
+                            "https://www.sportdeets.com")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials() // Required for cookies

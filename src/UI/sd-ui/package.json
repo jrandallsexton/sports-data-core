@@ -29,6 +29,7 @@
   },
   "scripts": {
     "start": "npm run lint && react-scripts start",
+    "start:prod-local": "npm run lint && set REACT_APP_API_BASE_URL=http://192.168.0.112:8080&& react-scripts start",
     "server": "json-server api-mock/db.json --port 3001",
     "build": "react-scripts build",
     "test": "react-scripts test",

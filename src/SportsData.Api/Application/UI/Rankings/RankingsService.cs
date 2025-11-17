@@ -139,11 +139,52 @@ namespace SportsData.Api.Application.UI.Rankings
 
         public async Task<Result<List<RankingsByPollIdByWeekDto>>> GetRankingsBySeasonYear(int seasonYear, CancellationToken ct)
         {
-            var polls = await _canonicalDataProvider.GetFranchiseSeasonRankings(seasonYear);
+            _logger.LogInformation(
+                "GetRankingsBySeasonYear called with seasonYear={SeasonYear}", 
+                seasonYear);
 
-            var dtos = polls.Select(poll => poll.ToRankingsByPollDto()).ToList();
+            try
+            {
+                _logger.LogDebug(
+                    "Calling CanonicalDataProvider.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
+                    seasonYear);
+                
+                var polls = await _canonicalDataProvider.GetFranchiseSeasonRankings(seasonYear);
 
-            return new Success<List<RankingsByPollIdByWeekDto>>(dtos);
+                _logger.LogInformation(
+                    "Received {Count} polls from CanonicalDataProvider for seasonYear={SeasonYear}", 
+                    polls?.Count ?? 0, 
+                    seasonYear);
+
+                if (polls == null || polls.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "No polls returned from CanonicalDataProvider for seasonYear={SeasonYear}", 
+                        seasonYear);
+                    return new Success<List<RankingsByPollIdByWeekDto>>([]);
+                }
+
+                var dtos = polls.Select(poll => poll.ToRankingsByPollDto()).ToList();
+
+                _logger.LogInformation(
+                    "Successfully transformed {Count} polls to DTOs for seasonYear={SeasonYear}", 
+                    dtos.Count, 
+                    seasonYear);
+
+                return new Success<List<RankingsByPollIdByWeekDto>>(dtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex, 
+                    "Error in GetRankingsBySeasonYear for seasonYear={SeasonYear}", 
+                    seasonYear);
+                
+                return new Failure<List<RankingsByPollIdByWeekDto>>(
+                    [],
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(seasonYear), $"Error retrieving rankings: {ex.Message}")]);
+            }
         }
     }
 }

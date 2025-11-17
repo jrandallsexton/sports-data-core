@@ -90,11 +90,67 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear)
         {
-            var response = await HttpClient.GetAsync($"franchise-season-ranking/seasonYear/{seasonYear}");
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            var metrics = tmp.FromJson<List<FranchiseSeasonPollDto>>();
-            return metrics ?? [];
+            _logger.LogInformation(
+                "ProducerClient.GetFranchiseSeasonRankings called with seasonYear={SeasonYear}", 
+                seasonYear);
+            
+            try
+            {
+                var url = $"franchise-season-ranking/seasonYear/{seasonYear}";
+                _logger.LogDebug(
+                    "Making HTTP GET request to Producer: {Url}", 
+                    url);
+                
+                var response = await HttpClient.GetAsync(url);
+                
+                _logger.LogInformation(
+                    "Received HTTP response from Producer, StatusCode={StatusCode}, seasonYear={SeasonYear}", 
+                    response.StatusCode, 
+                    seasonYear);
+                
+                response.EnsureSuccessStatusCode();
+                
+                var tmp = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogDebug(
+                    "Response body length: {Length} characters for seasonYear={SeasonYear}", 
+                    tmp?.Length ?? 0, 
+                    seasonYear);
+                
+                if (string.IsNullOrEmpty(tmp))
+                {
+                    _logger.LogWarning(
+                        "Empty response body received from Producer for seasonYear={SeasonYear}", 
+                        seasonYear);
+                    return [];
+                }
+                
+                var metrics = tmp.FromJson<List<FranchiseSeasonPollDto>>();
+                
+                _logger.LogInformation(
+                    "Successfully deserialized {Count} polls for seasonYear={SeasonYear}", 
+                    metrics?.Count ?? 0, 
+                    seasonYear);
+                
+                return metrics ?? [];
+            }
+            catch (HttpRequestException httpEx)
+            {
+                _logger.LogError(
+                    httpEx, 
+                    "HTTP request failed in ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}, StatusCode={StatusCode}", 
+                    seasonYear,
+                    httpEx.StatusCode);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex, 
+                    "Error in ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
+                    seasonYear);
+                throw;
+            }
         }
     }
 }

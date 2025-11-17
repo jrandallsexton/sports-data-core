@@ -464,9 +464,42 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear)
         {
-            var dto = await _producerClient.GetFranchiseSeasonRankings(seasonYear);
+            _logger.LogInformation(
+                "CanonicalDataProvider.GetFranchiseSeasonRankings called with seasonYear={SeasonYear}", 
+                seasonYear);
+            
+            try
+            {
+                _logger.LogDebug(
+                    "Calling ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
+                    seasonYear);
+                
+                var dto = await _producerClient.GetFranchiseSeasonRankings(seasonYear);
 
-            return dto.ToList();
+                _logger.LogInformation(
+                    "Received {Count} polls from ProducerClient for seasonYear={SeasonYear}", 
+                    dto?.Count ?? 0, 
+                    seasonYear);
+
+                return dto?.ToList() ?? [];
+            }
+            catch (HttpRequestException httpEx)
+            {
+                _logger.LogError(
+                    httpEx, 
+                    "HTTP error calling Producer service for GetFranchiseSeasonRankings, seasonYear={SeasonYear}, StatusCode={StatusCode}", 
+                    seasonYear,
+                    httpEx.StatusCode);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex, 
+                    "Error in CanonicalDataProvider.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
+                    seasonYear);
+                throw;
+            }
         }
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)

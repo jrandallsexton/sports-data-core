@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Logging;
 
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Core.Common;
@@ -14,10 +15,14 @@ namespace SportsData.Api.Application.UI.Rankings
     public class RankingsController : ApiControllerBase
     {
         private readonly IRankingsService _rankingsService;
+        private readonly ILogger<RankingsController> _logger;
         
-        public RankingsController(IRankingsService rankingsService)
+        public RankingsController(
+            IRankingsService rankingsService,
+            ILogger<RankingsController> logger)
         {
             _rankingsService = rankingsService;
+            _logger = logger;
         }
 
         [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
@@ -27,10 +32,39 @@ namespace SportsData.Api.Application.UI.Rankings
             [FromRoute] int seasonYear,
             CancellationToken cancellationToken)
         {
-            var result = await _rankingsService.GetRankingsBySeasonYear(
-                seasonYear,
-                cancellationToken);
-            return result.ToActionResult();
+            _logger.LogInformation("GetPolls called with seasonYear={SeasonYear}", seasonYear);
+            
+            try
+            {
+                var result = await _rankingsService.GetRankingsBySeasonYear(
+                    seasonYear,
+                    cancellationToken);
+                
+                if (result.IsSuccess)
+                {
+                    _logger.LogInformation(
+                        "GetPolls succeeded for seasonYear={SeasonYear}, returned {Count} polls", 
+                        seasonYear, 
+                        result.Value.Count);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "GetPolls failed for seasonYear={SeasonYear}, Status={Status}", 
+                        seasonYear, 
+                        result.Status);
+                }
+                
+                return result.ToActionResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex, 
+                    "Unhandled exception in GetPolls for seasonYear={SeasonYear}", 
+                    seasonYear);
+                throw;
+            }
         }
 
         [HttpGet("{seasonYear}/week/{week}")]

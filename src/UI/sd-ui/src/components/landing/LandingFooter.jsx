@@ -6,7 +6,7 @@ function LandingFooter() {
     <footer className="landing-footer">
       <div className="footer-content">
         <p>
-          © {new Date().getFullYear()}{" "}
+          17 Nov © {new Date().getFullYear()}{" "}
           <span className="footer-brand">
             sportDeets<span className="tm-symbol">™</span>
           </span>

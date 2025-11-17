@@ -179,7 +179,7 @@ public class LeagueController : ApiControllerBase
                 "Unhandled exception in GetMatchupsForLeagueWeek for leagueId={LeagueId}, week={Week}", 
                 id, 
                 week);
-            throw;
+            return BadRequest(ex.Message);
         }
     }
 

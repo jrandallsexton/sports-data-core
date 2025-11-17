@@ -166,159 +166,282 @@ namespace SportsData.Api.Application.UI.Leagues
             int week,
             CancellationToken cancellationToken = default)
         {
-            var league = await _dbContext.PickemGroups
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == leagueId, cancellationToken: cancellationToken);
+            _logger.LogInformation(
+                "LeagueService.GetMatchupsForLeagueWeekAsync called with userId={UserId}, leagueId={LeagueId}, week={Week}", 
+                userId, 
+                leagueId, 
+                week);
 
-            if (league is null)
-                return new Failure<LeagueWeekMatchupsDto>(
-                    default!,
-                    ResultStatus.NotFound,
-                    [new ValidationFailure(nameof(leagueId), "League not found")]);
-
-            var matchups = await _dbContext.PickemGroupMatchups
-                .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
-                .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
-                {
-                    StartDateUtc = x.StartDateUtc,
-                    ContestId = x.ContestId,
-                    AwayRank = x.AwayRank,
-                    HomeRank = x.HomeRank,
-                })
-                .ToListAsync(cancellationToken);
-
-            var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
-
-            var predictions = await _dbContext.ContestPredictions
-                .Where(x => contestIds.Contains(x.ContestId))
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            var previews = await _dbContext.MatchupPreviews
-                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            var canonicalMatchups = await _canonicalDataProvider.GetMatchupsByContestIds(contestIds);
-
-            // Create dictionary for fast lookup of canonical values
-            var canonicalMap = canonicalMatchups.ToDictionary(x => x.ContestId);
-
-            // Fill in canonical fields for each league matchup
-            foreach (var matchup in matchups)
+            try
             {
-                if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
+                _logger.LogDebug(
+                    "Querying database for league, leagueId={LeagueId}", 
+                    leagueId);
+                
+                var league = await _dbContext.PickemGroups
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == leagueId, cancellationToken: cancellationToken);
+
+                if (league is null)
                 {
-                    //matchup.StartDateUtc = canonical.StartDateUtc;
-                    matchup.Status = canonical.Status;
-                    matchup.Broadcasts = canonical.Broadcasts;
+                    _logger.LogWarning(
+                        "League not found, leagueId={LeagueId}, userId={UserId}, week={Week}", 
+                        leagueId, 
+                        userId, 
+                        week);
+                    
+                    return new Failure<LeagueWeekMatchupsDto>(
+                        default!,
+                        ResultStatus.NotFound,
+                        [new ValidationFailure(nameof(leagueId), "League not found")]);
+                }
 
-                    // Away team
-                    matchup.Away = canonical.Away;
-                    matchup.AwayShort = canonical.AwayShort;
-                    matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
-                    matchup.AwayLogoUri = canonical.AwayLogoUri;
-                    matchup.AwaySlug = canonical.AwaySlug;
-                    matchup.AwayColor = canonical.AwayColor;
-                    matchup.AwayWins = canonical.AwayWins;
-                    matchup.AwayLosses = canonical.AwayLosses;
-                    matchup.AwayConferenceWins = canonical.AwayConferenceWins;
-                    matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
-                    matchup.AwayRank = canonical.AwayRank;
+                _logger.LogInformation(
+                    "League found: {LeagueName}, PickType={PickType}, leagueId={LeagueId}", 
+                    league.Name, 
+                    league.PickType, 
+                    leagueId);
 
-                    // Home team
-                    matchup.Home = canonical.Home;
-                    matchup.HomeShort = canonical.HomeShort;
-                    matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
-                    matchup.HomeLogoUri = canonical.HomeLogoUri;
-                    matchup.HomeSlug = canonical.HomeSlug;
-                    matchup.HomeColor = canonical.HomeColor;
-                    matchup.HomeWins = canonical.HomeWins;
-                    matchup.HomeLosses = canonical.HomeLosses;
-                    matchup.HomeConferenceWins = canonical.HomeConferenceWins;
-                    matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
-                    matchup.HomeRank = canonical.HomeRank;
-
-                    // Odds
-                    matchup.SpreadCurrent = canonical.SpreadCurrent.HasValue
-                        ? Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
-
-                    matchup.SpreadOpen = canonical.SpreadOpen.HasValue
-                        ? Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
-
-                    matchup.OverUnderCurrent = canonical.OverUnderCurrent.HasValue
-                        ? Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
-
-                    matchup.OverUnderOpen = canonical.OverUnderOpen.HasValue
-                        ? Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
-
-                    // Venue
-                    matchup.Venue = canonical.Venue;
-                    matchup.VenueCity = canonical.VenueCity;
-                    matchup.VenueState = canonical.VenueState;
-
-                    // Result
-                    matchup.IsComplete = canonical.CompletedUtc.HasValue;
-                    matchup.AwayScore = canonical.AwayScore;
-                    matchup.HomeScore = canonical.HomeScore;
-                    matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;
-                    matchup.SpreadWinnerFranchiseSeasonId = canonical.SpreadWinnerFranchiseSeasonId;
-                    matchup.OverUnderResult = canonical.OverUnderResult;
-                    matchup.CompletedUtc = canonical.CompletedUtc;
-
-                    var preview = previews
-                        .Where(x => x.ContestId == matchup.ContestId &&
-                                    x.RejectedUtc == null)
-                        .OrderByDescending(x => x.CreatedUtc)
-                        .FirstOrDefault();
-
-                    if (preview != null)
+                _logger.LogDebug(
+                    "Querying database for league matchups, leagueId={LeagueId}, week={Week}", 
+                    leagueId, 
+                    week);
+                
+                var matchups = await _dbContext.PickemGroupMatchups
+                    .Where(x => x.GroupId == leagueId && x.SeasonWeek == week)
+                    .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
                     {
-                        if (league.PickType == PickType.StraightUp)
+                        StartDateUtc = x.StartDateUtc,
+                        ContestId = x.ContestId,
+                        AwayRank = x.AwayRank,
+                        HomeRank = x.HomeRank,
+                    })
+                    .ToListAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Retrieved {Count} matchups from database for leagueId={LeagueId}, week={Week}", 
+                    matchups.Count, 
+                    leagueId, 
+                    week);
+
+                var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
+
+                _logger.LogDebug(
+                    "Querying contest predictions for {ContestCount} contests, leagueId={LeagueId}, week={Week}", 
+                    contestIds.Count, 
+                    leagueId, 
+                    week);
+                
+                var predictions = await _dbContext.ContestPredictions
+                    .Where(x => contestIds.Contains(x.ContestId))
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
+
+                _logger.LogDebug(
+                    "Found {PredictionCount} contest predictions, leagueId={LeagueId}, week={Week}", 
+                    predictions.Count, 
+                    leagueId, 
+                    week);
+
+                _logger.LogDebug(
+                    "Querying matchup previews for {ContestCount} contests, leagueId={LeagueId}, week={Week}", 
+                    contestIds.Count, 
+                    leagueId, 
+                    week);
+                
+                var previews = await _dbContext.MatchupPreviews
+                    .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
+
+                _logger.LogDebug(
+                    "Found {PreviewCount} matchup previews, leagueId={LeagueId}, week={Week}", 
+                    previews.Count, 
+                    leagueId, 
+                    week);
+
+                _logger.LogDebug(
+                    "Calling CanonicalDataProvider.GetMatchupsByContestIds for {ContestCount} contests, leagueId={LeagueId}, week={Week}", 
+                    contestIds.Count, 
+                    leagueId, 
+                    week);
+                
+                var canonicalMatchups = await _canonicalDataProvider.GetMatchupsByContestIds(contestIds);
+
+                _logger.LogInformation(
+                    "Received {CanonicalCount} canonical matchups from CanonicalDataProvider for leagueId={LeagueId}, week={Week}", 
+                    canonicalMatchups?.Count ?? 0, 
+                    leagueId, 
+                    week);
+
+                if (canonicalMatchups == null || canonicalMatchups.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "No canonical matchups returned from CanonicalDataProvider for leagueId={LeagueId}, week={Week}", 
+                        leagueId, 
+                        week);
+                    canonicalMatchups = [];
+                }
+
+                // Create dictionary for fast lookup of canonical values
+                var canonicalMap = canonicalMatchups.ToDictionary(x => x.ContestId);
+
+                _logger.LogDebug(
+                    "Enriching {MatchupCount} matchups with canonical data, leagueId={LeagueId}, week={Week}", 
+                    matchups.Count, 
+                    leagueId, 
+                    week);
+
+                // Fill in canonical fields for each league matchup
+                foreach (var matchup in matchups)
+                {
+                    if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
+                    {
+                        //matchup.StartDateUtc = canonical.StartDateUtc;
+                        matchup.Status = canonical.Status;
+                        matchup.Broadcasts = canonical.Broadcasts;
+
+                        // Away team
+                        matchup.Away = canonical.Away;
+                        matchup.AwayShort = canonical.AwayShort;
+                        matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
+                        matchup.AwayLogoUri = canonical.AwayLogoUri;
+                        matchup.AwaySlug = canonical.AwaySlug;
+                        matchup.AwayColor = canonical.AwayColor;
+                        matchup.AwayWins = canonical.AwayWins;
+                        matchup.AwayLosses = canonical.AwayLosses;
+                        matchup.AwayConferenceWins = canonical.AwayConferenceWins;
+                        matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
+                        matchup.AwayRank = canonical.AwayRank;
+
+                        // Home team
+                        matchup.Home = canonical.Home;
+                        matchup.HomeShort = canonical.HomeShort;
+                        matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
+                        matchup.HomeLogoUri = canonical.HomeLogoUri;
+                        matchup.HomeSlug = canonical.HomeSlug;
+                        matchup.HomeColor = canonical.HomeColor;
+                        matchup.HomeWins = canonical.HomeWins;
+                        matchup.HomeLosses = canonical.HomeLosses;
+                        matchup.HomeConferenceWins = canonical.HomeConferenceWins;
+                        matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
+                        matchup.HomeRank = canonical.HomeRank;
+
+                        // Odds
+                        matchup.SpreadCurrent = canonical.SpreadCurrent.HasValue
+                            ? Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                            : (decimal?)null;
+
+                        matchup.SpreadOpen = canonical.SpreadOpen.HasValue
+                            ? Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
+                            : (decimal?)null;
+
+                        matchup.OverUnderCurrent = canonical.OverUnderCurrent.HasValue
+                            ? Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                            : (decimal?)null;
+
+                        matchup.OverUnderOpen = canonical.OverUnderOpen.HasValue
+                            ? Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
+                            : (decimal?)null;
+
+                        // Venue
+                        matchup.Venue = canonical.Venue;
+                        matchup.VenueCity = canonical.VenueCity;
+                        matchup.VenueState = canonical.VenueState;
+
+                        // Result
+                        matchup.IsComplete = canonical.CompletedUtc.HasValue;
+                        matchup.AwayScore = canonical.AwayScore;
+                        matchup.HomeScore = canonical.HomeScore;
+                        matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;
+                        matchup.SpreadWinnerFranchiseSeasonId = canonical.SpreadWinnerFranchiseSeasonId;
+                        matchup.OverUnderResult = canonical.OverUnderResult;
+                        matchup.CompletedUtc = canonical.CompletedUtc;
+
+                        var preview = previews
+                            .Where(x => x.ContestId == matchup.ContestId &&
+                                        x.RejectedUtc == null)
+                            .OrderByDescending(x => x.CreatedUtc)
+                            .FirstOrDefault();
+
+                        if (preview != null)
                         {
-                            matchup.AiWinnerFranchiseSeasonId = preview.PredictedStraightUpWinner;
+                            if (league.PickType == PickType.StraightUp)
+                            {
+                                matchup.AiWinnerFranchiseSeasonId = preview.PredictedStraightUpWinner;
+                            }
+                            else
+                            {
+                                matchup.AiWinnerFranchiseSeasonId = preview.PredictedSpreadWinner ?? preview.PredictedStraightUpWinner;
+                            }
                         }
-                        else
+
+                        matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId &&
+                                                                       x.RejectedUtc == null);
+
+                        matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
+                                                                      x is { ApprovedUtc: not null, RejectedUtc: null });
+
+                        var contestPredictions = predictions.Where(x => x.ContestId == matchup.ContestId);
+
+                        foreach (var prediction in contestPredictions)
                         {
-                            matchup.AiWinnerFranchiseSeasonId = preview.PredictedSpreadWinner ?? preview.PredictedStraightUpWinner;
+                            matchup.Predictions.Add(new ContestPredictionDto()
+                            {
+                                ContestId = prediction.ContestId,
+                                ModelVersion = prediction.ModelVersion,
+                                PredictionType = prediction.PredictionType,
+                                WinProbability = prediction.WinProbability,
+                                WinnerFranchiseSeasonId = prediction.WinnerFranchiseSeasonId
+                            });
                         }
                     }
-
-                    matchup.IsPreviewAvailable = previews.Any(x => x.ContestId == matchup.ContestId &&
-                                                                   x.RejectedUtc == null);
-
-                    matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
-                                                                  x is { ApprovedUtc: not null, RejectedUtc: null });
-
-                    var contestPredictions = predictions.Where(x => x.ContestId == matchup.ContestId);
-
-                    foreach (var prediction in contestPredictions)
+                    else
                     {
-                        matchup.Predictions.Add(new ContestPredictionDto()
-                        {
-                            ContestId = prediction.ContestId,
-                            ModelVersion = prediction.ModelVersion,
-                            PredictionType = prediction.PredictionType,
-                            WinProbability = prediction.WinProbability,
-                            WinnerFranchiseSeasonId = prediction.WinnerFranchiseSeasonId
-                        });
+                        _logger.LogWarning(
+                            "No canonical matchup found for ContestId={ContestId}, leagueId={LeagueId}, week={Week}", 
+                            matchup.ContestId, 
+                            leagueId, 
+                            week);
                     }
                 }
+
+                _logger.LogDebug(
+                    "Finished enriching matchups, creating result DTO for leagueId={LeagueId}, week={Week}", 
+                    leagueId, 
+                    week);
+
+                var result = new LeagueWeekMatchupsDto
+                {
+                    PickType = league!.PickType,
+                    SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
+                    WeekNumber = week,
+                    Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
+                };
+
+                _logger.LogInformation(
+                    "Successfully completed GetMatchupsForLeagueWeekAsync for leagueId={LeagueId}, week={Week}, userId={UserId}, returning {Count} matchups", 
+                    leagueId, 
+                    week, 
+                    userId, 
+                    result.Matchups.Count);
+
+                return new Success<LeagueWeekMatchupsDto>(result);
             }
-
-            var result = new LeagueWeekMatchupsDto
+            catch (Exception ex)
             {
-                PickType = league!.PickType,
-                SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
-                WeekNumber = week,
-                Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
-            };
-
-            return new Success<LeagueWeekMatchupsDto>(result);
+                _logger.LogError(
+                    ex, 
+                    "Error in GetMatchupsForLeagueWeekAsync for leagueId={LeagueId}, week={Week}, userId={UserId}", 
+                    leagueId, 
+                    week, 
+                    userId);
+                
+                return new Failure<LeagueWeekMatchupsDto>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(leagueId), $"Error retrieving matchups: {ex.Message}")]);
+            }
         }
 
         public async Task<Result<Guid>> DeleteLeague(

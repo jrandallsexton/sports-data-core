@@ -284,15 +284,47 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
         public async Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds)
         {
-            var sql = _queryProvider.GetLeagueMatchupsByContestIds();
+            _logger.LogInformation(
+                "CanonicalDataProvider.GetMatchupsByContestIds called with {ContestCount} contestIds", 
+                contestIds?.Count ?? 0);
+            
+            try
+            {
+                if (contestIds == null || contestIds.Count == 0)
+                {
+                    _logger.LogWarning("GetMatchupsByContestIds called with null or empty contestIds list");
+                    return [];
+                }
 
-            var results = await _connection.QueryAsync<LeagueWeekMatchupsDto.MatchupForPickDto>(
-                sql,
-                new { ContestIds = contestIds }, // contestIds = List<Guid>
-                commandType: CommandType.Text
-            );
+                var sql = _queryProvider.GetLeagueMatchupsByContestIds();
+                
+                _logger.LogDebug(
+                    "Executing Dapper query for {ContestCount} contests", 
+                    contestIds.Count);
 
-            return results.ToList();
+                var results = await _connection.QueryAsync<LeagueWeekMatchupsDto.MatchupForPickDto>(
+                    sql,
+                    new { ContestIds = contestIds }, // contestIds = List<Guid>
+                    commandType: CommandType.Text
+                );
+
+                var resultList = results.ToList();
+                
+                _logger.LogInformation(
+                    "Retrieved {ResultCount} matchups from database for {ContestCount} contestIds", 
+                    resultList.Count, 
+                    contestIds.Count);
+
+                return resultList;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex, 
+                    "Error in GetMatchupsByContestIds for {ContestCount} contests", 
+                    contestIds?.Count ?? 0);
+                throw;
+            }
         }
 
         public async Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId)

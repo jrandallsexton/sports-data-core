@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
@@ -22,17 +23,20 @@ public class LeagueController : ApiControllerBase
     private readonly AppDataContext _dbContext;
     private readonly INotificationService _notificationService;
     private readonly NotificationConfig _notificationConfig;
+    private readonly ILogger<LeagueController> _logger;
 
     public LeagueController(
         ILeagueService iLeagueService,
         AppDataContext dbContext,
         INotificationService notificationService,
-        IOptions<NotificationConfig> notificationConfig)
+        IOptions<NotificationConfig> notificationConfig,
+        ILogger<LeagueController> logger)
     {
         _iLeagueService = iLeagueService;
         _dbContext = dbContext;
         _notificationService = notificationService;
         _notificationConfig = notificationConfig.Value;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -130,9 +134,53 @@ public class LeagueController : ApiControllerBase
         [FromRoute]Guid id,
         [FromRoute]int week)
     {
-        var userId = HttpContext.GetCurrentUserId();
-        var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
-        return result.ToActionResult();
+        _logger.LogInformation(
+            "GetMatchupsForLeagueWeek called with leagueId={LeagueId}, week={Week}", 
+            id, 
+            week);
+        
+        try
+        {
+            var userId = HttpContext.GetCurrentUserId();
+            
+            _logger.LogDebug(
+                "Resolved userId={UserId} for GetMatchupsForLeagueWeek, leagueId={LeagueId}, week={Week}", 
+                userId, 
+                id, 
+                week);
+            
+            var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
+            
+            if (result.IsSuccess)
+            {
+                _logger.LogInformation(
+                    "GetMatchupsForLeagueWeek succeeded for leagueId={LeagueId}, week={Week}, userId={UserId}, returned {Count} matchups", 
+                    id, 
+                    week, 
+                    userId, 
+                    result.Value.Matchups.Count);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "GetMatchupsForLeagueWeek failed for leagueId={LeagueId}, week={Week}, userId={UserId}, Status={Status}", 
+                    id, 
+                    week, 
+                    userId, 
+                    result.Status);
+            }
+            
+            return result.ToActionResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex, 
+                "Unhandled exception in GetMatchupsForLeagueWeek for leagueId={LeagueId}, week={Week}", 
+                id, 
+                week);
+            throw;
+        }
     }
 
     [HttpDelete("{id}")]

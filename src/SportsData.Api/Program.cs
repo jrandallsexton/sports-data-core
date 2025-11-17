@@ -188,6 +188,8 @@ namespace SportsData.Api
                     policy.WithOrigins(
                             "http://localhost:3000",
                             "http://localhost:3001",
+                            "http://api-int.sportdeets.com",
+                            "https://api-int.sportdeets.com",
                             "https://dev.sportdeets.com",
                             "https://sportdeets.com",
                             "https://www.sportdeets.com")

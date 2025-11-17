@@ -215,6 +215,36 @@ namespace SportsData.Api
 
             app.UseCors("AllowFrontend");
 
+            // Ensure CORS headers are added to all responses, including 401/403
+            app.Use(async (context, next) =>
+            {
+                await next();
+                
+                // Add CORS headers to error responses if not already present
+                if ((context.Response.StatusCode == 401 || context.Response.StatusCode == 403) &&
+                    context.Request.Headers.ContainsKey("Origin") &&
+                    !context.Response.Headers.ContainsKey("Access-Control-Allow-Origin"))
+                {
+                    var origin = context.Request.Headers["Origin"].ToString();
+                    var allowedOrigins = new[]
+                    {
+                        "http://localhost:3000",
+                        "http://localhost:3001",
+                        "http://api-int.sportdeets.com",
+                        "https://api-int.sportdeets.com",
+                        "https://dev.sportdeets.com",
+                        "https://sportdeets.com",
+                        "https://www.sportdeets.com"
+                    };
+                    
+                    if (allowedOrigins.Contains(origin))
+                    {
+                        context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
+                        context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
+                    }
+                }
+            });
+
             app.UseRouting();
             app.UseMiddleware<FirebaseAuthenticationMiddleware>();
             app.UseAuthentication();

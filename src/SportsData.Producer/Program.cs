@@ -112,7 +112,8 @@ public class Program
 
         var app = builder.Build();
         
-        app.UseHttpsRedirection();
+        // Don't redirect to HTTPS when behind a proxy (Front Door, Traefik)
+        // app.UseHttpsRedirection();
 
         using (var scope = app.Services.CreateScope())
         {

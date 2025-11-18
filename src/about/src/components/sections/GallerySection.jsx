@@ -96,18 +96,18 @@ const galleries = {
     ],
   },
   infrastructure: {
-    title: "Infrastructure & DevOps",
-    description: "Kubernetes, Flux, and deployment pipelines",
+    title: "CI/CD & DevOps",
+    description: "Azure DevOps pipelines and GitHub Actions workflows",
     images: [
       {
-        src: "/gallery/infra/flux-dashboard.jpg",
-        alt: "Flux GitOps",
-        caption: "GitOps deployment status and reconciliation",
+        src: "/gallery/infra/azure-devops-pipelines.jpg",
+        alt: "Azure DevOps Pipelines",
+        caption: "CI/CD pipeline runs and deployment history",
       },
       {
-        src: "/gallery/infra/k8s-pods.jpg",
-        alt: "Kubernetes Pods",
-        caption: "Running pods and service health in K3s cluster",
+        src: "/gallery/infra/github-actions.jpg",
+        alt: "GitHub Actions",
+        caption: "Automated workflows and deployment status",
       },
     ],
   },

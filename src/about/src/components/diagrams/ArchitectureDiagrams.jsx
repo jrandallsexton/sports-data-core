@@ -167,19 +167,13 @@ mermaid.initialize({
   },
 });
 
-const ArchitectureDiagrams = () => {
-  const [activeEnv, setActiveEnv] = useState('prod');
-  const [activeView, setActiveView] = useState('overview');
-  const [isZoomed, setIsZoomed] = useState(false);
-  const diagramRef = useRef(null);
-  const zoomedDiagramRef = useRef(null);
-
-  const diagrams = {
-    prod: {
-      overview: {
-        title: 'Production Architecture Overview',
-        description: 'Click on any component to see detailed view',
-        diagram: `
+// Static diagram configurations
+const diagrams = {
+  prod: {
+    overview: {
+      title: 'Production Architecture Overview',
+      description: 'Click on any component to see detailed view',
+      diagram: `
 graph LR
     Users[👤 Users] -->|HTTPS| Azure[☁️ Azure Services]
     Azure -->|HTTP| Cluster[🏠 K3s Cluster]
@@ -187,7 +181,7 @@ graph LR
     Services -->|Store/Query| Data[💾 Data Layer]
     Services -.->|Metrics/Logs| Obs[📊 Observability]
     Azure -.->|Config| Services`
-      },
+    },
       azure: {
         title: 'Azure Services',
         description: 'Front Door, API Management, Static Web Apps, and supporting services',
@@ -570,13 +564,20 @@ graph TB
     KeyVault -.->|Secrets| AppConfig
     
     ACR -->|Pull Images| API & Producer & Provider`
-      }
     }
-  };
+  }
+};
+
+const ArchitectureDiagrams = () => {
+  const [activeEnv, setActiveEnv] = useState('prod');
+  const [activeView, setActiveView] = useState('overview');
+  const [isZoomed, setIsZoomed] = useState(false);
+  const diagramRef = useRef(null);
+  const zoomedDiagramRef = useRef(null);
 
   const getActiveDiagram = useCallback(() => {
     return diagrams[activeEnv][activeView] || diagrams[activeEnv].overview;
-  }, [activeEnv, activeView]);
+  }, [activeEnv, activeView]); // diagrams is now a module constant, no need to include in deps
 
   const viewOptions = {
     prod: [

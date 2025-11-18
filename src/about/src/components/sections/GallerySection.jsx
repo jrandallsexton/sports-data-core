@@ -1,73 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import CollapsibleSection from "../common/CollapsibleSection";
 
-const GallerySection = ({ id }) => {
-  const [expandedSection, setExpandedSection] = useState(null);
-  const [lightboxImage, setLightboxImage] = useState(null);
-
-  const handleToggle = (sectionName) => {
-    setExpandedSection(expandedSection === sectionName ? null : sectionName);
-  };
-
-  const openLightbox = (imageSrc, alt, caption, galleryKey, imageIndex) => {
-    setLightboxImage({ src: imageSrc, alt, caption, galleryKey, imageIndex });
-  };
-
-  const closeLightbox = () => {
-    setLightboxImage(null);
-  };
-
-  const navigateImage = useCallback((direction) => {
-    if (!lightboxImage) return;
-    
-    const currentGallery = galleries[lightboxImage.galleryKey];
-    const currentIndex = lightboxImage.imageIndex;
-    let newIndex;
-
-    if (direction === 'next') {
-      newIndex = (currentIndex + 1) % currentGallery.images.length;
-    } else {
-      newIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length;
-    }
-
-    const newImage = currentGallery.images[newIndex];
-    setLightboxImage({
-      src: newImage.src,
-      alt: newImage.alt,
-      caption: newImage.caption,
-      galleryKey: lightboxImage.galleryKey,
-      imageIndex: newIndex,
-    });
-  }, [lightboxImage]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!lightboxImage) return;
-
-      switch (e.key) {
-        case 'Escape':
-          closeLightbox();
-          break;
-        case 'ArrowRight':
-          navigateImage('next');
-          break;
-        case 'ArrowLeft':
-          navigateImage('prev');
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxImage, navigateImage]);
-
-  const galleries = {
-    application: {
-      title: "Application Screenshots",
-      description: "User-facing features and interfaces",
-      images: [
+// Static gallery configurations
+const galleries = {
+  application: {
+    title: "Application Screenshots",
+    description: "User-facing features and interfaces",
+    images: [
         {
           src: "/gallery/application/dashboard.jpg",
           alt: "Main Dashboard",
@@ -135,44 +74,106 @@ const GallerySection = ({ id }) => {
         },
       ],
     },
-    observability: {
-      title: "Observability, Monitoring, & Logging",
-      description: "Grafana dashboards, Prometheus metrics, Seq structured logs, and distributed tracing",
-      images: [
-        {
-          src: "/gallery/observability/grafana-cluster.jpg",
-          alt: "Grafana Cluster Dashboard",
-          caption: "K3s cluster metrics and health monitoring",
-        },
-        {
-          src: "/gallery/observability/prometheus.jpg",
-          alt: "Prometheus Metrics",
-          caption: "Time-series metrics collection and alerts",
-        },
-        {
-          src: "/gallery/observability/seq.jpg",
-          alt: "Seq Structured Logs",
-          caption: "Centralized structured logging with search and filtering",
-        },
-      ],
-    },
-    infrastructure: {
-      title: "Infrastructure & DevOps",
-      description: "Kubernetes, Flux, and deployment pipelines",
-      images: [
-        {
-          src: "/gallery/infra/flux-dashboard.jpg",
-          alt: "Flux GitOps",
-          caption: "GitOps deployment status and reconciliation",
-        },
-        {
-          src: "/gallery/infra/k8s-pods.jpg",
-          alt: "Kubernetes Pods",
-          caption: "Running pods and service health in K3s cluster",
-        },
-      ],
-    },
+  observability: {
+    title: "Observability, Monitoring, & Logging",
+    description: "Grafana dashboards, Prometheus metrics, Seq structured logs, and distributed tracing",
+    images: [
+      {
+        src: "/gallery/observability/grafana-cluster.jpg",
+        alt: "Grafana Cluster Dashboard",
+        caption: "K3s cluster metrics and health monitoring",
+      },
+      {
+        src: "/gallery/observability/prometheus.jpg",
+        alt: "Prometheus Metrics",
+        caption: "Time-series metrics collection and alerts",
+      },
+      {
+        src: "/gallery/observability/seq.jpg",
+        alt: "Seq Structured Logs",
+        caption: "Centralized structured logging with search and filtering",
+      },
+    ],
+  },
+  infrastructure: {
+    title: "Infrastructure & DevOps",
+    description: "Kubernetes, Flux, and deployment pipelines",
+    images: [
+      {
+        src: "/gallery/infra/flux-dashboard.jpg",
+        alt: "Flux GitOps",
+        caption: "GitOps deployment status and reconciliation",
+      },
+      {
+        src: "/gallery/infra/k8s-pods.jpg",
+        alt: "Kubernetes Pods",
+        caption: "Running pods and service health in K3s cluster",
+      },
+    ],
+  },
+};
+
+const GallerySection = ({ id }) => {
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  const handleToggle = (sectionName) => {
+    setExpandedSection(expandedSection === sectionName ? null : sectionName);
   };
+
+  const openLightbox = (imageSrc, alt, caption, galleryKey, imageIndex) => {
+    setLightboxImage({ src: imageSrc, alt, caption, galleryKey, imageIndex });
+  };
+
+  const closeLightbox = () => {
+    setLightboxImage(null);
+  };
+
+  const navigateImage = useCallback((direction) => {
+    if (!lightboxImage) return;
+    
+    const currentGallery = galleries[lightboxImage.galleryKey];
+    const currentIndex = lightboxImage.imageIndex;
+    let newIndex;
+
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % currentGallery.images.length;
+    } else {
+      newIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length;
+    }
+
+    const newImage = currentGallery.images[newIndex];
+    setLightboxImage({
+      src: newImage.src,
+      alt: newImage.alt,
+      caption: newImage.caption,
+      galleryKey: lightboxImage.galleryKey,
+      imageIndex: newIndex,
+    });
+  }, [lightboxImage]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!lightboxImage) return;
+
+      switch (e.key) {
+        case 'Escape':
+          closeLightbox();
+          break;
+        case 'ArrowRight':
+          navigateImage('next');
+          break;
+        case 'ArrowLeft':
+          navigateImage('prev');
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage, navigateImage]);
 
   return (
     <>

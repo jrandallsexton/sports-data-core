@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import CollapsibleSection from "../common/CollapsibleSection";
 
 const GallerySection = ({ id }) => {
@@ -17,7 +17,7 @@ const GallerySection = ({ id }) => {
     setLightboxImage(null);
   };
 
-  const navigateImage = (direction) => {
+  const navigateImage = useCallback((direction) => {
     if (!lightboxImage) return;
     
     const currentGallery = galleries[lightboxImage.galleryKey];
@@ -38,7 +38,7 @@ const GallerySection = ({ id }) => {
       galleryKey: lightboxImage.galleryKey,
       imageIndex: newIndex,
     });
-  };
+  }, [lightboxImage]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -61,7 +61,7 @@ const GallerySection = ({ id }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxImage]);
+  }, [lightboxImage, navigateImage]);
 
   const galleries = {
     application: {
@@ -136,23 +136,23 @@ const GallerySection = ({ id }) => {
       ],
     },
     observability: {
-      title: "Observability & Monitoring",
-      description: "Grafana dashboards and monitoring tools",
+      title: "Observability, Monitoring, & Logging",
+      description: "Grafana dashboards, Prometheus metrics, Seq structured logs, and distributed tracing",
       images: [
         {
-          src: "/gallery/obs/grafana-overview.jpg",
-          alt: "Grafana Overview",
-          caption: "System-wide metrics and health monitoring",
+          src: "/gallery/observability/grafana-cluster.jpg",
+          alt: "Grafana Cluster Dashboard",
+          caption: "K3s cluster metrics and health monitoring",
         },
         {
-          src: "/gallery/obs/grafana-api.jpg",
-          alt: "API Metrics",
-          caption: "API performance and request tracking",
-        },
-        {
-          src: "/gallery/obs/prometheus.jpg",
+          src: "/gallery/observability/prometheus.jpg",
           alt: "Prometheus Metrics",
           caption: "Time-series metrics collection and alerts",
+        },
+        {
+          src: "/gallery/observability/seq.jpg",
+          alt: "Seq Structured Logs",
+          caption: "Centralized structured logging with search and filtering",
         },
       ],
     },
@@ -169,22 +169,6 @@ const GallerySection = ({ id }) => {
           src: "/gallery/infra/k8s-pods.jpg",
           alt: "Kubernetes Pods",
           caption: "Running pods and service health in K3s cluster",
-        },
-      ],
-    },
-    logging: {
-      title: "Logging & Tracing",
-      description: "Seq structured logs and Tempo distributed tracing",
-      images: [
-        {
-          src: "/gallery/logging/seq-logs.jpg",
-          alt: "Seq Structured Logs",
-          caption: "Centralized structured logging with search and filtering",
-        },
-        {
-          src: "/gallery/logging/tempo-traces.jpg",
-          alt: "Tempo Traces",
-          caption: "Distributed tracing across microservices",
         },
       ],
     },

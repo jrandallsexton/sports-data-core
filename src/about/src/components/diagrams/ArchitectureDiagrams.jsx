@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 
 /*
@@ -574,9 +574,9 @@ graph TB
     }
   };
 
-  const getActiveDiagram = () => {
+  const getActiveDiagram = useCallback(() => {
     return diagrams[activeEnv][activeView] || diagrams[activeEnv].overview;
-  };
+  }, [activeEnv, activeView]);
 
   const viewOptions = {
     prod: [

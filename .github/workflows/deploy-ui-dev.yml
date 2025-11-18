@@ -26,6 +26,11 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Verify .env.dev exists
+      run: |
+        ls -la .env*
+        cat .env.dev
+
     - name: Build React app for dev
       run: npm run build:dev
 

@@ -6,11 +6,11 @@ function LandingFooter() {
     <footer className="landing-footer">
       <div className="footer-content">
         <p>
-          17 Nov © {new Date().getFullYear()}{" "}
+          18 Nov © {new Date().getFullYear()}{" "}
           <span className="footer-brand">
             sportDeets<span className="tm-symbol">™</span>
           </span>
-          . All rights reserved. (dev)
+          . All rights reserved.
         </p>
 
         <div className="footer-links">

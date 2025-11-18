@@ -233,6 +233,11 @@
     order: 1;
   }
   
+  /* Hide nav-actions (Settings and Sign Out) on mobile - they're in the hamburger menu */
+  .top-nav .nav-actions {
+    display: none;
+  }
+  
   /* Hide "Sign Out" text on mobile, show icon only */
   .logout-button span {
     display: none;

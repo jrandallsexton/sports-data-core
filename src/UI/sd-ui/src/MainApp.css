@@ -12,7 +12,10 @@
   padding: 2rem;
   transition: all 0.3s ease;
   margin-top: 60px; /* Account for fixed navigation bar */
-  padding-top: 48px; /* Additional space when environment banner is present (12px padding * 2 + text height ~24px) */
+}
+
+.main-content.dev-env {
+  padding-top: 60px; /* Additional space for environment banner (~48-54px tall) */
 }
 
 .main-content.side-nav-active {
@@ -23,6 +26,10 @@
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
+  }
+  
+  .main-content.dev-env {
+    padding-top: 100px; /* More clearance needed on mobile for environment banner */
   }
   
   .main-content.side-nav-active {

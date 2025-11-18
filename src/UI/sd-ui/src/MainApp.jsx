@@ -113,7 +113,7 @@ function MainApp() {
         onSignOut={handleSignOutClick}
       />
       <EnvironmentBanner />
-      <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
+      <main className={`main-content ${isSideNav ? "side-nav-active" : ""} ${process.env.REACT_APP_ENVIRONMENT === 'development' ? 'dev-env' : ''}`}>
         {apiOffline ? (
           <ErrorPage message="We lost the ball trying to contact the server." />
         ) : (

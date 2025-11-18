@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
+import EnvironmentBanner from "./components/common/EnvironmentBanner";
 import "./MainApp.css";
 import useSignalRClient from "hooks/useSignalRClient";
 import { setGlobalApiErrorHandler } from "api/apiClient";
@@ -111,6 +112,7 @@ function MainApp() {
         onToggle={() => setIsSideNav(!isSideNav)}
         onSignOut={handleSignOutClick}
       />
+      <EnvironmentBanner />
       <main className={`main-content ${isSideNav ? "side-nav-active" : ""}`}>
         {apiOffline ? (
           <ErrorPage message="We lost the ball trying to contact the server." />

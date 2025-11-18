@@ -11,6 +11,8 @@
   flex: 1;
   padding: 2rem;
   transition: all 0.3s ease;
+  margin-top: 60px; /* Account for fixed navigation bar */
+  padding-top: 48px; /* Additional space when environment banner is present (12px padding * 2 + text height ~24px) */
 }
 
 .main-content.side-nav-active {

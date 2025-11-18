@@ -97,17 +97,32 @@ const galleries = {
   },
   infrastructure: {
     title: "CI/CD & DevOps",
-    description: "Azure DevOps pipelines and GitHub Actions workflows",
+    description: "Azure DevOps pipelines, GitHub Actions workflows, and Flux GitOps automation",
     images: [
       {
-        src: "/gallery/infra/azure-devops-pipelines.jpg",
+        src: "/gallery/cicd/ado-pipelines.jpg",
         alt: "Azure DevOps Pipelines",
-        caption: "CI/CD pipeline runs and deployment history",
+        caption: "CI/CD pipeline configuration and stages",
       },
       {
-        src: "/gallery/infra/github-actions.jpg",
+        src: "/gallery/cicd/ado-pipeline-runs.jpg",
+        alt: "Azure DevOps Pipeline Runs",
+        caption: "Pipeline execution history and deployment status",
+      },
+      {
+        src: "/gallery/cicd/github-actions.jpg",
         alt: "GitHub Actions",
         caption: "Automated workflows and deployment status",
+      },
+      {
+        src: "/gallery/cicd/flux.jpg",
+        alt: "Flux GitOps",
+        caption: "Flux reconciliation status and managed resources",
+      },
+      {
+        src: "/gallery/cicd/flux-apps.jpg",
+        alt: "Flux Applications Tree",
+        caption: "GitOps-managed application resources and dependencies",
       },
     ],
   },

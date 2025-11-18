@@ -1,4 +1,4 @@
-name: Deploy React App to Azure Static Web App (Dev)
+name: Deploy React App to AzSWA (Dev)
 
 on:
   push:
@@ -26,12 +26,8 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Set environment for dev
-      run: |
-        echo "REACT_APP_API_BASE_URL=https://api-dev.sportdeets.com" > .env.production
-
-    - name: Build React app
-      run: npm run build
+    - name: Build React app for dev
+      run: npm run build:dev
 
     - name: Deploy to Azure Static Web App (Dev)
       uses: Azure/static-web-apps-deploy@v1

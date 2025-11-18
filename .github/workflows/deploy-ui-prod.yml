@@ -1,4 +1,4 @@
-name: Deploy React App to Azure Static Web App (Production)
+name: Deploy React App to AzSWA (Production)
 
 on:
   workflow_dispatch:  # Manual trigger only

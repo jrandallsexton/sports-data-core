@@ -56,8 +56,8 @@ select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Dat
 
 update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AP Poll: Week 12'
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 12'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'a54dfb88-a331-4214-c52f-fadf07ec10dc' where "ShortHeadline" = '2025 AP Poll: Week 13'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'a54dfb88-a331-4214-c52f-fadf07ec10dc' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 13'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'd98f45f2-d348-24e4-09af-552972c79313'
 
 select * from public."Season"

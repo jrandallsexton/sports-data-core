@@ -6,6 +6,7 @@ import AISection from './sections/AISection';
 import ObservabilitySection from './sections/ObservabilitySection';
 import DataQualitySection from './sections/DataQualitySection';
 import DevOpsSection from './sections/DevOpsSection';
+import GallerySection from './sections/GallerySection';
 import FutureEnhancementsSection from './sections/FutureEnhancementsSection';
 
 const AboutPage = () => {
@@ -13,6 +14,7 @@ const AboutPage = () => {
 
   const sections = useMemo(() => [
     { id: 'overview', label: 'Overview' },
+    { id: 'gallery', label: 'Gallery' },
     { id: 'architecture', label: 'Architecture' },
     { id: 'ai', label: 'AI & Predictive Insights' },
     { id: 'observability', label: 'Observability' },
@@ -80,6 +82,7 @@ const AboutPage = () => {
       {/* Main Content */}
       <main className="about-content">
         <OverviewSection id="overview" />
+        <GallerySection id="gallery" />
         <ArchitectureSection id="architecture" />
         <AISection id="ai" />
         <ObservabilitySection id="observability" />

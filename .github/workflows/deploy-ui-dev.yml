@@ -33,6 +33,16 @@ jobs:
 
     - name: Build React app for dev
       run: npm run build:dev
+      env:
+        REACT_APP_API_BASE_URL: https://api-dev.sportdeets.com
+        REACT_APP_ENVIRONMENT: development
+        REACT_APP_PROD_URL: https://sportdeets.com
+
+    - name: Verify build output contains dev API URL
+      run: |
+        echo "Checking build files for API URL..."
+        grep -r "api-dev.sportdeets.com" build/ || echo "WARNING: dev API URL not found in build!"
+        grep -r "api.sportdeets.com" build/ && echo "ERROR: prod API URL found in build!" || echo "Good: prod API URL not found"
 
     - name: Deploy to Azure Static Web App (Dev)
       uses: Azure/static-web-apps-deploy@v1

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CollapsibleSection from '../common/CollapsibleSection';
+import ArchitectureDiagrams from '../diagrams/ArchitectureDiagrams';
 
 const ArchitectureSection = ({ id }) => {
   const [expandedSection, setExpandedSection] = useState(null);
@@ -16,6 +17,8 @@ const ArchitectureSection = ({ id }) => {
       </div>
       
       <div className="section-content">
+        <ArchitectureDiagrams />
+        
         <CollapsibleSection 
           title="Services" 
           isExpanded={expandedSection === 'services'}

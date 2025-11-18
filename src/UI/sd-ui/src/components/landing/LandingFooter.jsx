@@ -10,7 +10,7 @@ function LandingFooter() {
           <span className="footer-brand">
             sportDeets<span className="tm-symbol">™</span>
           </span>
-          . All rights reserved. v1811251814
+          . All rights reserved. v1811251817
         </p>
 
         <div className="footer-links">

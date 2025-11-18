@@ -114,10 +114,25 @@ import mermaid from 'mermaid';
  *   style Provider fill:#dc2626
  */
 
+// Azure icon paths
+const icons = {
+  frontDoor: '/azure-icons/networking/10073-icon-service-Front-Door-and-CDN-Profiles.svg',
+  apim: '/azure-icons/integration/10042-icon-service-API-Management-Services.svg',
+  cosmosDb: '/azure-icons/databases/10121-icon-service-Azure-Cosmos-DB.svg',
+  appConfig: '/azure-icons/integration/10219-icon-service-App-Configuration.svg',
+  keyVault: '/azure-icons/security/10245-icon-service-Key-Vaults.svg',
+  serviceBus: '/azure-icons/integration/10836-icon-service-Azure-Service-Bus.svg',
+  containerRegistry: '/azure-icons/containers/10105-icon-service-Container-Registries.svg',
+};
+
+// Helper function to create icon + text label
+const icon = (path, text, size = 20) => `<img src='${path}' width='${size}'/> ${text}`;
+
 // Initialize Mermaid
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
+  securityLevel: 'loose', // Required to render HTML in labels
   themeVariables: {
     // GitHub-style monochrome (currently active)
     primaryColor: '#333',
@@ -286,14 +301,14 @@ graph LR
     subgraph Azure["Azure Cloud"]
         direction TB
         UI[React UI<br/>sportdeets.com]
-        FrontDoor[Azure Front Door<br/>CDN + WAF]
-        APIM[API Management]
+        FrontDoor["<img src='/azure-icons/networking/10073-icon-service-Front-Door-and-CDN-Profiles.svg' width='24'/><br/>Azure Front Door"]
+        APIM["<img src='/azure-icons/integration/10042-icon-service-API-Management-Services.svg' width='24'/><br/>API Management"]
         Firebase[Firebase Auth]
-        AppConfig[App Configuration]
-        KeyVault[Key Vault]
-        ServiceBus[Service Bus]
-        Cosmos[(Cosmos DB)]
-        ACR[Container Registry]
+        AppConfig["<img src='/azure-icons/integration/10219-icon-service-App-Configuration.svg' width='24'/><br/>App Configuration"]
+        KeyVault["<img src='/azure-icons/security/10245-icon-service-Key-Vaults.svg' width='24'/><br/>Key Vault"]
+        ServiceBus["<img src='/azure-icons/integration/10836-icon-service-Azure-Service-Bus.svg' width='24'/><br/>Service Bus"]
+        Cosmos["<img src='/azure-icons/databases/10121-icon-service-Azure-Cosmos-DB.svg' width='24'/><br/>Cosmos DB"]
+        ACR["<img src='/azure-icons/containers/10105-icon-service-Container-Registries.svg' width='24'/><br/>Container Registry"]
     end
     
     ESPN[ESPN API]
@@ -499,11 +514,11 @@ graph TB
     subgraph "Azure Cloud"
         UI[React UI<br/>dev.sportdeets.com]
         Firebase[Firebase Auth]
-        AppConfig[App Configuration]
-        KeyVault[Key Vault]
-        ServiceBus[Service Bus]
-        Cosmos[(Cosmos DB)]
-        ACR[Container Registry]
+        AppConfig["<img src='/azure-icons/integration/10219-icon-service-App-Configuration.svg' width='24'/><br/>App Configuration"]
+        KeyVault["<img src='/azure-icons/security/10245-icon-service-Key-Vaults.svg' width='24'/><br/>Key Vault"]
+        ServiceBus["<img src='/azure-icons/integration/10836-icon-service-Azure-Service-Bus.svg' width='24'/><br/>Service Bus"]
+        Cosmos["<img src='/azure-icons/databases/10121-icon-service-Azure-Cosmos-DB.svg' width='24'/><br/>Cosmos DB"]
+        ACR["<img src='/azure-icons/containers/10105-icon-service-Container-Registries.svg' width='24'/><br/>Container Registry"]
         Blob[Blob Storage]
         
         subgraph "App Service Plan"

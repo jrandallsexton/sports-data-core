@@ -26,29 +26,12 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Verify .env.dev exists
-      run: |
-        ls -la .env*
-        cat .env.dev
-
     - name: Build React app for dev
-      run: npm run build:dev
+      run: npm run build
       env:
         REACT_APP_API_BASE_URL: https://api-dev.sportdeets.com
         REACT_APP_ENVIRONMENT: development
         REACT_APP_PROD_URL: https://sportdeets.com
-
-    - name: Verify build output contains dev API URL
-      run: |
-        echo "=== Checking build files for API URLs ==="
-        echo "Looking for dev API URL (api-dev.sportdeets.com):"
-        grep -r "api-dev.sportdeets.com" build/ && echo "✓ Found dev API URL" || echo "✗ WARNING: dev API URL NOT found!"
-        echo ""
-        echo "Looking for prod API URL (api.sportdeets.com - should NOT be here):"
-        grep -r "api.sportdeets.com" build/ && echo "✗ ERROR: prod API URL found!" || echo "✓ Good: prod API URL not found"
-        echo ""
-        echo "=== Checking specific JS files ==="
-        find build/static/js -name "*.js" -exec sh -c 'echo "File: {}"; grep -o "https://api[^\"]*sportdeets.com" {} | sort -u || echo "  No API URLs found"' \;
 
     - name: Deploy to Azure Static Web App (Dev)
       uses: Azure/static-web-apps-deploy@v1

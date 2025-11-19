@@ -55,6 +55,11 @@ const AboutPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [sections]);
 
+  // Scroll to a better initial position on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="about-page">
       {/* Sticky Navigation */}

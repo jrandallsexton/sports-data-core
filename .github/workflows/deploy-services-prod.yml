@@ -35,7 +35,7 @@ jobs:
           if grep -q "image:" app/overlays/04_prod/api-patch.yaml; then
             sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataapi:${{ inputs.api_tag }}|g" app/overlays/04_prod/api-patch.yaml
           else
-            sed -i '/containers:/a\      - name: api-all\n        image: sportdeets.azurecr.io/sportsdataapi:${{ inputs.api_tag }}' app/overlays/04_prod/api-patch.yaml
+            sed -i '/- name: api-all/a\        image: sportdeets.azurecr.io/sportsdataapi:${{ inputs.api_tag }}' app/overlays/04_prod/api-patch.yaml
           fi
           echo "Updated API to tag: ${{ inputs.api_tag }}"
 

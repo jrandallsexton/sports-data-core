@@ -81,11 +81,11 @@ jobs:
         if: ${{ inputs.deploy_api && steps.api_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          # Update or add image to api-patch.yaml
+          # Update or add image to api-patch.yaml  
           if grep -q "image:" app/overlays/04_prod/api-patch.yaml; then
             sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}|g" app/overlays/04_prod/api-patch.yaml
           else
-            sed -i '/containers:/a\      - name: api-all\n        image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}' app/overlays/04_prod/api-patch.yaml
+            sed -i '/- name: api-all/a\        image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}' app/overlays/04_prod/api-patch.yaml
           fi
           echo "Updated API to tag: ${{ steps.api_tag.outputs.tag }}"
 

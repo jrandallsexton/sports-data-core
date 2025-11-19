@@ -94,7 +94,7 @@ const AboutPage = () => {
       {/* Footer */}
       <footer className="about-footer">
         <p>
-          &copy; 2025 <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a>. Built with React, .NET, and Azure.
+          &copy; 2025 <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a>. Built with React, .NET, and Azure. {process.env.REACT_APP_VERSION || 'v0.0.0'}
         </p>
         <p className="footer-note">
           This portfolio showcases the technical architecture and capabilities of the <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a> platform.

@@ -27,8 +27,13 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Generate version
+      run: echo "REACT_APP_VERSION=v$(date +'%d%m%y%H%M')" >> $GITHUB_ENV
+
     - name: Build React app
       run: npm run build
+      env:
+        REACT_APP_VERSION: ${{ env.REACT_APP_VERSION }}
 
     - name: Deploy to Azure Static Web App (Production)
       uses: Azure/static-web-apps-deploy@v1

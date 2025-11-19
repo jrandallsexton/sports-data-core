@@ -81,24 +81,36 @@ jobs:
         if: ${{ inputs.deploy_api && steps.api_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          sed -i "s|image: sportdeets.azurecr.io/sportsdataapi:.*|image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}|g" \
-            app/base/apps/api/api-deployment.yaml
+          # Update or add image to api-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/api-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}|g" app/overlays/04_prod/api-patch.yaml
+          else
+            sed -i '/containers:/a\      - name: api-all\n        image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}' app/overlays/04_prod/api-patch.yaml
+          fi
           echo "Updated API to tag: ${{ steps.api_tag.outputs.tag }}"
 
       - name: Update Producer image tag
         if: ${{ inputs.deploy_producer && steps.producer_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          sed -i "s|image: sportdeets.azurecr.io/sportsdataproducer:.*|image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}|g" \
-            app/base/apps/producer/producer-football-ncaa-deployment.yaml
+          # Update or add image to producer-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/producer-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}|g" app/overlays/04_prod/producer-patch.yaml
+          else
+            sed -i '/- name: producer/a\        image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}' app/overlays/04_prod/producer-patch.yaml
+          fi
           echo "Updated Producer to tag: ${{ steps.producer_tag.outputs.tag }}"
 
       - name: Update Provider image tag
         if: ${{ inputs.deploy_provider && steps.provider_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          sed -i "s|image: sportdeets.azurecr.io/sportsdataprovider:.*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" \
-            app/base/apps/provider/provider-football-ncaa.yaml
+          # Update or add image to provider-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/provider-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" app/overlays/04_prod/provider-patch.yaml
+          else
+            sed -i '/- name: provider-football-ncaa/a\        image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}' app/overlays/04_prod/provider-patch.yaml
+          fi
           echo "Updated Provider to tag: ${{ steps.provider_tag.outputs.tag }}"
 
       - name: Commit and push changes
@@ -107,7 +119,7 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           
-          git add app/base/apps/*/
+          git add app/overlays/04_prod/*.yaml
           
           if git diff --staged --quiet; then
             echo "No changes to commit"

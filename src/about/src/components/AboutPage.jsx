@@ -26,7 +26,7 @@ const AboutPage = () => {
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      const navHeight = 70; // Account for sticky nav
+      const navHeight = 85; // Increased from 80 to account for padding
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
       window.scrollTo({
         top: elementPosition - navHeight,

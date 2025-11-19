@@ -11,18 +11,28 @@ const ArchitectureSection = ({ id }) => {
   };
 
   const providerDiagram = `graph TD
-    A[Hangfire Job] --> B[ESPN API]
-    B --> C{Parse Response}
-    C --> D[Resolve References]
-    D --> E[(Cosmos DB)]
-    E --> F[Publish Event]
-    F --> G[Producer Service]
+    H[HTTP Request] --> C
+    A[Hangfire Job] --> C{BypassCache?}
+    C -->|Yes| B[ESPN API]
+    C -->|No| D[(Cosmos DB)]
+    D -->|Not Found| B
+    D -->|Found| E[Publish Event]
+    B --> F{Resource Is Index?}
+    F -->|Yes| G[Resolve References]
+    F -->|No| I[Store in Cosmos DB]
+    G --> I
+    I --> E
+    E --> J[Producer Service]
     
+    style H fill:#0891b2
     style A fill:#1e40af
+    style C fill:#0d9488
     style B fill:#7c3aed
-    style E fill:#059669
-    style F fill:#6366f1
-    style G fill:#1e40af`;
+    style D fill:#059669
+    style F fill:#0d9488
+    style I fill:#059669
+    style E fill:#6366f1
+    style J fill:#1e40af`;
 
   const producerDiagram = `graph TD
     A[Event from Provider] --> B{Has JSON Payload?}

@@ -45,17 +45,26 @@ const OverviewSection = ({ id }) => {
             <div className="tech-card">
               <h4>Frontend</h4>
               <p>
-                <strong>React 19.1.0</strong> – Functional components with
-                hooks, built for a dynamic, responsive UI
+                <strong>React 19.1.0</strong> - Modern UI with hooks and
+                functional components
               </p>
               <p>
-                <strong>React Router</strong> – Declarative routing for SPA
-                navigation
+                <strong>React Router 7</strong> - Client-side routing and navigation
               </p>
               <p>
-                <strong>Firebase Auth</strong> – Secure login with support for
-                email/password, Google sign-in, and custom claims for role-based
-                access
+                <strong>Firebase 11</strong> - Authentication and custom claims
+              </p>
+              <p>
+                <strong>SignalR</strong> - Real-time updates for live contest data
+              </p>
+              <p>
+                <strong>Material-UI</strong> - Component library for consistent design
+              </p>
+              <p>
+                <strong>Chart.js & Recharts</strong> - Data visualization
+              </p>
+              <p>
+                <strong>Axios</strong> - HTTP client for API communication
               </p>
             </div>
 
@@ -106,8 +115,8 @@ const OverviewSection = ({ id }) => {
                 ingested external JSON (ESPN APIs, etc.)
               </p>
               <p>
-                <strong>Azure Database for PostgreSQL</strong> – Canonical
-                relational store for contests, picks, and analytics
+                <strong>Azure Front Door</strong> – Global entry point for all
+                environments with routing to k3s cluster
               </p>
               <p>
                 <strong>Azure Key Vault</strong> – Secrets and credentials
@@ -116,6 +125,10 @@ const OverviewSection = ({ id }) => {
               <p>
                 <strong>Azure Service Bus</strong> – Distributed messaging
                 backbone between Provider, Producer, and API services
+              </p>
+              <p>
+                <strong>Azure SignalR Service</strong> – Real-time push from API
+                to UI for contest updates and status broadcasting
               </p>
             </div>
 

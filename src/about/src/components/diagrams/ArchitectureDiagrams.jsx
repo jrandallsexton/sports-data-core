@@ -189,12 +189,8 @@ graph LR
 graph TB
     FD[Front Door<br/>CDN + WAF + SSL]
     APIM[API Management<br/>Rate Limit + Swagger]
-    
-    subgraph "Static Web Apps"
-        UI1[sportdeets.com]
-        UI2[dev.sportdeets.com]
-        UI3[about.sportdeets.com]
-    end
+    UI[Static Web App<br/>sportdeets.com]
+    SignalRSvc[SignalR Service<br/>WebSocket Hub]
     
     subgraph "Configuration"
         AppConfig[App Configuration]
@@ -207,8 +203,9 @@ graph TB
         ACR[Container Registry]
     end
     
-    FD --> UI1 & UI2 & UI3
+    FD --> UI
     FD --> APIM
+    FD --> SignalRSvc
     AppConfig -.->|Secrets| KeyVault`
       },
       cluster: {
@@ -297,6 +294,7 @@ graph LR
         UI[React UI<br/>sportdeets.com]
         FrontDoor["<img src='/azure-icons/networking/10073-icon-service-Front-Door-and-CDN-Profiles.svg' width='24'/><br/>Azure Front Door"]
         APIM["<img src='/azure-icons/integration/10042-icon-service-API-Management-Services.svg' width='24'/><br/>API Management"]
+        SignalRSvc[SignalR Service<br/>WebSocket Hub]
         Firebase[Firebase Auth]
         AppConfig["<img src='/azure-icons/integration/10219-icon-service-App-Configuration.svg' width='24'/><br/>App Configuration"]
         KeyVault["<img src='/azure-icons/security/10245-icon-service-Key-Vaults.svg' width='24'/><br/>Key Vault"]
@@ -339,12 +337,14 @@ graph LR
     Users -->|HTTPS| FrontDoor
     Users -->|WebSocket| FrontDoor
     FrontDoor -->|Route| APIM
+    FrontDoor -->|Route| SignalRSvc
     APIM -->|Proxy| Traefik
     Traefik --> API
     FrontDoor -.->|CDN| UI
+    SignalRSvc <-->|Connect| API
     
     UI <-->|Auth| Firebase
-    UI <-->|Real-time| API
+    UI <-->|Real-time| SignalRSvc
     
     GitHub -->|GitOps| Flux
     Flux -.->|Deploy| API

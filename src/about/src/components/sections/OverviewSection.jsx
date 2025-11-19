@@ -26,13 +26,13 @@ const OverviewSection = ({ id }) => {
           <p>
             <strong>sportDeets</strong> is a full-stack sports analytics
             platform built for NCAA football fans. It powers weekly pick’em
-            contests, predictive insights, and rich stat visualizations for
-            competitive and casual users alike.
+            contests, AI-backed predictions, and rich visualizations for both
+            competitive and casual users.
           </p>
           <p>
-            The platform blends traditional sports engagement with advanced
-            machine learning, allowing users to compete in private leagues while
-            leveraging AI-driven forecasts and deep performance data.
+            By blending traditional fan engagement with machine learning,
+            sportDeets enables users to create private leagues, make data-driven
+            picks, and explore deep performance insights throughout the season.
           </p>
         </CollapsibleSection>
 
@@ -45,89 +45,154 @@ const OverviewSection = ({ id }) => {
             <div className="tech-card">
               <h4>Frontend</h4>
               <p>
-                <strong>React 19.1.0</strong> - Modern UI with hooks and
-                functional components
+                <strong>React 19.1.0</strong> – Functional components with
+                hooks, built for a dynamic, responsive UI
               </p>
               <p>
-                <strong>React Router</strong> - Client-side routing
+                <strong>React Router</strong> – Declarative routing for SPA
+                navigation
               </p>
               <p>
-                <strong>Firebase</strong> - Authentication and custom claims
+                <strong>Firebase Auth</strong> – Secure login with support for
+                email/password, Google sign-in, and custom claims for role-based
+                access
               </p>
             </div>
 
             <div className="tech-card">
               <h4>Backend</h4>
               <p>
-                <strong>C# / .NET</strong> - Core services and APIs
+                <strong>C# / .NET 9</strong> – Modular services powering
+                ingestion, enrichment, and API layers
               </p>
               <p>
-                <strong>Entity Framework Core</strong> - ORM for canonical model
+                <strong>ASP.NET Core</strong> – RESTful endpoints and background
+                service hosts
               </p>
               <p>
-                <strong>ASP.NET Core</strong> - RESTful API services
+                <strong>Entity Framework Core</strong> – Code-first ORM for
+                canonical PostgreSQL schema
+              </p>
+              <p>
+                <strong>MassTransit</strong> – Distributed messaging over Azure
+                Service Bus
+              </p>
+              <p>
+                <strong>Hangfire</strong> – Background job orchestration and
+                recurring task execution
+              </p>
+              <p>
+                <strong>Polly</strong> – Retry, circuit breaker, and timeout
+                policies for resilient API and service calls
               </p>
             </div>
 
             <div className="tech-card">
               <h4>Cloud & Infrastructure</h4>
               <p>
-                <strong>Azure App Services</strong> - Development environment
+                <strong>Azure App Configuration</strong> – Centralized app
+                settings with dynamic refresh
               </p>
               <p>
-                <strong>Azure PostgreSQL</strong> - Canonical data model
+                <strong>Azure App Services</strong> – Hosts API and background
+                workers in development
               </p>
               <p>
-                <strong>Azure Cosmos DB</strong> - Raw JSON storage
+                <strong>Azure Blob Storage</strong> – Asset storage for logos,
+                images, logs, and backups
               </p>
               <p>
-                <strong>Azure Blob Storage</strong> - Logos and backups
+                <strong>Azure Cosmos DB</strong> – Raw document store for
+                ingested external JSON (ESPN APIs, etc.)
+              </p>
+              <p>
+                <strong>Azure Database for PostgreSQL</strong> – Canonical
+                relational store for contests, picks, and analytics
+              </p>
+              <p>
+                <strong>Azure Key Vault</strong> – Secrets and credentials
+                management for services and pipelines
+              </p>
+              <p>
+                <strong>Azure Service Bus</strong> – Distributed messaging
+                backbone between Provider, Producer, and API services
               </p>
             </div>
 
             <div className="tech-card">
               <h4>Container Orchestration</h4>
               <p>
-                <strong>Kubernetes (k3s)</strong> - Production cluster
+                <strong>Kubernetes (k3s)</strong> – Lightweight,
+                production-grade cluster powering sportDeets on-prem
               </p>
               <p>
-                <strong>Vagrant</strong> - Local k3s provisioning
+                <strong>Vagrant + Hyper-V</strong> – Automates local k3s node
+                provisioning (4 nodes) for dev/test parity
               </p>
               <p>
-                <strong>Flux</strong> - GitOps workflow
+                <strong>Flux CD</strong> – GitOps controller syncing manifests
+                from <code>sports-data-config</code> repo
+              </p>
+              <p>
+                <strong>Kustomize</strong> – Overlay-based environment
+                templating (dev, prod) for scalable deployments
+              </p>
+              <p>
+                <strong>Reloader</strong> – Detects config and secret changes,
+                triggers rolling restarts for affected pods
+              </p>
+              <p>
+                <strong>Traefik</strong> – Ingress controller for internal
+                routing, TLS termination, and dashboard access
               </p>
             </div>
 
             <div className="tech-card">
               <h4>Observability</h4>
               <p>
-                <strong>Prometheus</strong> - Metrics collection
+                <strong>Prometheus</strong> – Time-series metrics collection for
+                all cluster and service components
               </p>
               <p>
-                <strong>Grafana</strong> - Dashboards and visualization
+                <strong>Grafana</strong> – Unified dashboards for system health,
+                job queues, and usage trends
               </p>
               <p>
-                <strong>Loki</strong> - Log aggregation
+                <strong>Loki</strong> – Centralized log aggregation and
+                filtering across microservices
               </p>
               <p>
-                <strong>Tempo</strong> - Distributed tracing
+                <strong>Tempo</strong> – Distributed trace visualization for
+                request flows and latency hotspots
               </p>
               <p>
-                <strong>Seq</strong> - Structured logging
+                <strong>Seq</strong> – Structured application logging with
+                real-time querying and alerting
               </p>
             </div>
 
             <div className="tech-card">
               <h4>AI & ML</h4>
               <p>
-                <strong>Ollama</strong> - Local LLM hosting
+                <strong>Ollama</strong> – Local LLM hosting and prompt-based
+                insights (e.g., matchup previews, user-facing analysis)
               </p>
               <p>
-                <strong>Python</strong> - ML model training
+                <strong>Python</strong> – Scripts for model training, weekly
+                prediction generation, and post-game evaluation
               </p>
               <p>
-                <strong>Scikit-learn</strong> - Logistic Regression, Random
-                Forest
+                <strong>Scikit-learn</strong> – Baseline classification models
+                (Logistic Regression, Random Forest) for straight-up and ATS
+                picks
+              </p>
+              <p>
+                <strong>PostgreSQL</strong> – Features and results stored for
+                training and evaluation with week-over-week rollups
+              </p>
+              <p>
+                <strong>Custom Prompt Templates</strong> – Persona-driven
+                narratives (e.g., “MetricBot”) for LLM-generated content
               </p>
             </div>
           </div>
@@ -164,8 +229,8 @@ const OverviewSection = ({ id }) => {
               with schedules, results, venues, and recent news
             </li>
             <li>
-              <strong>Responsive UI:</strong> Designed for desktop-first use
-              with mobile and tablet layout support where needed
+              <strong>Responsive Design:</strong> Optimized for desktop-first
+              interaction with smooth adaptation to tablets and mobile devices
             </li>
           </ul>
         </CollapsibleSection>

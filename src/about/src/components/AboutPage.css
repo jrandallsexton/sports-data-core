@@ -216,6 +216,20 @@
   color: #61dafb;
   margin: 0 0 0.75rem 0;
   font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+}
+
+.github-link {
+  color: var(--text-color);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.github-link:hover {
+  opacity: 1;
 }
 
 .tech-card p {
@@ -432,3 +446,60 @@
     padding: 0.35rem 0.6rem;
   }
 }
+
+/* Service Diagram Styles */
+.service-description {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #b0b0b0;
+  line-height: 1.5;
+}
+
+.tech-card .mermaid {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tech-card .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.future-services {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(97, 218, 251, 0.2);
+}
+
+.future-services h4 {
+  color: #61dafb;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.future-services ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.future-services li {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #d0d0d0;
+}
+
+.future-services li:before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #61dafb;
+  font-weight: bold;
+}
+

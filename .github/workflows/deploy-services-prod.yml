@@ -1,0 +1,74 @@
+name: Deploy Services to Production (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_tag:
+        description: 'API image tag (e.g., 1347)'
+        required: false
+        type: string
+      producer_tag:
+        description: 'Producer image tag (e.g., 1343)'
+        required: false
+        type: string
+      provider_tag:
+        description: 'Provider image tag (e.g., 1344)'
+        required: false
+        type: string
+
+jobs:
+  update-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sports-data-config repo
+        uses: actions/checkout@v4
+        with:
+          repository: jrandallsexton/sports-data-config
+          token: ${{ secrets.PAT_TOKEN }}
+          path: sports-data-config
+
+      - name: Update API image tag
+        if: ${{ inputs.api_tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataapi:.*|image: sportdeets.azurecr.io/sportsdataapi:${{ inputs.api_tag }}|g" \
+            app/base/apps/api/api-deployment.yaml
+          echo "Updated API to tag: ${{ inputs.api_tag }}"
+
+      - name: Update Producer image tag
+        if: ${{ inputs.producer_tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataproducer:.*|image: sportdeets.azurecr.io/sportsdataproducer:${{ inputs.producer_tag }}|g" \
+            app/base/apps/producer/producer-football-ncaa-deployment.yaml
+          echo "Updated Producer to tag: ${{ inputs.producer_tag }}"
+
+      - name: Update Provider image tag
+        if: ${{ inputs.provider_tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataprovider:.*|image: sportdeets.azurecr.io/sportsdataprovider:${{ inputs.provider_tag }}|g" \
+            app/base/apps/provider/provider-football-ncaa.yaml
+          echo "Updated Provider to tag: ${{ inputs.provider_tag }}"
+
+      - name: Commit and push changes
+        working-directory: sports-data-config
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          git add app/base/apps/*/
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            COMMIT_MSG="Deploy to production:"
+            [ -n "${{ inputs.api_tag }}" ] && COMMIT_MSG="$COMMIT_MSG API=${{ inputs.api_tag }}"
+            [ -n "${{ inputs.producer_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Producer=${{ inputs.producer_tag }}"
+            [ -n "${{ inputs.provider_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ inputs.provider_tag }}"
+            
+            git commit -m "$COMMIT_MSG"
+            git push
+            
+            echo "✅ Changes committed to sports-data-config. Flux will deploy automatically."
+          fi

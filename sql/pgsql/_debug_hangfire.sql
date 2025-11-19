@@ -9,6 +9,11 @@ ORDER BY
 
   select count(*) from hangfire."job"
   select count(*) from hangfire."state"
+  SELECT * FROM hangfire."lock";
+
+  DELETE FROM hangfire."lock" WHERE "resource" = 'hangfire:lock:recurring-job:SourcingJobOrchestrator';
+
+
 
 
 

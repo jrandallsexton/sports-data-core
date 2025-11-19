@@ -1,0 +1,124 @@
+name: Deploy Services to Production (Auto Latest)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: 'Deploy API with latest tag'
+        required: false
+        type: boolean
+        default: false
+      deploy_producer:
+        description: 'Deploy Producer with latest tag'
+        required: false
+        type: boolean
+        default: false
+      deploy_provider:
+        description: 'Deploy Provider with latest tag'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get latest API tag from ACR
+        if: ${{ inputs.deploy_api }}
+        id: api_tag
+        run: |
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdataapi \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1)
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest API tag: $LATEST_TAG"
+
+      - name: Get latest Producer tag from ACR
+        if: ${{ inputs.deploy_producer }}
+        id: producer_tag
+        run: |
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdataproducer \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1)
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest Producer tag: $LATEST_TAG"
+
+      - name: Get latest Provider tag from ACR
+        if: ${{ inputs.deploy_provider }}
+        id: provider_tag
+        run: |
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdataprovider \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1)
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest Provider tag: $LATEST_TAG"
+
+      - name: Checkout sports-data-config repo
+        uses: actions/checkout@v4
+        with:
+          repository: jrandallsexton/sports-data-config
+          token: ${{ secrets.PAT_TOKEN }}
+          path: sports-data-config
+
+      - name: Update API image tag
+        if: ${{ inputs.deploy_api && steps.api_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataapi:.*|image: sportdeets.azurecr.io/sportsdataapi:${{ steps.api_tag.outputs.tag }}|g" \
+            app/base/apps/api/api-deployment.yaml
+          echo "Updated API to tag: ${{ steps.api_tag.outputs.tag }}"
+
+      - name: Update Producer image tag
+        if: ${{ inputs.deploy_producer && steps.producer_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataproducer:.*|image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}|g" \
+            app/base/apps/producer/producer-football-ncaa-deployment.yaml
+          echo "Updated Producer to tag: ${{ steps.producer_tag.outputs.tag }}"
+
+      - name: Update Provider image tag
+        if: ${{ inputs.deploy_provider && steps.provider_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          sed -i "s|image: sportdeets.azurecr.io/sportsdataprovider:.*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" \
+            app/base/apps/provider/provider-football-ncaa.yaml
+          echo "Updated Provider to tag: ${{ steps.provider_tag.outputs.tag }}"
+
+      - name: Commit and push changes
+        working-directory: sports-data-config
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          git add app/base/apps/*/
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            COMMIT_MSG="Deploy to production (auto):"
+            [ "${{ inputs.deploy_api }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG API=${{ steps.api_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_producer }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Producer=${{ steps.producer_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_provider }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ steps.provider_tag.outputs.tag }}"
+            
+            git commit -m "$COMMIT_MSG"
+            git push
+            
+            echo "✅ Changes committed to sports-data-config. Flux will deploy automatically."
+          fi

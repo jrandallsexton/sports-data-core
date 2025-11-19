@@ -26,7 +26,7 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: ${{ secrets.ACR_CREDENTIALS }}
 
       - name: Get latest API tag from ACR
         if: ${{ inputs.deploy_api }}

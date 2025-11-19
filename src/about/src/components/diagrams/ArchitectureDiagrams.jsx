@@ -176,7 +176,7 @@ const diagrams = {
       diagram: `
 graph LR
     Users[👤 Users] -->|HTTPS| Azure[☁️ Azure Services]
-    Azure -->|HTTP| Cluster[🏠 K3s Cluster]
+    Azure -->|HTTP| Cluster[☸️ K3s Cluster]
     Cluster --> Services[⚙️ App Services]
     Services -->|Store/Query| Data[💾 Data Layer]
     Services -.->|Metrics/Logs| Obs[📊 Observability]
@@ -583,7 +583,7 @@ const ArchitectureDiagrams = () => {
     prod: [
       { id: 'overview', label: 'Overview', icon: '🏠' },
       { id: 'azure', label: 'Azure', icon: '☁️' },
-      { id: 'cluster', label: 'K3s Cluster', icon: '⚙️' },
+      { id: 'cluster', label: 'K3s Cluster', icon: '☸️' },
       { id: 'data', label: 'Data', icon: '💾' },
       { id: 'observability', label: 'Observability', icon: '📊' },
       { id: 'complete', label: 'Complete View', icon: '🗺️' }

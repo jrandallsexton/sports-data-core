@@ -39,7 +39,7 @@ const AboutPage = () => {
   // Update active section based on scroll position
   useEffect(() => {
     const handleScroll = () => {
-      const navHeight = 70;
+      const navHeight = 130;
       const scrollPosition = window.scrollY + navHeight + 50;
 
       for (let i = sections.length - 1; i >= 0; i--) {

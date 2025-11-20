@@ -286,8 +286,9 @@ graph TB
         description: 'Full end-to-end system view',
         diagram: `
 graph LR
-    Users[👤 Users]
+    Clients[👤 Clients]
     GitHub[GitHub Repo]
+    Firebase[Firebase Auth]
     
     subgraph Azure["Azure Cloud"]
         direction TB
@@ -295,7 +296,6 @@ graph LR
         FrontDoor["<img src='/azure-icons/networking/10073-icon-service-Front-Door-and-CDN-Profiles.svg' width='24'/><br/>Azure Front Door"]
         APIM["<img src='/azure-icons/integration/10042-icon-service-API-Management-Services.svg' width='24'/><br/>API Management"]
         SignalRSvc[SignalR Service<br/>WebSocket Hub]
-        Firebase[Firebase Auth]
         AppConfig["<img src='/azure-icons/integration/10219-icon-service-App-Configuration.svg' width='24'/><br/>App Configuration"]
         KeyVault["<img src='/azure-icons/security/10245-icon-service-Key-Vaults.svg' width='24'/><br/>Key Vault"]
         ServiceBus["<img src='/azure-icons/integration/10836-icon-service-Azure-Service-Bus.svg' width='24'/><br/>Service Bus"]
@@ -325,7 +325,7 @@ graph LR
     subgraph OnPrem["On-Prem Data"]
         direction TB
         PG[(PostgreSQL<br/>Server)]
-        Ollama[Ollama LLM<br/>via Ngrok]
+        Ollama[Ollama LLM]
     end
     
     subgraph External["External Services"]
@@ -334,8 +334,8 @@ graph LR
         Twilio[Twilio<br/>SMS]
     end
     
-    Users -->|HTTPS| FrontDoor
-    Users -->|WebSocket| FrontDoor
+    Clients -->|HTTPS| FrontDoor
+    Clients -->|WebSocket| FrontDoor
     FrontDoor -->|Route| APIM
     FrontDoor -->|Route| SignalRSvc
     APIM -->|Proxy| Traefik

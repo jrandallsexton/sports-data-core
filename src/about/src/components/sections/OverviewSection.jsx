@@ -133,6 +133,14 @@ const OverviewSection = ({ id }) => {
                 workers in development
               </p>
               <p>
+                <strong>Azure Arc</strong> – Connects on-prem k3s cluster to
+                Azure with managed identity for secure Key Vault access
+              </p>
+              <p>
+                <strong>Azure Bastion</strong> – Secure SSH access to PostgreSQL
+                VM using RSA keys without public IP exposure
+              </p>
+              <p>
                 <strong>Azure Blob & Disk Storage</strong> – Blob storage for
                 logos, images, logs, and backups; managed disks for PostgreSQL VM
               </p>

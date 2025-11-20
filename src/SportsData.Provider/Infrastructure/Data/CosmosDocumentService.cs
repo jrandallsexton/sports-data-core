@@ -80,6 +80,7 @@ namespace SportsData.Provider.Infrastructure.Data
                 document.SourceUrlHash = HashProvider.GenerateHashFromUri(document.Uri);
             }
 
+            // TODO: This was a HORRIBLE decision, but Cosmos requires a partition key. I should have used the entire hash.
             var routingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
 
             // Assign routingKey to DocumentBase if needed

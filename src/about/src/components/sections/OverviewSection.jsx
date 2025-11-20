@@ -87,6 +87,10 @@ const OverviewSection = ({ id }) => {
                 canonical PostgreSQL schema
               </p>
               <p>
+                <strong>Firebase Admin SDK</strong> – JWT token validation and
+                user authentication for API endpoints
+              </p>
+              <p>
                 <strong>FluentValidation</strong> – Declarative validation rules
                 for commands and queries
               </p>

@@ -79,25 +79,51 @@ const OverviewSection = ({ id }) => {
                 service hosts
               </p>
               <p>
+                <strong>AutoMapper</strong> – Object-to-object mapping for DTOs
+                and entity transformations
+              </p>
+              <p>
                 <strong>Entity Framework Core</strong> – Code-first ORM for
                 canonical PostgreSQL schema
               </p>
               <p>
-                <strong>MassTransit</strong> – Distributed messaging over Azure
-                Service Bus
+                <strong>FluentValidation</strong> – Declarative validation rules
+                for commands and queries
               </p>
               <p>
                 <strong>Hangfire</strong> – Background job orchestration and
                 recurring task execution
               </p>
               <p>
+                <strong>MassTransit</strong> – Distributed messaging over Azure
+                Service Bus with outbox pattern
+              </p>
+              <p>
+                <strong>MediatR</strong> – CQRS and mediator pattern
+                implementation for clean architecture
+              </p>
+              <p>
                 <strong>Polly</strong> – Retry, circuit breaker, and timeout
-                policies for resilient API and service calls
+                policies for resilient API calls
+              </p>
+              <p>
+                <strong>Serilog</strong> – Structured logging with Seq and
+                console sinks
+              </p>
+              <p>
+                <strong>SportsData.Core</strong> – Shared library with DI
+                registration extensions, data persistence, messaging, health
+                checks, and HTTP clients used across all services
               </p>
             </div>
 
             <div className="tech-card">
               <h4>Cloud & Infrastructure</h4>
+              <p>
+                <strong>Azure API Management</strong> – Consumption-tier gateway
+                proxying Front Door requests to internal k3s API with CORS and
+                rate limiting
+              </p>
               <p>
                 <strong>Azure App Configuration</strong> – Centralized app
                 settings with dynamic refresh
@@ -107,12 +133,20 @@ const OverviewSection = ({ id }) => {
                 workers in development
               </p>
               <p>
-                <strong>Azure Blob Storage</strong> – Asset storage for logos,
-                images, logs, and backups
+                <strong>Azure Blob & Disk Storage</strong> – Blob storage for
+                logos, images, logs, and backups; managed disks for PostgreSQL VM
+              </p>
+              <p>
+                <strong>Azure Container Registry</strong> – Private Docker
+                image repository for service deployments to App Services and k3s
               </p>
               <p>
                 <strong>Azure Cosmos DB</strong> – Raw document store for
                 ingested external JSON (ESPN APIs, etc.)
+              </p>
+              <p>
+                <strong>Azure Data Factory</strong> – Orchestrates Cosmos DB
+                data sync from production to development for realistic testing
               </p>
               <p>
                 <strong>Azure Front Door</strong> – Global entry point for all
@@ -123,12 +157,28 @@ const OverviewSection = ({ id }) => {
                 management for services and pipelines
               </p>
               <p>
+                <strong>Azure Pipelines</strong> – CI/CD automation for
+                building, testing, and deploying services to ACR and environments
+              </p>
+              <p>
                 <strong>Azure Service Bus</strong> – Distributed messaging
                 backbone between Provider, Producer, and API services
               </p>
               <p>
                 <strong>Azure SignalR Service</strong> – Real-time push from API
                 to UI for contest updates and status broadcasting
+              </p>
+              <p>
+                <strong>Azure Static Web Apps</strong> – Hosts React UI in both
+                development and production with global CDN distribution
+              </p>
+              <p>
+                <strong>Azure Virtual Machine</strong> – Self-managed PostgreSQL
+                server in development environment
+              </p>
+              <p>
+                <strong>Azure Virtual Network</strong> – Private networking
+                connecting App Services to PostgreSQL VM in development
               </p>
             </div>
 

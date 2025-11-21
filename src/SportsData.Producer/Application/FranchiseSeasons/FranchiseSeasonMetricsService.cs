@@ -74,8 +74,26 @@ namespace SportsData.Producer.Application.FranchiseSeasons
                 ThirdFourthRate = fsm.ThirdFourthRate,
                 TimePossRatio = fsm.TimePossRatio,
                 TurnoverMarginPerDrive = fsm.TurnoverMarginPerDrive,
-                Ypp = fsm.Ypp
+                Ypp = fsm.Ypp,
+
+                // scoring summary fields
+                PtsScoredMin = fsm.FranchiseSeason.PtsScoredMin,
+                PtsScoredMax = fsm.FranchiseSeason.PtsScoredMax,
+                PtsScoredAvg = fsm.FranchiseSeason.PtsScoredAvg,
+
+                PtsAllowedMin = fsm.FranchiseSeason.PtsAllowedMin,
+                PtsAllowedMax = fsm.FranchiseSeason.PtsAllowedMax,
+                PtsAllowedAvg = fsm.FranchiseSeason.PtsAllowedAvg,
+
+                MarginWinMin = fsm.FranchiseSeason.MarginWinMin,
+                MarginWinMax = fsm.FranchiseSeason.MarginWinMax,
+                MarginWinAvg = fsm.FranchiseSeason.MarginWinAvg,
+
+                MarginLossMin = fsm.FranchiseSeason.MarginLossMin,
+                MarginLossMax = fsm.FranchiseSeason.MarginLossMax,
+                MarginLossAvg = fsm.FranchiseSeason.MarginLossAvg
             }).ToList();
+
 
             return new Success<List<FranchiseSeasonMetricsDto>>(dtos);
         }

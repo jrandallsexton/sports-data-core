@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 # === Load data ===
 df_train = pd.read_csv("./data/competition_metrics_full.csv")
-df_predict = pd.read_csv("./data/competition_metrics_week_12.csv")
+df_predict = pd.read_csv("./data/competition_metrics_week_13.csv")
 
 # === Derive ATS label (exclude nulls or ties against spread) ===
 df_train = df_train.dropna(subset=["HomeScore", "AwayScore", "Spread"]).copy()
@@ -59,3 +59,5 @@ raw_output_cols = [
 df_predict[raw_output_cols].to_csv("./data/predictions_ats_raw.csv", index=False)
 
 print("✅ Raw ATS predictions written to ./data/predictions_ats_raw.csv")
+
+

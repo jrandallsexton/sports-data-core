@@ -54,3 +54,5 @@ with open("./data/contest_predictions.json", "w") as f:
     json.dump(all_predictions, f, indent=2)
 
 print("✅ DTOs written to ./data/contest_predictions.json")
+
+

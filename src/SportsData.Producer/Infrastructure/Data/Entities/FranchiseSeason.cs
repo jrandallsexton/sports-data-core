@@ -56,6 +56,26 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int ConferenceTies { get; set; }
 
+        // Points allowed
+        public int? PtsAllowedMin { get; set; }
+        public int? PtsAllowedMax { get; set; }
+        public decimal? PtsAllowedAvg { get; set; }
+
+        // Points scored
+        public int? PtsScoredMin { get; set; }
+        public int? PtsScoredMax { get; set; }
+        public decimal? PtsScoredAvg { get; set; }
+
+        // Margin of victory
+        public int? MarginWinMin { get; set; }
+        public int? MarginWinMax { get; set; }
+        public decimal? MarginWinAvg { get; set; }
+
+        // Margin of loss
+        public int? MarginLossMin { get; set; }
+        public int? MarginLossMax { get; set; }
+        public decimal? MarginLossAvg { get; set; }
+
         // End Enrichment Properties
 
         public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];

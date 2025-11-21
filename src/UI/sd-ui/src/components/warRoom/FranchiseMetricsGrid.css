@@ -101,6 +101,32 @@
   vertical-align: top;
 }
 
+/* Sticky first column (Team name) */
+.metrics-table th:first-child,
+.metrics-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #2a2d35;
+}
+
+.metrics-table tbody tr:hover td:first-child {
+  background-color: #3a4050;
+}
+
+.metrics-table tbody tr.even-row td:first-child {
+  background-color: #1a1d23;
+}
+
+.metrics-table tbody tr.odd-row td:first-child {
+  background-color: #1f2329;
+}
+
+.metrics-table tbody tr:hover.even-row td:first-child,
+.metrics-table tbody tr:hover.odd-row td:first-child {
+  background-color: #3a4050;
+}
+
 .metrics-table th.sortable {
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -153,7 +179,32 @@
 }
 
 .metrics-table tr:hover {
-  background-color: #2a2d35 !important;
+  background-color: #2a3a50 !important;
+}
+
+.metrics-table tr:hover td {
+  background-color: #2a3a50 !important;
+  color: #fff;
+}
+
+.metrics-table tr:hover .team-link {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Selected row state (persists on click) */
+.metrics-table tr.selected-row td {
+  background-color: #2a3a50 !important;
+  color: #fff;
+}
+
+.metrics-table tr.selected-row .team-link {
+  color: #fff;
+  font-weight: 600;
+}
+
+.metrics-table tbody tr {
+  cursor: pointer;
 }
 
 /* Numeric columns - center align and use monospace font */

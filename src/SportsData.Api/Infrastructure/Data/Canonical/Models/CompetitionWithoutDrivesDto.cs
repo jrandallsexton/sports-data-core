@@ -12,3 +12,7 @@ public class CompetitionWithoutDrivesDto
     public int PlaysWithDriveId { get; set; }
     public string? LastPlayText { get; set; }
 }
+
+public class CompetitionWithoutMetricsDto
+{
+}

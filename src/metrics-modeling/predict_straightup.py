@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 # === Load training and prediction data ===
 df_train = pd.read_csv("./data/competition_metrics_full.csv")
-df_predict = pd.read_csv("./data/competition_metrics_week_12.csv")
+df_predict = pd.read_csv("./data/competition_metrics_week_13.csv")
 
 # === Filter & label training data ===
 df_train = df_train[df_train["Winner"].isin(["HOME", "AWAY"])].copy()
@@ -55,3 +55,5 @@ output_cols = [
 df_predict[output_cols].to_csv("./data/predictions_straightup_raw.csv", index=False)
 
 print("✅ Straight-up raw predictions written to ./data/predictions_straightup_raw.csv")
+
+

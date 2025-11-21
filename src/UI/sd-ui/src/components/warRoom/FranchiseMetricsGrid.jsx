@@ -10,6 +10,7 @@ function FranchiseMetricsGrid() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [showAll, setShowAll] = useState(false);
   const [selectedConference, setSelectedConference] = useState('all');
+  const [selectedRow, setSelectedRow] = useState(null);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -79,6 +80,14 @@ function FranchiseMetricsGrid() {
     if (typeof value === 'number') {
       if (key === 'gamesPlayed' || key === 'seasonYear') {
         return value.toString();
+      }
+      // Integer metrics (min/max/counts) - only non-average values
+      if ((key.includes('Min') || key.includes('Max')) && !key.includes('Avg')) {
+        return Math.round(value).toString();
+      }
+      // Average metrics show 2 decimal places (includes ptsScoredAvg, ptsAllowedAvg, marginWinAvg, marginLossAvg)
+      if (key.includes('Avg')) {
+        return value.toFixed(2);
       }
       // Field position difference and turnover margin can be negative, show more precision
       if (key === 'fieldPosDiff' || key === 'turnoverMarginPerDrive') {
@@ -219,11 +228,52 @@ function FranchiseMetricsGrid() {
               <th onClick={() => handleSort('penaltyYardsPerPlay')} className="sortable">
                 Penalty{'\n'}Y/P {getSortIcon('penaltyYardsPerPlay')}
               </th>
+              <th onClick={() => handleSort('ptsScoredMin')} className="sortable">
+                Pts Scored{'\n'}Min {getSortIcon('ptsScoredMin')}
+              </th>
+              <th onClick={() => handleSort('ptsScoredMax')} className="sortable">
+                Pts Scored{'\n'}Max {getSortIcon('ptsScoredMax')}
+              </th>
+              <th onClick={() => handleSort('ptsScoredAvg')} className="sortable">
+                Pts Scored{'\n'}Avg {getSortIcon('ptsScoredAvg')}
+              </th>
+              <th onClick={() => handleSort('ptsAllowedMin')} className="sortable">
+                Pts Allowed{'\n'}Min {getSortIcon('ptsAllowedMin')}
+              </th>
+              <th onClick={() => handleSort('ptsAllowedMax')} className="sortable">
+                Pts Allowed{'\n'}Max {getSortIcon('ptsAllowedMax')}
+              </th>
+              <th onClick={() => handleSort('ptsAllowedAvg')} className="sortable">
+                Pts Allowed{'\n'}Avg {getSortIcon('ptsAllowedAvg')}
+              </th>
+              <th onClick={() => handleSort('marginWinMin')} className="sortable">
+                Win Margin{'\n'}Min {getSortIcon('marginWinMin')}
+              </th>
+              <th onClick={() => handleSort('marginWinMax')} className="sortable">
+                Win Margin{'\n'}Max {getSortIcon('marginWinMax')}
+              </th>
+              <th onClick={() => handleSort('marginWinAvg')} className="sortable">
+                Win Margin{'\n'}Avg {getSortIcon('marginWinAvg')}
+              </th>
+              <th onClick={() => handleSort('marginLossMin')} className="sortable">
+                Loss Margin{'\n'}Min {getSortIcon('marginLossMin')}
+              </th>
+              <th onClick={() => handleSort('marginLossMax')} className="sortable">
+                Loss Margin{'\n'}Max {getSortIcon('marginLossMax')}
+              </th>
+              <th onClick={() => handleSort('marginLossAvg')} className="sortable">
+                Loss Margin{'\n'}Avg {getSortIcon('marginLossAvg')}
+              </th>
             </tr>
           </thead>
           <tbody>
             {displayedMetrics.map((team, index) => (
-              <tr key={team.franchiseSlug} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
+              <tr 
+                key={team.franchiseSlug} 
+                className={`${index % 2 === 0 ? 'even-row' : 'odd-row'} ${selectedRow === team.franchiseSlug ? 'selected-row' : ''}`}
+                onClick={() => setSelectedRow(selectedRow === team.franchiseSlug ? null : team.franchiseSlug)}
+                style={{ cursor: 'pointer' }}
+              >
                 <td className="team-name">
                   <a
                     href={`/app/sport/football/ncaa/team/${team.franchiseSlug}/2025`}
@@ -258,6 +308,18 @@ function FranchiseMetricsGrid() {
                 <td>{formatValue(team.fieldPosDiff, 'fieldPosDiff')}</td>
                 <td>{formatValue(team.turnoverMarginPerDrive, 'turnoverMarginPerDrive')}</td>
                 <td>{formatValue(team.penaltyYardsPerPlay, 'penaltyYardsPerPlay')}</td>
+                <td>{formatValue(team.ptsScoredMin, 'ptsScoredMin')}</td>
+                <td>{formatValue(team.ptsScoredMax, 'ptsScoredMax')}</td>
+                <td>{formatValue(team.ptsScoredAvg, 'ptsScoredAvg')}</td>
+                <td>{formatValue(team.ptsAllowedMin, 'ptsAllowedMin')}</td>
+                <td>{formatValue(team.ptsAllowedMax, 'ptsAllowedMax')}</td>
+                <td>{formatValue(team.ptsAllowedAvg, 'ptsAllowedAvg')}</td>
+                <td>{formatValue(team.marginWinMin, 'marginWinMin')}</td>
+                <td>{formatValue(team.marginWinMax, 'marginWinMax')}</td>
+                <td>{formatValue(team.marginWinAvg, 'marginWinAvg')}</td>
+                <td>{formatValue(team.marginLossMin, 'marginLossMin')}</td>
+                <td>{formatValue(team.marginLossMax, 'marginLossMax')}</td>
+                <td>{formatValue(team.marginLossAvg, 'marginLossAvg')}</td>
               </tr>
             ))}
           </tbody>

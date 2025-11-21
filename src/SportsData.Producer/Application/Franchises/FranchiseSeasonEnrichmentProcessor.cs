@@ -34,9 +34,9 @@ namespace SportsData.Producer.Application.Franchises
         public async Task Process(EnrichFranchiseSeasonCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = command.CorrelationId
-                   }))
+            {
+                ["CorrelationId"] = command.CorrelationId
+            }))
             {
                 _logger.LogInformation("Began with {@command}", command);
 
@@ -64,26 +64,41 @@ namespace SportsData.Producer.Application.Franchises
                 return;
             }
 
-            await UpdateWinsAndLosses(command, franchiseSeason);
+            var contests = await GetFinalizedContestsForFranchiseSeason(command.FranchiseSeasonId);
+
+            await UpdateWinsAndLosses(command, franchiseSeason, contests);
+            UpdateScoringMargins(franchiseSeason, contests);
+
+            franchiseSeason.ModifiedUtc = DateTime.UtcNow;
+            franchiseSeason.ModifiedBy = Guid.NewGuid();
+
+            await _dataContext.SaveChangesAsync();
+
+            await _eventBus.Publish(new FranchiseSeasonEnrichmentCompleted(
+                command.FranchiseSeasonId,
+                command.CorrelationId,
+                Guid.NewGuid()));
 
             await RequestFranchiseSeasonSourcing(command, franchiseSeason, franchiseSeason.ExternalIds.First());
         }
 
+        private async Task<List<Contest>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
+        {
+            return await _dataContext.Contests
+                .Where(c => c.FinalizedUtc != null &&
+                            (c.AwayTeamFranchiseSeasonId == franchiseSeasonId ||
+                             c.HomeTeamFranchiseSeasonId == franchiseSeasonId))
+                .ToListAsync();
+        }
+
         private async Task UpdateWinsAndLosses(
             EnrichFranchiseSeasonCommand command,
-            FranchiseSeason franchiseSeason)
+            FranchiseSeason franchiseSeason,
+            List<Contest> contests)
         {
-            
-            // update the wins and losses
-            var contests = await _dataContext.Contests
-                .Where(c => c.FinalizedUtc != null &&
-                            (c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ||
-                            c.HomeTeamFranchiseSeasonId == command.FranchiseSeasonId))
-                .ToListAsync();
-
             var wins = 0;
             var losses = 0;
-            var ties = 0; // TODO: Support ties for other sports after NCAAFB
+            var ties = 0;
             var conferenceWins = 0;
             var conferenceLosses = 0;
             var conferenceTies = 0;
@@ -94,24 +109,19 @@ namespace SportsData.Producer.Application.Franchises
 
                 if (wasWinner)
                     wins++;
-
-                if (!wasWinner)
+                else
                     losses++;
 
-                // conference
                 var conferenceId = franchiseSeason.GroupSeasonId;
 
-                // determine the opponent's conference
-                var opponentFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ?
-                    contest.HomeTeamFranchiseSeasonId :
-                    contest.AwayTeamFranchiseSeasonId;
+                var opponentFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId
+                    ? contest.HomeTeamFranchiseSeasonId
+                    : contest.AwayTeamFranchiseSeasonId;
 
-                // get the opponent's franchiseSeason
                 var oppFranchiseSeason = await _dataContext
                     .FranchiseSeasons
                     .AsNoTracking()
-                    .Where(x => x.Id == opponentFranchiseSeasonId)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(x => x.Id == opponentFranchiseSeasonId);
 
                 if (oppFranchiseSeason is null)
                 {
@@ -125,30 +135,69 @@ namespace SportsData.Producer.Application.Franchises
                 {
                     if (wasWinner)
                         conferenceWins++;
-
-                    if (!wasWinner)
+                    else
                         conferenceLosses++;
                 }
-
-                franchiseSeason.Wins = wins;
-                franchiseSeason.Losses = losses;
-                franchiseSeason.Ties = ties;
-
-                franchiseSeason.ConferenceWins = conferenceWins;
-                franchiseSeason.ConferenceLosses = conferenceLosses;
-                franchiseSeason.ConferenceTies = conferenceTies;
-
-                franchiseSeason.ModifiedUtc = DateTime.UtcNow;
-                franchiseSeason.ModifiedBy = Guid.NewGuid();
-
-                await _eventBus.Publish(
-                    new FranchiseSeasonEnrichmentCompleted(
-                        command.FranchiseSeasonId,
-                        command.CorrelationId,
-                        Guid.NewGuid()));
-
-                await _dataContext.SaveChangesAsync();
             }
+
+            franchiseSeason.Wins = wins;
+            franchiseSeason.Losses = losses;
+            franchiseSeason.Ties = ties;
+
+            franchiseSeason.ConferenceWins = conferenceWins;
+            franchiseSeason.ConferenceLosses = conferenceLosses;
+            franchiseSeason.ConferenceTies = conferenceTies;
+        }
+
+        private void UpdateScoringMargins(FranchiseSeason franchiseSeason, List<Contest> contests)
+        {
+            var scored = new List<int>();
+            var allowed = new List<int>();
+            var winMargins = new List<int>();
+            var lossMargins = new List<int>();
+
+            foreach (var contest in contests)
+            {
+                var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
+                var isWinner = contest.WinnerFranchiseId == franchiseSeason.Id;
+
+                var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
+                var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;
+
+                scored.Add(teamScore);
+                allowed.Add(opponentScore);
+
+                var margin = teamScore - opponentScore;
+
+                if (isWinner)
+                    winMargins.Add(margin);
+                else
+                    lossMargins.Add(Math.Abs(margin));
+            }
+
+            franchiseSeason.PtsScoredMin = scored.Any() ? scored.Min() : null;
+            franchiseSeason.PtsScoredMax = scored.Any() ? scored.Max() : null;
+            franchiseSeason.PtsScoredAvg = scored.Any()
+                ? Math.Round(Convert.ToDecimal(scored.Average()), 2)
+                : null;
+
+            franchiseSeason.PtsAllowedMin = allowed.Any() ? allowed.Min() : null;
+            franchiseSeason.PtsAllowedMax = allowed.Any() ? allowed.Max() : null;
+            franchiseSeason.PtsAllowedAvg = allowed.Any()
+                ? Math.Round(Convert.ToDecimal(allowed.Average()), 2)
+                : null;
+
+            franchiseSeason.MarginWinMin = winMargins.Any() ? winMargins.Min() : null;
+            franchiseSeason.MarginWinMax = winMargins.Any() ? winMargins.Max() : null;
+            franchiseSeason.MarginWinAvg = winMargins.Any()
+                ? Math.Round(Convert.ToDecimal(winMargins.Average()), 2)
+                : null;
+
+            franchiseSeason.MarginLossMin = lossMargins.Any() ? lossMargins.Min() : null;
+            franchiseSeason.MarginLossMax = lossMargins.Any() ? lossMargins.Max() : null;
+            franchiseSeason.MarginLossAvg = lossMargins.Any()
+                ? Math.Round(Convert.ToDecimal(lossMargins.Average()), 2)
+                : null;
         }
 
         private async Task RequestFranchiseSeasonSourcing(
@@ -167,7 +216,8 @@ namespace SportsData.Producer.Application.Franchises
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor
             ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
+
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing { Id = Guid.NewGuid() });
             await _dataContext.SaveChangesAsync();
         }
     }

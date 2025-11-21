@@ -37,7 +37,25 @@ namespace SportsData.Core.Dtos.Canonical
         public decimal FieldPosDiff { get; init; }
         public decimal TurnoverMarginPerDrive { get; init; }
         public decimal PenaltyYardsPerPlay { get; init; }
+
+        // Scoring Summary
+        public int? PtsScoredMin { get; init; }
+        public int? PtsScoredMax { get; init; }
+        public decimal? PtsScoredAvg { get; init; }
+
+        public int? PtsAllowedMin { get; init; }
+        public int? PtsAllowedMax { get; init; }
+        public decimal? PtsAllowedAvg { get; init; }
+
+        public int? MarginWinMin { get; init; }
+        public int? MarginWinMax { get; init; }
+        public decimal? MarginWinAvg { get; init; }
+
+        public int? MarginLossMin { get; init; }
+        public int? MarginLossMax { get; init; }
+        public decimal? MarginLossAvg { get; init; }
     }
+
 
 
     public class MetricLegendDto

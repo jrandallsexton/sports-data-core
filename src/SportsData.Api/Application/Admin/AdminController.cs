@@ -146,6 +146,16 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        [HttpGet]
+        [Route("errors/competitions-without-metrics")]
+        public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics()
+        {
+            await Task.CompletedTask;
+            throw new NotImplementedException();
+            //var result = await _adminService.GetCompetitionsWithoutMetrics();
+            //return result.ToActionResult();
+        }
+
         [HttpPost]
         [Route("ai-predictions/{syntheticId}")]
         public async Task<IActionResult> PostBulkPicks(

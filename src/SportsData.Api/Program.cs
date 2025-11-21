@@ -97,6 +97,9 @@ namespace SportsData.Api
                 options.ModelBinderProviders.Insert(0, new FirebaseUserClaimsBinderProvider());
             });
 
+            // Add memory cache for user authentication caching
+            builder.Services.AddMemoryCache();
+
             // 3. Add Authorization middleware
             //builder.Services.AddAuthorization();
 

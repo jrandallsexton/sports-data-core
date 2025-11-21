@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Security.Claims;
 
 namespace SportsData.Api.Application.Admin;
 
 /// <summary>
 /// Requires either:
 /// 1. X-Admin-Token header with valid admin token, or
-/// 2. Valid Firebase JWT token with admin access
+/// 2. Valid Firebase JWT token with Admin role claim
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class AdminApiTokenAttribute : Attribute, IAuthorizationFilter
@@ -20,20 +21,21 @@ public class AdminApiTokenAttribute : Attribute, IAuthorizationFilter
         var providedToken = context.HttpContext.Request.Headers["X-Admin-Token"].FirstOrDefault();
         if (!string.IsNullOrEmpty(providedToken) && !string.IsNullOrEmpty(validToken) && providedToken == validToken)
         {
-            // Valid admin token provided
+            // Valid admin token provided - bypass user auth check
             return;
         }
 
-        // If no valid admin token, check for authenticated user with admin role
+        // If no valid admin token, check for authenticated user with Admin role
         if (context.HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            var firebaseUid = context.HttpContext.User.FindFirst("user_id")?.Value;
-            if (!string.IsNullOrEmpty(firebaseUid))
+            // ? Check if user has Admin role claim (added by FirebaseAuthenticationMiddleware)
+            if (context.HttpContext.User.IsInRole("Admin"))
             {
                 return;
             }
         }
 
+        // Neither admin token nor admin role found
         context.Result = new UnauthorizedResult();
     }
 }

@@ -57,10 +57,12 @@ namespace SportsData.Api.Application.Admin
 
         public async Task RefreshAiExistence(Guid correlationId)
         {
+            // TODO: Accept the seasonWeek as a parameter
+
             // get the current week
             //var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
             var weeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
-            var currentWeek = weeks.Where(x => x.WeekNumber == 11).First()!;
+            var currentWeek = weeks.Where(x => x.WeekNumber == 12).First()!;
 
             if (currentWeek is null)
             {

@@ -71,7 +71,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
 
                 var leaderboard = await _dataContext.UserPicks
                     .Include(p => p.Group)
-                    .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
+                    .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null && p.ScoredAt != null)
                     .GroupBy(p => new { p.UserId, p.User.DisplayName })
                     .Select(g => new
                     {

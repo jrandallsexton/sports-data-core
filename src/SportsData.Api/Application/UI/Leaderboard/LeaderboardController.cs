@@ -40,6 +40,7 @@ public class LeaderboardController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
 
+        // TODO: Make season year dynamic
         var result = await _leaderboardService
             .GetLeaderboardWidgetForUser(userId, 2025, cancellationToken);
 

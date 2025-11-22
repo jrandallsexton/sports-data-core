@@ -32,7 +32,7 @@ namespace SportsData.Producer.Application.Venues
 
             foreach (var venue in venues)
             {
-                _backgroundJobProvider.Enqueue<IVenueService>(p => p.GeocodeVenue(venue.Id));
+                _backgroundJobProvider.Enqueue<VenueService>(p => p.GeocodeVenue(venue.Id));
 
                 await Task.Delay(2000); // small delay to avoid overwhelming the queue
             }

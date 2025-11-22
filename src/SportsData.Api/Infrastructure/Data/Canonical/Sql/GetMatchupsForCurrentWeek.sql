@@ -17,6 +17,12 @@ SELECT
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
 
+  v."Name"                  as "VenueName",
+  v."City"                  as "VenueCity",
+  v."State"                 as "VenueState",
+  v."Latitude"              as "VenueLatitude",
+  v."Longitude"             as "VenueLongitude",
+
   fAway."Slug"              as "AwaySlug",
   fAway."ColorCodeHex"      as "AwayColor",
   fsrdAway."Current"        as "AwayRank",

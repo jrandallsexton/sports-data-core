@@ -13,6 +13,7 @@ using SportsData.Producer.Application.FranchiseSeasons;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.SeasonWeek;
+using SportsData.Producer.Application.Venues;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Geo;
@@ -91,6 +92,7 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IFranchiseSeasonRankingService, FranchiseSeasonRankingService>();
 
+            services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
 
             return services;
@@ -123,6 +125,11 @@ namespace SportsData.Producer.DependencyInjection
             recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
                 nameof(FootballCompetitionStreamScheduler),
                 job => job.Execute(),
+                "0 7 * * 0"); // Sunday at 07:00 UTC
+
+            recurringJobManager.AddOrUpdate<VenueGeoCodeJob>(
+                nameof(VenueGeoCodeJob),
+                job => job.ExecuteAsync(),
                 "0 7 * * 0"); // Sunday at 07:00 UTC
 
             return services;

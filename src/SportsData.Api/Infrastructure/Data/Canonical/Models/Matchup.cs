@@ -8,6 +8,19 @@
 
         public DateTime StartDateUtc { get; set; }
 
+        // Venue Info
+        public string? VenueName { get; set; }
+
+        public string? VenueCity { get; set; }
+
+        public string? VenueState { get; set; }
+
+        public decimal? VenueLatitude { get; set; }
+
+        public decimal? VenueLongitude { get; set; }
+
+        // Away Team Info
+
         public required string AwaySlug { get; set; }
 
         public int? AwayRank { get; set; }
@@ -21,6 +34,8 @@
         public int AwayConferenceLosses { get; set; }
 
         public string? AwayConferenceSlug { get; set; }
+
+        // Home Team Info
 
         public required string HomeSlug { get; set; }
 

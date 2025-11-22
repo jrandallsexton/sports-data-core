@@ -13,17 +13,17 @@ namespace SportsData.Producer.Application.Venues
     public class VenueService : IVenueService
     {
         private readonly ILogger<VenueService> _logger;
-        private readonly IGeocodingService _geocodingService;
         private readonly TeamSportDataContext _dataContext;
+        private readonly IGeocodingService _geocodingService;
 
         public VenueService(
             ILogger<VenueService> logger,
-            IGeocodingService geocodingService,
-            TeamSportDataContext dataContext)
+            TeamSportDataContext dataContext,
+            IGeocodingService geocodingService)
         {
             _logger = logger;
-            _geocodingService = geocodingService;
             _dataContext = dataContext;
+            _geocodingService = geocodingService;
         }
 
         public async Task GeocodeVenue(Guid venueId)

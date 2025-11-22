@@ -92,6 +92,7 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IFranchiseSeasonRankingService, FranchiseSeasonRankingService>();
 
+            services.AddScoped<IVenueService, VenueService>();
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
 

@@ -14,13 +14,12 @@ namespace SportsData.Producer.Application.Venues
     {
         private readonly ILogger<VenueService> _logger;
         private readonly IGeocodingService _geocodingService;
-        private readonly BaseDataContext _dataContext;
+        private readonly TeamSportDataContext _dataContext;
 
         public VenueService(
             ILogger<VenueService> logger,
             IGeocodingService geocodingService,
-            BaseDataContext dataContext
-            )
+            TeamSportDataContext dataContext)
         {
             _logger = logger;
             _geocodingService = geocodingService;

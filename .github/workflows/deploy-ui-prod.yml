@@ -42,3 +42,4 @@ jobs:
         action: "upload"
         app_location: "src/UI/sd-ui"
         output_location: "build"
+        skip_app_build: true

@@ -34,9 +34,19 @@ const mapOptions = {
 };
 
 function GameMap() {
+  // Debug logging for API key
+  console.log('=== Google Maps API Key Debug ===');
+  console.log('REACT_APP_GOOGLE_MAPS_API_KEY:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
+  console.log('Key exists:', !!process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
+  console.log('Key length:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY?.length);
+  console.log('All env vars:', Object.keys(process.env).filter(k => k.startsWith('REACT_APP_')));
+  
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   });
+
+  console.log('Google Maps isLoaded:', isLoaded);
+  console.log('Google Maps loadError:', loadError);
 
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);

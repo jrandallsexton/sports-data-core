@@ -34,7 +34,6 @@ const mapOptions = {
 };
 
 function GameMap() {
-  // Debug logging for API key
   console.log('=== Google Maps API Key Debug ===');
   console.log('REACT_APP_GOOGLE_MAPS_API_KEY:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
   console.log('Key exists:', !!process.env.REACT_APP_GOOGLE_MAPS_API_KEY);

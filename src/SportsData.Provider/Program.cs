@@ -39,7 +39,7 @@ namespace SportsData.Provider
             services.AddSwaggerGen();
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode, null);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
             services.AddMessaging(config, [typeof(DocumentRequestedHandler)]);
 

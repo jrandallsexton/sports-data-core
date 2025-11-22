@@ -144,12 +144,16 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration,
             string applicationName,
-            Sport mode,
-            int? maxWorkers)
+            Sport mode)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
+
+            var minWorkersConfigValue = configuration[$"{applicationName}:BackgroundProcessor:MinWorkers"];
+            var minWorkers = int.TryParse(minWorkersConfigValue, out var parsedMinWorkers)
+                ? parsedMinWorkers
+                : 20;
 
             Console.WriteLine($"Hangfire ConnStr: {connString}");
 
@@ -164,8 +168,7 @@ namespace SportsData.Core.DependencyInjection
 
             services.AddHangfireServer(serverOptions =>
             {
-                // Use maxWorkers if specified, otherwise use the higher value between 20 and processor count * 2
-                serverOptions.WorkerCount = maxWorkers ?? Math.Max(20, Environment.ProcessorCount * 2);
+                serverOptions.WorkerCount = minWorkers;
             });
             
             return services;

@@ -15,6 +15,7 @@ using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.SeasonWeek;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Geo;
 
 namespace SportsData.Producer.DependencyInjection
 {
@@ -89,6 +90,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
 
             services.AddScoped<IFranchiseSeasonRankingService, FranchiseSeasonRankingService>();
+
+            services.AddScoped<IGeocodingService, GeoCodingService>();
 
             return services;
         }

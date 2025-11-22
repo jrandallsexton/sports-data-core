@@ -8,6 +8,8 @@
 
         public DateTime StartDateUtc { get; set; }
 
+        public string Status { get; set; } = null!;
+
         // Venue Info
         public string? VenueName { get; set; }
 
@@ -22,6 +24,10 @@
         // Away Team Info
 
         public required string AwaySlug { get; set; }
+
+        public string? AwayColor { get; set; }
+
+        public string AwayAbbreviation { get; set; } = null!;
 
         public int? AwayRank { get; set; }
 
@@ -38,6 +44,10 @@
         // Home Team Info
 
         public required string HomeSlug { get; set; }
+
+        public string? HomeColor { get; set; }
+
+        public string HomeAbbreviation { get; set; } = null!;
 
         public int? HomeRank { get; set; }
 

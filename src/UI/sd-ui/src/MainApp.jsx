@@ -16,6 +16,7 @@ import MessageBoardPage from "./components/messageboard/MessageboardPage.jsx";
 import HomePage from "./components/home/HomePage.jsx";
 import WarRoomPage from "./components/warRoom/WarRoomPage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
+import GameMap from "./components/map/GameMap.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
 import ConfirmationDialog from "./components/common/ConfirmationDialog";
@@ -122,6 +123,7 @@ function MainApp() {
             <Route path="/picks/:leagueId?" element={<PicksPage />} />
             <Route path="/warroom" element={<WarRoomPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/map" element={<GameMap />} />
             <Route path="/messageboard" element={<MessageBoardPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route

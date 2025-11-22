@@ -11,6 +11,7 @@ using SportsData.Api.Application.UI.Leaderboard;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
+using SportsData.Api.Application.UI.Map;
 using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Application.UI.Messageboard;
 using SportsData.Api.Application.UI.Picks;
@@ -71,6 +72,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IRankingsService, RankingsService>();
 
             services.AddScoped<IPreviewService, PreviewService>();
+
+            services.AddScoped<IMapService, MapService>();
 
             return services;
         }

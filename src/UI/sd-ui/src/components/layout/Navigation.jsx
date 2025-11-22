@@ -9,7 +9,8 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaRocket
+  FaRocket,
+  FaMapMarkedAlt
 } from "react-icons/fa";
 import './Navigation.css';
 
@@ -45,6 +46,10 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
             <NavLink to="/app/leaderboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaTrophy className="nav-icon" />
               <span>Leaderboard</span>
+            </NavLink>
+            <NavLink to="/app/map" className="nav-link" onClick={handleNavLinkClick}>
+              <FaMapMarkedAlt className="nav-icon" />
+              <span>Game Map</span>
             </NavLink>
             <NavLink to="/app/messageboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaComments className="nav-icon" />
@@ -112,6 +117,12 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                 <NavLink to="/app/leaderboard" className="nav-link">
                   <FaTrophy className="nav-icon" />
                   <span>Leaderboard</span>
+                </NavLink>
+              </td>
+              <td>
+                <NavLink to="/app/map" className="nav-link">
+                  <FaMapMarkedAlt className="nav-icon" />
+                  <span>Map</span>
                 </NavLink>
               </td>
               <td>

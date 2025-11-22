@@ -109,7 +109,7 @@ function PicksPage() {
 
   useEffect(() => {
     async function fetchMatchups() {
-      if (!selectedLeagueId) return;
+      if (!selectedLeagueId || selectedWeek === null) return;
       setLoadingMatchups(true);
       try {
         const response = await apiWrapper.Matchups.getByLeagueAndWeek(
@@ -129,7 +129,7 @@ function PicksPage() {
 
   useEffect(() => {
     async function fetchPicks() {
-      if (!selectedLeagueId) return;
+      if (!selectedLeagueId || selectedWeek === null) return;
 
       try {
         const response = await apiWrapper.Picks.getUserPicksByWeek(

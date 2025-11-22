@@ -42,8 +42,18 @@ function LeagueWeekOverviewTable({ overview }) {
               <tr key={contest.contestId}>
                 <td>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ flex: 1, textAlign: 'left', color: contest.leagueWinnerFranchiseSeasonId === contest.awayFranchiseSeasonId ? 'limegreen' : undefined }}>
-                      {contest.awayShort}
+                    <span style={{ flex: 1, textAlign: 'left' }}>
+                      <a 
+                        href={`/app/sport/football/ncaa/team/${contest.awaySlug}/2025`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: contest.leagueWinnerFranchiseSeasonId === contest.awayFranchiseSeasonId ? 'limegreen' : '#61dafb',
+                          textDecoration: 'none'
+                        }}
+                      >
+                        {contest.awayShort}
+                      </a>
                     </span>
                     <span style={{ flex: 1, textAlign: 'center', color: '#888' }}>
                       {contest.homeSpread === null || contest.homeSpread === 0
@@ -52,17 +62,34 @@ function LeagueWeekOverviewTable({ overview }) {
                             ? (contest.homeSpread > 0 ? '+' : '') + contest.homeSpread
                             : '')}
                     </span>
-                    <span style={{ flex: 1, textAlign: 'right', color: contest.leagueWinnerFranchiseSeasonId === contest.homeFranchiseSeasonId ? 'limegreen' : undefined }}>
-                      {contest.homeShort}
+                    <span style={{ flex: 1, textAlign: 'right' }}>
+                      <a 
+                        href={`/app/sport/football/ncaa/team/${contest.homeSlug}/2025`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: contest.leagueWinnerFranchiseSeasonId === contest.homeFranchiseSeasonId ? 'limegreen' : '#61dafb',
+                          textDecoration: 'none'
+                        }}
+                      >
+                        {contest.homeShort}
+                      </a>
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.9em', color: '#aaa' }}>
                     <span style={{ flex: 1 }}></span>
                     <span style={{ flex: 1, textAlign: 'center' }}></span>
                     <span style={{ flex: 1, textAlign: 'right' }}>
-                      {typeof contest.awayScore === 'number' && typeof contest.homeScore === 'number'
-                        ? `${contest.awayScore}-${contest.homeScore}`
-                        : ''}
+                      {typeof contest.awayScore === 'number' && typeof contest.homeScore === 'number' ? (
+                        <a 
+                          href={`/app/sport/football/ncaa/contest/${contest.contestId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#aaa', textDecoration: 'none' }}
+                        >
+                          {`${contest.awayScore}-${contest.homeScore}`}
+                        </a>
+                      ) : ''}
                     </span>
                   </div>
                 </td>

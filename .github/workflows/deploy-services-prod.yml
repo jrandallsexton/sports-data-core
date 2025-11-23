@@ -105,7 +105,7 @@ jobs:
             --service-name sportdeets-apim \
             --api-id sportdeets-api \
             --path / \
-            --specification-url https://api.sportdeets.com/swagger/v1/swagger.json \
+            --specification-url https://api-int.sportdeets.com/swagger/v1/swagger.json \
             --specification-format OpenApi \
             --subscription-required false
           

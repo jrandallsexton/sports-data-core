@@ -29,15 +29,6 @@ jobs:
     - name: Generate version
       run: echo "REACT_APP_VERSION=v$(date +'%d%m%y%H%M')" >> $GITHUB_ENV
 
-    - name: Build React app for dev
-      run: npm run build
-      env:
-        REACT_APP_API_BASE_URL: https://api-dev.sportdeets.com
-        REACT_APP_ENVIRONMENT: development
-        REACT_APP_PROD_URL: https://sportdeets.com
-        REACT_APP_VERSION: ${{ env.REACT_APP_VERSION }}
-        REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
-
     - name: Deploy to Azure Static Web App (Dev)
       uses: Azure/static-web-apps-deploy@v1
       with:
@@ -46,6 +37,7 @@ jobs:
         action: "upload"
         app_location: "src/UI/sd-ui"
         output_location: "build"
+        app_build_command: "npm run build"
       env:
         REACT_APP_API_BASE_URL: https://api-dev.sportdeets.com
         REACT_APP_ENVIRONMENT: development

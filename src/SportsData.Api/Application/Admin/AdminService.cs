@@ -60,9 +60,9 @@ namespace SportsData.Api.Application.Admin
             // TODO: Accept the seasonWeek as a parameter
 
             // get the current week
-            //var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
-            var weeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
-            var currentWeek = weeks.Where(x => x.WeekNumber == 12).First()!;
+            var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
+            //var weeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
+            //var currentWeek = weeks.Where(x => x.WeekNumber == 13).First()!;
 
             if (currentWeek is null)
             {

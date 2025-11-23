@@ -40,6 +40,8 @@ public class Program
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+        
+        services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
         services.AddClients(config);
         
@@ -148,6 +150,7 @@ public class Program
         app.UseCommonFeatures();
 
         app.MapControllers();
+        app.MapPrometheusScrapingEndpoint();
 
         app.Services.ConfigureHangfireJobs(mode);
 

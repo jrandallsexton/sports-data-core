@@ -71,6 +71,7 @@ namespace SportsData.Provider
             app.UseAuthorization();
             app.UseCommonFeatures();
             app.MapControllers();
+            app.MapPrometheusScrapingEndpoint();
 
             app.Services.ConfigureHangfireJobs(mode);
 

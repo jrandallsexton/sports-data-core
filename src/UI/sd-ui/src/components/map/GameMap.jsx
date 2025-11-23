@@ -54,7 +54,7 @@ function GameMap() {
   const [conferenceFilter, setConferenceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [conferences, setConferences] = useState([]);
-  const [tooltipMode, setTooltipMode] = useState("off"); // "off", "labels", "details"
+  const [tooltipMode, setTooltipMode] = useState("off");  // "off", "labels", "details"
   const mapRef = useRef(null);
   const previousScoresRef = useRef({});
   const hoverTimeoutRef = useRef(null);

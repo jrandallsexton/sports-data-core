@@ -17,6 +17,7 @@ using SportsData.Api.Application.Events;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.DependencyInjection;
+using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Middleware;
@@ -125,6 +126,9 @@ namespace SportsData.Api
             });
 
             services.AddCoreServices(config);
+
+            // Add OpenTelemetry instrumentation
+            services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -272,6 +276,9 @@ namespace SportsData.Api
             var buildConfigurationName = assemblyConfigurationAttribute?.Configuration ?? "Development";
 
             app.UseCommonFeatures(buildConfigurationName);
+
+            // Map Prometheus metrics endpoint
+            app.MapPrometheusScrapingEndpoint();
 
             app.MapHub<NotificationHub>("/hubs/notifications");
 

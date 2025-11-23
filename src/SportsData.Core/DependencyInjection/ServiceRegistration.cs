@@ -218,7 +218,7 @@ namespace SportsData.Core.DependencyInjection
             string applicationName,
             IConfiguration configuration)
         {
-            var otelConfig = configuration.GetSection(OpenTelemetryConfig.SectionName).Get<OpenTelemetryConfig>();
+            var otelConfig = configuration.GetSection("CommonConfig:" + OpenTelemetryConfig.SectionName).Get<OpenTelemetryConfig>();
 
             // If OTel is disabled or config is missing, skip instrumentation
             if (otelConfig == null || !otelConfig.Enabled)

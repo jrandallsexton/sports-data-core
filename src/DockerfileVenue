@@ -1,16 +1,11 @@
 # Use the official ASP.NET Core runtime as a base for final app
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Install ICU and enable full globalization
-RUN apk add --no-cache icu-libs \
-    && echo "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false" >> /etc/environment
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+# Build stage - use Debian-based SDK for gRPC Tools compatibility
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 

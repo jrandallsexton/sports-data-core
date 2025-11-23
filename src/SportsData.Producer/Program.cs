@@ -86,7 +86,7 @@ public class Program
         //        typeof(ProcessImageResponseHandler)
         //    ]);
 
-        services.AddInstrumentation(builder.Environment.ApplicationName);
+        services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
         switch (mode)
         {

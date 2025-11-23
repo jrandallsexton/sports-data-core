@@ -43,7 +43,7 @@ namespace SportsData.Provider
 
             services.AddMessaging(config, [typeof(DocumentRequestedHandler)]);
 
-            services.AddInstrumentation(builder.Environment.ApplicationName);
+            services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
             builder.Services.Configure<ProviderDocDatabaseConfig>(
                 builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabaseConfig"));

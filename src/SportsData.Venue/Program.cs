@@ -62,7 +62,7 @@ namespace SportsData.Venue
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
-            services.AddInstrumentation(builder.Environment.ApplicationName);
+            services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddCaching(config);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, Sport.All);
 

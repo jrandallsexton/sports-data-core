@@ -213,36 +213,116 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddInstrumentation(this IServiceCollection services, string applicationName)
+        public static IServiceCollection AddInstrumentation(
+            this IServiceCollection services,
+            string applicationName,
+            IConfiguration configuration)
         {
+            var otelConfig = configuration.GetSection(OpenTelemetryConfig.SectionName).Get<OpenTelemetryConfig>();
+
+            // If OTel is disabled or config is missing, skip instrumentation
+            if (otelConfig == null || !otelConfig.Enabled)
+            {
+                return services;
+            }
+
+            // Use configured service name or fallback to application name
+            var serviceName = string.IsNullOrEmpty(otelConfig.ServiceName) ? applicationName : otelConfig.ServiceName;
+
             Action<ResourceBuilder> appResourceBuilder =
                 resource => resource
                     .AddTelemetrySdk()
-                    .AddService(applicationName);
+                    .AddService(
+                        serviceName: serviceName,
+                        serviceVersion: otelConfig.ServiceVersion);
 
-            services.AddOpenTelemetry()
-                .ConfigureResource(appResourceBuilder)
-                .WithTracing(builder => builder
-                    .SetSampler<AlwaysOnSampler>()
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddSource("APITracing")
-                    //.AddConsoleExporter()
-                    .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317/v1/logs"))
-                )
-                .WithMetrics(builder => builder
-                    .AddRuntimeInstrumentation()
-                    .AddMeter(
+            var otelBuilder = services.AddOpenTelemetry()
+                .ConfigureResource(appResourceBuilder);
+
+            // === TRACING ===
+            if (otelConfig.Tracing.Enabled)
+            {
+                otelBuilder.WithTracing(builder =>
+                {
+                    // Use configured sampling ratio
+                    var samplingRatio = Math.Clamp(otelConfig.Tracing.SamplingRatio, 0.0, 1.0);
+                    builder.SetSampler(new TraceIdRatioBasedSampler(samplingRatio));
+
+                    // Built-in instrumentation
+                    builder.AddAspNetCoreInstrumentation(options =>
+                    {
+                        options.RecordException = true;
+                        options.Filter = httpContext =>
+                        {
+                            // Don't trace health checks
+                            return !httpContext.Request.Path.StartsWithSegments("/health");
+                        };
+                    });
+
+                    builder.AddHttpClientInstrumentation(options =>
+                    {
+                        options.RecordException = true;
+                    });
+
+                    // Custom activity sources
+                    builder.AddSource("SportsData.*");
+
+                    // Export to OTLP (Tempo)
+                    builder.AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri(otelConfig.Tracing.OtlpEndpoint);
+                        options.TimeoutMilliseconds = otelConfig.Tracing.TimeoutMs;
+                    });
+                });
+            }
+
+            // === METRICS ===
+            if (otelConfig.Metrics.Enabled)
+            {
+                otelBuilder.WithMetrics(builder =>
+                {
+                    // Built-in meters
+                    builder.AddRuntimeInstrumentation();
+                    builder.AddAspNetCoreInstrumentation();
+                    builder.AddHttpClientInstrumentation();
+
+                    // Framework meters
+                    builder.AddMeter(
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
-                        "System.Net.Http")
-                    .AddPrometheusExporter()
-                    .AddAspNetCoreInstrumentation()
-                    .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317/v1/logs")));
+                        "System.Net.Http");
 
-            services.Configure<OpenTelemetryLoggerOptions>(logging => logging.AddOtlpExporter());
-            services.ConfigureOpenTelemetryMeterProvider(metrics => metrics.AddOtlpExporter());
-            services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddOtlpExporter());
+                    // Prometheus scraping endpoint
+                    builder.AddPrometheusExporter(options =>
+                    {
+                        // Metrics available at /metrics
+                    });
+
+                    // Also export to OTLP if endpoint is configured
+                    if (!string.IsNullOrEmpty(otelConfig.Metrics.OtlpEndpoint))
+                    {
+                        builder.AddOtlpExporter(options =>
+                        {
+                            options.Endpoint = new Uri(otelConfig.Metrics.OtlpEndpoint);
+                            options.TimeoutMilliseconds = otelConfig.Metrics.TimeoutMs;
+                        });
+                    }
+                });
+            }
+
+            // === LOGGING ===
+            // Note: Loki doesn't support OTLP natively - this requires an OTLP Collector
+            if (otelConfig.Logging.Enabled)
+            {
+                services.Configure<OpenTelemetryLoggerOptions>(logging =>
+                {
+                    logging.AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri(otelConfig.Logging.OtlpEndpoint);
+                        options.TimeoutMilliseconds = otelConfig.Logging.TimeoutMs;
+                    });
+                });
+            }
 
             return services;
         }

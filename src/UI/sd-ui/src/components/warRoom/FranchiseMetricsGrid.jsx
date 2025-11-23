@@ -78,23 +78,29 @@ function FranchiseMetricsGrid() {
     
     // Format decimal values with appropriate precision
     if (typeof value === 'number') {
+
       if (key === 'gamesPlayed' || key === 'seasonYear') {
         return value.toString();
       }
+
       // Integer metrics (min/max/counts) - only non-average values
       if ((key.includes('Min') || key.includes('Max')) && !key.includes('Avg')) {
         return Math.round(value).toString();
       }
+
       // Average metrics show 2 decimal places (includes ptsScoredAvg, ptsAllowedAvg, marginWinAvg, marginLossAvg)
       if (key.includes('Avg')) {
         return value.toFixed(2);
       }
+
       // Field position difference and turnover margin can be negative, show more precision
       if (key === 'fieldPosDiff' || key === 'turnoverMarginPerDrive') {
         return value.toFixed(3);
       }
+
       // Most other metrics show 2 decimal places
       return value.toFixed(2);
+      
     }
     
     return value;

@@ -35,8 +35,4 @@ jobs:
         output_location: "build"
         app_build_command: "npm run build"
       env:
-        REACT_APP_API_BASE_URL: https://api.sportdeets.com
-        REACT_APP_ENVIRONMENT: production
-        REACT_APP_PROD_URL: https://sportdeets.com
-        REACT_APP_VERSION: ${{ env.REACT_APP_VERSION }}
         REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}

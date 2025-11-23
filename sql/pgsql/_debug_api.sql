@@ -66,10 +66,34 @@ order by "StartDateUtc" desc
 -- in API, execute "MatchupScheduler"
 
 select * from public."User"
-select * from public."UserPick"
-where
-  "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
-ORDER BY "CreatedUtc" desc
+select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'e85f1f9c-c251-0f57-ddfe-0d6c0856244e'
+
+SELECT "ContestId", COUNT(*) AS pick_count
+FROM public."UserPick"
+WHERE "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+GROUP BY "ContestId"
+HAVING COUNT(*) > 1
+ORDER BY pick_count DESC;
+
+WITH ranked_picks AS (
+    SELECT "Id",
+           "UserId",
+           "PickemGroupId",
+           "ContestId",
+           "CreatedUtc",
+           ROW_NUMBER() OVER (
+               PARTITION BY "UserId", "PickemGroupId", "ContestId"
+               ORDER BY "CreatedUtc" DESC
+           ) AS rn
+    FROM public."UserPick"
+    --WHERE "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813'
+)
+SELECT *
+FROM ranked_picks
+WHERE rn > 1
+ORDER BY "PickemGroupId", "ContestId", rn;
+
+
 
 select * from public."ContestPrediction"
 --delete from public."ContestPrediction"

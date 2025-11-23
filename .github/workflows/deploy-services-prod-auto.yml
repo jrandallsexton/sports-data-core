@@ -134,3 +134,23 @@ jobs:
             
             echo "✅ Changes committed to sports-data-config. Flux will deploy automatically."
           fi
+
+      - name: Wait for Flux to deploy
+        if: ${{ inputs.deploy_api }}
+        run: |
+          echo "Waiting 60 seconds for Flux to deploy new API version..."
+          sleep 60
+
+      - name: Import Swagger to APIM
+        if: ${{ inputs.deploy_api }}
+        run: |
+          az apim api import \
+            --resource-group rg-sportdeets-prod \
+            --service-name apim-sportdeets-prod \
+            --api-id sports-data-api \
+            --path / \
+            --specification-url https://api.sportdeets.com/swagger/v1/swagger.json \
+            --specification-format OpenApi \
+            --subscription-required false
+          
+          echo "✅ APIM Swagger definition updated from https://api.sportdeets.com/swagger/v1/swagger.json"

@@ -91,7 +91,9 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
     select * from public."Contest" where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
 select * from public."CompetitionStream"
-select * from public."Competition" where "ContestId" = '672c2b6b-639d-e1fd-08e0-57872a85ae1c'
+select * from public."Contest" where "Id" = '59960665-7a2d-5c6e-d260-563132d4005b'
+select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
+select * from public."Competition" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."CompetitionStatus" where "CompetitionId" = 'ec7d6034-05db-88d7-9ab1-9f657a2b5955'
 
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
@@ -122,6 +124,7 @@ select count(*) from public."CompetitionDrive"
 select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
 select * from public."Contest" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f'
 select * from public."Competition" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+select * from public."CompetitionStatus" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 select * from public."CompetitionCompetitor" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 select * from public."CompetitionOdds" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 
@@ -191,7 +194,8 @@ select * from public."CompetitionStatus" where "CompetitionId" = 'd0c23fa1-ad50-
 select * from public."CompetitionStatus" where "StatusDescription" = 'In Progress'
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
 select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
-select * from public."Venue"
+select count(*) from public."Venue" where "Latitude" > 0;
+select * from public."Venue" where "Latitude" > 0 order by "Name"
 
 select *
 from public."GroupSeason" gs

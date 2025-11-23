@@ -155,7 +155,7 @@ GET http://<api-url>/metrics
 **Example metrics:**
 ```
 # HTTP request duration
-http_server_duration_ms_bucket{http_method="GET",http_route="/ui/league/{id}/matchups/{week}",http_status_code="200"}
+http_server_duration_ms_bucket{http_method="GET",http_route="/ui/leagues/{id}/matchups/{week}",http_status_code="200"}
 
 # Active HTTP requests
 http_server_active_requests{http_method="GET"}

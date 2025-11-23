@@ -2,13 +2,15 @@
 
 import apiClient from "../apiClient";
 
+const BASE_PATH = "/ui/leagues";
+
 /**
  * Sends a request to create a new league.
  * @param {CreateLeagueRequest} request - DTO matching the backend model
  * @returns {Promise<{ id: string }>} Created league ID
  */
 const createLeague = async (request) => {
-  const response = await apiClient.post("/ui/league", request);
+  const response = await apiClient.post(BASE_PATH, request);
   return response.data;
 };
 
@@ -18,7 +20,7 @@ const createLeague = async (request) => {
  * @returns {Promise<LeagueDetailDto>} League details
  */
 const getLeagueById = async (id) => {
-  const response = await apiClient.get(`/ui/league/${id}`);
+  const response = await apiClient.get(`${BASE_PATH}/${id}`);
   return response.data;
 };
 
@@ -27,7 +29,7 @@ const getLeagueById = async (id) => {
  * @returns {Promise<LeagueSummaryDto[]>} Array of leagues
  */
 const getUserLeagues = async () => {
-  const response = await apiClient.get("/ui/league");
+  const response = await apiClient.get(BASE_PATH);
   return response.data;
 };
 
@@ -37,7 +39,7 @@ const getUserLeagues = async () => {
  * @returns {Promise<void>} No response body expected
  */
 const joinLeague = async (id) => {
-  await apiClient.post(`/ui/league/${id}/join`);
+  await apiClient.post(`${BASE_PATH}/${id}/join`);
 };
 
 /**
@@ -47,7 +49,7 @@ const joinLeague = async (id) => {
  * @returns {Promise<void>} No response body expected
  */
 const deleteLeague = async (id) => {
-  await apiClient.delete(`/ui/league/${id}`);
+  await apiClient.delete(`${BASE_PATH}/${id}`);
 };
 
 /**
@@ -63,7 +65,7 @@ const sendInvite = async (leagueId, email, inviteeName = null) => {
     email,
     inviteeName,
   };
-  await apiClient.post(`/ui/league/${leagueId}/invite`, requestBody);
+  await apiClient.post(`${BASE_PATH}/${leagueId}/invite`, requestBody);
 };
 
 /**
@@ -71,13 +73,13 @@ const sendInvite = async (leagueId, email, inviteeName = null) => {
  * @returns {Promise<PublicLeagueDto[]>} Array of public leagues
  */
 const getPublicLeagues = async () => {
-  const response = await apiClient.get("/ui/league/discover");
+  const response = await apiClient.get(`${BASE_PATH}/discover`);
   return response.data;
 };
 
 const getLeagueWeekOverview = async (leagueId, weekNumber) => {
   return apiClient.get(
-    `/ui/league/${encodeURIComponent(leagueId)}/overview/${weekNumber}`
+    `${BASE_PATH}/${encodeURIComponent(leagueId)}/overview/${weekNumber}`
   );
 };
 

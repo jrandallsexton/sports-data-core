@@ -16,7 +16,7 @@ using SportsData.Core.Extensions;
 namespace SportsData.Api.Application.UI.Leagues;
 
 [ApiController]
-[Route("ui/league")]
+[Route("ui/leagues")]
 public class LeagueController : ApiControllerBase
 {
     private readonly ILeagueService _iLeagueService;

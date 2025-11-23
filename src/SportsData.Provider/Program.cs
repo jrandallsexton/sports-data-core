@@ -71,7 +71,13 @@ namespace SportsData.Provider
             app.UseAuthorization();
             app.UseCommonFeatures();
             app.MapControllers();
-            app.MapPrometheusScrapingEndpoint();
+            
+            // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled
+            var otelConfig = config.GetSection("CommonConfig:OpenTelemetry").Get<SportsData.Core.Config.OpenTelemetryConfig>();
+            if (otelConfig?.Enabled == true && otelConfig.Metrics?.Enabled == true)
+            {
+                app.MapPrometheusScrapingEndpoint();
+            }
 
             app.Services.ConfigureHangfireJobs(mode);
 

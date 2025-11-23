@@ -3,7 +3,7 @@
 namespace SportsData.Api.Application.UI.Conferences
 {
     [ApiController]
-    [Route("ui/conference")]
+    [Route("ui/conferences")]
     public class ConferenceController : ControllerBase
     {
         private readonly IConferenceService _conferenceService;
@@ -13,7 +13,7 @@ namespace SportsData.Api.Application.UI.Conferences
             _conferenceService = conferenceService;
         }
 
-        [HttpGet("list")]
+        [HttpGet]
         public async Task<ActionResult<List<ConferenceNameAndSlugDto>>> GetConferenceNamesAndSlugs(CancellationToken cancellationToken)
         {
             var conferencesAndSlugs = await _conferenceService.GetConferenceNamesAndSlugs(cancellationToken);

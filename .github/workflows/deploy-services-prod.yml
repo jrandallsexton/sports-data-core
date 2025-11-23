@@ -101,9 +101,9 @@ jobs:
         if: ${{ inputs.api_tag != '' }}
         run: |
           az apim api import \
-            --resource-group rg-sportdeets-prod \
-            --service-name apim-sportdeets-prod \
-            --api-id sports-data-api \
+            --resource-group rg-sportDeets \
+            --service-name sportdeets-apim \
+            --api-id sportdeets-api \
             --path / \
             --specification-url https://api.sportdeets.com/swagger/v1/swagger.json \
             --specification-format OpenApi \

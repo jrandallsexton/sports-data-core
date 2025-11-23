@@ -1,4 +1,12 @@
-[![Deploy React App to Azure Static Web App](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui.yml)
+[![Deploy About App to Azure Static Web App (Production)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-about.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-about.yml)
+
+[![Deploy React App to AzSWA (Dev)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-dev.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-dev.yml)
+
+[![Deploy React App to AzSWA (Production)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-prod.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-prod.yml)
+
+[![Deploy Services to Production (Auto Latest)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-services-prod-auto.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-services-prod-auto.yml)
+
+[![Copilot code review](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer)
 
 [![Build Status](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)
 ## sports-data-core

@@ -158,7 +158,7 @@ namespace SportsData.Api.Application.Admin
 
         [HttpPost]
         [Route("ai-predictions/{syntheticId}")]
-        public async Task<IActionResult> PostBulkPicks(
+        public async Task<ActionResult<BulkPredictionsResponse>> PostBulkPicks(
             [FromRoute] string syntheticId,
             [FromBody] List<ContestPredictionDto> predictions)
         {
@@ -167,9 +167,26 @@ namespace SportsData.Api.Application.Admin
             var result = await _contestService.SubmitContestPredictions(userId, predictions);
 
             if (result.IsSuccess)
-                return Created();
+            {
+                var response = new BulkPredictionsResponse
+                {
+                    SuccessCount = predictions.Count,
+                    TotalCount = predictions.Count,
+                    Message = $"Successfully submitted {predictions.Count} prediction(s)"
+                };
+                return Created($"/admin/ai-predictions/{syntheticId}", response);
+            }
 
-            return BadRequest();
+            var errorMessage = result is Failure<bool> failure && failure.Errors.Count > 0
+                ? string.Join("; ", failure.Errors.Select(e => e.ErrorMessage))
+                : "Failed to submit predictions";
+
+            return BadRequest(new BulkPredictionsResponse
+            {
+                SuccessCount = 0,
+                TotalCount = predictions.Count,
+                Message = errorMessage
+            });
         }
     }
 }

@@ -42,6 +42,12 @@ namespace SportsData.Provider.Application.ResourceIndex
                 return NotFound();
             }
 
+            resourceIndex.LastPageIndex = null; // reset paging
+            resourceIndex.ModifiedUtc = DateTime.UtcNow;
+            resourceIndex.ModifiedBy = Guid.Empty;
+
+            await _dataContext.SaveChangesAsync();
+
             var jobDef = new DocumentJobDefinition(resourceIndex);
             var result = _backgroundJobProvider.Enqueue<ResourceIndexJob>(x => x.ExecuteAsync(jobDef));
 

@@ -28,7 +28,7 @@ namespace SportsData.Api.Application.Admin
 
         Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors();
         
-        Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays();
+        Task<Result<CompetitionsWithoutPlaysResponse>> GetCompetitionsWithoutPlays();
         
         Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives();
     }
@@ -426,17 +426,21 @@ namespace SportsData.Api.Application.Admin
             }
         }
 
-        public async Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays()
+        public async Task<Result<CompetitionsWithoutPlaysResponse>> GetCompetitionsWithoutPlays()
         {
             try
             {
                 var result = await _canonicalAdminData.GetCompetitionsWithoutPlays();
-                return new Success<List<CompetitionWithoutPlaysDto>>(result);
+                var response = new CompetitionsWithoutPlaysResponse
+                {
+                    Items = result
+                };
+                return new Success<CompetitionsWithoutPlaysResponse>(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without plays");
-                return new Failure<List<CompetitionWithoutPlaysDto>>(
+                return new Failure<CompetitionsWithoutPlaysResponse>(
                     default!,
                     ResultStatus.BadRequest,
                     [new ValidationFailure("competitions", $"Error retrieving competitions without plays: {ex.Message}")]);

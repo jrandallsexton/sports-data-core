@@ -8,6 +8,8 @@ const AdminApi = {
     apiClient.get('/admin/errors/competitions-without-plays'),
   getCompetitionsWithoutDrives: () =>
     apiClient.get('/admin/errors/competitions-without-drives'),
+  getCompetitionsWithoutMetrics: () =>
+    apiClient.get('/admin/errors/competitions-without-metrics'),
   resetPreview: (contestId) =>
     apiClient.post(`/admin/matchup/preview/${contestId}/reset`),
 };

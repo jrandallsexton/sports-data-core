@@ -150,10 +150,8 @@ namespace SportsData.Api.Application.Admin
         [Route("errors/competitions-without-metrics")]
         public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics()
         {
-            await Task.CompletedTask;
-            throw new NotImplementedException();
-            //var result = await _adminService.GetCompetitionsWithoutMetrics();
-            //return result.ToActionResult();
+            var result = await _adminService.GetCompetitionsWithoutMetrics();
+            return result.ToActionResult();
         }
 
         [HttpPost]

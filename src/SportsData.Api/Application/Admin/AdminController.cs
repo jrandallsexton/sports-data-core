@@ -177,11 +177,15 @@ namespace SportsData.Api.Application.Admin
                 return Created($"/admin/ai-predictions/{syntheticId}", response);
             }
 
+            var errorMessage = result is Failure<bool> failure && failure.Errors.Count > 0
+                ? string.Join("; ", failure.Errors.Select(e => e.ErrorMessage))
+                : "Failed to submit predictions";
+
             return BadRequest(new BulkPredictionsResponse
             {
                 SuccessCount = 0,
                 TotalCount = predictions.Count,
-                Message = "Failed to submit predictions"
+                Message = errorMessage
             });
         }
     }

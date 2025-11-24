@@ -140,7 +140,7 @@ namespace SportsData.Api.Application.Admin
 
         [HttpGet]
         [Route("errors/competitions-without-drives")]
-        public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives()
+        public async Task<ActionResult<CompetitionsWithoutDrivesResponse>> GetCompetitionsWithoutDrives()
         {
             var result = await _adminService.GetCompetitionsWithoutDrives();
             return result.ToActionResult();

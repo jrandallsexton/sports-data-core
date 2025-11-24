@@ -4,5 +4,5 @@ namespace SportsData.Api.Application.Admin;
 
 public class GetCompetitionsWithoutCompetitorsResponse
 {
-    public List<CompetitionWithoutCompetitorsDto> Items { get; set; } = new();
+    public List<CompetitionWithoutCompetitorsDto> Items { get; init; } = new();
 }

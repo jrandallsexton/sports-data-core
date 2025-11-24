@@ -11,7 +11,7 @@
   flex: 1;
   padding: 2rem;
   transition: all 0.3s ease;
-  margin-top: 20px; /* Account for fixed navigation bar */
+  margin-top: 30px; /* Account for fixed navigation bar */
 }
 
 .main-content.dev-env {

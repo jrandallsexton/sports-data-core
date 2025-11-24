@@ -13,9 +13,18 @@ update public."MatchupPreview" set
 "PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
 */
 
-select * from public."MatchupPreview" where "ContestId" = 'e2758932-b9d5-a450-fe56-5911e9756f43' order by "CreatedUtc" desc
+select * from public."MatchupPreview" where "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec' order by "CreatedUtc" desc
+
+--update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 22:31:26.653867+00' where "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd' and "ApprovedUtc" is not null and "RejectedUtc" is null
+--update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 19:07:43.073712+00' where "Id" = '13af5484-b8e9-4d37-9161-5f19877e85cb'
+update public."MatchupPreview" set "PredictedSpreadWinner" = '71151ce3-4823-0d50-889c-a7ea9efae249' where "Id" = '2821e3d4-d4d6-413c-8937-b7cb9447084e'
+
 select * from public."PickemGroup" where "IsPublic" = true
-select * from public."UserPick" where "Week" = 11 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+select * from public."UserPick" where "Week" = 13 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
+
+update public."UserPick" set "FranchiseId" = '71151ce3-4823-0d50-889c-a7ea9efae249',  "IsCorrect" = null, "PointsAwarded" = null, "ScoredAt" = null where "Week" = 12 and
+"UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
+
 --delete from public."UserPick" where "Week" = 11 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
 -- FIX DEV - 02 NOV 2025
@@ -66,7 +75,7 @@ order by "StartDateUtc" desc
 -- in API, execute "MatchupScheduler"
 
 select * from public."User"
-select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'e85f1f9c-c251-0f57-ddfe-0d6c0856244e'
+select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd'
 
 SELECT "ContestId", COUNT(*) AS pick_count
 FROM public."UserPick"

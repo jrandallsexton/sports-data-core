@@ -51,13 +51,13 @@ select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2
 select * from public."GroupSeason" where "ParentId" is null
 select * from public."FranchiseSeason" where "GroupSeasonId" is null
 select * from public."FranchiseSeasonRanking" order by "Date"
-select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' order by "Date"
+select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
 
 update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'a54dfb88-a331-4214-c52f-fadf07ec10dc' where "ShortHeadline" = '2025 AP Poll: Week 13'
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = 'a54dfb88-a331-4214-c52f-fadf07ec10dc' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 13'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' where "ShortHeadline" = '2025 AP Poll: Week 14'
+--update public."FranchiseSeasonRanking" set "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 14'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'd98f45f2-d348-24e4-09af-552972c79313'
 
 select * from public."Season"

@@ -26,7 +26,7 @@ namespace SportsData.Api.Application.Admin
 
         Task<Result<Guid>> UpsertMatchupPreview(string jsonContent);
 
-        Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors();
+        Task<Result<GetCompetitionsWithoutCompetitorsResponse>> GetCompetitionsWithoutCompetitors();
         
         Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays();
         
@@ -409,17 +409,20 @@ namespace SportsData.Api.Application.Admin
             }
         }
 
-        public async Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors()
+        public async Task<Result<GetCompetitionsWithoutCompetitorsResponse>> GetCompetitionsWithoutCompetitors()
         {
             try
             {
                 var result = await _canonicalAdminData.GetCompetitionsWithoutCompetitors();
-                return new Success<List<CompetitionWithoutCompetitorsDto>>(result);
+                return new Success<GetCompetitionsWithoutCompetitorsResponse>(new GetCompetitionsWithoutCompetitorsResponse
+                {
+                    Items = result
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get competitions without competitors");
-                return new Failure<List<CompetitionWithoutCompetitorsDto>>(
+                return new Failure<GetCompetitionsWithoutCompetitorsResponse>(
                     default!,
                     ResultStatus.BadRequest,
                     [new ValidationFailure("competitions", $"Error retrieving competitions without competitors: {ex.Message}")]);

@@ -124,7 +124,7 @@ namespace SportsData.Api.Application.Admin
 
         [HttpGet]
         [Route("errors/competitions-without-competitors")]
-        public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors()
+        public async Task<ActionResult<GetCompetitionsWithoutCompetitorsResponse>> GetCompetitionsWithoutCompetitors()
         {
             var result = await _adminService.GetCompetitionsWithoutCompetitors();
             return result.ToActionResult();

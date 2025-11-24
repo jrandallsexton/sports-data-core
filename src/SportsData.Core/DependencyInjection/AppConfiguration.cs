@@ -133,12 +133,8 @@ namespace SportsData.Core.DependencyInjection
             }
             else
             {
-                if (app.Environment.IsDevelopment() ||
-                    app.Environment.EnvironmentName == "Local")
-                {
-                    app.UseSwagger();
-                    app.UseSwaggerUI();
-                }
+                app.UseSwagger();
+                app.UseSwaggerUI();
             }
 
             //app.UseSerilogRequestLogging();

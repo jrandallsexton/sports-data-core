@@ -31,6 +31,8 @@ namespace SportsData.Api.Application.Admin
         Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays();
         
         Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives();
+        
+        Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics();
     }
 
     public class AdminService : IAdminService
@@ -457,6 +459,23 @@ namespace SportsData.Api.Application.Admin
                     default!,
                     ResultStatus.BadRequest,
                     [new ValidationFailure("competitions", $"Error retrieving competitions without drives: {ex.Message}")]);
+            }
+        }
+
+        public async Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics()
+        {
+            try
+            {
+                var result = await _canonicalAdminData.GetCompetitionsWithoutMetrics();
+                return new Success<List<CompetitionWithoutMetricsDto>>(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get competitions without metrics");
+                return new Failure<List<CompetitionWithoutMetricsDto>>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("competitions", $"Error retrieving competitions without metrics: {ex.Message}")]);
             }
         }
     }

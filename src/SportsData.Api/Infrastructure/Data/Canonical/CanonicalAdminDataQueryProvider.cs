@@ -5,7 +5,8 @@ public class CanonicalAdminDataQueryProvider
     private static readonly string[] _fileNames = [
         "CompetitionsWithoutCompetitors.sql",
         "CompetitionsWithoutPlays.sql",
-        "CompetitionsWithoutDrives.sql"
+        "CompetitionsWithoutDrives.sql",
+        "CompetitionsWithoutMetrics.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -44,4 +45,6 @@ public class CanonicalAdminDataQueryProvider
     public string GetCompetitionsWithoutPlays() => Get("CompetitionsWithoutPlays.sql");
     
     public string GetCompetitionsWithoutDrives() => Get("CompetitionsWithoutDrives.sql");
+    
+    public string GetCompetitionsWithoutMetrics() => Get("CompetitionsWithoutMetrics.sql");
 }

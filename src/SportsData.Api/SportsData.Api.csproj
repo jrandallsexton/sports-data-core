@@ -39,6 +39,7 @@
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutCompetitors.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutPlays.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutDrives.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutMetrics.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameInfo.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />

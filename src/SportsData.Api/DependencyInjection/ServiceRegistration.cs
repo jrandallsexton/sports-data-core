@@ -7,6 +7,7 @@ using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Application.UI.Articles;
 using SportsData.Api.Application.UI.Conferences;
 using SportsData.Api.Application.UI.Contest;
 using SportsData.Api.Application.UI.Leaderboard;
@@ -81,6 +82,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IPreviewService, PreviewService>();
 
             services.AddScoped<IMapService, MapService>();
+
+            services.AddScoped<IArticleService, ArticleService>();
 
             return services;
         }

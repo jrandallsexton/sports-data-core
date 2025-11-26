@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -71,10 +72,5 @@ namespace SportsData.Producer.Application.Contests
                 }
             }
         }
-    }
-
-    public interface IAmARecurringJob
-    {
-        Task ExecuteAsync();
     }
 }

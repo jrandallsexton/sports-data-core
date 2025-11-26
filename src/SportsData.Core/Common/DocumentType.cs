@@ -59,7 +59,7 @@
         SeasonRanking = 56,
         EventCompetitionSituation = 57,
         SeasonPoll = 58,
-        SeasonPollWeek = 58,
+        SeasonPollWeek = 61,
         EventCompetitionAthleteStatistics = 59,
         EventCompetitionCompetitorStatistics = 60,
         Unknown = 9999

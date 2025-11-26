@@ -10,8 +10,6 @@ namespace SportsData.Core.Config
 
         public required string AzureBlobStorageUrl { get; set; }
 
-        public required string AzureBlobStorageContainerPrefix { get; set; }
-
         public required string AzureServiceBusConnectionString { get; set; }
 
         public required string SqlBaseConnectionString { get; set; }

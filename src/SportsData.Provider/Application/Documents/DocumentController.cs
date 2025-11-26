@@ -272,8 +272,8 @@ namespace SportsData.Provider.Application.Documents
 
             // upload it to blob storage
             var containerName = query.SeasonYear.HasValue
-                ? $"provider-{query.Sport.ToString().ToLower()}-{query.DocumentType.ToString().ToLower()}-{query.SeasonYear.Value}"
-                : $"provider-{query.Sport.ToString().ToLower()}-{query.DocumentType.ToString().ToLower()}";
+                ? $"{query.Sport.ToKebabCase()}-{query.DocumentType.ToKebabCase()}-{query.SeasonYear.Value}"
+                : $"{query.Sport.ToKebabCase()}-{query.DocumentType.ToKebabCase()}";
 
             _logger.LogInformation("Container name {@ContainerName}", containerName);
 

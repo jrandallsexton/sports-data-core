@@ -89,12 +89,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Franchise.Ref);
 
-        if (franchiseIdentity is null)
-        {
-            _logger.LogError($"Failed to generate franchise hash for {externalProviderDto.Franchise.Ref}");
-            throw new InvalidOperationException($"Franchise hash generation failed for {externalProviderDto.Franchise.Ref}");
-        }
-
         var franchise = await _dataContext.Franchises
             .Include(f => f.Seasons)
             .FirstOrDefaultAsync(x => x.Id == franchiseIdentity.CanonicalId);
@@ -157,7 +151,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             () => _dataContext.Venues,
             externalIdsNav: "ExternalIds",
             key: v => v.Id);
-
 
         if (dto.Groups?.Ref is null)
         {

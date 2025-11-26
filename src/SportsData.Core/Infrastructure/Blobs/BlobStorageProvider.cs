@@ -31,7 +31,7 @@ namespace SportsData.Core.Infrastructure.Blobs
         public async Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename)
         {
             // Normalize names
-            containerName = $"{_config.Value.AzureBlobStorageContainerPrefix.ToLower()}-{containerName.ToLower()}";
+            containerName = containerName.ToLower();
 
             // Stronger client options + retries (affects all operations on this client)
             var clientOptions = new BlobClientOptions

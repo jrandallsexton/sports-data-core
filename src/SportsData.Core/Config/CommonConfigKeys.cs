@@ -41,9 +41,6 @@ namespace SportsData.Core.Config
         public static string AzureBlobStorageUrl =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageUrl)}";
 
-        public static string AzureBlobStorageContainerPrefix =>
-            $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureBlobStorageContainerPrefix)}";
-
         public static string AzureServiceBus =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureServiceBusConnectionString)}";
 

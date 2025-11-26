@@ -189,6 +189,8 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 publishEvents = true;
             }
 
+            // Leaders are here, but cannot be processed until we have AthleteSeason entities created
+
             if (publishEvents)
             {
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());

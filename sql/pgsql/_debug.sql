@@ -1,5 +1,7 @@
 
 select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
+
+select * from public."AthleteImage"
 select count(*) from public."AthleteImage"
 
 select f."Slug", ath.*  from public."AthleteImage" ai
@@ -46,6 +48,9 @@ select * from public."GroupSeason" where "Id" = 'bc72c270-1636-6248-17a1-9443be5
 select * from public."GroupSeason" where "Id" = '3437b85c-ba19-181e-af1e-c8b30a28dff6' -- NCAA Division I
 select * from public."GroupSeason" where "Id" = 'acb492db-a8c1-71ed-3ffb-f9f1d2398195' -- NCAA Football
 
+--update public."GroupSeason" set "Abbreviation" = 'fbs' where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07'
+update public."GroupSeason" set "Abbreviation" = 'fcs' where "Slug" = 'fcs-i-aa' and "Abbreviation" = 'UNK'
+select * from public."GroupSeason" where "Abbreviation" = 'UNK'
 select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2025
 
 select * from public."GroupSeason" where "ParentId" is null
@@ -54,7 +59,7 @@ select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
 
-update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
+--update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' where "ShortHeadline" = '2025 AP Poll: Week 14'
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 14'
@@ -194,7 +199,8 @@ select * from public."CompetitionStatus" where "CompetitionId" = 'd0c23fa1-ad50-
 select * from public."CompetitionStatus" where "StatusDescription" = 'In Progress'
 select * from public."Contest" where "SeasonWeekId" = 'd8d8db49-2692-56dc-ded8-f7606f5fc041' and "StartDateUtc" < '2025-09-07 01:13:00+00' order by "StartDateUtc"
 select * from public."Contest" where "AwayTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' or "HomeTeamFranchiseSeasonId" = '8a37fae5-3901-b39e-5dc3-f69f0488d5fb' order by "StartDateUtc"
-select count(*) from public."Venue" where "Latitude" > 0;
+select count(*) from public."Venue" where "Latitude" = 0;
+select * from public."VenueImage"
 select * from public."Venue" where "Latitude" > 0 order by "Name"
 
 select *

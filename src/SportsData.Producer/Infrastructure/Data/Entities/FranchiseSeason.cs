@@ -19,6 +19,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public GroupSeason? GroupSeason { get; set; }
 
+        public string? GroupSeasonMap { get; set; } // flattened hierarchy eg. NCAAF|NCAA|fbs|sec
+
         public int SeasonYear { get; set; }
 
         public required string Slug { get; set; }

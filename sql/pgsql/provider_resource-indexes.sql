@@ -2,6 +2,7 @@ select "LastPageIndex", "TotalPageCount", * from public."ResourceIndex" where "I
 select * from public."ResourceIndex" where "IsRecurring" is false and "LastCompletedUtc" is null order by "Ordinal"
 
 select * from public."ResourceIndex" where "IsRecurring" is true order by "Ordinal"
+select * from public."ResourceIndex" where "IsSeasonSpecific" is true order by "Ordinal"
 
 --update public."ResourceIndex" set "ProcessingInstanceId" = null, "ProcessingStartedUtc" = null, "IsQueued" = false, "LastCompletedUtc" = null where "Id" = '8683b877-ca76-4c17-97ab-0fe3e8eec350'
 
@@ -19,3 +20,10 @@ select * from public."ResourceIndexItem" where "ResourceIndexId" = '9e49039a-684
 
 SHOW max_connections
 SHOW config_file
+
+-- CREATE DATABASE umami;
+-- CREATE USER umami WITH ENCRYPTED PASSWORD 'YOUR_PASSWORD_HERE';
+-- GRANT ALL PRIVILEGES ON DATABASE umami TO umami;
+
+-- GRANT ALL ON SCHEMA public TO umami;
+-- ALTER DATABASE umami OWNER TO umami;

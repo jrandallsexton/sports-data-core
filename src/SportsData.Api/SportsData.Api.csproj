@@ -16,6 +16,7 @@
   <ItemGroup>
     <None Remove="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutCompetitors.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutPlays.sql" />
+    <None Remove="Infrastructure\Data\Canonical\Sql\GetCompletedFbsContestsBySeasonWeekId.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
     <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
@@ -40,6 +41,7 @@
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutPlays.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutDrives.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutMetrics.sql" />
+    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCompletedFbsContestsBySeasonWeekId.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameInfo.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />

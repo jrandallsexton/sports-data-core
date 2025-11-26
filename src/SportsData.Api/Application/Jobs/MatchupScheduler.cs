@@ -3,11 +3,12 @@ using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Jobs
 {
-    public class MatchupScheduler
+    public class MatchupScheduler : IAmARecurringJob
     {
         private readonly ILogger<MatchupScheduler> _logger;
         private readonly AppDataContext _dataContext;

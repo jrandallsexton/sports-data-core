@@ -10,14 +10,11 @@ using Microsoft.IdentityModel.Tokens;
 
 using Npgsql;
 
-using Serilog;
-
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.Events;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.DependencyInjection;
-using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Middleware;
@@ -157,7 +154,21 @@ namespace SportsData.Api
                 client.Timeout = TimeSpan.FromMinutes(5);
             });
 
-            services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<OllamaClient>());
+            var deepSeekConfig = new DeepSeekClientConfig
+            {
+                ApiKey = config["CommonConfig:DeepSeekClientConfig:ApiKey"]!,
+                Model = config["CommonConfig:DeepSeekClientConfig:Model"]!,
+                BaseUrl = config["CommonConfig:DeepSeekClientConfig:BaseUrl"]!
+            };
+            services.AddSingleton(deepSeekConfig);
+            services.AddHttpClient<DeepSeekClient>((sp, client) =>
+            {
+                var cfg = sp.GetRequiredService<DeepSeekClientConfig>();
+                client.BaseAddress = new Uri(cfg.BaseUrl);
+                client.Timeout = TimeSpan.FromMinutes(5);
+            });
+
+            services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
             /* End AI */
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
@@ -166,11 +177,13 @@ namespace SportsData.Api
 
             services.AddMessaging<AppDataContext>(config,
             [
+                typeof(ContestOddsUpdatedHandler),
+                typeof(ContestRecapArticlePublishedHandler),
                 typeof(ContestStartTimeUpdatedHandler),
+                typeof(ContestStatusChangedHandler),
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                typeof(PreviewGeneratedHandler),
-                typeof(ContestStatusChangedHandler)
+                typeof(PreviewGeneratedHandler)
             ]);
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];

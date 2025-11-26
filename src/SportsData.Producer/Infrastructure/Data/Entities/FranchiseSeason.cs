@@ -43,7 +43,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsAllStar { get; set; }
 
-        public ICollection<FranchiseSeasonLogo> Logos { get; set; } = new List<FranchiseSeasonLogo>();
+        public ICollection<FranchiseSeasonLogo> Logos { get; set; } = [];
 
         // Enrichment Properties
         public int Wins { get; set; }
@@ -107,6 +107,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(t => t.DisplayNameShort).HasMaxLength(50);
                 builder.Property(t => t.ColorCodeHex).HasMaxLength(7);
                 builder.Property(t => t.ColorCodeAltHex).HasMaxLength(7);
+                builder.Property(t => t.GroupSeasonMap).HasMaxLength(100);
 
                 builder.HasOne(x => x.Franchise)
                     .WithMany(f => f.Seasons)

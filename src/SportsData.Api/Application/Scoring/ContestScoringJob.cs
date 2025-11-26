@@ -2,11 +2,12 @@
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Scoring
 {
-    public class ContestScoringJob
+    public class ContestScoringJob : IAmARecurringJob
     {
         private readonly ILogger<ContestScoringJob> _logger;
         private readonly AppDataContext _dataContext;

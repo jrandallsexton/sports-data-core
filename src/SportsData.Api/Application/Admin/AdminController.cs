@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest;
@@ -7,7 +8,6 @@ using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -18,23 +18,26 @@ namespace SportsData.Api.Application.Admin
     public class AdminController : ApiControllerBase
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-        private readonly IProvideAiCommunication _ai;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAdminService _adminService;
         private readonly IContestService _contestService;
+        private readonly IAiService _aiService;
+        private readonly ILogger<AdminController> _logger;
 
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
-            IProvideAiCommunication ai,
             IProvideBackgroundJobs backgroundJobProvider,
             IAdminService adminService,
-            IContestService contestService)
+            IContestService contestService,
+            IAiService aiService,
+            ILogger<AdminController> logger)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
-            _ai = ai;
             _backgroundJobProvider = backgroundJobProvider;
             _adminService = adminService;
             _contestService = contestService;
+            _aiService = aiService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -51,11 +54,35 @@ namespace SportsData.Api.Application.Admin
             return Task.FromResult<IActionResult>(Ok(identity));
         }
 
+        /// <summary>
+        /// Test game recap generation with large prompt + JSON data
+        /// Example: POST /admin/ai/game-recap
+        /// Body: { "gameDataJson": "{ ... your large JSON ... }", "reloadPrompt": false }
+        /// </summary>
         [HttpPost]
-        [Route("ai-test")]
-        public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
+        [Route("ai/game-recap")]
+        public async Task<ActionResult<GameRecapResponse>> GenerateGameRecap(
+            [FromBody] GenerateGameRecapCommand command)
         {
-            return Ok(await _ai.GetResponseAsync(command.Text));
+            try
+            {
+                var response = await _aiService.GenerateGameRecapAsync(command, CancellationToken.None);
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Game recap generation failed with invalid operation");
+                return BadRequest(new { error = "Failed to generate game recap", message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error generating game recap");
+                return StatusCode(500, new
+                {
+                    error = "Failed to generate game recap",
+                    message = ex.Message
+                });
+            }
         }
 
         [HttpPost]
@@ -168,6 +195,14 @@ namespace SportsData.Api.Application.Admin
                 return Created();
 
             return BadRequest();
+        }
+
+        [HttpPost]
+        [Route("ai-test")]
+        public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
+        {
+            var response = await _aiService.GetAiResponseAsync(command.Text);
+            return Ok(response);
         }
     }
 }

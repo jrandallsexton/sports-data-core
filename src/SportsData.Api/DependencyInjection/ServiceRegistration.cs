@@ -1,6 +1,8 @@
 ﻿using Hangfire;
 
 using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.AI;
+using SportsData.Api.Application.Contests;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
@@ -62,11 +64,16 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<MatchupPreviewGenerator>();
             services.AddScoped<MatchupScheduler>();
             services.AddSingleton<MatchupPreviewPromptProvider>();
+            services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<ContestScoringJob>();
+
+            services.AddScoped<ContestRecapJob>();
+            services.AddScoped<ContestRecapProcessor>();
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<IAiService, AiService>();
 
             services.AddScoped<IContestService, ContestService>();
             services.AddScoped<IRankingsService, RankingsService>();
@@ -99,6 +106,11 @@ namespace SportsData.Api.DependencyInjection
 
             recurringJobManager.AddOrUpdate<ContestScoringJob>(
                 nameof(ContestScoringJob),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<ContestRecapJob>(
+                nameof(ContestRecapJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 

@@ -20,7 +20,8 @@ public class CanonicalDataQueryProvider
         "GetContestOverviewWinProbabilityPoints.sql",
         "GetContestOverviewPlayLog.sql",
         "GetCurrentAndLastWeekSeasonWeeks.sql",
-        "GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql"
+        "GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql",
+        "GetCompletedFbsContestsBySeasonWeekId.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -89,4 +90,6 @@ public class CanonicalDataQueryProvider
     public string GetRankingsByPollBySeasonByWeek() => Get("GetRankingsByPollBySeasonByWeek.sql");
 
     public string GetFranchiseSeasonStatistics() => Get("GetFranchiseSeasonStatistics.sql");
+
+    public string GetCompletedFbsContestIdsBySeasonWeekId() => Get("GetCompletedFbsContestsBySeasonWeekId.sql");
 }

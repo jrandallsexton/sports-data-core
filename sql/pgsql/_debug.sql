@@ -65,6 +65,8 @@ select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Dat
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 14'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'd98f45f2-d348-24e4-09af-552972c79313'
 
+
+
 select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"

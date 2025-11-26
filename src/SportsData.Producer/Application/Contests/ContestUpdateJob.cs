@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
+using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Venues

@@ -26,8 +26,8 @@ apiClient.interceptors.request.use(async (config) => {
     const user = auth.currentUser;
 
     if (user) {
-      // Force refresh if token is close to expiring
-      const token = await user.getIdToken(true);
+      // Get token without forcing refresh - Firebase will refresh automatically if expired
+      const token = await user.getIdToken(false);
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       console.warn("No Firebase user found. Skipping Authorization header.");

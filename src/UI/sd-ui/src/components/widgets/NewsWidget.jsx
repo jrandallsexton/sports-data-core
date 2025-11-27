@@ -88,10 +88,34 @@ function NewsWidget() {
                   border: "none",
                   padding: 0,
                   font: "inherit",
-                  textAlign: "left"
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
                 }}
               >
-                <strong>🏈</strong> {article.title}
+                {article.imageUrls && article.imageUrls.length > 0 ? (
+                  <div style={{ display: "flex", gap: "4px" }}>
+                    {article.imageUrls.map((url, index) => (
+                      <img 
+                        key={index}
+                        src={url} 
+                        alt=""
+                        style={{ 
+                          width: "20px", 
+                          height: "20px", 
+                          objectFit: "contain" 
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <strong>🏈</strong>
+                )}
+                <span>{article.title}</span>
               </button>
             </div>
           ))}

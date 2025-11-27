@@ -33,7 +33,8 @@ namespace SportsData.Api.Application.UI.Articles
                     ContestId = a.ContestId!.Value,
                     Title = a.Title,
                     Url = $"http://localhost:5262/ui/articles/{a.Id}",
-                    ImageUrls = a.ImageUrls
+                    ImageUrls = a.ImageUrls,
+                    GroupSeasonMap = a.FranchiseSeasons.OrderBy(fs => fs.DisplayOrder).FirstOrDefault()!.GroupSeasonMap,
                 })
                 .ToListAsync();
 
@@ -56,7 +57,8 @@ namespace SportsData.Api.Application.UI.Articles
                         Title = a.Title,
                         Content = a.Content,
                         Url = $"http://localhost:5262/ui/articles/{a.Id}",
-                        ImageUrls = a.ImageUrls
+                        ImageUrls = a.ImageUrls,
+                        GroupSeasonMap = a.FranchiseSeasons.OrderBy(fs => fs.DisplayOrder).FirstOrDefault()!.GroupSeasonMap,
                     }
                 })
                 .FirstOrDefaultAsync()!; }
@@ -89,6 +91,8 @@ namespace SportsData.Api.Application.UI.Articles
         public required string Url { get; set; }
 
         public string[] ImageUrls { get; set; } = [];
+
+        public string? GroupSeasonMap { get; set; }
     }
 
     public class ArticleSummaryDto
@@ -106,5 +110,7 @@ namespace SportsData.Api.Application.UI.Articles
         public required string Title { get; set; }
 
         public required string Url { get; set; }
+
+        public string? GroupSeasonMap { get; set; }
     }
 }

@@ -53,7 +53,7 @@ SELECT
 FROM next_week nw
 inner join public."Contest" c ON c."SeasonWeekId" = nw."SeasonWeekId"
 inner join public."Competition" comp on comp."ContestId" = c."Id"
-left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" != '59'
+left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
 left  join public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
 inner join public."Venue" v on v."Id" = c."VenueId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"

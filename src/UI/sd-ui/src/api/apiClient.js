@@ -18,14 +18,20 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  const auth = getAuth();
-  const user = auth.currentUser;
+  // Skip auth endpoints to avoid circular dependencies
+  const isAuthEndpoint = config.url?.includes('/auth/set-token') || config.url?.includes('/auth/clear-token');
+  
+  if (!isAuthEndpoint) {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-  if (user) {
-    const token = await user.getIdToken();
-    config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    console.warn("No Firebase user found. Skipping Authorization header.");
+    if (user) {
+      // Force refresh if token is close to expiring
+      const token = await user.getIdToken(true);
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn("No Firebase user found. Skipping Authorization header.");
+    }
   }
 
   return config;

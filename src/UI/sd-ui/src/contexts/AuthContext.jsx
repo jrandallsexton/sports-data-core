@@ -26,15 +26,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const setToken = async (firebaseUser) => {
+  const setToken = async (firebaseUser, forceRefresh = false) => {
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await firebaseUser.getIdToken(forceRefresh);
       //console.log('Setting token cookie for user:', firebaseUser.uid);
       await apiClient.post('/auth/set-token', { token });
       setUser(firebaseUser);
     } catch (error) {
       console.error('Token setup failed:', error);
-      setUser(null);
+      // Don't clear user on token refresh failures
+      if (!forceRefresh) {
+        setUser(null);
+      }
     }
   };
 
@@ -67,6 +70,18 @@ export function AuthProvider({ children }) {
     return () => {
       unsubscribe();
     };
+  }, [user]);
+
+  // Refresh token every 50 minutes (tokens expire after 1 hour)
+  useEffect(() => {
+    if (!user) return;
+
+    const refreshInterval = setInterval(async () => {
+      console.log('Refreshing Firebase token...');
+      await setToken(user, true);
+    }, 50 * 60 * 1000); // 50 minutes
+
+    return () => clearInterval(refreshInterval);
   }, [user]);
 
   return (

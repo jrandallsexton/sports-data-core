@@ -76,6 +76,8 @@ order by "StartDateUtc" desc
 
 select * from public."User"
 select * from public."Article"
+--delete from public."Article"
+select * from public."ArticleFranchiseSeason"
 select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd'
 
 SELECT "ContestId", COUNT(*) AS pick_count

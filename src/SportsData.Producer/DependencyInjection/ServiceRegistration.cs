@@ -96,6 +96,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
 
+            services.AddScoped<FootballCompetitionMetricsAuditJob>();
+
             return services;
         }
 
@@ -130,6 +132,11 @@ namespace SportsData.Producer.DependencyInjection
 
             recurringJobManager.AddOrUpdate<VenueGeoCodeJob>(
                 nameof(VenueGeoCodeJob),
+                job => job.ExecuteAsync(),
+                "0 7 * * 0"); // Sunday at 07:00 UTC
+
+            recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
+                nameof(FootballCompetitionMetricsAuditJob),
                 job => job.ExecuteAsync(),
                 "0 7 * * 0"); // Sunday at 07:00 UTC
 

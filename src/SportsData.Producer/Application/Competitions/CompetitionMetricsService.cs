@@ -30,7 +30,9 @@ namespace SportsData.Producer.Application.Competitions
             // delete existing metrics for this competition
             var existingMetrics = _dataContext.CompetitionMetrics
                 .Where(m => m.CompetitionId == competitionId);
+
             _dataContext.CompetitionMetrics.RemoveRange(existingMetrics);
+
             await _dataContext.SaveChangesAsync();
 
             var competition = await _dataContext.Competitions
@@ -63,6 +65,8 @@ namespace SportsData.Producer.Application.Competitions
 
             await _dataContext.CompetitionMetrics.AddAsync(awayMetric);
             await _dataContext.CompetitionMetrics.AddAsync(homeMetric);
+
+            // TODO: Raise integration event?
             await _dataContext.SaveChangesAsync();
         }
 

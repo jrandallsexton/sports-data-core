@@ -36,3 +36,5 @@ jobs:
         app_build_command: "npm run build"
       env:
         REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+        REACT_APP_API_BASE_URL: https://api.sportdeets.com
+        REACT_APP_SIGNALR_URL: https://api-int.sportdeets.com

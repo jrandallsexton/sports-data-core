@@ -205,8 +205,8 @@ function GameMap() {
   }, [conferenceFilter, statusFilter]);
 
   const getMarkerColor = (game) => {
-    if (game.status === "Final") return "#4CAF50"; // Green
-    if (game.status === "InProgress") return "#F44336"; // Red
+    if (game.status === "Final") return "#F44336"; // Red
+    if (game.status === "InProgress") return "#4CAF50"; // Green
     return "#9E9E9E"; // Gray
   };
 
@@ -329,11 +329,11 @@ function GameMap() {
               Upcoming
             </span>
             <span className="legend-item">
-              <span className="legend-dot" style={{backgroundColor: "#F44336"}}></span>
+              <span className="legend-dot" style={{backgroundColor: "#4CAF50"}}></span>
               Live
             </span>
             <span className="legend-item">
-              <span className="legend-dot" style={{backgroundColor: "#4CAF50"}}></span>
+              <span className="legend-dot" style={{backgroundColor: "#F44336"}}></span>
               Final
             </span>
           </div>

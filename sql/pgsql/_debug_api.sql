@@ -13,7 +13,7 @@ update public."MatchupPreview" set
 "PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
 */
 
-select * from public."MatchupPreview" where "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec' order by "CreatedUtc" desc
+select * from public."MatchupPreview" where "ContestId" = 'aa00bd58-a986-d3a3-d1e5-f166c92dbcd0' order by "CreatedUtc" desc
 
 --update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 22:31:26.653867+00' where "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd' and "ApprovedUtc" is not null and "RejectedUtc" is null
 --update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 19:07:43.073712+00' where "Id" = '13af5484-b8e9-4d37-9161-5f19877e85cb'
@@ -74,7 +74,7 @@ order by "StartDateUtc" desc
 -- in Producer, execute "ContestUpdateJob"
 -- in API, execute "MatchupScheduler"
 
-select * from public."User"
+select * from public."User" -- ngovRAr5E8cjMVaZNvcqN1nPFPJ2
 select * from public."Article"
 --delete from public."Article"
 select * from public."ArticleFranchiseSeason"
@@ -150,7 +150,7 @@ select * from public."MessagePost" where "ThreadId" = '00000000-0000-0000-0000-0
 --delete from public."PickemGroupWeek"
 --delete from public."PickemGroupMatchup"
 --delete from public."UserPick"
---update public."User" set "DisplayName" = 'StatBot', "IsSynthetic" = true, "SignInProvider" = 'password' where "Id" = 'e972f550-acab-4162-a4ee-e76170a4c9e1'
+--update public."User" set "IsAdmin" = true where "Id" = '11111111-1111-1111-1111-111111111111'
 
 /*
 INSERT INTO "ContestPreview" (

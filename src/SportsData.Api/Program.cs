@@ -266,8 +266,8 @@ namespace SportsData.Api
             });
 
             app.UseRouting();
-            app.UseMiddleware<FirebaseAuthenticationMiddleware>();
             app.UseAuthentication();
+            app.UseMiddleware<FirebaseAuthenticationMiddleware>();
             app.UseAuthorization();
             app.UseOutputCache();
 

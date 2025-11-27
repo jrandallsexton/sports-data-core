@@ -43,7 +43,7 @@
   inner join public."SeasonWeek" sw on sw."Id" = c."SeasonWeekId"
   inner join public."Venue" v on v."Id" = c."VenueId"
   inner join public."Competition" comp on comp."ContestId" = c."Id"
-  left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" != '59'
+  left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
   inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
   inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
   inner join public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"

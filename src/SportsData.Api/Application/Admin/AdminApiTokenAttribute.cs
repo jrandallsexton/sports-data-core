@@ -28,8 +28,11 @@ public class AdminApiTokenAttribute : Attribute, IAuthorizationFilter
         // If no valid admin token, check for authenticated user with Admin role
         if (context.HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            // ? Check if user has Admin role claim (added by FirebaseAuthenticationMiddleware)
-            if (context.HttpContext.User.IsInRole("Admin"))
+            // Check claims directly for Admin role
+            var hasAdminRole = context.HttpContext.User.Claims
+                .Any(c => c.Type == ClaimTypes.Role && c.Value == "Admin");
+            
+            if (hasAdminRole)
             {
                 return;
             }

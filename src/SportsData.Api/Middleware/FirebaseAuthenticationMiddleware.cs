@@ -23,7 +23,25 @@ public class FirebaseAuthenticationMiddleware
 
     public async Task Invoke(HttpContext context, IUserService userService)
     {
+        // If JWT Bearer already authenticated the user, enhance with database claims
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            var firebaseUid = context.User.FindFirst("user_id")?.Value;
+            if (!string.IsNullOrEmpty(firebaseUid))
+            {
+                await EnhanceAuthenticatedUser(context, userService, firebaseUid);
+                await _next(context);
+                return;
+            }
+        }
+
+        // Otherwise, try to authenticate manually
         var token = context.Request.Headers["Authorization"].ToString()?.Replace("Bearer ", "");
+        
+        if (string.IsNullOrEmpty(token))
+        {
+            token = context.Request.Cookies["authToken"];
+        }
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -119,5 +137,51 @@ public class FirebaseAuthenticationMiddleware
         }
 
         await _next(context);
+    }
+
+    private async Task EnhanceAuthenticatedUser(HttpContext context, IUserService userService, string firebaseUid)
+    {
+        var cacheKey = $"user:{firebaseUid}";
+
+        var user = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+            entry.SlidingExpiration = TimeSpan.FromMinutes(5);
+            
+            return await userService.GetUserByFirebaseUidAsync(firebaseUid);
+        });
+
+        if (user == null)
+        {
+            return;
+        }
+
+        // Add database-driven claims to the existing identity
+        if (context.User.Identity is ClaimsIdentity identity)
+        {
+            // Add role claims
+            if (user.IsAdmin && !context.User.IsInRole("Admin"))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+            }
+
+            if (user.IsReadOnly)
+            {
+                identity.AddClaim(new Claim("permission", "ReadOnly"));
+            }
+
+            if (user.IsSynthetic)
+            {
+                identity.AddClaim(new Claim("user_type", "Synthetic"));
+            }
+
+            if (user.IsPanelPersona)
+            {
+                identity.AddClaim(new Claim("user_type", "PanelPersona"));
+            }
+
+            // Store in Items for backward compatibility
+            context.Items["User"] = user;
+        }
     }
 }

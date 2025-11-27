@@ -34,7 +34,8 @@ INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchise
 INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
 
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
-  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
+
+left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
         fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
         fsrAway."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
@@ -43,9 +44,10 @@ INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchise
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
+left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
         fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
         fsrHome."SeasonWeekId" = c."SeasonWeekId"
+left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
 WHERE c."StartDateUtc" <= NOW() and ((fsAway."Id" = @FranchiseSeasonId) Or (fsHome."Id" = @FranchiseSeasonId))
 ORDER BY c."StartDateUtc", fHome."Slug";

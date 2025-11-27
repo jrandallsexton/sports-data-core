@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { Link } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
 import "../home/HomePage.css";
 
@@ -79,16 +78,21 @@ function NewsWidget() {
         }}>
           {articles.map((article) => (
             <div key={article.contestId} style={{ marginBottom: "12px" }}>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleArticleClick(article.articleId);
+              <button
+                onClick={() => handleArticleClick(article.articleId)}
+                style={{ 
+                  color: "#ffc107", 
+                  textDecoration: "none", 
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  font: "inherit",
+                  textAlign: "left"
                 }}
-                style={{ color: "#ffc107", textDecoration: "none", cursor: "pointer" }}
               >
                 <strong>🏈</strong> {article.title}
-              </a>
+              </button>
             </div>
           ))}
         </div>

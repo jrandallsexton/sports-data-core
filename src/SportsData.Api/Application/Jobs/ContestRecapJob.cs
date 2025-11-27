@@ -42,8 +42,10 @@ namespace SportsData.Api.Application.Jobs
 
                 foreach (var contestId in completedContestIds)
                 {
-                    _backgroundJobProvider.Enqueue<ContestRecapProcessor>(x =>
-                        x.ProcessAsync(contestId));
+                    _backgroundJobProvider.Schedule<ContestRecapProcessor>(x =>
+                        x.ProcessAsync(contestId), TimeSpan.FromSeconds(30));
+
+                    await Task.Delay(1000);
                 }
             }
         }

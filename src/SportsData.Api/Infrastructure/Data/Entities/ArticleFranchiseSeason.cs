@@ -18,6 +18,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// </summary>
         public Guid FranchiseSeasonId { get; set; }
 
+        public string? GroupSeasonMap { get; set; }
+
         /// <summary>
         /// Optional: Order for display purposes (0-based)
         /// </summary>

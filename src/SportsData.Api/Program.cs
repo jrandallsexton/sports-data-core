@@ -168,7 +168,7 @@ namespace SportsData.Api
                 client.Timeout = TimeSpan.FromMinutes(5);
             });
 
-            services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
+            services.AddScoped<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
             /* End AI */
 
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);

@@ -35,11 +35,13 @@ namespace SportsData.Producer.Application.Contests.Overview
             var homeTeamSeason = await _dbContext.FranchiseSeasons
                 .Include(fs => fs.Franchise)
                 .Include(fs => fs.Logos)
+                .Include(fs => fs.GroupSeason)
                 .FirstOrDefaultAsync(fs => fs.Id == contest.HomeTeamFranchiseSeasonId);
 
             var awayTeamSeason = await _dbContext.FranchiseSeasons
                 .Include(fs => fs.Franchise)
                 .Include(fs => fs.Logos)
+                .Include(fs => fs.GroupSeason)
                 .FirstOrDefaultAsync(fs => fs.Id == contest.AwayTeamFranchiseSeasonId);
 
             var quarterScores = await _dbContext.CompetitionCompetitorLineScores
@@ -63,7 +65,9 @@ namespace SportsData.Producer.Application.Contests.Overview
                     LogoUrl = homeTeamSeason?.Logos?.FirstOrDefault()?.Uri.OriginalString,
                     ColorPrimary = homeTeamSeason?.Franchise?.ColorCodeHex,
                     FinalScore = contest.HomeScore,
-                    Slug = homeTeamSeason!.Franchise!.Slug
+                    Slug = homeTeamSeason!.Franchise!.Slug,
+                    Conference = homeTeamSeason.GroupSeason?.ShortName,
+                    GroupSeasonMap = homeTeamSeason.GroupSeasonMap
                 },
                 AwayTeam = new TeamScoreDto
                 {
@@ -72,7 +76,9 @@ namespace SportsData.Producer.Application.Contests.Overview
                     LogoUrl = awayTeamSeason?.Logos?.FirstOrDefault()?.Uri.OriginalString,
                     ColorPrimary = awayTeamSeason?.Franchise?.ColorCodeHex,
                     FinalScore = contest.AwayScore,
-                    Slug = awayTeamSeason!.Franchise!.Slug
+                    Slug = awayTeamSeason!.Franchise!.Slug,
+                    Conference = awayTeamSeason.GroupSeason?.ShortName,
+                    GroupSeasonMap = awayTeamSeason.GroupSeasonMap
                 },
                 QuarterScores = quarterScores
                     .GroupBy(ls => ls.Period)

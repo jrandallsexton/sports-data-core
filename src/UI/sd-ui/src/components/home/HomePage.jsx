@@ -72,6 +72,12 @@ function HomePage() {
 
       <section className="card-section">
         <div className="card">
+          <NewsWidget />
+        </div>
+      </section>
+
+      <section className="card-section">
+        <div className="card">
           <RankingsWidget />
         </div>
       </section>
@@ -90,12 +96,9 @@ function HomePage() {
       )}
 
       <section className="card-section">
-        {/* Tips and News */}
+        {/* Tips */}
         <div className="card">
           <TipWeekWidget />
-        </div>
-        <div className="card">
-          <NewsWidget />
         </div>
       </section>
 

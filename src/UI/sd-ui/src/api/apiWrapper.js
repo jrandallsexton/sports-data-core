@@ -12,6 +12,7 @@ import Contest from "./contestApi";
 import Admin from "./adminApi";
 import Analytics from "./analyticsApi";
 import Maps from "./mapsApi";
+import Articles from "./articlesApi";
 
 const apiWrapper = {
   Matchups,
@@ -27,7 +28,8 @@ const apiWrapper = {
   Contest,
   Admin,
   Analytics,
-  Maps
+  Maps,
+  Articles
 };
 
 export default apiWrapper;

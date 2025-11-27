@@ -84,6 +84,10 @@ namespace SportsData.Core.Dtos.Canonical
     {
         public Guid FranchiseSeasonId { get; set; }
 
+        public string? GroupSeasonMap { get; set; }
+
+        public string? Conference { get; set; }
+
         public required string Slug { get; set; }
 
         public string? DisplayName { get; set; }

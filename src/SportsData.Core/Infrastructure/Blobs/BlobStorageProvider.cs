@@ -3,7 +3,6 @@ using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using SportsData.Core.Config;
@@ -23,12 +22,10 @@ namespace SportsData.Core.Infrastructure.Blobs
     public class BlobStorageProvider : IProvideBlobStorage
     {
         private readonly IOptions<CommonConfig> _config;
-        private readonly ILogger<BlobStorageProvider> _logger;
 
-        public BlobStorageProvider(IOptions<CommonConfig> config, ILogger<BlobStorageProvider> logger)
+        public BlobStorageProvider(IOptions<CommonConfig> config)
         {
             _config = config;
-            _logger = logger;
         }
 
         public async Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename)
@@ -90,8 +87,6 @@ namespace SportsData.Core.Infrastructure.Blobs
 
         public async Task<string> GetFileContentsAsync(string containerName, string filename)
         {
-            _logger.LogInformation("GetFileContentsAsync called - containerName: '{ContainerName}', filename: '{Filename}'", containerName, filename);
-            
             // Normalize names to match your naming conventions
             //containerName = $"{_config.Value.AzureBlobStorageContainerPrefix.ToLower()}-{containerName.ToLower()}";
 
@@ -105,39 +100,16 @@ namespace SportsData.Core.Infrastructure.Blobs
                 }
             };
 
-            var connectionString = _config.Value.AzureBlobStorageConnectionString;
-            _logger.LogInformation("Using connection string starting with: '{ConnectionStringPrefix}'", 
-                connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0)));
-
             var containerClient = new BlobContainerClient(
-                connectionString,
+                _config.Value.AzureBlobStorageConnectionString,
                 containerName,
                 clientOptions);
 
-            _logger.LogInformation("BlobContainerClient created - Container URI: '{ContainerUri}'", containerClient.Uri);
-
             var blobClient = containerClient.GetBlobClient(filename);
-            
-            _logger.LogInformation("BlobClient created - Blob URI: '{BlobUri}'", blobClient.Uri);
 
-            try
-            {
-                var response = await blobClient.DownloadAsync();
-                _logger.LogInformation("Blob downloaded successfully - ContentLength: {ContentLength}", response.Value.ContentLength);
-                
-                using var reader = new StreamReader(response.Value.Content);
-                var content = await reader.ReadToEndAsync();
-                
-                _logger.LogInformation("Blob content read successfully - Length: {ContentLength} characters", content.Length);
-                
-                return content;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to download blob - Container: '{ContainerName}', Filename: '{Filename}', BlobUri: '{BlobUri}'", 
-                    containerName, filename, blobClient.Uri);
-                throw;
-            }
+            var response = await blobClient.DownloadAsync();
+            using var reader = new StreamReader(response.Value.Content);
+            return await reader.ReadToEndAsync();
         }
     }
 }

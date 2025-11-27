@@ -13,5 +13,14 @@ namespace SportsData.Api.Application.UI.Articles
             var response = await articleService.GetArticlesAsync();
             return Ok(response);
         }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<GetArticleResponse>> GetArticleById(
+            [FromRoute] Guid id,
+            [FromServices] IArticleService articleService)
+        {
+            var response = await articleService.GetArticleByIdAsync(id);
+            return Ok(response);
+        }
     }
 }

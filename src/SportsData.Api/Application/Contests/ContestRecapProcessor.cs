@@ -4,6 +4,7 @@ using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
@@ -64,7 +65,7 @@ namespace SportsData.Api.Application.Contests
             });
 
             // save the recap to the database
-            var article = new Infrastructure.Data.Entities.Article
+            var article = new Article
             {
                 Id = Guid.NewGuid(),
                 ContestId = contestId,
@@ -77,7 +78,27 @@ namespace SportsData.Api.Application.Contests
                 AiModel = recap.Model,
                 AiPromptNameAndVersion = recap.PromptVersion,
                 PublishedAt = _dateTimeProvider.UtcNow(),
-                AuthorId = new Guid("b6e59053-46cb-4bbf-9876-0a70f539c81c")
+                AuthorId = new Guid("b6e59053-46cb-4bbf-9876-0a70f539c81c"),
+                FranchiseSeasons = new List<ArticleFranchiseSeason>()
+                {
+                    new()
+                    {
+                        FranchiseSeasonId = overview.Header!.AwayTeam!.FranchiseSeasonId,
+                        DisplayOrder = 0,
+                        GroupSeasonMap = overview.Header!.AwayTeam!.GroupSeasonMap
+                    },
+                    new()
+                    {
+                        FranchiseSeasonId = overview.Header!.HomeTeam!.FranchiseSeasonId,
+                        DisplayOrder = 1,
+                        GroupSeasonMap = overview.Header!.HomeTeam!.GroupSeasonMap
+                    }
+                },
+                ImageUrls =
+                [
+                    overview.Header!.AwayTeam!.LogoUrl!,
+                    overview.Header!.HomeTeam!.LogoUrl!
+                ]
             };
 
             await _dataContext.Articles.AddAsync(article);

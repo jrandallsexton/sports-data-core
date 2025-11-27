@@ -38,6 +38,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public ICollection<ArticleAthleteSeason> AthleteSeasons { get; set; } = [];
 
+        public string[] ImageUrls { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<Article>
         {
             public void Configure(EntityTypeBuilder<Article> builder)
@@ -74,6 +76,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .WithOne(x => x.Article)
                     .HasForeignKey(x => x.ArticleId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.Property(a => a.ImageUrls)
+                    .HasColumnType("text[]"); // PostgreSQL array type
             }
         }
     }

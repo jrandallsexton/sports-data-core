@@ -43,6 +43,20 @@ SELECT
   fsm_home."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
   fsm_home."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
 
+  -- Home FranchiseSeason metrics (scoring/margin)
+  fs_home."PtsScoredAvg" AS "HomePtsScoredAvg",
+  fs_home."PtsScoredMin" AS "HomePtsScoredMin",
+  fs_home."PtsScoredMax" AS "HomePtsScoredMax",
+  fs_home."PtsAllowedAvg" AS "HomePtsAllowedAvg",
+  fs_home."PtsAllowedMin" AS "HomePtsAllowedMin",
+  fs_home."PtsAllowedMax" AS "HomePtsAllowedMax",
+  fs_home."MarginWinAvg" AS "HomeMarginWinAvg",
+  fs_home."MarginWinMin" AS "HomeMarginWinMin",
+  fs_home."MarginWinMax" AS "HomeMarginWinMax",
+  fs_home."MarginLossAvg" AS "HomeMarginLossAvg",
+  fs_home."MarginLossMin" AS "HomeMarginLossMin",
+  fs_home."MarginLossMax" AS "HomeMarginLossMax",
+
   fsm_away."FranchiseSeasonId" AS "AwayFranchiseSeasonId",
   fsm_away."Ypp" AS "AwayYpp",
   fsm_away."SuccessRate" AS "AwaySuccessRate",
@@ -65,6 +79,20 @@ SELECT
   fsm_away."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
   fsm_away."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
 
+  -- Away FranchiseSeason metrics (scoring/margin)
+  fs_away."PtsScoredAvg" AS "AwayPtsScoredAvg",
+  fs_away."PtsScoredMin" AS "AwayPtsScoredMin",
+  fs_away."PtsScoredMax" AS "AwayPtsScoredMax",
+  fs_away."PtsAllowedAvg" AS "AwayPtsAllowedAvg",
+  fs_away."PtsAllowedMin" AS "AwayPtsAllowedMin",
+  fs_away."PtsAllowedMax" AS "AwayPtsAllowedMax",
+  fs_away."MarginWinAvg" AS "AwayMarginWinAvg",
+  fs_away."MarginWinMin" AS "AwayMarginWinMin",
+  fs_away."MarginWinMax" AS "AwayMarginWinMax",
+  fs_away."MarginLossAvg" AS "AwayMarginLossAvg",
+  fs_away."MarginLossMin" AS "AwayMarginLossMin",
+  fs_away."MarginLossMax" AS "AwayMarginLossMax",
+
   NULL AS "HomeScore",
   NULL AS "AwayScore",
   NULL AS "Winner",
@@ -80,6 +108,12 @@ JOIN public."FranchiseSeasonMetric" fsm_home
 
 JOIN public."FranchiseSeasonMetric" fsm_away
   ON fsm_away."FranchiseSeasonId" = con."AwayTeamFranchiseSeasonId"
+
+JOIN public."FranchiseSeason" fs_home
+  ON fs_home."Id" = con."HomeTeamFranchiseSeasonId"
+
+JOIN public."FranchiseSeason" fs_away
+  ON fs_away."Id" = con."AwayTeamFranchiseSeasonId"
 
 LEFT JOIN public."CompetitionOdds" odds
   ON odds."CompetitionId" = comp."Id" AND odds."ProviderId" = '58'

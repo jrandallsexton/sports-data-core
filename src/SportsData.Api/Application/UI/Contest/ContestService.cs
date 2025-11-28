@@ -1,4 +1,5 @@
-﻿using SportsData.Api.Infrastructure.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -46,8 +47,23 @@ namespace SportsData.Api.Application.UI.Contest
             await _canonicalDataProvider.RefreshContestMediaByContestId(contestId);
         }
 
-        public async Task<Result<bool>> SubmitContestPredictions(Guid userId, List<ContestPredictionDto> predictions)
+        public async Task<Result<bool>> SubmitContestPredictions(
+            Guid userId,
+            List<ContestPredictionDto> predictions)
         {
+            var contestIds = predictions.Select(p => p.ContestId).Distinct().ToList();
+
+            // Delete existing predictions for these contests and this user
+            var existingPredictions = await _dataContext.ContestPredictions
+                .Where(cp => contestIds.Contains(cp.ContestId) && cp.CreatedBy == userId)
+                .ToListAsync();
+
+            if (existingPredictions.Any())
+            {
+                _dataContext.ContestPredictions.RemoveRange(existingPredictions);
+            }
+
+            // Add new predictions
             foreach (var entity in predictions.Select(prediction => prediction.AsEntity()))
             {
                 entity.CreatedBy = userId;

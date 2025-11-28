@@ -1,63 +1,76 @@
 # predict_ats.py
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+import numpy as np
+from scipy.stats import norm
 
-# === Load data ===
-df_train = pd.read_csv("./data/competition_metrics_full.csv")
-df_predict = pd.read_csv("./data/competition_metrics_week_13.csv")
+# === Load SU predictions (which contain margin predictions) ===
+df_su = pd.read_csv("./data/predictions_straightup_raw.csv")
+df_week = pd.read_csv("./data/competition_metrics_week_14.csv")
 
-# === Derive ATS label (exclude nulls or ties against spread) ===
-df_train = df_train.dropna(subset=["HomeScore", "AwayScore", "Spread"]).copy()
-df_train["Margin"] = df_train["HomeScore"] - df_train["AwayScore"]
-df_train["CoveredSpread"] = (df_train["Margin"] > df_train["Spread"]).astype(int)
+# Merge to get spread
+df_predict = df_su.merge(
+    df_week[['ContestId', 'Spread']],
+    on='ContestId',
+    how='left'
+)
 
-# === Filter out pushes (margin == spread) ===
-df_train = df_train[df_train["Margin"] != df_train["Spread"]].copy()
+# Get residual std from SU model (should be same value)
+residual_std = df_predict["ResidualStd"].iloc[0]
 
-# === Features ===
-feature_cols = [
-    'HomeYpp', 'HomeSuccessRate', 'HomeExplosiveRate', 'HomePointsPerDrive',
-    'HomeThirdFourthRate', 'HomeRzTdRate', 'HomeRzScoreRate', 'HomeTimePossRatio',
-    'HomeOppYpp', 'HomeOppSuccessRate', 'HomeOppExplosiveRate', 'HomeOppPointsPerDrive',
-    'HomeOppThirdFourthRate', 'HomeOppRzTdRate', 'HomeOppScoreTdRate',
-    'HomeNetPunt', 'HomeFgPctShrunk', 'HomeFieldPosDiff', 'HomeTurnoverMarginPerDrive',
-    'HomePenaltyYardsPerPlay',
+print(f"📊 Using SU model predictions with Residual Std = {residual_std:.2f} points")
 
-    'AwayYpp', 'AwaySuccessRate', 'AwayExplosiveRate', 'AwayPointsPerDrive',
-    'AwayThirdFourthRate', 'AwayRzTdRate', 'AwayRzScoreRate', 'AwayTimePossRatio',
-    'AwayOppYpp', 'AwayOppSuccessRate', 'AwayOppExplosiveRate', 'AwayOppPointsPerDrive',
-    'AwayOppThirdFourthRate', 'AwayOppRzTdRate', 'AwayOppScoreTdRate',
-    'AwayNetPunt', 'AwayFgPctShrunk', 'AwayFieldPosDiff', 'AwayTurnoverMarginPerDrive',
-    'AwayPenaltyYardsPerPlay',
+# === Calculate ATS probabilities using SU margin predictions ===
+# Standard sports betting spread convention:
+#   Negative spread = home favored (e.g., -17.5 means home must win by >17.5)
+#   Positive spread = home underdog (e.g., +6.5 means home gets 6.5 points)
+#
+# P(Home covers) = P(Margin + Spread > 0)
+#   - If home favored (-17.5): P(Margin - 17.5 > 0) = P(win by >17.5)
+#   - If home underdog (+6.5): P(Margin + 6.5 > 0) = P(lose by <6.5 or win)
+df_predict["MarginVsSpread"] = df_predict["PredictedMargin"] + df_predict["Spread"]
+df_predict["HomeCoverProbability"] = norm.sf(0, loc=df_predict["MarginVsSpread"], scale=residual_std)
 
-    'Spread'
-]
+# P(Away covers) = complement
+df_predict["AwayCoverProbability"] = norm.sf(0, loc=-df_predict["MarginVsSpread"], scale=residual_std)
 
-# === Train model ===
-X_train = df_train[feature_cols].fillna(0)
-y_train = df_train["CoveredSpread"]
+# Clip probabilities
+df_predict["HomeCoverProbability"] = df_predict["HomeCoverProbability"].clip(0.01, 0.99)
+df_predict["AwayCoverProbability"] = df_predict["AwayCoverProbability"].clip(0.01, 0.99)
 
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
-
-# === Predict ===
-X_predict = df_predict[feature_cols].fillna(0)
-df_predict["PredictedLabel"] = model.predict(X_predict)
-df_predict["HomeCoverProbability"] = model.predict_proba(X_predict)[:, 1]  # P(home covers)ls
+# Determine predicted label
+df_predict["ATS_PredictedLabel"] = (df_predict["HomeCoverProbability"] > df_predict["AwayCoverProbability"]).astype(int)
 
 df_predict["ModelVersion"] = "MetricBot-v1.0.0"
 
-# === Save raw predictions ===
+# === Save raw ATS predictions ===
 raw_output_cols = [
     "ContestId",
     "HomeFranchiseSeasonId",
     "AwayFranchiseSeasonId",
-    "PredictedLabel",
+    "ATS_PredictedLabel",
+    "PredictedMargin",
     "HomeCoverProbability",
+    "AwayCoverProbability",
     "ModelVersion"
 ]
-df_predict[raw_output_cols].to_csv("./data/predictions_ats_raw.csv", index=False)
+
+# Rename ATS_PredictedLabel to PredictedLabel for compatibility
+df_output = df_predict[raw_output_cols].copy()
+df_output = df_output.rename(columns={"ATS_PredictedLabel": "PredictedLabel"})
+
+df_output.to_csv("./data/predictions_ats_raw.csv", index=False)
 
 print("✅ Raw ATS predictions written to ./data/predictions_ats_raw.csv")
+
+
+
+
+
+
+
+
+
+
+
 
 

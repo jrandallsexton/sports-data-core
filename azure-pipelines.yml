@@ -24,4 +24,6 @@ pool:
 
 steps:
   - script: |
-      echo "Hello from '/' root folder."
+      echo "Hello from '/' root folder." > /dev/null 2>&1 || echo "Pipeline triggered"
+    displayName: 'Pipeline Root Check'
+    continueOnError: true

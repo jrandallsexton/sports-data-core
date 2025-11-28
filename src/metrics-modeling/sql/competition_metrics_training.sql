@@ -28,6 +28,20 @@ SELECT
     cm_home."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
     cm_home."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
 
+    -- Home FranchiseSeason metrics (scoring/margin)
+    fs_home."PtsScoredAvg" AS "HomePtsScoredAvg",
+    fs_home."PtsScoredMin" AS "HomePtsScoredMin",
+    fs_home."PtsScoredMax" AS "HomePtsScoredMax",
+    fs_home."PtsAllowedAvg" AS "HomePtsAllowedAvg",
+    fs_home."PtsAllowedMin" AS "HomePtsAllowedMin",
+    fs_home."PtsAllowedMax" AS "HomePtsAllowedMax",
+    fs_home."MarginWinAvg" AS "HomeMarginWinAvg",
+    fs_home."MarginWinMin" AS "HomeMarginWinMin",
+    fs_home."MarginWinMax" AS "HomeMarginWinMax",
+    fs_home."MarginLossAvg" AS "HomeMarginLossAvg",
+    fs_home."MarginLossMin" AS "HomeMarginLossMin",
+    fs_home."MarginLossMax" AS "HomeMarginLossMax",
+
     cm_away."FranchiseSeasonId" AS "AwayFranchiseSeasonId",
     cm_away."Ypp" AS "AwayYpp",
     cm_away."SuccessRate" AS "AwaySuccessRate",
@@ -49,6 +63,20 @@ SELECT
     cm_away."FieldPosDiff" AS "AwayFieldPosDiff",
     cm_away."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
     cm_away."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
+
+    -- Away FranchiseSeason metrics (scoring/margin)
+    fs_away."PtsScoredAvg" AS "AwayPtsScoredAvg",
+    fs_away."PtsScoredMin" AS "AwayPtsScoredMin",
+    fs_away."PtsScoredMax" AS "AwayPtsScoredMax",
+    fs_away."PtsAllowedAvg" AS "AwayPtsAllowedAvg",
+    fs_away."PtsAllowedMin" AS "AwayPtsAllowedMin",
+    fs_away."PtsAllowedMax" AS "AwayPtsAllowedMax",
+    fs_away."MarginWinAvg" AS "AwayMarginWinAvg",
+    fs_away."MarginWinMin" AS "AwayMarginWinMin",
+    fs_away."MarginWinMax" AS "AwayMarginWinMax",
+    fs_away."MarginLossAvg" AS "AwayMarginLossAvg",
+    fs_away."MarginLossMin" AS "AwayMarginLossMin",
+    fs_away."MarginLossMax" AS "AwayMarginLossMax",
 
     con."HomeScore",
     con."AwayScore",
@@ -72,6 +100,12 @@ JOIN public."CompetitionMetric" cm_home ON cm_home."CompetitionId" = comp."Id"
 
 JOIN public."CompetitionMetric" cm_away ON cm_away."CompetitionId" = comp."Id"
     AND cm_away."FranchiseSeasonId" = con."AwayTeamFranchiseSeasonId"
+
+JOIN public."FranchiseSeason" fs_home
+    ON fs_home."Id" = con."HomeTeamFranchiseSeasonId"
+
+JOIN public."FranchiseSeason" fs_away
+    ON fs_away."Id" = con."AwayTeamFranchiseSeasonId"
 
 -- Join odds from provider 58
 LEFT JOIN public."CompetitionOdds" odds

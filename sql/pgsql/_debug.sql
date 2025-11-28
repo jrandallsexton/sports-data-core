@@ -150,6 +150,17 @@ select * from public."FranchiseSeasonMetric"
 select * from public."GroupSeason" order by "Name"
 --delete from public."CompetitionMetric"
 
+SELECT 
+    column_name,
+    data_type,
+    is_nullable
+FROM 
+    information_schema.columns
+WHERE 
+    table_name = 'FranchiseSeasonMetric'
+ORDER BY 
+    ordinal_position;
+
 SELECT json_agg(row_to_json(cm))
 FROM (
     select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' order by "SequenceNumber"::int

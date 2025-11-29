@@ -52,12 +52,6 @@ namespace SportsData.Api.Application.Contests
             // get the contest overview
             var overview = await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
 
-            if (overview is null)
-            {
-                _logger.LogError("Contest overview not found for contest ID {ContestId}", contestId);
-                return;
-            }
-
             // generate the recap using AI service
             var recap = await _aiService.GenerateGameRecapAsync(new GenerateGameRecapCommand()
             {

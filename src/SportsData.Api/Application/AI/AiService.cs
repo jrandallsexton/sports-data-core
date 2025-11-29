@@ -58,7 +58,7 @@ namespace SportsData.Api.Application.AI
             {
                 // Load or reload prompt from blob storage
                 var (promptText, promptName) = command.ReloadPrompt
-                    ? (await _gameRecapPromptProvider.ReloadPromptAsync(), "game-recap-v1")
+                    ? (await _gameRecapPromptProvider.ReloadPromptAsync(), "game-recap-v2") // TODO: Move to appConfig
                     : await _gameRecapPromptProvider.GetGameRecapPromptAsync();
 
                 _logger.LogInformation(

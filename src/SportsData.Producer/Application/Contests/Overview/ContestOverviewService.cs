@@ -54,7 +54,10 @@ namespace SportsData.Producer.Application.Contests.Overview
             {
                 ContestId = contest.Id,
                 Status = ContestStatus.Completed, // TODO: Map from actual status
-                WeekLabel = contest.SeasonWeek?.Number.ToString(),
+                WeekLabel = contest.SeasonWeek.Number.ToString(),
+                SeasonWeekId = contest.SeasonWeek.Id,
+                SeasonYear = contest.SeasonYear,
+                SeasonWeekNumber = contest.SeasonWeek.Number,
                 StartTimeUtc = contest.StartDateUtc,
                 VenueName = contest.Venue?.Name,
                 Location = contest.Venue != null ? $"{contest.Venue.City}, {contest.Venue.State}" : null,

@@ -67,6 +67,12 @@ namespace SportsData.Core.Dtos.Canonical
 
         public string? WeekLabel { get; set; }
 
+        public Guid SeasonWeekId { get; set; }
+
+        public int SeasonYear { get; set; }
+
+        public int SeasonWeekNumber { get; set; }
+
         public DateTime StartTimeUtc { get; set; }
 
         public string? VenueName { get; set; }

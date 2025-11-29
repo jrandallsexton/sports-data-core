@@ -29,10 +29,16 @@ namespace SportsData.Api.Application.UI.Articles
 
         public async Task<GetArticlesResponse> GetArticlesAsync()
         {
-            //var currentSeasonWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+            var currentSeasonWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+
+            if (currentSeasonWeek is null)
+            {
+                throw new InvalidOperationException("Current season week not found.");
+            }
 
             var articles = await _dataContext.Articles
                 .OrderBy(x => x.Title)
+                .Where(x => x.SeasonWeekId == currentSeasonWeek.Id)
                 .Select(a => new ArticleSummaryDto
                 {
                     ArticleId = a.Id,
@@ -46,6 +52,8 @@ namespace SportsData.Api.Application.UI.Articles
 
             return new GetArticlesResponse()
             {
+                SeasonYear = currentSeasonWeek.SeasonYear,
+                SeasonWeekNumber = currentSeasonWeek.WeekNumber,
                 Articles = articles
             };
         }
@@ -77,6 +85,10 @@ namespace SportsData.Api.Application.UI.Articles
 
     public class GetArticlesResponse
     {
+        public int SeasonYear { get; set; }
+
+        public int SeasonWeekNumber { get; set; }
+
         public List<ArticleSummaryDto> Articles { get; set; } = [];
     }
 

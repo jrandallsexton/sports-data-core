@@ -21,11 +21,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public DateTime PublishedAt { get; set; }
 
-        public Guid? SeasonWeekId { get; set; }
+        public Guid SeasonWeekId { get; set; }
 
-        public int? SeasonYear { get; set; }
+        public int SeasonYear { get; set; }
 
-        public int? SeasonWeekNumber { get; set; }
+        public int SeasonWeekNumber { get; set; }
 
         public Guid AuthorId { get; set; }
 
@@ -66,7 +66,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 
                 builder.Property(x => x.PublishedAt)
                     .IsRequired();
-                
+
+                builder.Property(x => x.SeasonWeekId)
+                    .IsRequired();
+
+                builder.Property(x => x.SeasonYear)
+                    .IsRequired();
+
+                builder.Property(x => x.SeasonWeekNumber)
+                    .IsRequired();
+
                 builder.HasOne(x => x.Author)
                     .WithMany()
                     .HasForeignKey(x => x.AuthorId)

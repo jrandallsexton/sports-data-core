@@ -79,6 +79,9 @@ namespace SportsData.Api.Application.Contests
                 AiPromptNameAndVersion = recap.PromptVersion,
                 PublishedAt = _dateTimeProvider.UtcNow(),
                 AuthorId = new Guid("b6e59053-46cb-4bbf-9876-0a70f539c81c"),
+                SeasonWeekId = overview.Header!.SeasonWeekId,
+                SeasonYear = overview.Header!.SeasonYear,
+                SeasonWeekNumber = overview.Header!.SeasonWeekNumber,
                 FranchiseSeasons = new List<ArticleFranchiseSeason>()
                 {
                     new()

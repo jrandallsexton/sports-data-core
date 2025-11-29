@@ -28,6 +28,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public UserPickType PickType { get; set; } = UserPickType.StraightUp;
 
+        public string? SyntheticPickStyle { get; set; }
+
         // === Scoring Fields ===
         public bool? IsCorrect { get; set; }
 
@@ -86,6 +88,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                builder.Property(u => u.SyntheticPickStyle)
+                    .HasMaxLength(100);
             }
         }
     }

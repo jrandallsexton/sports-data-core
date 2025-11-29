@@ -148,11 +148,40 @@ public class FirebaseAuthenticationMiddleware
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
             entry.SlidingExpiration = TimeSpan.FromMinutes(5);
             
-            return await userService.GetUserByFirebaseUidAsync(firebaseUid);
+            var dbUser = await userService.GetUserByFirebaseUidAsync(firebaseUid);
+            
+            if (dbUser == null)
+            {
+                _logger.LogInformation("User not found in EnhanceAuthenticatedUser, creating new user: {FirebaseUid}", firebaseUid);
+                
+                // Extract claims from the existing JWT token
+                var email = context.User.FindFirst(ClaimTypes.Email)?.Value 
+                    ?? context.User.FindFirst("email")?.Value 
+                    ?? "unknown@example.com";
+                var name = context.User.FindFirst("name")?.Value;
+                var picture = context.User.FindFirst("picture")?.Value;
+                var provider = context.User.FindFirst("firebase")?.Value 
+                    ?? context.User.FindFirst("sign_in_provider")?.Value 
+                    ?? "unknown";
+                var emailVerifiedClaim = context.User.FindFirst("email_verified")?.Value;
+                var emailVerified = emailVerifiedClaim != null && bool.TryParse(emailVerifiedClaim, out var verified) && verified;
+                
+                dbUser = await userService.GetOrCreateUserAsync(
+                    firebaseUid,
+                    email,
+                    name,
+                    picture,
+                    provider,
+                    emailVerified
+                );
+            }
+            
+            return dbUser;
         });
 
         if (user == null)
         {
+            _logger.LogWarning("Failed to create or retrieve user: {FirebaseUid}", firebaseUid);
             return;
         }
 

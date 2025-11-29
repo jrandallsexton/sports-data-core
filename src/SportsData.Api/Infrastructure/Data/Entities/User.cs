@@ -27,6 +27,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool IsSynthetic { get; set; }
 
+        /// <summary>
+        /// Conservative, Moderate, Aggressive (text-based instead of enum for dynamic profiles in AppConfig)
+        /// </summary>
+        public string? SyntheticPickStyle { get; set; }
+
         public bool IsPanelPersona { get; set; }
 
         public bool IsAdmin { get; set; }
@@ -61,6 +66,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasMaxLength(100);
 
                 builder.Property(u => u.Timezone)
+                    .HasMaxLength(100);
+
+                builder.Property(u => u.SyntheticPickStyle)
                     .HasMaxLength(100);
 
                 builder

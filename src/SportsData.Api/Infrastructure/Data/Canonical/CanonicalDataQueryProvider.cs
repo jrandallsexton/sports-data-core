@@ -3,25 +3,26 @@
 public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
+        "GetCompletedFbsContestsBySeasonWeekId.sql",
+        "GetContestOverviewGameInfo.sql",
+        "GetContestOverviewPlayLog.sql",
+        "GetContestOverviewQuarterScores.sql",
+        "GetContestOverviewWinProbabilityPoints.sql",
         "GetContestResultsByContestIds.sql",
+        "GetCurrentAndLastWeekSeasonWeeks.sql",
         "GetCurrentSeasonWeek.sql",
+        "GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql",
         "GetFranchiseSeasonStatistics.sql",
         "GetFranchiseSeasonStatisticsForPreviewGeneration.sql",
         "GetLeagueMatchupsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
         "GetMatchupResultByContestId.sql",
         "GetMatchupsForCurrentWeek.sql",
+        "GetMatchupsForSeasonWeek.sql",
         "GetRankingsByPollBySeasonByWeek.sql",
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
-        "GetTeamSeasons.sql",
-        "GetContestOverviewGameInfo.sql",
-        "GetContestOverviewQuarterScores.sql",
-        "GetContestOverviewWinProbabilityPoints.sql",
-        "GetContestOverviewPlayLog.sql",
-        "GetCurrentAndLastWeekSeasonWeeks.sql",
-        "GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql",
-        "GetCompletedFbsContestsBySeasonWeekId.sql"
+        "GetTeamSeasons.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -80,6 +81,8 @@ public class CanonicalDataQueryProvider
     public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId.sql");
 
     public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
+
+    public string GetMatchupsForSeasonWeek() => Get("GetMatchupsForSeasonWeek.sql");
 
     public string GetTeamCard() => Get("GetTeamCard.sql");
 

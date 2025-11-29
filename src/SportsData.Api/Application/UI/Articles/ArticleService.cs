@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Canonical;
 
 namespace SportsData.Api.Application.UI.Articles
 {
@@ -14,17 +15,22 @@ namespace SportsData.Api.Application.UI.Articles
     {
         private readonly ILogger<ArticleService> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly IProvideCanonicalData _canonicalDataProvider;
 
         public ArticleService(
             ILogger<ArticleService> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            IProvideCanonicalData canonicalDataProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _canonicalDataProvider = canonicalDataProvider;
         }
 
         public async Task<GetArticlesResponse> GetArticlesAsync()
         {
+            //var currentSeasonWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+
             var articles = await _dataContext.Articles
                 .OrderBy(x => x.Title)
                 .Select(a => new ArticleSummaryDto

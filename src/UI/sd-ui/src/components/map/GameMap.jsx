@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, useLoadScript, Marker, InfoWindow, OverlayView } from "@react-google-maps/api";
 import { useContestUpdates } from "../../contexts/ContestUpdatesContext";
+import { useUserDto } from "../../contexts/UserContext";
 import apiWrapper from "../../api/apiWrapper";
-import confetti from "canvas-confetti";
+import LeagueWeekSelector from "../picks/LeagueWeekSelector";
 import "./GameMap.css";
 
 const mapContainerStyle = {
@@ -47,6 +48,9 @@ function GameMap() {
   console.log('Google Maps isLoaded:', isLoaded);
   console.log('Google Maps loadError:', loadError);
 
+  const { userDto, loading: userLoading } = useUserDto();
+  const leagues = Object.values(userDto?.leagues || {});
+  
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [hoveredGame, setHoveredGame] = useState(null);
@@ -55,19 +59,29 @@ function GameMap() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [conferences, setConferences] = useState([]);
   const [tooltipMode, setTooltipMode] = useState("off");  // "off", "labels", "details"
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [scoringPlays, setScoringPlays] = useState(new Set()); // Track contests with recent scoring plays
   const mapRef = useRef(null);
   const previousScoresRef = useRef({});
   const hoverTimeoutRef = useRef(null);
+  const selectedGameIdRef = useRef(null); // Track selected game ID
 
   const { getContestUpdate } = useContestUpdates();
 
-  // Fetch map data from API
+  // Find the selected league's maxSeasonWeek (same pattern as PicksPage)
+  const selectedLeague = leagues.find((l) => l.id === selectedLeagueId) ?? null;
+  const maxSeasonWeek = selectedLeague?.maxSeasonWeek ?? 
+    (leagues.length > 0 ? Math.max(...leagues.map(l => l.maxSeasonWeek || 1)) : null);
+
+  // Fetch map data from API - on mount and when league/week changes
   useEffect(() => {
     async function fetchMapData() {
       setLoading(true);
       try {
-        const response = await apiWrapper.Maps.getMap();
-        const mapData = response.data || [];
+        // Pass league and week parameters if they are selected
+        const response = await apiWrapper.Maps.getMap(selectedLeagueId, selectedWeek);
+        const mapData = response.data?.matchups || [];
         
         // Transform API data to component format
         const transformedGames = mapData.map(game => ({
@@ -115,32 +129,9 @@ function GameMap() {
       }
     }
     fetchMapData();
-  }, []);
+  }, [selectedLeagueId, selectedWeek]); // Refetch when league or week changes
 
-  // Trigger fireworks when a score happens
-  const triggerFireworks = useCallback(() => {
-    // Fire confetti from random positions
-    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
-    
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { 
-            x: Math.random() * 0.4 + 0.3, // Random position between 30% and 70%
-            y: Math.random() * 0.4 + 0.3 
-          },
-          colors: colors,
-          shapes: ['circle', 'square'],
-          gravity: 1.2,
-          scalar: 1.2,
-        });
-      }, i * 150);
-    }
-  }, []);
-
-  // Monitor live updates and trigger fireworks on scoring plays
+  // Monitor live updates and add visual indicator for scoring plays
   useEffect(() => {
     games.forEach(game => {
       const liveUpdate = getContestUpdate(game.contestId);
@@ -156,13 +147,23 @@ function GameMap() {
         if (previousScore && 
             (previousScore.away !== currentScore.away || 
              previousScore.home !== currentScore.home)) {
-          triggerFireworks();
+          // Add to scoring plays set for visual indicator
+          setScoringPlays(prev => new Set(prev).add(game.contestId));
+          
+          // Remove after animation duration (5 seconds)
+          setTimeout(() => {
+            setScoringPlays(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(game.contestId);
+              return newSet;
+            });
+          }, 5000);
         }
 
         previousScoresRef.current[game.contestId] = currentScore;
       }
     });
-  }, [games, getContestUpdate, triggerFireworks]);
+  }, [games, getContestUpdate]);
 
   // Enrich games with live data
   const enrichedGames = games.map(game => {
@@ -204,6 +205,16 @@ function GameMap() {
     setSelectedGame(null);
   }, [conferenceFilter, statusFilter]);
 
+  // Update selectedGame with live data when enrichedGames changes
+  useEffect(() => {
+    if (selectedGame && selectedGameIdRef.current === selectedGame.contestId) {
+      const updatedGame = enrichedGames.find(g => g.contestId === selectedGame.contestId);
+      if (updatedGame && JSON.stringify(updatedGame) !== JSON.stringify(selectedGame)) {
+        setSelectedGame(updatedGame);
+      }
+    }
+  }, [enrichedGames, selectedGame]);
+
   const getMarkerColor = (game) => {
     if (game.status === "Final") return "#F44336"; // Red
     if (game.status === "InProgress") return "#4CAF50"; // Green
@@ -216,6 +227,7 @@ function GameMap() {
 
   const handleMarkerClick = (game) => {
     setSelectedGame(game);
+    selectedGameIdRef.current = game.contestId; // Track the selected game ID
     setHoveredGame(null);
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -223,9 +235,8 @@ function GameMap() {
   };
 
   const handleMapClick = () => {
-    if (tooltipMode !== "details") {
-      setSelectedGame(null);
-    }
+    setSelectedGame(null);
+    selectedGameIdRef.current = null; // Clear the tracked ID
   };
 
   const cycleTooltipMode = () => {
@@ -242,6 +253,7 @@ function GameMap() {
       e.stopPropagation();
     }
     setSelectedGame(game);
+    selectedGameIdRef.current = game.contestId; // Track the selected game ID
   };
 
   const handleMarkerMouseOver = (game) => {
@@ -291,6 +303,19 @@ function GameMap() {
   return (
     <div className="game-map-container">
       <div className="map-controls">
+        {/* League and Week Selector */}
+        {!userLoading && leagues.length > 0 && (
+          <LeagueWeekSelector
+            leagues={leagues}
+            selectedLeagueId={selectedLeagueId}
+            setSelectedLeagueId={setSelectedLeagueId}
+            selectedWeek={selectedWeek}
+            setSelectedWeek={setSelectedWeek}
+            maxSeasonWeek={maxSeasonWeek}
+            allowAll={true}
+          />
+        )}
+        
         <div className="filters">
           <select 
             value={conferenceFilter} 
@@ -489,7 +514,7 @@ function GameMap() {
               }}
               onCloseClick={() => setSelectedGame(null)}
             >
-              <div className="info-window">
+              <div className={`info-window ${scoringPlays.has(selectedGame.contestId) ? 'scoring-play' : ''}`}>
                 <h1 className="map-venue-name">{selectedGame.venueName}</h1>
                 <h2 className="map-venue-location">{selectedGame.venueCity}, {selectedGame.venueState}</h2>
                 <div className="map-game-time">
@@ -508,6 +533,35 @@ function GameMap() {
                   {selectedGame.homeRank && <span className="map-rank-inline">#{selectedGame.homeRank}</span>}
                   {selectedGame.homeShort} ({selectedGame.homeWins}-{selectedGame.homeLosses})
                 </div>
+                
+                {/* Live Score Display */}
+                {(selectedGame.status === "InProgress" || selectedGame.status === "Final") && 
+                 selectedGame.awayScore !== null && selectedGame.homeScore !== null && (
+                  <div className="map-score-display">
+                    <div className="map-score-line">
+                      <span className="map-team-abbr">{selectedGame.awayShort}:</span>
+                      <span className="map-score">{selectedGame.awayScore}</span>
+                    </div>
+                    <div className="map-score-line">
+                      <span className="map-team-abbr">{selectedGame.homeShort}:</span>
+                      <span className="map-score">{selectedGame.homeScore}</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Game Status Info */}
+                {selectedGame.status === "InProgress" && selectedGame.period && (
+                  <div className="map-game-status">
+                    {selectedGame.period}
+                    {selectedGame.clock && ` - ${selectedGame.clock}`}
+                  </div>
+                )}
+                {selectedGame.status === "Final" && (
+                  <div className="map-game-status map-final-status">
+                    Final
+                  </div>
+                )}
+                
                 {selectedGame.homeSpread && (
                   <div className="map-spread-line">
                     Spread: {selectedGame.homeShort} {selectedGame.homeSpread > 0 ? '+' : ''}{selectedGame.homeSpread}

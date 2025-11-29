@@ -12,6 +12,9 @@
   background: linear-gradient(135deg, #1e2127 0%, #2a2d35 100%);
   border-bottom: 2px solid #61dafb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .filters {
@@ -42,6 +45,48 @@
 .filter-select:focus {
   border-color: #61dafb;
   box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.2);
+}
+
+.filter-button {
+  padding: 8px 16px;
+  background: #61dafb;
+  border: 2px solid #61dafb;
+  border-radius: 8px;
+  color: #1a1d23;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  white-space: nowrap;
+}
+
+.filter-button:hover:not(:disabled) {
+  background: #4fc3f7;
+  border-color: #4fc3f7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(97, 218, 251, 0.3);
+}
+
+.filter-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.filter-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-button.clear-filter {
+  background: #f44336;
+  border-color: #f44336;
+  color: white;
+}
+
+.filter-button.clear-filter:hover {
+  background: #e53935;
+  border-color: #e53935;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
 .legend {
@@ -111,6 +156,26 @@
   max-width: 350px;
   color: #1a1d23;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  transition: all 0.3s ease;
+}
+
+/* Scoring Play Animation */
+.info-window.scoring-play {
+  animation: score-pulse 5s ease-in-out;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  border-radius: 8px;
+}
+
+@keyframes score-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+  }
 }
 
 /* Style Google Maps InfoWindow header container */
@@ -181,6 +246,57 @@
   font-size: 0.8rem;
   font-weight: 500;
   line-height: 1.2;
+}
+
+/* Live Score Display in InfoWindow */
+.map-score-display {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.map-score-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.map-score-line .map-team-abbr {
+  font-weight: 600;
+  color: #1a1d23;
+}
+
+.map-score-line .map-score {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1a1d23;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Game Status in InfoWindow */
+.map-game-status {
+  margin: 8px 0 6px 0;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #F44336 0%, #E53935 100%);
+  border-radius: 4px;
+  text-align: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.map-game-status.map-final-status {
+  background: linear-gradient(135deg, #4CAF50 0%, #43A047 100%);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  animation: none;
 }
 
 .game-status {

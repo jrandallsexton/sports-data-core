@@ -21,6 +21,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public DateTime PublishedAt { get; set; }
 
+        public Guid? SeasonWeekId { get; set; }
+
+        public int? SeasonYear { get; set; }
+
+        public int? SeasonWeekNumber { get; set; }
+
         public Guid AuthorId { get; set; }
 
         public User Author { get; set; } = default!;

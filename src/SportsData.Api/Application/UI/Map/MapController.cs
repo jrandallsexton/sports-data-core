@@ -19,9 +19,18 @@ namespace SportsData.Api.Application.UI.Map
 
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<Matchup>> GetMatchups()
+        public async Task<ActionResult<Matchup>> GetMatchups(
+            [FromQuery] Guid? leagueId,
+            [FromQuery] int? weekNumber)
         {
-            var result = await _mapService.GetMatchupsForCurrentWeek();
+            var query = new GetMapMatchupsQuery
+            {
+                LeagueId = leagueId,
+                WeekNumber = weekNumber
+            };
+
+            var result = await _mapService.GetMatchups(query);
+
             return Ok(result);
         }
     }

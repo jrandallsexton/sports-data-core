@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.YouTube.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests.Overview;
@@ -87,6 +88,29 @@ namespace SportsData.Producer.Application.Contests
         {
             var correlationId = Guid.NewGuid();
             _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, CancellationToken.None));
+            return Ok(new { Message = correlationId });
+        }
+
+        [HttpPost("/seasonYear/{seasonYear}/week/{seasonWeekNumber}/replay")]
+        public async Task<IActionResult> ReplaySeasonWeekContests([FromRoute] int seasonYear, [FromRoute] int seasonWeekNumber)
+        {
+            var seasonWeekId = await _dataContext.SeasonWeeks
+                .Include(sw => sw.Season)
+                .Where(sw => sw.Season!.Year == seasonYear && sw.Number == seasonWeekNumber)
+                .Select(sw => sw.Id)
+                .FirstOrDefaultAsync();
+
+            var contestIds = await _dataContext.Contests
+                .Where(c => c.SeasonYear == seasonYear && c.SeasonWeekId == seasonWeekId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var correlationId = Guid.NewGuid();
+            foreach (var contestId in contestIds)
+            {
+                _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
+            }
+
             return Ok(new { Message = correlationId });
         }
 

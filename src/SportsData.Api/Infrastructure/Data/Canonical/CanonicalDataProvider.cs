@@ -235,6 +235,26 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
+        public async Task<List<Matchup>> GetMatchupsForSeasonWeek(int seasonYear, int seasonWeekNumber)
+        {
+            var sql = _queryProvider.GetMatchupsForSeasonWeek();
+
+            try
+            {
+                var results = await _connection.QueryAsync<Matchup>(
+                    sql,
+                    new { SeasonYear = seasonYear, SeasonWeekNumber = seasonWeekNumber });
+
+                return results.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch current week matchups");
+
+                throw;
+            }
+        }
+
         public async Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds)
         {
             _logger.LogInformation(

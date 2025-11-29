@@ -24,6 +24,8 @@ public interface IProvideCanonicalData
 
     Task<List<Matchup>> GetMatchupsForCurrentWeek();
 
+    Task<List<Matchup>> GetMatchupsForSeasonWeek(int seasonYear, int seasonWeekNumber);
+
     Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds);
 
     Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);

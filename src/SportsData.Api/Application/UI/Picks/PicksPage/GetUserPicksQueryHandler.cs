@@ -48,7 +48,8 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
                     IsCorrect = p.IsCorrect,
                     PickType = p.PickType,
                     TiebreakerGuessTotal = p.TiebreakerGuessTotal,
-                    PointsAwarded = p.PointsAwarded
+                    PointsAwarded = p.PointsAwarded,
+                    IsSynthetic = p.User.IsSynthetic
                 })
                 .ToListAsync(cancellationToken);
         }

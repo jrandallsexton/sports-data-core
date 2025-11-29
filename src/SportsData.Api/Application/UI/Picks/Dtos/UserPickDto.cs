@@ -8,6 +8,8 @@ public record UserPickDto
 
     public Guid Id { get; init; }
 
+    public bool IsSynthetic { get; set; }
+
     public Guid ContestId { get; init; }
 
     public Guid FranchiseId { get; init; }

@@ -9,7 +9,7 @@ function LeagueWeekOverviewTable({ overview }) {
 
   // Get unique users
   const users = Array.from(
-    new Map(userPicks.map(p => [p.userId, { userId: p.userId, user: p.user }])).values()
+    new Map(userPicks.map(p => [p.userId, { userId: p.userId, user: p.user, isSynthetic: p.isSynthetic }])).values()
   );
 
   // Build a lookup: { [userId]: { [contestId]: pick } }
@@ -26,7 +26,7 @@ function LeagueWeekOverviewTable({ overview }) {
           <th>Game</th>
           {users.map(user => (
             <th key={user.userId}>
-              {user.user === "StatBot" && (
+              {(user.user === "StatBot" || user.isSynthetic) && (
                 <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
               )}
               {user.user}

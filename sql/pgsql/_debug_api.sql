@@ -74,8 +74,13 @@ order by "StartDateUtc" desc
 -- in Producer, execute "ContestUpdateJob"
 -- in API, execute "MatchupScheduler"
 
-select * from public."User" -- ngovRAr5E8cjMVaZNvcqN1nPFPJ2
+select * from public."User" order by "DisplayName"
+-- update public."User" set "DisplayName" = 'NervousBot', "IsSynthetic" = true, "SyntheticPickStyle" = 'Conservative' where "Id" = 'fab4d468-5899-4324-b0fd-7d2a01d76504'
+-- update public."User" set "DisplayName" = 'MehBot', "IsSynthetic" = true, "SyntheticPickStyle" = 'Moderate' where "Id" = '7f9c6a8e-8b93-4623-a0f0-2741df86b679'
+-- update public."User" set "DisplayName" = 'GambleBot', "IsSynthetic" = true, "SyntheticPickStyle" = 'Aggressive' where "Id" = '82942ecd-7b8d-420f-a13c-7e90d0ecd048'
 select * from public."Article"
+
+
 --delete from public."Article"
 select * from public."ArticleFranchiseSeason"
 select * from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd'

@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
@@ -11,8 +12,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
 using System.Text.Json.Serialization;
-
-using Twilio.Annotations;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -40,21 +39,25 @@ namespace SportsData.Api.Application.Admin
         private readonly ILogger<AdminService> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideCanonicalData _canonicalData;
-        private readonly ILeagueService _leagueService;
         private readonly IProvideCanonicalAdminData _canonicalAdminData;
+        private readonly ISyntheticPickService _syntheticPickService;
+        private readonly ILeagueService _leagueService;
 
         public AdminService(
             ILogger<AdminService> logger,
             AppDataContext dataContext,
             IProvideCanonicalData canonicalData,
-            ILeagueService leagueService,
-            IProvideCanonicalAdminData canonicalAdminData)
+            IProvideCanonicalAdminData canonicalAdminData,
+            ISyntheticPickService syntheticPickService,
+            ILeagueService leagueService
+            )
         {
             _logger = logger;
             _dataContext = dataContext;
             _canonicalData = canonicalData;
-            _leagueService = leagueService;
             _canonicalAdminData = canonicalAdminData;
+            _syntheticPickService = syntheticPickService;
+            _leagueService = leagueService;
         }
 
         public async Task RefreshAiExistence(Guid correlationId)
@@ -198,66 +201,22 @@ namespace SportsData.Api.Application.Admin
                 }
             }
 
-            var metricBotId = Guid.Parse("b210d677-19c3-4f26-ac4b-b2cc7ad58c44");
+            var metricBots = await _dataContext.Users
+                .AsNoTracking()
+                .Where(u => u.IsSynthetic == true && u.SyntheticPickStyle != null)
+                .ToListAsync();
 
-            // Create picks for MetricBot
-            foreach (var group in allGroups)
+            foreach (var metricBot in metricBots)
             {
-                // get the matchups for the group
-                var groupMatchupsResult = await _leagueService
-                    .GetMatchupsForLeagueWeekAsync(statbotId, group.Id, currentWeek.WeekNumber, CancellationToken.None);
-
-                if (!groupMatchupsResult.IsSuccess)
+                // Create picks for MetricBot
+                foreach (var group in allGroups)
                 {
-                    _logger.LogWarning("Could not get matchups for group {GroupId}", group.Id);
-                    continue;
-                }
-
-                var groupMatchups = groupMatchupsResult.Value;
-
-                // iterate each group matchup
-                foreach (var matchup in groupMatchups.Matchups)
-                {
-                    // get the synthetic's pick
-                    var synPick = await _dataContext.UserPicks
-                        .Where(x => x.ContestId == matchup.ContestId &&
-                                    x.PickemGroupId == group.Id &&
-                                    x.UserId == metricBotId)
-                        .FirstOrDefaultAsync();
-
-                    // do we already have one?
-                    if (synPick is not null)
-                        continue;
-
-                    // get the previously-generated ContestPrediction
-                    var prediction = await _dataContext.ContestPredictions
-                        .AsNoTracking()
-                        .Where(x => x.ContestId == matchup.ContestId &&
-                                    x.PredictionType == group.PickType)
-                        .OrderByDescending(x => x.CreatedUtc)
-                        .FirstOrDefaultAsync();
-
-                    // no preview? skip it
-                    if (prediction is null)
-                        continue;
-
-                    // generate the synthetic's pick from the ContestPrediction
-                    synPick = new PickemGroupUserPick()
-                    {
-                        UserId = metricBotId,
-                        ContestId = matchup.ContestId,
-                        CreatedUtc = prediction.CreatedUtc,
-                        CreatedBy = metricBotId,
-                        FranchiseId = prediction.WinnerFranchiseSeasonId,
-                        PickemGroupId = group.Id,
-                        PickType = prediction.PredictionType == PickType.StraightUp ?
-                            UserPickType.StraightUp : UserPickType.AgainstTheSpread,
-                        Week = currentWeek.WeekNumber,
-                        TiebreakerType = TiebreakerType.TotalPoints
-                    };
-
-                    await _dataContext.UserPicks.AddAsync(synPick);
-                    await _dataContext.SaveChangesAsync();
+                    await _syntheticPickService.GenerateMetricBasedPicksForSynthetic(
+                        group.Id,
+                        group.PickType,
+                        metricBot.Id,
+                        metricBot.SyntheticPickStyle!,
+                        currentWeek.WeekNumber);
                 }
             }
 

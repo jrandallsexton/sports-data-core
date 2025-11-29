@@ -514,6 +514,7 @@ namespace SportsData.Api.Application.UI.Leagues
             var league = await _dbContext.PickemGroups
                 .AsNoTracking()
                 .Include(x => x.Members)
+                .ThenInclude(m => m.User)
                 .FirstOrDefaultAsync(g => g.Id == leagueId);
 
             if (league is null)
@@ -583,7 +584,7 @@ namespace SportsData.Api.Application.UI.Leagues
                     LeagueWinnerFranchiseSeasonId = x.SpreadWinnerFranchiseSeasonId ?? x.WinnerFranchiseSeasonId
                 }).ToList();
 
-            foreach (var member in league.Members.OrderBy(x => x.UserId))
+            foreach (var member in league.Members.OrderBy(x => x.User.DisplayName))
             {
                 var userPicksResult = await _pickService
                     .GetUserPicksByGroupAndWeek(member.UserId, leagueId, week, CancellationToken.None);

@@ -11,9 +11,11 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 using SportsData.Api.Application.Auth;
+using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Events;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
+using SportsData.Api.Config;
 using SportsData.Api.DependencyInjection;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
@@ -110,6 +112,7 @@ namespace SportsData.Api
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
+            services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
             
             FirebaseApp.Create(new AppOptions
             {

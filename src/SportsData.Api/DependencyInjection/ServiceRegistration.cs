@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 
 using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Contests;
 using SportsData.Api.Application.Jobs;
@@ -23,6 +24,7 @@ using SportsData.Api.Application.UI.Rankings;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.User;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
@@ -75,6 +77,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IAiService, AiService>();
+
+            // Synthetic pick services
+            services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
+            services.AddScoped<ISyntheticPickService, SyntheticPickService>();
 
             services.AddScoped<IContestService, ContestService>();
             services.AddScoped<IRankingsService, RankingsService>();

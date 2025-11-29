@@ -2,11 +2,18 @@ namespace SportsData.Api.Config;
 
 /// <summary>
 /// Configuration for synthetic user pick styles loaded from Azure App Configuration.
-/// Key: SportsData.Api:SyntheticUserPickStyles
+/// Key: SportsData.Api:syntheticUserPickStyles
+/// Binds directly to the nested dictionary in the JSON:
+/// {
+///   "syntheticUserPickStyles": {
+///     "moderate": { "name": "Moderate", "description": "...", "thresholds": [...] },
+///     "conservative": { ... },
+///     "aggressive": { ... }
+///   }
+/// }
 /// </summary>
-public class SyntheticUserPickStylesConfig
+public class SyntheticUserPickStylesConfig : Dictionary<string, SyntheticUserPickStyle>
 {
-    public Dictionary<string, SyntheticUserPickStyle> SyntheticUserPickStyles { get; set; } = new();
 }
 
 public class SyntheticUserPickStyle

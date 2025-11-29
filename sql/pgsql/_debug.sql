@@ -150,16 +150,16 @@ select * from public."FranchiseSeasonMetric"
 select * from public."GroupSeason" order by "Name"
 --delete from public."CompetitionMetric"
 
-SELECT 
-    column_name,
-    data_type,
-    is_nullable
-FROM 
-    information_schema.columns
-WHERE 
-    table_name = 'FranchiseSeasonMetric'
-ORDER BY 
-    ordinal_position;
+-- SELECT 
+--     column_name,
+--     data_type,
+--     is_nullable
+-- FROM 
+--     information_schema.columns
+-- WHERE 
+--     table_name = 'FranchiseSeasonMetric'
+-- ORDER BY 
+--     ordinal_position;
 
 SELECT json_agg(row_to_json(cm))
 FROM (

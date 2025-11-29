@@ -7,6 +7,9 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
+  .news-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 /* Consistent underline for all widget headers */
 .card h2 {

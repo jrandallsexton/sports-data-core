@@ -77,7 +77,8 @@ function NewsWidget() {
           gap: "16px",
           listStyle: "none", 
           padding: 0 
-        }}>
+        }}
+        className="news-grid">
           {articles.map((article) => (
             <div key={article.contestId} style={{ marginBottom: "12px" }}>
               <button
@@ -174,15 +175,15 @@ function NewsWidget() {
               ×
             </button>
             <h2 style={{ color: "#ffc107", marginTop: 0 }}>{selectedArticle.title}</h2>
-            {selectedArticle.url && (
+            {selectedArticle.contestId && (
               <p>
                 <a
-                  href={selectedArticle.url}
+                  href={`/app/sport/football/ncaa/contest/${selectedArticle.contestId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "#ffc107" }}
                 >
-                  View Original Article
+                  Game Overview
                 </a>
               </p>
             )}

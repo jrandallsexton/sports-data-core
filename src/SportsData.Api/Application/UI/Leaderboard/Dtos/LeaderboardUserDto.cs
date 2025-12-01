@@ -10,6 +10,8 @@
 
         public string Name { get; set; } = "";   // Display name
 
+        public bool IsSynthetic { get; set; }
+
         public int TotalPicks { get; set; } // Total number of picks made
 
         public int TotalCorrect { get; set; }

@@ -72,13 +72,14 @@ namespace SportsData.Api.Application.UI.Leaderboard
                 var leaderboard = await _dataContext.UserPicks
                     .Include(p => p.Group)
                     .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null && p.ScoredAt != null)
-                    .GroupBy(p => new { p.UserId, p.User.DisplayName })
+                    .GroupBy(p => new { p.UserId, p.User.DisplayName, p.User.IsSynthetic })
                     .Select(g => new
                     {
                         LeagueId = groupId,
                         LeagueName = g.First().Group.Name,
                         g.Key.UserId,
                         g.Key.DisplayName,
+                        g.Key.IsSynthetic,
                         TotalPoints = g.Sum(p => p.PointsAwarded ?? 0),
                         CurrentWeekPoints = g
                             .Where(p => p.Week == currentWeek)
@@ -110,6 +111,7 @@ namespace SportsData.Api.Application.UI.Leaderboard
                         LeagueName = x.LeagueName,
                         UserId = x.UserId,
                         Name = x.DisplayName,
+                        IsSynthetic = x.IsSynthetic,
                         TotalPoints = x.TotalPoints,
                         CurrentWeekPoints = x.CurrentWeekPoints,
                         WeeklyAverage = x.WeeksPlayed > 0

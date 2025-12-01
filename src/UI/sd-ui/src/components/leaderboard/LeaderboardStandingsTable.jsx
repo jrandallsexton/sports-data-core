@@ -98,7 +98,7 @@ function LeaderboardStandingsTable({ leaderboard, sortBy, sortOrder, handleSort,
               </td>
 
               <td>
-                {user.name === "StatBot" && (
+                {(user.name === "StatBot" || user.isSynthetic) && (
                   <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
                 )}
                 {user.name}{" "}

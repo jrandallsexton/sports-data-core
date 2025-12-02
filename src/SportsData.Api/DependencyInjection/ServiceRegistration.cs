@@ -103,11 +103,6 @@ namespace SportsData.Api.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
-            recurringJobManager.RemoveIfExists(nameof(ContestRecapJob));
-            recurringJobManager.RemoveIfExists(nameof(ContestScoringJob));
-            recurringJobManager.RemoveIfExists(nameof(MatchupPreviewGenerator));
-            recurringJobManager.RemoveIfExists(nameof(MatchupScheduler));
-
             recurringJobManager.AddOrUpdate<ContestRecapJob>(
                 nameof(ContestRecapJob),
                 job => job.ExecuteAsync(),

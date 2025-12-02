@@ -13,5 +13,25 @@
         "DebugTarget": "http.FootballNcaa"
       }
     ]
+  },
+  {
+    "Name": "Everything",
+    "Projects": [
+      {
+        "Path": "src\\SportsData.Provider\\SportsData.Provider.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.FootballNcaa"
+      },
+      {
+        "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.FootballNcaa"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
   }
 ]

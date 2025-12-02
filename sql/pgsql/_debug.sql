@@ -99,6 +99,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '59960665-7a2d-5c6e-d260-563132d4005b'
+select * from public."Contest" where "SeasonWeekId" = 'a58395b9-aa0d-e643-39e8-3d17f0238cfb'
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."Competition" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."CompetitionStatus" where "CompetitionId" = 'ec7d6034-05db-88d7-9ab1-9f657a2b5955'

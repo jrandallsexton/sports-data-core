@@ -103,13 +103,13 @@ namespace SportsData.Api.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
-            recurringJobManager.AddOrUpdate<MatchupScheduler>(
-                nameof(MatchupScheduler),
-                job => job.ExecuteAsync(),
-                Cron.Weekly);
+            recurringJobManager.RemoveIfExists(nameof(ContestRecapJob));
+            recurringJobManager.RemoveIfExists(nameof(ContestScoringJob));
+            recurringJobManager.RemoveIfExists(nameof(MatchupPreviewGenerator));
+            recurringJobManager.RemoveIfExists(nameof(MatchupScheduler));
 
-            recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
-                nameof(MatchupPreviewGenerator),
+            recurringJobManager.AddOrUpdate<ContestRecapJob>(
+                nameof(ContestRecapJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
@@ -118,8 +118,13 @@ namespace SportsData.Api.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
-            recurringJobManager.AddOrUpdate<ContestRecapJob>(
-                nameof(ContestRecapJob),
+            recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
+                nameof(MatchupPreviewGenerator),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<MatchupScheduler>(
+                nameof(MatchupScheduler),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 

@@ -110,13 +110,15 @@ namespace SportsData.Producer.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
+            recurringJobManager.RemoveIfExists(nameof(ContestEnrichmentJob));
+            recurringJobManager.RemoveIfExists(nameof(ContestUpdateJob));
+            recurringJobManager.RemoveIfExists(nameof(FootballCompetitionMetricsAuditJob));
+            recurringJobManager.RemoveIfExists(nameof(FootballCompetitionStreamScheduler));
+            recurringJobManager.RemoveIfExists(nameof(FranchiseSeasonEnrichmentJob));
+            recurringJobManager.RemoveIfExists(nameof(VenueGeoCodeJob));
+
             recurringJobManager.AddOrUpdate<ContestEnrichmentJob>(
                 nameof(ContestEnrichmentJob),
-                job => job.ExecuteAsync(),
-                Cron.Weekly);
-
-            recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(
-                nameof(FranchiseSeasonEnrichmentJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
@@ -125,18 +127,23 @@ namespace SportsData.Producer.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Daily);
 
+            recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
+                nameof(FootballCompetitionMetricsAuditJob),
+                job => job.ExecuteAsync(),
+                "0 7 * * 0"); // Sunday at 07:00 UTC
+
             recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
                 nameof(FootballCompetitionStreamScheduler),
                 job => job.Execute(),
                 "0 7 * * 0"); // Sunday at 07:00 UTC
 
+            recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(
+                nameof(FranchiseSeasonEnrichmentJob),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
             recurringJobManager.AddOrUpdate<VenueGeoCodeJob>(
                 nameof(VenueGeoCodeJob),
-                job => job.ExecuteAsync(),
-                "0 7 * * 0"); // Sunday at 07:00 UTC
-
-            recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
-                nameof(FootballCompetitionMetricsAuditJob),
                 job => job.ExecuteAsync(),
                 "0 7 * * 0"); // Sunday at 07:00 UTC
 

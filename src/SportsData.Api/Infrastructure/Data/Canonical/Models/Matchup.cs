@@ -41,6 +41,8 @@
 
         public string? AwayConferenceSlug { get; set; }
 
+        public string? AwayGroupSeasonMap { get; set; }
+
         // Home Team Info
 
         public required string HomeSlug { get; set; }
@@ -60,6 +62,8 @@
         public int HomeConferenceLosses { get; set; }
 
         public string? HomeConferenceSlug { get; set; }
+
+        public string? HomeGroupSeasonMap { get; set; }
 
         public string? Spread { get; set; }
 

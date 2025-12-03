@@ -9,5 +9,7 @@
         public int WeekNumber { get; set; }
 
         public int SeasonYear { get; set; }
+
+        public bool IsNonStandardWeek { get; set; }
     }
 }

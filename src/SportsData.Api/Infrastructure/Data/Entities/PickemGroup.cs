@@ -19,6 +19,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public TeamRankingFilter? RankingFilter { get; set; }
 
+        /// <summary>
+        /// For non-standard week groups (e.g. NCAAFB conference championship week), this field contains the season map filter string
+        /// </summary>
+        public string? NonStandardWeekGroupSeasonMapFilter { get; set; }
+
         public PickType PickType { get; set; } = PickType.StraightUp;
 
         public TiebreakerType TiebreakerType { get; set; } = TiebreakerType.None;
@@ -55,7 +60,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.HasIndex(x => x.CommissionerUserId);
 
+                builder.Property(x => x.Description).HasMaxLength(100);
+
                 builder.Property(x => x.Name).HasMaxLength(100);
+
+                builder.Property(x => x.NonStandardWeekGroupSeasonMapFilter).HasMaxLength(100);
 
                 builder.Property(l => l.PickType)
                     .HasConversion<int>() // Store bitflag as int

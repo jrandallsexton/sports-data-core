@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Scoring
+namespace SportsData.Api.Application.Jobs
 {
     public class ContestScoringJob : IAmARecurringJob
     {

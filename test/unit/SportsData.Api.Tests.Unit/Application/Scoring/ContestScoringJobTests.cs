@@ -2,6 +2,7 @@
 
 using Moq;
 
+using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;

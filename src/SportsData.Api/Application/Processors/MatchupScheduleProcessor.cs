@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
@@ -58,7 +59,8 @@ namespace SportsData.Api.Application.Processors
                     SeasonWeek = command.SeasonWeek,
                     SeasonWeekId = command.SeasonWeekId,
                     SeasonYear = command.SeasonYear,
-                    GroupId = command.GroupId
+                    GroupId = command.GroupId,
+                    IsNonStandardWeek = command.IsNonStandardWeek
                 };
                 await _dataContext.PickemGroupWeeks.AddAsync(groupWeek);
                 await _dataContext.SaveChangesAsync();
@@ -82,13 +84,37 @@ namespace SportsData.Api.Application.Processors
 
             var allMatchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
 
-            var groupMatchups = allMatchups
-                .Where(x =>
-                    (x.AwayRank.HasValue && x.AwayRank <= topX) ||
-                    (x.HomeRank.HasValue && x.HomeRank <= topX) ||
-                    (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
-                    (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug))
-                );
+            IEnumerable<Matchup>? groupMatchups;
+
+            if (groupWeek.IsNonStandardWeek && !string.IsNullOrEmpty(group.NonStandardWeekGroupSeasonMapFilter))
+            {
+                var groupFilters = group.NonStandardWeekGroupSeasonMapFilter
+                    .Split('|', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(f => f.Trim())
+                    .ToArray();
+                
+                // this could be ["fbs"] or ["fbs", "foo", "bar"], etc.
+                // AwayGroupSeasonMap and HomeGroupSeasonMap look like this: "NCAAF|yy|d3" or "NCAAF|NCAA|fbs|American" (not exclusive examples)
+                groupMatchups = allMatchups
+                    .Where(x =>
+                        (x.AwayRank.HasValue && x.AwayRank <= topX) ||
+                        (x.HomeRank.HasValue && x.HomeRank <= topX) ||
+                        (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
+                        (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug)) ||
+                        (x.AwayGroupSeasonMap != null && groupFilters.Any(filter => x.AwayGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase))) ||
+                        (x.HomeGroupSeasonMap != null && groupFilters.Any(filter => x.HomeGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    );
+            }
+            else
+            {
+                groupMatchups = allMatchups
+                    .Where(x =>
+                        (x.AwayRank.HasValue && x.AwayRank <= topX) ||
+                        (x.HomeRank.HasValue && x.HomeRank <= topX) ||
+                        (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
+                        (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug))
+                    );
+            }
 
             foreach (var groupMatchup in groupMatchups)
             {
@@ -134,7 +160,6 @@ namespace SportsData.Api.Application.Processors
                 CancellationToken.None);
 
             await _dataContext.SaveChangesAsync();
-
         }
     }
 }

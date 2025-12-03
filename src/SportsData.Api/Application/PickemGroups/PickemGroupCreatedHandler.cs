@@ -89,6 +89,7 @@ namespace SportsData.Api.Application.PickemGroups
                     currentWeek.Id,
                     currentWeek.SeasonYear,
                     currentWeek.WeekNumber,
+                    currentWeek.IsNonStandardWeek,
                     @event.CorrelationId);
 
                 // kick off a process to create the PickemGroupWeek and matchups for the current week

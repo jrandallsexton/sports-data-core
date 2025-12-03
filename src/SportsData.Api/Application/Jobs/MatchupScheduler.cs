@@ -70,6 +70,7 @@ namespace SportsData.Api.Application.Jobs
                         currentWeek.Id,
                         currentWeek.SeasonYear,
                         currentWeek.WeekNumber,
+                        currentWeek.IsNonStandardWeek,
                         Guid.NewGuid());
                     _backgroundJobProvider.Enqueue<IScheduleGroupWeekMatchups>(p => p.Process(cmd));
                 }
@@ -83,4 +84,5 @@ public record ScheduleGroupWeekMatchupsCommand(
     Guid SeasonWeekId,
     int SeasonYear,
     int SeasonWeek,
+    bool IsNonStandardWeek,
     Guid CorrelationId);

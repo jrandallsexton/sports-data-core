@@ -23,6 +23,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime EndDate { get; set; }
 
+        public bool IsNonStandardWeek { get; set; }
+
         public ICollection<SeasonPollWeek> Rankings { get; set; } = [];
 
         public ICollection<SeasonWeekExternalId> ExternalIds { get; set; } = [];
@@ -33,7 +35,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<SeasonWeek> builder)
             {
-                builder.ToTable("SeasonWeek");
+                builder.ToTable(nameof(SeasonWeek));
 
                 builder.HasKey(x => x.Id);
 
@@ -44,6 +46,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .IsRequired();
 
                 builder.Property(x => x.EndDate)
+                    .IsRequired();
+
+                builder.Property(x => x.IsNonStandardWeek)
                     .IsRequired();
 
                 builder.HasOne(x => x.Season)

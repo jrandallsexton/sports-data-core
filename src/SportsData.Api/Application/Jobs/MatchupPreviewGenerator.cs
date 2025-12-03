@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Previews
+namespace SportsData.Api.Application.Jobs
 {
     public class MatchupPreviewGenerator
     {

@@ -70,6 +70,9 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
+--update public."SeasonWeek" set "IsNonStandardWeek" = false
+-- update public."SeasonWeek" set "IsNonStandardWeek" = true
+-- where "Number" > 14 or "SeasonPhaseId" != '467c9ac2-97ab-f5e3-6fa0-41b2eeca638b'
 
 select con."Id", con."Name" from public."Contest" con
 inner join public."Competition" comp on comp."ContestId" = con."Id"

@@ -16,6 +16,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public required Guid SeasonWeekId { get; set; }
 
+        public bool IsNonStandardWeek { get; set; }
+
         public bool AreMatchupsGenerated { get; set; }
 
         public ICollection<PickemGroupMatchup> Matchups { get; set; } = [];
@@ -31,6 +33,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.SeasonYear).IsRequired();
                 builder.Property(x => x.SeasonWeek).IsRequired();
                 builder.Property(x => x.SeasonWeekId).IsRequired();
+                builder.Property(x => x.IsNonStandardWeek).IsRequired();
 
                 builder.Property(x => x.AreMatchupsGenerated).IsRequired();
 

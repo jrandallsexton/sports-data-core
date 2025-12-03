@@ -169,7 +169,9 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
-                CausationId.Provider.ResourceIndexItemProcessor);
+                CausationId.Provider.ResourceIndexItemProcessor,
+                0,
+                command.IncludeLinkedDocumentTypes);
 
             await _publisher.Publish(evt);
 
@@ -217,7 +219,9 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
-                CausationId.Provider.ResourceIndexItemProcessor);
+                CausationId.Provider.ResourceIndexItemProcessor,
+                0,
+                command.IncludeLinkedDocumentTypes);
 
             await _publisher.Publish(evt);
             _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
@@ -235,5 +239,6 @@ namespace SportsData.Provider.Application.Processors
         DocumentType DocumentType,
         string? ParentId,
         int? SeasonYear = null,
-        bool BypassCache = false);
+        bool BypassCache = false,
+        IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null);
 }

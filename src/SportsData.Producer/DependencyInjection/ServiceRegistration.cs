@@ -110,13 +110,6 @@ namespace SportsData.Producer.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
-            recurringJobManager.RemoveIfExists(nameof(ContestEnrichmentJob));
-            recurringJobManager.RemoveIfExists(nameof(ContestUpdateJob));
-            recurringJobManager.RemoveIfExists(nameof(FootballCompetitionMetricsAuditJob));
-            recurringJobManager.RemoveIfExists(nameof(FootballCompetitionStreamScheduler));
-            recurringJobManager.RemoveIfExists(nameof(FranchiseSeasonEnrichmentJob));
-            recurringJobManager.RemoveIfExists(nameof(VenueGeoCodeJob));
-
             recurringJobManager.AddOrUpdate<ContestEnrichmentJob>(
                 nameof(ContestEnrichmentJob),
                 job => job.ExecuteAsync(),

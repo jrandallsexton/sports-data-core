@@ -30,7 +30,9 @@ namespace SportsData.Provider.Application.ResourceIndex
         }
 
         [HttpPost("{id}/process")]
-        public async Task<IActionResult> ProcessResourceIndex([FromRoute] string id)
+        public async Task<IActionResult> ProcessResourceIndex(
+            [FromRoute] string id, 
+            [FromBody] ProcessResourceIndexRequest? request = null)
         {
             var indexId = Guid.Parse(id);
             var resourceIndex = await _dataContext.ResourceIndexJobs
@@ -48,7 +50,19 @@ namespace SportsData.Provider.Application.ResourceIndex
 
             await _dataContext.SaveChangesAsync();
 
-            var jobDef = new DocumentJobDefinition(resourceIndex);
+            var jobDef = new DocumentJobDefinition(resourceIndex)
+            {
+                IncludeLinkedDocumentTypes = request?.IncludeLinkedDocumentTypes
+            };
+
+            if (request?.IncludeLinkedDocumentTypes?.Count > 0)
+            {
+                _logger.LogInformation(
+                    "Processing ResourceIndex {Id} with inclusion filter: {DocumentTypes}",
+                    indexId,
+                    string.Join(", ", request.IncludeLinkedDocumentTypes));
+            }
+
             var result = _backgroundJobProvider.Enqueue<ResourceIndexJob>(x => x.ExecuteAsync(jobDef));
 
             return Accepted(result);
@@ -112,4 +126,13 @@ namespace SportsData.Provider.Application.ResourceIndex
         public int? Ordinal { get; set; }
     }
 
+    public record ProcessResourceIndexRequest
+    {
+        /// <summary>
+        /// Inclusion-only semantics: if this is provided and non-empty,
+        /// downstream processors should only spawn linked documents that are in this list.
+        /// If null or empty, all linked documents are processed (default behavior).
+        /// </summary>
+        public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; }
+    }
 }

@@ -2,6 +2,7 @@
 using SportsData.Core.Common.Hashing;
 
 using System;
+using System.Collections.Generic;
 
 namespace SportsData.Core.Eventing.Events.Documents
 {
@@ -19,6 +20,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         SourceDataProvider SourceDataProvider,
         Guid CorrelationId,
         Guid CausationId,
-        int AttemptCount = 0
+        int AttemptCount = 0,
+        IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null
     ) : EventBase(CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
 }

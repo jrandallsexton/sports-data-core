@@ -32,7 +32,8 @@ SELECT
   fsAway."Losses"           as "AwayLosses",
   fsAway."ConferenceWins"   as "AwayConferenceWins",
   fsAway."ConferenceLosses" as "AwayConferenceLosses",
-  gsAway."Slug"             as "AwayConferenceSlug",  
+  gsAway."Slug"             as "AwayConferenceSlug",
+  fsAway."GroupSeasonMap"   as "AwayGroupSeasonMap",
 
   fHome."Slug"              as "HomeSlug",
   fHome."ColorCodeHex"      as "HomeColor",
@@ -43,6 +44,7 @@ SELECT
   fsHome."ConferenceWins"   as "HomeConferenceWins",
   fsHome."ConferenceLosses" as "HomeConferenceLosses",
   gsHome."Slug"             as "HomeConferenceSlug",
+  fsHome."GroupSeasonMap"   as "HomeGroupSeasonMap",
 
   co."Details"        as "Spread",
   (co."Spread" * -1)  as "AwaySpread",

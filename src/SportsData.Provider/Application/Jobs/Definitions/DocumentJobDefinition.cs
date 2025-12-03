@@ -51,5 +51,13 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         public int? SeasonYear { get; init; }
 
         public int? StartPage { get; set; }
+
+        /// <summary>
+        /// Optional inclusion-only list of linked document types that downstream processors
+        /// should honor when deciding which linked documents to spawn.
+        /// If null or empty, all linked documents are processed (default behavior).
+        /// If provided and non-empty, only linked documents of types in this collection will be spawned.
+        /// </summary>
+        public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; set; }
     }
 }

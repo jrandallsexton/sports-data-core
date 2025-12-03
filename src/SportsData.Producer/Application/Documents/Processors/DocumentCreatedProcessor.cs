@@ -74,7 +74,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.Ref,
                 evt.SourceUrlHash,
                 evt.SourceRef,
-                evt.AttemptCount));
+                evt.AttemptCount,
+                evt.IncludeLinkedDocumentTypes));
         }
     }
 }

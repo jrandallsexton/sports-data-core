@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentAssertions;
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -66,13 +67,13 @@ public class SeasonTypeDocumentProcessorTests
             .Include(s => s.Phases)
             .FirstAsync();
 
-        Assert.Single(season.Phases);
+        season.Phases.Should().ContainSingle();
 
         var phase = season.Phases.First();
-        Assert.Equal("Preseason", phase.Name);
-        Assert.Equal("pre", phase.Abbreviation);
-        Assert.Equal(1, phase.TypeCode);
-        Assert.Equal(SourceDataProvider.Espn, phase.ExternalIds.First().Provider);
+        phase.Name.Should().Be("Preseason");
+        phase.Abbreviation.Should().Be("pre");
+        phase.TypeCode.Should().Be(1);
+        phase.ExternalIds.First().Provider.Should().Be(SourceDataProvider.Espn);
 
         // Publish verification
         //Mocker.Get<MassTransit.IPublishEndpoint>()

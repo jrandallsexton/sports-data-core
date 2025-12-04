@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentAssertions;
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
@@ -53,11 +55,11 @@ public class SeasonDocumentProcessorTests
             .Include(s => s.ExternalIds)
             .FirstOrDefaultAsync();
 
-        Assert.NotNull(season);
-        Assert.Equal(2025, season.Year);
-        Assert.NotEmpty(season.Phases);
-        Assert.NotEmpty(season.ExternalIds);
-        Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
+        season.Should().NotBeNull();
+        season!.Year.Should().Be(2025);
+        season.Phases.Should().NotBeEmpty();
+        season.ExternalIds.Should().NotBeEmpty();
+        season.ExternalIds.Should().AllSatisfy(id => id.Provider.Should().Be(SourceDataProvider.Espn));
     }
 
     [Fact]
@@ -88,11 +90,11 @@ public class SeasonDocumentProcessorTests
             .Include(s => s.ExternalIds)
             .FirstOrDefaultAsync();
 
-        Assert.NotNull(season);
-        Assert.Equal(2024, season.Year);
-        Assert.NotEmpty(season.Phases);
-        Assert.NotEmpty(season.ExternalIds);
-        Assert.All(season.ExternalIds, id => Assert.Equal(SourceDataProvider.Espn, id.Provider));
+        season.Should().NotBeNull();
+        season!.Year.Should().Be(2024);
+        season.Phases.Should().NotBeEmpty();
+        season.ExternalIds.Should().NotBeEmpty();
+        season.ExternalIds.Should().AllSatisfy(id => id.Provider.Should().Be(SourceDataProvider.Espn));
     }
 
     [Fact]
@@ -121,8 +123,8 @@ public class SeasonDocumentProcessorTests
             .Include(s => s.ExternalIds)
             .FirstOrDefaultAsync();
 
-        Assert.NotNull(season);
-        var initialPhaseCount = season.Phases.Count;
+        season.Should().NotBeNull();
+        var initialPhaseCount = season!.Phases.Count;
         var initialExternalIdCount = season.ExternalIds.Count;
 
         // Act - re-ingest same document
@@ -134,15 +136,15 @@ public class SeasonDocumentProcessorTests
             .Include(s => s.ExternalIds)
             .FirstOrDefaultAsync();
 
-        Assert.NotNull(updatedSeason);
-        Assert.Equal(season.Id, updatedSeason.Id);
-        Assert.Equal(initialPhaseCount, updatedSeason.Phases.Count);
-        Assert.Equal(initialExternalIdCount, updatedSeason.ExternalIds.Count);
+        updatedSeason.Should().NotBeNull();
+        updatedSeason!.Id.Should().Be(season.Id);
+        updatedSeason.Phases.Should().HaveCount(initialPhaseCount);
+        updatedSeason.ExternalIds.Should().HaveCount(initialExternalIdCount);
 
         // Updated check for ActivePhaseId
         if (updatedSeason.ActivePhaseId != null)
         {
-            Assert.Contains(updatedSeason.Phases, p => p.Id == updatedSeason.ActivePhaseId);
+            updatedSeason.Phases.Should().Contain(p => p.Id == updatedSeason.ActivePhaseId);
         }
 
     }

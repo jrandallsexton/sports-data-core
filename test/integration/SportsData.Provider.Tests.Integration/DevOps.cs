@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+
+using Xunit;
 
 namespace SportsData.Provider.Tests.Integration
 {
@@ -7,7 +9,7 @@ namespace SportsData.Provider.Tests.Integration
         [Fact]
         public void DevopsTest()
         {
-            Assert.True(true);
+            true.Should().BeTrue();
         }
     }
 }

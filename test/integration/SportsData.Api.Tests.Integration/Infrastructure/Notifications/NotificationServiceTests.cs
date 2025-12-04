@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using FluentAssertions;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Tests.Shared;
@@ -27,7 +28,7 @@ namespace SportsData.Api.Tests.Integration.Infrastructure.Notifications
                 });
 
             // assert
-            Assert.NotNull(response);
+            response.Should().NotBeNull();
         }
 
         [Fact(Skip = "debugging purposes only")]
@@ -51,7 +52,7 @@ namespace SportsData.Api.Tests.Integration.Infrastructure.Notifications
             var response = await sms.SendSmsAsync("10_digit_number_here", "sms_msg_here");
 
             // assert
-            Assert.NotNull(response);
+            response.Should().NotBeNull();
         }
     }
 }

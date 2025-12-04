@@ -1,4 +1,6 @@
-﻿using AutoFixture;
+using AutoFixture;
+
+using FluentAssertions;
 
 using Moq;
 
@@ -175,9 +177,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Where(x => x.SeasonWeekId == seasonWeekId)
                 .FirstOrDefault();
 
-            Assert.NotNull(savedGroupWeek);
-            Assert.Equal(2, savedGroupWeek.Matchups.Count); // Only ranked and conference matchups
-            Assert.True(savedGroupWeek.AreMatchupsGenerated);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().HaveCount(2); // Only ranked and conference matchups
+            savedGroupWeek.AreMatchupsGenerated.Should().BeTrue();
         }
 
         /// <summary>
@@ -250,9 +252,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Where(x => x.SeasonWeekId == seasonWeekId)
                 .FirstOrDefault();
 
-            Assert.NotNull(savedGroupWeek);
-            Assert.Equal(2, savedGroupWeek.Matchups.Count); // FBS matchup + ranked FCS
-            Assert.True(savedGroupWeek.IsNonStandardWeek);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().HaveCount(2); // FBS matchup + ranked FCS
+            savedGroupWeek.IsNonStandardWeek.Should().BeTrue();
         }
 
         /// <summary>
@@ -309,8 +311,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Where(x => x.SeasonWeekId == seasonWeekId)
                 .FirstOrDefault();
 
-            Assert.NotNull(savedGroupWeek);
-            Assert.Single(savedGroupWeek.Matchups); // Should match despite case difference
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().ContainSingle(); // Should match despite case difference
         }
 
         /// <summary>
@@ -373,8 +375,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Where(x => x.SeasonWeekId == seasonWeekId)
                 .FirstOrDefault();
 
-            Assert.NotNull(savedGroupWeek);
-            Assert.Equal(2, savedGroupWeek.Matchups.Count); // Both fbs and bowl matchups
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().HaveCount(2); // Both fbs and bowl matchups
         }
 
         /// <summary>
@@ -419,10 +421,10 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var savedGroupWeek = DataContext.PickemGroupWeeks
                 .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId && x.GroupId == groupId);
 
-            Assert.NotNull(savedGroupWeek);
-            Assert.Equal(2024, savedGroupWeek.SeasonYear);
-            Assert.Equal(5, savedGroupWeek.SeasonWeek);
-            Assert.False(savedGroupWeek.IsNonStandardWeek);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.SeasonYear.Should().Be(2024);
+            savedGroupWeek.SeasonWeek.Should().Be(5);
+            savedGroupWeek.IsNonStandardWeek.Should().BeFalse();
         }
 
         /// <summary>
@@ -531,17 +533,18 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Where(x => x.SeasonWeekId == seasonWeekId)
                 .FirstOrDefault();
 
-            Assert.NotNull(savedGroupWeek);
-            var savedMatchup = Assert.Single(savedGroupWeek.Matchups);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().ContainSingle();
+            var savedMatchup = savedGroupWeek.Matchups.Single();
             
-            Assert.Equal(contestId, savedMatchup.ContestId);
-            Assert.Equal(5, savedMatchup.AwayRank);
-            Assert.Equal(10, savedMatchup.HomeRank);
-            Assert.Equal(8, savedMatchup.AwayWins);
-            Assert.Equal(2, savedMatchup.AwayLosses);
-            Assert.Equal(7, savedMatchup.HomeWins);
-            Assert.Equal(3, savedMatchup.HomeLosses);
-            Assert.Equal("-3.5", savedMatchup.Spread);
+            savedMatchup.ContestId.Should().Be(contestId);
+            savedMatchup.AwayRank.Should().Be(5);
+            savedMatchup.HomeRank.Should().Be(10);
+            savedMatchup.AwayWins.Should().Be(8);
+            savedMatchup.AwayLosses.Should().Be(2);
+            savedMatchup.HomeWins.Should().Be(7);
+            savedMatchup.HomeLosses.Should().Be(3);
+            savedMatchup.Spread.Should().Be("-3.5");
         }
     }
 }

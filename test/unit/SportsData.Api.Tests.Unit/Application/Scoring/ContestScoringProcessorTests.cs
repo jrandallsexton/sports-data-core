@@ -102,7 +102,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         var contestId = Guid.NewGuid();
 
         Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupResult(contestId))
+            .Setup(x => x.GetMatchupResult(contestId))!
             .ReturnsAsync((MatchupResult?)null);
 
         var command = new ScoreContestCommand(contestId);

@@ -22,5 +22,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SportsData.Core\SportsData.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

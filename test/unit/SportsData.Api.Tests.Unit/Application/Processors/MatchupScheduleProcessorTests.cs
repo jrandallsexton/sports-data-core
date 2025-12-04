@@ -1,7 +1,7 @@
 using AutoFixture;
 
 using FluentAssertions;
-
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application;
@@ -262,8 +262,12 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
         /// A filter value of "FBS" should match data containing "fbs" in the GroupSeasonMap field.
         /// This ensures robust matching regardless of data casing.
         /// </summary>
-        [Fact]
-        public async Task Process_NonStandardWeek_CaseInsensitiveFilter()
+        [Theory]
+        [InlineData("FBS")]
+        [InlineData("fbs")]
+        [InlineData("Fbs")]
+        [InlineData("fBs")]
+        public async Task Process_NonStandardWeek_CaseInsensitiveFilter(string filter)
         {
             // Arrange
             var groupId = Guid.NewGuid();
@@ -272,7 +276,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var group = Fixture.Build<PickemGroup>()
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => (TeamRankingFilter?)null)
-                .With(x => x.NonStandardWeekGroupSeasonMapFilter, "FBS") // Uppercase
+                .With(x => x.NonStandardWeekGroupSeasonMapFilter, filter) // Use the filter parameter
                 .With(x => x.Conferences, new List<PickemGroupConference>())
                 .Create();
 
@@ -308,8 +312,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 
             // Assert
             var savedGroupWeek = DataContext.PickemGroupWeeks
-                .Where(x => x.SeasonWeekId == seasonWeekId)
-                .FirstOrDefault();
+                .Include(pickemGroupWeek => pickemGroupWeek.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
 
             savedGroupWeek.Should().NotBeNull();
             savedGroupWeek!.Matchups.Should().ContainSingle(); // Should match despite case difference
@@ -372,8 +376,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 
             // Assert
             var savedGroupWeek = DataContext.PickemGroupWeeks
-                .Where(x => x.SeasonWeekId == seasonWeekId)
-                .FirstOrDefault();
+                .Include(pickemGroupWeek => pickemGroupWeek.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
 
             savedGroupWeek.Should().NotBeNull();
             savedGroupWeek!.Matchups.Should().HaveCount(2); // Both fbs and bowl matchups
@@ -530,8 +534,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 
             // Assert
             var savedGroupWeek = DataContext.PickemGroupWeeks
-                .Where(x => x.SeasonWeekId == seasonWeekId)
-                .FirstOrDefault();
+                .Include(pickemGroupWeek => pickemGroupWeek.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
 
             savedGroupWeek.Should().NotBeNull();
             savedGroupWeek!.Matchups.Should().ContainSingle();

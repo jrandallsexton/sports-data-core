@@ -1,4 +1,6 @@
-﻿using SportsData.Producer.Application.Slugs;
+﻿using FluentAssertions;
+
+using SportsData.Producer.Application.Slugs;
 
 using Xunit;
 
@@ -24,6 +26,6 @@ public class SlugGeneratorTests : ProducerTestBase<SlugGeneratorTests>
         var result = SlugGenerator.GenerateSlug(input);
 
         // Assert
-        Assert.Equal(expected, result);
+        result.Should().Be(expected);
     }
 }

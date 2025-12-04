@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentAssertions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Tests.Shared;
@@ -21,7 +23,7 @@ public class BlobStorageProviderTests : IntegrationTestBase<BlobStorageProviderT
     {
         var result = await _blobStorageProvider.GetFileContentsAsync("prompts", "prediction-insights-v1.txt");
 
-        Assert.False(string.IsNullOrWhiteSpace(result));
-        Assert.Contains("plausible", result);
+        result.Should().NotBeNullOrWhiteSpace();
+        result.Should().Contain("plausible");
     }
 }

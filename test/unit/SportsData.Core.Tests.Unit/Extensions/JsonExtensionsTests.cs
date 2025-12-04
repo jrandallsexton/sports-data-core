@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using FluentAssertions;
+
+using System.Text.Json;
 
 using SportsData.Core.Extensions;
 
@@ -31,14 +33,14 @@ namespace SportsData.Core.Tests.Unit.Extensions
             var deserialized = json.FromJson<SampleModel>();
 
             // assert
-            Assert.Equal("abc123", deserialized.Id);
-            Assert.Equal(42, deserialized.Count);
-            Assert.Null(deserialized.NullValue);
+            deserialized.Id.Should().Be("abc123");
+            deserialized.Count.Should().Be(42);
+            deserialized.NullValue.Should().BeNull();
 
             // Also ensure camelCasing is applied
-            Assert.Contains("\"id\"", json);
-            Assert.Contains("\"count\"", json);
-            Assert.DoesNotContain("nullValue", json); // Should be omitted
+            json.Should().Contain("\"id\"");
+            json.Should().Contain("\"count\"");
+            json.Should().NotContain("nullValue"); // Should be omitted
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using AutoFixture;
 
+using FluentAssertions;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
@@ -51,8 +53,8 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             key: v => v.Id);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(venue.Id, result);
+        result.Should().NotBeNull();
+        result.Should().Be(venue.Id);
     }
 
     [Fact]
@@ -93,7 +95,7 @@ public class ExternalEntityResolverTests : ProducerTestBase<ExternalEntityResolv
             key: v => v.Id);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(venue.Id, result);
+        result.Should().NotBeNull();
+        result.Should().Be(venue.Id);
     }
 }

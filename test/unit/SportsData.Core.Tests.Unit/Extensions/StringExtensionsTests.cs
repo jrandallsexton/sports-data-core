@@ -1,4 +1,6 @@
 ﻿#nullable enable
+using FluentAssertions;
+
 using SportsData.Core.Extensions;
 
 using Xunit;
@@ -35,7 +37,7 @@ namespace SportsData.Core.Tests.Unit.Extensions
         public void ToCanonicalForm_ReturnsExpected(string? input, string? expected)
         {
             var result = input.ToCanonicalFormNullable();
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using SportsData.Api.Application.User;
+﻿using FluentAssertions;
+
+using SportsData.Api.Application.User;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -26,6 +28,6 @@ public class DisplayNameGeneratorTests
             names.Add(name);
         }
 
-        Assert.Equal(25, names.Count); // ensure no duplicates in this small sample
+        names.Should().HaveCount(25); // ensure no duplicates in this small sample
     }
 }

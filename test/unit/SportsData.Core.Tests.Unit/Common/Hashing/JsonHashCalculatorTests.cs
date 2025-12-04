@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Common.Hashing;
+﻿using FluentAssertions;
+
+using SportsData.Core.Common.Hashing;
 
 using Xunit;
 
@@ -17,7 +19,7 @@ public class JsonHashCalculatorTests
         var hash1 = _calculator.NormalizeAndHash(json1);
         var hash2 = _calculator.NormalizeAndHash(json2);
 
-        Assert.Equal(hash1, hash2);
+        hash1.Should().Be(hash2);
     }
 
     [Fact]
@@ -29,7 +31,7 @@ public class JsonHashCalculatorTests
         var hash1 = _calculator.NormalizeAndHash(json1);
         var hash2 = _calculator.NormalizeAndHash(json2);
 
-        Assert.NotEqual(hash1, hash2);
+        hash1.Should().NotBe(hash2);
     }
 
     [Theory]
@@ -40,8 +42,8 @@ public class JsonHashCalculatorTests
     public void Hash_ShouldReturnStableHash_ForEmptyOrWhitespaceInput(string input)
     {
         var hash = _calculator.NormalizeAndHash(input);
-        Assert.False(string.IsNullOrWhiteSpace(hash));
+        hash.Should().NotBeNullOrWhiteSpace();
         // Optionally assert the exact SHA256 of empty string:
-        Assert.Equal("E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855", hash);
+        hash.Should().Be("E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855");
     }
 }

@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Common.Hashing;
+﻿using FluentAssertions;
+
+using SportsData.Core.Common.Hashing;
 
 using Xunit;
 
@@ -16,8 +18,8 @@ namespace SportsData.Core.Tests.Unit.Common
             var hash1 = HashProvider.GenerateHashFromUri(uri);
             var hash2 = HashProvider.GenerateHashFromUri(uri);
 
-            Assert.Equal(hash1, hash2); // Deterministic
-            Assert.Matches("^[a-f0-9]{64}$", hash1); // SHA256 is 64 chars in hex
+            hash1.Should().Be(hash2); // Deterministic
+            hash1.Should().MatchRegex("^[a-f0-9]{64}$"); // SHA256 is 64 chars in hex
         }
 
         [Fact]
@@ -29,7 +31,7 @@ namespace SportsData.Core.Tests.Unit.Common
             var hash1 = HashProvider.GenerateHashFromUri(uri1, cleanUrl: false);
             var hash2 = HashProvider.GenerateHashFromUri(uri2, cleanUrl: false);
 
-            Assert.NotEqual(hash1, hash2);
+            hash1.Should().NotBe(hash2);
         }
 
         [Fact]
@@ -41,7 +43,7 @@ namespace SportsData.Core.Tests.Unit.Common
             var hash1 = HashProvider.GenerateHashFromUri(uri1, cleanUrl: true);
             var hash2 = HashProvider.GenerateHashFromUri(uri2, cleanUrl: true);
 
-            Assert.Equal(hash1, hash2);
+            hash1.Should().Be(hash2);
         }
 
 

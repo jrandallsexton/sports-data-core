@@ -40,19 +40,28 @@ export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) 
                 <div className="contest-leaders-team contest-leaders-away">
                   {cat.away?.leaders && cat.away.leaders.length > 0 ? (
                     cat.away.leaders.map((l, i) => (
-                      <div key={i} className="contest-leader-item">
-                        {isSimpleStat(l.statLine) ? (
-                          <span>
-                            <span className="contest-leader-player">{l.playerName}</span>
-                            {" - "}
-                            <span className="contest-leader-statline">{l.statLine}</span>
-                          </span>
-                        ) : (
-                          <>
-                            <span className="contest-leader-player">{l.playerName}</span>
-                            <div className="contest-leader-statline">{l.statLine}</div>
-                          </>
+                      <div key={i} className="contest-leader-item" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {l.playerHeadshotUrl && (
+                          <img 
+                            src={l.playerHeadshotUrl} 
+                            alt={l.playerName}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
                         )}
+                        <div>
+                          {isSimpleStat(l.statLine) ? (
+                            <span>
+                              <span className="contest-leader-player">{l.playerName}</span>
+                              {" - "}
+                              <span className="contest-leader-statline">{l.statLine}</span>
+                            </span>
+                          ) : (
+                            <>
+                              <span className="contest-leader-player">{l.playerName}</span>
+                              <div className="contest-leader-statline">{l.statLine}</div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -67,19 +76,28 @@ export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) 
                 <div className="contest-leaders-team contest-leaders-home">
                   {cat.home?.leaders && cat.home.leaders.length > 0 ? (
                     cat.home.leaders.map((l, i) => (
-                      <div key={i} className="contest-leader-item">
-                        {isSimpleStat(l.statLine) ? (
-                          <span>
-                            <span className="contest-leader-player">{l.playerName}</span>
-                            {" - "}
-                            <span className="contest-leader-statline">{l.statLine}</span>
-                          </span>
-                        ) : (
-                          <>
-                            <span className="contest-leader-player">{l.playerName}</span>
-                            <div className="contest-leader-statline">{l.statLine}</div>
-                          </>
+                      <div key={i} className="contest-leader-item" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {l.playerHeadshotUrl && (
+                          <img 
+                            src={l.playerHeadshotUrl} 
+                            alt={l.playerName}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
                         )}
+                        <div>
+                          {isSimpleStat(l.statLine) ? (
+                            <span>
+                              <span className="contest-leader-player">{l.playerName}</span>
+                              {" - "}
+                              <span className="contest-leader-statline">{l.statLine}</span>
+                            </span>
+                          ) : (
+                            <>
+                              <span className="contest-leader-player">{l.playerName}</span>
+                              <div className="contest-leader-statline">{l.statLine}</div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))
                   ) : (

@@ -12,7 +12,7 @@ namespace SportsData.Producer.Application.Contests.Overview
         Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
     }
 
-    public class ContestOverviewService : IContestOverviewService
+    public partial class ContestOverviewService : IContestOverviewService
     {
         private readonly TeamSportDataContext _dbContext;
 
@@ -20,6 +20,76 @@ namespace SportsData.Producer.Application.Contests.Overview
             TeamSportDataContext dbContext)
         {
             _dbContext = dbContext;
+        }
+
+        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
+        {
+            // Fetch basic contest info to get team slugs and franchise season IDs
+            var contest = await _dbContext.Contests
+                .AsNoTracking()
+                .Include(x => x.Competitions)
+                .Include(x => x.AwayTeamFranchiseSeason!)
+                .ThenInclude(x => x.Franchise)
+                .ThenInclude(x => x.Logos)
+                .Include(x => x.HomeTeamFranchiseSeason!)
+                .ThenInclude(x => x.Franchise)
+                .ThenInclude(x => x.Logos)
+                .Include(x => x.AwayTeamFranchiseSeason!)
+                .ThenInclude(x => x.Logos!)
+                .Include(x => x.HomeTeamFranchiseSeason!)
+                .ThenInclude(x => x.Logos!)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(c => c.Id == contestId);
+
+            if (contest is null)
+                throw new ArgumentException($"Contest with ID {contestId} not found.");
+
+            var competitionId = contest.Competitions.First().Id;
+
+            var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
+            var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
+
+            var awayTeamColor = contest.AwayTeamFranchiseSeason!.Franchise.ColorCodeHex;
+            var homeTeamColor = contest.HomeTeamFranchiseSeason!.Franchise.ColorCodeHex;
+
+            var awayTeamLogoUri = contest.AwayTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
+            var homeTeamLogoUri = contest.HomeTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
+
+            var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
+            var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
+
+            var metrics = await GetCompetitionMetricsAsync(competitionId, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
+
+            var dto = new ContestOverviewDto
+            {
+                Header = await GetGameHeaderAsync(contestId),
+                Leaders = await GetGameLeadersAsync(contestId),
+                WinProbability = await GetWinProbabilityAsync(
+                    contestId,
+                    awayTeamSlug,
+                    homeTeamSlug,
+                    awayTeamColor,
+                    homeTeamColor
+                    ),
+                PlayLog = await GetPlayLogAsync(
+                    contestId,
+                    awayTeamSlug,
+                    homeTeamSlug,
+                    awayTeamLogoUri,
+                    homeTeamLogoUri,
+                    awayTeamFranchiseSeasonId),
+                TeamStats = await GetTeamStatsAsync(contestId),
+                Info = await GetGameInfoAsync(contestId),
+                AwayMetrics = metrics.Item1,
+                HomeMetrics = metrics.Item2,
+                MediaItems = await GetMedia(competitionId)
+            };
+
+            //dto.Summary = await GetNarrativeSummaryAsync(contestId);
+
+            //dto.MatchupAnalysis = await GetMatchupAnalysisAsync(contestId);
+
+            return dto;
         }
 
         private async Task<GameHeaderDto?> GetGameHeaderAsync(Guid contestId)
@@ -132,11 +202,39 @@ namespace SportsData.Producer.Application.Contests.Overview
                             : null)
                         ?? "Unknown"
                     ,
+                    PlayerHeadshotUrl = null, // Will be populated after materialization
                     StatLine = s.DisplayValue,
                     Numeric = null,   // map if you have a numeric primary value
-                    Rank = 1       // map if you have s.Rank (lower = better)
+                    Rank = 1,      // map if you have s.Rank (lower = better)
+                    AthleteSeasonId = s.AthleteSeasonId // Add this to fetch headshots later
                 }))
                 .ToListAsync();
+
+            // 2b) Fetch headshot URLs separately (EF Core can't translate navigation collections in projections)
+            var athleteSeasonIds = flat.Select(f => f.AthleteSeasonId).Distinct().ToList();
+            
+            var headshots = await _dbContext.AthleteSeasons
+                .AsNoTracking()
+                .Where(a => athleteSeasonIds.Contains(a.Id))
+                .Select(a => new
+                {
+                    AthleteSeasonId = a.Id,
+                    HeadshotUrl = a.Athlete != null && a.Athlete.Images.Any()
+                        ? a.Athlete.Images.OrderBy(i => i.CreatedUtc).First().Uri.ToString()
+                        : null
+                })
+                .ToListAsync();
+
+            var headshotLookup = headshots.ToDictionary(h => h.AthleteSeasonId, h => h.HeadshotUrl);
+
+            // Populate headshot URLs
+            foreach (var row in flat)
+            {
+                if (headshotLookup.TryGetValue(row.AthleteSeasonId, out var headshotUrl))
+                {
+                    row.PlayerHeadshotUrl = headshotUrl;
+                }
+            }
 
             // 3) Group by category and build category-centric leaders with home/away arrays (ties allowed).
             var categories = flat
@@ -165,26 +263,6 @@ namespace SportsData.Producer.Application.Contests.Overview
                 .ToList();
 
             return new GameLeadersDto { Categories = categories };
-        }
-
-        /// <summary>
-        /// Strongly-typed projection row used for grouping/selection (EF-safe).
-        /// </summary>
-        private sealed class FlatLeaderRow
-        {
-            // Category metadata
-            public string CategoryId { get; set; } = null!;
-            public string CategoryName { get; set; } = null!;
-            public string? Abbr { get; set; }
-            public string? Unit { get; set; }
-            public int DisplayOrder { get; set; }
-
-            // Player/leader data
-            public Guid FranchiseSeasonId { get; set; }
-            public string PlayerName { get; set; } = null!;
-            public string? StatLine { get; set; }
-            public decimal? Numeric { get; set; }
-            public int Rank { get; set; } = 1;
         }
 
         /// <summary>
@@ -223,7 +301,7 @@ namespace SportsData.Producer.Application.Contests.Overview
                 Value = w.Numeric,
                 StatLine = w.StatLine,
                 Rank = 1,
-                HeadshotUrl = null
+                PlayerHeadshotUrl = w.PlayerHeadshotUrl // ✅ Populated from separate query
             }).ToList();
         }
 
@@ -369,76 +447,6 @@ namespace SportsData.Producer.Application.Contests.Overview
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
-        {
-            // Fetch basic contest info to get team slugs and franchise season IDs
-            var contest = await _dbContext.Contests
-                .AsNoTracking()
-                .Include(x => x.Competitions)
-                .Include(x => x.AwayTeamFranchiseSeason!)
-                .ThenInclude(x => x.Franchise)
-                .ThenInclude(x => x.Logos)
-                .Include(x => x.HomeTeamFranchiseSeason!)
-                .ThenInclude(x => x.Franchise)
-                .ThenInclude(x => x.Logos)
-                .Include(x => x.AwayTeamFranchiseSeason!)
-                .ThenInclude(x => x.Logos!)
-                .Include(x => x.HomeTeamFranchiseSeason!)
-                .ThenInclude(x => x.Logos!)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(c => c.Id == contestId);
-
-            if (contest is null)
-                throw new ArgumentException($"Contest with ID {contestId} not found.");
-
-            var competitionId = contest.Competitions.First().Id;
-
-            var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
-            var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
-
-            var awayTeamColor = contest.AwayTeamFranchiseSeason!.Franchise.ColorCodeHex;
-            var homeTeamColor = contest.HomeTeamFranchiseSeason!.Franchise.ColorCodeHex;
-
-            var awayTeamLogoUri = contest.AwayTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
-            var homeTeamLogoUri = contest.HomeTeamFranchiseSeason?.Logos?.FirstOrDefault()?.Uri;
-
-            var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
-            var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
-
-            var metrics = await GetCompetitionMetricsAsync(competitionId, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
-
-            var dto = new ContestOverviewDto
-            {
-                Header = await GetGameHeaderAsync(contestId),
-                Leaders = await GetGameLeadersAsync(contestId),
-                WinProbability = await GetWinProbabilityAsync(
-                    contestId,
-                    awayTeamSlug,
-                    homeTeamSlug,
-                    awayTeamColor,
-                    homeTeamColor
-                    ),
-                PlayLog = await GetPlayLogAsync(
-                    contestId,
-                    awayTeamSlug,
-                    homeTeamSlug,
-                    awayTeamLogoUri,
-                    homeTeamLogoUri,
-                    awayTeamFranchiseSeasonId),
-                TeamStats = await GetTeamStatsAsync(contestId),
-                Info = await GetGameInfoAsync(contestId),
-                AwayMetrics = metrics.Item1,
-                HomeMetrics = metrics.Item2,
-                MediaItems = await GetMedia(competitionId)
-            };
-
-            //dto.Summary = await GetNarrativeSummaryAsync(contestId);
-
-            //dto.MatchupAnalysis = await GetMatchupAnalysisAsync(contestId);
-
-            return dto;
-        }
-
         private async Task<List<MediaItemDto>> GetMedia(Guid competitionId)
         {
             var media = await _dbContext.CompetitionMedia
@@ -461,7 +469,6 @@ namespace SportsData.Producer.Application.Contests.Overview
 
             return media;
         }
-
 
         private async Task<(CompetitionMetricDto?, CompetitionMetricDto?)> GetCompetitionMetricsAsync(
             Guid competitionId, Guid awayFranchiseSeasonId, Guid homeFranchiseSeasonId)

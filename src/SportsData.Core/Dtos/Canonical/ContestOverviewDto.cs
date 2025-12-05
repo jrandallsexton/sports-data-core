@@ -147,7 +147,11 @@ namespace SportsData.Core.Dtos.Canonical
         public string? PlayerId { get; set; }
 
         public string PlayerName { get; set; } = null!;
+
+        public string? PlayerHeadshotUrl { get; set; }
+
         public string? Position { get; set; }
+
         public string? Jersey { get; set; }
 
         /// <summary>Stable team id/slug in case you need routing or badges.</summary>
@@ -161,8 +165,6 @@ namespace SportsData.Core.Dtos.Canonical
 
         /// <summary>1-based rank within the team for this category. Equal ranks indicate a tie.</summary>
         public int Rank { get; set; } = 1;
-
-        public string? HeadshotUrl { get; set; }
     }
 
 

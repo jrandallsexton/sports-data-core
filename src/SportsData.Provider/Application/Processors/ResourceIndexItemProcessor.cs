@@ -154,7 +154,22 @@ namespace SportsData.Provider.Application.Processors
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
             var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
 
-            var jsonDoc = json.GetSizeInKilobytes() <= 200 ? json : null;
+            // Azure Service Bus limits:
+            // - Standard tier: 256 KB max message size
+            // - Premium tier: 1 MB max message size
+            // Using conservative 200 KB limit (204,800 bytes) to allow for overhead
+            const int MAX_INLINE_JSON_BYTES = 204_800; // 200 KB in bytes
+            
+            var jsonSizeInBytes = json.GetSizeInBytes();
+            var jsonDoc = jsonSizeInBytes <= MAX_INLINE_JSON_BYTES ? json : null;
+            
+            if (jsonDoc == null)
+            {
+                _logger.LogInformation(
+                    "Document JSON size ({SizeKB} KB) exceeds {MaxKB} KB limit, sending reference only",
+                    jsonSizeInBytes / 1024.0,
+                    MAX_INLINE_JSON_BYTES / 1024);
+            }
 
             var evt = new DocumentCreated(
                 urlHash,
@@ -203,7 +218,22 @@ namespace SportsData.Provider.Application.Processors
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
             var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
 
-            var jsonDoc = json.GetSizeInKilobytes() <= 200 ? json : null;
+            // Azure Service Bus limits:
+            // - Standard tier: 256 KB max message size
+            // - Premium tier: 1 MB max message size
+            // Using conservative 200 KB limit (204,800 bytes) to allow for overhead
+            const int MAX_INLINE_JSON_BYTES = 204_800; // 200 KB in bytes
+            
+            var jsonSizeInBytes = json.GetSizeInBytes();
+            var jsonDoc = jsonSizeInBytes <= MAX_INLINE_JSON_BYTES ? json : null;
+            
+            if (jsonDoc == null)
+            {
+                _logger.LogInformation(
+                    "Document JSON size ({SizeKB} KB) exceeds {MaxKB} KB limit, sending reference only",
+                    jsonSizeInBytes / 1024.0,
+                    MAX_INLINE_JSON_BYTES / 1024);
+            }
 
             // TODO: Put this back to DocumentUpdated (need the handler in Producer first)
             var evt = new DocumentCreated(

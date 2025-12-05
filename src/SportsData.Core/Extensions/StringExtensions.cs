@@ -31,13 +31,28 @@ namespace SportsData.Core.Extensions
             return textInfo.ToTitleCase(trimmed);
         }
 
+        /// <summary>
+        /// Gets the size of the string in kilobytes (KB) using UTF-8 encoding.
+        /// Uses ceiling to ensure size is not under-reported due to integer truncation.
+        /// </summary>
         public static int GetSizeInKilobytes(this string str)
         {
             if (string.IsNullOrEmpty(str))
                 return 0;
 
             var byteCount = System.Text.Encoding.UTF8.GetByteCount(str);
-            return byteCount / 1024;
+            return (int)Math.Ceiling(byteCount / 1024.0); // Use Math.Ceiling to round up
+        }
+        
+        /// <summary>
+        /// Gets the exact size of the string in bytes using UTF-8 encoding.
+        /// </summary>
+        public static int GetSizeInBytes(this string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return 0;
+
+            return System.Text.Encoding.UTF8.GetByteCount(str);
         }
 
         public static DateTime? TryParseUtcNullable(this string? dateStr)

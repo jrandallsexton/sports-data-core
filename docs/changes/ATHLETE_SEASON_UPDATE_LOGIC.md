@@ -197,7 +197,6 @@ foreach (var athleteSeason in athleteSeasons)
             providerRef: new Uri(externalId.SourceUrl),
             sourceUri: new Uri(externalId.SourceUrl),
             json: null, // Will be fetched from MongoDB
-            urlHash: externalId.SourceUrlHash,
             sport: Sport.FootballNcaa,
             seasonYear: athleteSeason.SeasonYear,
             documentType: DocumentType.AthleteSeason,

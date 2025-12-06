@@ -119,7 +119,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         var athleteSeason = athlete.Seasons.FirstOrDefault(s => s.FranchiseSeasonId == franchiseSeasonId);
         if (athleteSeason is not null)
         {
-            _logger.LogWarning("AthleteSeason already exists. Updating not implemented");
+            await ProcessExisting(command, athleteSeason, dto);
             return;
         }
 
@@ -141,6 +141,51 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athlete.Id);
+        
+        // Process headshot for new AthleteSeason
+        await ProcessHeadshot(command, entity, dto);
+    }
+
+    private async Task ProcessExisting(
+        ProcessDocumentCommand command,
+        AthleteSeason entity,
+        EspnAthleteSeasonDto dto)
+    {
+        _logger.LogInformation("AthleteSeason already exists: {Id}. Processing updates.", entity.Id);
+        
+        // Process headshot for existing AthleteSeason
+        await ProcessHeadshot(command, entity, dto);
+        
+        _logger.LogInformation("Successfully processed existing AthleteSeason {Id}", entity.Id);
+    }
+
+    private async Task ProcessHeadshot(
+        ProcessDocumentCommand command,
+        AthleteSeason entity,
+        EspnAthleteSeasonDto dto)
+    {
+        if (dto.Headshot?.Href is not null)
+        {
+            var imgIdentity = _externalRefIdentityGenerator.Generate(dto.Headshot.Href);
+
+            await _publishEndpoint.Publish(new Core.Eventing.Events.Images.ProcessImageRequest(
+                dto.Headshot.Href,
+                imgIdentity.CanonicalId,
+                entity.Id,
+                $"{entity.Id}-{imgIdentity.CanonicalId}.png",
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                0, 0,
+                null,
+                command.CorrelationId,
+                CausationId.Producer.AthleteSeasonDocumentProcessor));
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Published ProcessImageRequest for AthleteSeason {Id}, Image: {ImageId}", entity.Id, imgIdentity.CanonicalId);
+        }
     }
 
     private async Task<Guid> TryResolveFranchiseSeasonIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)

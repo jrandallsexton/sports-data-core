@@ -7,6 +7,7 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
@@ -21,19 +22,22 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IEventBus _bus;
         private readonly IProvideProviders _providerClient;
+        private readonly IGenerateExternalRefIdentities _externalIdentityProvider;
 
         public AthleteImageRequestProcessor(
             ILogger<AthleteImageRequestProcessor<TDataContext>> logger,
             TDataContext dataContext,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IEventBus bus,
-            IProvideProviders providerClient)
+            IProvideProviders providerClient,
+            IGenerateExternalRefIdentities externalIdentityProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _documentTypeDecoder = documentTypeDecoder;
             _bus = bus;
             _providerClient = providerClient;
+            _externalIdentityProvider = externalIdentityProvider;
         }
 
         public async Task ProcessRequest(ProcessImageRequest request)
@@ -73,12 +77,14 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 return;
             }
 
+            var imageIdentity = _externalIdentityProvider.Generate(request.Url);
+
             // if not, obtain the image from Provider
             // who will return a link to blob storage or
             // fetch the image, upload it, then return that blob storage url
             // either way, the link we pass to the response will be that of blob storage
             var query = new GetExternalImageQuery(
-                Guid.NewGuid().ToString(),
+                imageIdentity.CanonicalId.ToString(),
                 request.Url,
                 request.SourceDataProvider,
                 request.Sport,
@@ -116,7 +122,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 request.CausationId);
 
             await _bus.Publish(outgoingEvt2);
-
+            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Published ProcessImageResponse");

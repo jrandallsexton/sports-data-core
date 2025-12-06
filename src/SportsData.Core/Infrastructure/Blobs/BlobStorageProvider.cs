@@ -37,12 +37,12 @@ namespace SportsData.Core.Infrastructure.Blobs
             var clientOptions = new BlobClientOptions
             {
                 Retry =
-            {
-                Mode = RetryMode.Exponential,
-                MaxRetries = 5,
-                Delay = TimeSpan.FromSeconds(1),
-                MaxDelay = TimeSpan.FromSeconds(15)
-            }
+                {
+                    Mode = RetryMode.Exponential,
+                    MaxRetries = 5,
+                    Delay = TimeSpan.FromSeconds(1),
+                    MaxDelay = TimeSpan.FromSeconds(15)
+                }
             };
 
             // Single container client, reuse its pipeline for the blob client

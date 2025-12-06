@@ -5,7 +5,7 @@ from scipy.stats import norm
 
 # === Load SU predictions (which contain margin predictions) ===
 df_su = pd.read_csv("./data/predictions_straightup_raw.csv")
-df_week = pd.read_csv("./data/competition_metrics_week_14.csv")
+df_week = pd.read_csv("./data/competition_metrics_week_15.csv")
 
 # Merge to get spread
 df_predict = df_su.merge(
@@ -61,6 +61,7 @@ df_output = df_output.rename(columns={"ATS_PredictedLabel": "PredictedLabel"})
 df_output.to_csv("./data/predictions_ats_raw.csv", index=False)
 
 print("✅ Raw ATS predictions written to ./data/predictions_ats_raw.csv")
+
 
 
 

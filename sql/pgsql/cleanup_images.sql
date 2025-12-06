@@ -9,7 +9,7 @@ SELECT
     "Uri" as old_uri,
     REPLACE("Uri", 
         'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage',
-        'sportdeetssa.blob.core.windows.net/football-ncaa-venue-image'
+        'sportdeetssa.blob.core.windows.net/venue-image-football-ncaa'
     ) as new_uri
 FROM public."VenueImage"
 WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage%';
@@ -18,7 +18,7 @@ WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballnc
 UPDATE public."VenueImage"
 SET "Uri" = REPLACE("Uri", 
     'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage',
-    'sportdeetssa.blob.core.windows.net/football-ncaa-venue-image'
+    'sportdeetssa.blob.core.windows.net/venue-image-football-ncaa'
 )
 WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage%';
 

@@ -13,7 +13,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Documents
 {
@@ -272,8 +271,8 @@ namespace SportsData.Provider.Application.Documents
 
             // upload it to blob storage
             var containerName = query.SeasonYear.HasValue
-                ? $"{query.Sport.ToKebabCase()}-{query.DocumentType.ToKebabCase()}-{query.SeasonYear.Value}"
-                : $"{query.Sport.ToKebabCase()}-{query.DocumentType.ToKebabCase()}";
+                ? $"{query.DocumentType.ToKebabCase()}-{query.Sport.ToKebabCase()}-{query.SeasonYear.Value}"
+                : $"{query.DocumentType.ToKebabCase()}-{query.Sport.ToKebabCase()}";
 
             _logger.LogInformation("Container name {@ContainerName}", containerName);
 

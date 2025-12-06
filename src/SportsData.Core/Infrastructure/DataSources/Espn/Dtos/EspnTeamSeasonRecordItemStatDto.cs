@@ -3,7 +3,8 @@
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 
 #pragma warning disable CS8618
-public class EspnTeamSeasonRecordItemStatDto
+
+public class EspnTeamSeasonRecordStatDto
 {
     [JsonPropertyName("name")]
     public string Name { get; set; }

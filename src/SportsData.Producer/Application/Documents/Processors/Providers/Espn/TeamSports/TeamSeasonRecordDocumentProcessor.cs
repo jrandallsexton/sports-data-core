@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
@@ -18,15 +19,18 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly TDataContext _dataContext;
     private readonly ILogger<TeamSeasonRecordDocumentProcessor<TDataContext>> _logger;
     private readonly IEventBus _publishEndpoint;
+    private readonly IGenerateExternalRefIdentities _externalIdentityProvider;
 
     public TeamSeasonRecordDocumentProcessor(
         TDataContext dataContext,
         ILogger<TeamSeasonRecordDocumentProcessor<TDataContext>> logger,
-        IEventBus publishEndpoint)
+        IEventBus publishEndpoint,
+        IGenerateExternalRefIdentities externalIdentityProvider)        
     {
         _dataContext = dataContext;
         _logger = logger;
         _publishEndpoint = publishEndpoint;
+        _externalIdentityProvider = externalIdentityProvider;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -63,42 +67,47 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (franchiseSeason is null)
         {
-            _logger.LogWarning("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogError("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonId);
             return;
         }
 
         var dto = command.Document.FromJson<EspnTeamSeasonRecordDto>();
-        if (dto?.Items is null || dto.Items.Count == 0)
+
+        if (dto is null)
         {
-            _logger.LogWarning("No TeamSeasonRecord items found in document for FranchiseSeason {Id}", franchiseSeasonId);
+            _logger.LogError("DTO is null for TeamSeasonRecord processing. ParentId: {ParentId}", command.ParentId);
             return;
         }
 
-        if (!dto.Items.Any())
+        // Find existing record by FranchiseSeasonId, Name, and Type (natural key)
+        var existing = await _dataContext.FranchiseSeasonRecords
+            .FirstOrDefaultAsync(r => r.FranchiseSeasonId == franchiseSeasonId 
+                                   && r.Name == dto.Name 
+                                   && r.Type == dto.Type);
+
+        if (existing is not null)
         {
-            _logger.LogInformation("No items to process for FranchiseSeason {Id}", franchiseSeasonId);
-            return;
+            // delete then re-add to simplify processing logic
+            _dataContext.FranchiseSeasonRecords.Remove(existing);
+            await _dataContext.SaveChangesAsync();
         }
 
-        foreach (var item in dto.Items)
-        {
-            var entity = item.AsEntity(
-                franchiseSeasonId,
-                franchiseSeason.FranchiseId,
-                franchiseSeason.SeasonYear,
-                Guid.Empty);
+        var entity = dto.AsEntity(
+            franchiseSeasonId,
+            franchiseSeason.FranchiseId,
+            franchiseSeason.SeasonYear,
+            Guid.Empty);
 
-            await _dataContext.FranchiseSeasonRecords.AddAsync(entity);
+        await _dataContext.FranchiseSeasonRecords.AddAsync(entity);
 
-            var canonical = entity.AsCanonical();
-            await _publishEndpoint.Publish(new FranchiseSeasonRecordCreated(
-                canonical,
-                command.CorrelationId,
-                CausationId.Producer.TeamSeasonRecordDocumentProcessor));
-        }
+        var canonical = entity.AsCanonical();
+        await _publishEndpoint.Publish(new FranchiseSeasonRecordCreated(
+            canonical,
+            command.CorrelationId,
+            CausationId.Producer.TeamSeasonRecordDocumentProcessor));
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully processed {Count} TeamSeasonRecord items for FranchiseSeason {Id}", dto.Items.Count, franchiseSeasonId);
+        _logger.LogInformation("Successfully processed TeamSeasonRecord '{RecordName}' for FranchiseSeason {Id}", dto.Name, franchiseSeasonId);
     }
 }

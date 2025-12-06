@@ -1,5 +1,8 @@
 ﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
+
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -12,20 +15,41 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 /// <remarks>This DTO (Data Transfer Object) is used to encapsulate information about a paginated result set,
 /// including metadata such as the total count of items, the current page index, the page size, and the total number of
 /// pages. The actual records are contained in the <see cref="Items"/> property.</remarks>
-public class EspnTeamSeasonRecordDto
+public class EspnTeamSeasonRecordDto : IHasRef
 {
-    [JsonPropertyName("count")]
-    public int Count { get; set; }
+    [JsonPropertyName("$ref")]
+    public Uri Ref { get; set; }
 
-    [JsonPropertyName("pageIndex")]
-    public int PageIndex { get; set; }
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
 
-    [JsonPropertyName("pageSize")]
-    public int PageSize { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 
-    [JsonPropertyName("pageCount")]
-    public int PageCount { get; set; }
+    [JsonPropertyName("abbreviation")]
+    public string Abbreviation { get; set; }
 
-    [JsonPropertyName("items")]
-    public List<EspnTeamSeasonRecordItemDto> Items { get; set; }
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; }
+
+    [JsonPropertyName("shortDisplayName")]
+    public string ShortDisplayName { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; }
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
+
+    [JsonPropertyName("summary")]
+    public string Summary { get; set; }
+
+    [JsonPropertyName("displayValue")]
+    public string DisplayValue { get; set; }
+
+    [JsonPropertyName("value")]
+    public double Value { get; set; }
+
+    [JsonPropertyName("stats")]
+    public List<EspnTeamSeasonRecordStatDto> Stats { get; set; }
 }

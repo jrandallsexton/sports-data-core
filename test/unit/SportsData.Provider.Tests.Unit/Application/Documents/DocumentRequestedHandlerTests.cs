@@ -28,6 +28,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     [Theory]
     [InlineData("EspnAwardsIndex.json", "https://sports.core.api.espn.com/v2/awards/index", DocumentType.Award)]
     [InlineData("EspnSeasonTypeWeeks.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks?lang=en&region=us", DocumentType.SeasonTypeWeek)]
+    [InlineData("EspnTeamSeasonRecords.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/99/record?lang=en", DocumentType.TeamSeasonRecord)]
     public async Task WhenResourceIndexHasItems_EnqueuesEachItem(
         string fileName,
         string srcUrl,

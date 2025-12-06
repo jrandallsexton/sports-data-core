@@ -261,6 +261,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         // stats
         await ProcessStatistics(canonicalEntity.Id, dto, command);
 
+        // athletes
+        await ProcessAthletes(canonicalEntity.Id, dto, command);
+
         // leaders
         await ProcessLeaders(canonicalEntity.Id, dto, command);
 
@@ -453,6 +456,30 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             CausationId.Producer.TeamSeasonDocumentProcessor));
     }
 
+    private async Task ProcessAthletes(
+        Guid franchiseSeasonId,
+        EspnTeamSeasonDto dto,
+        ProcessDocumentCommand command)
+    {
+        if (dto.Athletes?.Ref is null)
+        {
+            _logger.LogInformation("No athletes reference found in the DTO for TeamSeason {Season}", command.Season);
+            return;
+        }
+
+        // Request sourcing of team season athletes
+        await _publishEndpoint.Publish(new DocumentRequested(
+            dto.Athletes.Ref.ToCleanUrl(),
+            franchiseSeasonId.ToString(),
+            dto.Athletes.Ref,
+            command.Sport,
+            command.Season,
+            DocumentType.AthleteSeason,
+            command.SourceDataProvider,
+            command.CorrelationId,
+            CausationId.Producer.TeamSeasonDocumentProcessor));
+    }
+
     private async Task ProcessLeaders(
         Guid franchiseSeasonId,
         EspnTeamSeasonDto dto,
@@ -511,14 +538,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             _logger.LogInformation("No record found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
+
         // Request sourcing of team season record
-        var recordUri = dto.Record.Ref;
-        var recordId = recordUri.Segments.Last().TrimEnd('/');
+        var recordIdentity = _externalRefIdentityGenerator.Generate(dto.Record.Ref);
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            recordId,
+            recordIdentity.CanonicalId.ToString(),
             franchiseSeasonId.ToString(),
-            recordUri,
+            new Uri(recordIdentity.CleanUrl),
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonRecord,
@@ -563,62 +590,17 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         var saveChanges = false;
 
         // request updated statistics
-        if (dto.Statistics?.Ref is not null && ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
-        {
-            var identity = _externalRefIdentityGenerator.Generate(dto.Statistics.Ref);
+        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
+            await ProcessStatistics(existing.Id, dto, command);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.UrlHash,
-                ParentId: existing.Id.ToString(),
-                Uri: new Uri(identity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeasonStatistics,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            saveChanges = true;
-            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Statistics");
-        }
+        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
+            await ProcessRanks(existing.Id, dto, command);
 
-        if (dto.Ranks?.Ref is not null && ShouldSpawn(DocumentType.TeamSeasonRank, command))
-        {
-            var identity = _externalRefIdentityGenerator.Generate(dto.Ranks.Ref);
+        if (ShouldSpawn(DocumentType.AthleteSeason, command))
+            await ProcessAthletes(existing.Id, dto, command);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.UrlHash,
-                ParentId: existing.Id.ToString(),
-                Uri: new Uri(identity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeasonRank,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            saveChanges = true;
-            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Ranks");
-        }
-
-        if (dto.Leaders?.Ref is not null && ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
-        {
-            var identity = _externalRefIdentityGenerator.Generate(dto.Leaders.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.UrlHash,
-                ParentId: existing.Id.ToString(),
-                Uri: new Uri(identity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeasonLeaders,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            saveChanges = true;
-            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Leaders");
-        }
+        if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
+            await ProcessLeaders(existing.Id, dto, command);
 
         if (dto.Events?.Ref is not null && ShouldSpawn(DocumentType.Event, command))
         {

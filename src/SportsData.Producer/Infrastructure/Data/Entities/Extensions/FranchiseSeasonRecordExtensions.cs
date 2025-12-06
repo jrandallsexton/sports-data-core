@@ -6,7 +6,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 public static class EspnTeamSeasonRecordExtensions
 {
     public static FranchiseSeasonRecord AsEntity(
-        this EspnTeamSeasonRecordItemDto dto,
+        this EspnTeamSeasonRecordDto dto,
         Guid franchiseSeasonId,
         Guid franchiseId,
         int seasonYear,
@@ -32,7 +32,7 @@ public static class EspnTeamSeasonRecordExtensions
         };
     }
 
-    public static FranchiseSeasonRecordStat AsEntity(this EspnTeamSeasonRecordItemStatDto dto)
+    public static FranchiseSeasonRecordStat AsEntity(this EspnTeamSeasonRecordStatDto dto)
     {
         return new FranchiseSeasonRecordStat
         {

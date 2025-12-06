@@ -15,7 +15,7 @@ using SportsData.Core.Infrastructure.Clients.AI;
 var deepSeekConfig = new DeepSeekClientConfig
 {
     BaseUrl = "https://api.deepseek.com/chat/completions", // ? Correct full endpoint URL
-    ApiKey = "sk-6b185de2bf7f4550bc05643b60e2f31b", // ?? Hardcoded for local testing only
+    ApiKey = "<<YOUR-KEY-HERE>>", // ?? Hardcoded for local testing only
     Model = "deepseek-chat", // or "deepseek-coder" for code-related tasks
     Temperature = 1.0, // 0.0 = deterministic, 2.0 = very creative
     MaxTokens = 4096   // Max tokens in response (default: 4096)
@@ -47,7 +47,7 @@ if (aiProvider.Equals("deepseek", StringComparison.OrdinalIgnoreCase))
         BaseUrl = config["CommonConfig:DeepSeekClientConfig:BaseUrl"] 
             ?? "https://api.deepseek.com/chat/completions",
         ApiKey = config["CommonConfig:DeepSeekClientConfig:ApiKey"] 
-            ?? "sk-6b185de2bf7f4550bc05643b60e2f31b",
+            ?? "<<YOUR-KEY-HERE>>",
         Model = config["CommonConfig:DeepSeekClientConfig:Model"] ?? "deepseek-chat",
         Temperature = double.TryParse(
             config["CommonConfig:DeepSeekClientConfig:Temperature"], out var temp) ? temp : 1.0,

@@ -32,7 +32,7 @@ Replace the Ollama AI configuration in `src/SportsData.Api/Program.cs` with:
 var deepSeekConfig = new DeepSeekClientConfig
 {
     BaseUrl = "https://api.deepseek.com/chat/completions",
-    ApiKey = "sk-6b185de2bf7f4550bc05643b60e2f31b", // Local testing only
+    ApiKey = "<<YOUR-KEY-HERE>>", // Local testing only
     Model = "deepseek-chat",
     Temperature = 1.0,
     MaxTokens = 4096

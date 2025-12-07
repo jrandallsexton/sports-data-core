@@ -35,7 +35,9 @@ order by ap."Name", ats."LastName", ats."FirstName"
 select * from public."FranchiseSeasonRecord"
 select * from public."Franchise"
 select * from public."FranchiseExternalId"
-select * from public."FranchiseSeason" where "Slug" = 'lsu-tigers'
+
+select * from public."FranchiseSeason" where "Id" = '68ca12c9-e48c-69a3-f788-6616e643cfb9'
+select * from public."FranchiseSeason" where "Id" = '077e005c-74ff-4de5-e6b7-a1702e5ac0fe'
 
 select * from public."FranchiseSeasonStatisticCategory"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'

@@ -79,9 +79,9 @@ namespace SportsData.Core.Dtos.Canonical
 
         public string? Location { get; set; }
 
-        public TeamScoreDto? HomeTeam { get; set; }
-
         public TeamScoreDto? AwayTeam { get; set; }
+
+        public TeamScoreDto? HomeTeam { get; set; }
 
         public List<QuarterScoreDto>? QuarterScores { get; set; }
     }

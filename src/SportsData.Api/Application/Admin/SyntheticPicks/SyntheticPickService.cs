@@ -5,7 +5,6 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Admin.SyntheticPicks;
 
@@ -116,43 +115,76 @@ public class SyntheticPickService : ISyntheticPickService
         if (string.IsNullOrWhiteSpace(pickStyle))
             throw new ArgumentException("Pick style cannot be null or empty", nameof(pickStyle));
 
-        // Default to model's prediction
-        var finalPickFranchiseId = prediction.WinnerFranchiseSeasonId;
-
-        // Only apply threshold logic for ATS picks with a valid spread
-        if (prediction.PredictionType == PickType.AgainstTheSpread && matchup.SpreadCurrent.HasValue)
+        // For straight up picks, always use the model's prediction
+        if (prediction.PredictionType == PickType.StraightUp)
         {
-            var spreadAbs = Math.Abs(matchup.SpreadCurrent.Value);
-            var requiredConfidence = _pickStyleProvider.GetRequiredConfidence(pickStyle, (double)spreadAbs);
-            var modelConfidence = (double)prediction.WinProbability;
-
-            // If model confidence doesn't meet threshold, flip to opposite team
-            if (modelConfidence < requiredConfidence)
-            {
-                finalPickFranchiseId = prediction.WinnerFranchiseSeasonId == matchup.HomeFranchiseSeasonId
-                    ? matchup.AwayFranchiseSeasonId
-                    : matchup.HomeFranchiseSeasonId;
-
-                _logger.LogDebug(
-                    "Style '{Style}': Spread {Spread} requires {Required:P0}, model has {Actual:P0} - flipping pick for contest {ContestId}",
-                    pickStyle,
-                    spreadAbs,
-                    requiredConfidence,
-                    modelConfidence,
-                    matchup.ContestId);
-            }
-            else
-            {
-                _logger.LogDebug(
-                    "Style '{Style}': Spread {Spread} requires {Required:P0}, model has {Actual:P0} - keeping model prediction for contest {ContestId}",
-                    pickStyle,
-                    spreadAbs,
-                    requiredConfidence,
-                    modelConfidence,
-                    matchup.ContestId);
-            }
+            return prediction.WinnerFranchiseSeasonId;
         }
 
-        return finalPickFranchiseId;
+        // For ATS picks without a spread, fall back to the model's prediction
+        if (!matchup.SpreadCurrent.HasValue)
+        {
+            return prediction.WinnerFranchiseSeasonId;
+        }
+
+        // ATS logic with threshold
+        // IMPORTANT: ContestPrediction is ALWAYS relative to the HOME team
+        // - WinnerFranchiseSeasonId should be the home team's FranchiseSeasonId
+        // - WinProbability is the home team's probability to cover the spread
+        // - Spread is always relative to home team (negative = home favored)
+        
+        var spreadAbs = Math.Abs(matchup.SpreadCurrent.Value);
+        var requiredConfidence = _pickStyleProvider.GetRequiredConfidence(pickStyle, (double)spreadAbs);
+        var homeTeamCoverProbability = (double)prediction.WinProbability;
+        
+        // Determine which team is the favorite based on spread
+        // Negative spread = home is favorite, Positive spread = away is favorite
+        var favoriteTeam = matchup.SpreadCurrent.Value < 0 
+            ? matchup.HomeFranchiseSeasonId 
+            : matchup.AwayFranchiseSeasonId;
+        
+        var underdogTeam = favoriteTeam == matchup.HomeFranchiseSeasonId
+            ? matchup.AwayFranchiseSeasonId
+            : matchup.HomeFranchiseSeasonId;
+        
+        // Calculate favorite's probability to cover
+        // If home is favorite: use home probability directly
+        // If away is favorite: use inverse of home probability
+        var favoriteIsHome = matchup.SpreadCurrent.Value < 0;
+        var favoriteCoverProbability = favoriteIsHome 
+            ? homeTeamCoverProbability 
+            : (1.0 - homeTeamCoverProbability);
+        
+        // Apply threshold: favorite must meet confidence threshold to pick them
+        if (favoriteCoverProbability >= requiredConfidence)
+        {
+            // Favorite meets threshold - pick the favorite
+            _logger.LogDebug(
+                "Style '{Style}': Spread {Spread} requires {Required:P0}, favorite has {FavConf:P0} - picking favorite ({Team}) [MEETS THRESHOLD] for contest {ContestId}",
+                pickStyle,
+                spreadAbs,
+                requiredConfidence,
+                favoriteCoverProbability,
+                favoriteTeam,
+                matchup.ContestId);
+            
+            return favoriteTeam;
+        }
+        else
+        {
+            // Favorite doesn't meet threshold - pick the underdog
+            var underdogCoverProbability = 1.0 - favoriteCoverProbability;
+            _logger.LogDebug(
+                "Style '{Style}': Spread {Spread} requires {Required:P0}, favorite only has {FavConf:P0} (underdog: {DogConf:P0}) - picking underdog ({Team}) [BELOW THRESHOLD] for contest {ContestId}",
+                pickStyle,
+                spreadAbs,
+                requiredConfidence,
+                favoriteCoverProbability,
+                underdogCoverProbability,
+                underdogTeam,
+                matchup.ContestId);
+            
+            return underdogTeam;
+        }
     }
 }

@@ -73,9 +73,9 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(dto.Id))
+        if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("AthleteSeasonDto missing Id. {@Command}", command);
+            _logger.LogError("EspnFootballAthleteSeasonDto Ref is null. {@Command}", command);
             return;
         }
 
@@ -116,13 +116,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
-        var athleteSeason = athlete.Seasons.FirstOrDefault(s => s.FranchiseSeasonId == franchiseSeasonId);
-        if (athleteSeason is not null)
-        {
-            await ProcessExisting(command, athleteSeason, dto);
-            return;
-        }
-
         var positionId = await TryResolvePositionIdAsync(dto, command);
         if (positionId == Guid.Empty)
         {
@@ -130,33 +123,126 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             return;
         }
 
+        var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
+
+        var entity = await _dataContext.AthleteSeasons
+            .FirstOrDefaultAsync(x => x.Id == athleteSeasonIdentity.CanonicalId);
+
+        if (entity is not null)
+        {
+            await ProcessExisting(command, entity, dto, athlete.Id, franchiseSeasonId, positionId);
+        }
+        else
+        {
+            await ProcessNew(command, dto, franchiseSeasonId, athlete.Id, positionId);
+        }
+    }
+
+    private async Task ProcessNew(
+        ProcessDocumentCommand command,
+        EspnAthleteSeasonDto dto,
+        Guid franchiseSeasonId,
+        Guid athleteId,
+        Guid positionId)
+    {
         var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
             franchiseSeasonId,
             positionId,
-            athlete.Id,
+            athleteId,
             command.CorrelationId);
 
         await _dataContext.AthleteSeasons.AddAsync(entity);
+
+        await ProcessEventLog();
+
+        await ProcessHeadshot(command, entity, dto);
+
+        await ProcessStatistics(command, dto, entity.Id);
+
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athlete.Id);
-        
-        // Process headshot for new AthleteSeason
-        await ProcessHeadshot(command, entity, dto);
+        _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athleteId);
     }
 
     private async Task ProcessExisting(
         ProcessDocumentCommand command,
         AthleteSeason entity,
-        EspnAthleteSeasonDto dto)
+        EspnAthleteSeasonDto dto,
+        Guid athleteId,
+        Guid franchiseSeasonId,
+        Guid positionId)
     {
         _logger.LogInformation("AthleteSeason already exists: {Id}. Processing updates.", entity.Id);
-        
-        // Process headshot for existing AthleteSeason
+
+        var newEntity = dto.AsEntity(
+            _externalRefIdentityGenerator,
+            franchiseSeasonId,
+            positionId,
+            athleteId,
+            command.CorrelationId);
+
+        entity.DisplayName = newEntity.DisplayName;
+        entity.ExperienceAbbreviation = newEntity.ExperienceAbbreviation;
+        entity.ExperienceDisplayValue = newEntity.ExperienceDisplayValue;
+        entity.ExperienceYears = newEntity.ExperienceYears;
+        entity.FirstName = newEntity.FirstName;
+        entity.FranchiseSeasonId = franchiseSeasonId;
+        entity.HeightDisplay = newEntity.HeightDisplay;
+        entity.HeightDisplay = newEntity.HeightDisplay;
+        entity.HeightIn = newEntity.HeightIn;
+        entity.IsActive = newEntity.IsActive;
+        entity.Jersey = newEntity.Jersey;
+        entity.LastName = newEntity.LastName;
+        entity.ModifiedUtc = DateTime.UtcNow;
+        entity.ModifiedBy = command.CorrelationId;
+        entity.PositionId = positionId;
+        entity.ShortName = newEntity.ShortName;
+        entity.Slug = newEntity.Slug;
+        entity.StatusId = newEntity.StatusId;
+        entity.WeightDisplay = newEntity.WeightDisplay;
+        entity.WeightLb = newEntity.WeightLb;
+
+        await ProcessEventLog();
+
         await ProcessHeadshot(command, entity, dto);
-        
+
+        await ProcessStatistics(command, dto, entity.Id);
+
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
+
         _logger.LogInformation("Successfully processed existing AthleteSeason {Id}", entity.Id);
+    }
+
+    private async Task ProcessEventLog()
+    {
+        // TODO: Implement
+        await Task.Delay(100);
+    }
+
+    private async Task ProcessStatistics(
+        ProcessDocumentCommand command,
+        EspnAthleteSeasonDto dto,
+        Guid athleteSeasonId)
+    {
+        if (dto.Statistics?.Ref is null)
+            return;
+
+        var statisticsIdentity = _externalRefIdentityGenerator.Generate(dto.Statistics.Ref);
+
+        await _publishEndpoint.Publish(new DocumentRequested(
+            Id: statisticsIdentity.CanonicalId.ToString(),
+            ParentId: athleteSeasonId.ToString(),
+            Uri: dto.Statistics.Ref.ToCleanUri(),
+            Sport: Sport.FootballNcaa,
+            SeasonYear: command.Season,
+            DocumentType: DocumentType.AthleteSeasonStatistics,
+            SourceDataProvider: SourceDataProvider.Espn,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
+        ));
     }
 
     private async Task ProcessHeadshot(
@@ -164,28 +250,27 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         AthleteSeason entity,
         EspnAthleteSeasonDto dto)
     {
-        if (dto.Headshot?.Href is not null)
-        {
-            var imgIdentity = _externalRefIdentityGenerator.Generate(dto.Headshot.Href);
+        if (dto.Headshot?.Href is null)
+            return;
 
-            await _publishEndpoint.Publish(new Core.Eventing.Events.Images.ProcessImageRequest(
-                dto.Headshot.Href,
-                imgIdentity.CanonicalId,
-                entity.Id,
-                $"{entity.Id}-{imgIdentity.CanonicalId}.png",
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                0, 0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.AthleteSeasonDocumentProcessor));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+        var imgIdentity = _externalRefIdentityGenerator.Generate(dto.Headshot.Href);
 
-            _logger.LogInformation("Published ProcessImageRequest for AthleteSeason {Id}, Image: {ImageId}", entity.Id, imgIdentity.CanonicalId);
-        }
+        await _publishEndpoint.Publish(new Core.Eventing.Events.Images.ProcessImageRequest(
+            dto.Headshot.Href,
+            imgIdentity.CanonicalId,
+            entity.Id,
+            $"{entity.Id}-{imgIdentity.CanonicalId}.png",
+            command.Sport,
+            command.Season,
+            command.DocumentType,
+            command.SourceDataProvider,
+            0, 0,
+            null,
+            command.CorrelationId,
+            CausationId.Producer.AthleteSeasonDocumentProcessor));
+
+        _logger.LogInformation("Published ProcessImageRequest for AthleteSeason {Id}, Image: {ImageId}", entity.Id, imgIdentity.CanonicalId);
+
     }
 
     private async Task<Guid> TryResolveFranchiseSeasonIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)

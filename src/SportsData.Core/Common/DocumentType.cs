@@ -6,6 +6,7 @@
         AthleteImage = 1,
         AthletePosition = 2,
         AthleteSeason = 3,
+        AthleteSeasonStatistics = 26,
         Award = 4,
         Coach = 5,
         CoachSeason = 6,

@@ -1,28 +1,28 @@
 -- Check how many rows will be affected
 SELECT COUNT(*) as rows_to_update
-FROM public."VenueImage"
-WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage%';
+FROM public."AthleteImage"
+WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-athleteimage-%';
 
 -- Preview the changes that will be made
 SELECT 
     "Id",
     "Uri" as old_uri,
     REPLACE("Uri", 
-        'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage',
-        'sportdeetssa.blob.core.windows.net/venue-image-football-ncaa'
+        'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-athleteimage-',
+        'sportdeetssa.blob.core.windows.net/athlete-image-football-ncaa-'
     ) as new_uri
-FROM public."VenueImage"
-WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage%';
+FROM public."AthleteImage"
+WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-athleteimage-%';
 
 -- Update the URIs to point to production storage account
-UPDATE public."VenueImage"
+UPDATE public."AthleteImage"
 SET "Uri" = REPLACE("Uri", 
-    'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage',
-    'sportdeetssa.blob.core.windows.net/venue-image-football-ncaa'
+    'sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-athleteimage-',
+    'sportdeetssa.blob.core.windows.net/athlete-image-football-ncaa-'
 )
-WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-venueimage%';
+WHERE "Uri" LIKE '%sportdeetssadev.blob.core.windows.net/dev-provider-footballncaa-athleteimage-%';
 
 -- Verify the update
 SELECT "Id", "Uri" 
-FROM public."VenueImage"
+FROM public."AthleteImage"
 LIMIT 10;

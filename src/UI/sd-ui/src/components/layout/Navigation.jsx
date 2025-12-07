@@ -28,7 +28,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
       <>
         <nav className="navigation side-nav">
           <div className="nav-header">
-            <NavLink to="/app/" className="logo" end>sportDeets<span className="tm-symbol">™</span></NavLink>
+            <NavLink to="/app/" className="logo" end>sportDeets</NavLink>
           </div>
           <div className="nav-links">
             <NavLink to="/app/" className="nav-link" end onClick={handleNavLinkClick}>
@@ -89,7 +89,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
         <FaBars />
       </button>
       <div className="nav-header">
-        <NavLink to="/app/" className="logo" end>sportDeets<span className="tm-symbol">™</span></NavLink>
+        <NavLink to="/app/" className="logo" end>sportDeets</NavLink>
       </div>
       <div className="nav-links">
         <table>

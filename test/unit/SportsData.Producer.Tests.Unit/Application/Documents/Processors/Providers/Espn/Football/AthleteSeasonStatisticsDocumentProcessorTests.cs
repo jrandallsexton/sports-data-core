@@ -232,20 +232,26 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
 
+        var nonExistentAthleteSeasonId = Guid.NewGuid();
+
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.Season, 2023)
             .With(x => x.DocumentType, DocumentType.AthleteSeasonStatistics)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, Guid.NewGuid().ToString()) // Non-existent AthleteSeason
+            .With(x => x.ParentId, nonExistentAthleteSeasonId.ToString())
             .Create();
 
         // Act
         await sut.ProcessAsync(command);
 
-        // Assert
-        (await FootballDataContext.AthleteSeasonStatistics.CountAsync()).Should().Be(0);
+        // Assert - Query only for statistics related to the non-existent AthleteSeason
+        var statisticsForNonExistentAthlete = await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == nonExistentAthleteSeasonId)
+            .ToListAsync();
+        
+        statisticsForNonExistentAthlete.Should().BeEmpty("no statistics should be created when AthleteSeason doesn't exist");
     }
 
     /// <summary>
@@ -263,6 +269,8 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
 
+        var initialCount = await FootballDataContext.AthleteSeasonStatistics.CountAsync();
+
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
@@ -275,8 +283,9 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         // Act
         await sut.ProcessAsync(command);
 
-        // Assert
-        (await FootballDataContext.AthleteSeasonStatistics.CountAsync()).Should().Be(0);
+        // Assert - Verify count hasn't changed
+        var finalCount = await FootballDataContext.AthleteSeasonStatistics.CountAsync();
+        finalCount.Should().Be(initialCount, "no new statistics should be created when ParentId is invalid");
     }
 
     /// <summary>
@@ -312,8 +321,12 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         // Act
         await sut.ProcessAsync(command);
 
-        // Assert
-        (await FootballDataContext.AthleteSeasonStatistics.CountAsync()).Should().Be(0);
+        // Assert - Query only for statistics related to this specific AthleteSeason
+        var statisticsForThisAthlete = await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == athleteSeason.Id)
+            .ToListAsync();
+        
+        statisticsForThisAthlete.Should().BeEmpty("no statistics should be created when document is null");
     }
 
     /// <summary>
@@ -352,8 +365,12 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         // Act
         await sut.ProcessAsync(command);
 
-        // Assert
-        (await FootballDataContext.AthleteSeasonStatistics.CountAsync()).Should().Be(0);
+        // Assert - Query only for statistics related to this specific AthleteSeason
+        var statisticsForThisAthlete = await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == athleteSeason.Id)
+            .ToListAsync();
+        
+        statisticsForThisAthlete.Should().BeEmpty("no statistics should be created when $ref is null");
     }
 
     /// <summary>

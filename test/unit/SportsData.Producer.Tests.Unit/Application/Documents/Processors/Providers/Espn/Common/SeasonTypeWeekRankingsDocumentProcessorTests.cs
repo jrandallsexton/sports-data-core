@@ -19,6 +19,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common
 {
+    /// <summary>
+    /// Tests for SeasonTypeWeekRankingsDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class SeasonTypeWeekRankingsDocumentProcessorTests
     : ProducerTestBase<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>
     {
@@ -176,60 +181,70 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto.Ref);
+            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto!.Ref);
             var seasonPollIdentity = generator.Generate(seasonPollRef);
 
-            // Add the SeasonPoll (parent of the incoming document)
-            var seasonPoll = Fixture.Build<SeasonPoll>()
-                .OmitAutoProperties()
-                .With(x => x.Id, seasonPollIdentity.CanonicalId)
-                .With(x => x.Name, "AP Top 25")
-                .With(x => x.ShortName, "AP Poll")
-                .Create();
+            // OPTIMIZATION: Direct instantiation
+            var seasonPoll = new SeasonPoll
+            {
+                Id = seasonPollIdentity.CanonicalId,
+                Name = "AP Top 25",
+                ShortName = "AP Poll",
+                SeasonYear = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
             await FootballDataContext.SeasonPolls.AddAsync(seasonPoll);
             await FootballDataContext.SaveChangesAsync();
 
-            var season = Fixture.Build<Season>()
-                .OmitAutoProperties()
-                .With(x => x.Id, seasonId)
-                .With(x => x.Name, "2025 NCAA Football Season")
-                .With(x => x.Year, 2025)
-                .Create();
+            // OPTIMIZATION: Direct instantiation
+            var season = new Season
+            {
+                Id = seasonId,
+                Name = "2025 NCAA Football Season",
+                Year = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
-            var seasonPhase = Fixture.Build<SeasonPhase>()
-                .OmitAutoProperties()
-                .With(x => x.Id, seasonPhaseId)
-                .With(x => x.SeasonId, seasonId)
-                .With(x => x.Season, season)
-                .With(x => x.Name, "2025 Regular Season")
-                .With(x => x.Slug, "Regular Season")
-                .With(x => x.Abbreviation, "REG")
-                .Create();
+            var seasonPhase = new SeasonPhase
+            {
+                Id = seasonPhaseId,
+                SeasonId = seasonId,
+                Name = "2025 Regular Season",
+                Slug = "Regular Season",
+                Abbreviation = "REG",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             var weekRefUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us";
             var weekHash = generator.Generate(weekRefUrl).UrlHash;
 
             var seasonWeekIdentity = generator.Generate(dto.Season.Type.Week.Ref);
-            var seasonWeek = Fixture.Build<SeasonWeek>()
-                .OmitAutoProperties()
-                .With(x => x.Id, seasonWeekIdentity.CanonicalId)
-                .With(x => x.Number, 2)
-                .With(x => x.SeasonId, seasonId)
-                .With(x => x.SeasonPhaseId, seasonPhaseId)
-                .With(x => x.SeasonPhase, seasonPhase)
-                .With(x => x.Rankings, new List<SeasonPollWeek>())
-                .With(x => x.ExternalIds, new List<SeasonWeekExternalId>
+            
+            // OPTIMIZATION: Direct instantiation
+            var seasonWeek = new SeasonWeek
+            {
+                Id = seasonWeekIdentity.CanonicalId,
+                Number = 2,
+                SeasonId = seasonId,
+                SeasonPhaseId = seasonPhaseId,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<SeasonWeekExternalId>
                 {
                     new()
                     {
                         Id = Guid.NewGuid(),
+                        SeasonWeekId = seasonWeekIdentity.CanonicalId,
                         Provider = SourceDataProvider.Espn,
                         SourceUrl = weekRefUrl,
                         SourceUrlHash = weekHash,
                         Value = weekHash
                     }
-                })
-                .Create();
+                }
+            };
 
             await FootballDataContext.Seasons.AddAsync(season);
             await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
@@ -248,123 +263,73 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 urlHash: weekHash
             );
 
-            // seed FranchiseSeason entities for all teams in the rankings JSON
-
-            foreach (var entry in dto!.Ranks)
+            // OPTIMIZATION: Batch create franchises and franchise seasons
+            var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
+            
+            foreach (var entry in allTeams)
             {
                 var teamIdentity = generator.Generate(entry.Team.Ref);
 
-                var franchise = Fixture.Build<Franchise>()
-                    .OmitAutoProperties()
-                    .With(x => x.Id, teamIdentity.CanonicalId)
-                    .With(x => x.ColorCodeHex, "#FFFFFF")
-                    .With(x => x.DisplayName, "SomeTeam")
-                    .With(x => x.DisplayNameShort, "ST")
-                    .With(x => x.Location, "Fooville")
-                    .With(x => x.Name, "SomeTeam")
-                    .With(x => x.Slug, "some-team")
-                    .With(x => x.Seasons, new List<FranchiseSeason>())
-                    .With(x => x.ExternalIds, new List<FranchiseExternalId>()
+                // OPTIMIZATION: Direct instantiation - was taking ~4 seconds per entity!
+                var franchise = new Franchise
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "SomeTeam",
+                    DisplayNameShort = "ST",
+                    Location = "Fooville",
+                    Name = "SomeTeam",
+                    Slug = "some-team",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseExternalId>
                     {
-                        Fixture.Build<FranchiseExternalId>()
-                            .With(e => e.Id, Guid.NewGuid())
-                            .With(e => e.Provider, SourceDataProvider.Espn)
-                            .With(e => e.SourceUrl, teamIdentity.CleanUrl)
-                            .With(e => e.SourceUrlHash, teamIdentity.UrlHash)
-                            .With(e => e.Value, teamIdentity.UrlHash)
-                            .Create()
-                    })
-                    .Create();
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
 
                 await FootballDataContext.Franchises.AddAsync(franchise);
-                await FootballDataContext.SaveChangesAsync();
 
-                var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                    .OmitAutoProperties()
-                    .With(x => x.Id, teamIdentity.CanonicalId)
-                    .With(x => x.ColorCodeHex, "#FFFFFF")
-                    .With(x => x.DisplayName, "SomeTeam")
-                    .With(x => x.DisplayNameShort, "ST")
-                    .With(x => x.Location, "Fooville")
-                    .With(x => x.Name, "SomeTeam")
-                    .With(x => x.Slug, "some-team")
-                    .With(x => x.Franchise, franchise)
-                    .With(x => x.FranchiseId, franchise.Id)
-                    .With(x => x.SeasonYear, 2025)
-                    .With(x => x.Abbreviation, "ST")
-                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>()
+                var franchiseSeason = new FranchiseSeason
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "SomeTeam",
+                    DisplayNameShort = "ST",
+                    Location = "Fooville",
+                    Name = "SomeTeam",
+                    Slug = "some-team",
+                    FranchiseId = franchise.Id,
+                    SeasonYear = 2025,
+                    Abbreviation = "ST",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseSeasonExternalId>
                     {
-                        Fixture.Build<FranchiseSeasonExternalId>()
-                            .With(e => e.Id, Guid.NewGuid())
-                            .With(e => e.Provider, SourceDataProvider.Espn)
-                            .With(e => e.SourceUrl, teamIdentity.CleanUrl)
-                            .With(e => e.SourceUrlHash, teamIdentity.UrlHash)
-                            .With(e => e.Value, teamIdentity.UrlHash)
-                            .Create()
-                    })
-                    .Create();
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseSeasonId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
 
                 await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-                await FootballDataContext.SaveChangesAsync();
             }
-
-            foreach (var entry in dto!.Others)
-            {
-                var teamIdentity = generator.Generate(entry.Team.Ref);
-
-                var franchise = Fixture.Build<Franchise>()
-                    .OmitAutoProperties()
-                    .With(x => x.Id, teamIdentity.CanonicalId)
-                    .With(x => x.ColorCodeHex, "#FFFFFF")
-                    .With(x => x.DisplayName, "SomeTeam")
-                    .With(x => x.DisplayNameShort, "ST")
-                    .With(x => x.Location, "Fooville")
-                    .With(x => x.Name, "SomeTeam")
-                    .With(x => x.Slug, "some-team")
-                    .With(x => x.Seasons, new List<FranchiseSeason>())
-                    .With(x => x.ExternalIds, new List<FranchiseExternalId>()
-                    {
-                        Fixture.Build<FranchiseExternalId>()
-                            .With(e => e.Id, Guid.NewGuid())
-                            .With(e => e.Provider, SourceDataProvider.Espn)
-                            .With(e => e.SourceUrl, teamIdentity.CleanUrl)
-                            .With(e => e.SourceUrlHash, teamIdentity.UrlHash)
-                            .With(e => e.Value, teamIdentity.UrlHash)
-                            .Create()
-                    })
-                    .Create();
-
-                await FootballDataContext.Franchises.AddAsync(franchise);
-                await FootballDataContext.SaveChangesAsync();
-
-                var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                    .OmitAutoProperties()
-                    .With(x => x.Id, teamIdentity.CanonicalId)
-                    .With(x => x.ColorCodeHex, "#FFFFFF")
-                    .With(x => x.DisplayName, "SomeTeam")
-                    .With(x => x.DisplayNameShort, "ST")
-                    .With(x => x.Location, "Fooville")
-                    .With(x => x.Name, "SomeTeam")
-                    .With(x => x.Slug, "some-team")
-                    .With(x => x.Franchise, franchise)
-                    .With(x => x.FranchiseId, franchise.Id)
-                    .With(x => x.SeasonYear, 2025)
-                    .With(x => x.Abbreviation, "ST")
-                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>()
-                    {
-                        Fixture.Build<FranchiseSeasonExternalId>()
-                            .With(e => e.Id, Guid.NewGuid())
-                            .With(e => e.Provider, SourceDataProvider.Espn)
-                            .With(e => e.SourceUrl, teamIdentity.CleanUrl)
-                            .With(e => e.SourceUrlHash, teamIdentity.UrlHash)
-                            .With(e => e.Value, teamIdentity.UrlHash)
-                            .Create()
-                    })
-                    .Create();
-
-                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-                await FootballDataContext.SaveChangesAsync();
-            }
+            
+            await FootballDataContext.SaveChangesAsync();
 
             var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
 

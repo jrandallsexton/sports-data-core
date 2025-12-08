@@ -15,6 +15,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionPredictionDocumentProcessor.
+/// Optimized to eliminate AutoFixture overhead.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionPredictionDocumentProcessorTests :
     ProducerTestBase<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>
 {
@@ -28,15 +33,40 @@ public class EventCompetitionPredictionDocumentProcessorTests :
         var homeRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en");
         var awayRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30?lang=en");
 
-        var homeSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
-            .Create();
+        // OPTIMIZATION: Direct instantiation
+        var homeSeasonId = Guid.NewGuid();
+        var homeSeason = new FranchiseSeason
+        {
+            Id = homeSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "HOME",
+            DisplayName = "Home Team",
+            DisplayNameShort = "HT",
+            Location = "Home",
+            Name = "Home Team",
+            Slug = "home-team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
-        var awaySeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
-            .Create();
+        var awaySeasonId = Guid.NewGuid();
+        var awaySeason = new FranchiseSeason
+        {
+            Id = awaySeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "AWAY",
+            DisplayName = "Away Team",
+            DisplayNameShort = "AT",
+            Location = "Away",
+            Name = "Away Team",
+            Slug = "away-team",
+            ColorCodeHex = "#000000",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeSeason, awaySeason);
         await FootballDataContext.FranchiseSeasonExternalIds.AddRangeAsync(
@@ -59,10 +89,15 @@ public class EventCompetitionPredictionDocumentProcessorTests :
                 Value = awayRef.UrlHash
             });
 
-        var competition = Fixture.Build<Competition>()
-            .WithAutoProperties()
-            .With(x => x.Id, competitionId)
-            .Create();
+        // OPTIMIZATION: Direct instantiation
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();

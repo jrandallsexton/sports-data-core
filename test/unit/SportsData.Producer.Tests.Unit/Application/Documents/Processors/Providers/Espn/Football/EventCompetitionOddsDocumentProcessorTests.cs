@@ -22,9 +22,46 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// Tests for EventCompetitionOddsDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class EventCompetitionOddsDocumentProcessorTests
         : ProducerTestBase<EventCompetitionOddsDocumentProcessor<FootballDataContext>>
     {
+        // OPTIMIZATION: Helper method to create test contest and competition
+        private async Task<(Contest contest, Competition competition)> CreateTestContestAndCompetitionAsync(Guid competitionId)
+        {
+            var contest = new Contest
+            {
+                Id = Guid.NewGuid(),
+                Name = "Test Contest",
+                ShortName = "Test",
+                SeasonYear = 2025,
+                Sport = Sport.FootballNcaa,
+                StartDateUtc = DateTime.UtcNow,
+                HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+                AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var competition = new Competition
+            {
+                Id = competitionId,
+                ContestId = contest.Id,
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await FootballDataContext.Contests.AddAsync(contest);
+            await FootballDataContext.Competitions.AddAsync(competition);
+            await FootballDataContext.SaveChangesAsync();
+
+            return (contest, competition);
+        }
         [Fact]
         public async Task Test_Deserialization_SpotChecks()
         {
@@ -173,24 +210,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var hash = Mocker.GetMock<IJsonHashCalculator>();
 
             var compId = Guid.NewGuid();
-            var contest = Fixture.Build<Contest>()
-                .WithAutoProperties()
-                .With(x => x.HomeTeamFranchiseSeasonId, Guid.NewGuid())
-                .With(x => x.AwayTeamFranchiseSeasonId, Guid.NewGuid())
-                .With(x => x.Competitions, new List<Competition>())
-                .Create();
-
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, compId)
-                .With(x => x.ContestId, contest.Id)
-                .With(x => x.Contest, contest)
-                .With(x => x.Odds, new List<CompetitionOdds>())
-                .Create();
-
-            await FootballDataContext.Contests.AddAsync(contest);
-            await FootballDataContext.Competitions.AddAsync(competition);
-            await FootballDataContext.SaveChangesAsync();
+            
+            // OPTIMIZATION: Use helper method
+            await CreateTestContestAndCompetitionAsync(compId);
 
             var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
 
@@ -250,22 +272,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var compId = Guid.NewGuid();
 
-            var contest = Fixture.Build<Contest>()
-                .WithAutoProperties()
-                .With(x => x.Competitions, new List<Competition>())
-                .Create();
-
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, compId)
-                .With(x => x.ContestId, contest.Id)
-                .With(x => x.Contest, contest)
-                .With(x => x.Odds, new List<CompetitionOdds>())
-                .Create();
-
-            await FootballDataContext.Contests.AddAsync(contest);
-            await FootballDataContext.Competitions.AddAsync(competition);
-            await FootballDataContext.SaveChangesAsync();
+            // OPTIMIZATION: Use helper method
+            await CreateTestContestAndCompetitionAsync(compId);
 
             var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
             var dto = json.FromJson<EspnEventCompetitionOddsDto>();
@@ -275,7 +283,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash");
 
             // Seed existing odds with ExternalId matching UrlHash+Provider
-            var existing = dto.AsEntity(idGen.Object, compId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "content-hash");
+            var existing = dto!.AsEntity(idGen.Object, compId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "content-hash");
             existing.ExternalIds = new List<CompetitionOddsExternalId>
             {
                 new CompetitionOddsExternalId
@@ -321,24 +329,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var hash = Mocker.GetMock<IJsonHashCalculator>();
 
             var compId = Guid.NewGuid();
-            var contest = Fixture.Build<Contest>()
-                .WithAutoProperties()
-                .With(x => x.HomeTeamFranchiseSeasonId, Guid.NewGuid())
-                .With(x => x.AwayTeamFranchiseSeasonId, Guid.NewGuid())
-                .With(x => x.Competitions, new List<Competition>())
-                .Create();
-
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, compId)
-                .With(x => x.ContestId, contest.Id)
-                .With(x => x.Contest, contest)
-                .With(x => x.Odds, new List<CompetitionOdds>())
-                .Create();
-
-            await FootballDataContext.Contests.AddAsync(contest);
-            await FootballDataContext.Competitions.AddAsync(competition);
-            await FootballDataContext.SaveChangesAsync();
+            
+            // OPTIMIZATION: Use helper method
+            await CreateTestContestAndCompetitionAsync(compId);
 
             // Load fixtures
             var jsonOriginal = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_20Sep25.json");

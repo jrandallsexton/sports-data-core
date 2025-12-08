@@ -15,6 +15,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// Tests for EventCompetitionProbabilityDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class EventCompetitionProbabilityDocumentProcessorTests :
         ProducerTestBase<EventCompetitionProbabilityDocumentProcessor<FootballDataContext>>
     {
@@ -27,24 +32,30 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionProbability.json");
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .With(x => x.Probabilities, new List<CompetitionProbability>())
-                .With(x => x.ExternalIds, new List<CompetitionExternalId>())
-                .Create();
-
+            var competitionId = Guid.NewGuid();
             var competitionRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en");
 
-            competition.ExternalIds.Add(new CompetitionExternalId
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
             {
-                Id = Guid.NewGuid(),
-                CompetitionId = competition.Id,
-                Provider = SourceDataProvider.Espn,
-                SourceUrl = competitionRef.CleanUrl,
-                SourceUrlHash = competitionRef.UrlHash,
-                Value = competitionRef.UrlHash
-            });
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<CompetitionExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        CompetitionId = competitionId,
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = competitionRef.CleanUrl,
+                        SourceUrlHash = competitionRef.UrlHash,
+                        Value = competitionRef.UrlHash
+                    }
+                }
+            };
 
             await FootballDataContext.Competitions.AddAsync(competition);
             await FootballDataContext.SaveChangesAsync();
@@ -74,3 +85,4 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
     }
 }
+

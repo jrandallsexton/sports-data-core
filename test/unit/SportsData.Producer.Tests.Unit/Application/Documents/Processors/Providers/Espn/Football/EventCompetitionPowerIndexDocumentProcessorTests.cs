@@ -15,6 +15,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// Tests for EventCompetitionPowerIndexDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class EventCompetitionPowerIndexDocumentProcessorTests :
         ProducerTestBase<EventCompetitionPowerIndexDocumentProcessor<FootballDataContext>>
     {
@@ -27,19 +32,39 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPowerIndex.json");
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .With(x => x.PowerIndexes, new List<CompetitionPowerIndex>())
-                .Create();
+            var competitionId = Guid.NewGuid();
+            
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             await FootballDataContext.Competitions.AddAsync(competition);
             await FootballDataContext.SaveChangesAsync();
 
-            var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .Create();
+            var franchiseSeasonId = Guid.NewGuid();
+            
+            // OPTIMIZATION: Direct instantiation
+            var franchiseSeason = new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                FranchiseId = Guid.NewGuid(),
+                SeasonYear = 2024,
+                Abbreviation = "TEAM",
+                DisplayName = "Team",
+                DisplayNameShort = "T",
+                Location = "Location",
+                Name = "Team",
+                Slug = "team",
+                ColorCodeHex = "#FFFFFF",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             var identity = new ExternalRefIdentityGenerator().Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en");
 
@@ -83,3 +108,4 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
     }
 }
+

@@ -16,6 +16,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// Tests for EventCompetitionStatusDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class EventCompetitionStatusDocumentProcessorTests :
         ProducerTestBase<EventCompetitionStatusDocumentProcessor<FootballDataContext>>
     {
@@ -28,12 +33,17 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionStatus.json");
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .With(x => x.Id, Guid.NewGuid())
-                .With(x => x.Status, (CompetitionStatus?)null)
-                .With(x => x.ExternalIds, new List<CompetitionExternalId>())
-                .Create();
+            var competitionId = Guid.NewGuid();
+            
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             await FootballDataContext.Competitions.AddAsync(competition);
             await FootballDataContext.SaveChangesAsync();
@@ -68,3 +78,4 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
     }
 }
+

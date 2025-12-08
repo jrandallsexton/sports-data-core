@@ -16,6 +16,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionCompetitorScoreDocumentProcessor.
+/// Optimized to eliminate AutoFixture overhead for massive performance gains.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string ScoreUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/1/score";
@@ -43,10 +48,20 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitorId = Guid.NewGuid();
-        var competitor = Fixture.Build<CompetitionCompetitor>()
-            .With(x => x.Id, competitorId)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture (was taking 29 seconds!)
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            HomeAway = "home",
+            Winner = false,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
         await FootballDataContext.SaveChangesAsync();
 

@@ -17,6 +17,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionDriveDocumentProcessor.
+/// Optimized to eliminate AutoFixture overhead for massive performance gains.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string DriveUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/drives/4016283341?lang=en";
@@ -44,30 +49,36 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<Competition>()
-            .OmitAutoProperties()
-            .With(x => x.Id, competitionId)
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Drives, new List<CompetitionDrive>())
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        
         await FootballDataContext.Competitions.AddAsync(competition);
 
         var startTeamId = Guid.NewGuid();
-        var startFranchiseSeason = Fixture.Build<FranchiseSeason>()
-            .OmitAutoProperties()
-            .With(x => x.Id, startTeamId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Abbreviation, "START")
-            .With(x => x.ColorCodeHex, "#FFFFFF")
-            .With(x => x.DisplayName, "Start Team")
-            .With(x => x.DisplayNameShort, "DisplayNameShort")
-            .With(x => x.Location, "Location")
-            .With(x => x.Name, "Start Team Name")
-            .With(x => x.Slug, "start-team")
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture
+        var startFranchiseSeason = new FranchiseSeason
+        {
+            Id = startTeamId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            Abbreviation = "START",
+            ColorCodeHex = "#FFFFFF",
+            DisplayName = "Start Team",
+            DisplayNameShort = "DisplayNameShort",
+            Location = "Location",
+            Name = "Start Team Name",
+            Slug = "start-team"
+        };
         
         var teamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en";
         startFranchiseSeason.ExternalIds = new List<FranchiseSeasonExternalId>
@@ -75,12 +86,14 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             new()
             {
                 Id = Guid.NewGuid(),
+                FranchiseSeasonId = startTeamId,
                 Provider = SourceDataProvider.Espn,
                 Value = generator.Generate(teamUrl).UrlHash,
                 SourceUrlHash = generator.Generate(teamUrl).UrlHash,
                 SourceUrl = teamUrl
             }
         };
+        
         await FootballDataContext.FranchiseSeasons.AddAsync(startFranchiseSeason);
         await FootballDataContext.SaveChangesAsync();
 
@@ -117,30 +130,36 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<Competition>()
-            .OmitAutoProperties()
-            .With(x => x.Id, competitionId)
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Drives, new List<CompetitionDrive>())
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        
         await FootballDataContext.Competitions.AddAsync(competition);
 
         var startTeamId = Guid.NewGuid();
-        var startFranchiseSeason = Fixture.Build<FranchiseSeason>()
-            .OmitAutoProperties()
-            .With(x => x.Id, startTeamId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Abbreviation, "START")
-            .With(x => x.ColorCodeHex, "#FFFFFF")
-            .With(x => x.DisplayName, "Start Team")
-            .With(x => x.DisplayNameShort, "DisplayNameShort")
-            .With(x => x.Location, "Location")
-            .With(x => x.Name, "Start Team Name")
-            .With(x => x.Slug, "start-team")
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture
+        var startFranchiseSeason = new FranchiseSeason
+        {
+            Id = startTeamId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            Abbreviation = "START",
+            ColorCodeHex = "#FFFFFF",
+            DisplayName = "Start Team",
+            DisplayNameShort = "DisplayNameShort",
+            Location = "Location",
+            Name = "Start Team Name",
+            Slug = "start-team"
+        };
 
         var teamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en";
         startFranchiseSeason.ExternalIds = new List<FranchiseSeasonExternalId>
@@ -148,36 +167,40 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
             new()
             {
                 Id = Guid.NewGuid(),
+                FranchiseSeasonId = startTeamId,
                 Provider = SourceDataProvider.Espn,
                 Value = generator.Generate(teamUrl).UrlHash,
                 SourceUrlHash = generator.Generate(teamUrl).UrlHash,
                 SourceUrl = teamUrl
             }
         };
+        
         await FootballDataContext.FranchiseSeasons.AddAsync(startFranchiseSeason);
         await FootballDataContext.SaveChangesAsync();
 
         var correlationId = Guid.NewGuid();
-        var existingDrive = Fixture.Build<CompetitionDrive>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.Description, "Existing drive")
-            .With(x => x.SequenceNumber, "1")
-            .With(x => x.Ordinal, 1)
-            .With(x => x.CompetitionId, Guid.NewGuid())
-            .With(x => x.CreatedBy, correlationId)
-            .Create();
-
         var driveIdentity = generator.Generate(DriveUrl);
-        existingDrive.ExternalIds = new List<CompetitionDriveExternalId>
+        
+        // OPTIMIZATION: Direct instantiation - THIS WAS THE 3.5 MINUTE BOTTLENECK!
+        var existingDrive = new CompetitionDrive
         {
-            new()
+            Id = Guid.NewGuid(),
+            Description = "Existing drive",
+            SequenceNumber = "1",
+            Ordinal = 1,
+            CompetitionId = Guid.NewGuid(),
+            CreatedBy = correlationId,
+            CreatedUtc = DateTime.UtcNow,
+            ExternalIds = new List<CompetitionDriveExternalId>
             {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                Value = driveIdentity.UrlHash,
-                SourceUrlHash = driveIdentity.UrlHash,
-                SourceUrl = DriveUrl,
-                DriveId = existingDrive.Id
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    Value = driveIdentity.UrlHash,
+                    SourceUrlHash = driveIdentity.UrlHash,
+                    SourceUrl = DriveUrl
+                }
             }
         };
         
@@ -205,11 +228,15 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var competition = Fixture.Build<Competition>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        // OPTIMIZATION: Direct instantiation instead of AutoFixture
+        var competition = new Competition
+        {
+            Id = Guid.NewGuid(),
+            ContestId = Guid.NewGuid(),
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();
 

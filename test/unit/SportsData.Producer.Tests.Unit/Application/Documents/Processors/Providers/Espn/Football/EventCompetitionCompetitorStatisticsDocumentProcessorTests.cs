@@ -4,6 +4,7 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -16,6 +17,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
+    /// <summary>
+    /// Tests for EventCompetitionCompetitorStatisticsDocumentProcessor.
+    /// Optimized to eliminate AutoFixture overhead.
+    /// </summary>
+    [Collection("Sequential")]
     public class EventCompetitionCompetitorStatisticsDocumentProcessorTests
         : ProducerTestBase<EventCompetitionCompetitorStatisticsDocumentProcessor<TeamSportDataContext>>
     {
@@ -23,9 +29,15 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_Throws_WhenFranchiseSeasonNotFound()
         {
             // Arrange
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .Create();
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
+            {
+                Id = Guid.NewGuid(),
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             await TeamSportDataContext.Competitions.AddAsync(competition);
             await TeamSportDataContext.SaveChangesAsync();
@@ -55,24 +67,45 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var identity = generator.Generate(dto.Team.Ref);
+            var identity = generator.Generate(dto!.Team.Ref);
 
-            var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+            // OPTIMIZATION: Direct instantiation
+            var franchiseSeason = new FranchiseSeason
+            {
+                Id = Guid.NewGuid(),
+                FranchiseId = Guid.NewGuid(),
+                SeasonYear = 2024,
+                Abbreviation = "TEST",
+                DisplayName = "Test Team",
+                DisplayNameShort = "TT",
+                Location = "Test",
+                Name = "Test",
+                Slug = "test",
+                ColorCodeHex = "#FFFFFF",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<FranchiseSeasonExternalId>
                 {
                     new()
                     {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
                         SourceUrlHash = identity.UrlHash,
                         SourceUrl = identity.CleanUrl,
                         Value = identity.UrlHash
                     }
-                })
-                .Create();
+                }
+            };
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .Create();
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
+            {
+                Id = Guid.NewGuid(),
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.Competitions.AddAsync(competition);
@@ -112,29 +145,55 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var identity = generator.Generate(dto.Team.Ref);
+            var identity = generator.Generate(dto!.Team.Ref);
 
-            var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                .WithAutoProperties()
-                .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+            // OPTIMIZATION: Direct instantiation
+            var franchiseSeason = new FranchiseSeason
+            {
+                Id = Guid.NewGuid(),
+                FranchiseId = Guid.NewGuid(),
+                SeasonYear = 2024,
+                Abbreviation = "TEST",
+                DisplayName = "Test Team",
+                DisplayNameShort = "TT",
+                Location = "Test",
+                Name = "Test",
+                Slug = "test",
+                ColorCodeHex = "#FFFFFF",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<FranchiseSeasonExternalId>
                 {
                     new()
                     {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
                         SourceUrlHash = identity.UrlHash,
                         SourceUrl = identity.CleanUrl,
                         Value = identity.UrlHash
                     }
-                })
-                .Create();
+                }
+            };
 
-            var competition = Fixture.Build<Competition>()
-                .WithAutoProperties()
-                .Create();
+            // OPTIMIZATION: Direct instantiation
+            var competition = new Competition
+            {
+                Id = Guid.NewGuid(),
+                ContestId = Guid.NewGuid(),
+                Date = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
 
-            var existing = Fixture.Build<CompetitionCompetitorStatistic>()
-                .With(x => x.FranchiseSeasonId, franchiseSeason.Id)
-                .With(x => x.CompetitionId, competition.Id)
-                .With(x => x.Categories, new List<CompetitionCompetitorStatisticCategory>
+            // OPTIMIZATION: Direct instantiation
+            var existing = new CompetitionCompetitorStatistic
+            {
+                Id = Guid.NewGuid(),
+                FranchiseSeasonId = franchiseSeason.Id,
+                CompetitionId = competition.Id,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                Categories = new List<CompetitionCompetitorStatisticCategory>
                 {
                     new()
                     {
@@ -142,8 +201,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Name = "OLD",
                         Stats = new List<CompetitionCompetitorStatisticStat>()
                     }
-                })
-                .Create();
+                }
+            };
 
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.Competitions.AddAsync(competition);
@@ -176,3 +235,4 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
     }
 }
+

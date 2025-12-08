@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using AutoFixture;
 
 using FluentAssertions;
@@ -16,6 +16,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionCompetitorLineScoreDocumentProcessor.
+/// Optimized to minimize AutoFixture overhead and test execution time.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string TestUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores/1/1?lang=en&region=us";
@@ -43,11 +48,20 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitorId = Guid.NewGuid();
-        var competitor = Fixture.Build<CompetitionCompetitor>()
-            .With(x => x.Id, competitorId)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.LineScores, new List<CompetitionCompetitorLineScore>())
-            .Create();
+        
+        // OPTIMIZATION: Create minimal competitor without AutoFixture overhead
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            HomeAway = "home",
+            Winner = false,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
         await FootballDataContext.SaveChangesAsync();
 
@@ -87,31 +101,44 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
 
         var identity = generator.Generate(TestUrl);
 
-        var existing = Fixture.Build<CompetitionCompetitorLineScore>()
-            .With(x => x.Id, identity.CanonicalId)
-            .With(x => x.CompetitionCompetitorId, competitorId)
-            .With(x => x.Value, 99)
-            .With(x => x.DisplayValue, "99")
-            .With(x => x.Period, 1)
-            .With(x => x.SourceId, "OLD")
-            .With(x => x.SourceDescription, "Old Desc")
-            .With(x => x.ExternalIds, new List<CompetitionCompetitorLineScoreExternalId>
+        // OPTIMIZATION: Create minimal existing line score without AutoFixture overhead
+        var existing = new CompetitionCompetitorLineScore
+        {
+            Id = identity.CanonicalId,
+            CompetitionCompetitorId = competitorId,
+            Value = 99,
+            DisplayValue = "99",
+            Period = 1,
+            SourceId = "OLD",
+            SourceDescription = "Old Desc",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<CompetitionCompetitorLineScoreExternalId>
             {
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Provider = SourceDataProvider.Espn,
-                Value = identity.UrlHash,
-                SourceUrl = identity.CleanUrl,
-                SourceUrlHash = identity.UrlHash
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionCompetitorLineScoreId = identity.CanonicalId,
+                    Provider = SourceDataProvider.Espn,
+                    Value = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl,
+                    SourceUrlHash = identity.UrlHash
+                }
             }
-            })
-            .Create();
+        };
 
-        var competitor = Fixture.Build<CompetitionCompetitor>()
-            .With(x => x.Id, competitorId)
-            .Without(x => x.LineScores) // don’t assign LineScores manually
-            .Create();
+        // OPTIMIZATION: Create minimal competitor
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            HomeAway = "away",
+            Winner = false,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
 
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
         await FootballDataContext.CompetitionCompetitorLineScores.AddAsync(existing);
@@ -119,10 +146,10 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
 
-        // Act — reprocess same data
+        // Act � reprocess same data
         await sut.ProcessAsync(command);
 
-        // Assert — verify update
+        // Assert � verify update
         var updated = await FootballDataContext.CompetitionCompetitorLineScores
             .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
 

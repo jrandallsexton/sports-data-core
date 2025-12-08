@@ -19,6 +19,11 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionPlayDocumentProcessor.
+/// Optimized to eliminate AutoFixture overhead.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
@@ -60,56 +65,88 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<Competition>()
-            .OmitAutoProperties()
-            .With(x => x.Id, competitionId)
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.Plays, new List<CompetitionPlay>())
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();
 
         // Setup team franchise seasons for both teams
         var startTeamId = Guid.NewGuid();
-        var startTeam = Fixture.Build<FranchiseSeason>()
-            .With(x => x.Id, startTeamId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>())
-            .Create();
-        
         var startTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99";
-        var startTeamExternalId = Fixture.Build<FranchiseSeasonExternalId>()
-            .With(x => x.FranchiseSeasonId, startTeamId)
-            .With(x => x.Provider, SourceDataProvider.Espn)
-            .With(x => x.Value, generator.Generate(startTeamUrl).UrlHash)
-            .With(x => x.SourceUrlHash, generator.Generate(startTeamUrl).UrlHash)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
-        startTeam.ExternalIds = new List<FranchiseSeasonExternalId> { startTeamExternalId };
+        
+        // OPTIMIZATION: Direct instantiation
+        var startTeam = new FranchiseSeason
+        {
+            Id = startTeamId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM1",
+            DisplayName = "Team 1",
+            DisplayNameShort = "T1",
+            Location = "Location",
+            Name = "Team 1",
+            Slug = "team-1",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<FranchiseSeasonExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FranchiseSeasonId = startTeamId,
+                    Provider = SourceDataProvider.Espn,
+                    Value = generator.Generate(startTeamUrl).UrlHash,
+                    SourceUrl = startTeamUrl,
+                    SourceUrlHash = generator.Generate(startTeamUrl).UrlHash,
+                    CreatedBy = Guid.NewGuid()
+                }
+            }
+        };
 
         await FootballDataContext.FranchiseSeasons.AddAsync(startTeam);
         await FootballDataContext.SaveChangesAsync();
 
         var returnTeamId = Guid.NewGuid();
-        var returnTeam = Fixture.Build<FranchiseSeason>()
-            .With(x => x.Id, returnTeamId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>())
-            .Create();
-        
         var returnTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30";
-        var returnTeamExternalId = Fixture.Build<FranchiseSeasonExternalId>()
-            .With(x => x.FranchiseSeasonId, returnTeamId)
-            .With(x => x.Provider, SourceDataProvider.Espn)
-            .With(x => x.SourceUrlHash, generator.Generate(returnTeamUrl).UrlHash)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
-        returnTeam.ExternalIds = new List<FranchiseSeasonExternalId> { returnTeamExternalId };
+        
+        // OPTIMIZATION: Direct instantiation
+        var returnTeam = new FranchiseSeason
+        {
+            Id = returnTeamId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM2",
+            DisplayName = "Team 2",
+            DisplayNameShort = "T2",
+            Location = "Location",
+            Name = "Team 2",
+            Slug = "team-2",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<FranchiseSeasonExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FranchiseSeasonId = returnTeamId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = returnTeamUrl,
+                    SourceUrlHash = generator.Generate(returnTeamUrl).UrlHash,
+                    Value = generator.Generate(returnTeamUrl).UrlHash,
+                    CreatedBy = Guid.NewGuid()
+                }
+            }
+        };
 
         await FootballDataContext.FranchiseSeasons.AddAsync(returnTeam);
         await FootballDataContext.SaveChangesAsync();
@@ -149,51 +186,84 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<Competition>()
-            .With(x => x.Id, competitionId)
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        
+        // OPTIMIZATION: Direct instantiation
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
         await FootballDataContext.Competitions.AddAsync(competition);
 
         var startTeamId = Guid.NewGuid();
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .With(x => x.Id, startTeamId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        var startTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30";
+        
+        // OPTIMIZATION: Direct instantiation
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = startTeamId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
 
-        var startTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30";
-        var externalId = Fixture.Build<FranchiseSeasonExternalId>()
-            .With(x => x.FranchiseSeasonId, startTeamId)
-            .With(x => x.Provider, SourceDataProvider.Espn)
-            .With(x => x.SourceUrlHash, generator.Generate(startTeamUrl).UrlHash)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        // OPTIMIZATION: Direct instantiation
+        var externalId = new FranchiseSeasonExternalId
+        {
+            Id = Guid.NewGuid(),
+            FranchiseSeasonId = startTeamId,
+            Provider = SourceDataProvider.Espn,
+            SourceUrl = startTeamUrl,
+            SourceUrlHash = generator.Generate(startTeamUrl).UrlHash,
+            Value = generator.Generate(startTeamUrl).UrlHash,
+            CreatedBy = Guid.NewGuid()
+        };
         await FootballDataContext.FranchiseSeasonExternalIds.AddAsync(externalId);
 
         // Add the FranchiseSeason for dto.Team.Ref
         var teamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99?lang=en";
         var mainFranchiseSeasonId = Guid.NewGuid();
-        var mainFranchiseSeason = Fixture.Build<FranchiseSeason>()
-            .With(x => x.Id, mainFranchiseSeasonId)
-            .With(x => x.FranchiseId, Guid.NewGuid())
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+        
+        // OPTIMIZATION: Direct instantiation
+        var mainFranchiseSeason = new FranchiseSeason
+        {
+            Id = mainFranchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "MAIN",
+            DisplayName = "Main Team",
+            DisplayNameShort = "MT",
+            Location = "Location",
+            Name = "Main Team",
+            Slug = "main-team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<FranchiseSeasonExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    FranchiseSeasonId = mainFranchiseSeasonId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = new Uri(teamUrl).ToCleanUrl(),
                     SourceUrlHash = generator.Generate(teamUrl).UrlHash,
                     Value = generator.Generate(teamUrl).UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
         await FootballDataContext.FranchiseSeasons.AddAsync(mainFranchiseSeason);
 

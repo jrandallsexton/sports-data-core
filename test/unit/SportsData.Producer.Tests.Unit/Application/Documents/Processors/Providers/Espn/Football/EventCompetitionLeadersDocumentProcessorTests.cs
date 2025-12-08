@@ -23,6 +23,11 @@ using FootballLeaderCategory = SportsData.Core.Common.FootballLeaderCategory;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
+/// <summary>
+/// Tests for EventCompetitionLeadersDocumentProcessor.
+/// Optimized to eliminate AutoFixture overhead.
+/// </summary>
+[Collection("Sequential")]
 public class EventCompetitionLeadersDocumentProcessorTests : 
     ProducerTestBase<EventCompetitionLeadersDocumentProcessor<TeamSportDataContext>>
 {
@@ -33,7 +38,120 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     {
         _output = output;
         var documentJson = LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json").Result;
-        _dto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+        _dto = documentJson.FromJson<EspnEventCompetitionLeadersDto>()!;
+    }
+
+    // OPTIMIZATION: Helper method to seed test data
+    private async Task SeedTestDataAsync(EspnEventCompetitionLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid competitionId)
+    {
+        // Seed competition
+        var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto.Ref);
+        var competitionIdentity = identityGenerator.Generate(competitionRef);
+
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<CompetitionExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = competitionIdentity.CleanUrl,
+                    SourceUrlHash = competitionIdentity.UrlHash,
+                    Value = competitionIdentity.UrlHash
+                }
+            }
+        };
+
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Seed LeaderCategories
+        var nextCategoryId = 1;
+        foreach (var category in leadersDto.Categories)
+        {
+            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+            {
+                Id = nextCategoryId++,
+                Name = category.Name,
+                DisplayName = category.DisplayName,
+                ShortDisplayName = category.ShortDisplayName,
+                Abbreviation = category.Abbreviation,
+                CreatedUtc = DateTime.UtcNow
+            });
+        }
+
+        var athleteSeasonIds = new HashSet<Guid>();
+        var franchiseSeasonIds = new HashSet<Guid>();
+
+        // Seed Athlete + FranchiseSeason for each leader
+        foreach (var leader in leadersDto.Categories.SelectMany(c => c.Leaders))
+        {
+            var athleteSeasonIdentity = identityGenerator.Generate(leader.Athlete.Ref);
+            if (athleteSeasonIds.Add(athleteSeasonIdentity.CanonicalId))
+            {
+                var athlete = new FootballAthleteSeason
+                {
+                    Id = athleteSeasonIdentity.CanonicalId,
+                    AthleteId = Guid.NewGuid(),
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<AthleteSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            AthleteSeasonId = athleteSeasonIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = athleteSeasonIdentity.CleanUrl,
+                            SourceUrlHash = athleteSeasonIdentity.UrlHash,
+                            Value = athleteSeasonIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.AthleteSeasons.AddAsync(athlete);
+            }
+
+            var franchiseSeasonIdentity = identityGenerator.Generate(leader.Team.Ref);
+            if (franchiseSeasonIds.Add(franchiseSeasonIdentity.CanonicalId))
+            {
+                var franchiseSeason = new FranchiseSeason
+                {
+                    Id = franchiseSeasonIdentity.CanonicalId,
+                    FranchiseId = Guid.NewGuid(),
+                    SeasonYear = 2024,
+                    Abbreviation = "TEST",
+                    DisplayName = "Test Team",
+                    DisplayNameShort = "TT",
+                    Location = "Test",
+                    Name = "Test",
+                    Slug = "test",
+                    ColorCodeHex = "#FFFFFF",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseSeasonId = franchiseSeasonIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = franchiseSeasonIdentity.CleanUrl,
+                            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+                            Value = franchiseSeasonIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            }
+        }
+
+        await FootballDataContext.SaveChangesAsync();
     }
 
     [Fact]
@@ -221,53 +339,30 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task WhenCompetitionExists_LeadersAreCreated()
     {
         // arrange
-        var identityGenerator = new ExternalRefIdentityGenerator();
-        var identity = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en");
-
         var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
 
-        var competition = Fixture.Build<Competition>()
-            .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<CompetitionExternalId>
-            {
-                    new CompetitionExternalId
-                    {
-                        Id = identity.CanonicalId,
-                        Provider = SourceDataProvider.Espn,
-                        SourceUrl = identity.CleanUrl,
-                        SourceUrlHash = identity.UrlHash,
-                        Value = identity.UrlHash
-                    }
-            })
-            .Create();
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
 
-        await FootballDataContext.Competitions.AddAsync(competition);
-        await FootballDataContext.SaveChangesAsync();
+        var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto!.Ref);
+        var competitionIdentity = identityGenerator.Generate(competitionRef);
 
-        // Also seed known LeaderCategory IDs
-        FootballDataContext.LeaderCategories.AddRange(
-            new CompetitionLeaderCategory
-            {
-                Id = 1,
-                Name = "passingLeader",
-                DisplayName = "Passing Leader",
-                ShortDisplayName = "PASS",
-                Abbreviation = "PYDS",
-                CreatedUtc = DateTime.UtcNow
-            });
-
-        await FootballDataContext.SaveChangesAsync();
+        // OPTIMIZATION: Use helper to seed all required data
+        await SeedTestDataAsync(leadersDto, identityGenerator, competitionIdentity.CanonicalId);
 
         var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
+
+        var leadersIdentity = identityGenerator.Generate(leadersDto.Ref);
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
             .With(x => x.Document, documentJson)
-            .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/leaders?lang=en".UrlHash())
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
             .With(x => x.DocumentType, DocumentType.EventCompetitionLeaders)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.ParentId, competitionIdentity.CanonicalId.ToString())
             .With(x => x.CorrelationId, Guid.NewGuid())
             .Create();
 
@@ -295,93 +390,8 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto!.Ref);
         var competitionIdentity = identityGenerator.Generate(competitionRef);
 
-        // Seed competition
-        var competition = Fixture.Build<Competition>()
-            .WithAutoProperties()
-            .With(x => x.Id, competitionIdentity.CanonicalId)
-            .With(x => x.ExternalIds, new List<CompetitionExternalId>
-            {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrl = competitionIdentity.CleanUrl,
-                    SourceUrlHash = competitionIdentity.UrlHash,
-                    Value = competitionIdentity.UrlHash
-                }
-            })
-            .With(x => x.Leaders, new List<CompetitionLeader>())
-            .Create();
-
-        await FootballDataContext.Competitions.AddAsync(competition);
-
-        // Seed LeaderCategories
-        var nextCategoryId = 1;
-        foreach (var category in leadersDto.Categories)
-        {
-            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
-            {
-                Id = nextCategoryId++,
-                Name = category.Name,
-                DisplayName = category.DisplayName,
-                ShortDisplayName = category.ShortDisplayName,
-                Abbreviation = category.Abbreviation,
-                CreatedUtc = DateTime.UtcNow
-            });
-        }
-
-        var athleteSeasonIds = new List<Guid>();
-        var franchiseSeasonIds = new List<Guid>();
-
-        // Seed Athlete + FranchiseSeason for each leader
-        foreach (var leader in leadersDto.Categories.SelectMany(c => c.Leaders))
-        {
-            var athleteSeasonIdentity = identityGenerator.Generate(leader.Athlete.Ref);
-            if (!athleteSeasonIds.Contains(athleteSeasonIdentity.CanonicalId))
-            {
-                var athlete = Fixture.Build<FootballAthleteSeason>()
-                    .WithAutoProperties()
-                    .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
-                    .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = athleteSeasonIdentity.CleanUrl,
-                            SourceUrlHash = athleteSeasonIdentity.UrlHash,
-                            Value = athleteSeasonIdentity.UrlHash
-                        }
-                    })
-                    .Create();
-                await FootballDataContext.AthleteSeasons.AddAsync(athlete);
-                athleteSeasonIds.Add(athleteSeasonIdentity.CanonicalId);
-            }
-
-            var franchiseSeasonIdentity = identityGenerator.Generate(leader.Team.Ref);
-            if (!franchiseSeasonIds.Contains(franchiseSeasonIdentity.CanonicalId))
-            {
-                var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                    .WithAutoProperties()
-                    .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = franchiseSeasonIdentity.CleanUrl,
-                            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
-                            Value = franchiseSeasonIdentity.UrlHash
-                        }
-                    })
-                    .Create();
-                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-                franchiseSeasonIds.Add(franchiseSeasonIdentity.CanonicalId);
-            }
-        }
-
-        await FootballDataContext.SaveChangesAsync();
+        // OPTIMIZATION: Use helper to seed all required data
+        await SeedTestDataAsync(leadersDto, identityGenerator, competitionIdentity.CanonicalId);
 
         var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
 
@@ -395,7 +405,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.CorrelationId, Guid.NewGuid())
-            .With(x => x.ParentId, competition.Id.ToString())
+            .With(x => x.ParentId, competitionIdentity.CanonicalId.ToString())
             .Create();
 
         // Act
@@ -438,93 +448,8 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto!.Ref);
         var competitionIdentity = identityGenerator.Generate(competitionRef);
 
-        // Seed competition
-        var competition = Fixture.Build<Competition>()
-            .WithAutoProperties()
-            .With(x => x.Id, competitionIdentity.CanonicalId)
-            .With(x => x.ExternalIds, new List<CompetitionExternalId>
-            {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrl = competitionIdentity.CleanUrl,
-                    SourceUrlHash = competitionIdentity.UrlHash,
-                    Value = competitionIdentity.UrlHash
-                }
-            })
-            .With(x => x.Leaders, new List<CompetitionLeader>())
-            .Create();
-
-        await FootballDataContext.Competitions.AddAsync(competition);
-
-        // Seed LeaderCategories
-        var nextCategoryId = 1;
-        foreach (var category in leadersDto.Categories)
-        {
-            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
-            {
-                Id = nextCategoryId++,
-                Name = category.Name,
-                DisplayName = category.DisplayName,
-                ShortDisplayName = category.ShortDisplayName,
-                Abbreviation = category.Abbreviation,
-                CreatedUtc = DateTime.UtcNow
-            });
-        }
-
-        var athleteSeasonIds = new List<Guid>();
-        var franchiseSeasonIds = new List<Guid>();
-
-        // Seed Athlete + FranchiseSeason for each leader
-        foreach (var leader in leadersDto.Categories.SelectMany(c => c.Leaders))
-        {
-            var athleteSeasonIdentity = identityGenerator.Generate(leader.Athlete.Ref);
-            if (!athleteSeasonIds.Contains(athleteSeasonIdentity.CanonicalId))
-            {
-                var athlete = Fixture.Build<FootballAthleteSeason>()
-                    .WithAutoProperties()
-                    .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
-                    .With(x => x.ExternalIds, new List<AthleteSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = athleteSeasonIdentity.CleanUrl,
-                            SourceUrlHash = athleteSeasonIdentity.UrlHash,
-                            Value = athleteSeasonIdentity.UrlHash
-                        }
-                    })
-                    .Create();
-                await FootballDataContext.AthleteSeasons.AddAsync(athlete);
-                athleteSeasonIds.Add(athleteSeasonIdentity.CanonicalId);
-            }
-
-            var franchiseSeasonIdentity = identityGenerator.Generate(leader.Team.Ref);
-            if (!franchiseSeasonIds.Contains(franchiseSeasonIdentity.CanonicalId))
-            {
-                var franchiseSeason = Fixture.Build<FranchiseSeason>()
-                    .WithAutoProperties()
-                    .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-                    .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = franchiseSeasonIdentity.CleanUrl,
-                            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
-                            Value = franchiseSeasonIdentity.UrlHash
-                        }
-                    })
-                    .Create();
-                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-                franchiseSeasonIds.Add(franchiseSeasonIdentity.CanonicalId);
-            }
-        }
-
-        await FootballDataContext.SaveChangesAsync();
+        // OPTIMIZATION: Use helper to seed all required data
+        await SeedTestDataAsync(leadersDto, identityGenerator, competitionIdentity.CanonicalId);
 
         var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
 
@@ -538,7 +463,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.CorrelationId, Guid.NewGuid())
-            .With(x => x.ParentId, competition.Id.ToString())
+            .With(x => x.ParentId, competitionIdentity.CanonicalId.ToString())
             .Create();
 
         // Act

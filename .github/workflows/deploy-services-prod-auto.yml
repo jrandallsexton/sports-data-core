@@ -135,11 +135,33 @@ jobs:
             echo "✅ Changes committed to sports-data-config. Flux will deploy automatically."
           fi
 
-      - name: Wait for Flux to deploy
+      - name: Wait for API to be healthy
         if: ${{ inputs.deploy_api }}
         run: |
-          echo "Waiting 60 seconds for Flux to deploy new API version..."
-          sleep 60
+          echo "Waiting for API to be available and healthy..."
+          MAX_ATTEMPTS=30
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking API health..."
+            
+            # Try to hit the health endpoint
+            if curl -f -s -o /dev/null -w "%{http_code}" https://api-int.sportdeets.com/health | grep -q "200"; then
+              echo "✅ API is healthy and ready!"
+              
+              # Extra 10 seconds to ensure Swagger endpoint is also ready
+              echo "Waiting 10 more seconds for Swagger endpoint..."
+              sleep 10
+              exit 0
+            fi
+            
+            echo "API not ready yet, waiting 10 seconds..."
+            sleep 10
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          
+          echo "❌ API failed to become healthy after $((MAX_ATTEMPTS * 10)) seconds"
+          exit 1
 
       - name: Import Swagger to APIM
         if: ${{ inputs.deploy_api }}
@@ -153,4 +175,4 @@ jobs:
             --specification-format OpenApi \
             --subscription-required false
           
-          echo "✅ APIM Swagger definition updated from https://api.sportdeets.com/swagger/v1/swagger.json"
+          echo "✅ APIM Swagger definition updated from https://api-int.sportdeets.com/swagger/v1/swagger.json"

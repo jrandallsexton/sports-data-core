@@ -639,5 +639,90 @@ namespace SportsData.Api.Application.UI.Leagues
 
             return new Success<Guid>(leagueId);
         }
+
+        public async Task<Result<LeagueScoresByWeekDto>> GetLeagueScoresByWeek(Guid leagueId)
+        {
+            var league = await _dbContext.PickemGroups
+                .AsNoTracking()
+                .Include(x => x.Members)
+                .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(x => x.Id == leagueId);
+
+            if (league is null)
+                return new Failure<LeagueScoresByWeekDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(leagueId), $"League with ID {leagueId} not found.")]);
+
+            // Get all picks for this league
+            var userPicks = await _dbContext.UserPicks
+                .AsNoTracking()
+                .Where(p => p.PickemGroupId == leagueId)
+                .Include(p => p.User)
+                .ToListAsync();
+
+            // Get all matchups for this league to determine weeks
+            var matchups = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.GroupId == leagueId)
+                .Select(m => new { m.ContestId, m.SeasonWeek })
+                .ToListAsync();
+
+            // Create a map of contestId -> week for fast lookup
+            var contestWeekMap = matchups.ToDictionary(m => m.ContestId, m => m.SeasonWeek);
+
+            // Get all unique weeks
+            var allWeeks = matchups.Select(m => m.SeasonWeek).Distinct().OrderBy(w => w).ToList();
+
+            // Build result DTO
+            var result = new LeagueScoresByWeekDto
+            {
+                LeagueId = leagueId,
+                LeagueName = league.Name,
+                Weeks = new List<LeagueScoresByWeekDto.LeagueScoreByWeek>()
+            };
+
+            // Process each week
+            foreach (var weekNumber in allWeeks)
+            {
+                var weekMatchups = matchups.Where(m => m.SeasonWeek == weekNumber).ToList();
+                var weekContestIds = weekMatchups.Select(m => m.ContestId).ToHashSet();
+                var weekPicks = userPicks.Where(p => weekContestIds.Contains(p.ContestId)).ToList();
+
+                var weekDto = new LeagueScoresByWeekDto.LeagueScoreByWeek
+                {
+                    WeekNumber = weekNumber,
+                    PickCount = weekMatchups.Count,
+                    UserScores = new List<LeagueScoresByWeekDto.LeagueUserScoreDto>()
+                };
+
+                // Calculate scores for each user this week using pre-scored PointsAwarded
+                foreach (var member in league.Members.OrderBy(m => m.User.DisplayName))
+                {
+                    var userWeekPicks = weekPicks.Where(p => p.UserId == member.UserId).ToList();
+                    
+                    // Sum the already-scored points
+                    var score = userWeekPicks
+                        .Where(p => p.PointsAwarded.HasValue)
+                        .Sum(p => p.PointsAwarded!.Value);
+
+                    weekDto.UserScores.Add(new LeagueScoresByWeekDto.LeagueUserScoreDto
+                    {
+                        UserId = member.UserId,
+                        UserName = member.User.DisplayName,
+                        WeekNumber = weekNumber,
+                        PickCount = userWeekPicks.Count,
+                        Score = score
+                    });
+                }
+
+                // Sort users by score descending for this week
+                weekDto.UserScores = weekDto.UserScores.OrderByDescending(u => u.Score).ToList();
+
+                result.Weeks.Add(weekDto);
+            }
+
+            return new Success<LeagueScoresByWeekDto>(result);
+        }
     }
 }

@@ -267,4 +267,18 @@ public class LeagueController : ApiControllerBase
 
         return result.ToActionResult();
     }
+
+    /// <summary>
+    /// Gets scores by week for all members of a league.
+    /// </summary>
+    /// <param name="id">The league ID</param>
+    /// <returns>Weekly scores for all league members</returns>
+    [HttpGet("{id}/scores")]
+    [Authorize]
+    public async Task<ActionResult<LeagueScoresByWeekDto>> GetLeagueScoresByWeek([FromRoute] Guid id)
+    {
+        var result = await _iLeagueService.GetLeagueScoresByWeek(id);
+
+        return result.ToActionResult();
+    }
 }

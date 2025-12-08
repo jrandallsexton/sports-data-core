@@ -6,6 +6,7 @@ import apiWrapper from "../../api/apiWrapper";
 import LeaguesApi from '../../api/leagues/leaguesApi';
 import LeaderboardStandingsTable from "./LeaderboardStandingsTable";
 import LeagueWeekOverviewTable from "./LeagueWeekOverviewTable";
+import WeeklyScoresTable from "./WeeklyScoresTable";
 import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
@@ -19,6 +20,7 @@ function LeaderboardPage() {
   const [loading, setLoading] = useState(false);
   const [overview, setOverview] = useState(null);
   const [selectedWeek, setSelectedWeek] = useState(null); // Start with null instead of 1
+  const [weeklyScores, setWeeklyScores] = useState(null);
 
   const currentUserId = userDto?.id ?? null;
 
@@ -73,6 +75,24 @@ function LeaderboardPage() {
         });
     }
   }, [selectedLeagueId, selectedWeek]);
+
+  // Fetch weekly scores when league changes
+  useEffect(() => {
+    const fetchWeeklyScores = async () => {
+      if (!selectedLeagueId) {
+        setWeeklyScores(null);
+        return;
+      }
+      try {
+        const data = await LeaguesApi.getLeagueScores(selectedLeagueId);
+        setWeeklyScores(data);
+      } catch (err) {
+        console.error("Failed to load weekly scores", err);
+        setWeeklyScores(null);
+      }
+    };
+    fetchWeeklyScores();
+  }, [selectedLeagueId]);
 
   // Generate week options based on maxSeasonWeek
   const weekOptions = Array.from({ length: maxSeasonWeek }, (_, i) => i + 1);
@@ -130,6 +150,11 @@ function LeaderboardPage() {
 
       <LeagueWeekOverviewTable
         overview={overview}
+      />
+
+      <WeeklyScoresTable
+        scoresData={weeklyScores}
+        currentUserId={currentUserId}
       />
     </div>
   );

@@ -27,4 +27,6 @@ public interface ILeagueService
         int week);
 
     Task<Result<Guid>> GenerateLeagueWeekPreviews(Guid leagueId, int weekId);
+
+    Task<Result<LeagueScoresByWeekDto>> GetLeagueScoresByWeek(Guid leagueId);
 }

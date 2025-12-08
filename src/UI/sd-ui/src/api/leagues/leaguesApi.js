@@ -83,6 +83,16 @@ const getLeagueWeekOverview = async (leagueId, weekNumber) => {
   );
 };
 
+/**
+ * Fetches weekly scores for all users in a league.
+ * @param {string} leagueId - League GUID
+ * @returns {Promise<LeagueScoresDto>} Weekly scores data
+ */
+const getLeagueScores = async (leagueId) => {
+  const response = await apiClient.get(`${BASE_PATH}/${leagueId}/scores`);
+  return response.data;
+};
+
 const LeaguesApi = {
   createLeague,
   getLeagueById,
@@ -91,7 +101,8 @@ const LeaguesApi = {
   deleteLeague,
   sendInvite,
   getPublicLeagues,
-  getLeagueWeekOverview
+  getLeagueWeekOverview,
+  getLeagueScores
 };
 
 export default LeaguesApi;

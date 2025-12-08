@@ -13,24 +13,21 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // No cookies needed
   withCredentials: false,
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  // Skip auth endpoints to avoid circular dependencies
-  const isAuthEndpoint = config.url?.includes('/auth/set-token') || config.url?.includes('/auth/clear-token');
-  
-  if (!isAuthEndpoint) {
-    const auth = getAuth();
-    const user = auth.currentUser;
+  const auth = getAuth();
+  const user = auth.currentUser;
 
-    if (user) {
-      // Get token without forcing refresh - Firebase will refresh automatically if expired
+  if (user) {
+    try {
+      // Get fresh token - Firebase handles caching automatically
       const token = await user.getIdToken(false);
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.warn("No Firebase user found. Skipping Authorization header.");
+    } catch (error) {
+      console.error('Failed to get Firebase token:', error);
+      // Don't block the request, let the API return 401 if needed
     }
   }
 
@@ -39,18 +36,22 @@ apiClient.interceptors.request.use(async (config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    //console.log("API Response:", response.status, response.config.url);
     return response;
   },
   async (error) => {
-    console.log("API Error:", error.response?.status, error.config?.url);
+    const status = error.response?.status;
+    const url = error.config?.url;
+    
+    console.log(`API Error: ${status || 'Network Error'} ${url}`);
 
-    if (error.response?.status === 401) {
+    if (status === 401) {
       error.isUnauthorized = true;
+      console.warn('Unauthorized request - user may need to re-authenticate');
     }
 
+    // Network error / timeout / CORS failure
     if (!error.response && onGlobalApiError) {
-      // Network error / timeout / CORS failure, etc.
+      console.error('API offline or unreachable', error.message);
       onGlobalApiError(error);
     }
 

@@ -27,7 +27,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
 /// <summary>
 /// Tests for AthleteSeasonDocumentProcessor covering create, update, dependency resolution, and image processing.
+/// Optimized to eliminate AutoFixture overhead.
 /// </summary>
+[Collection("Sequential")]
 public class AthleteSeasonDocumentProcessorTests :
     ProducerTestBase<AthleteSeasonDocumentProcessor>
 {
@@ -55,58 +57,75 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        var franchise = Fixture.Build<Franchise>()
-            .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.Seasons, new List<FranchiseSeason>())
-            .Create();
-
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-            .With(x => x.FranchiseId, franchise.Id)
-            .With(x => x.SeasonYear, 2024)
-            .With(x => x.ExternalIds, new List<FranchiseSeasonExternalId>
+        // OPTIMIZATION: Direct instantiation
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<FranchiseSeasonExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    FranchiseSeasonId = franchiseSeasonId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = franchiseSeasonIdentity.CleanUrl,
                     SourceUrlHash = franchiseSeasonIdentity.UrlHash,
                     Value = franchiseSeasonIdentity.UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
-        var position = Fixture.Build<AthletePosition>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.Abbreviation, "QB")
-            .With(x => x.ExternalIds, new List<AthletePositionExternalId>
+        var positionId = Guid.NewGuid();
+        var position = new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "QB",
+            Name = "Quarterback",
+            DisplayName = "Quarterback",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthletePositionExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = positionIdentity.CleanUrl,
                     SourceUrlHash = positionIdentity.UrlHash,
                     Value = positionIdentity.UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.LastName, dto.LastName)
-            .With(x => x.FirstName, dto.FirstName)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            LastName = dto.LastName,
+            FirstName = dto.FirstName,
+            DisplayName = $"{dto.FirstName} {dto.LastName}",
+            ShortName = dto.LastName,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         var athleteExternalId = new AthleteExternalId
         {
             Id = Guid.NewGuid(),
-            AthleteId = athleteIdentity.CanonicalId,
+            AthleteId = athleteId,
             Provider = SourceDataProvider.Espn,
             SourceUrl = athleteRef,
             SourceUrlHash = athleteIdentity.UrlHash,
@@ -183,44 +202,74 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        // Setup dependencies
-        var position = Fixture.Build<AthletePosition>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<AthletePositionExternalId>
+        // OPTIMIZATION: Direct instantiation
+        var positionId = Guid.NewGuid();
+        var position = new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "QB",
+            Name = "Quarterback",
+            DisplayName = "Quarterback",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthletePositionExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = positionIdentity.CleanUrl,
                     SourceUrlHash = positionIdentity.UrlHash,
                     Value = positionIdentity.UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-            .With(x => x.SeasonYear, 2024)
-            .Create();
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = "Test",
+            LastName = "Player",
+            DisplayName = "Test Player",
+            ShortName = "Player",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         // Create existing AthleteSeason with old data
-        var existingAthleteSeason = Fixture.Build<FootballAthleteSeason>()
-            .With(x => x.Id, dtoIdentity.CanonicalId)
-            .With(x => x.AthleteId, athlete.Id)
-            .With(x => x.FranchiseSeasonId, franchiseSeason.Id)
-            .With(x => x.PositionId, position.Id)
-            .With(x => x.DisplayName, "Old Display Name")
-            .With(x => x.Jersey, "99")
-            .With(x => x.ExperienceYears, 1)
-            .Create();
+        var existingAthleteSeason = new FootballAthleteSeason
+        {
+            Id = dtoIdentity.CanonicalId,
+            AthleteId = athlete.Id,
+            FranchiseSeasonId = franchiseSeason.Id,
+            PositionId = position.Id,
+            DisplayName = "Old Display Name",
+            Jersey = "99",
+            ExperienceYears = 1,
+            FirstName = "Old",
+            LastName = "Name",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.AthletePositions.AddAsync(position);
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
@@ -319,12 +368,18 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto!.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        // Create only the Athlete (no FranchiseSeason)
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        // OPTIMIZATION: Direct instantiation - Create only the Athlete (no FranchiseSeason)
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = "Test",
+            LastName = "Player",
+            DisplayName = "Test Player",
+            ShortName = "Player",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.Athletes.AddAsync(athlete);
         await FootballDataContext.SaveChangesAsync();
@@ -374,17 +429,35 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        // Create Athlete and FranchiseSeason (but no Position)
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-            .Create();
+        // OPTIMIZATION: Direct instantiation - Create Athlete and FranchiseSeason (but no Position)
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = "Test",
+            LastName = "Player",
+            DisplayName = "Test Player",
+            ShortName = "Player",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
         await FootballDataContext.Athletes.AddAsync(athlete);
@@ -502,31 +575,58 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        var position = Fixture.Build<AthletePosition>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<AthletePositionExternalId>
+        // OPTIMIZATION: Direct instantiation
+        var positionId = Guid.NewGuid();
+        var position = new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "QB",
+            Name = "Quarterback",
+            DisplayName = "Quarterback",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthletePositionExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = positionIdentity.CleanUrl,
                     SourceUrlHash = positionIdentity.UrlHash,
                     Value = positionIdentity.UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-            .Create();
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = "Test",
+            LastName = "Player",
+            DisplayName = "Test Player",
+            ShortName = "Player",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.AthletePositions.AddAsync(position);
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
@@ -578,31 +678,58 @@ public class AthleteSeasonDocumentProcessorTests :
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
         var athleteIdentity = generator.Generate(athleteRef);
 
-        var position = Fixture.Build<AthletePosition>()
-            .With(x => x.Id, Guid.NewGuid())
-            .With(x => x.ExternalIds, new List<AthletePositionExternalId>
+        // OPTIMIZATION: Direct instantiation
+        var positionId = Guid.NewGuid();
+        var position = new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "QB",
+            Name = "Quarterback",
+            DisplayName = "Quarterback",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthletePositionExternalId>
             {
                 new()
                 {
                     Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
                     Provider = SourceDataProvider.Espn,
                     SourceUrl = positionIdentity.CleanUrl,
                     SourceUrlHash = positionIdentity.UrlHash,
                     Value = positionIdentity.UrlHash
                 }
-            })
-            .Create();
+            }
+        };
 
-        var franchiseSeason = Fixture.Build<FranchiseSeason>()
-            .WithAutoProperties()
-            .With(x => x.Id, franchiseSeasonIdentity.CanonicalId)
-            .Create();
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        var franchiseSeason = new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
-        var athlete = Fixture.Build<FootballAthlete>()
-            .WithAutoProperties()
-            .With(x => x.Id, athleteIdentity.CanonicalId)
-            .With(x => x.Seasons, new List<AthleteSeason>())
-            .Create();
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = "Test",
+            LastName = "Player",
+            DisplayName = "Test Player",
+            ShortName = "Player",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         await FootballDataContext.AthletePositions.AddAsync(position);
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
@@ -630,4 +757,5 @@ public class AthleteSeasonDocumentProcessorTests :
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }
+
 

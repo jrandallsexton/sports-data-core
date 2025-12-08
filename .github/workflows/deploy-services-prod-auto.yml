@@ -175,4 +175,11 @@ jobs:
             --specification-format OpenApi \
             --subscription-required false
           
+          # Restore service URL (import clears it)
+          az apim api update \
+            --resource-group rg-sportDeets \
+            --service-name sportdeets-apim \
+            --api-id sportdeets-api \
+            --service-url "https://api-int.sportdeets.com"
+          
           echo "✅ APIM Swagger definition updated from https://api-int.sportdeets.com/swagger/v1/swagger.json"

@@ -1,4 +1,5 @@
 import React from "react";
+import { FaRobot } from "react-icons/fa";
 import "./LeaderboardPage.css";
 
 function WeeklyScoresTable({ scoresData, currentUserId }) {
@@ -6,7 +7,7 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
     return null;
   }
 
-  const { leagueName, weeks = [] } = scoresData;
+  const { weeks = [] } = scoresData;
 
   if (weeks.length === 0) {
     return (
@@ -28,12 +29,15 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
         userMap.set(userScore.userId, {
           userId: userScore.userId,
           userName: userScore.userName,
+          isSynthetic: userScore.isSynthetic,
           weekScores: new Map()
         });
       }
       userMap.get(userScore.userId).weekScores.set(week.weekNumber, {
         score: userScore.score,
-        pickCount: userScore.pickCount
+        pickCount: userScore.pickCount,
+        isDropWeek: userScore.isDropWeek,
+        isWeeklyWinner: userScore.isWeeklyWinner
       });
     });
   });
@@ -44,8 +48,7 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
   );
 
   return (
-    <div className="weekly-scores-container" style={{ marginTop: '32px' }}>
-      <h2>Weekly Scores - {leagueName}</h2>
+    <div className="weekly-scores-container">
       <table className="leaderboard-table">
         <thead>
           <tr>
@@ -62,6 +65,9 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
               className={user.userId === currentUserId ? "current-user-row" : ""}
             >
               <td>
+                {user.isSynthetic && (
+                  <FaRobot className="robot-icon" style={{ marginRight: "8px", color: "#61dafb" }} />
+                )}
                 {user.userName}
                 {user.userId === currentUserId && (
                   <span className="you-label"> (You)</span>
@@ -72,8 +78,37 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
                 const displayValue = weekData && weekData.pickCount > 0 
                   ? weekData.score 
                   : '-';
+                const isWeeklyWinner = weekData && weekData.isWeeklyWinner;
+                const isDropWeek = weekData && weekData.isDropWeek;
+                
                 return (
-                  <td key={week.weekNumber}>{displayValue}</td>
+                  <td key={week.weekNumber}>
+                    {isDropWeek ? (
+                      <span style={{
+                        textDecoration: 'line-through',
+                        textDecorationColor: 'red',
+                        textDecorationThickness: '3px',
+                        color: '#888',
+                        opacity: 0.6,
+                        fontStyle: 'italic'
+                      }}>
+                        {displayValue}
+                      </span>
+                    ) : isWeeklyWinner ? (
+                      <span style={{
+                        border: '2px solid limegreen',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        color: 'limegreen',
+                        display: 'inline-block'
+                      }}>
+                        {displayValue}
+                      </span>
+                    ) : (
+                      displayValue
+                    )}
+                  </td>
                 );
               })}
             </tr>

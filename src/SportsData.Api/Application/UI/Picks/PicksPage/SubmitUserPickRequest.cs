@@ -14,7 +14,7 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
         public int Week { get; set; }
 
         [JsonPropertyName("pickType")]
-        public UserPickType PickType { get; set; } = UserPickType.StraightUp;
+        public PickType PickType { get; set; } = PickType.StraightUp;
 
         [JsonPropertyName("franchiseSeasonId")]
         public Guid? FranchiseSeasonId { get; set; }

@@ -19,19 +19,22 @@ namespace SportsData.Api.Application.Scoring
         private readonly IProvideCanonicalData _canonicalData;
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
+        private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public ContestScoringProcessor(
             ILogger<ContestScoringProcessor> logger,
             AppDataContext dataContext,
             IProvideCanonicalData canonicalData,
             IEventBus bus,
-            IPickScoringService pickScoringService)
+            IPickScoringService pickScoringService,
+            ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
             _canonicalData = canonicalData;
             _bus = bus;
             _pickScoringService = pickScoringService;
+            _leagueWeekScoringService = leagueWeekScoringService;
         }
 
         public async Task Process(ScoreContestCommand command)
@@ -57,6 +60,9 @@ namespace SportsData.Api.Application.Scoring
                     g => g.Select(p => p).ToList()
                 );
 
+            // Track which leagues need week scoring
+            var leaguesNeedingScoring = new HashSet<(Guid LeagueId, int SeasonYear, int WeekNumber)>();
+
             foreach (var kvp in dictionary)
             {
                 var group = await _dataContext.PickemGroups
@@ -70,6 +76,17 @@ namespace SportsData.Api.Application.Scoring
                 if (group is null)
                 {
                     _logger.LogError("Group was null");
+                    continue;
+                }
+
+                // Get the matchup to extract season year and week number
+                var matchup = group.Weeks.FirstOrDefault()?.Matchups.FirstOrDefault();
+                if (matchup == null)
+                {
+                    _logger.LogWarning(
+                        "Could not find matchup for contestId={ContestId} in groupId={GroupId}",
+                        command.ContestId,
+                        group.Id);
                     continue;
                 }
 
@@ -101,6 +118,33 @@ namespace SportsData.Api.Application.Scoring
                     await _dataContext.SaveChangesAsync();
                 }
 
+                // Track this league for week scoring using matchup data
+                leaguesNeedingScoring.Add((group.Id, matchup.SeasonYear, matchup.SeasonWeek));
+            }
+
+            // After all picks are scored, trigger league week scoring
+            foreach (var (leagueId, seasonYear, weekNumber) in leaguesNeedingScoring)
+            {
+                try
+                {
+                    _logger.LogInformation(
+                        "Triggering league week scoring for leagueId={LeagueId}, seasonYear={SeasonYear}, week={Week} after contest scoring",
+                        leagueId,
+                        seasonYear,
+                        weekNumber);
+
+                    await _leagueWeekScoringService.ScoreLeagueWeekAsync(leagueId, seasonYear, weekNumber);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Failed to score league week for leagueId={LeagueId}, seasonYear={SeasonYear}, week={Week}",
+                        leagueId,
+                        seasonYear,
+                        weekNumber);
+                    // Don't throw - we don't want to fail contest scoring if league scoring fails
+                }
             }
         }
     }

@@ -73,6 +73,12 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 select * from public."Season"
 select * from public."SeasonPhase"
 select * from public."SeasonWeek" order by "StartDate"
+
+select sw.* from public."SeasonWeek" sw
+inner join public."Season" s on s."Id" = sw."SeasonId"
+where s."Year" = 2025 and sw."EndDate" < now() 
+order by sw."StartDate"
+
 --update public."SeasonWeek" set "IsNonStandardWeek" = false
 -- update public."SeasonWeek" set "IsNonStandardWeek" = true
 -- where "Number" > 14 or "SeasonPhaseId" != '467c9ac2-97ab-f5e3-6fa0-41b2eeca638b'

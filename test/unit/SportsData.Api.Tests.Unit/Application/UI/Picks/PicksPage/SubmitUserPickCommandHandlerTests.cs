@@ -23,7 +23,7 @@ public class SubmitUserPickCommandHandlerTests : ApiTestBase<SubmitUserPickComma
             UserId = Guid.NewGuid(),
             PickemGroupId = Guid.NewGuid(),
             ContestId = Guid.NewGuid(),
-            PickType = UserPickType.StraightUp,
+            PickType = PickType.StraightUp,
             FranchiseSeasonId = Guid.NewGuid(),
             OverUnder = OverUnderPick.Over,
             ConfidencePoints = 7,
@@ -61,7 +61,7 @@ public class SubmitUserPickCommandHandlerTests : ApiTestBase<SubmitUserPickComma
             UserId = Guid.NewGuid(),
             PickemGroupId = Guid.NewGuid(),
             ContestId = Guid.NewGuid(),
-            PickType = UserPickType.StraightUp,
+            PickType = PickType.StraightUp,
             FranchiseId = Guid.NewGuid(),
             TiebreakerType = TiebreakerType.TotalPoints
         };

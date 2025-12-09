@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
@@ -203,6 +204,37 @@ namespace SportsData.Api.Application.Admin
         {
             var response = await _aiService.GetAiResponseAsync(command.Text);
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Backfills league week scores for an entire season.
+        /// Processes all completed weeks for the specified season year.
+        /// </summary>
+        /// <param name="seasonYear">The season year to backfill (e.g., 2024, 2025)</param>
+        /// <returns>Summary of backfill operation</returns>
+        [HttpPost]
+        [Route("backfill-league-scores/{seasonYear}")]
+        public async Task<IActionResult> BackfillLeagueScores(int seasonYear)
+        {
+            try
+            {
+                var result = await _adminService.BackfillLeagueScoresAsync(seasonYear);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error during backfill for season {SeasonYear}",
+                    seasonYear);
+
+                return StatusCode(500, new
+                {
+                    seasonYear,
+                    error = "Backfill failed",
+                    message = ex.Message
+                });
+            }
         }
     }
 }

@@ -26,8 +26,23 @@ select * from public."User" where "IsSynthetic" = true
 
 --select * from public."UserPick" where "UserId" = '82942ecd-7b8d-420f-a13c-7e90d0ecd048' and "Week" = 15
 
-delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 15
-delete from public."UserPick" where "UserId" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44' and "Week" = 15
-delete from public."UserPick" where "UserId" = 'fab4d468-5899-4324-b0fd-7d2a01d76504' and "Week" = 15
-delete from public."UserPick" where "UserId" = '7f9c6a8e-8b93-4623-a0f0-2741df86b679' and "Week" = 15
-delete from public."UserPick" where "UserId" = '82942ecd-7b8d-420f-a13c-7e90d0ecd048' and "Week" = 15
+-- delete from public."UserPick" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "Week" = 15
+-- delete from public."UserPick" where "UserId" = 'b210d677-19c3-4f26-ac4b-b2cc7ad58c44' and "Week" = 15
+-- delete from public."UserPick" where "UserId" = 'fab4d468-5899-4324-b0fd-7d2a01d76504' and "Week" = 15
+-- delete from public."UserPick" where "UserId" = '7f9c6a8e-8b93-4623-a0f0-2741df86b679' and "Week" = 15
+-- delete from public."UserPick" where "UserId" = '82942ecd-7b8d-420f-a13c-7e90d0ecd048' and "Week" = 15
+
+-- Update all existing records from TotalPoints (1) to EarliestSubmission (3)
+select * from public."PickemGroup"
+select * from public."PickemGroupMatchup"
+select * from public."PickemGroupWeekResult"
+--UPDATE "PickemGroup" SET "TiebreakerType" = 3 WHERE "TiebreakerType" = 1;
+
+SELECT 
+    "PickemGroupId",
+    "SeasonWeek",
+    COUNT(*) FILTER (WHERE "IsWeeklyWinner" = true) as "WinnerCount",
+    MAX("TotalPoints") as "HighScore"
+FROM "PickemGroupWeekResult"
+GROUP BY "PickemGroupId", "SeasonWeek"
+HAVING COUNT(*) FILTER (WHERE "IsWeeklyWinner" = true) > 1;

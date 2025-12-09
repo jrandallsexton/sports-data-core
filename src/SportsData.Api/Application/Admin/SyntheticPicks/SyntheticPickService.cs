@@ -91,7 +91,7 @@ public class SyntheticPickService : ISyntheticPickService
                 FranchiseId = finalPickFranchiseId,
                 PickemGroupId = pickemGroupId,
                 PickType = prediction.PredictionType == PickType.StraightUp ?
-                    UserPickType.StraightUp : UserPickType.AgainstTheSpread,
+                    PickType.StraightUp : PickType.AgainstTheSpread,
                 Week = seasonWeekNumber,
                 TiebreakerType = TiebreakerType.TotalPoints
             };

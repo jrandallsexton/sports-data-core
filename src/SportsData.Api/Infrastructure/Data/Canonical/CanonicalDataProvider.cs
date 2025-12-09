@@ -161,6 +161,24 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
+        public async Task<List<SeasonWeek>> GetCompletedSeasonWeeks(int seasonYear)
+        {
+            var sql = _queryProvider.GetCompletedSeasonWeeks();
+
+            try
+            {
+                var result = await _connection.QueryAsync<SeasonWeek>(
+                    sql,
+                    new { SeasonYear = seasonYear });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resolve completed season weeks for year {SeasonYear}", seasonYear);
+                return [];
+            }
+        }
+
         public async Task<SeasonWeek?> GetCurrentSeasonWeek()
         {
             var sql = _queryProvider.GetCurrentSeasonWeek();

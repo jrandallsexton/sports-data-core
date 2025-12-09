@@ -50,7 +50,7 @@ public class PickServiceTests : ApiTestBase<PickService>
         {
             PickemGroupId = groupId,
             ContestId = contestId,
-            PickType = UserPickType.StraightUp,
+            PickType = PickType.StraightUp,
             FranchiseSeasonId = Guid.NewGuid(),
             OverUnder = OverUnderPick.Over,
             ConfidencePoints = 5,
@@ -68,7 +68,7 @@ public class PickServiceTests : ApiTestBase<PickService>
                 cmd.UserId == userId &&
                 cmd.PickemGroupId == groupId &&
                 cmd.ContestId == contestId &&
-                cmd.PickType == UserPickType.StraightUp &&
+                cmd.PickType == PickType.StraightUp &&
                 cmd.FranchiseSeasonId == request.FranchiseSeasonId &&
                 cmd.OverUnder == request.OverUnder &&
                 cmd.ConfidencePoints == request.ConfidencePoints &&
@@ -112,7 +112,7 @@ public class PickServiceTests : ApiTestBase<PickService>
         {
             PickemGroupId = groupId,
             ContestId = contestId,
-            PickType = UserPickType.StraightUp
+            PickType = PickType.StraightUp
         };
 
         // Act

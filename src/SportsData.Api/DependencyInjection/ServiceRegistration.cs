@@ -69,11 +69,13 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<MatchupPreviewPromptProvider>();
             services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<ContestScoringJob>();
+            services.AddScoped<LeagueWeekScoringJob>();
 
             services.AddScoped<ContestRecapJob>();
             services.AddScoped<ContestRecapProcessor>();
 
             services.AddScoped<IPickScoringService, PickScoringService>();
+            services.AddScoped<ILeagueWeekScoringService, LeagueWeekScoringService>();
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IAiService, AiService>();
@@ -110,6 +112,11 @@ namespace SportsData.Api.DependencyInjection
 
             recurringJobManager.AddOrUpdate<ContestScoringJob>(
                 nameof(ContestScoringJob),
+                job => job.ExecuteAsync(),
+                Cron.Weekly);
+
+            recurringJobManager.AddOrUpdate<LeagueWeekScoringJob>(
+                nameof(LeagueWeekScoringJob),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 

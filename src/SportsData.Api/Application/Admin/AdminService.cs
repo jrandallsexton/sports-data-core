@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
+using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
@@ -32,7 +33,17 @@ namespace SportsData.Api.Application.Admin
         Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives();
         
         Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics();
+
+        Task<BackfillLeagueScoresResult> BackfillLeagueScoresAsync(int seasonYear);
     }
+
+    public record BackfillLeagueScoresResult(
+        int SeasonYear,
+        int TotalWeeks,
+        int ProcessedWeeks,
+        int Errors,
+        string Message
+    );
 
     public class AdminService : IAdminService
     {
@@ -42,6 +53,7 @@ namespace SportsData.Api.Application.Admin
         private readonly IProvideCanonicalAdminData _canonicalAdminData;
         private readonly ISyntheticPickService _syntheticPickService;
         private readonly ILeagueService _leagueService;
+        private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public AdminService(
             ILogger<AdminService> logger,
@@ -49,7 +61,8 @@ namespace SportsData.Api.Application.Admin
             IProvideCanonicalData canonicalData,
             IProvideCanonicalAdminData canonicalAdminData,
             ISyntheticPickService syntheticPickService,
-            ILeagueService leagueService
+            ILeagueService leagueService,
+            ILeagueWeekScoringService leagueWeekScoringService
             )
         {
             _logger = logger;
@@ -58,6 +71,7 @@ namespace SportsData.Api.Application.Admin
             _canonicalAdminData = canonicalAdminData;
             _syntheticPickService = syntheticPickService;
             _leagueService = leagueService;
+            _leagueWeekScoringService = leagueWeekScoringService;
         }
 
         public async Task RefreshAiExistence(Guid correlationId)
@@ -180,7 +194,7 @@ namespace SportsData.Api.Application.Admin
                             ? preview.PredictedSpreadWinner
                             : preview.PredictedStraightUpWinner,
                         PickemGroupId = group.Id,
-                        PickType = group.PickType == PickType.StraightUp ? UserPickType.StraightUp : UserPickType.AgainstTheSpread,
+                        PickType = group.PickType == PickType.StraightUp ? PickType.StraightUp : PickType.AgainstTheSpread,
                         Week = currentWeek.WeekNumber,
                         TiebreakerType = TiebreakerType.TotalPoints
                     };
@@ -435,6 +449,119 @@ namespace SportsData.Api.Application.Admin
                     default!,
                     ResultStatus.BadRequest,
                     [new ValidationFailure("competitions", $"Error retrieving competitions without metrics: {ex.Message}")]);
+            }
+        }
+
+        public async Task<BackfillLeagueScoresResult> BackfillLeagueScoresAsync(int seasonYear)
+        {
+            _logger.LogInformation(
+                "Starting league scores backfill for season year {SeasonYear}",
+                seasonYear);
+
+            try
+            {
+                // Get all completed weeks for the season - matches LeagueWeekScoringJob pattern
+                var seasonWeeks = await _canonicalData.GetCompletedSeasonWeeks(seasonYear);
+
+                if (seasonWeeks.Count == 0)
+                {
+                    _logger.LogWarning("No completed weeks found for season year {SeasonYear}", seasonYear);
+                    return new BackfillLeagueScoresResult(
+                        seasonYear,
+                        0,
+                        0,
+                        0,
+                        "No completed weeks found for this season"
+                    );
+                }
+
+                _logger.LogInformation(
+                    "Found {WeekCount} completed weeks for season {SeasonYear}",
+                    seasonWeeks.Count,
+                    seasonYear);
+
+                var processedLeagueWeeks = 0;
+                var errors = 0;
+
+                // Process each week - EXACTLY like LeagueWeekScoringJob
+                foreach (var seasonWeek in seasonWeeks)
+                {
+                    _logger.LogInformation(
+                        "Processing season year={Year}, week={Week}",
+                        seasonWeek.SeasonYear,
+                        seasonWeek.WeekNumber);
+
+                    try
+                    {
+                        // Get all DISTINCT league/year/week combinations - EXACTLY like LeagueWeekScoringJob
+                        var leagueWeeks = await _dataContext.PickemGroupMatchups
+                            .Where(m => m.SeasonYear == seasonWeek.SeasonYear && m.SeasonWeek == seasonWeek.WeekNumber)
+                            .Select(m => new { m.GroupId, m.SeasonYear, m.SeasonWeek })
+                            .Distinct()
+                            .ToListAsync();
+
+                        _logger.LogInformation(
+                            "Found {Count} leagues with matchups for week {Week}",
+                            leagueWeeks.Count,
+                            seasonWeek.WeekNumber);
+
+                        // Score each league/week combination - EXACTLY like LeagueWeekScoringJob
+                        foreach (var leagueWeek in leagueWeeks)
+                        {
+                            try
+                            {
+                                await _leagueWeekScoringService.ScoreLeagueWeekAsync(
+                                    leagueWeek.GroupId,
+                                    leagueWeek.SeasonYear,
+                                    leagueWeek.SeasonWeek);
+
+                                processedLeagueWeeks++;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(
+                                    ex,
+                                    "Failed to process league week: leagueId={LeagueId}, year={Year}, week={Week}",
+                                    leagueWeek.GroupId,
+                                    leagueWeek.SeasonYear,
+                                    leagueWeek.SeasonWeek);
+                                errors++;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Failed to process season week {WeekNumber} for year {SeasonYear}",
+                            seasonWeek.WeekNumber,
+                            seasonYear);
+                        errors++;
+                    }
+                }
+
+                _logger.LogInformation(
+                    "Completed backfill for season {SeasonYear}: {ProcessedCount} league-weeks processed, {ErrorCount} errors",
+                    seasonYear,
+                    processedLeagueWeeks,
+                    errors);
+
+                return new BackfillLeagueScoresResult(
+                    seasonYear,
+                    seasonWeeks.Count,
+                    processedLeagueWeeks,
+                    errors,
+                    $"Backfilled {processedLeagueWeeks} league-weeks across {seasonWeeks.Count} weeks for season {seasonYear}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error during backfill for season {SeasonYear}",
+                    seasonYear);
+
+                throw; // Let controller handle it
             }
         }
     }

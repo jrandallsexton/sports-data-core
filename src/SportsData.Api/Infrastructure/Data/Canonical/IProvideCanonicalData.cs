@@ -18,6 +18,8 @@ public interface IProvideCanonicalData
 
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear);
 
+    Task<List<SeasonWeek>> GetCompletedSeasonWeeks(int seasonYear);
+
     Task<SeasonWeek?> GetCurrentSeasonWeek();
 
     Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear);

@@ -10,7 +10,7 @@
 
         public int Week { get; set; }
 
-        public UserPickType PickType { get; set; }
+        public PickType PickType { get; set; }
 
         public Guid? FranchiseSeasonId { get; set; }
 

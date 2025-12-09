@@ -14,7 +14,7 @@ public record UserPickDto
 
     public Guid FranchiseId { get; init; }
 
-    public UserPickType PickType { get; init; }
+    public PickType PickType { get; init; }
 
     public int? ConfidencePoints { get; init; }
 

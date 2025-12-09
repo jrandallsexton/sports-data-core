@@ -21,6 +21,8 @@ function LeaderboardPage() {
   const [overview, setOverview] = useState(null);
   const [selectedWeek, setSelectedWeek] = useState(null); // Start with null instead of 1
   const [weeklyScores, setWeeklyScores] = useState(null);
+  const [activeTab, setActiveTab] = useState("standings");
+  const [showBots, setShowBots] = useState(true);
 
   const currentUserId = userDto?.id ?? null;
 
@@ -97,6 +99,27 @@ function LeaderboardPage() {
   // Generate week options based on maxSeasonWeek
   const weekOptions = Array.from({ length: maxSeasonWeek }, (_, i) => i + 1);
 
+  // Filter functions for synthetic users
+  const filterLeaderboard = (data) => {
+    if (showBots) return data;
+    return data.filter(user => !user.isSynthetic);
+  };
+
+  const filterWeeklyScores = (data) => {
+    if (!data || showBots) return data;
+    const filteredWeeks = data.weeks.map(week => ({
+      ...week,
+      userScores: week.userScores.filter(user => !user.isSynthetic)
+    }));
+    return { ...data, weeks: filteredWeeks };
+  };
+
+  const filterOverview = (data) => {
+    if (!data || showBots) return data;
+    const filteredUserPicks = data.userPicks.filter(pick => !pick.isSynthetic);
+    return { ...data, userPicks: filteredUserPicks };
+  };
+
   function handleSort(column) {
     if (sortBy === column) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -112,50 +135,96 @@ function LeaderboardPage() {
 
   return (
     <div className="leaderboard-container">
-      <LeagueSelector
-        leagues={leagues}
-        selectedLeagueId={selectedLeagueId}
-        setSelectedLeagueId={setSelectedLeagueId}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <LeagueSelector
+          leagues={leagues}
+          selectedLeagueId={selectedLeagueId}
+          setSelectedLeagueId={setSelectedLeagueId}
+        />
+        
+        {/* Show Bots Filter */}
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={showBots}
+            onChange={(e) => setShowBots(e.target.checked)}
+          />
+          <span>Show Bots</span>
+        </label>
+      </div>
 
-      {loading ? (
-        <div className="loading">Loading leaderboard...</div>
-      ) : (
-        <LeaderboardStandingsTable
-          leaderboard={leaderboard}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          handleSort={handleSort}
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button
+          className={`tab-button ${activeTab === "standings" ? "active" : ""}`}
+          onClick={() => setActiveTab("standings")}
+        >
+          Standings
+        </button>
+        <button
+          className={`tab-button ${activeTab === "allWeeks" ? "active" : ""}`}
+          onClick={() => setActiveTab("allWeeks")}
+        >
+          All Weeks
+        </button>
+        <button
+          className={`tab-button ${activeTab === "byWeek" ? "active" : ""}`}
+          onClick={() => setActiveTab("byWeek")}
+        >
+          By Week
+        </button>
+      </div>
+
+      {/* Standings Tab */}
+      {activeTab === "standings" && (
+        <>
+          {loading ? (
+            <div className="loading">Loading leaderboard...</div>
+          ) : (
+            <LeaderboardStandingsTable
+              leaderboard={filterLeaderboard(leaderboard)}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              handleSort={handleSort}
+              currentUserId={currentUserId}
+              loading={loading}
+            />
+          )}
+        </>
+      )}
+
+      {/* All Weeks Tab */}
+      {activeTab === "allWeeks" && (
+        <WeeklyScoresTable
+          scoresData={filterWeeklyScores(weeklyScores)}
           currentUserId={currentUserId}
-          loading={loading}
         />
       )}
 
-      {/* Week selector only for LeagueWeekOverviewTable */}
-      {selectedWeek !== null && (
-        <div className="league-selector" style={{ margin: '16px 0' }}>
-          <label htmlFor="week-select" style={{ marginRight: 8, fontWeight: 500, color: '#ccc', fontSize: '1rem', lineHeight: '32px' }}>Week:</label>
-          <select
-            id="week-select"
-            value={selectedWeek}
-            onChange={e => setSelectedWeek(Number(e.target.value))}
-            className="week-selector-select"
-          >
-            {weekOptions.map(week => (
-              <option key={week} value={week}>Week {week}</option>
-            ))}
-          </select>
-        </div>
+      {/* By Week Tab */}
+      {activeTab === "byWeek" && (
+        <>
+          {selectedWeek !== null && (
+            <div className="league-selector" style={{ margin: '16px 0' }}>
+              <label htmlFor="week-select" style={{ marginRight: 8, fontWeight: 500, color: '#ccc', fontSize: '1rem', lineHeight: '32px' }}>Week:</label>
+              <select
+                id="week-select"
+                value={selectedWeek}
+                onChange={e => setSelectedWeek(Number(e.target.value))}
+                className="week-selector-select"
+              >
+                {weekOptions.map(week => (
+                  <option key={week} value={week}>Week {week}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <LeagueWeekOverviewTable
+            overview={filterOverview(overview)}
+          />
+        </>
       )}
-
-      <LeagueWeekOverviewTable
-        overview={overview}
-      />
-
-      <WeeklyScoresTable
-        scoresData={weeklyScores}
-        currentUserId={currentUserId}
-      />
     </div>
   );
 }

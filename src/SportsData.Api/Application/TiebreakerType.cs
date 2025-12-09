@@ -4,7 +4,8 @@
     {
         None = 0,
         TotalPoints = 1,       // Guess the total combined score
-        HomeAndAwayScores = 2  // Guess each team's score
+        HomeAndAwayScores = 2, // Guess each team's score
+        EarliestSubmission = 3 // Winner determined by earliest pick submission
     }
 
     public enum TiebreakerTiePolicy

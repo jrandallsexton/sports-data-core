@@ -23,11 +23,19 @@
 
             public required string UserName { get; set; }
 
+            public bool IsSynthetic { get; set; }
+
             public int WeekNumber { get; set; }
 
             public int PickCount { get; set; }
 
             public int Score { get; set; }
+
+            public bool IsDropWeek { get; set; }
+
+            public bool IsWeeklyWinner { get; set; }
+
+            public int? Rank { get; set; }
         }
     }
 }

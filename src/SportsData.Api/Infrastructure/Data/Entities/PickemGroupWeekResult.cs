@@ -23,13 +23,22 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool IsWeeklyWinner { get; set; }
 
+        public bool IsDropWeek { get; set; }
+
+        public int? Rank { get; set; }
+
         public DateTime CalculatedUtc { get; set; }
+
+        // Navigation properties
+        public PickemGroup? Group { get; set; }
+
+        public User? User { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<PickemGroupWeekResult>
         {
             public void Configure(EntityTypeBuilder<PickemGroupWeekResult> builder)
             {
-                builder.ToTable("LeagueWeekResult");
+                builder.ToTable(nameof(PickemGroupWeekResult));
 
                 builder.HasKey(x => x.Id);
 
@@ -45,7 +54,20 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.CorrectPicks).IsRequired();
                 builder.Property(x => x.TotalPicks).IsRequired();
                 builder.Property(x => x.IsWeeklyWinner).IsRequired();
+                builder.Property(x => x.IsDropWeek).IsRequired().HasDefaultValue(false);
+                builder.Property(x => x.Rank).IsRequired(false);
                 builder.Property(x => x.CalculatedUtc).IsRequired();
+
+                // Relationships
+                builder.HasOne(x => x.Group)
+                    .WithMany()
+                    .HasForeignKey(x => x.PickemGroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
         }
     }

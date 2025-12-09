@@ -98,7 +98,7 @@ namespace SportsData.Api.Application.UI.Picks
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(request.ContestId), "This contest is locked and cannot be picked.")]);
 
-            if (request.PickType == UserPickType.OverUnder && request.OverUnder == OverUnderPick.None)
+            if (request.PickType == PickType.OverUnder && request.OverUnder == OverUnderPick.None)
             {
                 return new Failure<Guid>(
                     default,

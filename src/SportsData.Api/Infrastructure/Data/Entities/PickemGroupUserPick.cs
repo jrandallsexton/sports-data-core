@@ -26,7 +26,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public int? ConfidencePoints { get; set; }
 
-        public UserPickType PickType { get; set; } = UserPickType.StraightUp;
+        public PickType PickType { get; set; } = PickType.StraightUp;
 
         public string? SyntheticPickStyle { get; set; }
 

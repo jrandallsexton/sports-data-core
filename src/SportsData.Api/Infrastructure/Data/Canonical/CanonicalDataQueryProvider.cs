@@ -4,6 +4,7 @@ public class CanonicalDataQueryProvider
 {
     private static readonly string[] _fileNames = [
         "GetCompletedFbsContestsBySeasonWeekId.sql",
+        "GetCompletedSeasonWeeks.sql",
         "GetContestOverviewGameInfo.sql",
         "GetContestOverviewPlayLog.sql",
         "GetContestOverviewQuarterScores.sql",
@@ -59,6 +60,8 @@ public class CanonicalDataQueryProvider
     public string GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId() => Get("GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql");
 
     public string GetCurrentAndLastWeekSeasonWeeks() => Get("GetCurrentAndLastWeekSeasonWeeks.sql");
+
+    public string GetCompletedSeasonWeeks() => Get("GetCompletedSeasonWeeks.sql");
 
     public string GetContestOverviewGameInfo() => Get("GetContestOverviewGameInfo.sql");
 

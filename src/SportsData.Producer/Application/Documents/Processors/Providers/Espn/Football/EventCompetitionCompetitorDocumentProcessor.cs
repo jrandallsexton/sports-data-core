@@ -132,7 +132,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
                 _logger.LogWarning(
                     "Competition not found. Raising DocumentRequested (override mode). CompetitionId={CompetitionId}",
                     competitionId);
-                
+
                 // raise an event to source the competition competitor
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: competitionIdentity.UrlHash,
@@ -143,7 +143,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
                     DocumentType: DocumentType.EventCompetition,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
+                    CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
                 ));
 
                 throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");

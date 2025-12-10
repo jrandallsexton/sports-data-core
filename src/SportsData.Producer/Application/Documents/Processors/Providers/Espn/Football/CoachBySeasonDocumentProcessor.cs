@@ -169,7 +169,7 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : IProcessDocuments
                     franchiseSeasonIdentity);
 
                 await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: coachIdentity.UrlHash,
+                    Id: franchiseSeasonIdentity.UrlHash,
                     ParentId: null,
                     Uri: dto.Team.Ref.ToCleanUri(),
                     Sport: command.Sport,

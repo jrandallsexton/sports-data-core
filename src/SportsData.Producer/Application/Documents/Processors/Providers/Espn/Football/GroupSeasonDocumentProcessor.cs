@@ -117,7 +117,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                     _logger.LogWarning(
                         "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                         DocumentType.Season,
-                        nameof(GroupSeasonDocumentProcessor<TDataContext>),
+                        nameof(GroupSeasonDocumentProcessor),
                         dto.Season.Ref);
                     throw new ExternalDocumentNotSourcedException(
                         $"Season {dto.Season.Ref} not found. Will retry when available.");
@@ -168,7 +168,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                     _logger.LogWarning(
                         "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                         DocumentType.GroupSeason,
-                        nameof(GroupSeasonDocumentProcessor<TDataContext>),
+                        nameof(GroupSeasonDocumentProcessor),
                         dto.Parent.Ref);
                     throw new ExternalDocumentNotSourcedException(
                         $"GroupSeason {dto.Parent.Ref} not found. Will retry.");

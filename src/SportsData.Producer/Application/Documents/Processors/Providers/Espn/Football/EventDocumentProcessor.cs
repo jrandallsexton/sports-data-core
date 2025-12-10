@@ -380,7 +380,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                     DocumentType.TeamSeason,
                     command.SourceDataProvider,
                     command.CorrelationId,
-                    CausationId.Producer.TeamSeasonDocumentProcessor));
+                    CausationId.Producer.EventDocumentProcessor));
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
@@ -435,7 +435,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                     DocumentType.TeamSeason,
                     command.SourceDataProvider,
                     command.CorrelationId,
-                    CausationId.Producer.TeamSeasonDocumentProcessor));
+                    CausationId.Producer.EventDocumentProcessor));
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 

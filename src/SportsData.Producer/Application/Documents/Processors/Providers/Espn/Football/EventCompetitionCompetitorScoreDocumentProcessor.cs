@@ -115,7 +115,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                 _logger.LogWarning(
                     "CompetitionCompetitor not found. Raising DocumentRequested (override mode). CompetitionCompetitorUrl={CompetitionCompetitorUrl}",
                     competitionCompetitorIdentity.CleanUrl);
-                
+
                 await _bus.Publish(new DocumentRequested(
                     Id: competitionCompetitorIdentity.UrlHash,
                     ParentId: competitionIdentity.CanonicalId.ToString(),
@@ -125,7 +125,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                     DocumentType: DocumentType.EventCompetitionCompetitor,
                     SourceDataProvider: SourceDataProvider.Espn,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+                    CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
                 ));
 
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());

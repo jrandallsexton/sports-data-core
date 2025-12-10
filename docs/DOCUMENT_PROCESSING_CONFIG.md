@@ -116,14 +116,14 @@ if (dependency is null)
 
 ## Testing Plan
 
-1. **Baseline Test (DisableDependencyRequests = false)**
+1. **Baseline Test (EnableDependencyRequests = true)**
    - Deploy to dev environment
    - Trigger bulk athlete season sourcing
    - Monitor Hangfire job counts
    - Expected: High job counts due to reactive requests
 
-2. **Feature Flag Test (DisableDependencyRequests = true)**
-   - Update config to `true`
+2. **Feature Flag Test (EnableDependencyRequests = false)**
+   - Update config to `false`
    - Restart Producer service
    - Trigger same bulk sourcing
    - Monitor Hangfire job counts
@@ -150,19 +150,19 @@ Key metrics to track:
 
 ## Migration Strategy
 
-1. **Phase 1 (Current)**: Deploy with flag OFF (override mode)
+1. **Phase 1 (Current)**: Deploy with flag OFF (safe mode)
    - No behavior change
    - Allows safe deployment and rollback
 
 2. **Phase 2**: Enable in dev/QA
-   - Set `DisableDependencyRequests: true`
+   - Set `EnableDependencyRequests: true` (only if override mode is needed)
    - Monitor for issues
    - Validate data integrity
 
 3. **Phase 3**: Enable in production
-   - Set `DisableDependencyRequests: true` in prod config
+   - Keep `EnableDependencyRequests: false` in prod config (safe mode)
    - Monitor job counts closely
-   - Be prepared to toggle flag OFF if issues arise
+   - Be prepared to toggle flag if issues arise
 
 4. **Phase 4** (Future): Remove legacy mode
    - After successful production run

@@ -319,6 +319,10 @@ public class AthleteSeasonDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
+        // Enable dependency requests for this test (override mode)
+        var config = new SportsData.Producer.Config.DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
+
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor>();
 
@@ -358,6 +362,10 @@ public class AthleteSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        // Enable dependency requests for this test (override mode)
+        var config = new SportsData.Producer.Config.DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor>();
@@ -418,6 +426,10 @@ public class AthleteSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        // Enable dependency requests for this test (override mode)
+        var config = new SportsData.Producer.Config.DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor>();

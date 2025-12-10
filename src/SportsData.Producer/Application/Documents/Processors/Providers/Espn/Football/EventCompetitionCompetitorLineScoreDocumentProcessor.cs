@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,17 +24,20 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
     private readonly TDataContext _dataContext;
     private readonly IEventBus _bus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionCompetitorLineScoreDocumentProcessor(
         ILogger<EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _bus = bus;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -86,28 +90,44 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
 
         if (!exists)
         {
-            _logger.LogError("CompetitionCompetitor not found for Id: {Id}", competitionCompetitorId);
-
             var competitionCompetitorRef = EspnUriMapper.CompetitionLineScoreRefToCompetitionCompetitorRef(dto.Ref);
             var competitionCompetitorIdentity = _externalRefIdentityGenerator.Generate(competitionCompetitorRef);
 
             var competitionRef = EspnUriMapper.CompetitionLineScoreRefToCompetitionRef(dto.Ref);
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
 
-            // raise an event to source the competition competitor
-            await _bus.Publish(new DocumentRequested(
-                Id: competitionCompetitorIdentity.UrlHash,
-                ParentId: competitionIdentity.CanonicalId.ToString(),
-                Uri: competitionCompetitorRef,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionCompetitor,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
-            ));
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.EventCompetitionCompetitor,
+                    nameof(EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext>),
+                    competitionCompetitorRef);
+                throw new ExternalDocumentNotSourcedException(
+                    $"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
+            }
+            else
+            {
+                // Legacy mode: keep existing DocumentRequested logic
+                _logger.LogWarning(
+                    "CompetitionCompetitor not found. Raising DocumentRequested (override mode). CompetitionCompetitorId={CompetitionCompetitorId}",
+                    competitionCompetitorId);
+                
+                // raise an event to source the competition competitor
+                await _bus.Publish(new DocumentRequested(
+                    Id: competitionCompetitorIdentity.UrlHash,
+                    ParentId: competitionIdentity.CanonicalId.ToString(),
+                    Uri: competitionCompetitorRef,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionCompetitor,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
+                ));
 
-            throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
+                throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
+            }
         }
 
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);

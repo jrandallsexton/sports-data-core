@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,17 +24,20 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
     private readonly TDataContext _dataContext;
     private readonly IEventBus _bus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionCompetitorScoreDocumentProcessor(
         ILogger<EventCompetitionCompetitorScoreDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _bus = bus;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -95,22 +99,40 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                     .CleanUrl));
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
 
-            await _bus.Publish(new DocumentRequested(
-                Id: competitionCompetitorIdentity.UrlHash,
-                ParentId: competitionIdentity.CanonicalId.ToString(),
-                Uri: new Uri(competitionCompetitorIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionCompetitor,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-            ));
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.EventCompetitionCompetitor,
+                    nameof(EventCompetitionCompetitorScoreDocumentProcessor<TDataContext>),
+                    competitionCompetitorIdentity.CleanUrl);
+                throw new ExternalDocumentNotSourcedException(
+                    $"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry when available.");
+            }
+            else
+            {
+                // Legacy mode: keep existing DocumentRequested logic
+                _logger.LogWarning(
+                    "CompetitionCompetitor not found. Raising DocumentRequested (override mode). CompetitionCompetitorUrl={CompetitionCompetitorUrl}",
+                    competitionCompetitorIdentity.CleanUrl);
+                
+                await _bus.Publish(new DocumentRequested(
+                    Id: competitionCompetitorIdentity.UrlHash,
+                    ParentId: competitionIdentity.CanonicalId.ToString(),
+                    Uri: new Uri(competitionCompetitorIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.EventCompetitionCompetitor,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
+                ));
 
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
 
-            throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");
+                throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");
+            }
         }
 
         var scoreIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);

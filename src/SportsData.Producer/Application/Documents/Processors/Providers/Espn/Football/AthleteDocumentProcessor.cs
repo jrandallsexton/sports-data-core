@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -9,6 +9,7 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -26,17 +27,20 @@ public class AthleteDocumentProcessor : IProcessDocuments
     private readonly FootballDataContext _dataContext;
     private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly DocumentProcessingConfig _config;
 
     public AthleteDocumentProcessor(
         ILogger<AthleteDocumentProcessor> logger,
         FootballDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -275,25 +279,41 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         if (positionId == Guid.Empty)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: positionIdentity.CanonicalId.ToString(),
-                ParentId: null,
-                Uri: externalProviderDto.Position.Ref.ToCleanUri(),
-                Sport: Sport.FootballNcaa,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.AthletePosition,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteDocumentProcessor
-            ));
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.AthletePosition,
+                    nameof(AthleteDocumentProcessor),
+                    positionIdentity.CleanUrl);
+                throw new ExternalDocumentNotSourcedException(
+                    $"AthletePosition {positionIdentity.CleanUrl} not found. Will retry when available.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "AthletePosition not found. Raising DocumentRequested (override mode). {@Identity}",
+                    positionIdentity);
 
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: positionIdentity.CanonicalId.ToString(),
+                    ParentId: null,
+                    Uri: externalProviderDto.Position.Ref.ToCleanUri(),
+                    Sport: Sport.FootballNcaa,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.AthletePosition,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.AthleteDocumentProcessor
+                ));
 
-            _logger.LogWarning("No AthletePosition found. {@Identity}", positionIdentity);
-            throw new ExternalDocumentNotSourcedException($"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
-                                                          $"Please ensure the position document is processed before this athlete.");
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
 
+                throw new ExternalDocumentNotSourcedException(
+                    $"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
+                    $"Please ensure the position document is processed before this athlete.");
+            }
         }
 
         newEntity.PositionId = positionId;

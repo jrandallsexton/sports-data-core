@@ -1,4 +1,4 @@
-﻿using SportsData.Core.Common;
+using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 

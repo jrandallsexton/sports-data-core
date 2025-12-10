@@ -234,10 +234,12 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
                     "GroupSeason not found. Raising DocumentRequested (override mode). {Ref}",
                     dto.Groups.Ref);
 
+                var groupSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Groups.Ref);
+
                 await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: Guid.NewGuid().ToString(),
+                    Id: groupSeasonIdentity.UrlHash,
                     ParentId: null,
-                    Uri: dto.Groups.Ref,
+                    Uri: new Uri(groupSeasonIdentity.CleanUrl),
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.GroupSeason,

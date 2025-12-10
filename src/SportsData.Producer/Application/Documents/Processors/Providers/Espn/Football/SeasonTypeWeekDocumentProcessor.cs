@@ -131,10 +131,10 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
                     Uri: seasonPhaseRef,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
-                    DocumentType: DocumentType.Franchise,
+                    DocumentType: DocumentType.SeasonType,
                     SourceDataProvider: command.SourceDataProvider,
                     CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                    CausationId: CausationId.Producer.SeasonTypeWeekDocumentProcessor
                 ));
                 await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();

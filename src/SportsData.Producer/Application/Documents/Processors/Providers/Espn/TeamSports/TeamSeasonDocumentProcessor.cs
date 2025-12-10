@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -9,6 +9,7 @@ using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -24,17 +25,20 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly TDataContext _dataContext;
     private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly DocumentProcessingConfig _config;
 
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _config = config;
     }
 
     /// <summary>
@@ -124,23 +128,39 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (franchise is null)
         {
-            _logger.LogWarning("Franchise not found. {@Identity}", franchiseIdentity);
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.Franchise,
+                    nameof(TeamSeasonDocumentProcessor<TDataContext>),
+                    franchiseIdentity.CleanUrl);
+                throw new ExternalDocumentNotSourcedException(
+                    $"Franchise {franchiseIdentity.CleanUrl} not found. Will retry when available.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Franchise not found. Raising DocumentRequested (override mode). {@Identity}",
+                    franchiseIdentity);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: franchiseIdentity.UrlHash,
-                ParentId: null,
-                Uri: new Uri(franchiseIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.Franchise,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: franchiseIdentity.UrlHash,
+                    ParentId: null,
+                    Uri: new Uri(franchiseIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.Franchise,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
 
-            throw new ExternalDocumentNotSourcedException($"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
+                throw new ExternalDocumentNotSourcedException(
+                    $"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
+            }
         }
 
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);
@@ -198,22 +218,42 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (canonicalEntity.GroupSeasonId is null)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: null,
-                Uri: dto.Groups.Ref,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.GroupSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.GroupSeason,
+                    nameof(TeamSeasonDocumentProcessor<TDataContext>),
+                    dto.Groups.Ref);
+                throw new ExternalDocumentNotSourcedException(
+                    $"GroupSeason {dto.Groups.Ref} not found. Will retry when available.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "GroupSeason not found. Raising DocumentRequested (override mode). {Ref}",
+                    dto.Groups.Ref);
 
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+                var groupSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Groups.Ref);
 
-            throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Groups.Ref} not found. Will retry.");
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: groupSeasonIdentity.UrlHash,
+                    ParentId: null,
+                    Uri: new Uri(groupSeasonIdentity.CleanUrl),
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.GroupSeason,
+                    SourceDataProvider: SourceDataProvider.Espn,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
+                ));
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"GroupSeason {dto.Groups.Ref} not found. Will retry.");
+            }
         }
     }
 

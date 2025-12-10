@@ -1,4 +1,4 @@
-﻿using SportsData.Core.Common;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;

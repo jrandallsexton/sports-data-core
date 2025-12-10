@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,17 +24,20 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly TDataContext _dataContext;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly IEventBus _publishEndpoint;
+    private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekDocumentProcessor(
         ILogger<SeasonTypeWeekDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IEventBus publishEndpoint)
+        IEventBus publishEndpoint,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _publishEndpoint = publishEndpoint;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -104,22 +108,39 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
             var seasonPhaseRef = EspnUriMapper.SeasonTypeWeekToSeasonType(externalProviderDto.Ref);
             var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(seasonPhaseRef);
 
-            _logger.LogWarning("Could not find SeasonPhase with Id {SeasonPhaseId}", seasonPhaseId);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: seasonPhaseIdentity.UrlHash,
-                ParentId: null,
-                Uri: seasonPhaseRef,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.Franchise,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+            if (!_config.EnableDependencyRequests)
+            {
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                    DocumentType.SeasonType,
+                    nameof(SeasonTypeWeekDocumentProcessor<TDataContext>),
+                    seasonPhaseRef);
+                throw new ExternalDocumentNotSourcedException(
+                    $"SeasonPhase {seasonPhaseRef} not found. Will retry.");
+            }
+            else
+            {
+                // Legacy mode: keep existing DocumentRequested logic
+                _logger.LogWarning(
+                    "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonPhaseId={SeasonPhaseId}",
+                    seasonPhaseId);
+                
+                await _publishEndpoint.Publish(new DocumentRequested(
+                    Id: seasonPhaseIdentity.UrlHash,
+                    ParentId: null,
+                    Uri: seasonPhaseRef,
+                    Sport: command.Sport,
+                    SeasonYear: command.Season,
+                    DocumentType: DocumentType.SeasonType,
+                    SourceDataProvider: command.SourceDataProvider,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: CausationId.Producer.SeasonTypeWeekDocumentProcessor
+                ));
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
 
-            throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
+                throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
+            }
         }
 
         var dtoIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);

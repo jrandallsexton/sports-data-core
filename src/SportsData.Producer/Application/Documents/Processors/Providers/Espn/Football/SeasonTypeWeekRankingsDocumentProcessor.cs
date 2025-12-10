@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,17 +24,20 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
     private readonly TDataContext _dataContext;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly IEventBus _publishEndpoint;
+    private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekRankingsDocumentProcessor(
         ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IEventBus publishEndpoint)
+        IEventBus publishEndpoint,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _publishEndpoint = publishEndpoint;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -122,23 +126,41 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
             {
                 var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
-                    ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
-                    Uri: dto.Season.Type.Week.Ref,
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.SeasonTypeWeek,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                ));
+                if (!_config.EnableDependencyRequests)
+                {
+                    _logger.LogWarning(
+                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                        DocumentType.SeasonTypeWeek,
+                        nameof(SeasonTypeWeekRankingsDocumentProcessor<TDataContext>),
+                        dto.Season.Type.Week.Ref);
+                    throw new ExternalDocumentNotSourcedException(
+                        "SeasonWeek not found. Sourcing requested. Will retry.");
+                }
+                else
+                {
+                    // Legacy mode: keep existing DocumentRequested logic
+                    _logger.LogWarning(
+                        "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
+                        dto.Season.Type.Week.Ref);
+                    
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
+                        ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
+                        Uri: dto.Season.Type.Week.Ref,
+                        Sport: Sport.FootballNcaa,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.SeasonTypeWeek,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
+                    ));
 
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                await _dataContext.SaveChangesAsync();
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
 
-                _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
-                throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
+                    _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
+                    throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
+                }
             }
 
             seasonWeekId = seasonWeek.Id;
@@ -177,31 +199,49 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
 
         if (missingFranchiseSeasons.Any())
         {
-            foreach (var missing in missingFranchiseSeasons)
+            if (!_config.EnableDependencyRequests)
             {
-                _logger.LogError("Missing FranchiseSeason for Team Ref {TeamRef} with expected URI {Uri}",
-                    missing.Key, missing.Value);
-
-                var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
-                var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: missing.Key.ToString(),
-                    ParentId: franchiseId.ToString(),
-                    Uri: missing.Value,
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: command.Season!.Value,
-                    DocumentType: DocumentType.TeamSeason,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                ));
+                _logger.LogWarning(
+                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Count={Count}",
+                    DocumentType.TeamSeason,
+                    nameof(SeasonTypeWeekRankingsDocumentProcessor<TDataContext>),
+                    missingFranchiseSeasons.Count);
+                throw new ExternalDocumentNotSourcedException(
+                    $"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
             }
+            else
+            {
+                // Legacy mode: keep existing DocumentRequested logic
+                _logger.LogWarning(
+                    "FranchiseSeasons not found. Raising DocumentRequested (override mode). Count={Count}",
+                    missingFranchiseSeasons.Count);
+                
+                foreach (var missing in missingFranchiseSeasons)
+                {
+                    _logger.LogError("Missing FranchiseSeason for Team Ref {TeamRef} with expected URI {Uri}",
+                        missing.Key, missing.Value);
 
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
+                    var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
+                    var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
 
-            throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: missing.Key.ToString(),
+                        ParentId: franchiseId.ToString(),
+                        Uri: missing.Value,
+                        Sport: Sport.FootballNcaa,
+                        SeasonYear: command.Season!.Value,
+                        DocumentType: DocumentType.TeamSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
+                    ));
+                }
+
+                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
+            }
         }
 
         // Create the entity from the DTO

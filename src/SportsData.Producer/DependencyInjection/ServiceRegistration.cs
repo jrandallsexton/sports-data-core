@@ -14,6 +14,7 @@ using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.SeasonWeek;
 using SportsData.Producer.Application.Venues;
+using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Geo;
@@ -26,6 +27,23 @@ namespace SportsData.Producer.DependencyInjection
             this IServiceCollection services,
             Sport mode)
         {
+            // Register document processing configuration
+            services.AddSingleton(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                
+                // Read from Azure App Configuration: SportsData.Producer:DocumentProcessing:EnableDependencyRequests
+                var enableDependencyRequestsValue = config["SportsData.Producer:DocumentProcessing:EnableDependencyRequests"];
+                var enableDependencyRequests = bool.TryParse(enableDependencyRequestsValue, out var parsed) 
+                    ? parsed 
+                    : false; // Default to false (safe mode: no reactive requests)
+                
+                return new DocumentProcessingConfig
+                {
+                    EnableDependencyRequests = enableDependencyRequests
+                };
+            });
+
             services.AddScoped<IDataContextFactory, DataContextFactory>();
 
             services.AddDataPersistenceExternal();

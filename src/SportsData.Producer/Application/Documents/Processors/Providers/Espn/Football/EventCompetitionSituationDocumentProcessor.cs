@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -7,6 +7,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -22,17 +23,20 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
     private readonly TDataContext _dataContext;
     private readonly IEventBus _bus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionSituationDocumentProcessor(
         ILogger<EventCompetitionSituationDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        DocumentProcessingConfig config)
     {
         _logger = logger;
         _dataContext = dataContext;
         _bus = bus;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _config = config;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -96,23 +100,41 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
 
             if (lastPlay == null)
             {
-                // request the play to be sourced
-                await _bus.Publish(new DocumentRequested(
-                    Id: lastPlayIdentity.UrlHash,
-                    ParentId: competitionId.ToString(),
-                    Uri: dto.LastPlay.Ref,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionPlay,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionSituationDocumentProcessor
-                ));
+                if (!_config.EnableDependencyRequests)
+                {
+                    _logger.LogWarning(
+                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                        DocumentType.EventCompetitionPlay,
+                        nameof(EventCompetitionSituationDocumentProcessor<TDataContext>),
+                        dto.LastPlay.Ref);
+                    throw new ExternalDocumentNotSourcedException(
+                        $"Play {dto.LastPlay.Ref} not found. Will retry when available.");
+                }
+                else
+                {
+                    // Legacy mode: keep existing DocumentRequested logic
+                    _logger.LogWarning(
+                        "LastPlay not found. Raising DocumentRequested (override mode). PlayRef={PlayRef}",
+                        dto.LastPlay.Ref);
+                    
+                    // request the play to be sourced
+                    await _bus.Publish(new DocumentRequested(
+                        Id: lastPlayIdentity.UrlHash,
+                        ParentId: competitionId.ToString(),
+                        Uri: dto.LastPlay.Ref,
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.EventCompetitionPlay,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventCompetitionSituationDocumentProcessor
+                    ));
 
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                await _dataContext.SaveChangesAsync();
+                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    await _dataContext.SaveChangesAsync();
 
-                throw new ExternalDocumentNotSourcedException($"Play {dto.LastPlay.Ref} not found. Will retry.");
+                    throw new ExternalDocumentNotSourcedException($"Play {dto.LastPlay.Ref} not found. Will retry.");
+                }
             }
 
             lastPlayId = lastPlay.Id;

@@ -114,6 +114,100 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventDto externalDto,
         int seasonYear)
     {
+        var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
+        var seasonWeekId = await GetSeasonWeekId(command, externalDto);
+
+        var contest = externalDto.AsEntity(
+            _externalRefIdentityGenerator,
+            command.Sport,
+            seasonYear,
+            seasonWeekId,
+            seasonPhaseId,
+            command.CorrelationId);
+
+        // Add contest links from dto.Links
+        AddLinks(externalDto, contest);
+
+        // Get the team IDs from the external DTO
+        await AddTeams(command, externalDto, contest);
+
+        // Attempt to resolve Venue from $ref
+        await AddVenue(command, externalDto, contest);
+
+        // process competitions
+        await ProcessCompetition(command, externalDto, contest);
+
+        await _dataContext.AddAsync(contest);
+
+        await _publishEndpoint.Publish(new ContestCreated(
+            contest.ToCanonicalModel(),
+            command.CorrelationId,
+            CausationId.Producer.EventDocumentProcessor));
+
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
+        await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task<Guid> GetSeasonWeekId(ProcessDocumentCommand command, EspnEventDto externalDto)
+    {
+        var seasonWeekId = Guid.Empty;
+
+        if (externalDto.Week is null)
+        {
+            _logger.LogError("Event DTO missing Week information. Requires enrichment to determine. {@ExternalDto}", externalDto);
+        }
+        else
+        {
+            var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
+
+            var seasonWeek = await _dataContext.SeasonWeeks
+                .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
+
+            if (seasonWeek is null)
+            {
+                if (!_config.EnableDependencyRequests)
+                {
+                    _logger.LogWarning(
+                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
+                        DocumentType.SeasonTypeWeek,
+                        nameof(EventDocumentProcessor<TDataContext>),
+                        externalDto.Week.Ref);
+                }
+                else
+                {
+                    // Legacy mode: keep existing DocumentRequested logic
+                    _logger.LogWarning(
+                        "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
+                        externalDto.Week.Ref);
+
+                    await _publishEndpoint.Publish(new DocumentRequested(
+                        Id: Guid.NewGuid().ToString(),
+                        ParentId: null, // TODO: could be seasonPhaseId? FML.
+                        Uri: externalDto.Week.Ref.ToCleanUri(),
+                        Sport: command.Sport,
+                        SeasonYear: command.Season,
+                        DocumentType: DocumentType.SeasonTypeWeek,
+                        SourceDataProvider: command.SourceDataProvider,
+                        CorrelationId: command.CorrelationId,
+                        CausationId: CausationId.Producer.EventDocumentProcessor
+                    ));
+                }
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+            }
+            else
+            {
+                seasonWeekId = seasonWeek.Id;
+            }
+        }
+
+        return seasonWeekId;
+    }
+
+    private async Task<Guid> GetSeasonPhaseId(ProcessDocumentCommand command, EspnEventDto externalDto)
+    {
         var seasonPhaseId = await _dataContext.ResolveIdAsync<
             SeasonPhase, SeasonPhaseExternalId>(
             externalDto.SeasonType,
@@ -140,7 +234,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                 _logger.LogWarning(
                     "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonType={SeasonType}",
                     externalDto.SeasonType);
-                
+
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: Guid.NewGuid().ToString(),
                     ParentId: null,
@@ -158,90 +252,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
             }
         }
 
-        var seasonWeekId = Guid.Empty;
-
-        if (externalDto.Week is null)
-        {
-            _logger.LogError("Event DTO missing Week information. Requires enrichment to determine. {@ExternalDto}", externalDto);
-        }
-        else
-        {
-            var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
-
-            var seasonWeek = await _dataContext.SeasonWeeks
-                .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
-
-            if (seasonWeek is null)
-            {
-                if (!_config.EnableDependencyRequests)
-                {
-                    _logger.LogWarning(
-                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                        DocumentType.SeasonTypeWeek,
-                        nameof(EventDocumentProcessor<TDataContext>),
-                        externalDto.Week.Ref);
-                    throw new ExternalDocumentNotSourcedException(
-                        $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
-                }
-                else
-                {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
-                        externalDto.Week.Ref);
-                    
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: Guid.NewGuid().ToString(),
-                        ParentId: null, // TODO: could be seasonPhaseId? FML.
-                        Uri: externalDto.Week.Ref.ToCleanUri(),
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.SeasonTypeWeek,
-                        SourceDataProvider: command.SourceDataProvider,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor
-                    ));
-
-                    throw new ExternalDocumentNotSourcedException(
-                        $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
-                }
-            }
-            else
-            {
-                seasonWeekId = seasonWeek.Id;
-            }
-        }
-
-        var contest = externalDto.AsEntity(
-            _externalRefIdentityGenerator,
-            command.Sport,
-            seasonYear,
-            seasonWeekId,
-            seasonPhaseId.Value,
-            command.CorrelationId);
-
-        // Add contest links from dto.Links
-        AddLinks(externalDto, contest);
-
-        // Get the team IDs from the external DTO
-        await AddTeams(command, externalDto, contest);
-
-        // Attempt to resolve Venue from $ref
-        await AddVenue(command, externalDto, contest);
-
-        // process competitions
-        await ProcessCompetition(command, externalDto, contest);
-
-        await _dataContext.AddAsync(contest);
-
-        await _publishEndpoint.Publish(new ContestCreated(
-            contest.ToCanonicalModel(),
-            command.CorrelationId,
-            CausationId.Producer.EventDocumentProcessor));
-
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-
-        await _dataContext.SaveChangesAsync();
+        return seasonPhaseId.Value;
     }
 
     private async Task ProcessCompetition(
@@ -314,7 +325,9 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
             else
             {
                 var venueHash = HashProvider.GenerateHashFromUri(venue.Ref);
+
                 _logger.LogWarning("Venue not found for hash {VenueHash}, publishing sourcing request.", venueHash);
+
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: venueHash,
                     ParentId: string.Empty,
@@ -326,6 +339,9 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.EventDocumentProcessor
                 ));
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"Venue not found for {venue.Ref} in command {command.CorrelationId}");
             }
         }
     }

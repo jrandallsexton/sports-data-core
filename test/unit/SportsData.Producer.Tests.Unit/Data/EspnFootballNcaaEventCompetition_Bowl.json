@@ -1,0 +1,259 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323?lang=en",
+  "id": "401778323",
+  "guid": "026eaf51-47ba-3b5b-8cd9-6efc43e7b88a",
+  "uid": "s:20~l:23~e:401778323~c:401778323",
+  "date": "2025-12-28T02:15Z",
+  "attendance": 0,
+  "type": {
+    "id": "42",
+    "text": "Bowl Game",
+    "abbreviation": "Bowl Game",
+    "slug": "bowl-game",
+    "type": "bowl-game"
+  },
+  "timeValid": true,
+  "dateValid": false,
+  "neutralSite": true,
+  "divisionCompetition": false,
+  "conferenceCompetition": false,
+  "previewAvailable": false,
+  "recapAvailable": false,
+  "boxscoreAvailable": false,
+  "lineupAvailable": false,
+  "gamecastAvailable": false,
+  "playByPlayAvailable": false,
+  "conversationAvailable": true,
+  "commentaryAvailable": false,
+  "pickcenterAvailable": true,
+  "summaryAvailable": true,
+  "liveAvailable": false,
+  "ticketsAvailable": true,
+  "shotChartAvailable": false,
+  "timeoutsAvailable": false,
+  "possessionArrowAvailable": false,
+  "onWatchESPN": true,
+  "recent": false,
+  "bracketAvailable": false,
+  "wallclockAvailable": false,
+  "highlightsAvailable": true,
+  "gameSource": {
+    "id": "1",
+    "description": "basic/manual",
+    "state": "basic"
+  },
+  "boxscoreSource": {
+    "id": "0",
+    "description": "none",
+    "state": "none"
+  },
+  "playByPlaySource": {
+    "id": "0",
+    "description": "none",
+    "state": "none"
+  },
+  "linescoreSource": {
+    "id": "1",
+    "description": "basic/manual",
+    "state": "basic"
+  },
+  "statsSource": {
+    "id": "0",
+    "description": "none",
+    "state": "none"
+  },
+  "venue": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3891?lang=en",
+    "id": "3891",
+    "guid": "8a2b5070-4bbd-3dd3-bc00-e867aea0b5be",
+    "fullName": "NRG Stadium",
+    "address": {
+      "city": "Houston",
+      "state": "TX",
+      "zipCode": "77054",
+      "country": "USA"
+    },
+    "grass": false,
+    "indoor": true,
+    "images": [
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/3891.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [
+          "full",
+          "day"
+        ]
+      },
+      {
+        "href": "https://a.espncdn.com/i/venues/college-football/day/interior/3891.jpg",
+        "width": 2000,
+        "height": 1125,
+        "alt": "",
+        "rel": [
+          "full",
+          "day",
+          "interior"
+        ]
+      }
+    ]
+  },
+  "competitors": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/competitors/248?lang=en",
+      "id": "248",
+      "uid": "s:20~l:23~t:248",
+      "type": "team",
+      "order": 0,
+      "homeAway": "home",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/248?lang=en"
+      },
+      "score": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/competitors/248/score?lang=en"
+      },
+      "record": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/248/record?lang=en"
+      },
+      "curatedRank": {
+        "current": 21
+      }
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/competitors/99?lang=en",
+      "id": "99",
+      "uid": "s:20~l:23~t:99",
+      "type": "team",
+      "order": 1,
+      "homeAway": "away",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en"
+      },
+      "score": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/competitors/99/score?lang=en"
+      },
+      "record": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/record?lang=en"
+      },
+      "curatedRank": {
+        "current": 99
+      }
+    }
+  ],
+  "notes": [
+    {
+      "type": "event",
+      "headline": "Kinder's Texas Bowl"
+    }
+  ],
+  "situation": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/situation?lang=en"
+  },
+  "status": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/status?lang=en"
+  },
+  "odds": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/odds?lang=en"
+  },
+  "broadcasts": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/broadcasts?lang=en"
+  },
+  "tickets": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/tickets?lang=en"
+  },
+  "leaders": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/leaders?lang=en"
+  },
+  "links": [
+    {
+      "language": "en",
+      "rel": [
+        "summary",
+        "desktop",
+        "event"
+      ],
+      "href": "https://www.espn.com/college-football/game/_/gameId/401778323/lsu-houston",
+      "text": "Gamecast",
+      "shortText": "Summary",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [
+        "summary",
+        "sportscenter",
+        "app",
+        "event"
+      ],
+      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401778323",
+      "text": "Gamecast",
+      "shortText": "Summary",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [
+        "now",
+        "desktop",
+        "event"
+      ],
+      "href": "https://www.espn.com/college-football/game/_/gameId/401778323",
+      "text": "Now",
+      "shortText": "Now",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [
+        "watchespn",
+        "desktop",
+        "event"
+      ],
+      "href": "https://www.espn.com/watchespn/index?gameId=401778323&sourceLang=en",
+      "text": "WatchESPN",
+      "shortText": "WatchESPN",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en",
+      "rel": [
+        "watchespn",
+        "app",
+        "event"
+      ],
+      "href": "watchespn://showEvent?gameId=401778323&sourceLang=en",
+      "text": "WatchESPN",
+      "shortText": "WatchESPN",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "predictor": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/predictor?lang=en"
+  },
+  "powerIndexes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/powerindex?lang=en"
+  },
+  "format": {
+    "regulation": {
+      "periods": 4,
+      "displayName": "Quarter",
+      "slug": "quarter",
+      "clock": 900.0
+    },
+    "overtime": {
+      "periods": 0,
+      "displayName": "untimed",
+      "slug": "untimed"
+    }
+  },
+  "drives": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401778323/competitions/401778323/drives?lang=en"
+  },
+  "hasDefensiveStats": false
+}

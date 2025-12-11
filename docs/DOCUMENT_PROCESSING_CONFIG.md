@@ -143,26 +143,28 @@ if (dependency is null)
 
 Key metrics to track:
 
-- **Hangfire Job Counts**: Should be dramatically lower with flag enabled
+- **Hangfire Job Counts**: Should be dramatically lower in safe mode (`EnableDependencyRequests = false`)
 - **Retry Rates**: May increase slightly (expected and healthy)
 - **Processing Duration**: Should improve with fewer cross-requests
-- **DocumentRequested Events**: Should drop to zero with flag enabled
+- **DocumentRequested Events**: Should drop to zero in safe mode (`EnableDependencyRequests = false`)
 
 ## Migration Strategy
 
-1. **Phase 1 (Current)**: Deploy with flag OFF (safe mode)
-   - No behavior change
-   - Allows safe deployment and rollback
+1. **Phase 1 (Current)**: Deploy feature flag infrastructure with safe mode default
+   - Default: `EnableDependencyRequests = false` (safe mode - no reactive requests)
+   - Behavior: Processors throw exceptions on missing dependencies and rely on Hangfire retries
+   - This CHANGES behavior from the previous reactive request pattern to prevent cyclical dependencies
+   - Allows rollback via config toggle to `true` if data issues emerge
 
-2. **Phase 2**: Enable in dev/QA
-   - Set `EnableDependencyRequests: true` (only if override mode is needed)
-   - Monitor for issues
-   - Validate data integrity
+2. **Phase 2**: Validate in dev/QA
+   - Monitor with `EnableDependencyRequests = false` (safe mode)
+   - Confirm job counts remain low and data integrity is maintained
+   - Test override mode (`true`) only if specific scenarios require reactive requests
 
-3. **Phase 3**: Enable in production
-   - Keep `EnableDependencyRequests: false` in prod config (safe mode)
-   - Monitor job counts closely
-   - Be prepared to toggle flag if issues arise
+3. **Phase 3**: Production deployment
+   - Keep `EnableDependencyRequests = false` in prod config (safe mode)
+   - Monitor Hangfire job counts, retry rates, and data completeness
+   - Feature flag available to toggle to `true` if critical issues arise
 
 4. **Phase 4** (Future): Remove legacy mode
    - After successful production run

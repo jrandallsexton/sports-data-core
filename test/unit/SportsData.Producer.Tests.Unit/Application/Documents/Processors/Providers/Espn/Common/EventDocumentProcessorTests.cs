@@ -17,6 +17,7 @@ using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -221,6 +222,10 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     public async Task WhenEntityDoesNotExist_VenueMissing_ShouldPublishDocumentRequested()
     {
         // arrange
+        // TODO: This test reflects current bowl season processing behavior where missing venues
+        // trigger a retry via ExternalDocumentNotSourcedException. Once we support per-dependency
+        // flag overrides, update this test to verify Contest creation with VenueId=null when
+        // EnableDependencyRequests=true for Venue dependencies.
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
@@ -255,16 +260,18 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         await sut.ProcessAsync(command);
 
         // assert
+        // Current behavior: Missing venue triggers retry, Contest is not created
         var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
-        created.Should().NotBeNull();
-        created!.VenueId.Should().BeNull();
+        created.Should().BeNull("missing venue triggers retry, Contest creation is deferred");
 
+        // Verify DocumentRequested published for missing Venue
         bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
             d.DocumentType == DocumentType.Venue &&
             d.ParentId == string.Empty), It.IsAny<CancellationToken>()), Times.Once);
 
-        bus.Verify(x => x.Publish(It.Is<DocumentRequested>(d =>
-            d.DocumentType == DocumentType.EventCompetition), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        // Verify retry scheduled via DocumentCreated with incremented AttemptCount
+        bus.Verify(x => x.Publish(It.Is<DocumentCreated>(d =>
+            d.AttemptCount == command.AttemptCount + 1), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

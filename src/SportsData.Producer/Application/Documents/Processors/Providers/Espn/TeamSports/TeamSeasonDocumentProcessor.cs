@@ -627,47 +627,23 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        var saveChanges = false;
-
         // request updated statistics
-        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
-            await ProcessStatistics(existing.Id, dto, command);
-
-        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
-            await ProcessRanks(existing.Id, dto, command);
-
         if (ShouldSpawn(DocumentType.AthleteSeason, command))
             await ProcessAthletes(existing.Id, dto, command);
+
+        if (ShouldSpawn(DocumentType.Event, command))
+            await ProcessEvents(existing.Id, dto, command);
 
         if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
             await ProcessLeaders(existing.Id, dto, command);
 
-        if (dto.Events?.Ref is not null && ShouldSpawn(DocumentType.Event, command))
-        {
-            var identity = _externalRefIdentityGenerator.Generate(dto.Events.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: identity.UrlHash,
-                ParentId: existing.Id.ToString(),
-                Uri: new Uri(identity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.Event,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.TeamSeasonDocumentProcessor
-            ));
-            saveChanges = true;
-            _logger.LogInformation($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raising DocumentRequested for Events");
-        }
+        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
+            await ProcessRanks(existing.Id, dto, command);
 
-        if (saveChanges)
-        {
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
-        }
-        else
-        {
-            _logger.LogWarning($"{nameof(TeamSeasonDocumentProcessor<TDataContext>)} raised zero events.");
-        }
+        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
+            await ProcessStatistics(existing.Id, dto, command);
+
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
     }
 }

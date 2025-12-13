@@ -91,6 +91,7 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
         var existingSeason = await _dataContext.Seasons
             .Include(s => s.Phases)
             .Include(s => s.ExternalIds)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == mappedSeason.Id);
 
         if (existingSeason != null)

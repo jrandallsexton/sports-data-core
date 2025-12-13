@@ -8,6 +8,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Application.Sourcing.Historical;
 using SportsData.Provider.Infrastructure.Data;
 
 using System.Net;
@@ -30,6 +31,12 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+
+            // Historical sourcing services
+            services.Configure<HistoricalSourcingConfig>(
+                configuration.GetSection(HistoricalSourcingConfig.SectionName));
+            services.AddScoped<IHistoricalSourcingUriBuilder, HistoricalSourcingUriBuilder>();
+            services.AddScoped<IHistoricalSeasonSourcingService, HistoricalSeasonSourcingService>();
 
             var imageClient = services.AddHttpClient("images", c =>
             {

@@ -120,7 +120,13 @@ namespace SportsData.Provider.Application.Jobs
             // IMPORTANT: Only look at jobs with the SAME correlationId (same historical sourcing run)
             var upstreamJobs = await _dataContext.ResourceIndexJobs
                 .Where(x => x.CreatedBy == correlationId && upstreamTiers.Contains(x.DocumentType))
-                .Select(x => new { x.DocumentType, x.LastCompletedUtc, x.IsEnabled })
+                .Select(x => new { 
+                    x.DocumentType, 
+                    x.LastCompletedUtc, 
+                    x.IsEnabled,
+                    x.ProcessingStartedUtc,
+                    x.ProcessingInstanceId 
+                })
                 .ToListAsync();
 
             foreach (var tier in upstreamTiers)
@@ -143,12 +149,37 @@ namespace SportsData.Provider.Application.Jobs
                     return true; // Should cancel - tier was disabled/failed
                 }
                 
+                // ✅ Check if tier is currently processing (has ProcessingInstanceId)
+                // If it's processing, we need to wait
+                if (job.ProcessingInstanceId.HasValue)
+                {
+                    _logger.LogWarning(
+                        "Upstream tier {Tier} is currently processing. Will check again on retry. CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    
+                    // Throw exception to trigger Hangfire retry
+                    throw new InvalidOperationException(
+                        $"Upstream tier {tier} is still processing. Job will retry automatically.");
+                }
+                
+                // ✅ Check if tier started processing but never completed (likely failed)
+                if (job.ProcessingStartedUtc.HasValue && !job.LastCompletedUtc.HasValue)
+                {
+                    _logger.LogError(
+                        "Upstream tier {Tier} started but never completed (likely failed). CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    return true; // Should cancel - tier failed
+                }
+                
                 if (!job.LastCompletedUtc.HasValue)
                 {
                     _logger.LogWarning(
-                        "Upstream tier {Tier} has not completed yet. CorrelationId={CorrelationId}",
+                        "Upstream tier {Tier} has not started yet. Will check again on retry. CorrelationId={CorrelationId}",
                         tier, correlationId);
-                    return true; // Should cancel - tier hasn't finished
+                    
+                    // Throw exception to trigger Hangfire retry
+                    throw new InvalidOperationException(
+                        $"Upstream tier {tier} has not started yet. Job will retry automatically.");
                 }
             }
 
@@ -157,63 +188,6 @@ namespace SportsData.Provider.Application.Jobs
                 currentTier, correlationId);
             
             return false; // Can proceed - all upstream tiers completed successfully
-        }
-
-        private async Task<bool> CheckUpstreamTiersAsync(Guid correlationId, DocumentType currentTier)
-        {
-            // Define tier dependencies
-            var upstreamTiers = currentTier switch
-            {
-                DocumentType.Venue => new[] { DocumentType.Season },
-                DocumentType.TeamSeason => new[] { DocumentType.Season, DocumentType.Venue },
-                DocumentType.AthleteSeason => new[] { DocumentType.Season, DocumentType.Venue, DocumentType.TeamSeason },
-                _ => Array.Empty<DocumentType>()
-            };
-
-            if (!upstreamTiers.Any())
-                return false; // No upstream dependencies
-
-            // ✅ Check if any upstream tier failed or didn't complete
-            // IMPORTANT: Only look at jobs with the SAME correlationId (same historical sourcing run)
-            var upstreamJobs = await _dataContext.ResourceIndexJobs
-                .Where(x => x.CreatedBy == correlationId && upstreamTiers.Contains(x.DocumentType))
-                .Select(x => new { x.DocumentType, x.LastCompletedUtc, x.IsEnabled })
-                .ToListAsync();
-
-            foreach (var tier in upstreamTiers)
-            {
-                var job = upstreamJobs.FirstOrDefault(x => x.DocumentType == tier);
-                
-                if (job == null)
-                {
-                    _logger.LogWarning(
-                        "Upstream tier {Tier} not found for this historical sourcing run. CorrelationId={CorrelationId}",
-                        tier, correlationId);
-                    return true; // Failed - tier doesn't exist for this correlation
-                }
-                
-                if (!job.IsEnabled)
-                {
-                    _logger.LogWarning(
-                        "Upstream tier {Tier} is disabled (likely failed). CorrelationId={CorrelationId}",
-                        tier, correlationId);
-                    return true; // Failed - tier was disabled
-                }
-                
-                if (!job.LastCompletedUtc.HasValue)
-                {
-                    _logger.LogWarning(
-                        "Upstream tier {Tier} has not completed yet. CorrelationId={CorrelationId}",
-                        tier, correlationId);
-                    return true; // Failed - tier hasn't finished
-                }
-            }
-
-            _logger.LogInformation(
-                "All upstream tiers completed successfully for this historical sourcing run. Proceeding with {CurrentTier}. CorrelationId={CorrelationId}",
-                currentTier, correlationId);
-            
-            return false; // All upstream tiers completed
         }
 
         private async Task ProcessLeaf(

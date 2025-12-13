@@ -36,6 +36,7 @@ select * from public."User" where "IsSynthetic" = true
 select * from public."PickemGroup"
 select * from public."PickemGroupMatchup"
 select * from public."PickemGroupWeekResult"
+--delete from public."PickemGroupWeekResult"
 --UPDATE "PickemGroup" SET "TiebreakerType" = 3 WHERE "TiebreakerType" = 1;
 
 SELECT 

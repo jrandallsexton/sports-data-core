@@ -40,17 +40,46 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
         {
+            // Get the historical sourcing correlationId from CreatedBy
+            var correlationId = await _dataContext.ResourceIndexJobs
+                .Where(x => x.Id == jobDefinition.ResourceIndexId)
+                .Select(x => x.CreatedBy)
+                .FirstOrDefaultAsync();
+            
+            // Fall back to ResourceIndexId if not set (for recurring jobs)
+            if (correlationId == Guid.Empty)
+                correlationId = jobDefinition.ResourceIndexId;
+
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = jobDefinition.ResourceIndexId
-                   }))
-                await ExecuteInternal(jobDefinition);
+            {
+                ["CorrelationId"] = correlationId,
+                ["TierName"] = jobDefinition.DocumentType,
+                ["SeasonYear"] = jobDefinition.SeasonYear ?? 0,
+                ["ResourceIndexId"] = jobDefinition.ResourceIndexId
+            }))
+            {
+                _logger.LogInformation(
+                    "TIER_STARTED: Tier={Tier}, SeasonYear={Season}, Shape={Shape}, ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
+                    jobDefinition.Shape, jobDefinition.ResourceIndexId);
+                
+                var startTime = DateTime.UtcNow;
+                await ExecuteInternal(jobDefinition, correlationId);
+                var duration = DateTime.UtcNow - startTime;
+                
+                _logger.LogInformation(
+                    "TIER_COMPLETED: Tier={Tier}, SeasonYear={Season}, DurationMin={DurationMin:F2}, " +
+                    "ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
+                    duration.TotalMinutes, jobDefinition.ResourceIndexId);
+            }
         }
 
         private async Task ProcessLeaf(
             DocumentJobDefinition jobDefinition,
             Guid id,
-            Guid me)
+            Guid me,
+            Guid correlationId)
         {
             try
             {
@@ -59,10 +88,10 @@ namespace SportsData.Provider.Application.Jobs
                 var hrefHash = HashProvider.GenerateHashFromUri(href!.ToCleanUri());
 
                 var cmd = new ProcessResourceIndexItemCommand(
-                    jobDefinition.ResourceIndexId,            // correlation
-                    id,                                       // parent RI job id (same as your loop)
-                    hrefHash,                                 // UrlHash
-                    href!,                                     // $ref
+                    correlationId,                            // ✅ CorrelationId FIRST
+                    id,                                       // ResourceIndexId SECOND
+                    hrefHash,                                 // Id (UrlHash) THIRD
+                    href!,                                    // Uri
                     jobDefinition.Sport,
                     jobDefinition.SourceDataProvider,
                     jobDefinition.DocumentType,
@@ -105,7 +134,7 @@ namespace SportsData.Provider.Application.Jobs
             return; // don't fall through to index traversal
         }
 
-        private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
+        private async Task ExecuteInternal(DocumentJobDefinition jobDefinition, Guid correlationId)
         {
             _logger.LogInformation("Begin processing {@JobDefinition}", jobDefinition);
 
@@ -129,7 +158,7 @@ namespace SportsData.Provider.Application.Jobs
 
             if (jobDefinition.Shape == ResourceShape.Leaf)
             {
-                await ProcessLeaf(jobDefinition, id, me);
+                await ProcessLeaf(jobDefinition, id, me, correlationId);
                 return;
             }
 
@@ -168,6 +197,8 @@ namespace SportsData.Provider.Application.Jobs
                 _logger.LogInformation("Target collection {Collection}", collectionName);
                 // NOTE: left in place in case you want to observe coverage; no short-circuiting
 
+                var totalItemsEnqueued = 0;
+
                 // ---- Page loop -------------------------------------------------
                 while (true)
                 {
@@ -185,9 +216,9 @@ namespace SportsData.Provider.Application.Jobs
                     foreach (var item in resourceIndexDto.Items)
                     {
                         var cmd = new ProcessResourceIndexItemCommand(
-                            jobDefinition.ResourceIndexId,
-                            id,
-                            HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()),
+                            correlationId,  // ✅ CorrelationId FIRST
+                            id,             // ResourceIndexId SECOND
+                            HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()), // Id (UrlHash) THIRD
                             item.Ref,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
@@ -198,6 +229,7 @@ namespace SportsData.Provider.Application.Jobs
                             jobDefinition.IncludeLinkedDocumentTypes);
 
                         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                        totalItemsEnqueued++;
                     }
 
                     // Page-scoped, owner-gated, monotonic progress
@@ -229,7 +261,9 @@ namespace SportsData.Provider.Application.Jobs
                         .SetProperty(x => x.IsQueued, _ => false)
                         .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
 
-                _logger.LogInformation("Completed ResourceIndex {Id}.", id);
+                _logger.LogInformation(
+                    "TIER_SOURCING_COMPLETED: Tier={Tier}, TotalDocumentsEnqueued={Count}, ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, totalItemsEnqueued, id);
             }
             catch (Exception ex)
             {

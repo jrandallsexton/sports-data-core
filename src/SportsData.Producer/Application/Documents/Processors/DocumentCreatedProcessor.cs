@@ -27,14 +27,28 @@ namespace SportsData.Producer.Application.Documents.Processors
 
         public async Task Process(DocumentCreated evt)
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = evt.CorrelationId
-                   }))
             {
-                _logger.LogInformation("Began with {@command}", evt);
+                ["CorrelationId"] = evt.CorrelationId,
+                ["CausationId"] = evt.CausationId,
+                ["DocumentType"] = evt.DocumentType,
+                ["SeasonYear"] = evt.SeasonYear ?? 0
+            }))
+            {
+                _logger.LogInformation(
+                    "DOC_PROCESSING_STARTED: DocumentType={DocumentType}, SourceUrlHash={SourceUrlHash}, " +
+                    "AttemptCount={AttemptCount}",
+                    evt.DocumentType, evt.SourceUrlHash, evt.AttemptCount);
 
                 await ProcessInternal(evt);
+                
+                sw.Stop();
+                
+                _logger.LogInformation(
+                    "DOC_PROCESSING_COMPLETED: DocumentType={DocumentType}, DurationMs={DurationMs}",
+                    evt.DocumentType, sw.ElapsedMilliseconds);
             }
         }
 

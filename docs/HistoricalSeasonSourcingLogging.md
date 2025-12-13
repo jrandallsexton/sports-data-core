@@ -23,9 +23,45 @@ The `CorrelationId` from your historical sourcing request flows through the enti
 - **DocumentType** - Type of document being processed
 - **ResourceIndexId** - The ResourceIndex job ID
 
+## Tier Dependency Validation
+
+**NEW:** Each tier now validates that upstream dependencies completed successfully before processing:
+
+### Dependency Chain
+```
+Season (no dependencies)
+  ?
+Venue (requires: Season)
+  ?
+TeamSeason (requires: Season, Venue)
+  ?
+AthleteSeason (requires: Season, Venue, TeamSeason)
+```
+
+### Failure Cascade
+If an upstream tier fails (e.g., ESPN returns 500 on Season endpoint):
+1. Season job fails and is marked `IsEnabled = false`
+2. Venue job checks upstream ? detects Season failure ? cancels itself
+3. TeamSeason job checks upstream ? detects Season failure ? cancels itself
+4. AthleteSeason job checks upstream ? detects Season failure ? cancels itself
+
+**Log Message:** `TIER_CANCELLED: Upstream tier failed. Cancelling tier.`
+
 ## Structured Log Messages
 
 ### Tier-Level Events
+
+#### TIER_CANCELLED
+Logged when a tier is cancelled due to upstream failure.
+
+**Fields:**
+- `Tier` - DocumentType that was cancelled
+- `SeasonYear` - Season year
+
+**Example:**
+```
+TIER_CANCELLED: Upstream tier failed. Cancelling tier. Tier=Venue, SeasonYear=2024
+```
 
 #### TIER_STARTED
 Logged when a ResourceIndex job begins processing a tier.
@@ -97,8 +133,8 @@ DOC_PROCESSING_COMPLETED: DocumentType=TeamSeason, DurationMs=1234
 
 ## Seq Queries
 
-### Query 1: Historical Sourcing Overview
-Get all tier events for a specific historical sourcing run:
+### Query 1: Historical Sourcing Overview (with Cancellations)
+Get all tier events including cancellations:
 
 ```sql
 select 
@@ -114,7 +150,22 @@ where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with you
 order by @Timestamp
 ```
 
-### Query 2: Tier Duration Analysis
+### Query 2: Detect Failed Tiers
+Find tiers that were cancelled due to upstream failures:
+
+```sql
+select 
+  @Timestamp,
+  TierName,
+  SeasonYear,
+  @Message
+from stream
+where @Message like 'TIER_CANCELLED%'
+  and CorrelationId = '00000000-0000-0000-0000-000000000000'
+order by @Timestamp
+```
+
+### Query 3: Tier Duration Analysis
 Compare tier processing times:
 
 ```sql
@@ -130,7 +181,7 @@ where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with you
 order by @Timestamp
 ```
 
-### Query 3: Document Processing Rate by Tier
+### Query 4: Document Processing Rate by Tier
 Calculate average processing time per document type:
 
 ```sql
@@ -146,7 +197,7 @@ where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with you
 group by DocumentType
 ```
 
-### Query 4: Failed/Retried Documents
+### Query 5: Failed/Retried Documents
 Find documents that required retries:
 
 ```sql
@@ -162,8 +213,8 @@ where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with you
 order by @Timestamp
 ```
 
-### Query 5: Tier Timeline Visualization
-Create a timeline view showing tier start/completion:
+### Query 6: Tier Timeline Visualization
+Create a timeline view showing tier start/completion/cancellation:
 
 ```sql
 select 
@@ -172,6 +223,7 @@ select
     when @Message like 'TIER_STARTED%' then 'Started'
     when @Message like 'TIER_COMPLETED%' then 'Completed'
     when @Message like 'TIER_SOURCING_COMPLETED%' then 'Sourced'
+    when @Message like 'TIER_CANCELLED%' then 'Cancelled'
   end as EventType,
   TierName,
   DurationMin,
@@ -182,7 +234,7 @@ where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with you
 order by @Timestamp
 ```
 
-### Query 6: Processing Lag Detection
+### Query 7: Processing Lag Detection
 Identify gaps between tier sourcing completion and actual document processing:
 
 ```sql
@@ -215,7 +267,21 @@ and CorrelationId is not null
 Tier {TierName} completed for season {SeasonYear} in {DurationMin} minutes
 ```
 
-### Signal 2: Long-Running Document Alert
+### Signal 2: Tier Cancellation Alert
+Get notified when tiers are cancelled due to upstream failures:
+
+**Name:** Historical Tier Cancelled  
+**Query:**
+```sql
+@Message like 'TIER_CANCELLED%'
+```
+
+**Notification:** Slack/Email with message:
+```
+?? Tier {TierName} cancelled for season {SeasonYear} due to upstream failure
+```
+
+### Signal 3: Long-Running Document Alert
 Alert on documents taking longer than expected:
 
 **Name:** Slow Document Processing  
@@ -230,7 +296,7 @@ and DurationMs > 30000
 Document processing took {DurationMs}ms for {DocumentType}
 ```
 
-### Signal 3: High Retry Rate
+### Signal 4: High Retry Rate
 Alert when documents require multiple retries:
 
 **Name:** High Document Retry Rate  
@@ -251,8 +317,8 @@ Document {SourceUrlHash} requires retry attempt {AttemptCount}
 ```http
 POST /api/sourcing/historical/seasons
 {
-  "sport": "FootballNcaa",
-  "sourceDataProvider": "Espn",
+  "sport": 2,
+  "sourceDataProvider": 0,
   "seasonYear": 2024
 }
 ```
@@ -281,18 +347,37 @@ where CorrelationId = '3fa85f64-5717-4562-b3fc-2c963f66afa6'
 order by @Timestamp
 ```
 
-### Step 3: Analyze Results
+### Step 3: Handle Failures
+If you see `TIER_CANCELLED` messages:
+
+1. **Identify root cause** - Check which tier failed first
+2. **Fix the issue** (e.g., wait for ESPN API to recover)
+3. **Reset and retry**:
+```sql
+-- Reset all jobs for this correlation
+UPDATE "ResourceIndexJobs" 
+SET "LastCompletedUtc" = NULL, 
+    "LastPageIndex" = NULL, 
+    "IsEnabled" = true,
+    "IsQueued" = false
+WHERE "CreatedBy" = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+```
+
+4. **Manually trigger** via `/api/resourceIndex/{id}/process` for each tier
+
+### Step 4: Analyze Results
 After completion, run the duration analysis query to get timing data for future optimization.
 
 ## Dashboard Recommendations
 
 Create a Seq dashboard with these widgets:
 
-1. **Tier Progress** - Timeline of TIER_STARTED/TIER_COMPLETED events
+1. **Tier Progress** - Timeline of TIER_STARTED/TIER_COMPLETED/TIER_CANCELLED events
 2. **Document Processing Rate** - Bar chart of documents processed per minute
 3. **Average Document Duration** - Line chart of avg processing time by DocumentType
 4. **Retry Rate** - Gauge showing percentage of documents requiring retries
-5. **Current Status** - Text widget showing last event timestamp and tier
+5. **Cancellation Rate** - Count of TIER_CANCELLED events
+6. **Current Status** - Text widget showing last event timestamp and tier
 
 ## Troubleshooting
 
@@ -305,8 +390,51 @@ Create a Seq dashboard with these widgets:
 ### Issue: High Retry Rates
 **Check:** Query for `AttemptCount > 2` to identify problematic documents and their error messages.
 
+### Issue: Tier Cancelled Unexpectedly
+**Check:** 
+1. Query for the previous tier's completion status
+2. Verify ESPN API is responding (500 errors will cause failures)
+3. Check if delays were too short and jobs started before upstream completed
+
+### Issue: ESPN API Returning 500s
+**Resolution:**
+1. All subsequent tiers will auto-cancel
+2. Wait for ESPN API to recover (usually a few minutes)
+3. Reset the jobs using SQL above
+4. Manually re-trigger each tier in order
+
+## Recovery Procedures
+
+### Scenario 1: Season Tier Failed (ESPN 500)
+```
+TIER_CANCELLED: Tier=Venue
+TIER_CANCELLED: Tier=TeamSeason  
+TIER_CANCELLED: Tier=AthleteSeason
+```
+
+**Recovery:**
+1. Wait for ESPN to recover
+2. Reset all 4 tiers (SQL above)
+3. Manually trigger Season tier first
+4. Wait for completion
+5. Manually trigger remaining tiers
+
+### Scenario 2: Mid-Tier Failure (e.g., Venue failed)
+```
+TIER_COMPLETED: Tier=Season ?
+TIER_CANCELLED: Tier=TeamSeason ?
+TIER_CANCELLED: Tier=AthleteSeason ?
+```
+
+**Recovery:**
+1. Fix Venue tier issue
+2. Reset Venue, TeamSeason, AthleteSeason
+3. Season is already complete - leave it
+4. Manually trigger Venue, then others
+
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** December 2025  
+**Changes:** Added tier dependency validation and cancellation logic
 **Related:** HistoricalSeasonSourcingAnalysis.md, HISTORICAL_SEASON_SOURCING.md

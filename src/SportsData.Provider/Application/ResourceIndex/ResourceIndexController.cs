@@ -110,29 +110,4 @@ namespace SportsData.Provider.Application.ResourceIndex
             return Ok(resourceIndexJob);
         }
     }
-
-    public record CreateResourceIndexCommand
-    {
-        public Sport Sport { get; init; }
-        public SourceDataProvider SourceDataProvider { get; init; }
-        public DocumentType DocumentType { get; init; }
-        public int? SeasonYear { get; init; }
-        public required Uri Ref { get; init; }
-        public bool IsRecurring { get; set; }
-        public string? CronExpression { get; set; }
-        public bool IsEnabled { get; set; }
-        public ResourceShape Shape { get; set; } = ResourceShape.Auto;
-
-        public int? Ordinal { get; set; }
-    }
-
-    public record ProcessResourceIndexRequest
-    {
-        /// <summary>
-        /// Inclusion-only semantics: if this is provided and non-empty,
-        /// downstream processors should only spawn linked documents that are in this list.
-        /// If null or empty, all linked documents are processed (default behavior).
-        /// </summary>
-        public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; }
-    }
 }

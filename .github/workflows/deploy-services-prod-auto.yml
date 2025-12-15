@@ -183,8 +183,17 @@ jobs:
             --service-url "https://api-int.sportdeets.com"
           
           # Restore policy (import removes it)
+          cat > policy.json <<'EOF'
+          {
+            "properties": {
+              "value": "<policies><inbound><base /><set-backend-service backend-id=\"sportdeets-internal-api\" /></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>",
+              "format": "xml"
+            }
+          }
+          EOF
+          
           az rest --method put \
             --uri "/subscriptions/a11f8d2b-4f9b-4d85-ac2c-3b8e768cd8e0/resourceGroups/rg-sportDeets/providers/Microsoft.ApiManagement/service/sportdeets-apim/apis/sportdeets-api/policies/policy?api-version=2024-06-01-preview" \
-            --body '{"properties":{"value":"<policies><inbound><base /><set-backend-service backend-id=\\"sportdeets-internal-api\\" /></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>","format":"xml"}}'
+            --body @policy.json
           
           echo "✅ APIM Swagger definition updated from https://api-int.sportdeets.com/swagger/v1/swagger.json"

@@ -92,7 +92,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 var resourceIndex = new ResourceIndexEntity
                 {
                     Id = Guid.NewGuid(),
-                    Ordinal = (int)(baseOrdinal * 100 + i), // Timestamp + tier index ensures uniqueness
+                    Ordinal = baseOrdinal * 100L + i, // Timestamp + tier index ensures uniqueness (use long to avoid overflow)
                     Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
                     IsRecurring = false,
                     IsQueued = false,

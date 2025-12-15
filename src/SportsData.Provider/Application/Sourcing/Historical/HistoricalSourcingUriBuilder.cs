@@ -30,7 +30,10 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
         var path = documentType switch
         {
             DocumentType.Season => $"{baseUrl}/seasons/{seasonYear}",
+
+            // ESPN venues endpoint is league-level (not season-specific), so seasonYear is intentionally unused
             DocumentType.Venue => $"{baseUrl}/venues",
+
             DocumentType.TeamSeason => $"{baseUrl}/seasons/{seasonYear}/teams",
             DocumentType.AthleteSeason => $"{baseUrl}/seasons/{seasonYear}/athletes",
             _ => throw new ArgumentException(

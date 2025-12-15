@@ -77,7 +77,9 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             var startTime = DateTime.UtcNow;
             var existingOrdinalCount = await _dataContext.ResourceIndexJobs.CountAsync(cancellationToken);
 
-            // Create ResourceIndex records and schedule jobs
+            // Create ResourceIndex records (collect them for scheduling after persistence)
+            var createdResourceIndexes = new List<(ResourceIndexEntity Entity, TimeSpan Delay)>();
+
             for (var i = 0; i < tiers.Length; i++)
             {
                 var tier = tiers[i];
@@ -110,22 +112,35 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
                 await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
 
-                // Schedule the job with delay
+                // Store for scheduling after persistence
                 var delayTimeSpan = TimeSpan.FromMinutes(tier.DelayMinutes);
-                var jobDefinition = new DocumentJobDefinition(resourceIndex);
-
-                _backgroundJobProvider.Schedule<ResourceIndexJob>(
-                    job => job.ExecuteAsync(jobDefinition),
-                    delayTimeSpan);
+                createdResourceIndexes.Add((resourceIndex, delayTimeSpan));
 
                 _logger.LogInformation(
-                    "Scheduled tier. Tier={TierName}, DocumentType={DocumentType}, Delay={DelayMinutes}min, " +
+                    "Created ResourceIndex for tier. Tier={TierName}, DocumentType={DocumentType}, Delay={DelayMinutes}min, " +
                     "ResourceIndexId={ResourceIndexId}, Uri={Uri}",
                     tier.DocumentType, tier.DocumentType, tier.DelayMinutes,
                     resourceIndex.Id, uri);
             }
 
+            // Persist all ResourceIndex records BEFORE scheduling jobs
             await _dataContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("ResourceIndex records persisted. Scheduling {Count} jobs...", createdResourceIndexes.Count);
+
+            // Now schedule jobs against persisted records
+            foreach (var (resourceIndex, delay) in createdResourceIndexes)
+            {
+                var jobDefinition = new DocumentJobDefinition(resourceIndex);
+
+                _backgroundJobProvider.Schedule<ResourceIndexJob>(
+                    job => job.ExecuteAsync(jobDefinition),
+                    delay);
+
+                _logger.LogInformation(
+                    "Scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
+                    resourceIndex.DocumentType, resourceIndex.Id, delay);
+            }
 
             _logger.LogInformation(
                 "Historical season sourcing initiated. {TierCount} tiers scheduled. CorrelationId={CorrelationId}",

@@ -100,6 +100,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
         var seasonPhase = await _dataContext.SeasonPhases
             .Include(x => x.Weeks)
             .ThenInclude(w => w.ExternalIds)
+            .AsSplitQuery()
             .Where(x => x.Id == seasonPhaseId)
             .FirstOrDefaultAsync();
 

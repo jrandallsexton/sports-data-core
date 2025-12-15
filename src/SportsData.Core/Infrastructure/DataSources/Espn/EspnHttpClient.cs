@@ -58,7 +58,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Non-success status from ESPN: {StatusCode} for {Uri}", response.StatusCode, uri);
+                _logger.LogError("Non-success status from ESPN: {StatusCode} for {Uri}", response.StatusCode, uri);
                 return string.Empty;
             }
 

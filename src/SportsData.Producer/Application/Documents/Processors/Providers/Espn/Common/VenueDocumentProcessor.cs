@@ -160,16 +160,24 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
 
         var address = dto.Address;
 
-        if (venue.City != address.City ||
-            venue.State != address.State ||
-            venue.PostalCode != address.ZipCode.ToString() ||
-            venue.Country != address.Country)
+        // Normalize values (null/whitespace from ESPN ? empty string or null in DB)
+        var incomingCity = address?.City ?? string.Empty;
+        var incomingState = string.IsNullOrWhiteSpace(address?.State) ? string.Empty : address.State;
+        var incomingPostalCode = address?.ZipCode.ToString() ?? string.Empty;
+        var incomingCountry = string.IsNullOrWhiteSpace(address?.Country) ? null : address.Country;
+
+        if (venue.City != incomingCity ||
+            venue.State != incomingState ||
+            venue.PostalCode != incomingPostalCode ||
+            venue.Country != incomingCountry)
         {
-            _logger.LogInformation("Updating address");
-            venue.City = address.City;
-            venue.State = address.State;
-            venue.PostalCode = address.ZipCode.ToString();
-            venue.Country = address.Country;
+            _logger.LogInformation("Updating address from ({OldCity}, {OldState}, {OldZip}, {OldCountry}) to ({NewCity}, {NewState}, {NewZip}, {NewCountry})",
+                venue.City, venue.State, venue.PostalCode, venue.Country ?? "(null)",
+                incomingCity, incomingState, incomingPostalCode, incomingCountry ?? "(null)");
+            venue.City = incomingCity;
+            venue.State = incomingState;
+            venue.PostalCode = incomingPostalCode;
+            venue.Country = incomingCountry;
             updated = true;
         }
 

@@ -56,7 +56,7 @@ select * from public."GroupSeason" where "Abbreviation" = 'UNK'
 select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2025
 
 select * from public."GroupSeason" where "ParentId" is null
-select * from public."FranchiseSeason" where "GroupSeasonId" is null
+select * from public."FranchiseSeason" where "SeasonYear" = 2024 order by "Slug"
 select * from public."FranchiseSeasonRanking" order by "Date"
 select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
@@ -71,12 +71,12 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 
 
 select * from public."Season"
-select * from public."SeasonPhase"
+select * from public."SeasonPhase" order by "Year", "Slug"
 select * from public."SeasonWeek" order by "StartDate"
 
 select sw.* from public."SeasonWeek" sw
 inner join public."Season" s on s."Id" = sw."SeasonId"
-where s."Year" = 2025 and sw."EndDate" < now() 
+where s."Year" = 2024 and sw."EndDate" < now() 
 order by sw."StartDate"
 
 --update public."SeasonWeek" set "IsNonStandardWeek" = false

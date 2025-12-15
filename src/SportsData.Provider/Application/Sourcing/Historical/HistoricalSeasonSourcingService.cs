@@ -75,7 +75,11 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             };
 
             var startTime = DateTime.UtcNow;
-            var existingOrdinalCount = await _dataContext.ResourceIndexJobs.CountAsync(cancellationToken);
+            
+            // Use timestamp-based ordinals to avoid race conditions with concurrent requests
+            // Format: YYYYMMDDHHmmss (14 digits) + tier index (2 digits)
+            // Example: 20251214103045 + 00 = 2025121410304500
+            var baseOrdinal = long.Parse(startTime.ToString("yyyyMMddHHmmss"));
 
             // Create ResourceIndex records (collect them for scheduling after persistence)
             var createdResourceIndexes = new List<(ResourceIndexEntity Entity, TimeSpan Delay)>();
@@ -88,7 +92,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 var resourceIndex = new ResourceIndexEntity
                 {
                     Id = Guid.NewGuid(),
-                    Ordinal = existingOrdinalCount + i,
+                    Ordinal = (int)(baseOrdinal * 100 + i), // Timestamp + tier index ensures uniqueness
                     Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
                     IsRecurring = false,
                     IsQueued = false,
@@ -118,9 +122,9 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
                 _logger.LogInformation(
                     "Created ResourceIndex for tier. Tier={TierName}, DocumentType={DocumentType}, Delay={DelayMinutes}min, " +
-                    "ResourceIndexId={ResourceIndexId}, Uri={Uri}",
+                    "Ordinal={Ordinal}, ResourceIndexId={ResourceIndexId}, Uri={Uri}",
                     tier.DocumentType, tier.DocumentType, tier.DelayMinutes,
-                    resourceIndex.Id, uri);
+                    resourceIndex.Ordinal, resourceIndex.Id, uri);
             }
 
             // Persist all ResourceIndex records BEFORE scheduling jobs

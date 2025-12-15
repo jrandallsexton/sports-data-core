@@ -53,6 +53,7 @@ select * from public."GroupSeason" where "Id" = 'acb492db-a8c1-71ed-3ffb-f9f1d23
 --update public."GroupSeason" set "Abbreviation" = 'fbs' where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07'
 update public."GroupSeason" set "Abbreviation" = 'fcs' where "Slug" = 'fcs-i-aa' and "Abbreviation" = 'UNK'
 select * from public."GroupSeason" where "Abbreviation" = 'UNK'
+select * from public."GroupSeason" where "SeasonYear" = 2024 order by "Name"
 select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2025
 
 select * from public."GroupSeason" where "ParentId" is null
@@ -111,6 +112,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '59960665-7a2d-5c6e-d260-563132d4005b'
+select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."Competition" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
@@ -160,6 +162,7 @@ select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-63
 select * from public."CompetitionMetric" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346'
 select count(*) from public."CompetitionMetric"
 select * from public."FranchiseSeasonMetric"
+select * from public."FranchiseSeasonRecord"
 select * from public."GroupSeason" order by "Name"
 --delete from public."CompetitionMetric"
 

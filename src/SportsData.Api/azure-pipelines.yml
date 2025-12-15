@@ -2,7 +2,15 @@ trigger:
   branches:
     include:
       - main
-      - test/*
+  paths:
+    include:
+      - 'src/SportsData.Api/**'
+      - 'src/SportsData.Core/**'
+
+pr:
+  branches:
+    include:
+      - main
   paths:
     include:
       - 'src/SportsData.Api/**'
@@ -82,6 +90,7 @@ stages:
   - stage: BuildImagePushACR
     displayName: 'Build Image & Push to ACR'
     dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: BuildImage
         displayName: 'Build and Push Image'

@@ -25,7 +25,9 @@ namespace SportsData.Producer.Application.Documents
         {
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       ["CorrelationId"] = context.Message.CorrelationId
+                       ["CorrelationId"] = context.Message.CorrelationId,
+                       ["CausationId"] = context.Message.CausationId,
+                       ["DocumentType"] = context.Message.DocumentType
                    }))
             {
                 const int maxAttempts = 10;

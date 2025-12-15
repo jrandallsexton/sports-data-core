@@ -9,6 +9,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private static readonly HashSet<string> KnownLeafSuffixes = new(StringComparer.OrdinalIgnoreCase)
         {
             "broadcasts",
+            "futures",
             "leaders",
             "predictor",
             "score",

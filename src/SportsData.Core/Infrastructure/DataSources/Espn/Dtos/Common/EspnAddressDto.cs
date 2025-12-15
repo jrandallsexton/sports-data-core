@@ -19,5 +19,5 @@ public class EspnAddressDto
     public long ZipCode { get; set; }
 
     [JsonPropertyName("country")]
-    public string Country { get; set; } = "USA";
+    public string Country { get; set; } = "UNK";
 }

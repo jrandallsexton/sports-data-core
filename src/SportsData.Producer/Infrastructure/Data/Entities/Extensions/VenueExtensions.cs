@@ -42,8 +42,9 @@ public static class VenueExtensions
             Slug = SlugGenerator.GenerateSlug(new[] { dto.ShortName, dto.FullName }),
             Capacity = dto.Capacity,
             City = dto.Address?.City ?? string.Empty,
-            State = dto.Address?.State ?? string.Empty,
+            State = string.IsNullOrWhiteSpace(dto.Address?.State) ? string.Empty : dto.Address.State,
             PostalCode = dto.Address?.ZipCode.ToString() ?? string.Empty,
+            Country = string.IsNullOrWhiteSpace(dto.Address?.Country) ? null : dto.Address.Country
         };
     }
 

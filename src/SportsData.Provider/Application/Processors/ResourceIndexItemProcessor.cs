@@ -50,14 +50,19 @@ namespace SportsData.Provider.Application.Processors
 
         public async Task Process(ProcessResourceIndexItemCommand command)
         {
-            var correlationId = Guid.NewGuid();
+            // ✅ Use the correlationId from the command instead of generating new one
             using (_logger.BeginScope(new Dictionary<string, object>
             {
-                ["CorrelationId"] = correlationId
+                ["CorrelationId"] = command.CorrelationId,
+                ["DocumentType"] = command.DocumentType,
+                ["SourceUrlHash"] = command.Id
             }))
             {
-                _logger.LogInformation("Started with {@command}", command);
-                await ProcessInternal(command, correlationId);
+                _logger.LogInformation(
+                    "Processing resource index item. Uri={Uri}, DocumentType={DocumentType}",
+                    command.Uri, command.DocumentType);
+                
+                await ProcessInternal(command, command.CorrelationId);
             }
         }
 

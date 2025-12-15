@@ -10,7 +10,7 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 {
     public class ResourceIndex : CanonicalEntityBase<Guid>, IHasSourceUrlHash
     {
-        public int Ordinal { get; set; }
+        public long Ordinal { get; set; }
 
         public required string Name { get; set; }
 

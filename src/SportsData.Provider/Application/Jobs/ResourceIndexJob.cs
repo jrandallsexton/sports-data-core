@@ -40,17 +40,161 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
         {
+            // Get the historical sourcing correlationId from CreatedBy
+            var correlationId = await _dataContext.ResourceIndexJobs
+                .Where(x => x.Id == jobDefinition.ResourceIndexId)
+                .Select(x => x.CreatedBy)
+                .FirstOrDefaultAsync();
+            
+            // Fall back to ResourceIndexId if not set (for recurring jobs)
+            if (correlationId == Guid.Empty)
+                correlationId = jobDefinition.ResourceIndexId;
+
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = jobDefinition.ResourceIndexId
-                   }))
-                await ExecuteInternal(jobDefinition);
+            {
+                ["CorrelationId"] = correlationId,
+                ["TierName"] = jobDefinition.DocumentType,
+                ["SeasonYear"] = jobDefinition.SeasonYear ?? 0,
+                ["ResourceIndexId"] = jobDefinition.ResourceIndexId
+            }))
+            {
+                // ✅ Check if upstream tiers completed successfully (for historical sourcing only)
+                if (correlationId != jobDefinition.ResourceIndexId) // Historical sourcing detected
+                {
+                    var shouldCancel = await ShouldCancelDueToUpstreamFailureAsync(correlationId, jobDefinition.DocumentType);
+                    if (shouldCancel)
+                    {
+                        _logger.LogError(
+                            "TIER_CANCELLED: Upstream tier failed. Cancelling tier. Tier={Tier}, SeasonYear={Season}",
+                            jobDefinition.DocumentType, jobDefinition.SeasonYear);
+                        
+                        // Mark this job as cancelled/failed
+                        await _dataContext.ResourceIndexJobs
+                            .Where(x => x.Id == jobDefinition.ResourceIndexId)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(x => x.IsQueued, _ => false)
+                                .SetProperty(x => x.IsEnabled, _ => false));
+                        
+                        return;
+                    }
+                }
+                
+                _logger.LogInformation(
+                    "TIER_STARTED: Tier={Tier}, SeasonYear={Season}, Shape={Shape}, ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
+                    jobDefinition.Shape, jobDefinition.ResourceIndexId);
+                
+                var startTime = DateTime.UtcNow;
+                await ExecuteInternal(jobDefinition, correlationId);
+                var duration = DateTime.UtcNow - startTime;
+                
+                _logger.LogInformation(
+                    "TIER_COMPLETED: Tier={Tier}, SeasonYear={Season}, DurationMin={DurationMin:F2}, " +
+                    "ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
+                    duration.TotalMinutes, jobDefinition.ResourceIndexId);
+            }
+        }
+
+        /// <summary>
+        /// Checks if this tier should be cancelled due to upstream tier failures or incomplete processing.
+        /// Only applies to historical sourcing runs (where CreatedBy contains a correlation ID).
+        /// </summary>
+        /// <param name="correlationId">The correlation ID for this historical sourcing run</param>
+        /// <param name="currentTier">The current tier being evaluated</param>
+        /// <returns>True if the tier should be cancelled, false if it can proceed</returns>
+        private async Task<bool> ShouldCancelDueToUpstreamFailureAsync(Guid correlationId, DocumentType currentTier)
+        {
+            // Define tier dependencies
+            var upstreamTiers = currentTier switch
+            {
+                DocumentType.Venue => new[] { DocumentType.Season },
+                DocumentType.TeamSeason => new[] { DocumentType.Season, DocumentType.Venue },
+                DocumentType.AthleteSeason => new[] { DocumentType.Season, DocumentType.Venue, DocumentType.TeamSeason },
+                _ => Array.Empty<DocumentType>()
+            };
+
+            if (!upstreamTiers.Any())
+                return false; // No upstream dependencies - can proceed
+
+            // IMPORTANT: Only look at jobs with the SAME correlationId (same historical sourcing run)
+            var upstreamJobs = await _dataContext.ResourceIndexJobs
+                .Where(x => x.CreatedBy == correlationId && upstreamTiers.Contains(x.DocumentType))
+                .Select(x => new { 
+                    x.DocumentType, 
+                    x.LastCompletedUtc, 
+                    x.IsEnabled,
+                    x.ProcessingStartedUtc,
+                    x.ProcessingInstanceId 
+                })
+                .ToListAsync();
+
+            foreach (var tier in upstreamTiers)
+            {
+                var job = upstreamJobs.FirstOrDefault(x => x.DocumentType == tier);
+                
+                if (job == null)
+                {
+                    _logger.LogWarning(
+                        "Upstream tier {Tier} not found for this historical sourcing run. CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    return true; // Should cancel - tier doesn't exist for this correlation
+                }
+                
+                if (!job.IsEnabled)
+                {
+                    _logger.LogWarning(
+                        "Upstream tier {Tier} is disabled (likely failed). CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    return true; // Should cancel - tier was disabled/failed
+                }
+                
+                // ✅ Check if tier is currently processing (has ProcessingInstanceId)
+                // If it's processing, we need to wait
+                if (job.ProcessingInstanceId.HasValue)
+                {
+                    _logger.LogWarning(
+                        "Upstream tier {Tier} is currently processing. Will check again on retry. CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    
+                    // Throw exception to trigger Hangfire retry
+                    throw new InvalidOperationException(
+                        $"Upstream tier {tier} is still processing. Job will retry automatically.");
+                }
+                
+                // ✅ Check if tier started processing but never completed (likely failed)
+                if (job.ProcessingStartedUtc.HasValue && !job.LastCompletedUtc.HasValue)
+                {
+                    _logger.LogError(
+                        "Upstream tier {Tier} started but never completed (likely failed). CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    return true; // Should cancel - tier failed
+                }
+                
+                if (!job.LastCompletedUtc.HasValue)
+                {
+                    _logger.LogWarning(
+                        "Upstream tier {Tier} has not started yet. Will check again on retry. CorrelationId={CorrelationId}",
+                        tier, correlationId);
+                    
+                    // Throw exception to trigger Hangfire retry
+                    throw new InvalidOperationException(
+                        $"Upstream tier {tier} has not started yet. Job will retry automatically.");
+                }
+            }
+
+            _logger.LogInformation(
+                "All upstream tiers completed successfully for this historical sourcing run. Proceeding with {CurrentTier}. CorrelationId={CorrelationId}",
+                currentTier, correlationId);
+            
+            return false; // Can proceed - all upstream tiers completed successfully
         }
 
         private async Task ProcessLeaf(
             DocumentJobDefinition jobDefinition,
             Guid id,
-            Guid me)
+            Guid me,
+            Guid correlationId)
         {
             try
             {
@@ -59,10 +203,10 @@ namespace SportsData.Provider.Application.Jobs
                 var hrefHash = HashProvider.GenerateHashFromUri(href!.ToCleanUri());
 
                 var cmd = new ProcessResourceIndexItemCommand(
-                    jobDefinition.ResourceIndexId,            // correlation
-                    id,                                       // parent RI job id (same as your loop)
-                    hrefHash,                                 // UrlHash
-                    href!,                                     // $ref
+                    correlationId,                            // ✅ CorrelationId FIRST
+                    id,                                       // ResourceIndexId SECOND
+                    hrefHash,                                 // Id (UrlHash) THIRD
+                    href!,                                    // Uri
                     jobDefinition.Sport,
                     jobDefinition.SourceDataProvider,
                     jobDefinition.DocumentType,
@@ -105,7 +249,7 @@ namespace SportsData.Provider.Application.Jobs
             return; // don't fall through to index traversal
         }
 
-        private async Task ExecuteInternal(DocumentJobDefinition jobDefinition)
+        private async Task ExecuteInternal(DocumentJobDefinition jobDefinition, Guid correlationId)
         {
             _logger.LogInformation("Begin processing {@JobDefinition}", jobDefinition);
 
@@ -129,7 +273,7 @@ namespace SportsData.Provider.Application.Jobs
 
             if (jobDefinition.Shape == ResourceShape.Leaf)
             {
-                await ProcessLeaf(jobDefinition, id, me);
+                await ProcessLeaf(jobDefinition, id, me, correlationId);
                 return;
             }
 
@@ -168,6 +312,8 @@ namespace SportsData.Provider.Application.Jobs
                 _logger.LogInformation("Target collection {Collection}", collectionName);
                 // NOTE: left in place in case you want to observe coverage; no short-circuiting
 
+                var totalItemsEnqueued = 0;
+
                 // ---- Page loop -------------------------------------------------
                 while (true)
                 {
@@ -185,9 +331,9 @@ namespace SportsData.Provider.Application.Jobs
                     foreach (var item in resourceIndexDto.Items)
                     {
                         var cmd = new ProcessResourceIndexItemCommand(
-                            jobDefinition.ResourceIndexId,
-                            id,
-                            HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()),
+                            correlationId,  // ✅ CorrelationId FIRST
+                            id,             // ResourceIndexId SECOND
+                            HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()), // Id (UrlHash) THIRD
                             item.Ref,
                             jobDefinition.Sport,
                             jobDefinition.SourceDataProvider,
@@ -198,6 +344,7 @@ namespace SportsData.Provider.Application.Jobs
                             jobDefinition.IncludeLinkedDocumentTypes);
 
                         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                        totalItemsEnqueued++;
                     }
 
                     // Page-scoped, owner-gated, monotonic progress
@@ -229,7 +376,9 @@ namespace SportsData.Provider.Application.Jobs
                         .SetProperty(x => x.IsQueued, _ => false)
                         .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
 
-                _logger.LogInformation("Completed ResourceIndex {Id}.", id);
+                _logger.LogInformation(
+                    "TIER_SOURCING_COMPLETED: Tier={Tier}, TotalDocumentsEnqueued={Count}, ResourceIndexId={ResourceIndexId}",
+                    jobDefinition.DocumentType, totalItemsEnqueued, id);
             }
             catch (Exception ex)
             {

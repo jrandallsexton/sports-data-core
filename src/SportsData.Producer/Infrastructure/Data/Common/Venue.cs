@@ -22,11 +22,20 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public required string City { get; set; }
 
-        public required string State { get; set; }
+        /// <summary>
+        /// State/Province/Region. May be empty for international venues.
+        /// Use "UNK" for unknown or N/A for venues outside US/Canada.
+        /// </summary>
+        public string State { get; set; } = string.Empty;
 
         public required string PostalCode { get; set; }
 
-        public string Country { get; set; } = "US";
+        /// <summary>
+        /// Country code. Null if ESPN doesn't provide it.
+        /// Common values: "USA", "IRL", "GER", "ENG", etc.
+        /// Use queries to identify and fix missing data.
+        /// </summary>
+        public string? Country { get; set; }
 
         public decimal Latitude { get; set; }
 

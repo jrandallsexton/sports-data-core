@@ -52,6 +52,8 @@ namespace SportsData.Api.Application.Processors
 
             if (groupWeek is null)
             {
+                _logger.LogError("GroupWeek was null.{GroupId} {SeasonWeekId}", command.GroupId, command.SeasonWeekId);
+
                 groupWeek = new PickemGroupWeek()
                 {
                     Id = Guid.NewGuid(),
@@ -140,7 +142,7 @@ namespace SportsData.Api.Application.Processors
                     HomeWins = groupMatchup.HomeWins,
                     OverOdds = groupMatchup.OverOdds,
                     OverUnder = groupMatchup.OverUnder,
-                    SeasonWeek = command.SeasonWeek,
+                    SeasonWeek = groupWeek.SeasonWeek,
                     SeasonWeekId = groupMatchup.SeasonWeekId,
                     SeasonYear = command.SeasonYear,
                     Spread = groupMatchup.Spread,

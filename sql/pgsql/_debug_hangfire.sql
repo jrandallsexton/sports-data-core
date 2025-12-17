@@ -7,9 +7,19 @@ FROM
 ORDER BY
   pg_total_relation_size(relid) DESC;
 
+  SELECT DATE(createdat) as date, COUNT(*) 
+FROM hangfire.job 
+GROUP BY DATE(createdat) 
+ORDER BY date DESC 
+LIMIT 10;
+
   select count(*) from hangfire."job"
   select count(*) from hangfire."state"
   SELECT * FROM hangfire."lock";
+
+  SELECT COUNT(*) as count 
+FROM hangfire.job 
+ORDER BY count DESC;
 
   DELETE FROM hangfire."lock" WHERE "resource" = 'hangfire:lock:recurring-job:SourcingJobOrchestrator';
 

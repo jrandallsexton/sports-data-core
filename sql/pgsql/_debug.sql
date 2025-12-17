@@ -74,7 +74,7 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 select * from public."Season"
 select * from public."SeasonPhase" order by "Year", "Slug"
 select * from public."SeasonWeek" order by "StartDate"
-
+--update public."SeasonWeek" set "EndDate" = '2025-12-14 07:59:00+00' where "Id" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select sw.* from public."SeasonWeek" sw
 inner join public."Season" s on s."Id" = sw."SeasonId"
 where s."Year" = 2024 and sw."EndDate" < now() 

@@ -6,6 +6,7 @@ import "../home/HomePage.css";
 function NewsWidget() {
   const [articles, setArticles] = useState([]);
   const [seasonWeekNumber, setSeasonWeekNumber] = useState(null);
+  const [seasonPhase, setSeasonPhase] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [loadingArticle, setLoadingArticle] = useState(false);
@@ -17,6 +18,7 @@ function NewsWidget() {
         const response = await apiWrapper.Articles.getArticles();
         setArticles(response.data?.articles || []);
         setSeasonWeekNumber(response.data?.seasonWeekNumber || null);
+        setSeasonPhase(response.data?.seasonPhase || null);
       } catch (error) {
         console.error("Failed to fetch articles:", error);
         setArticles([]);
@@ -59,7 +61,7 @@ function NewsWidget() {
   if (loading) {
     return (
       <div className="news-card">
-        <h2>Latest News{seasonWeekNumber ? ` - Week ${seasonWeekNumber}` : ''}</h2>
+        <h2>Latest News{seasonWeekNumber ? ` - ${seasonPhase ? seasonPhase + ' ' : ''}Week ${seasonWeekNumber}` : ''}</h2>
         <p style={{ color: "#ffc107", textAlign: "center" }}>Loading articles...</p>
       </div>
     );
@@ -67,7 +69,7 @@ function NewsWidget() {
 
   return (
     <div className="news-card">
-      <h2>Latest News{seasonWeekNumber ? ` - Week ${seasonWeekNumber}` : ''}</h2>
+      <h2>Latest News{seasonWeekNumber ? ` - ${seasonPhase ? seasonPhase + ' ' : ''}Week ${seasonWeekNumber}` : ''}</h2>
       {articles.length === 0 ? (
         <p>No articles available at this time.</p>
       ) : (

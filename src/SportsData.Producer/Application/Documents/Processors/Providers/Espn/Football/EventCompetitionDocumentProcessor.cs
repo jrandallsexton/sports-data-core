@@ -143,35 +143,14 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         await AddVenue(command, externalDto, competition);
 
-        await ProcessCompetitors(command, externalDto, competition);
-
         ProcessNotes(command, externalDto, competition);
-
-        await ProcessSituation(command, externalDto, competition);
-
-        await ProcessStatus(command, externalDto, competition);
-
-        await ProcessOdds(command, externalDto, competition);
-
-        await ProcessBroadcasts(command, externalDto, competition);
-
-        // shows as "Details" on the DTO, but is actually plays
-        await ProcessPlays(command, externalDto, competition);
-
-        await ProcessLeaders(command, externalDto, competition);
-
         ProcessLinks(command, externalDto, competition);
-
-        await ProcessPredictions(command, externalDto, competition);
-
-        await ProcessProbabilities(command, externalDto, competition);
-
-        await ProcessPowerIndexes(command, externalDto, competition);
-
-        await ProcessDrives(command, externalDto, competition);
 
         await _dataContext.Competitions.AddAsync(competition);
         await _dataContext.SaveChangesAsync();
+
+        // Process all child documents - same logic whether new or update
+        await ProcessChildDocuments(command, externalDto, competition);
     }
 
     private async Task AddVenue(
@@ -293,7 +272,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         return false;
     }
 
-    private async Task ProcessStatus(
+    private async Task<bool> ProcessStatus(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
         Competition competition)
@@ -301,7 +280,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         if (externalDto.Status?.Ref is null)
         {
             _logger.LogWarning("No status information provided in the competition document.");
-            return;
+            return false;
         }
             
         await _publishEndpoint.Publish(new DocumentRequested(
@@ -315,6 +294,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
             CorrelationId: command.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
         ));
+
+        return true;
     }
 
     private async Task ProcessOdds(
@@ -515,266 +496,99 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventCompetitionDto dto,
         Competition competition)
     {
-        var raiseEvents = false;
-
+        // Map DTO to a temporary entity with all properties populated
         var updatedEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
             competition.ContestId,
             command.CorrelationId);
 
-        if (competition.Attendance != updatedEntity.Attendance)
+        // Store the original date for comparison (needed for ContestStartTimeUpdated event)
+        var originalDate = competition.Date;
+
+        // Use EF Core's SetValues to update all scalar properties automatically
+        // This compares every property and marks only changed ones as Modified
+        _dataContext.Entry(competition).CurrentValues.SetValues(updatedEntity);
+
+        // Check if EF detected any changes
+        if (_dataContext.Entry(competition).State == EntityState.Modified)
         {
-            competition.Attendance = updatedEntity.Attendance;
+            // Log which properties changed (helpful for debugging)
+            var changedProperties = _dataContext.Entry(competition)
+                .Properties
+                .Where(p => p.IsModified)
+                .Select(p => $"{p.Metadata.Name}: {p.OriginalValue} ? {p.CurrentValue}")
+                .ToList();
+
+            _logger.LogInformation(
+                "Updating Competition {CompetitionId}. Changed properties: {Changes}",
+                competition.Id,
+                string.Join(", ", changedProperties));
+
+            // Special handling: Publish domain event if Date changed
+            if (competition.Date != originalDate)
+            {
+                _logger.LogInformation(
+                    "Competition date changed from {OldDate} to {NewDate}, publishing ContestStartTimeUpdated",
+                    originalDate, competition.Date);
+
+                await _publishEndpoint.Publish(
+                    new ContestStartTimeUpdated(
+                        competition.ContestId,
+                        competition.Date,
+                        command.CorrelationId,
+                        CausationId.Producer.EventCompetitionDocumentProcessor));
+            }
+
+            // Update audit fields
+            competition.ModifiedUtc = DateTime.UtcNow;
+            competition.ModifiedBy = command.CorrelationId;
+
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Updated Competition {CompetitionId} with {PropertyCount} property changes",
+                competition.Id,
+                changedProperties.Count);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "No property changes detected for Competition {CompetitionId}",
+                competition.Id);
         }
 
-        if (competition.Date != updatedEntity.Date)
-        {
-            competition.Date = updatedEntity.Date;
+        // Process all child documents - same logic whether new or update
+        await ProcessChildDocuments(command, dto, competition);
+    }
 
-            await _publishEndpoint.Publish(
-                new ContestStartTimeUpdated(
-                    competition.ContestId,
-                    competition.Date,
-                    command.CorrelationId,
-                    CausationId.Producer.EventCompetitionDocumentProcessor));
-            raiseEvents = true;
-        }
+    /// <summary>
+    /// Processes all child documents and relationships for a competition.
+    /// This method is called for both new entities and updates to ensure
+    /// child documents are always spawned if their $ref exists in the DTO.
+    /// </summary>
+    private async Task ProcessChildDocuments(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto dto,
+        Competition competition)
+    {
+        var raiseEvents = false;
 
+        // Process child document requests that return bool (indicating if event should be raised)
         raiseEvents = raiseEvents || await ProcessSituation(command, dto, competition);
+        raiseEvents = raiseEvents || await ProcessStatus(command, dto, competition);
+        
+        // Process all other child document requests
+        await ProcessOdds(command, dto, competition);
+        await ProcessBroadcasts(command, dto, competition);
+        await ProcessPlays(command, dto, competition);
+        await ProcessLeaders(command, dto, competition);
+        await ProcessPredictions(command, dto, competition);
+        await ProcessProbabilities(command, dto, competition);
+        await ProcessPowerIndexes(command, dto, competition);
+        await ProcessDrives(command, dto, competition);
+        await ProcessCompetitors(command, dto, competition);
 
-        if (dto.Status?.Ref is not null)
-        {
-            var statusIdentity = _externalRefIdentityGenerator.Generate(dto.Status.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: statusIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(statusIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionStatus,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        // update spreads, moneylines, totals, etc.
-        if (dto.Odds?.Ref is not null)
-        {
-            var oddsIdentity = _externalRefIdentityGenerator.Generate(dto.Odds.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: oddsIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(oddsIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionOdds,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-
-            raiseEvents = true;
-        }
-
-        if (dto.Broadcasts?.Ref is not null)
-        {
-            var broadcastIdentity = _externalRefIdentityGenerator.Generate(dto.Broadcasts.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: broadcastIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(broadcastIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionBroadcast,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.Details?.Ref is not null)
-        {
-            var playLogIdentity = _externalRefIdentityGenerator.Generate(dto.Details.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: playLogIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(playLogIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionPlay,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.Leaders?.Ref is not null)
-        {
-            var leadersIdentity = _externalRefIdentityGenerator.Generate(dto.Leaders.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: leadersIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(leadersIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionLeaders,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.Predictor?.Ref is not null)
-        {
-            var predictionIdentity = _externalRefIdentityGenerator.Generate(dto.Predictor.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: predictionIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(predictionIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionPrediction,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.Probabilities?.Ref is not null)
-        {
-            var probabilityIdentity = _externalRefIdentityGenerator.Generate(dto.Probabilities.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: probabilityIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(probabilityIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionProbability,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.PowerIndexes?.Ref is not null)
-        {
-            var powerIndexIdentity = _externalRefIdentityGenerator.Generate(dto.PowerIndexes.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: powerIndexIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(powerIndexIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionPowerIndex,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        if (dto.Drives?.Ref is not null)
-        {
-            var drivesIdentity = _externalRefIdentityGenerator.Generate(dto.Drives.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: drivesIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(drivesIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionDrive,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-            raiseEvents = true;
-        }
-
-        foreach (var competitor in dto.Competitors)
-        {
-            var competitorIdentity = _externalRefIdentityGenerator.Generate(competitor.Ref);
-
-            if (competitor.Score?.Ref is not null)
-            {
-                var scoreIdentity = _externalRefIdentityGenerator.Generate(competitor.Score.Ref);
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: scoreIdentity.UrlHash,
-                    ParentId: competitorIdentity.CanonicalId.ToString(),
-                    Uri: new Uri(scoreIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionCompetitorScore,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-                ));
-                raiseEvents = true;
-            }
-
-            if (competitor.Linescores?.Ref is not null)
-            {
-                    
-                var lineScoreIdentity = _externalRefIdentityGenerator.Generate(competitor.Linescores.Ref);
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: lineScoreIdentity.UrlHash,
-                    ParentId: competitorIdentity.CanonicalId.ToString(),
-                    Uri: new Uri(lineScoreIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionCompetitorLineScore,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-                ));
-                raiseEvents = true;
-            }
-
-            if (competitor.Statistics?.Ref is not null)
-            {
-                var statisticsIdentity = _externalRefIdentityGenerator.Generate(competitor.Statistics.Ref);
-
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: statisticsIdentity.UrlHash,
-                    ParentId: competition.Id.ToString(),
-                    Uri: new Uri(statisticsIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionCompetitorStatistics,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-                ));
-                raiseEvents = true;
-            }
-
-            //if (competitor.Leaders?.Ref is not null)
-            //{
-            //    var leadersIdentity = _externalRefIdentityGenerator.Generate(competitor.Leaders.Ref);
-            //    await _publishEndpoint.Publish(new DocumentRequested(
-            //        Id: leadersIdentity.UrlHash,
-            //        ParentId: competition.Id.ToString(),
-            //        Uri: new Uri(leadersIdentity.CleanUrl),
-            //        Sport: command.Sport,
-            //        SeasonYear: command.Season,
-            //        DocumentType: DocumentType.EventCompetitionLeaders,
-            //        SourceDataProvider: command.SourceDataProvider,
-            //        CorrelationId: command.CorrelationId,
-            //        CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            //    ));
-            //}
-        }
-
+        // Save outbox ping if any events need to be raised
         if (raiseEvents)
         {
             await _dataContext.OutboxPings.AddAsync(new OutboxPing());

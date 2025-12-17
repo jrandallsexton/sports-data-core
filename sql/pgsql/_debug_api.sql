@@ -20,6 +20,7 @@ select * from public."MatchupPreview" where "ContestId" = 'aa00bd58-a986-d3a3-d1
 update public."MatchupPreview" set "PredictedSpreadWinner" = '71151ce3-4823-0d50-889c-a7ea9efae249' where "Id" = '2821e3d4-d4d6-413c-8937-b7cb9447084e'
 
 select * from public."PickemGroup" where "IsPublic" = true
+update public."PickemGroup" set "NonStandardWeekGroupSeasonMapFilter" = 'fbs'
 select * from public."UserPick" where "Week" = 13 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
 
 update public."UserPick" set "FranchiseId" = '71151ce3-4823-0d50-889c-a7ea9efae249',  "IsCorrect" = null, "PointsAwarded" = null, "ScoredAt" = null where "Week" = 12 and
@@ -47,7 +48,9 @@ select * from public."PickemGroup"
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' order by "SeasonWeek"
+select * from public."PickemGroupWeek" order by "SeasonWeek"
 select * from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
+update public."PickemGroupWeek" set "AreMatchupsGenerated" = false where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7'
 --delete from public."PickemGroupWeek" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
 delete from public."PickemGroupMatchup" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
 -- https://api-dev.sportdeets.com/ui/matchup//preview
@@ -125,7 +128,7 @@ select * from public."OutboxMessage"
 select * from public."OutboxState"
 select *
 from public."PickemGroupMatchup" m
-where m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeek" = 2 --and "ContestId" = 'df5fe110-1801-c8c6-826c-847aa01f8e29'
+where m."GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' and "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' --and "ContestId" = 'df5fe110-1801-c8c6-826c-847aa01f8e29'
 order by "Spread"
 
 -- SELECT *

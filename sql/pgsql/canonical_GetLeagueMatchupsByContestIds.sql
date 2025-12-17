@@ -56,7 +56,17 @@ INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionBroadcast" cb on cb."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
-LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
+
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+
 LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
 
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
@@ -95,17 +105,10 @@ LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."Franchise
 
 --WHERE c."Id" = 'ee11ed43-9a77-9e87-73c4-5ce6ca312ae5'
 WHERE c."Id" IN (
-  '016861cc-9cab-1296-c156-c6be3c46cadb',
-'24477be2-e202-7ce2-ef3b-4b71a9bc3b58',
-'39087234-df27-817d-7798-80190853a704',
-'4a41c8a6-bcc5-473a-f88b-d151a5c9aeea',
-'6fb9aa0a-720b-751a-a36f-d0e54fcaf1bf',
-'71bae14f-71b7-9554-65ee-028dc0912ad9',
-'7ba93dac-a490-f35b-e0d2-61c747391a31',
-'7d6edbc7-c777-abf1-b2c6-46a501996492',
-'ae646c2a-c263-3b8c-b8ad-16f24b38a8fc',
-'d9c160f7-bd11-28f9-f19d-2e14d6c3d8dd',
-'e9724378-b059-f6cb-4cd6-74d5416cbf3e')
+  '860ab8de-e4bd-b936-b124-1e7d1e520af1',
+'d0c5276e-c804-b661-7d4d-c063112fd2b7',
+'e6d84189-e4fc-197a-76fc-5e5ee81a2ef6',
+'8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb')
 
 GROUP BY
   c."SeasonWeekId",

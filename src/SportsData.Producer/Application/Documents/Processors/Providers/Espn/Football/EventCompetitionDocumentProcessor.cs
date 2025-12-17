@@ -298,90 +298,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         return true;
     }
 
-    private async Task ProcessOdds(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Odds?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Odds.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Odds.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionOdds,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessBroadcasts(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Broadcasts?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Broadcasts.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Broadcasts.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionBroadcast,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessPlays(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Details?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Details.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Details.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionPlay,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessLeaders(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Leaders?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Leaders.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Leaders.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionLeaders,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
     private static void ProcessLinks(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
@@ -407,84 +323,26 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
-    private async Task ProcessPredictions(
+    /// <summary>
+    /// Generic helper to process child documents that have a $ref property.
+    /// Eliminates repetitive null checks and DocumentRequested publishing.
+    /// </summary>
+    private async Task ProcessChildDocumentRef(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
+        EspnLinkDto? linkDto,
+        Competition competition,
+        DocumentType documentType)
     {
-        if (externalDto.Predictor?.Ref is null)
+        if (linkDto?.Ref is null)
             return;
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Predictor.Ref),
+            Id: HashProvider.GenerateHashFromUri(linkDto.Ref),
             ParentId: competition.Id.ToString(),
-            Uri: externalDto.Predictor.Ref.ToCleanUri(),
+            Uri: linkDto.Ref.ToCleanUri(),
             Sport: command.Sport,
             SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionPrediction,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessProbabilities(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Probabilities?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Probabilities.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Probabilities.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionProbability,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessPowerIndexes(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.PowerIndexes?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.PowerIndexes.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.PowerIndexes.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionPowerIndex,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
-    private async Task ProcessDrives(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Drives?.Ref is null)
-            return;
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Drives.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Drives.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionDrive,
+            DocumentType: documentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
@@ -573,19 +431,21 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var raiseEvents = false;
 
-        // Process child document requests that return bool (indicating if event should be raised)
+        // Special cases that return bool for event tracking
         raiseEvents = raiseEvents || await ProcessSituation(command, dto, competition);
         raiseEvents = raiseEvents || await ProcessStatus(command, dto, competition);
         
-        // Process all other child document requests
-        await ProcessOdds(command, dto, competition);
-        await ProcessBroadcasts(command, dto, competition);
-        await ProcessPlays(command, dto, competition);
-        await ProcessLeaders(command, dto, competition);
-        await ProcessPredictions(command, dto, competition);
-        await ProcessProbabilities(command, dto, competition);
-        await ProcessPowerIndexes(command, dto, competition);
-        await ProcessDrives(command, dto, competition);
+        // All the simple $ref child documents - one line each using the generic helper
+        await ProcessChildDocumentRef(command, dto.Odds, competition, DocumentType.EventCompetitionOdds);
+        await ProcessChildDocumentRef(command, dto.Broadcasts, competition, DocumentType.EventCompetitionBroadcast);
+        await ProcessChildDocumentRef(command, dto.Details, competition, DocumentType.EventCompetitionPlay);
+        await ProcessChildDocumentRef(command, dto.Leaders, competition, DocumentType.EventCompetitionLeaders);
+        await ProcessChildDocumentRef(command, dto.Predictor, competition, DocumentType.EventCompetitionPrediction);
+        await ProcessChildDocumentRef(command, dto.Probabilities, competition, DocumentType.EventCompetitionProbability);
+        await ProcessChildDocumentRef(command, dto.PowerIndexes, competition, DocumentType.EventCompetitionPowerIndex);
+        await ProcessChildDocumentRef(command, dto.Drives, competition, DocumentType.EventCompetitionDrive);
+        
+        // Competitors (special handling for collections)
         await ProcessCompetitors(command, dto, competition);
 
         // Save outbox ping if any events need to be raised

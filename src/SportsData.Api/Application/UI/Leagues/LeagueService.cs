@@ -215,6 +215,7 @@ namespace SportsData.Api.Application.UI.Leagues
                         ContestId = x.ContestId,
                         AwayRank = x.AwayRank,
                         HomeRank = x.HomeRank,
+                        HeadLine = x.Headline
                     })
                     .ToListAsync(cancellationToken);
 
@@ -300,6 +301,7 @@ namespace SportsData.Api.Application.UI.Leagues
                         //matchup.StartDateUtc = canonical.StartDateUtc;
                         matchup.Status = canonical.Status;
                         matchup.Broadcasts = canonical.Broadcasts;
+                        matchup.HeadLine = canonical.HeadLine ?? matchup.HeadLine;
 
                         // Away team
                         matchup.Away = canonical.Away;

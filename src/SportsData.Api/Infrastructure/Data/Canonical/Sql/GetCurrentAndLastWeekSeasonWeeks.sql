@@ -5,7 +5,8 @@
     s."Id" AS "SeasonId",
     s."Year" AS "SeasonYear",
     sw."StartDate",
-    sw."EndDate"
+    sw."EndDate",
+    sw."IsNonStandardWeek"
 FROM public."Season" s
 JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
 JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"

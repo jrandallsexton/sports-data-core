@@ -6,6 +6,8 @@
 
         public Guid ContestId { get; set; }
 
+        public string? Headline { get; set; }
+
         public DateTime StartDateUtc { get; set; }
 
         public string Status { get; set; } = null!;

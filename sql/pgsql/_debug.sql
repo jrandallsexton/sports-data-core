@@ -108,14 +108,15 @@ from public."Contest" c
 where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 -- https://api-dev.sportdeets.com/ui/matchup/8a64dddf-0094-9a3a-2618-55c276296ef8/preview
 
-    select * from public."Contest" where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+    select * from public."Contest" where "Id" = '4368b706-e7fe-7dc1-786a-c54f8eda67cd'
 
 select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
+select * from public."Competition" where "ContestId" = '4368b706-e7fe-7dc1-786a-c54f8eda67cd'
+select * from public."CompetitionNote" where "CompetitionId" = '7690d4e5-b401-4c6d-749d-0233f902994a'
 select * from public."CompetitionStatus" where "CompetitionId" = 'ec7d6034-05db-88d7-9ab1-9f657a2b5955'
 
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"

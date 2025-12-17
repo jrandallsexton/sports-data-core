@@ -134,6 +134,7 @@ namespace SportsData.Api.Application.Processors
                     CreatedUtc = DateTime.UtcNow,
                     GroupId = group.Id,
                     GroupWeek = groupWeek,
+                    Headline = groupMatchup.Headline,
                     HomeConferenceLosses = groupMatchup.HomeConferenceLosses,
                     HomeConferenceWins = groupMatchup.HomeConferenceWins,
                     HomeLosses = groupMatchup.HomeLosses,

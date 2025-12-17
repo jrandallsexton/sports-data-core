@@ -3,7 +3,8 @@
     sp."Name" AS "SeasonPhase",
     sw."Number" AS "WeekNumber",
     s."Id" AS "SeasonId",
-    s."Year" AS "SeasonYear"
+    s."Year" AS "SeasonYear",
+    sw."IsNonStandardWeek"
 FROM public."Season" s
 JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
 JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"

@@ -67,7 +67,8 @@ namespace SportsData.Api.Application.Jobs
                         GroupId = group.Id,
                         SeasonWeek = currentWeekOrdinal,
                         SeasonYear = currentWeek.SeasonYear,
-                        SeasonWeekId = currentWeek.Id
+                        SeasonWeekId = currentWeek.Id,
+                        IsNonStandardWeek = currentWeek.IsNonStandardWeek
                     };
                     group.Weeks.Add(groupWeek);
                     await _dataContext.SaveChangesAsync();

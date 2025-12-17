@@ -14,6 +14,7 @@
 SELECT
   nw."SeasonWeekId",
   c."Id" AS "ContestId",
+  cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",
   cs."StatusTypeName" as "Status",
 
@@ -54,7 +55,18 @@ SELECT
 FROM next_week nw
 inner join public."Contest" c ON c."SeasonWeekId" = nw."SeasonWeekId"
 inner join public."Competition" comp on comp."ContestId" = c."Id"
-left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
+left join public."CompetitionNote" cn on cn."CompetitionId" = comp."Id" and cn."Type" = 'event'
+
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+
 left  join public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
 inner join public."Venue" v on v."Id" = c."VenueId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"

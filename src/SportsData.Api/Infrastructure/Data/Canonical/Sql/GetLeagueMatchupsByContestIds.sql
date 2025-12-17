@@ -56,7 +56,17 @@ INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionBroadcast" cb on cb."CompetitionId" = comp."Id"
 LEFT  JOIN public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
-LEFT  JOIN public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
+
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+
 LEFT  JOIN public."CompetitionTeamOdds" cto on cto."CompetitionOddsId" = co."Id" and cto."Side" = 'Home'
 
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"

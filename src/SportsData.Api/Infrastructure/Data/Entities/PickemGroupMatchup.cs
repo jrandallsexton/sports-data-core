@@ -11,6 +11,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public Guid ContestId { get; set; }
 
+        public string? Headline { get; set; }
+
         public DateTime StartDateUtc { get; set; }
 
         public int SeasonYear { get; set; }
@@ -67,6 +69,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
             {
                 builder.ToTable(nameof(PickemGroupMatchup));
                 builder.HasKey(x => new { x.GroupId, x.SeasonWeekId, x.ContestId });
+
+                builder.Property(x => x.Headline).HasMaxLength(256);
 
                 builder.Property(x => x.SeasonYear).IsRequired();
                 builder.Property(x => x.SeasonWeek).IsRequired();

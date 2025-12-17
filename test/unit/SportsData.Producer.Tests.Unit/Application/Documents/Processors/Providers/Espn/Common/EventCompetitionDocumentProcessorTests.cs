@@ -552,6 +552,50 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var dto = documentJson.FromJson<EspnEventCompetitionDto>();
             var competitionIdentity = generator.Generate(dto.Ref);
 
+            Guid homeId = Guid.NewGuid();
+            Guid awayId = Guid.NewGuid();
+
+            // Create FranchiseSeason entities to satisfy FK constraints
+            var homeFranchiseSeason = new FranchiseSeason
+            {
+                Id = homeId,
+                Abbreviation = "HOME",
+                DisplayName = "Home Team",
+                DisplayNameShort = "Home",
+                Slug = "home-team",
+                Location = "Home City",
+                Name = "Home Team",
+                ColorCodeHex = "#FF0000",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var awayFranchiseSeason = new FranchiseSeason
+            {
+                Id = awayId,
+                Abbreviation = "AWAY",
+                DisplayName = "Away Team",
+                DisplayNameShort = "Away",
+                Slug = "away-team",
+                Location = "Away City",
+                Name = "Away Team",
+                ColorCodeHex = "#0000FF",
+                ColorCodeAltHex = "#FFFFFF",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await base.FootballDataContext.FranchiseSeasons.AddAsync(homeFranchiseSeason);
+            await base.FootballDataContext.FranchiseSeasons.AddAsync(awayFranchiseSeason);
+            await base.FootballDataContext.SaveChangesAsync();
+
             var contest = new Contest
             {
                 Id = Guid.NewGuid(),
@@ -560,8 +604,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 Sport = Sport.FootballNcaa,
                 SeasonYear = 2024,
                 StartDateUtc = DateTime.UtcNow,
-                HomeTeamFranchiseSeasonId = Guid.NewGuid(),
-                AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+                HomeTeamFranchiseSeasonId = homeId,
+                AwayTeamFranchiseSeasonId = awayId,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };

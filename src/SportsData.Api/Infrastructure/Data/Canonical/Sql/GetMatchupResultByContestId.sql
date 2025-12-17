@@ -16,10 +16,10 @@ inner join public."Competition" co on co."ContestId" = c."Id"
 LEFT JOIN LATERAL (
   SELECT *
   FROM public."CompetitionOdds"
-  WHERE "CompetitionId" = comp."Id" 
+  WHERE "CompetitionId" = co."Id" 
     AND "ProviderId" IN ('58', '100')
   ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
   LIMIT 1
-) co ON TRUE
+) coo ON TRUE
 
 where c."Id" = @ContestId

@@ -374,7 +374,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
             var changedProperties = _dataContext.Entry(competition)
                 .Properties
                 .Where(p => p.IsModified)
-                .Select(p => $"{p.Metadata.Name}: {p.OriginalValue} ? {p.CurrentValue}")
+                .Select(p => $"{p.Metadata.Name}: {p.OriginalValue} -> {p.CurrentValue}")
                 .ToList();
 
             _logger.LogInformation(

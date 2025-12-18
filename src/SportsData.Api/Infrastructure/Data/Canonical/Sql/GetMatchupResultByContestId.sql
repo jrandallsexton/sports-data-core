@@ -11,5 +11,15 @@
   c."FinalizedUtc"
 from public."Contest" c
 inner join public."Competition" co on co."ContestId" = c."Id"
-inner join public."CompetitionOdds" coo on coo."CompetitionId" = co."Id" and coo."ProviderId" = '58'
+
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = co."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) coo ON TRUE
+
 where c."Id" = @ContestId

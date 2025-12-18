@@ -17,6 +17,8 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         {
             public Guid ContestId { get; set; }
 
+            public string? HeadLine { get; set; }
+
             public List<ContestPredictionDto> Predictions { get; set; } = [];
 
             public DateTime StartDateUtc { get; set; }

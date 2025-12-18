@@ -25,6 +25,7 @@ namespace SportsData.Producer.Application.Contests
         private readonly IDateTimeProvider _dateTimeProvider;
 
         private const string ProviderIdEspnBet = "58";
+        private const string ProviderIdDraftKings = "100";
 
         public ContestEnrichmentProcessor(
             ILogger<ContestEnrichmentProcessor> logger,
@@ -209,7 +210,8 @@ namespace SportsData.Producer.Application.Contests
                 contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
                 // were there odds on this game?
-                var odds = competition.Odds?.Where(x => x.ProviderId == ProviderIdEspnBet).FirstOrDefault();
+                var odds = competition.Odds?.Where(x => x.ProviderId == ProviderIdEspnBet).FirstOrDefault() ??
+                           competition.Odds?.Where(x => x.ProviderId == ProviderIdDraftKings).FirstOrDefault();
 
                 // TODO: Later we might want to score each odd individually - or even see if they were updated
                 // they are indeed updated post-game.  Will verify.

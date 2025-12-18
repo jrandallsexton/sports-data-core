@@ -93,6 +93,11 @@ function MatchupCard({
   return (
     <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${cardBorderClass}`}
          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {matchup.headLine && (
+        <div className="matchup-headline">
+          {matchup.headLine}
+        </div>
+      )}
       <div className="matchup-card-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Away Team Row */}
         <TeamRow

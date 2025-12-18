@@ -50,14 +50,25 @@ namespace SportsData.Api.Application.Jobs
 
                 if (groupWeek is null)
                 {
+                    var currentWeekOrdinal = currentWeek.WeekNumber;
+
+                    // if current week is postseason, we need to change the ordinal week number to reflect that
+                    if (currentWeek.IsPostSeason)
+                    {
+                        // we need to get the number of regular season weeks for this season year
+                        currentWeekOrdinal = group.Weeks.OrderByDescending(x => x.SeasonWeek)
+                            .Take(1).FirstOrDefault()?.SeasonWeek + 1 ?? currentWeek.WeekNumber;
+                    }
+
                     groupWeek = new PickemGroupWeek()
                     {
                         Id = Guid.NewGuid(),
                         AreMatchupsGenerated = false,
                         GroupId = group.Id,
-                        SeasonWeek = currentWeek.WeekNumber,
+                        SeasonWeek = currentWeekOrdinal,
                         SeasonYear = currentWeek.SeasonYear,
-                        SeasonWeekId = currentWeek.Id
+                        SeasonWeekId = currentWeek.Id,
+                        IsNonStandardWeek = currentWeek.IsNonStandardWeek
                     };
                     group.Weeks.Add(groupWeek);
                     await _dataContext.SaveChangesAsync();

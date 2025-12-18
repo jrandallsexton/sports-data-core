@@ -90,6 +90,21 @@
   height: 100%;
 }
 
+.matchup-headline {
+  background-color: #61dafb;
+  color: #1c1e22;
+  text-align: center;
+  padding: 6px;
+  font-weight: bold;
+  font-size: 0.95em;
+  margin: -20px -20px 0 -20px;
+  border-top-left-radius: 13px;
+  border-top-right-radius: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 .matchup-card-content {
   flex: 1 1 auto;
   display: flex;

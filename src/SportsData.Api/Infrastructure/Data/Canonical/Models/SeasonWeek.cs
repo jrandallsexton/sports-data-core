@@ -8,8 +8,12 @@
 
         public int WeekNumber { get; set; }
 
+        public string? SeasonPhase { get; set; }
+
         public int SeasonYear { get; set; }
 
         public bool IsNonStandardWeek { get; set; }
+
+        public bool IsPostSeason => SeasonPhase?.ToLower() == "postseason";
     }
 }

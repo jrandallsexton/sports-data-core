@@ -53,6 +53,7 @@ namespace SportsData.Api.Application.UI.Articles
             return new GetArticlesResponse()
             {
                 SeasonYear = currentSeasonWeek.SeasonYear,
+                SeasonPhase = currentSeasonWeek.SeasonPhase,
                 SeasonWeekNumber = currentSeasonWeek.WeekNumber,
                 Articles = articles
             };
@@ -86,6 +87,8 @@ namespace SportsData.Api.Application.UI.Articles
     public class GetArticlesResponse
     {
         public int SeasonYear { get; set; }
+
+        public string? SeasonPhase { get; set; }
 
         public int SeasonWeekNumber { get; set; }
 

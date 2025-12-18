@@ -186,7 +186,7 @@ jobs:
           cat > policy.json <<'EOF'
           {
             "properties": {
-              "value": "<policies><inbound><base /><set-backend-service backend-id=\"sportdeets-internal-api\" /></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>",
+              "value": "<policies><inbound><base /><set-backend-service backend-id=\"sportdeets-internal-api\" /><cors allow-credentials=\"true\"><allowed-origins><origin>https://sportdeets.com</origin><origin>https://www.sportdeets.com</origin><origin>https://admin.sportdeets.com</origin><origin>https://api.sportdeets.com</origin></allowed-origins><allowed-methods><method>GET</method><method>POST</method><method>PUT</method><method>DELETE</method><method>OPTIONS</method></allowed-methods><allowed-headers><header>*</header></allowed-headers><expose-headers><header>*</header></expose-headers></cors><rate-limit calls=\"5000\" renewal-period=\"60\" /></inbound><backend><base /></backend><outbound><base /><set-header name=\"X-RateLimit-Limit\" exists-action=\"override\"><value>5000</value></set-header></outbound><on-error><base /></on-error></policies>",
               "format": "xml"
             }
           }

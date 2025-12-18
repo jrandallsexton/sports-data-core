@@ -28,17 +28,9 @@ namespace SportsData.Producer.Application.Contests
             var seasonWeeks = await _dataContext.SeasonWeeks
                 .AsNoTracking()
                 .Where(sw => sw.StartDate < DateTime.UtcNow &&
-                             sw.EndDate > DateTime.UtcNow.AddDays(-13))
-                .OrderByDescending(sw => sw.Number)
+                             sw.EndDate > DateTime.UtcNow)
                 .Take(2)
                 .ToListAsync();
-
-            //var seasonWeeks = await _dataContext.SeasonWeeks
-            //    .AsNoTracking()
-            //    .Where(sw => sw.StartDate < DateTime.UtcNow &&
-            //                 sw.EndDate > DateTime.UtcNow)
-            //    .Take(2)
-            //    .ToListAsync();
 
             if (!seasonWeeks.Any())
             {
@@ -49,13 +41,6 @@ namespace SportsData.Producer.Application.Contests
             foreach (var seasonWeek in seasonWeeks)
             {
                 // get contests that have not been finalized
-                //var contests = await _dataContext.Contests
-                //    .AsNoTracking()
-                //    .Where(c => c.SeasonWeekId == seasonWeek.Id &&
-                //                c.StartDateUtc < DateTime.UtcNow.AddHours(3))
-                //    .OrderBy(c => c.StartDateUtc)
-                //    .ToListAsync();
-
                 var contests = await _dataContext.Contests
                     .AsNoTracking()
                     .Where(c => c.SeasonWeekId == seasonWeek.Id &&

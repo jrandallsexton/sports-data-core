@@ -2,6 +2,7 @@
 	sp."Year" as "SeasonYear",
 	sw."Number" as "WeekNumber",
 	c."Id" AS "ContestId",
+    cn."Headline" AS "Headline",
 	c."StartDateUtc" as "StartDateUtc",
 
 	v."Name" as "Venue",
@@ -43,6 +44,7 @@
   inner join public."SeasonWeek" sw on sw."Id" = c."SeasonWeekId"
   inner join public."Venue" v on v."Id" = c."VenueId"
   inner join public."Competition" comp on comp."ContestId" = c."Id"
+  left join public."CompetitionNote" cn on cn."CompetitionId" = comp."Id" and cn."Type" = 'event'
   
   -- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
 LEFT JOIN LATERAL (

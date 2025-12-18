@@ -8,6 +8,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical.Models
         public int WeekNumber { get; set; }
 
         public Guid ContestId { get; set; }
+
+        public string? HeadLine { get; set; }
         public DateTime StartDateUtc { get; set; }
 
         public required string Venue { get; set; }

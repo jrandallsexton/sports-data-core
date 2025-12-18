@@ -429,14 +429,10 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventCompetitionDto dto,
         Competition competition)
     {
-        var raiseEvents = false;
-
-        // Special cases that return bool for event tracking
-        raiseEvents = raiseEvents || await ProcessSituation(command, dto, competition);
-        raiseEvents = raiseEvents || await ProcessStatus(command, dto, competition);
-        
         // All the simple $ref child documents - one line each using the generic helper
         await ProcessChildDocumentRef(command, dto.Odds, competition, DocumentType.EventCompetitionOdds);
+        await ProcessChildDocumentRef(command, dto.Status, competition, DocumentType.EventCompetitionStatus);
+        await ProcessChildDocumentRef(command, dto.Situation, competition, DocumentType.EventCompetitionSituation);
         await ProcessChildDocumentRef(command, dto.Broadcasts, competition, DocumentType.EventCompetitionBroadcast);
         await ProcessChildDocumentRef(command, dto.Details, competition, DocumentType.EventCompetitionPlay);
         await ProcessChildDocumentRef(command, dto.Leaders, competition, DocumentType.EventCompetitionLeaders);
@@ -448,11 +444,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         // Competitors (special handling for collections)
         await ProcessCompetitors(command, dto, competition);
 
-        // Save outbox ping if any events need to be raised
-        if (raiseEvents)
-        {
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-            await _dataContext.SaveChangesAsync();
-        }
+        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+        await _dataContext.SaveChangesAsync();
     }
 }

@@ -2,6 +2,7 @@
     sp."Year" as "SeasonYear",
     sw."Number" as "WeekNumber",
     c."Id" AS "ContestId",
+    cn."Headline" AS "Headline",
     c."StartDateUtc" as "StartDateUtc",
 
     v."Name" as "Venue",
@@ -43,7 +44,18 @@
   inner join public."SeasonWeek" sw on sw."Id" = c."SeasonWeekId"
   inner join public."Venue" v on v."Id" = c."VenueId"
   inner join public."Competition" comp on comp."ContestId" = c."Id"
-  left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" != '59'
+  left join public."CompetitionNote" cn on cn."CompetitionId" = comp."Id" and cn."Type" = 'event'
+
+   -- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+
   inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
   inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
   inner join public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
@@ -52,16 +64,34 @@
   inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
   inner join public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
   inner join public."GroupSeason" gsHomeParent on gsHome."ParentId" = gsHomeParent."Id"
-  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
-        fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
-        fsrAway."SeasonWeekId" = c."SeasonWeekId"
+
+  LEFT JOIN LATERAL (
+    SELECT fsr.*
+    FROM public."FranchiseSeasonRanking" fsr
+    INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+    WHERE fsr."FranchiseSeasonId" = fsAway."Id"
+      AND fsr."DefaultRanking" = true
+      AND fsr."Type" IN ('ap', 'cfp')
+      AND sw."StartDate" <= c."StartDateUtc"
+    ORDER BY sw."StartDate" DESC
+    LIMIT 1
+  ) fsrAway ON TRUE
   left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
-  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
-        fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
-        fsrHome."SeasonWeekId" = c."SeasonWeekId"
+  
+  LEFT JOIN LATERAL (
+    SELECT fsr.*
+    FROM public."FranchiseSeasonRanking" fsr
+    INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+    WHERE fsr."FranchiseSeasonId" = fsHome."Id"
+      AND fsr."DefaultRanking" = true
+      AND fsr."Type" IN ('ap', 'cfp')
+      AND sw."StartDate" <= c."StartDateUtc"
+    ORDER BY sw."StartDate" DESC
+    LIMIT 1
+  ) fsrHome ON TRUE
   left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 --where c."Id" = @ContestId
-where c."Id" = '569daaa1-851c-4ca0-439f-71ba227539f7' --) t;
+where c."Id" = '860ab8de-e4bd-b936-b124-1e7d1e520af1' --) t;
 -- https://api-dev.sportdeets.com/ui/matchup/e890f3f7-a063-0132-04af-913076ae2a99/preview
 -- select * from public."Contest" where "Id" = 'e890f3f7-a063-0132-04af-913076ae2a99'
 -- SELECT * from "Competition" where "ContestId" = 'e890f3f7-a063-0132-04af-913076ae2a99'

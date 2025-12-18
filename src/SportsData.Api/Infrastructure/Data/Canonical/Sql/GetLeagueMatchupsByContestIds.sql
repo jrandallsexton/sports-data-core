@@ -81,10 +81,19 @@ LEFT JOIN LATERAL (
 ) flAway ON TRUE
 
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
-  left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
-        fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
-        fsrAway."SeasonWeekId" = c."SeasonWeekId"
-LEFT  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+
+LEFT JOIN LATERAL (
+  SELECT fsr.*
+  FROM public."FranchiseSeasonRanking" fsr
+  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+  WHERE fsr."FranchiseSeasonId" = fsAway."Id"
+    AND fsr."DefaultRanking" = true
+    AND fsr."Type" IN ('ap', 'cfp')
+    AND sw."StartDate" <= c."StartDateUtc"
+  ORDER BY sw."StartDate" DESC
+  LIMIT 1
+) fsrAway ON TRUE
+LEFT join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
@@ -98,9 +107,17 @@ LEFT JOIN LATERAL (
 ) flHome ON TRUE
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
-  left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
-        fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
-        fsrHome."SeasonWeekId" = c."SeasonWeekId"
+LEFT JOIN LATERAL (
+  SELECT fsr.*
+  FROM public."FranchiseSeasonRanking" fsr
+  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+  WHERE fsr."FranchiseSeasonId" = fsHome."Id"
+    AND fsr."DefaultRanking" = true
+    AND fsr."Type" IN ('ap', 'cfp')
+    AND sw."StartDate" <= c."StartDateUtc"
+  ORDER BY sw."StartDate" DESC
+  LIMIT 1
+) fsrHome ON TRUE
 LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 
 WHERE c."Id" = ANY(@ContestIds)

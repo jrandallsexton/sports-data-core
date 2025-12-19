@@ -622,3 +622,19 @@
     font-size: 0.75rem;
   }
 }
+
+.confidence-badge {
+  background-color: #fff;
+  color: #333;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+

@@ -13,6 +13,7 @@ import GameStatus from "./GameStatus";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import DeetsMeter from "./DeetsMeter";
+import ConfidencePicker from "./ConfidencePicker";
 
 function MatchupCard({
   matchup,
@@ -22,10 +23,16 @@ function MatchupCard({
   onPick,
   onViewInsight,
   isInsightUnlocked,
-  isFadingOut = false
+  isFadingOut = false,
+  useConfidencePoints,
+  usedConfidencePoints = [],
+  totalGames
 }) {
   const { userDto } = useUserDto();
   const seasonYear = matchup.seasonYear ?? 2025;
+
+  const [showConfidencePicker, setShowConfidencePicker] = useState(false);
+  const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);
 
   // Use custom hooks
   const {
@@ -84,6 +91,23 @@ function MatchupCard({
   const isAwaySelected = selectedFranchiseId === matchup.awayFranchiseSeasonId;
   const isHomeSelected = selectedFranchiseId === matchup.homeFranchiseSeasonId;
 
+  const handleTeamPick = (franchiseId) => {
+    if (useConfidencePoints) {
+      setPendingPickFranchiseId(franchiseId);
+      setShowConfidencePicker(true);
+    } else {
+      setLocalPickFranchiseId(franchiseId);
+      onPick(matchup, franchiseId);
+    }
+  };
+
+  const handleConfidenceSelect = (points) => {
+    setLocalPickFranchiseId(pendingPickFranchiseId);
+    onPick(matchup, pendingPickFranchiseId, points);
+    setShowConfidencePicker(false);
+    setPendingPickFranchiseId(null);
+  };
+
   const cardBorderClass = getPickResultClass(
     matchup.status,
     userPickResult,
@@ -94,6 +118,18 @@ function MatchupCard({
   return (
     <div className={`matchup-card ${isFadingOut ? "fade-out" : ""} ${cardBorderClass}`}
          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {showConfidencePicker && (
+        <ConfidencePicker
+          totalGames={totalGames}
+          usedPoints={usedConfidencePoints}
+          currentPoint={userPickResult?.confidencePoints}
+          onSelect={handleConfidenceSelect}
+          onCancel={() => {
+            setShowConfidencePicker(false);
+            setPendingPickFranchiseId(null);
+          }}
+        />
+      )}
       {matchup.headLine && (
         <div className="matchup-headline">
           {matchup.headLine}
@@ -182,10 +218,8 @@ function MatchupCard({
             isLocked={isLocked}
             isAiPick={matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId}
             isReadOnly={userDto?.isReadOnly}
-            onClick={() => {
-              setLocalPickFranchiseId(matchup.awayFranchiseSeasonId);
-              onPick(matchup, matchup.awayFranchiseSeasonId);
-            }}
+            confidencePoints={isAwaySelected ? userPickResult?.confidencePoints : null}
+            onClick={() => handleTeamPick(matchup.awayFranchiseSeasonId)}
           />
 
           {/* Team Comparison Button */}
@@ -231,10 +265,8 @@ function MatchupCard({
             isLocked={isLocked}
             isAiPick={matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId}
             isReadOnly={userDto?.isReadOnly}
-            onClick={() => {
-              setLocalPickFranchiseId(matchup.homeFranchiseSeasonId);
-              onPick(matchup, matchup.homeFranchiseSeasonId);
-            }}
+            confidencePoints={isHomeSelected ? userPickResult?.confidencePoints : null}
+            onClick={() => handleTeamPick(matchup.homeFranchiseSeasonId)}
           />
         </div>
       </div>

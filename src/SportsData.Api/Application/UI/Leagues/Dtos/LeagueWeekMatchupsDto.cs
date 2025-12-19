@@ -11,6 +11,8 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
         public PickType PickType { get; set; }
 
+        public bool UseConfidencePoints { get; set; }
+
         public List<MatchupForPickDto> Matchups { get; set; } = [];
 
         public class MatchupForPickDto

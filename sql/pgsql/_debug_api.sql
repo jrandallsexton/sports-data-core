@@ -21,7 +21,7 @@ update public."MatchupPreview" set "PredictedSpreadWinner" = '71151ce3-4823-0d50
 
 select * from public."PickemGroup" where "IsPublic" = true
 update public."PickemGroup" set "NonStandardWeekGroupSeasonMapFilter" = 'fbs'
-select * from public."UserPick" where "Week" = 13 and "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
+select * from public."UserPick" where "Week" = 17 and "UserId" = '11111111-1111-1111-1111-111111111111' --and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
 
 update public."UserPick" set "FranchiseId" = '71151ce3-4823-0d50-889c-a7ea9efae249',  "IsCorrect" = null, "PointsAwarded" = null, "ScoredAt" = null where "Week" = 12 and
 "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
@@ -45,6 +45,7 @@ inner join public."User" u on u."Id" = g."CommissionerUserId"
 where g."IsPublic" = true
 
 select * from public."PickemGroup"
+--update public."PickemGroup" set "UseConfidencePoints" = true where "Id" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b'
 select * from public."PickemGroupMember" where "PickemGroupId" = 'edf84c4b-04d0-488f-b18e-1fed96fb93c7'
 select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4840-41d0-baba-dd371b157c31'
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' order by "SeasonWeek"

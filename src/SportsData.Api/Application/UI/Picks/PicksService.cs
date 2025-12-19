@@ -68,6 +68,7 @@ namespace SportsData.Api.Application.UI.Picks
         {
             // Validate that the PickemGroup exists and supports this PickType
             var group = await _dataContext.PickemGroups
+                .AsNoTracking()
                 .FirstOrDefaultAsync(g => g.Id == request.PickemGroupId, cancellationToken);
 
             if (group is null)
@@ -84,6 +85,7 @@ namespace SportsData.Api.Application.UI.Picks
 
             // Optional: Validate the contest exists and isn't locked
             var matchup = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ContestId == request.ContestId, cancellationToken);
 
             if (matchup is null)

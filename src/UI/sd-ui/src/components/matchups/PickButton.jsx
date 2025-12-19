@@ -11,6 +11,7 @@ import { Bot } from 'lucide-react';
  * @param {function} props.onClick - Callback when button is clicked
  * @param {boolean} props.isAiPick - Whether this is the AI predicted winner
  * @param {boolean} props.isReadOnly - Whether user is in read-only mode
+ * @param {number} props.confidencePoints - Confidence points assigned to this pick
  */
 function PickButton({
   teamShort,
@@ -19,7 +20,8 @@ function PickButton({
   isLocked,
   onClick,
   isAiPick,
-  isReadOnly
+  isReadOnly,
+  confidencePoints
 }) {
 
   return (
@@ -31,9 +33,14 @@ function PickButton({
       disabled={isLocked}
       title={isReadOnly ? "Read-only mode" : ""}
     >
-      {/* Always show checkmark if selected, unless game is complete and incorrect */}
-      {isSelected && (!pickResult || pickResult === 'correct') && (
+      {/* Always show checkmark if selected, unless game is complete and incorrect OR confidence points are used */}
+      {isSelected && (!pickResult || pickResult === 'correct') && !confidencePoints && (
         <FaCheckCircle className="pick-result-icon" />
+      )}
+      {isSelected && confidencePoints && (
+        <span className="confidence-badge" title={`${confidencePoints} Confidence Points`}>
+          {confidencePoints}
+        </span>
       )}
       {pickResult && isSelected && pickResult === 'incorrect' && (
         <FaTimes className="pick-result-icon" />

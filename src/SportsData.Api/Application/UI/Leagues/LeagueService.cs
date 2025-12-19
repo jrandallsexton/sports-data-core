@@ -416,6 +416,7 @@ namespace SportsData.Api.Application.UI.Leagues
                 var result = new LeagueWeekMatchupsDto
                 {
                     PickType = league!.PickType,
+                    UseConfidencePoints = league!.UseConfidencePoints,
                     SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
                     WeekNumber = week,
                     Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()

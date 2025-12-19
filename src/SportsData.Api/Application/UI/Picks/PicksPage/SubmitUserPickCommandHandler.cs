@@ -28,8 +28,7 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
                 .FirstOrDefaultAsync(p =>
                         p.UserId == command.UserId &&
                         p.PickemGroupId == command.PickemGroupId &&
-                        p.ContestId == command.ContestId &&
-                        p.PickType == command.PickType,
+                        p.ContestId == command.ContestId,
                     cancellationToken);
 
             if (existing is not null)
@@ -37,7 +36,7 @@ namespace SportsData.Api.Application.UI.Picks.PicksPage
                 existing.FranchiseId = command.FranchiseSeasonId;
                 existing.OverUnder = command.OverUnder;
                 existing.ConfidencePoints = command.ConfidencePoints;
-
+                existing.PickType = command.PickType;
                 existing.TiebreakerGuessTotal = command.TiebreakerGuessTotal;
                 existing.TiebreakerGuessHome = command.TiebreakerGuessHome;
                 existing.TiebreakerGuessAway = command.TiebreakerGuessAway;

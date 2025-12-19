@@ -30,6 +30,7 @@ function PicksPage() {
 
   const [matchups, setMatchups] = useState([]);
   const [pickType, setPickType] = useState(null);
+  const [useConfidencePoints, setUseConfidencePoints] = useState(false);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
@@ -43,6 +44,12 @@ function PicksPage() {
 
   // Get contest updates for live game data
   const { getContestUpdate } = useContestUpdates();
+
+  const usedConfidencePoints = useMemo(() => {
+    return Object.values(userPicks)
+      .map(p => p.confidencePoints)
+      .filter(p => p !== null && p !== undefined);
+  }, [userPicks]);
 
   // Merge live updates with matchups
   const enrichedMatchups = useMemo(() => {
@@ -119,6 +126,7 @@ function PicksPage() {
         );
         setMatchups(response.data.matchups || []);
         setPickType(response.data.pickType);
+        setUseConfidencePoints(response.data.useConfidencePoints);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
       } finally {
@@ -153,15 +161,28 @@ function PicksPage() {
     fetchPicks();
   }, [selectedLeagueId, selectedWeek]);
 
-  async function handlePick(matchup, selectedFranchiseSeasonId) {
+  async function handlePick(matchup, selectedFranchiseSeasonId, confidencePoints) {
     try {
-      await apiWrapper.Picks.submitPick({
+      const pickPayload = {
         pickemGroupId: selectedLeagueId,
         contestId: matchup.contestId,
-        pickType: "StraightUp",
+        pickType: pickType || "StraightUp",
         franchiseSeasonId: selectedFranchiseSeasonId,
         week: selectedWeek,
-      });
+      };
+
+      if (confidencePoints !== undefined) {
+        pickPayload.confidencePoints = confidencePoints;
+      }
+
+      await apiWrapper.Picks.submitPick(pickPayload);
+
+      const updatedPick = {
+        ...userPicks[matchup.contestId],
+        contestId: matchup.contestId,
+        franchiseId: selectedFranchiseSeasonId,
+        confidencePoints: confidencePoints !== undefined ? confidencePoints : userPicks[matchup.contestId]?.confidencePoints
+      };
 
       if (hidePicked) {
         setFadingOut((prev) => [...prev, matchup.contestId]);
@@ -169,14 +190,14 @@ function PicksPage() {
         setTimeout(() => {
           setUserPicks((prev) => ({
             ...prev,
-            [matchup.contestId]: selectedFranchiseSeasonId,
+            [matchup.contestId]: updatedPick,
           }));
           setFadingOut((prev) => prev.filter((id) => id !== matchup.contestId));
         }, 500);
       } else {
         setUserPicks((prev) => ({
           ...prev,
-          [matchup.contestId]: selectedFranchiseSeasonId,
+          [matchup.contestId]: updatedPick,
         }));
       }
 
@@ -350,6 +371,9 @@ function PicksPage() {
                 onViewInsight={handleViewInsight}
                 isSubscribed={isSubscribed}
                 fadingOut={fadingOut}
+                useConfidencePoints={useConfidencePoints}
+                usedConfidencePoints={usedConfidencePoints}
+                totalGames={enrichedMatchups.length}
               />
             ) : (
               <MatchupGrid

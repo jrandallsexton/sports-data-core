@@ -4,7 +4,7 @@ import pandas as pd
 df_train = pd.read_csv("./data/competition_metrics.csv")
 
 # Load week 11 (predictions only)
-df_week11 = pd.read_csv("./data/competition_metrics_week_15.csv")
+df_week11 = pd.read_csv("./data/competition_metrics_week_1.csv")
 
 # Add required columns to match training
 df_week11["HomeScore"] = None
@@ -25,6 +25,9 @@ df_full = pd.concat([df_train, df_week11], ignore_index=True)
 df_full.to_csv("./data/competition_metrics_full.csv", index=False)
 
 print("✅ Combined dataset written to /data/competition_metrics_full.csv")
+
+
+
 
 
 

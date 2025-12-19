@@ -107,9 +107,15 @@ JOIN public."FranchiseSeason" fs_home
 JOIN public."FranchiseSeason" fs_away
     ON fs_away."Id" = con."AwayTeamFranchiseSeasonId"
 
--- Join odds from provider 58
-LEFT JOIN public."CompetitionOdds" odds
-    ON odds."CompetitionId" = comp."Id" AND odds."ProviderId" = '58'
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" 
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) odds ON TRUE
 
 -- Only completed games
 WHERE con."HomeScore" IS NOT NULL AND con."AwayScore" IS NOT NULL

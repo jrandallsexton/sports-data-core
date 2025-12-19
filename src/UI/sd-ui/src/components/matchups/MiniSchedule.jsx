@@ -19,7 +19,7 @@ function getResultClass(game) {
 
 export default function MiniSchedule({ schedule = [], seasonYear }) {
   // TODO: create new endpoint that only returns completed games
-  const games = schedule.slice(0, 8);
+  const games = schedule.slice(0, 13);
   // Drilldown state: which row is open, and its data
   const [drillIndex, setDrillIndex] = useState(null);
   const [drillSchedule, setDrillSchedule] = useState([]);
@@ -41,7 +41,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
     try {
       // Use current seasonYear for opponent
       const res = await import("../../api/apiWrapper").then(m => m.default.TeamCard.getBySlugAndSeason(opponentSlug, seasonYear));
-      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 10) : []);
+      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 13) : []);
     } catch (e) {
       setDrillError("Failed to load schedule");
     } finally {

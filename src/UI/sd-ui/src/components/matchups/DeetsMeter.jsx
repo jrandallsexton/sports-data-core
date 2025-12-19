@@ -1,7 +1,7 @@
 import React from 'react';
 import './DeetsMeter.css';
 
-const DeetsMeter = ({ predictions, homeFranchiseSeasonId, awayFranchiseSeasonId }) => {
+const DeetsMeter = ({ predictions, pickType, homeFranchiseSeasonId, awayFranchiseSeasonId }) => {
   // Find the StraightUp and ATS predictions
   const straightUpPrediction = predictions?.find(p => p.predictionType === 'StraightUp');
   const atsPrediction = predictions?.find(p => p.predictionType === 'AgainstTheSpread');
@@ -66,12 +66,16 @@ const DeetsMeter = ({ predictions, homeFranchiseSeasonId, awayFranchiseSeasonId 
     return null;
   }
 
+  // Determine which meters to show based on pickType
+  const showSU = !pickType || pickType === 'StraightUp';
+  const showATS = !pickType || pickType === 'AgainstTheSpread';
+
   return (
     <div className="deetsmeter">
       <div className="deetsmeter-header">deetsMeter™</div>
       <div className="deetsmeter-meters">
-        {renderMeter(straightUpData, 'SU')}
-        {renderMeter(atsData, 'ATS')}
+        {showSU && renderMeter(straightUpData, 'SU')}
+        {showATS && renderMeter(atsData, 'ATS')}
       </div>
     </div>
   );

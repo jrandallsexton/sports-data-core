@@ -16,6 +16,7 @@ import DeetsMeter from "./DeetsMeter";
 
 function MatchupCard({
   matchup,
+  pickType,
   userPickFranchiseSeasonId,
   userPickResult, // New: DTO containing isCorrect, franchiseId, etc.
   onPick,
@@ -166,6 +167,7 @@ function MatchupCard({
         {/* DeetsMeter - AI Prediction Meters */}
         <DeetsMeter
           predictions={matchup.predictions}
+          pickType={pickType}
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
           awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
         />

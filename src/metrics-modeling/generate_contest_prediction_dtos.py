@@ -12,12 +12,9 @@ PICKTYPE_ATS = 2
 # Normalize SU predictions
 su_records = []
 for _, row in df_su.iterrows():
-    if row["PredictedLabel"] == 1:
-        winner_id = row["HomeFranchiseSeasonId"]
-        win_prob = round(float(row["WinProbability"]), 4)
-    else:
-        winner_id = row["AwayFranchiseSeasonId"]
-        win_prob = round(1.0 - float(row["WinProbability"]), 4)
+    # Always use Home Team for consistency with UI display
+    winner_id = row["HomeFranchiseSeasonId"]
+    win_prob = round(float(row["WinProbability"]), 4)
 
     su_records.append({
         "ContestId": row["ContestId"],
@@ -33,19 +30,13 @@ ats_records = []
 
 for _, row in df_ats.iterrows():
     home_cover_prob = float(row["HomeCoverProbability"])
-    away_cover_prob = float(row["AwayCoverProbability"])
     
     contest_id = row["ContestId"]
     home_id = row["HomeFranchiseSeasonId"]
-    away_id = row["AwayFranchiseSeasonId"]
     
-    # Select winner based on predicted label
-    if row["PredictedLabel"] == 1:
-        winner_id = home_id
-        win_prob = round(home_cover_prob, 4)
-    else:
-        winner_id = away_id
-        win_prob = round(away_cover_prob, 4)
+    # Always use Home Team for consistency with UI display
+    winner_id = home_id
+    win_prob = round(home_cover_prob, 4)
 
     ats_records.append({
         "ContestId": contest_id,
@@ -62,6 +53,9 @@ with open("./data/contest_predictions.json", "w") as f:
     json.dump(all_predictions, f, indent=2)
 
 print("✅ DTOs written to ./data/contest_predictions.json")
+
+
+
 
 
 

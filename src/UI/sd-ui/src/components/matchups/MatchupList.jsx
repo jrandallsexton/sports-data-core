@@ -6,6 +6,7 @@ import { FaSpinner } from "react-icons/fa";
 
 function MatchupList({
   matchups,
+  pickType,
   loading,
   userPicks,
   onPick,
@@ -28,6 +29,7 @@ function MatchupList({
         <MatchupCard
           key={matchup.contestId}
           matchup={matchup}
+          pickType={pickType}
           userPickFranchiseSeasonId={userPicks[matchup.contestId]?.franchiseId}
           userPickResult={userPicks[matchup.contestId]}
           onPick={onPick}

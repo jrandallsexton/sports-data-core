@@ -29,6 +29,7 @@ function PicksPage() {
   const [loadingInsight, setLoadingInsight] = useState(false);
 
   const [matchups, setMatchups] = useState([]);
+  const [pickType, setPickType] = useState(null);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
@@ -117,6 +118,7 @@ function PicksPage() {
           selectedWeek
         );
         setMatchups(response.data.matchups || []);
+        setPickType(response.data.pickType);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
       } finally {
@@ -342,6 +344,7 @@ function PicksPage() {
             {viewMode === "card" ? (
               <MatchupList
                 matchups={visibleMatchups}
+                pickType={pickType}
                 userPicks={userPicks}
                 onPick={handlePick}
                 onViewInsight={handleViewInsight}

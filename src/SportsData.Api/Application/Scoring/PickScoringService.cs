@@ -34,13 +34,21 @@ public class PickScoringService : IPickScoringService
                 throw new InvalidOperationException("Unsupported PickType: " + group.PickType);
         }
 
+        // Centralized confidence points logic - applies to all pick types
         if (group.UseConfidencePoints)
         {
-            // TODO: Apply confidence logic to pick.PointsAwarded
+            pick.PointsAwarded = pick.IsCorrect == true ? (pick.ConfidencePoints ?? 0) : 0;
+        }
+        else
+        {
+            pick.PointsAwarded = pick.IsCorrect == true ? 1 : 0;
         }
     }
 
-    private void ScoreStraightUp(PickemGroupUserPick pick, MatchupResult result, DateTime now)
+    private void ScoreStraightUp(
+        PickemGroupUserPick pick,
+        MatchupResult result,
+        DateTime now)
     {
         if (!pick.FranchiseId.HasValue)
         {
@@ -50,7 +58,6 @@ public class PickScoringService : IPickScoringService
 
         pick.IsCorrect = pick.FranchiseId == result.WinnerFranchiseSeasonId;
         pick.ScoredAt = now;
-        pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
     }
 
     private void ScoreAgainstSpread(
@@ -102,9 +109,7 @@ public class PickScoringService : IPickScoringService
 
         pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseId == spreadWinnerId.Value;
         pick.ScoredAt = now;
-        pick.PointsAwarded = pick.IsCorrect.Value ? 1 : 0;
     }
-
 
     private void SetIncorrect(PickemGroupUserPick pick, DateTime now)
     {

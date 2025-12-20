@@ -109,6 +109,11 @@ function LeagueWeekOverviewTable({ overview }) {
                     <td key={user.userId}>
                       {pick ? (
                         <span>
+                          {pick.confidencePoints && (
+                            <span className="confidence-badge">
+                              {pick.confidencePoints}
+                            </span>
+                          )}
                           {teamShort}
                           {typeof pick.isCorrect === 'boolean' && (
                             <span style={{ marginLeft: 4, color: pick.isCorrect ? 'green' : 'red' }}>
@@ -131,7 +136,13 @@ function LeagueWeekOverviewTable({ overview }) {
               let total = 0;
               contests.forEach(contest => {
                 const pick = pickMap[user.userId]?.[contest.contestId];
-                if (pick && pick.isCorrect) total += 1;
+                if (pick) {
+                  if (pick.pointsAwarded !== undefined && pick.pointsAwarded !== null) {
+                    total += pick.pointsAwarded;
+                  } else if (pick.isCorrect) {
+                    total += (pick.confidencePoints || 1);
+                  }
+                }
               });
               return <td key={user.userId}>{total}</td>;
             })}

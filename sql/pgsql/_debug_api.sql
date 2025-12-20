@@ -23,6 +23,7 @@ select * from public."PickemGroup" where "IsPublic" = true
 update public."PickemGroup" set "NonStandardWeekGroupSeasonMapFilter" = 'fbs'
 select * from public."UserPick" where "Week" = 17 and "UserId" = '11111111-1111-1111-1111-111111111111' --and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
 
+--update public."UserPick" set "ConfidencePoints" = 1 where "Week" = 17 and "ConfidencePoints" is null
 update public."UserPick" set "FranchiseId" = '71151ce3-4823-0d50-889c-a7ea9efae249',  "IsCorrect" = null, "PointsAwarded" = null, "ScoredAt" = null where "Week" = 12 and
 "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813' and "ContestId" = 'f53efa06-a18f-76aa-a241-8bb6fa79dcec'
 

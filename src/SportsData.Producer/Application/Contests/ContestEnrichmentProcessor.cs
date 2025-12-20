@@ -54,7 +54,7 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
                     .ThenInclude(comp => comp.ExternalIds)
-                    .Include(c => c.Odds.Where(o => o.ProviderId == "58"))
+                    .Include(c => c.Odds.Where(o => o.ProviderId == "58" || o.ProviderId == "100"))
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
                     .Where(c => c.ContestId == command.ContestId)

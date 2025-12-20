@@ -39,6 +39,13 @@ function PicksPage() {
 
   const [hidePicked, setHidePicked] = useState(false);
   const [fadingOut, setFadingOut] = useState([]);
+  const [now, setNow] = useState(new Date());
+
+  // Update 'now' every 15 seconds to keep lock status in sync with MatchupCard
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const leagues = Object.values(userDto?.leagues || {});
 
@@ -322,9 +329,17 @@ function PicksPage() {
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
   const visibleMatchups = hidePicked
-    ? enrichedMatchups.filter(
-        (m) => !userPicks[m.contestId] || fadingOut.includes(m.contestId)
-      )
+    ? enrichedMatchups.filter((m) => {
+        const isPicked = !!userPicks[m.contestId];
+        
+        // Replicate locking logic from usePickLocking (5 min buffer)
+        // We do NOT hide based on isReadOnly, only based on time
+        const startTime = new Date(m.startDateUtc);
+        const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000);
+        const isLocked = now > lockTime;
+
+        return (!isPicked && !isLocked) || fadingOut.includes(m.contestId);
+      })
     : enrichedMatchups;
 
   return (

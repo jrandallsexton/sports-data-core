@@ -1,5 +1,3 @@
-using MassTransit;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -210,6 +208,16 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         // TODO: ProcessRanks
     }
 
+    private async Task ProcessUpdate(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionCompetitorDto dto,
+        CompetitionCompetitor entity)
+    {
+        await ProcessScores(entity.Id, dto, command);
+
+        await ProcessLineScores(entity.Id, dto, command);
+    }
+
     private async Task ProcessScores(
         Guid competitionCompetitorId,
         EspnEventCompetitionCompetitorDto externalProviderDto,
@@ -254,14 +262,5 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             CorrelationId: command.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
         ));
-    }
-
-    private async Task ProcessUpdate(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionCompetitorDto dto,
-        CompetitionCompetitor entity)
-    {
-        // TODO: Implement update logic if needed
-        await Task.CompletedTask;
     }
 }

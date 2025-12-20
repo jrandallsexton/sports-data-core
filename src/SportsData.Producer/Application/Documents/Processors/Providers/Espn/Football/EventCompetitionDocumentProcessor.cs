@@ -196,133 +196,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
-    private async Task ProcessCompetitors(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        foreach (var competitorDto in externalDto.Competitors)
-        {
-            if (competitorDto?.Ref is null)
-            {
-                _logger.LogError("Competitor reference is null, skipping competitor processing.");
-                continue;
-            }
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
-                ParentId: competition.Id.ToString(),
-                Uri: competitorDto.Ref.ToCleanUri(),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionCompetitor,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-        }
-    }
-
-    private static void ProcessNotes(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (!externalDto.Notes.Any())
-        {
-            return;
-        }
-
-        foreach (var note in externalDto.Notes)
-        {
-            var newNote = new CompetitionNote
-            {
-                Type = note.Type,
-                Headline = note.Headline,
-                CompetitionId = competition.Id
-            };
-            competition.Notes.Add(newNote);
-        }
-    }
-
-    private async Task<bool> ProcessSituation(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Situation?.Ref is not null)
-        {
-            var situationIdentity = _externalRefIdentityGenerator.Generate(externalDto.Situation.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: situationIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(situationIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionSituation,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private async Task<bool> ProcessStatus(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Status?.Ref is null)
-        {
-            _logger.LogWarning("No status information provided in the competition document.");
-            return false;
-        }
-            
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Status.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Status.Ref,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionStatus,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-
-        return true;
-    }
-
-    private static void ProcessLinks(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Links?.Any() != true)
-            return;
-
-        foreach (var link in externalDto.Links)
-        {
-            competition.Links.Add(new CompetitionLink()
-            {
-                Id = Guid.NewGuid(),
-                CompetitionId = competition.Id,
-                Rel = string.Join("|", link.Rel),
-                Href = link.Href.ToCleanUrl(),
-                Text = link.Text,
-                ShortText = link.ShortText,
-                IsExternal = link.IsExternal,
-                IsPremium = link.IsPremium,
-                SourceUrlHash = HashProvider.GenerateHashFromUri(link.Href)
-            });
-        }
-    }
-
     /// <summary>
     /// Generic helper to process child documents that have a $ref property.
     /// Eliminates repetitive null checks and DocumentRequested publishing.
@@ -446,5 +319,132 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessCompetitors(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        Competition competition)
+    {
+        foreach (var competitorDto in externalDto.Competitors)
+        {
+            if (competitorDto?.Ref is null)
+            {
+                _logger.LogError("Competitor reference is null, skipping competitor processing.");
+                continue;
+            }
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
+                ParentId: competition.Id.ToString(),
+                Uri: competitorDto.Ref.ToCleanUri(),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.EventCompetitionCompetitor,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+            ));
+        }
+    }
+
+    private static void ProcessNotes(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        Competition competition)
+    {
+        if (!externalDto.Notes.Any())
+        {
+            return;
+        }
+
+        foreach (var note in externalDto.Notes)
+        {
+            var newNote = new CompetitionNote
+            {
+                Type = note.Type,
+                Headline = note.Headline,
+                CompetitionId = competition.Id
+            };
+            competition.Notes.Add(newNote);
+        }
+    }
+
+    private static void ProcessLinks(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        Competition competition)
+    {
+        if (externalDto.Links?.Any() != true)
+            return;
+
+        foreach (var link in externalDto.Links)
+        {
+            competition.Links.Add(new CompetitionLink()
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Rel = string.Join("|", link.Rel),
+                Href = link.Href.ToCleanUrl(),
+                Text = link.Text,
+                ShortText = link.ShortText,
+                IsExternal = link.IsExternal,
+                IsPremium = link.IsPremium,
+                SourceUrlHash = HashProvider.GenerateHashFromUri(link.Href)
+            });
+        }
+    }
+
+    private async Task<bool> ProcessSituation(
+    ProcessDocumentCommand command,
+    EspnEventCompetitionDto externalDto,
+    Competition competition)
+    {
+        if (externalDto.Situation?.Ref is not null)
+        {
+            var situationIdentity = _externalRefIdentityGenerator.Generate(externalDto.Situation.Ref);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: situationIdentity.UrlHash,
+                ParentId: competition.Id.ToString(),
+                Uri: new Uri(situationIdentity.CleanUrl),
+                Sport: command.Sport,
+                SeasonYear: command.Season,
+                DocumentType: DocumentType.EventCompetitionSituation,
+                SourceDataProvider: command.SourceDataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+            ));
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task<bool> ProcessStatus(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        Competition competition)
+    {
+        if (externalDto.Status?.Ref is null)
+        {
+            _logger.LogWarning("No status information provided in the competition document.");
+            return false;
+        }
+
+        await _publishEndpoint.Publish(new DocumentRequested(
+            Id: HashProvider.GenerateHashFromUri(externalDto.Status.Ref),
+            ParentId: competition.Id.ToString(),
+            Uri: externalDto.Status.Ref,
+            Sport: command.Sport,
+            SeasonYear: command.Season,
+            DocumentType: DocumentType.EventCompetitionStatus,
+            SourceDataProvider: command.SourceDataProvider,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
+        ));
+
+        return true;
     }
 }

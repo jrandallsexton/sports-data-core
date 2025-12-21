@@ -128,10 +128,13 @@ namespace SportsData.Producer.Application.Contests
             {
                 CompetitionId = competition.Id,
                 ContestId = contestId,
+                Sport = Sport.FootballNcaa,
+                SeasonYear = 2025,
+                DataProvider = SourceDataProvider.Espn,
                 CorrelationId = contestId
             };
 
-            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command));
+            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command, CancellationToken.None));
             return Ok(new { Message = contestId });
         }
     }

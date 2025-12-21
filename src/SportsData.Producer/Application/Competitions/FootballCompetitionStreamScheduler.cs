@@ -82,8 +82,11 @@ public class FootballCompetitionStreamScheduler
                     {
                         ContestId = competition.ContestId,
                         CompetitionId = competition.Id,
+                        Sport = Sport.FootballNcaa,
+                        SeasonYear = contest.SeasonYear,
+                        DataProvider = SourceDataProvider.Espn,
                         CorrelationId = correlationId
-                    }),
+                    }, CancellationToken.None),
                     scheduledTimeUtc - DateTime.UtcNow);
 
                 _dataContext.CompetitionStreams.Add(new CompetitionStream

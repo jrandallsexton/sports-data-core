@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Infrastructure.Clients.YouTube.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests.Overview;
@@ -37,7 +36,6 @@ namespace SportsData.Producer.Application.Contests
         {
             var cmd = new UpdateContestCommand(
                 contestId,
-                2025,
                 SourceDataProvider.Espn,
                 Sport.FootballNcaa,
                 Guid.NewGuid());

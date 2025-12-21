@@ -36,7 +36,6 @@ namespace SportsData.Producer.Application.SeasonWeek
             {
                 var cmd = new UpdateContestCommand(
                     contestId,
-                    2025,
                     SourceDataProvider.Espn,
                     Sport.FootballNcaa,
                     Guid.NewGuid());

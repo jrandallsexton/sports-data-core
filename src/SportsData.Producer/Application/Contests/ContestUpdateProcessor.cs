@@ -39,7 +39,7 @@ namespace SportsData.Producer.Application.Contests
                 .Include(c => c.ExternalIds)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == command.ContestId);
-
+            
             if (contest is null)
             {
                 _logger.LogError("Contest not found");
@@ -62,7 +62,7 @@ namespace SportsData.Producer.Application.Contests
                 ParentId: null,
                 Uri: new Uri(contestIdentity.CleanUrl),
                 Sport: command.Sport,
-                SeasonYear: command.SeasonYear,
+                SeasonYear: contest.SeasonYear,
                 DocumentType: DocumentType.Event,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,

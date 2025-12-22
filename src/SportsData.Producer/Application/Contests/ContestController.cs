@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Infrastructure.Clients.YouTube.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests.Overview;
@@ -37,7 +36,6 @@ namespace SportsData.Producer.Application.Contests
         {
             var cmd = new UpdateContestCommand(
                 contestId,
-                2025,
                 SourceDataProvider.Espn,
                 Sport.FootballNcaa,
                 Guid.NewGuid());
@@ -84,42 +82,45 @@ namespace SportsData.Producer.Application.Contests
         }
 
         [HttpPost("{id}/replay")]
-        public IActionResult ReplayContestById([FromRoute] Guid id)
+        public IActionResult ReplayContestById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
             var correlationId = Guid.NewGuid();
-            _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, CancellationToken.None));
+            _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, cancellationToken));
             return Ok(new { Message = correlationId });
         }
 
         [HttpPost("/seasonYear/{seasonYear}/week/{seasonWeekNumber}/replay")]
-        public async Task<IActionResult> ReplaySeasonWeekContests([FromRoute] int seasonYear, [FromRoute] int seasonWeekNumber)
+        public async Task<IActionResult> ReplaySeasonWeekContests(
+            [FromRoute] int seasonYear, 
+            [FromRoute] int seasonWeekNumber,
+            CancellationToken cancellationToken)
         {
             var seasonWeekId = await _dataContext.SeasonWeeks
                 .Include(sw => sw.Season)
                 .Where(sw => sw.Season!.Year == seasonYear && sw.Number == seasonWeekNumber)
                 .Select(sw => sw.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             var contestIds = await _dataContext.Contests
                 .Where(c => c.SeasonYear == seasonYear && c.SeasonWeekId == seasonWeekId)
                 .Select(c => c.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var correlationId = Guid.NewGuid();
             foreach (var contestId in contestIds)
             {
-                _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
+                _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(contestId, correlationId, cancellationToken));
             }
 
             return Ok(new { Message = correlationId });
         }
 
         [HttpPost("{contestId}/broadcast")]
-        public async Task<IActionResult> BroadcastContest([FromRoute] Guid contestId)
+        public async Task<IActionResult> BroadcastContest([FromRoute] Guid contestId, CancellationToken cancellationToken)
         {
             var competition = await _dataContext
                 .Competitions.Where(x => x.ContestId == contestId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (competition == null)
                 return NotFound();
@@ -128,10 +129,13 @@ namespace SportsData.Producer.Application.Contests
             {
                 CompetitionId = competition.Id,
                 ContestId = contestId,
+                Sport = Sport.FootballNcaa,
+                SeasonYear = 2025,
+                DataProvider = SourceDataProvider.Espn,
                 CorrelationId = contestId
             };
 
-            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command));
+            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command, cancellationToken));
             return Ok(new { Message = contestId });
         }
     }

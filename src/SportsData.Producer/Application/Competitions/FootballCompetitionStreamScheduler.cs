@@ -24,12 +24,20 @@ public class FootballCompetitionStreamScheduler
         _backgroundJobProvider = backgroundJobProvider;
     }
 
-    public async Task Execute()
+    /// <summary>
+    /// Parameterless overload for Hangfire recurring job registration
+    /// </summary>
+    public Task Execute() => ExecuteAsync(CancellationToken.None);
+
+    /// <summary>
+    /// Main execution method with cancellation token support
+    /// </summary>
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         // get the current season week
         var seasonWeek = await _dataContext.SeasonWeeks
             .Where(sw => sw.StartDate <= DateTime.UtcNow && sw.EndDate >= DateTime.UtcNow)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (seasonWeek == null)
         {
@@ -42,73 +50,80 @@ public class FootballCompetitionStreamScheduler
             .ThenInclude(c => c.ExternalIds)
             .Where(x => x.SeasonWeekId == seasonWeek.Id)
             .AsSplitQuery()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var scheduledStreams = await _dataContext.CompetitionStreams
             .Where(x => x.SeasonWeekId == seasonWeek.Id)
             .AsNoTracking()
             .Select(x => x.CompetitionId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var scheduledCount = 0;
 
-        foreach (var contest in contests)
+        foreach (var competition in contests.SelectMany(contest => contest.Competitions))
         {
-            foreach (var competition in contest.Competitions)
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            var contest = contests.First(c => c.Competitions.Contains(competition));
+            
+            if (scheduledStreams.Contains(competition.Id))
             {
-                if (scheduledStreams.Contains(competition.Id))
-                {
-                    _logger.LogInformation("Stream already scheduled for CompetitionId {CompetitionId}. Skipping.", competition.Id);
-                    continue;
-                }
-
-                var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
-                if (externalId == null)
-                {
-                    _logger.LogWarning("No ESPN ExternalId found for CompetitionId {CompetitionId}. Skipping.", competition.Id);
-                    continue;
-                }
-
-                var scheduledTimeUtc = competition.Date - TimeSpan.FromMinutes(10);
-                if (scheduledTimeUtc < DateTime.UtcNow)
-                {
-                    scheduledTimeUtc = DateTime.UtcNow.AddSeconds(5);
-                }
-
-                var correlationId = Guid.NewGuid();
-
-                var jobId = _backgroundJobProvider.Schedule<IFootballCompetitionBroadcastingJob>(
-                    job => job.ExecuteAsync(new StreamFootballCompetitionCommand
-                    {
-                        ContestId = competition.ContestId,
-                        CompetitionId = competition.Id,
-                        CorrelationId = correlationId
-                    }),
-                    scheduledTimeUtc - DateTime.UtcNow);
-
-                _dataContext.CompetitionStreams.Add(new CompetitionStream
-                {
-                    BackgroundJobId = jobId,
-                    CompetitionId = competition.Id,
-                    CreatedBy = Guid.Empty,
-                    CreatedUtc = DateTime.UtcNow,
-                    Id = Guid.NewGuid(),
-                    ScheduledBy = nameof(FootballCompetitionStreamScheduler),
-                    ScheduledTimeUtc = scheduledTimeUtc,
-                    SeasonWeekId = seasonWeek.Id,
-                    Status = CompetitionStreamStatus.Scheduled,
-                });
-
-                _logger.LogInformation("Scheduled stream for CompetitionId {CompetitionId} at {ScheduledTimeUtc} with JobId {JobId}.",
-                    competition.Id, scheduledTimeUtc, jobId);
-
-                scheduledCount++;
+                _logger.LogInformation("Stream already scheduled for CompetitionId {CompetitionId}. Skipping.", competition.Id);
+                continue;
             }
+
+            var externalId = competition.ExternalIds.FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
+            if (externalId == null)
+            {
+                _logger.LogWarning("No ESPN ExternalId found for CompetitionId {CompetitionId}. Skipping.", competition.Id);
+                continue;
+            }
+
+            var scheduledTimeUtc = competition.Date - TimeSpan.FromMinutes(10);
+            if (scheduledTimeUtc < DateTime.UtcNow)
+            {
+                scheduledTimeUtc = DateTime.UtcNow.AddSeconds(5);
+            }
+
+            var correlationId = Guid.NewGuid();
+
+            // Note: CancellationToken.None is used here because this is the token that will be passed
+            // to the scheduled job when it executes in the future. The scheduled job will have its own
+            // cancellation management via Hangfire's job cancellation mechanisms.
+            var jobId = _backgroundJobProvider.Schedule<IFootballCompetitionBroadcastingJob>(
+                job => job.ExecuteAsync(new StreamFootballCompetitionCommand
+                {
+                    ContestId = competition.ContestId,
+                    CompetitionId = competition.Id,
+                    Sport = Sport.FootballNcaa,
+                    SeasonYear = contest.SeasonYear,
+                    DataProvider = SourceDataProvider.Espn,
+                    CorrelationId = correlationId
+                }, CancellationToken.None),
+                scheduledTimeUtc - DateTime.UtcNow);
+
+            _dataContext.CompetitionStreams.Add(new CompetitionStream
+            {
+                BackgroundJobId = jobId,
+                CompetitionId = competition.Id,
+                CreatedBy = Guid.Empty,
+                CreatedUtc = DateTime.UtcNow,
+                Id = Guid.NewGuid(),
+                ScheduledBy = nameof(FootballCompetitionStreamScheduler),
+                ScheduledTimeUtc = scheduledTimeUtc,
+                SeasonWeekId = seasonWeek.Id,
+                Status = CompetitionStreamStatus.Scheduled,
+            });
+
+            _logger.LogInformation("Scheduled stream for CompetitionId {CompetitionId} at {ScheduledTimeUtc} with JobId {JobId}.",
+                competition.Id, scheduledTimeUtc, jobId);
+
+            scheduledCount++;
         }
 
         if (scheduledCount > 0)
         {
-            await _dataContext.SaveChangesAsync();
+            await _dataContext.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Scheduled {ScheduledCount} new competition streams for SeasonWeek {SeasonWeekNumber}.",
                 scheduledCount, seasonWeek.Number);
         }

@@ -116,11 +116,11 @@ select * from public."Contest" where "Id" = '9c1dd681-8a67-91bb-1492-95742699410
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = '9c1dd681-8a67-91bb-1492-95742699410e'
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'cd68bd61-707f-90ad-26ae-f5f2ecd7d0cc'
+select * from public."Competition" where "ContestId" = '860ab8de-e4bd-b936-b124-1e7d1e520af1'
+select * from public."CompetitionCompetitor" where "CompetitionId" = '8cc5e162-fefb-2785-4ae7-e858edcb2a2d'
 select * from public."CompetitionNote" where "CompetitionId" = '7690d4e5-b401-4c6d-749d-0233f902994a'
 select * from public."CompetitionStatus" where "CompetitionId" = 'cd68bd61-707f-90ad-26ae-f5f2ecd7d0cc'
-
+select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '6be990ce-8ece-7d23-ed9f-f04687a062d9'
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
 select * from public."CompetitionPlay" where "CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by "SequenceNumber"::int
 

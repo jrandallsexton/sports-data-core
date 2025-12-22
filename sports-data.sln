@@ -109,6 +109,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{67222F6F-E
 	ProjectSection(SolutionItems) = preProject
 		docs\HistoricalSeasonSourcingAnalysis.md = docs\HistoricalSeasonSourcingAnalysis.md
 		docs\HISTORICAL_SEASON_SOURCING.md = docs\HISTORICAL_SEASON_SOURCING.md
+		docs\LIVE_UPDATES_REFACTORING.md = docs\LIVE_UPDATES_REFACTORING.md
 	EndProjectSection
 EndProject
 Global

@@ -54,7 +54,6 @@ public class Program
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
                 services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode);
-                services.AddScoped<FootballDataContext>(); // Explicit registration for factories
                 
                 // Abstract type registrations needed for services that inject them directly
                 // Note: These are NOT used by document processors (factories inject FootballDataContext)

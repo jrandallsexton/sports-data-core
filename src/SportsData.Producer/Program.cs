@@ -70,14 +70,31 @@ public class Program
 
         services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-        // Add messaging via MassTransit with Outbox pattern for FootballDataContext
-        // Factories inject FootballDataContext directly, so processors get the concrete type with outbox support
-        services.AddMessaging<FootballDataContext>(config, [
-            typeof(DocumentCreatedHandler),
-            typeof(ProcessImageRequestedHandler),
-            typeof(ProcessImageResponseHandler)
-            // NOTE: OutboxTestEventHandler removed - test via DocumentCreated ? OutboxTestDocumentProcessor flow
-        ]);
+        // Add messaging via MassTransit with Outbox pattern
+        // Sport-specific registration ensures the correct DbContext type is used for outbox
+        switch (mode)
+        {
+            case Sport.FootballNcaa:
+            case Sport.FootballNfl:
+                services.AddMessaging<FootballDataContext>(config, [
+                    typeof(DocumentCreatedHandler),
+                    typeof(ProcessImageRequestedHandler),
+                    typeof(ProcessImageResponseHandler)
+                ]);
+                break;
+            case Sport.GolfPga:
+                services.AddMessaging<GolfDataContext>(config, [
+                    typeof(DocumentCreatedHandler),
+                    typeof(ProcessImageRequestedHandler),
+                    typeof(ProcessImageResponseHandler)
+                ]);
+                break;
+            case Sport.All:
+            case Sport.BaseballMlb:
+            case Sport.BasketballNba:
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
 
         services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

@@ -499,7 +499,6 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
             CausationId: command.CorrelationId
         ), cancellationToken);
 
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing(), cancellationToken);
         await _dataContext.SaveChangesAsync(cancellationToken);
     }
 

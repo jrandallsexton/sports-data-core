@@ -55,7 +55,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _bus.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -129,8 +129,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.EventCompetitionSituationDocumentProcessor
                     ));
-
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    
                     await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException($"Play {dto.LastPlay.Ref} not found. Will retry.");

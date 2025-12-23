@@ -123,7 +123,6 @@ public class SeasonPollDocumentProcessor<TDataContext> : IProcessDocuments
             ));
         }
 
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
     }
 }

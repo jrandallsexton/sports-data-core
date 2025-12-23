@@ -56,7 +56,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _bus.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -128,7 +128,6 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                     CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
                 ));
 
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");

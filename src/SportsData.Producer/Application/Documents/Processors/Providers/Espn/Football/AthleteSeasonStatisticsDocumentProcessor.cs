@@ -106,7 +106,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 command.CorrelationId);
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(

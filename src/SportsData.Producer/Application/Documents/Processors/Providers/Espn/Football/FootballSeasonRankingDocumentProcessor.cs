@@ -52,7 +52,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : IProcessDocu
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)

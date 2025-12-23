@@ -63,6 +63,8 @@
         SeasonPollWeek = 61,
         EventCompetitionAthleteStatistics = 59,
         EventCompetitionCompetitorStatistics = 60,
+        OutboxTest = 99, // Test document type for validating outbox pattern with BaseDataContext
+        OutboxTestTeamSport = 98, // Test document type for validating outbox pattern with TeamSportDataContext
         Unknown = 9999
     }
 }

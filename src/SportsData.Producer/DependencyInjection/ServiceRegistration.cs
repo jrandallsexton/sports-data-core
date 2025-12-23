@@ -17,6 +17,7 @@ using SportsData.Producer.Application.Venues;
 using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Geo;
 
 namespace SportsData.Producer.DependencyInjection
@@ -59,21 +60,29 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IDocumentProcessorFactory>(provider =>
             {
-                var context = provider.GetRequiredService<BaseDataContext>();
-                var logger = provider.GetRequiredService<ILogger<DocumentProcessorFactory>>();
+                // Sport-specific factory registration
+                // For Football: Use FootballDataContext with outbox support
+                // For Golf: Use GolfDataContext with outbox support
+                // For Basketball: Use BasketballDataContext with outbox support
+                // The generic factory ensures the correct concrete DbContext type is passed to processors,
+                // which enables the MassTransit outbox interceptor for transactional event publishing.
+                
+                var context = provider.GetRequiredService<FootballDataContext>();
+                var logger = provider.GetRequiredService<ILogger<DocumentProcessorFactory<FootballDataContext>>>();
                 var registry = provider.GetRequiredService<IDocumentProcessorRegistry>();
-                var factory = new DocumentProcessorFactory(provider, logger, context, registry);
+                var factory = new DocumentProcessorFactory<FootballDataContext>(provider, logger, context, registry);
                 return factory;
             });
 
             services.AddScoped<IImageProcessorFactory>(provider =>
             {
+                // Sport-specific factory registration (same pattern as DocumentProcessorFactory)
                 var appMode = provider.GetRequiredService<IAppMode>();
-                var context = provider.GetRequiredService<BaseDataContext>();
-                var logger = provider.GetRequiredService<ILogger<ImageProcessorFactory>>();
+                var context = provider.GetRequiredService<FootballDataContext>();
+                var logger = provider.GetRequiredService<ILogger<ImageProcessorFactory<FootballDataContext>>>();
                 var decoder = provider.GetRequiredService<IDecodeDocumentProvidersAndTypes>();
 
-                return new ImageProcessorFactory(appMode, decoder, provider, context, logger);
+                return new ImageProcessorFactory<FootballDataContext>(appMode, decoder, provider, context, logger);
             });
 
             services.AddScoped<ImageRequestedProcessor>();

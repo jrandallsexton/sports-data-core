@@ -54,7 +54,6 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -140,8 +139,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
                     ));
-
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    
                     await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Will retry.");
@@ -191,8 +189,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
                     ));
-
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    
                     await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Will retry.");

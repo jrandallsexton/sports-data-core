@@ -186,7 +186,8 @@ namespace SportsData.Api
                 typeof(ContestStatusChangedHandler),
                 typeof(PickemGroupCreatedHandler),
                 typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                typeof(PreviewGeneratedHandler)
+                typeof(PreviewGeneratedHandler),
+                typeof(OutboxTestEventHandler)
             ]);
 
             var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];

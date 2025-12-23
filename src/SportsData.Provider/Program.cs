@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Documents;
+using SportsData.Provider.Application.Events;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
 using SportsData.Provider.Infrastructure.Data;
@@ -41,7 +42,7 @@ namespace SportsData.Provider
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-            services.AddMessaging(config, [typeof(DocumentRequestedHandler)]);
+            services.AddMessaging(config, [typeof(DocumentRequestedHandler), typeof(OutboxTestEventHandler)]);
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

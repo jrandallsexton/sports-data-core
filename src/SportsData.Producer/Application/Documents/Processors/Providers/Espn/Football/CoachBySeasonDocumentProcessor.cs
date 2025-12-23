@@ -55,7 +55,7 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -137,7 +137,7 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : IProcessDocuments
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
                 ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
@@ -179,7 +179,7 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : IProcessDocuments
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
                 ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(

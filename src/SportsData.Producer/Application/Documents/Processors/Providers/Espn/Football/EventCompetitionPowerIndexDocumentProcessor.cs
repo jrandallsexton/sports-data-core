@@ -114,7 +114,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionPowerIndexDocumentProcessor
             ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+
             await _dataContext.SaveChangesAsync();
 
             throw new InvalidOperationException("FranchiseSeason not found.");

@@ -98,7 +98,6 @@ namespace SportsData.Producer.Application.Contests
                 //    CorrelationId: command.CorrelationId,
                 //    CausationId: CausationId.Producer.ContestEnrichmentProcessor
                 //));
-                //await _dataContext.OutboxPings.AddAsync(new OutboxPing() { Id = Guid.NewGuid() });
                 //await _dataContext.SaveChangesAsync();
 
                 var contest = competition.Contest;

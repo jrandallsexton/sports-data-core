@@ -82,7 +82,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                     request.CausationId);
 
                 await _bus.Publish(outgoingEvt);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                
                 await _dataContext.SaveChangesAsync();
 
                 return;
@@ -127,7 +127,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 request.CausationId);
 
             await _bus.Publish(outgoingEvt2);
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+            
             await _dataContext.SaveChangesAsync();
         }
     }

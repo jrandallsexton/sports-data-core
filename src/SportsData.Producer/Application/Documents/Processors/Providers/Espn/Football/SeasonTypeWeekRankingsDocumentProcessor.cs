@@ -58,7 +58,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -154,8 +154,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
                         CorrelationId: command.CorrelationId,
                         CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
                     ));
-
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
+                    
                     await _dataContext.SaveChangesAsync();
 
                     _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
@@ -237,7 +236,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
                     ));
                 }
 
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");

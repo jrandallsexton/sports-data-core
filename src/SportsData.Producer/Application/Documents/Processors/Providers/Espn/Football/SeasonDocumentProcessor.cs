@@ -54,8 +54,6 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
-                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -194,7 +192,6 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (publishEvents)
         {
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
         }
 
@@ -205,31 +202,5 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
     {
         _logger.LogError("Season update detected. Not implemented");
         await Task.Delay(100);
-        //// Update scalar properties
-        //existingSeason.Year = mappedSeason.Year;
-        //existingSeason.Name = mappedSeason.Name;
-        //existingSeason.StartDate = mappedSeason.StartDate;
-        //existingSeason.EndDate = mappedSeason.EndDate;
-        //existingSeason.ActivePhaseId = mappedSeason.ActivePhaseId;
-
-        //// Replace Phases wholesale
-        //_dataContext.SeasonPhases.RemoveRange(existingSeason.Phases);
-        //existingSeason.Phases.Clear();
-        //foreach (var phase in mappedSeason.Phases)
-        //{
-        //    existingSeason.Phases.Add(phase);
-        //}
-
-        //// Replace ExternalIds wholesale
-        //_dataContext.SeasonExternalIds.RemoveRange(existingSeason.ExternalIds);
-        //existingSeason.ExternalIds.Clear();
-        //foreach (var extId in mappedSeason.ExternalIds)
-        //{
-        //    existingSeason.ExternalIds.Add(extId);
-        //}
-
-        //_logger.LogInformation("Updated existing Season with Id {SeasonId}", existingSeason.Id);
-
-        //return Task.CompletedTask;
     }
 }

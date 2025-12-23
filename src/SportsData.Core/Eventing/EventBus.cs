@@ -65,9 +65,17 @@ namespace SportsData.Core.Eventing
         private readonly IMessageDeliveryPolicy _policy;
         private readonly IOutboxAmbientState _outbox;
 
-        public EventBusAdapter(IPublishEndpoint publish, IBus bus,
-            IMessageDeliveryPolicy policy, IOutboxAmbientState outbox)
-        { _publish = publish; _bus = bus; _policy = policy; _outbox = outbox; }
+        public EventBusAdapter(
+            IPublishEndpoint publish,
+            IBus bus,
+            IMessageDeliveryPolicy policy,
+            IOutboxAmbientState outbox)
+        {
+            _publish = publish;
+            _bus = bus;
+            _policy = policy;
+            _outbox = outbox;
+        }
 
         public async Task Publish<T>(T message, CancellationToken ct = default) where T : class
         {

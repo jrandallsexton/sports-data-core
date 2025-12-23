@@ -206,8 +206,6 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
                             { "CompetitionDriveId", drive.Id.ToString()}
                         }
                     ));
-
-                    await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 }
 
                 await _dataContext.SaveChangesAsync();

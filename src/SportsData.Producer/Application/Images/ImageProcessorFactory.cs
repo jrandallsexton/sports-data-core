@@ -14,13 +14,19 @@ namespace SportsData.Producer.Application.Images
         IProcessLogoAndImageResponses GetResponseProcessor(DocumentType documentType);
     }
 
-    public class ImageProcessorFactory : IImageProcessorFactory
+    /// <summary>
+    /// Generic image processor factory that works with any sport-specific DbContext.
+    /// The generic parameter TDbContext is the concrete context type (FootballDataContext, GolfDataContext, etc.)
+    /// which has the MassTransit outbox interceptor registered for transactional event publishing.
+    /// </summary>
+    public class ImageProcessorFactory<TDbContext> : IImageProcessorFactory
+        where TDbContext : BaseDataContext
     {
         private readonly IAppMode _appMode;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IServiceProvider _provider;
-        private readonly BaseDataContext _dataContext;
-        private readonly ILogger<ImageProcessorFactory> _logger;
+        private readonly TDbContext _dataContext;
+        private readonly ILogger<ImageProcessorFactory<TDbContext>> _logger;
 
         private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _requestProcessors = new();
         private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _responseProcessors = new();
@@ -29,8 +35,8 @@ namespace SportsData.Producer.Application.Images
             IAppMode appMode,
             IDecodeDocumentProvidersAndTypes documentTypeDecoder,
             IServiceProvider provider,
-            BaseDataContext dataContext,
-            ILogger<ImageProcessorFactory> logger)
+            TDbContext dataContext,
+            ILogger<ImageProcessorFactory<TDbContext>> logger)
         {
             _appMode = appMode ?? throw new ArgumentNullException(nameof(appMode));
             _documentTypeDecoder = documentTypeDecoder;
@@ -87,6 +93,7 @@ namespace SportsData.Producer.Application.Images
 
             if (_requestProcessors.TryGetValue(key, out var openType))
             {
+                // CRITICAL: Creates image processors with concrete DbContext for outbox support
                 var closedType = openType.IsGenericTypeDefinition
                     ? openType.MakeGenericType(_dataContext.GetType())
                     : openType;
@@ -104,6 +111,7 @@ namespace SportsData.Producer.Application.Images
 
             if (_responseProcessors.TryGetValue(key, out var openType))
             {
+                // CRITICAL: Creates image processors with concrete DbContext for outbox support
                 var closedType = openType.IsGenericTypeDefinition
                     ? openType.MakeGenericType(_dataContext.GetType())
                     : openType;

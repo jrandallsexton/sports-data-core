@@ -17,6 +17,8 @@ using SportsData.Producer.Application.Venues;
 using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Golf;
 using SportsData.Producer.Infrastructure.Geo;
 
 namespace SportsData.Producer.DependencyInjection
@@ -59,21 +61,52 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IDocumentProcessorFactory>(provider =>
             {
-                var context = provider.GetRequiredService<BaseDataContext>();
-                var logger = provider.GetRequiredService<ILogger<DocumentProcessorFactory>>();
-                var registry = provider.GetRequiredService<IDocumentProcessorRegistry>();
-                var factory = new DocumentProcessorFactory(provider, logger, context, registry);
-                return factory;
+                // Sport-specific factory registration
+                // The generic factory ensures the correct concrete DbContext type is passed to processors,
+                // which enables the MassTransit outbox interceptor for transactional event publishing.
+                
+                return mode switch
+                {
+                    Sport.FootballNcaa or Sport.FootballNfl => new DocumentProcessorFactory<FootballDataContext>(
+                        provider,
+                        provider.GetRequiredService<ILogger<DocumentProcessorFactory<FootballDataContext>>>(),
+                        provider.GetRequiredService<FootballDataContext>(),
+                        provider.GetRequiredService<IDocumentProcessorRegistry>()),
+                    
+                    Sport.GolfPga => new DocumentProcessorFactory<GolfDataContext>(
+                        provider,
+                        provider.GetRequiredService<ILogger<DocumentProcessorFactory<GolfDataContext>>>(),
+                        provider.GetRequiredService<GolfDataContext>(),
+                        provider.GetRequiredService<IDocumentProcessorRegistry>()),
+                    
+                    _ => throw new NotSupportedException($"Sport mode '{mode}' is not supported for document processing")
+                };
             });
 
             services.AddScoped<IImageProcessorFactory>(provider =>
             {
+                // Sport-specific factory registration (same pattern as DocumentProcessorFactory)
                 var appMode = provider.GetRequiredService<IAppMode>();
-                var context = provider.GetRequiredService<BaseDataContext>();
-                var logger = provider.GetRequiredService<ILogger<ImageProcessorFactory>>();
                 var decoder = provider.GetRequiredService<IDecodeDocumentProvidersAndTypes>();
-
-                return new ImageProcessorFactory(appMode, decoder, provider, context, logger);
+                
+                return mode switch
+                {
+                    Sport.FootballNcaa or Sport.FootballNfl => new ImageProcessorFactory<FootballDataContext>(
+                        appMode,
+                        decoder,
+                        provider,
+                        provider.GetRequiredService<FootballDataContext>(),
+                        provider.GetRequiredService<ILogger<ImageProcessorFactory<FootballDataContext>>>()),
+                    
+                    Sport.GolfPga => new ImageProcessorFactory<GolfDataContext>(
+                        appMode,
+                        decoder,
+                        provider,
+                        provider.GetRequiredService<GolfDataContext>(),
+                        provider.GetRequiredService<ILogger<ImageProcessorFactory<GolfDataContext>>>()),
+                    
+                    _ => throw new NotSupportedException($"Sport mode '{mode}' is not supported for image processing")
+                };
             });
 
             services.AddScoped<ImageRequestedProcessor>();

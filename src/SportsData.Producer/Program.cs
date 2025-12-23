@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents;
+using SportsData.Producer.Application.Events;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -53,7 +54,10 @@ public class Program
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
                 services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode);
-                services.AddScoped<FootballDataContext>();
+                
+                // Abstract type registrations needed for services that inject them directly
+                // Note: These are NOT used by document processors (factories inject FootballDataContext)
+                // but other services (ContestEnrichmentJob, FranchiseSeasonEnrichmentProcessor, etc.) still need them
                 services.AddScoped<TeamSportDataContext, FootballDataContext>();
                 services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
@@ -66,27 +70,31 @@ public class Program
 
         services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-        // Add messaging via MassTransit using Outbox pattern
-        //services.AddMessaging<BaseDataContext, TeamSportDataContext, FootballDataContext>(config, [
-        //    typeof(DocumentCreatedHandler),
-        //    typeof(ProcessImageRequestedHandler),
-        //    typeof(ProcessImageResponseHandler)
-        //]);
-
-        // Add messaging via MassTransit WITHOUT using Outbox pattern
-        services.AddMessaging(config, [
-            typeof(DocumentCreatedHandler),
-            typeof(ProcessImageRequestedHandler),
-            typeof(ProcessImageResponseHandler)
-        ]);
-
-        //services.AddMessaging<BaseDataContext, TeamSportDataContext, FootballDataContext>(
-        //    config,
-        //    [
-        //        typeof(DocumentCreatedHandler),
-        //        typeof(ProcessImageRequestedHandler),
-        //        typeof(ProcessImageResponseHandler)
-        //    ]);
+        // Add messaging via MassTransit with Outbox pattern
+        // Sport-specific registration ensures the correct DbContext type is used for outbox
+        switch (mode)
+        {
+            case Sport.FootballNcaa:
+            case Sport.FootballNfl:
+                services.AddMessaging<FootballDataContext>(config, [
+                    typeof(DocumentCreatedHandler),
+                    typeof(ProcessImageRequestedHandler),
+                    typeof(ProcessImageResponseHandler)
+                ]);
+                break;
+            case Sport.GolfPga:
+                services.AddMessaging<GolfDataContext>(config, [
+                    typeof(DocumentCreatedHandler),
+                    typeof(ProcessImageRequestedHandler),
+                    typeof(ProcessImageResponseHandler)
+                ]);
+                break;
+            case Sport.All:
+            case Sport.BaseballMlb:
+            case Sport.BasketballNba:
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
 
         services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

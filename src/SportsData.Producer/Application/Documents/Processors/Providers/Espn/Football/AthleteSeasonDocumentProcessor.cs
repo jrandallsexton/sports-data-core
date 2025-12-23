@@ -56,7 +56,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later. {@evt}", docCreated);
                 await _publishEndpoint.Publish(docCreated);
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -120,7 +119,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
                 ));
-                await _dataContext.OutboxPings.AddAsync(new OutboxPing());
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
@@ -179,7 +177,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         await ProcessStatistics(command, dto, entity.Id);
 
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athleteId);
@@ -229,7 +226,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
 
         await ProcessStatistics(command, dto, entity.Id);
 
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully processed existing AthleteSeason {Id}", entity.Id);
@@ -329,7 +325,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
             _logger.LogWarning(
@@ -382,7 +377,6 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
             ));
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
             throw new ExternalDocumentNotSourcedException(

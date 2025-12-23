@@ -317,7 +317,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         // Competitors (special handling for collections)
         await ProcessCompetitors(command, dto, competition);
 
-        await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
     }
 

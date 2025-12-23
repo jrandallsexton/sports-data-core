@@ -41,8 +41,6 @@ public class AppDataContext : DbContext
 
     public DbSet<InboxState> InboxStates => Set<InboxState>();
 
-    public DbSet<OutboxPing> OutboxPings => Set<OutboxPing>();
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

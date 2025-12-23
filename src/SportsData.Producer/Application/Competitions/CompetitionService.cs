@@ -95,7 +95,6 @@ namespace SportsData.Producer.Application.Competitions
                 CausationId: CausationId.Producer.CompetitionService
             ));
 
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing());
             await _dataContext.SaveChangesAsync();
 
             return new Success<Guid>(competitionId, ResultStatus.Accepted);

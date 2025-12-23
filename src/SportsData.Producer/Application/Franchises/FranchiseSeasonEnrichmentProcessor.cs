@@ -216,8 +216,7 @@ namespace SportsData.Producer.Application.Franchises
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor
             ));
-
-            await _dataContext.OutboxPings.AddAsync(new OutboxPing { Id = Guid.NewGuid() });
+            
             await _dataContext.SaveChangesAsync();
         }
     }

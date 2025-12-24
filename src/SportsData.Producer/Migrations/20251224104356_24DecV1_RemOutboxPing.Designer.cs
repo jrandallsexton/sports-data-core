@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251224104356_24DecV1_RemOutboxPing")]
+    partial class _24DecV1_RemOutboxPing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -943,6 +946,9 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("AthleteCompetitionStatisticId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AthleteCompetitionStatisticId1")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -977,6 +983,9 @@ namespace SportsData.Producer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteCompetitionStatisticId");
+
+                    b.HasIndex("AthleteCompetitionStatisticId1")
+                        .HasDatabaseName("IX_AthleteCompetitionStatisticCategory_AthleteCompetitionStat~1");
 
                     b.ToTable("AthleteCompetitionStatisticCategory");
                 });
@@ -7183,10 +7192,15 @@ namespace SportsData.Producer.Migrations
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatisticCategory", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatistic", "AthleteCompetitionStatistic")
-                        .WithMany("Categories")
+                        .WithMany()
                         .HasForeignKey("AthleteCompetitionStatisticId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatistic", null)
+                        .WithMany("Categories")
+                        .HasForeignKey("AthleteCompetitionStatisticId1")
+                        .HasConstraintName("FK_AthleteCompetitionStatisticCategory_AthleteCompetitionStat~1");
 
                     b.Navigation("AthleteCompetitionStatistic");
                 });

@@ -33,10 +33,8 @@ public class AthleteCompetitionStatisticCategory : CanonicalEntityBase<Guid>
             builder.Property(x => x.Abbreviation).IsRequired().HasMaxLength(64);
             builder.Property(x => x.Summary).HasMaxLength(1024);
 
-            builder.HasOne(x => x.AthleteCompetitionStatistic)
-                .WithMany()
-                .HasForeignKey(x => x.AthleteCompetitionStatisticId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Relationship to AthleteCompetitionStatistic is configured on the other side
+            // (see AthleteCompetitionStatistic.EntityConfiguration)
 
             builder.HasMany(x => x.Stats)
                 .WithOne(x => x.AthleteCompetitionStatisticCategory)

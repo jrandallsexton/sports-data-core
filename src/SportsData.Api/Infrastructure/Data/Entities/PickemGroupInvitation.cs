@@ -25,11 +25,6 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.HasKey(x => x.Id);
 
-                builder.HasOne(x => x.Group)
-                    .WithMany()
-                    .HasForeignKey(x => x.PickemGroupId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 builder.HasOne(x => x.InvitedByUser)
                     .WithMany()
                     .HasForeignKey(x => x.InvitedByUserId)

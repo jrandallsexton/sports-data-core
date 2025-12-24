@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Api.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    partial class AppDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251224104324_24DecV1_RemOutboxPing")]
+    partial class _24DecV1_RemOutboxPing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -884,11 +887,16 @@ namespace SportsData.Api.Migrations
                     b.Property<Guid>("PickemGroupId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("PickemGroupId1")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvitedByUserId");
 
                     b.HasIndex("PickemGroupId");
+
+                    b.HasIndex("PickemGroupId1");
 
                     b.ToTable("PickemGroupInvitations", (string)null);
                 });
@@ -1517,10 +1525,14 @@ namespace SportsData.Api.Migrations
                         .IsRequired();
 
                     b.HasOne("SportsData.Api.Infrastructure.Data.Entities.PickemGroup", "Group")
-                        .WithMany("Invitations")
+                        .WithMany()
                         .HasForeignKey("PickemGroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.PickemGroup", null)
+                        .WithMany("Invitations")
+                        .HasForeignKey("PickemGroupId1");
 
                     b.Navigation("Group");
 

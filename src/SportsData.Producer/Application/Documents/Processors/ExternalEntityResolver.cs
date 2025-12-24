@@ -48,6 +48,7 @@ public static class ExternalEntityResolverExtensions
             .Where(r => r?.Ref != null)
             .Select(r => HashProvider.GenerateHashFromUri(r!.Ref))
             .Distinct()
+            .OrderBy(h => h) // Add ordering for deterministic results
             .ToArray();
 
         if (hashes.Length == 0)

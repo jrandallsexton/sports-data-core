@@ -103,7 +103,9 @@ namespace SportsData.Api.Application.Previews
 
                 if (!aiResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse))
                 {
-                    var errorMsg = aiResponse is Failure<string> f ? string.Join(", ", f.Errors) : "Unknown error";
+                    var errorMsg = aiResponse is Failure<string> f 
+                        ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
+                        : "Unknown error";
                     _logger.LogError("Attempt {Attempt} returned empty or failed response from AI. Error: {Error}", attempt, errorMsg);
                     continue;
                 }

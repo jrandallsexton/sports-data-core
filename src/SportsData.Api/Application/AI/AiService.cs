@@ -83,7 +83,10 @@ namespace SportsData.Api.Application.AI
 
                 if (!aiResponse.IsSuccess)
                 {
-                    var errorMsg = aiResponse is Failure<string> f ? string.Join(", ", f.Errors) : "Unknown error";
+                    var errorMsg = aiResponse is Failure<string> f 
+                        ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
+                        : "Unknown error";
+
                     _logger.LogError("AI request failed: {Error}", errorMsg);
                     
                     if (aiResponse.Status == ResultStatus.Forbid || aiResponse.Status == ResultStatus.BadRequest)

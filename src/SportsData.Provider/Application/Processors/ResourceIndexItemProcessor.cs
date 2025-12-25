@@ -8,7 +8,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 namespace SportsData.Provider.Application.Processors
 {
@@ -71,37 +70,70 @@ namespace SportsData.Provider.Application.Processors
             Guid correlationId)
         {
             var identity = _identityGenerator.Generate(command.Uri);
-
             var now = DateTime.UtcNow;
 
-            var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
-                .Where(x => x.Id == identity.CanonicalId)
-                .FirstOrDefaultAsync();
+            try
+            {
+                var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
+                    .Where(x => x.Id == identity.CanonicalId ||
+                               (x.ResourceIndexId == command.ResourceIndexId && x.SourceUrlHash == identity.UrlHash))
+                    .FirstOrDefaultAsync();
 
-            if (resourceIndexItemEntity is not null)
-            {
-                resourceIndexItemEntity.LastAccessed = now;
-                resourceIndexItemEntity.ModifiedUtc = now;
-                resourceIndexItemEntity.ModifiedBy = Guid.Empty;
-            }
-            else
-            {
-                resourceIndexItemEntity = new ResourceIndexItem
+                if (resourceIndexItemEntity is not null)
                 {
-                    Id = identity.CanonicalId,
-                    CreatedUtc = now,
-                    CreatedBy = Guid.Empty,
-                    Uri = command.Uri,
-                    SourceUrlHash = identity.UrlHash,
-                    ResourceIndexId = command.ResourceIndexId,
-                    LastAccessed = now
-                };
-                await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
+                    resourceIndexItemEntity.LastAccessed = now;
+                    resourceIndexItemEntity.ModifiedUtc = now;
+                    resourceIndexItemEntity.ModifiedBy = Guid.Empty;
+                }
+                else
+                {
+                    resourceIndexItemEntity = new ResourceIndexItem
+                    {
+                        Id = identity.CanonicalId,
+                        CreatedUtc = now,
+                        CreatedBy = Guid.Empty,
+                        Uri = command.Uri,
+                        SourceUrlHash = identity.UrlHash,
+                        ResourceIndexId = command.ResourceIndexId,
+                        LastAccessed = now
+                    };
+                    await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
+                }
+
+                await HandleValid(command, identity.UrlHash, correlationId);
+
+                await _dataContext.SaveChangesAsync();
             }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                _logger.LogWarning(ex, "Duplicate key detected for {Uri}. Retrying as update.", command.Uri);
 
-            await HandleValid(command, identity.UrlHash, correlationId);
+                // Clear change tracker to avoid pollution from failed insert and outbox messages
+                _dataContext.ChangeTracker.Clear();
 
-            await _dataContext.SaveChangesAsync();
+                // Retry as update only - fetch by unique constraint to be sure
+                var existing = await _dataContext.ResourceIndexItems
+                    .Where(x => x.ResourceIndexId == command.ResourceIndexId && x.SourceUrlHash == identity.UrlHash)
+                    .FirstOrDefaultAsync();
+
+                if (existing != null)
+                {
+                    existing.LastAccessed = now;
+                    existing.ModifiedUtc = now;
+                    existing.ModifiedBy = Guid.Empty;
+                    _dataContext.ResourceIndexItems.Update(existing);
+
+                    // Re-run business logic to re-queue outbox messages
+                    await HandleValid(command, identity.UrlHash, correlationId);
+
+                    await _dataContext.SaveChangesAsync();
+                }
+                else
+                {
+                    // Should not happen if 23505 was thrown, but rethrow if we can't find it
+                    throw;
+                }
+            }
         }
 
         private async Task HandleValid(

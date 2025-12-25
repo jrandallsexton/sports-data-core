@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using SportsData.Core.Common;
 
 namespace SportsData.Provider.Application.Sourcing.Historical;
@@ -12,6 +13,13 @@ public interface IHistoricalSourcingUriBuilder
 
 public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 {
+    private readonly HistoricalSourcingConfig _config;
+
+    public HistoricalSourcingUriBuilder(IOptions<HistoricalSourcingConfig> config)
+    {
+        _config = config.Value;
+    }
+
     public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
         if (sport == Sport.FootballNcaa && provider == SourceDataProvider.Espn)
@@ -23,9 +31,9 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
             $"Historical sourcing not yet supported for {sport}/{provider}");
     }
 
-    private static Uri BuildEspnFootballNcaaUri(DocumentType documentType, int seasonYear)
+    private Uri BuildEspnFootballNcaaUri(DocumentType documentType, int seasonYear)
     {
-        const string baseUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
+        var baseUrl = _config.EspnBaseUrl.TrimEnd('/');
 
         var path = documentType switch
         {

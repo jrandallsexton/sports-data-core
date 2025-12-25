@@ -10,6 +10,7 @@ using SportsData.Core.Eventing; // <- IEventBus, EventBusAdapter, MessageDeliver
 
 using System;
 using System.Collections.Generic;
+using System.Data; // Add this for IsolationLevel
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -34,10 +35,11 @@ namespace SportsData.Core.DependencyInjection
                 {
                     o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                     o.QueryDelay = TimeSpan.FromSeconds(1);
+                    o.IsolationLevel = IsolationLevel.ReadCommitted; // Fix PostgreSQL serialization conflicts
                     o.UsePostgres()
                         .UseBusOutbox(busOutbox =>
                         {
-                            busOutbox.MessageDeliveryLimit = int.MaxValue;
+                            busOutbox.MessageDeliveryLimit = 1000;
                         });
                 });
 
@@ -45,10 +47,11 @@ namespace SportsData.Core.DependencyInjection
                 {
                     o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                     o.QueryDelay = TimeSpan.FromSeconds(1);
+                    o.IsolationLevel = IsolationLevel.ReadCommitted; // Fix PostgreSQL serialization conflicts
                     o.UsePostgres()
                         .UseBusOutbox(busOutbox =>
                         {
-                            busOutbox.MessageDeliveryLimit = int.MaxValue;
+                            busOutbox.MessageDeliveryLimit = 1000;
                         });
                 });
 
@@ -56,10 +59,11 @@ namespace SportsData.Core.DependencyInjection
                 {
                     o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                     o.QueryDelay = TimeSpan.FromSeconds(1);
+                    o.IsolationLevel = IsolationLevel.ReadCommitted; // Fix PostgreSQL serialization conflicts
                     o.UsePostgres()
                         .UseBusOutbox(busOutbox =>
                         {
-                            busOutbox.MessageDeliveryLimit = int.MaxValue;
+                            busOutbox.MessageDeliveryLimit = 1000;
                         });
                 });
 
@@ -157,6 +161,7 @@ namespace SportsData.Core.DependencyInjection
                     {
                         o.DuplicateDetectionWindow = TimeSpan.FromSeconds(30);
                         o.QueryDelay = TimeSpan.FromSeconds(1);
+                        o.IsolationLevel = IsolationLevel.ReadCommitted; // Fix PostgreSQL serialization conflicts
                         o.UsePostgres()
                             .UseBusOutbox(busOutbox =>
                             {

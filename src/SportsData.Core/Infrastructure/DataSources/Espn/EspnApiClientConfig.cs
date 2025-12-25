@@ -24,7 +24,10 @@
 
         /// <summary>
         /// Amount of delay between requests to ESPN API, in milliseconds.
+        /// CRITICAL: ESPN uses IP-based rate limiting and returns 403 (not 429) when exceeded.
+        /// Default of 1000ms (1 second) = 60 requests/minute.
+        /// Previously increased from 250ms to 1000ms to avoid triggering ESPN rate limits.
         /// </summary>
-        public int RequestDelayMs { get; set; } = 250;
+        public int RequestDelayMs { get; set; } = 1000;
     }
 }

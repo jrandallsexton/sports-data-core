@@ -6,6 +6,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Previews;
 using SportsData.Core.Infrastructure.Clients.AI;
@@ -97,11 +98,15 @@ namespace SportsData.Api.Application.Previews
 
                 var fullPrompt = $"{promptData.PromptText}\n\n{jsonInput}{feedbackSection}";
 
-                rawResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
+                var aiResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
+                rawResponse = aiResponse.Value;
 
-                if (string.IsNullOrWhiteSpace(rawResponse))
+                if (!aiResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse))
                 {
-                    _logger.LogError("Attempt {Attempt} returned empty response from AI.", attempt);
+                    var errorMsg = aiResponse is Failure<string> f 
+                        ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
+                        : "Unknown error";
+                    _logger.LogError("Attempt {Attempt} returned empty or failed response from AI. Error: {Error}", attempt, errorMsg);
                     continue;
                 }
 

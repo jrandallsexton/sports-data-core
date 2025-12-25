@@ -1,6 +1,8 @@
 ﻿using SportsData.Api.Application.Admin;
 using SportsData.Api.Infrastructure.Prompts;
+using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.AI;
+
 using System.Diagnostics;
 
 namespace SportsData.Api.Application.AI
@@ -42,10 +44,10 @@ namespace SportsData.Api.Application.AI
 
             _logger.LogInformation(
                 "AI chat test completed. Response length: {Length} chars, Model: {Model}",
-                response?.Length ?? 0,
+                response.Value.Length,
                 _ai.GetModelName());
 
-            return response ?? string.Empty;
+            return response.Value;
         }
 
         public async Task<GameRecapResponse> GenerateGameRecapAsync(
@@ -75,9 +77,28 @@ namespace SportsData.Api.Application.AI
                     fullPrompt.Length / 4); // Rough token estimate: 1 token ≈ 4 chars
 
                 // Call AI provider (DeepSeek, Ollama, etc.)
-                var recap = await _ai.GetResponseAsync(fullPrompt, ct);
+                var aiResponse = await _ai.GetResponseAsync(fullPrompt, ct);
 
                 sw.Stop();
+
+                if (!aiResponse.IsSuccess)
+                {
+                    var errorMsg = aiResponse is Failure<string> f 
+                        ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
+                        : "Unknown error";
+
+                    _logger.LogError("AI request failed: {Error}", errorMsg);
+                    
+                    if (aiResponse.Status == ResultStatus.Forbid || aiResponse.Status == ResultStatus.BadRequest)
+                    {
+                        // Throw a specific exception that we can configure Hangfire to NOT retry
+                        throw new InvalidOperationException($"AI Fatal Error: {errorMsg}");
+                    }
+                    
+                    throw new InvalidOperationException($"AI Error: {errorMsg}");
+                }
+
+                var recap = aiResponse.Value;
 
                 if (string.IsNullOrWhiteSpace(recap))
                 {

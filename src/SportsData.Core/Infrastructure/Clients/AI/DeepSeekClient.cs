@@ -1,4 +1,8 @@
+using FluentValidation.Results;
+
 using Microsoft.Extensions.Logging;
+
+using SportsData.Core.Common;
 
 using System;
 using System.Net.Http;
@@ -38,7 +42,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task<string> GetResponseAsync(
+        public async Task<Result<string>> GetResponseAsync(
             string prompt,
             CancellationToken ct = default)
         {
@@ -79,11 +83,21 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync(ct);
-                    _logger.LogError(
-                        "DeepSeek returned non-success status code: {StatusCode}, Error: {Error}",
-                        response.StatusCode,
-                        errorContent);
-                    return errorContent;
+
+                    if (errorContent.Contains("Insufficient Balance", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var msg = $"DeepSeek API Balance Insufficient! Please top up the account. Error: {errorContent}";
+                        _logger.LogCritical(msg);
+                        return new Failure<string>(string.Empty, ResultStatus.Forbid, [new ValidationFailure("AI", msg)]);
+                    }
+                    else
+                    {
+                        _logger.LogError(
+                            "DeepSeek returned non-success status code: {StatusCode}, Error: {Error}",
+                            response.StatusCode,
+                            errorContent);
+                        return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", $"DeepSeek returned non-success status code: {response.StatusCode}")]);
+                    }
                 }
 
                 using var contentStream = await response.Content.ReadAsStreamAsync(ct);
@@ -96,7 +110,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 if (chatResponse?.Choices == null || chatResponse.Choices.Length == 0)
                 {
                     _logger.LogError("DeepSeek returned empty or null choices");
-                    return string.Empty;
+                    return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", "DeepSeek returned empty or null choices")]);
                 }
 
                 var content = chatResponse.Choices[0].Message?.Content?.Trim() ?? string.Empty;
@@ -107,22 +121,22 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                     chatResponse.Usage?.CompletionTokens ?? 0,
                     chatResponse.Usage?.TotalTokens ?? 0);
 
-                return content;
+                return new Success<string>(content);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "HTTP request failed when calling DeepSeek API");
-                return string.Empty;
+                return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", "HTTP request failed")]);
             }
             catch (JsonException ex)
             {
                 _logger.LogError(ex, "Failed to deserialize DeepSeek API response");
-                return string.Empty;
+                return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", "Failed to deserialize response")]);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error when calling DeepSeek API");
-                return string.Empty;
+                return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", "Unexpected error")]);
             }
             finally
             {
@@ -134,15 +148,15 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             string prompt,
             CancellationToken ct = default)
         {
-            var rawResponse = await GetResponseAsync(prompt, ct);
+            var response = await GetResponseAsync(prompt, ct);
 
-            if (string.IsNullOrWhiteSpace(rawResponse))
+            if (!response.IsSuccess || string.IsNullOrWhiteSpace(response.Value))
                 return default;
 
             try
             {
                 return JsonSerializer.Deserialize<T>(
-                    rawResponse,
+                    response.Value,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
             catch (JsonException ex)
@@ -151,7 +165,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                     ex,
                     "Failed to deserialize DeepSeek response into {Type}. Raw response: {Response}",
                     typeof(T).Name,
-                    rawResponse);
+                    response.Value);
                 return default;
             }
         }

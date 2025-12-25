@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentValidation.Results;
+
+using Microsoft.Extensions.Logging;
+
+using SportsData.Core.Common;
 
 using System;
 using System.Net.Http;
@@ -26,7 +30,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             _logger = logger;
         }
 
-        public async Task<string> GetResponseAsync(
+        public async Task<Result<string>> GetResponseAsync(
             string prompt,
             CancellationToken ct = default)
         {
@@ -49,7 +53,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("Ollama returned non-success status code: {StatusCode}", response.StatusCode);
-                    return string.Empty;
+                    return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", $"Ollama returned non-success status code: {response.StatusCode}")]);
                 }
 
                 using var contentStream = await response.Content.ReadAsStreamAsync(ct);
@@ -60,12 +64,12 @@ namespace SportsData.Core.Infrastructure.Clients.AI
                     ct
                 );
 
-                return payload?.Response?.Trim() ?? string.Empty;
+                return new Success<string>(payload?.Response?.Trim() ?? string.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to retrieve response from Ollama.");
-                return string.Empty;
+                return new Failure<string>(string.Empty, ResultStatus.Error, [new ValidationFailure("AI", "Failed to retrieve response from Ollama")]);
             }
             finally
             {
@@ -77,14 +81,14 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             string prompt,
             CancellationToken ct = default)
         {
-            var rawResponse = await GetResponseAsync(prompt, ct);
+            var response = await GetResponseAsync(prompt, ct);
 
-            if (string.IsNullOrWhiteSpace(rawResponse))
+            if (!response.IsSuccess || string.IsNullOrWhiteSpace(response.Value))
                 return default;
 
             try
             {
-                return JsonSerializer.Deserialize<T>(rawResponse, new JsonSerializerOptions
+                return JsonSerializer.Deserialize<T>(response.Value, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
@@ -92,7 +96,7 @@ namespace SportsData.Core.Infrastructure.Clients.AI
             catch (JsonException ex)
             {
                 _logger.LogError(ex, "Failed to deserialize Ollama response into {Type}", typeof(T).Name);
-                _logger.LogDebug("Raw response was: {Raw}", rawResponse);
+                _logger.LogDebug("Raw response was: {Raw}", response.Value);
                 return default;
             }
         }

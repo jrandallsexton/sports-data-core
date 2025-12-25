@@ -26,6 +26,7 @@ namespace SportsData.Core.Common
         Accepted,
         BadRequest,
         Created,
+        Error,
         Forbid,
         NotFound,
         Success,

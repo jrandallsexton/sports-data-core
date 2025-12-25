@@ -25,6 +25,6 @@
         /// <summary>
         /// Amount of delay between requests to ESPN API, in milliseconds.
         /// </summary>
-        public int RequestDelayMs { get; set; } = 250;
+        public int RequestDelayMs { get; set; } = 1000;
     }
 }

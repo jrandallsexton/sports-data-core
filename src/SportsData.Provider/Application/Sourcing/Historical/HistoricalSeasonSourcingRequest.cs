@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using SportsData.Core.Common;
 
 namespace SportsData.Provider.Application.Sourcing.Historical;
@@ -5,7 +6,7 @@ namespace SportsData.Provider.Application.Sourcing.Historical;
 /// <summary>
 /// Request to source a complete historical season from ESPN.
 /// </summary>
-public record HistoricalSeasonSourcingRequest
+public record HistoricalSeasonSourcingRequest : IValidatableObject
 {
     /// <summary>
     /// Sport to source (e.g., FootballNcaa)
@@ -27,4 +28,12 @@ public record HistoricalSeasonSourcingRequest
     /// Keys: "season", "venue", "teamSeason", "athleteSeason"
     /// </summary>
     public Dictionary<string, int>? TierDelays { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (SeasonYear > DateTime.UtcNow.Year)
+        {
+            yield return new ValidationResult($"Season year cannot be in the future. Current year is {DateTime.UtcNow.Year}.", new[] { nameof(SeasonYear) });
+        }
+    }
 }

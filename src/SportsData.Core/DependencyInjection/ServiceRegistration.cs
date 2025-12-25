@@ -68,7 +68,10 @@ namespace SportsData.Core.DependencyInjection
             services.AddDbContext<T>(options =>
             {
                 options.EnableSensitiveDataLogging();
-                options.UseNpgsql(connString);
+                options.UseNpgsql(connString, builder =>
+                {
+                    builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), ["40001"]);
+                });
                 options.ConfigureWarnings(w =>
                     w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
 
@@ -346,7 +349,10 @@ namespace SportsData.Core.DependencyInjection
                 configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
             );
 
-            services.AddHttpClient<EspnHttpClient>()
+            services.AddHttpClient<EspnHttpClient>(client =>
+                {
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; SportDeets/1.0; +https://sportdeets.com)");
+                })
                 .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();

@@ -28,7 +28,9 @@ namespace SportsData.Core.Http.Policies
                 .Or<TaskCanceledException>() // includes timeouts
                 .OrResult(r =>
                     (int)r.StatusCode >= 500 ||
-                    r.StatusCode == HttpStatusCode.RequestTimeout)
+                    r.StatusCode == HttpStatusCode.RequestTimeout ||
+                    r.StatusCode == HttpStatusCode.TooManyRequests ||
+                    r.StatusCode == HttpStatusCode.Forbidden)
                 .WaitAndRetryAsync(
                     retryCount,
                     attempt =>

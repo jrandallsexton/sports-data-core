@@ -65,6 +65,36 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             // Get tier delays (from request or config defaults)
             var tierDelays = GetTierDelays(request);
 
+            if (tierDelays.Season < 0 || tierDelays.Venue < 0 || tierDelays.TeamSeason < 0 || tierDelays.AthleteSeason < 0)
+            {
+                throw new ArgumentException("Tier delays cannot be negative.");
+            }
+
+            // Idempotency Check: Ensure we haven't already sourced this season
+            var existingSeasonJob = await _dataContext.ResourceIndexJobs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    x.Provider == request.SourceDataProvider &&
+                    x.SportId == request.Sport &&
+                    x.DocumentType == DocumentType.Season &&
+                    x.SeasonYear == request.SeasonYear,
+                    cancellationToken);
+
+            if (existingSeasonJob != null)
+            {
+                _logger.LogWarning(
+                    "Historical sourcing for {Year} already exists. ResourceIndexId={Id}, CreatedUtc={CreatedUtc}",
+                    request.SeasonYear, existingSeasonJob.Id, existingSeasonJob.CreatedUtc);
+
+                // Return the existing correlation ID if we can find it (stored in CreatedBy)
+                // Note: In a real scenario, we might want to return a 409 Conflict, but for now we'll return success with the existing ID
+                // to be idempotent.
+                return new HistoricalSeasonSourcingResponse
+                {
+                    CorrelationId = existingSeasonJob.CreatedBy
+                };
+            }
+
             // Define the tiers to process
             var tiers = new[]
             {
@@ -77,9 +107,9 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             var startTime = DateTime.UtcNow;
             
             // Use timestamp-based ordinals to avoid race conditions with concurrent requests
-            // Format: YYYYMMDDHHmmss (14 digits) + tier index (2 digits)
-            // Example: 20251214103045 + 00 = 2025121410304500
-            var baseOrdinal = long.Parse(startTime.ToString("yyyyMMddHHmmss"));
+            // Format: YYYYMMDDHHmmssfff (17 digits) + tier index (2 digits)
+            // Example: 20251214103045123 + 00 = 2025121410304512300
+            var baseOrdinal = long.Parse(startTime.ToString("yyyyMMddHHmmssfff"));
 
             // Create ResourceIndex records (collect them for scheduling after persistence)
             var createdResourceIndexes = new List<(ResourceIndexEntity Entity, TimeSpan Delay)>();

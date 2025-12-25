@@ -40,7 +40,6 @@ namespace SportsData.Core.Http.Policies
             // TODO: Extract the retry count and delay from a config file
             const int retryCount = 3;
             var baseDelay = TimeSpan.FromMilliseconds(200);
-            var rng = new Random();
 
             return Policy<HttpResponseMessage>
                 .Handle<HttpRequestException>()
@@ -89,7 +88,7 @@ namespace SportsData.Core.Http.Policies
                     attempt =>
                     {
                         var exp = Math.Pow(2, attempt - 1); // 1,2,4
-                        var jitterMs = rng.Next(25, 125);
+                        var jitterMs = Random.Shared.Next(25, 125); // Thread-safe Random.Shared (.NET 6+)
                         return TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * exp + jitterMs);
                     },
                     (outcome, delay, attempt, context) =>

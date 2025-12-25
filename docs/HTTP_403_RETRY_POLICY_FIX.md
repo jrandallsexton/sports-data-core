@@ -36,7 +36,7 @@ The retry policy was incorrectly treating HTTP 403 (Forbidden) as a transient er
 During historical season sourcing, ESPN API started returning **403 Forbidden**. When switching to VPN (different IP), requests worked immediately.
 
 **Key Discovery:**
-```
+```text
 Your IP ? ESPN API ? 403 Forbidden (IP blocked)
 VPN IP  ? ESPN API ? 200 OK (works immediately)
 ```
@@ -130,7 +130,7 @@ if (r.StatusCode == HttpStatusCode.Forbidden)
 
 ### Exponential Backoff
 
-```
+```text
 Attempt 1: 200ms × 2^0 + jitter(25-125ms) = ~200-325ms
 Attempt 2: 200ms × 2^1 + jitter(25-125ms) = ~400-525ms
 Attempt 3: 200ms × 2^2 + jitter(25-125ms) = ~800-925ms
@@ -150,7 +150,7 @@ Attempt 3: 200ms × 2^2 + jitter(25-125ms) = ~800-925ms
 - By the time logged and tested in Postman, API was working normally
 
 **Behavior Confirmed:**
-```
+```text
 15:23:45 - Request ? 503 Service Unavailable
 15:23:47 - Retry #1 ? 503
 15:23:51 - Retry #2 ? 503
@@ -179,22 +179,22 @@ Attempt 3: 200ms × 2^2 + jitter(25-125ms) = ~800-925ms
 ### Seq Queries
 
 **Monitor ESPN 403 rate limiting:**
-```
+```text
 @Level = "Warning" AND @Message LIKE "%403%ESPN%rate limiting%"
 ```
 
 **Monitor 503 transient outages:**
-```
+```text
 @Level = "Warning" AND @Message LIKE "%503 Service Unavailable%"
 ```
 
 **Monitor general retries:**
-```
+```text
 @Level = "Warning" AND @Message LIKE "%HTTP retry%"
 ```
 
 **Alert on non-ESPN 403 errors (auth failures):**
-```
+```text
 @Level = "Error" AND @Message LIKE "%403 Forbidden%" AND @Message NOT LIKE "%ESPN%"
 ```
 
@@ -227,13 +227,13 @@ Attempt 3: 200ms × 2^2 + jitter(25-125ms) = ~800-925ms
 
 | File | Change | Impact |
 |------|--------|--------|
-| `src/SportsData.Core/Http/Policies/RetryPolicy.cs` | ESPN-specific 403 retry logic | Prevents IP bans, handles rate limiting |
+| `src/SportsData.Core/Http/Policies/RetryPolicy.cs` | ESPN-specific 403 retry logic + Random.Shared | Prevents IP bans, thread-safe jitter |
 | `src/SportsData.Core/Infrastructure/DataSources/Espn/EspnApiClientConfig.cs` | Updated comments, kept 1000ms delay | Documented rate limiting behavior |
 
 ### Before vs After
 
 **Before Fix:**
-```
+```text
 Historical sourcing starts
 ?
 Provider makes requests to ESPN
@@ -248,7 +248,7 @@ Manual VPN switch required
 ```
 
 **After Fix:**
-```
+```text
 Historical sourcing starts
 ?
 Provider makes requests to ESPN (60 req/min)
@@ -346,6 +346,7 @@ private async Task EnforceRateLimit()
 | **503 Handling** | ? Already correct | ? Documented with real-world case |
 | **Logging** | ?? Generic warnings | ? Specific per-status messages |
 | **Request Delay** | ? 1000ms (adequate) | ? 1000ms (maintained) |
+| **Thread Safety** | ?? `new Random()` | ? `Random.Shared` (.NET 6+) |
 | **Historical Sourcing** | ? IP blocked | ? Completes with retries |
 | **VPN Required** | ? Yes (to bypass blocks) | ? No (automatic recovery) |
 
@@ -358,6 +359,7 @@ private async Task EnforceRateLimit()
 3. **Retry logic differentiation** required: ESPN 403 = retry, other 403 = fail fast
 4. **Current 1000ms delay adequate** for normal operations (previously tuned from 250ms)
 5. **Exponential backoff works** for both 503 transient outages and ESPN 403 rate limits
+6. **Thread-safe jitter** using `Random.Shared` prevents concurrency issues
 
 ---
 
@@ -365,5 +367,5 @@ private async Task EnforceRateLimit()
 
 **Build:** ? Successful  
 **Code Review:** ? Approved (CodeRabbit feedback addressed)  
-**Real-World Validation:** ? ESPN 503 (Dec 24) and 403 (Dec 25) incidents documented
+**Real-World Validation:** ? ESPN 503 (Dec 24) and 403 (Dec 25) incidents documented  
 

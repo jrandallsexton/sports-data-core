@@ -209,7 +209,7 @@ namespace SportsData.Core.DependencyInjection
                     {
                         Directory.CreateDirectory(logDir);
                     }
-                    return Path.Combine(logDir, $"{appName}-.log");
+                    return Path.Combine(logDir, $"{appName}-{Environment.MachineName}-.log");
                 }
                 catch
                 {
@@ -219,7 +219,7 @@ namespace SportsData.Core.DependencyInjection
                     {
                         Directory.CreateDirectory(fallbackDir);
                     }
-                    return Path.Combine(fallbackDir, $"{appName}-.log");
+                    return Path.Combine(fallbackDir, $"{appName}-{Environment.MachineName}-.log");
                 }
             }
         }

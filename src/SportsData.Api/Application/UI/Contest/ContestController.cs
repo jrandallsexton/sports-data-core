@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
@@ -25,17 +24,17 @@ namespace SportsData.Api.Application.UI.Contest
         }
 
         [HttpPost("{id}/refresh")]
-        public async Task<ActionResult<ContestOverviewDto>> RefreshContestById([FromRoute] Guid id)
+        public async Task<ActionResult<Guid>> RefreshContestById([FromRoute] Guid id)
         {
-            await _contestService.RefreshContestByContestId(id);
-            return Accepted(id);
+            var result = await _contestService.RefreshContestByContestId(id);
+            return result.ToActionResult();
         }
 
         [HttpPost("{id}/media/refresh")]
-        public async Task<ActionResult> RefreshContestMediaById([FromRoute] Guid id)
+        public async Task<ActionResult<Guid>> RefreshContestMediaById([FromRoute] Guid id)
         {
-            await _contestService.RefreshContestMediaByContestId(id);
-            return Accepted(id);
+            var result = await _contestService.RefreshContestMediaByContestId(id);
+            return result.ToActionResult();
         }
     }
 }

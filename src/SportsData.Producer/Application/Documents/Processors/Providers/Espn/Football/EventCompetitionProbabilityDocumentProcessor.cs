@@ -38,18 +38,23 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("EventCompetitionProbabilityDocumentProcessor started. {@Command}", command);
 
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionProbabilityDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionProbabilityDocumentProcessor failed.");
                 throw;
             }
         }
@@ -61,13 +66,13 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionProbabilityDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionProbabilityDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionProbabilityDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionProbabilityDto Ref is null or empty.");
             return;
         }
 
@@ -82,7 +87,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
 
         if (competitionId is null || competitionId == Guid.Empty)
         {
-            _logger.LogWarning("No matching competition found for ref: {ref}", dto.Competition.Ref);
+            _logger.LogWarning("No matching competition found. Ref={Ref}", dto.Competition.Ref);
             return;
         }
 
@@ -118,9 +123,19 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
 
         if (!hasChanged)
         {
-            _logger.LogInformation("No probability change detected for competition {competitionId}; skipping persistence.", competitionId);
+            _logger.LogInformation("No probability change detected, skipping. CompetitionId={CompId}, Home={Home}%, Away={Away}%", 
+                competitionId,
+                newEntity.HomeWinPercentage,
+                newEntity.AwayWinPercentage);
             return;
         }
+
+        _logger.LogInformation("Win probability changed, publishing event. CompetitionId={CompId}, Home={Home}%, Away={Away}%, Tie={Tie}%, SecondsLeft={Seconds}", 
+            competitionId,
+            newEntity.HomeWinPercentage,
+            newEntity.AwayWinPercentage,
+            newEntity.TiePercentage,
+            newEntity.SecondsLeft);
 
         await _publishEndpoint.Publish(new CompetitionWinProbabilityChanged(
             newEntity.CompetitionId,
@@ -140,7 +155,9 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
         await _dataContext.CompetitionProbabilities.AddAsync(newEntity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted new CompetitionProbability snapshot: {id}", newEntity.Id);
-
+        _logger.LogInformation("Persisted CompetitionProbability snapshot. CompetitionId={CompId}, ProbabilityId={ProbId}, Sequence={Seq}", 
+            competitionId,
+            newEntity.Id,
+            dto.SequenceNumber);
     }
 }

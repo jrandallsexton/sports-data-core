@@ -6,7 +6,6 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents;
-using SportsData.Producer.Application.Events;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Common;

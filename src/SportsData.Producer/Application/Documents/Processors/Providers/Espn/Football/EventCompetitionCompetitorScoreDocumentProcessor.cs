@@ -11,7 +11,6 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -44,24 +43,31 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitorId"] = command.ParentId ?? "Unknown"
                }))
         {
+            _logger.LogInformation("EventCompetitionCompetitorScoreDocumentProcessor started. {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionCompetitorScoreDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _bus.Publish(docCreated);
-
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionCompetitorScoreDocumentProcessor failed.");
                 throw;
             }
         }
@@ -73,13 +79,13 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionCompetitorScoreDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionCompetitorScoreDto.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId");
+            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId. ParentId={ParentId}", command.ParentId);
             throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
         }
 
@@ -111,9 +117,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
             }
             else
             {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "CompetitionCompetitor not found. Raising DocumentRequested (override mode). CompetitionCompetitorUrl={CompetitionCompetitorUrl}",
+                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorUrl={CompetitorUrl}", 
                     competitionCompetitorIdentity.CleanUrl);
 
                 await _bus.Publish(new DocumentRequested(
@@ -142,6 +146,10 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
 
         if (score != null)
         {
+            _logger.LogInformation("Updating existing CompetitorScore. CompetitorId={CompetitorId}, ScoreId={ScoreId}", 
+                competitionCompetitorId, 
+                scoreIdentity.CanonicalId);
+
             score.Value = dto.Value;
             score.DisplayValue = dto.DisplayValue;
             score.ModifiedBy = command.CorrelationId;
@@ -150,6 +158,8 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
         }
         else
         {
+            _logger.LogInformation("Creating new CompetitorScore. CompetitorId={CompetitorId}", competitionCompetitorId);
+
             var entity = dto.AsEntity(
                 competitionCompetitorId,
                 _externalRefIdentityGenerator,
@@ -161,6 +171,8 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted score for Competitor {Id}", competitionCompetitorId);
+        _logger.LogInformation("Persisted CompetitorScore. CompetitorId={CompetitorId}, Value={Value}", 
+            competitionCompetitorId, 
+            dto.Value);
     }
 }

@@ -46,24 +46,31 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["ContestId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("EventDocumentProcessor started. {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                    
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventDocumentProcessor failed.");
                 throw;
             }
         }
@@ -75,19 +82,19 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventDto Ref is null for event. {@Command}", command);
+            _logger.LogError("EspnEventDto Ref is null.");
             return;
         }
 
         if (!command.Season.HasValue)
         {
-            _logger.LogError("Command must have a SeasonYear defined");
+            _logger.LogError("Command missing SeasonYear.");
             throw new InvalidOperationException("SeasonYear must be defined in the command.");
         }
 
@@ -100,10 +107,12 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (entity is null)
         {
+            _logger.LogInformation("Processing new Contest entity. Ref={Ref}", externalDto.Ref);
             await ProcessNewEntity(command, externalDto, command.Season.Value);
         }
         else
         {
+            _logger.LogInformation("Processing Contest update. ContestId={ContestId}, Ref={Ref}", entity.Id, externalDto.Ref);
             await ProcessUpdate(command, externalDto, entity);
         }
     }
@@ -113,6 +122,8 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventDto externalDto,
         int seasonYear)
     {
+        _logger.LogInformation("Creating new Contest. SeasonYear={SeasonYear}", seasonYear);
+
         var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
         var seasonWeekId = await GetSeasonWeekId(command, externalDto);
 
@@ -138,12 +149,16 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
 
         await _dataContext.AddAsync(contest);
 
+        _logger.LogInformation("Publishing ContestCreated event. ContestId={ContestId}", contest.Id);
+
         await _publishEndpoint.Publish(new ContestCreated(
             contest.ToCanonicalModel(),
             command.CorrelationId,
             CausationId.Producer.EventDocumentProcessor));
 
         await _dataContext.SaveChangesAsync();
+        
+        _logger.LogInformation("Contest created successfully. ContestId={ContestId}", contest.Id);
     }
 
     private async Task<Guid> GetSeasonWeekId(ProcessDocumentCommand command, EspnEventDto externalDto)
@@ -257,8 +272,15 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventDto externalDto,
         Contest contest)
     {
+        _logger.LogInformation("Processing {Count} competitions. ContestId={ContestId}", 
+            externalDto.Competitions.Count(), 
+            contest.Id);
+
         foreach (var competition in externalDto.Competitions)
         {
+            _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}", 
+                competition.Ref);
+
             // raise an event to source the competition
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(competition.Ref),
@@ -486,14 +508,27 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventDto dto,
         Contest contest)
     {
+        _logger.LogInformation("Updating Contest. ContestId={ContestId}", contest.Id);
+
         if (DateTime.TryParse(dto.Date, out var startDateTime))
         {
+            _logger.LogInformation(
+                "Updating Contest StartDateUtc. ContestId={ContestId}, OldDate={OldDate}, NewDate={NewDate}",
+                contest.Id,
+                contest.StartDateUtc,
+                startDateTime.ToUniversalTime());
+
             contest.StartDateUtc = DateTime.Parse(dto.Date).ToUniversalTime();
             await _dataContext.SaveChangesAsync();
         }
 
         // I'm not sure if there is anything to update here,
         // but we will request sourcing of competitions again
+        _logger.LogInformation(
+            "Re-sourcing {Count} competitions for updated Contest. ContestId={ContestId}",
+            dto.Competitions.Count(),
+            contest.Id);
+
         foreach (var competition in dto.Competitions)
         {
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
@@ -512,5 +547,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
             
             await _dataContext.SaveChangesAsync();
         }
+        
+        _logger.LogInformation("Contest update completed. ContestId={ContestId}", contest.Id);
     }
 }

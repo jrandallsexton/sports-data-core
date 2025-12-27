@@ -39,13 +39,25 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
     {
-        using (_logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = command.CorrelationId }))
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
+               }))
         {
-            _logger.LogInformation("Began with {@command}", command);
-            try { await ProcessInternal(command); }
+            _logger.LogInformation("EventCompetitionOddsDocumentProcessor started. {@Command}", command);
+
+            try
+            {
+                await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionOddsDocumentProcessor completed.");
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionOddsDocumentProcessor failed.");
                 throw;
             }
         }
@@ -57,19 +69,19 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         var dto = command.Document.FromJson<EspnEventCompetitionOddsDto>();
         if (dto is null || dto.Ref is null)
         {
-            _logger.LogError("Invalid EspnEventCompetitionOddsDto or missing $ref. {@Command}", command);
+            _logger.LogError("Invalid EspnEventCompetitionOddsDto or missing $ref.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("Invalid ParentId format for CompetitionId.");
+            _logger.LogError("Invalid ParentId format for CompetitionId. ParentId={ParentId}", command.ParentId);
             return;
         }
 
         if (!command.Season.HasValue)
         {
-            _logger.LogError("Command must have a SeasonYear defined");
+            _logger.LogError("Command missing SeasonYear.");
             return;
         }
 
@@ -79,7 +91,10 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
             .FirstOrDefaultAsync(x => x.Id == competitionId);
 
         if (competition is null)
+        {
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             throw new ArgumentException("competition not found");
+        }
 
         // --- Identity + hash ---
         var identity = _idGen.Generate(dto.Ref); // stable odds id from $ref
@@ -97,7 +112,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         {
             existing = await _db.CompetitionOdds
                 .Include(o => o.Teams)
-                .Include(o => o.Links).Include(competitionOdds => competitionOdds.ExternalIds)
+                .Include(o => o.Links)
+                .Include(competitionOdds => competitionOdds.ExternalIds)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(x =>
                     x.ExternalIds.Any(e => e.SourceUrlHash == command.UrlHash &&
@@ -107,7 +123,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         // If nothing changed, bail out
         if (existing is not null && string.Equals(existing.ContentHash, contentHash, StringComparison.Ordinal))
         {
-            _logger.LogInformation("No odds changes detected. Skip. comp={CompId} provider={Prov}",
+            _logger.LogInformation("No odds changes detected, skipping. CompetitionId={CompId}, Provider={Prov}",
                 competition.Id, dto.Provider.Id);
             return;
         }
@@ -124,13 +140,21 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         // --- HARD REPLACE (no transactions; EF InMemory friendly) ---
         if (existing is not null)
         {
-            // Remove children first if you don’t 100% trust cascade in all environments
+            _logger.LogInformation("Updating CompetitionOdds (hard replace). CompetitionId={CompId}, OddsId={OddsId}", 
+                competition.Id, 
+                existing.Id);
+
+            // Remove children first if you don't 100% trust cascade in all environments
             if (existing.Teams?.Count > 0) _db.CompetitionTeamOdds.RemoveRange(existing.Teams);
             if (existing.Links?.Count > 0) _db.Set<CompetitionOddsLink>().RemoveRange(existing.Links);
             if (existing.ExternalIds?.Count > 0) _db.Set<CompetitionOddsExternalId>().RemoveRange(existing.ExternalIds);
 
             _db.CompetitionOdds.Remove(existing);
             await _db.SaveChangesAsync(); // ensure delete completed (and frees key)
+        }
+        else
+        {
+            _logger.LogInformation("Creating new CompetitionOdds. CompetitionId={CompId}", competition.Id);
         }
 
         await _db.CompetitionOdds.AddAsync(incoming);
@@ -148,7 +172,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
                 competition.Contest.Id, "ContestOddsUpdated", command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
         }
 
-        _logger.LogInformation("Odds upserted (hard replace). comp={CompId} provider={Prov} oddsId={OddsId}",
+        _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",
             competition.Id, dto.Provider.Id, incoming.Id);
     }
 }

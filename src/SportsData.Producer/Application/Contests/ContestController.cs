@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Contests.Overview;
@@ -16,15 +17,18 @@ namespace SportsData.Producer.Application.Contests
     [ApiController]
     public class ContestController : ControllerBase
     {
+        private readonly ILogger<ContestController> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IContestOverviewService _contestOverviewService;
         private readonly TeamSportDataContext _dataContext;
 
         public ContestController(
+            ILogger<ContestController> logger,
             IProvideBackgroundJobs backgroundJobProvider,
             IContestOverviewService contestOverviewService,
             TeamSportDataContext dataContext)
         {
+            _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
             _contestOverviewService = contestOverviewService;
             _dataContext = dataContext;
@@ -34,59 +38,121 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/update")]
         public IActionResult UpdateContest([FromRoute] Guid contestId)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "UpdateContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                contestId,
+                correlationId);
+                
             var cmd = new UpdateContestCommand(
                 contestId,
                 SourceDataProvider.Espn,
                 Sport.FootballNcaa,
-                Guid.NewGuid());
+                correlationId);
+                
             _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));
-            return Ok(new { Message = $"Contest {contestId} update initiated." });
+            
+            return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
         }
 
         [HttpPost]
         [Route("{contestId}/enrich")]
         public IActionResult EnrichContest([FromRoute] Guid contestId)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "EnrichContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                contestId,
+                correlationId);
+                
             var cmd = new EnrichContestCommand(
                 contestId,
-                Guid.NewGuid());
+                correlationId);
+                
             _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
-            return Ok(new { Message = $"Contest {contestId} enrichment initiated." });
+            
+            return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
         }
 
         [HttpGet("{id}/overview")]
         public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
             try
             {
+                _logger.LogInformation(
+                    "GetContestOverview requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    id,
+                    correlationId);
+                    
                 var contest = await _contestOverviewService.GetContestOverviewByContestId(id);
                 return Ok(contest);
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
+                _logger.LogWarning(
+                    ex,
+                    "Contest not found. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    id,
+                    correlationId);
                 return NotFound();
             }
         }
 
         [HttpPost("{id}/media/refresh")]
-        public async Task<ActionResult> RefreshContestMediaById([FromRoute] Guid id)
+        public async Task<ActionResult<Guid>> RefreshContestMediaById([FromRoute] Guid id)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "RefreshContestMedia requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                id,
+                correlationId);
+                
             // get the competitionId
             var competitionId = await _dataContext.Competitions
                 .Where(c => c.ContestId == id)
-                .FirstAsync()
-                .Select(x => x.Id);
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync();
 
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId, true));
-            return Accepted(id);
+            if (competitionId == default)
+            {
+                _logger.LogWarning(
+                    "Competition not found for contest. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    id,
+                    correlationId);
+                return NotFound();
+            }
+
+            _logger.LogInformation(
+                "Enqueuing RefreshCompetitionMedia. ContestId={ContestId}, CompetitionId={CompetitionId}, CorrelationId={CorrelationId}",
+                id,
+                competitionId,
+                correlationId);
+
+            _backgroundJobProvider.Enqueue<ICompetitionService>(
+                p => p.RefreshCompetitionMedia(competitionId, true));
+                
+            return Accepted(correlationId);
         }
 
         [HttpPost("{id}/replay")]
         public IActionResult ReplayContestById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
-            var correlationId = Guid.NewGuid();
-            _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(id, correlationId, cancellationToken));
-            return Ok(new { Message = correlationId });
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "ReplayContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                id,
+                correlationId);
+                
+            _backgroundJobProvider.Enqueue<IContestReplayService>(
+                p => p.ReplayContest(id, correlationId, cancellationToken));
+                
+            return Accepted(new { CorrelationId = correlationId, ContestId = id });
         }
 
         [HttpPost("/seasonYear/{seasonYear}/week/{seasonWeekNumber}/replay")]
@@ -95,6 +161,14 @@ namespace SportsData.Producer.Application.Contests
             [FromRoute] int seasonWeekNumber,
             CancellationToken cancellationToken)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "ReplaySeasonWeek requested. SeasonYear={SeasonYear}, WeekNumber={WeekNumber}, CorrelationId={CorrelationId}",
+                seasonYear,
+                seasonWeekNumber,
+                correlationId);
+                
             var seasonWeekId = await _dataContext.SeasonWeeks
                 .Include(sw => sw.Season)
                 .Where(sw => sw.Season!.Year == seasonYear && sw.Number == seasonWeekNumber)
@@ -106,24 +180,44 @@ namespace SportsData.Producer.Application.Contests
                 .Select(c => c.Id)
                 .ToListAsync(cancellationToken);
 
-            var correlationId = Guid.NewGuid();
+            _logger.LogInformation(
+                "Found {Count} contests to replay. SeasonYear={SeasonYear}, WeekNumber={WeekNumber}, CorrelationId={CorrelationId}",
+                contestIds.Count,
+                seasonYear,
+                seasonWeekNumber,
+                correlationId);
+
             foreach (var contestId in contestIds)
             {
-                _backgroundJobProvider.Enqueue<IContestReplayService>(p => p.ReplayContest(contestId, correlationId, cancellationToken));
+                _backgroundJobProvider.Enqueue<IContestReplayService>(
+                    p => p.ReplayContest(contestId, correlationId, cancellationToken));
             }
 
-            return Ok(new { Message = correlationId });
+            return Accepted(new { CorrelationId = correlationId, ContestCount = contestIds.Count });
         }
 
         [HttpPost("{contestId}/broadcast")]
         public async Task<IActionResult> BroadcastContest([FromRoute] Guid contestId, CancellationToken cancellationToken)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+            
+            _logger.LogInformation(
+                "BroadcastContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                contestId,
+                correlationId);
+                
             var competition = await _dataContext
                 .Competitions.Where(x => x.ContestId == contestId)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (competition == null)
+            {
+                _logger.LogWarning(
+                    "Competition not found for broadcast. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    contestId,
+                    correlationId);
                 return NotFound();
+            }
 
             var command = new StreamFootballCompetitionCommand()
             {
@@ -132,11 +226,13 @@ namespace SportsData.Producer.Application.Contests
                 Sport = Sport.FootballNcaa,
                 SeasonYear = 2025,
                 DataProvider = SourceDataProvider.Espn,
-                CorrelationId = contestId
+                CorrelationId = correlationId
             };
 
-            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(p => p.ExecuteAsync(command, cancellationToken));
-            return Ok(new { Message = contestId });
+            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(
+                p => p.ExecuteAsync(command, cancellationToken));
+                
+            return Accepted(new { CorrelationId = correlationId, CompetitionId = competition.Id });
         }
     }
 }

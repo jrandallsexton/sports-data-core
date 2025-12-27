@@ -227,6 +227,8 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
+            await _dataContext.SaveChangesAsync();
+
             _logger.LogInformation("DocumentCreated event published {@evt}", evt);
         }
 
@@ -291,6 +293,9 @@ namespace SportsData.Provider.Application.Processors
                 command.IncludeLinkedDocumentTypes);
 
             await _publisher.Publish(evt);
+
+            await _dataContext.SaveChangesAsync();
+
             _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
         }
 

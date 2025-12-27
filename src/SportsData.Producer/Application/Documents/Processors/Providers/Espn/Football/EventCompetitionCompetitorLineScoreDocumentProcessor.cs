@@ -44,25 +44,31 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitorId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionCompetitorLineScoreDocumentProcessor started. {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionCompetitorLineScoreDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _bus.Publish(docCreated);
-
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionCompetitorLineScoreDocumentProcessor failed.");
                 throw;
             }
         }
@@ -74,13 +80,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
 
         if (dto is null)
         {
-            _logger.LogWarning("No line score found to process. {@Command}", command);
+            _logger.LogWarning("No line score found to process.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId");
+            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId. ParentId={ParentId}", command.ParentId);
             return; // fatal. do not retry
         }
 
@@ -108,12 +114,9 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             }
             else
             {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "CompetitionCompetitor not found. Raising DocumentRequested (override mode). CompetitionCompetitorId={CompetitionCompetitorId}",
+                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorId={CompetitorId}", 
                     competitionCompetitorId);
                 
-                // raise an event to source the competition competitor
                 await _bus.Publish(new DocumentRequested(
                     Id: competitionCompetitorIdentity.UrlHash,
                     ParentId: competitionIdentity.CanonicalId.ToString(),
@@ -137,6 +140,10 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
 
         if (entry is not null)
         {
+            _logger.LogInformation("Updating existing CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}", 
+                competitionCompetitorId, 
+                dto.Period);
+
             entry.Value = dto.Value;
             entry.DisplayValue = dto.DisplayValue;
             entry.Period = dto.Period;
@@ -145,11 +152,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             entry.SourceState = dto.Source?.State;
             entry.ModifiedUtc = DateTime.UtcNow;
             entry.ModifiedBy = command.CorrelationId;
-
-            _logger.LogInformation("Updated existing line score for Competitor {Id}, Period {Period}", competitionCompetitorId, dto.Period);
         }
         else
         {
+            _logger.LogInformation("Creating new CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}", 
+                competitionCompetitorId, 
+                dto.Period);
+
             var entity = dto.AsEntity(
                 competitionCompetitorId,
                 _externalRefIdentityGenerator,
@@ -157,10 +166,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                 command.CorrelationId);
 
             await _dataContext.CompetitionCompetitorLineScores.AddAsync(entity);
-
-            _logger.LogInformation("Inserted new line score for Competitor {Id}, Period {Period}", competitionCompetitorId, dto.Period);
         }
 
         await _dataContext.SaveChangesAsync();
+        
+        _logger.LogInformation("Persisted CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}, Value={Value}", 
+            competitionCompetitorId, 
+            dto.Period,
+            dto.Value);
     }
 }

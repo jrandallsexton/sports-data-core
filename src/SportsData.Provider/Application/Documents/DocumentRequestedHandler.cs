@@ -32,25 +32,58 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = evt.CorrelationId
+                   ["CorrelationId"] = evt.CorrelationId,
+                   ["DocumentType"] = evt.DocumentType,
+                   ["Uri"] = evt.Uri.ToString()
                }))
         {
-            await ConsumeInternal(evt);
+            _logger.LogInformation(
+                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, CorrelationId={CorrelationId}",
+                evt.Uri,
+                evt.DocumentType,
+                evt.Sport,
+                evt.SourceDataProvider,
+                evt.CorrelationId);
+
+            try
+            {
+                await ConsumeInternal(evt);
+                
+                _logger.LogInformation(
+                    "DocumentRequested processed. Uri={Uri}, CorrelationId={CorrelationId}",
+                    evt.Uri,
+                    evt.CorrelationId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "DocumentRequested processing failed. Uri={Uri}, CorrelationId={CorrelationId}",
+                    evt.Uri,
+                    evt.CorrelationId);
+                throw;
+            }
         }
     }
 
     private async Task ConsumeInternal(DocumentRequested evt)
     {
-        _logger.LogInformation("Handling DocumentRequested: {Evt}", evt);
-
         var uri = evt.Uri;
 
         if (EspnResourceIndexClassifier.IsResourceIndex(uri))
         {
+            _logger.LogInformation(
+                "Treating as resource index. Uri={Uri}, CorrelationId={CorrelationId}",
+                uri,
+                evt.CorrelationId);
             await ProcessResourceIndex(uri, evt);
         }
         else
         {
+            _logger.LogInformation(
+                "Treating as leaf document. Uri={Uri}, CorrelationId={CorrelationId}",
+                uri,
+                evt.CorrelationId);
             ProcessResourceIndexItem(uri, evt);
         }
     }
@@ -71,7 +104,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             SeasonYear: evt.SeasonYear,
             BypassCache: true); // TODO: I cannot think of a reason where would ever want a cached document here.
 
-        _logger.LogInformation("Treating {Uri} as a leaf document. Enqueuing single processing command.", uri);
+        _logger.LogInformation(
+            "Enqueuing ProcessResourceIndexItem. UrlHash={UrlHash}, DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+            urlHash,
+            evt.DocumentType,
+            evt.CorrelationId);
+            
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 
@@ -79,6 +117,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var seenPages = new HashSet<string>();
         var enqueuedAnyRefs = false;
+        var totalItemsEnqueued = 0;
 
         while (uri is not null && seenPages.Add(uri.ToString()))
         {
@@ -86,11 +125,20 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             try
             {
+                _logger.LogInformation(
+                    "Fetching resource index page. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri,
+                    evt.CorrelationId);
+
                 json = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to fetch resource index at {Uri}. Aborting.", uri);
+                _logger.LogWarning(
+                    ex,
+                    "Failed to fetch resource index. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri,
+                    evt.CorrelationId);
                 break;
             }
 
@@ -101,23 +149,38 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to parse ResourceIndex JSON at {Uri}. Aborting.", uri);
+                _logger.LogWarning(
+                    ex,
+                    "Failed to parse ResourceIndex JSON. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri,
+                    evt.CorrelationId);
                 break;
             }
 
             if (dto == null || dto.Items == null || dto.Items.Count == 0)
             {
-                _logger.LogWarning("Empty ResourceIndex at {Uri}. Nothing to enqueue.", uri);
+                _logger.LogWarning(
+                    "Empty ResourceIndex. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri,
+                    evt.CorrelationId);
                 break;
             }
 
-            _logger.LogInformation("Found {Count} items in resource index at page {PageIndex}/{PageCount}", dto.Count, dto.PageIndex, dto.PageCount);
+            _logger.LogInformation(
+                "Found items in resource index page. Count={Count}, PageIndex={PageIndex}, PageCount={PageCount}, CorrelationId={CorrelationId}",
+                dto.Count,
+                dto.PageIndex,
+                dto.PageCount,
+                evt.CorrelationId);
 
             foreach (var item in dto.Items)
             {
                 if (item.Ref is null)
                 {
-                    _logger.LogInformation("Skipping item with null ref in page {PageIndex}", dto.PageIndex);
+                    _logger.LogDebug(
+                        "Skipping item with null ref. PageIndex={PageIndex}, CorrelationId={CorrelationId}",
+                        dto.PageIndex,
+                        evt.CorrelationId);
                     continue;
                 }
 
@@ -138,17 +201,18 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;
+                totalItemsEnqueued++;
             }
 
             if (dto.PageIndex >= dto.PageCount)
             {
-                _logger.LogInformation("Last page reached ({PageIndex}/{PageCount})", dto.PageIndex, dto.PageCount);
+                _logger.LogInformation(
+                    "Last page reached. PageIndex={PageIndex}, PageCount={PageCount}, CorrelationId={CorrelationId}",
+                    dto.PageIndex,
+                    dto.PageCount,
+                    evt.CorrelationId);
                 break;
             }
-
-            //var nextPage = dto.PageIndex + 1;
-            //var baseUri = uri.GetLeftPart(UriPartial.Path);
-            //uri = new Uri($"{baseUri}?limit={dto.PageSize}&page={nextPage}");
 
             var nextPage = dto.PageIndex + 1;
 
@@ -163,7 +227,18 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         if (enqueuedAnyRefs)
         {
-            _logger.LogInformation("All resource index items queued.");
+            _logger.LogInformation(
+                "All resource index items enqueued. TotalItems={TotalItems}, DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+                totalItemsEnqueued,
+                evt.DocumentType,
+                evt.CorrelationId);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "No resource index items enqueued. DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+                evt.DocumentType,
+                evt.CorrelationId);
         }
     }
 }

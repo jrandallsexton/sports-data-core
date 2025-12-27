@@ -10,7 +10,6 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -43,24 +42,31 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
+            _logger.LogInformation("EventCompetitionSituationDocumentProcessor started. {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionSituationDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _bus.Publish(docCreated);
-
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionSituationDocumentProcessor failed.");
                 throw;
             }
         }
@@ -72,19 +78,19 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionSituationDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionSituationDto.");
             return;
         }
 
         if (dto is { Down: 0, Distance: 0, YardLine: 0 })
         {
-            _logger.LogInformation("Situation has no data (down, distance, yardLine all zero). Skipping.");
+            _logger.LogInformation("Situation has no data (down, distance, yardLine all zero), skipping.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionId");
+            _logger.LogError("ParentId must be a valid Guid for CompetitionId. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -112,12 +118,8 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
                 }
                 else
                 {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "LastPlay not found. Raising DocumentRequested (override mode). PlayRef={PlayRef}",
-                        dto.LastPlay.Ref);
+                    _logger.LogWarning("LastPlay not found, raising DocumentRequested. PlayRef={PlayRef}", dto.LastPlay.Ref);
                     
-                    // request the play to be sourced
                     await _bus.Publish(new DocumentRequested(
                         Id: lastPlayIdentity.UrlHash,
                         ParentId: competitionId.ToString(),
@@ -151,11 +153,21 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : IProcess
 
         if (exists)
         {
-            _logger.LogInformation("CompetitionSituation already exists with Id: {Id}", entity.Id);
+            _logger.LogInformation("CompetitionSituation already exists, skipping. SituationId={Id}", entity.Id);
             return;
         }
 
+        _logger.LogInformation("Creating new CompetitionSituation. CompetitionId={CompId}, Down={Down}, Distance={Distance}, YardLine={YardLine}", 
+            competitionId,
+            dto.Down,
+            dto.Distance,
+            dto.YardLine);
+
         await _dataContext.CompetitionSituations.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Persisted CompetitionSituation. CompetitionId={CompId}, SituationId={SituationId}", 
+            competitionId,
+            entity.Id);
     }
 }

@@ -37,17 +37,23 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("EventCompetitionStatusDocumentProcessor started. {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionStatusDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionStatusDocumentProcessor failed.");
                 throw;
             }
         }
@@ -61,19 +67,19 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionStatusDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionStatusDto.");
             return; // terminal failure — don't retry
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionStatusDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionStatusDto Ref is null or empty.");
             return; // terminal failure — don't retry
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("ParentId is missing or invalid for CompetitionStatus: {parentId}", command.ParentId);
+            _logger.LogError("ParentId is missing or invalid for CompetitionStatus. ParentId={ParentId}", command.ParentId);
             throw new InvalidOperationException("CompetitionId (ParentId) is required to process CompetitionStatus");
         }
 
@@ -91,6 +97,11 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
         {
             publishEvent = existing.StatusTypeName != dto.Type.Name;
 
+            _logger.LogInformation("Updating CompetitionStatus (hard replace). CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
+                competitionId,
+                existing.StatusTypeName,
+                dto.Type.Name);
+
             // Remove only the ExternalIds for the ESPN provider to avoid unique key constraint violations
             var espnExternalIds = existing.ExternalIds
                 .Where(x => x.Provider == SourceDataProvider.Espn)
@@ -100,9 +111,19 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
 
             _dataContext.CompetitionStatuses.Remove(existing);
         }
+        else
+        {
+            _logger.LogInformation("Creating new CompetitionStatus. CompetitionId={CompId}, Status={Status}", 
+                competitionId,
+                dto.Type.Name);
+        }
 
         if (publishEvent)
         {
+            _logger.LogInformation("Competition status changed, publishing event. CompetitionId={CompId}, NewStatus={Status}",
+                competitionId,
+                entity.StatusTypeName);
+
             await _publishEndpoint.Publish(new CompetitionStatusChanged(
                 competitionId,
                 entity.StatusTypeName,
@@ -114,7 +135,9 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : IProcessDoc
         await _dataContext.CompetitionStatuses.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CompetitionStatus for competition {competitionId}", competitionId);
+        _logger.LogInformation("Persisted CompetitionStatus. CompetitionId={CompId}, Status={Status}", 
+            competitionId,
+            entity.StatusTypeName);
     }
 
 }

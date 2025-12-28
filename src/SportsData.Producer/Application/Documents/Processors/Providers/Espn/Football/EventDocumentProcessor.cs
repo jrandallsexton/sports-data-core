@@ -49,7 +49,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                    ["CorrelationId"] = command.CorrelationId,
                    ["DocumentType"] = command.DocumentType,
                    ["Season"] = command.Season ?? 0,
-                   ["ContestId"] = command.ParentId ?? "Unknown"
+                   ["ContestId"] = command.ParentId ?? Guid.Empty.ToString()
                }))
         {
             _logger.LogInformation("EventDocumentProcessor started. {@Command}", command);

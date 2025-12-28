@@ -30,6 +30,31 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var evt = context.Message;
 
+        // ✅ Validate CorrelationId - generate new one if empty
+        if (evt.CorrelationId == Guid.Empty)
+        {
+            _logger.LogWarning(
+                "DocumentRequested received with empty CorrelationId. Generating new one. Uri={Uri}, DocumentType={DocumentType}",
+                evt.Uri,
+                evt.DocumentType);
+            
+            // Generate new correlation ID from current Activity (OpenTelemetry)
+            var newCorrelationId = ActivityExtensions.GetCorrelationId();
+            
+            // Create new event with valid CorrelationId
+            evt = new DocumentRequested(
+                evt.Id,
+                evt.ParentId,
+                evt.Uri,
+                evt.Sport,
+                evt.SeasonYear,
+                evt.DocumentType,
+                evt.SourceDataProvider,
+                newCorrelationId,  // ✅ Use new correlation ID
+                evt.CausationId,
+                evt.PropertyBag);
+        }
+
         using (_logger.BeginScope(new Dictionary<string, object>
                {
                    ["CorrelationId"] = evt.CorrelationId,
@@ -38,29 +63,21 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                }))
         {
             _logger.LogInformation(
-                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, CorrelationId={CorrelationId}",
+                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}",
                 evt.Uri,
                 evt.DocumentType,
                 evt.Sport,
-                evt.SourceDataProvider,
-                evt.CorrelationId);
+                evt.SourceDataProvider);
 
             try
             {
                 await ConsumeInternal(evt);
                 
-                _logger.LogInformation(
-                    "DocumentRequested processed. Uri={Uri}, CorrelationId={CorrelationId}",
-                    evt.Uri,
-                    evt.CorrelationId);
+                _logger.LogInformation("DocumentRequested processed. Uri={Uri}", evt.Uri);
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "DocumentRequested processing failed. Uri={Uri}, CorrelationId={CorrelationId}",
-                    evt.Uri,
-                    evt.CorrelationId);
+                _logger.LogError(ex, "DocumentRequested processing failed. Uri={Uri}", evt.Uri);
                 throw;
             }
         }

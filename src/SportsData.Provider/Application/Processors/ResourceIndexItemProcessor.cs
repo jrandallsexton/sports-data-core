@@ -227,9 +227,9 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
-            await _dataContext.SaveChangesAsync();
-
-            _logger.LogInformation("DocumentCreated event published {@evt}", evt);
+            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}", 
+                urlHash, 
+                command.DocumentType);
         }
 
         private async Task HandleUpdatedDocumentAsync(
@@ -294,9 +294,9 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
-            await _dataContext.SaveChangesAsync();
-
-            _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
+            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}", 
+                urlHash, 
+                command.DocumentType);
         }
 
     }

@@ -160,7 +160,9 @@ namespace SportsData.Core.DependencyInjection
                 ? parsedMinWorkers
                 : 20;
 
+#if DEBUG
             Console.WriteLine($"Hangfire ConnStr: {connString}");
+#endif
 
             services.AddHangfire(x =>
             {

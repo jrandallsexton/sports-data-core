@@ -44,7 +44,9 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : IProce
                    ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("EventCompetitionProbabilityDocumentProcessor started. {@Command}", command);
+            _logger.LogInformation("EventCompetitionProbabilityDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {

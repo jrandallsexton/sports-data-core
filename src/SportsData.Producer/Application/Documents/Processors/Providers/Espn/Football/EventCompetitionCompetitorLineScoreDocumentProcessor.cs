@@ -50,7 +50,9 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                    ["CompetitorId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("EventCompetitionCompetitorLineScoreDocumentProcessor started. {@Command}", command);
+            _logger.LogInformation("EventCompetitionCompetitorLineScoreDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {

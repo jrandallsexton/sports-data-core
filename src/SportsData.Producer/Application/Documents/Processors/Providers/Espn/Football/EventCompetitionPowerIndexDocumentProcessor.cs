@@ -44,7 +44,9 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
                    ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor started. {@Command}", command);
+            _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {

@@ -52,7 +52,9 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
                    ["ContestId"] = command.ParentId ?? Guid.Empty.ToString()
                }))
         {
-            _logger.LogInformation("EventDocumentProcessor started. {@Command}", command);
+            _logger.LogInformation("EventDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {

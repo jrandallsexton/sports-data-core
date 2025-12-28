@@ -42,7 +42,9 @@ public class EventCompetitionBroadcastDocumentProcessor<TDataContext> : IProcess
                    ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("EventCompetitionBroadcastDocumentProcessor started. {@Command}", command);
+            _logger.LogInformation("EventCompetitionBroadcastDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {

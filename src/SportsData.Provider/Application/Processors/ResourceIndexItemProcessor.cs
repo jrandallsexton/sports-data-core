@@ -74,38 +74,55 @@ namespace SportsData.Provider.Application.Processors
 
             try
             {
-                var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
-                    .Where(x => x.Id == identity.CanonicalId ||
-                               (x.ResourceIndexId == command.ResourceIndexId && x.SourceUrlHash == identity.UrlHash))
-                    .FirstOrDefaultAsync();
-
-                if (resourceIndexItemEntity is not null)
+                // ✅ ONLY track ResourceIndexItems if they belong to an actual ResourceIndex job
+                // Ad-hoc document requests (from DocumentRequested events) should NOT create ResourceIndexItems
+                if (command.ResourceIndexId != Guid.Empty)
                 {
-                    resourceIndexItemEntity.LastAccessed = now;
-                    resourceIndexItemEntity.ModifiedUtc = now;
-                    resourceIndexItemEntity.ModifiedBy = Guid.Empty;
+                    var resourceIndexItemEntity = await _dataContext.ResourceIndexItems
+                        .Where(x => x.Id == identity.CanonicalId ||
+                                   (x.ResourceIndexId == command.ResourceIndexId && x.SourceUrlHash == identity.UrlHash))
+                        .FirstOrDefaultAsync();
+
+                    if (resourceIndexItemEntity is not null)
+                    {
+                        resourceIndexItemEntity.LastAccessed = now;
+                        resourceIndexItemEntity.ModifiedUtc = now;
+                        resourceIndexItemEntity.ModifiedBy = Guid.Empty;
+                    }
+                    else
+                    {
+                        resourceIndexItemEntity = new ResourceIndexItem
+                        {
+                            Id = identity.CanonicalId,
+                            CreatedUtc = now,
+                            CreatedBy = Guid.Empty,
+                            Uri = command.Uri,
+                            SourceUrlHash = identity.UrlHash,
+                            ResourceIndexId = command.ResourceIndexId,
+                            LastAccessed = now
+                        };
+                        await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
+                    }
                 }
                 else
                 {
-                    resourceIndexItemEntity = new ResourceIndexItem
-                    {
-                        Id = identity.CanonicalId,
-                        CreatedUtc = now,
-                        CreatedBy = Guid.Empty,
-                        Uri = command.Uri,
-                        SourceUrlHash = identity.UrlHash,
-                        ResourceIndexId = command.ResourceIndexId,
-                        LastAccessed = now
-                    };
-                    await _dataContext.ResourceIndexItems.AddAsync(resourceIndexItemEntity);
+                    _logger.LogDebug(
+                        "Skipping ResourceIndexItem creation for ad-hoc request. Uri={Uri}, CorrelationId={CorrelationId}",
+                        command.Uri,
+                        correlationId);
                 }
 
                 await HandleValid(command, identity.UrlHash, correlationId);
 
-                await _dataContext.SaveChangesAsync();
+                // Only save if we have changes (ResourceIndexItem tracking or outbox messages)
+                if (_dataContext.ChangeTracker.HasChanges())
+                {
+                    await _dataContext.SaveChangesAsync();
+                }
             }
             catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
             {
+                // This should only happen now if ResourceIndexId != Guid.Empty
                 _logger.LogWarning(ex, "Duplicate key detected for {Uri}. Retrying as update.", command.Uri);
 
                 // Clear change tracker to avoid pollution from failed insert and outbox messages
@@ -227,7 +244,9 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
-            _logger.LogInformation("DocumentCreated event published {@evt}", evt);
+            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}", 
+                urlHash, 
+                command.DocumentType);
         }
 
         private async Task HandleUpdatedDocumentAsync(
@@ -291,7 +310,10 @@ namespace SportsData.Provider.Application.Processors
                 command.IncludeLinkedDocumentTypes);
 
             await _publisher.Publish(evt);
-            _logger.LogInformation("DocumentUpdated event published {@evt}", evt);
+
+            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}", 
+                urlHash, 
+                command.DocumentType);
         }
 
     }

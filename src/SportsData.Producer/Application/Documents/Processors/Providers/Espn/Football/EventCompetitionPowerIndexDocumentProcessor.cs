@@ -38,17 +38,25 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing PowerIndexDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionPowerIndexDocumentProcessor failed.");
                 throw;
             }
         }
@@ -60,20 +68,20 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionPowerIndexDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionPowerIndexDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionPowerIndexDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionPowerIndexDto Ref is null or empty.");
             return;
         }
 
         // Resolve Competition
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("Invalid or missing Competition ID in ParentId");
+            _logger.LogError("Invalid or missing Competition ID in ParentId. ParentId={ParentId}", command.ParentId);
             throw new InvalidOperationException("Missing or invalid parent ID");
         }
 
@@ -83,8 +91,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
 
         if (competition is null)
         {
-            // TODO: Request sourcing of the competition document?
-            _logger.LogError("Competition not found for ID {CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
         }
 
@@ -101,7 +108,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
         {
             var teamHash = HashProvider.GenerateHashFromUri(dto.Team.Ref);
 
-            _logger.LogWarning("FranchiseSeason not found for hash {Hash}, publishing sourcing request.", teamHash);
+            _logger.LogWarning("FranchiseSeason not found, publishing sourcing request. Hash={Hash}", teamHash);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: teamHash,
@@ -120,6 +127,9 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
             throw new InvalidOperationException("FranchiseSeason not found.");
         }
 
+        var newIndexCount = 0;
+        var discoveredIndexNames = new List<string>();
+
         foreach (var stat in dto.Stats)
         {
             var powerIndexName = stat.Name.Trim().ToLowerInvariant();
@@ -129,6 +139,10 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
 
             if (powerIndex is null)
             {
+                _logger.LogInformation("Discovered new PowerIndex. Name={Name}, DisplayName={DisplayName}", 
+                    stat.Name,
+                    stat.DisplayName);
+
                 powerIndex = new PowerIndex()
                 {
                     Id = Guid.NewGuid(),
@@ -139,6 +153,8 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
                     CreatedBy = command.CorrelationId
                 };
                 await _dataContext.PowerIndexes.AddAsync(powerIndex);
+                newIndexCount++;
+                discoveredIndexNames.Add(stat.Name);
             }
 
             var index = stat.AsEntity(
@@ -153,5 +169,18 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
         }
 
         await _dataContext.SaveChangesAsync();
+
+        if (newIndexCount > 0)
+        {
+            _logger.LogInformation("Discovered {Count} new PowerIndexes. CompetitionId={CompId}, NewIndexes={Indexes}", 
+                newIndexCount,
+                competitionId,
+                string.Join(", ", discoveredIndexNames));
+        }
+
+        _logger.LogInformation("Persisted CompetitionPowerIndexes. CompetitionId={CompId}, FranchiseSeasonId={TeamId}, IndexCount={Count}", 
+            competitionId,
+            franchiseSeasonId.Value,
+            dto.Stats.Count());
     }
 }

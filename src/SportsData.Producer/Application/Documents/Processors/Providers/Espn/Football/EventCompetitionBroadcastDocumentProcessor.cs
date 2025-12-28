@@ -36,17 +36,25 @@ public class EventCompetitionBroadcastDocumentProcessor<TDataContext> : IProcess
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventCompetitionBroadcastDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionBroadcastDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionBroadcastDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionBroadcastDocumentProcessor failed.");
                 throw;
             }
         }
@@ -58,19 +66,19 @@ public class EventCompetitionBroadcastDocumentProcessor<TDataContext> : IProcess
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionBroadcastDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionBroadcastDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(command.ParentId))
         {
-            _logger.LogError("ParentId not provided. Cannot process broadcast for null CompetitionId");
+            _logger.LogError("ParentId not provided. Cannot process broadcast for null CompetitionId.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("Invalid ParentId format for CompetitionId. Cannot parse to Guid.");
+            _logger.LogError("Invalid ParentId format for CompetitionId. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -80,7 +88,7 @@ public class EventCompetitionBroadcastDocumentProcessor<TDataContext> : IProcess
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found.");
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             throw new InvalidOperationException($"Competition with Id {competitionId} not found.");
         }
 
@@ -99,9 +107,21 @@ public class EventCompetitionBroadcastDocumentProcessor<TDataContext> : IProcess
 
         if (newBroadcasts.Count > 0)
         {
+            _logger.LogInformation("Adding {Count} new broadcasts. CompetitionId={CompId}", 
+                newBroadcasts.Count, 
+                competitionId);
+
             _dataContext.Broadcasts.AddRange(newBroadcasts);
+        }
+        else
+        {
+            _logger.LogInformation("No new broadcasts to add, skipping. CompetitionId={CompId}", competitionId);
         }
 
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Persisted broadcasts. CompetitionId={CompId}, TotalBroadcasts={Total}", 
+            competitionId,
+            competition.Broadcasts.Count + newBroadcasts.Count);
     }
 }

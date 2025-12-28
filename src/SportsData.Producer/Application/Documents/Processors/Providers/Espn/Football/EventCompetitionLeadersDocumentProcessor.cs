@@ -48,25 +48,33 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionLeadersDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionLeadersDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionLeadersDocumentProcessor failed.");
                 throw;
             }
         }
@@ -77,13 +85,13 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
         var dto = command.Document.FromJson<EspnEventCompetitionLeadersDto>();
         if (dto is null || string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("Invalid or null DTO in {@Command}", command);
+            _logger.LogError("Invalid or null EspnEventCompetitionLeadersDto.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("Invalid or missing ParentId in {@Command}", command);
+            _logger.LogError("Invalid or missing ParentId. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -96,15 +104,23 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found. {@Command}", command);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             return;
         }
 
         // delete existing leaders & stats
+        var existingStatsCount = competition.Leaders.Sum(l => l.Stats.Count);
+        var existingLeadersCount = competition.Leaders.Count;
+
         _dataContext.CompetitionLeaderStats.RemoveRange(
             competition.Leaders.SelectMany(l => l.Stats));
         _dataContext.CompetitionLeaders.RemoveRange(competition.Leaders);
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Removed existing leaders. CompetitionId={CompId}, Leaders={LeaderCount}, Stats={StatCount}", 
+            competitionId,
+            existingLeadersCount,
+            existingStatsCount);
 
         var franchiseSeasonCache = new Dictionary<string, Guid>();
         var athleteSeasonCache = new Dictionary<string, Guid>();
@@ -119,7 +135,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
 
             if (leaderCategory == null)
             {
-                _logger.LogError("Leader category '{Category}' not found, skipping", category.Name);
+                _logger.LogWarning("Leader category not found, skipping. Category={Category}", category.Name);
                 continue;
             }
 
@@ -133,7 +149,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
             {
                 if (leaderDto.Statistics?.Ref is null)
                 {
-                    _logger.LogInformation("Leader statistics ref is null, skipping");
+                    _logger.LogDebug("Leader statistics ref is null, skipping.");
                     continue;
                 }
 
@@ -168,8 +184,14 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
         }
 
         await _dataContext.CompetitionLeaders.AddRangeAsync(leaders);
-
         await _dataContext.SaveChangesAsync();
+
+        var totalStats = leaders.Sum(l => l.Stats.Count);
+        _logger.LogInformation("Persisted CompetitionLeaders. CompetitionId={CompId}, Categories={CategoryCount}, Leaders={LeaderCount}, Stats={StatCount}", 
+            competitionId,
+            dto.Categories.Count(),
+            leaders.Count,
+            totalStats);
     }
 
     private async Task<Guid> ResolveAthleteSeasonIdAsync(
@@ -208,9 +230,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
                 var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
                 var athleteIdentity = _externalIdentityGenerator.Generate(athleteRef);
 
-                _logger.LogWarning(
-                    "AthleteSeason not found. Raising DocumentRequested (override mode). {Url}",
-                    athleteSeasonIdentity.CleanUrl);
+                _logger.LogWarning("AthleteSeason not found, raising DocumentRequested. Url={Url}", athleteSeasonIdentity.CleanUrl);
 
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: athleteSeasonIdentity.UrlHash,
@@ -259,7 +279,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
 
             var franchiseSeasonIdentity = _externalIdentityGenerator.Generate(teamDto.Ref);
                 
-            _logger.LogWarning("FranchiseSeason not found for hash {Hash}, requesting source.", franchiseSeasonIdentity.UrlHash);
+            _logger.LogWarning("FranchiseSeason not found, requesting source. Hash={Hash}", franchiseSeasonIdentity.UrlHash);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: franchiseSeasonIdentity.UrlHash,

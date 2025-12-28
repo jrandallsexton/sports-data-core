@@ -181,7 +181,11 @@ namespace SportsData.Core.DependencyInjection
                     });
                     cfg.ConfigureEndpoints(context);
                 });
-                
+
+#if DEBUG
+                Console.WriteLine($"using: {config[CommonConfigKeys.AzureServiceBus]}");
+#endif
+
             });
 
             // --- NEW: wire the abstraction + delivery policy + outbox ambient state ---

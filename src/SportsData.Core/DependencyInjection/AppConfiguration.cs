@@ -45,8 +45,9 @@ namespace SportsData.Core.DependencyInjection
                     configuration.MinimumLevel.Override(entry.Key, level);
                 }
 
-                // Allow appsettings to override/add sinks (e.g. File sink)
-                configuration.ReadFrom.Configuration(context.Configuration);
+                // NOTE: ReadFrom.Configuration is commented out to prevent duplicate sinks
+                // All sinks should be configured explicitly below
+                // configuration.ReadFrom.Configuration(context.Configuration);
 
                 // Environment-aware file logging path
                 var logPath = GetLogFilePath(context.HostingEnvironment);

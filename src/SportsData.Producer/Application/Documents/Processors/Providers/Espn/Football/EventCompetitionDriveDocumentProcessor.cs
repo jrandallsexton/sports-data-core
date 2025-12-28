@@ -38,18 +38,25 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("EventCompetitionDriveDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionDriveDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionDriveDocumentProcessor failed.");
                 throw;
             }
         }
@@ -61,13 +68,13 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionDriveDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionDriveDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionDriveDto Ref is null. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionDriveDto Ref is null.");
             return;
         }
 
@@ -75,7 +82,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
 
         if (competitionId is null)
         {
-            _logger.LogError("CompetitionId could not be determined");
+            _logger.LogError("CompetitionId could not be determined.");
             return;
         }
 
@@ -104,18 +111,20 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
 
         if (entity is null)
         {
+            _logger.LogInformation("Processing new CompetitionDrive entity. Ref={Ref}", externalDto.Ref);
             await ProcessNewEntity(
                 command,
                 externalDto,
-                competitionId!.Value,
+                competitionId.Value,
                 startFranchiseSeasonId,
                 endFranchiseSeasonId);
         }
         else
         {
+            _logger.LogInformation("Processing CompetitionDrive update. DriveId={DriveId}, Ref={Ref}", entity.Id, externalDto.Ref);
             await ProcessUpdate(
                 command,
-                competitionId!.Value,
+                competitionId.Value,
                 externalDto,
                 entity);
         }
@@ -125,7 +134,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
     {
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("CompetitionId could not be parsed");
+            _logger.LogError("CompetitionId could not be parsed. ParentId={ParentId}", command.ParentId);
             return null;
         }
 
@@ -135,7 +144,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
 
         if (!competitionExists)
         {
-            _logger.LogError("Competition not found for {CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             return null;
         }
 
@@ -149,6 +158,11 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
+        _logger.LogInformation("Creating new CompetitionDrive. CompetitionId={CompId}, Result={Result}, Sequence={Sequence}", 
+            competitionId,
+            externalDto.Result,
+            externalDto.SequenceNumber);
+
         var entity = externalDto.AsEntity(
             command.CorrelationId,
             _externalRefIdentityGenerator,
@@ -160,6 +174,10 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
 
         await _dataContext.Drives.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Persisted CompetitionDrive. CompetitionId={CompId}, DriveId={DriveId}", 
+            competitionId,
+            entity.Id);
 
         await ProcessPlays(
             command,
@@ -176,6 +194,9 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
     {
         if (externalDto.Plays?.Items != null)
         {
+            var linkedCount = 0;
+            var requestedCount = 0;
+
             foreach (var play in externalDto.Plays.Items)
             {
                 var playIdentity = _externalRefIdentityGenerator.Generate(play.Ref);
@@ -187,10 +208,10 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
                 if (playEntity != null)
                 {
                     playEntity.DriveId = drive.Id;
+                    linkedCount++;
                 }
                 else
                 {
-                    // do we want to request sourcing?
                     await _publishEndpoint.Publish(new DocumentRequested(
                         Id: playIdentity.UrlHash,
                         ParentId: competitionId.ToString(),
@@ -206,10 +227,17 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
                             { "CompetitionDriveId", drive.Id.ToString()}
                         }
                     ));
+                    requestedCount++;
                 }
 
                 await _dataContext.SaveChangesAsync();
             }
+
+            _logger.LogInformation("Processed plays for drive. DriveId={DriveId}, TotalPlays={Total}, Linked={Linked}, Requested={Requested}", 
+                drive.Id,
+                externalDto.Plays.Items.Count,
+                linkedCount,
+                requestedCount);
         }
     }
 
@@ -219,6 +247,8 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : IProcessDocu
         EspnEventCompetitionDriveDto externalDto,
         CompetitionDrive entity)
     {
+        _logger.LogInformation("Updating CompetitionDrive. DriveId={DriveId}", entity.Id);
+
         await ProcessPlays(
             command,
             competitionId,

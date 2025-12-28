@@ -20,14 +20,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
     where TDataContext : FootballDataContext
 {
-    private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
+    private readonly ILogger<EventCompetitionDocumentProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly IProvideProviders _provider;
 
     public EventCompetitionDocumentProcessor(
-        ILogger<EventDocumentProcessor<TDataContext>> logger,
+        ILogger<EventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -45,18 +45,25 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("EventCompetitionDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionDocumentProcessor failed.");
                 throw;
             }
         }
@@ -68,19 +75,19 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionDto Ref is null. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionDto Ref is null.");
             return;
         }
 
         if (string.IsNullOrEmpty(command.ParentId))
         {
-            _logger.LogError("ParentId not provided. Cannot process competition for null ContestId");
+            _logger.LogError("ParentId not provided. Cannot process competition for null ContestId.");
             return;
         }
 
@@ -92,7 +99,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (!command.Season.HasValue)
         {
-            _logger.LogError("Command must have a SeasonYear defined");
+            _logger.LogError("Command missing SeasonYear.");
             return;
         }
 
@@ -101,7 +108,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (contest is null)
         {
-            _logger.LogError("Contest not found.");
+            _logger.LogError("Contest not found. ContestId={ContestId}", contestId);
             throw new InvalidOperationException($"Contest with ID {contestId} not found.");
         }
 
@@ -115,18 +122,13 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (entity is null)
         {
-            await ProcessNewEntity(
-                command,
-                externalDto,
-                command.Season.Value,
-                contestId);
+            _logger.LogInformation("Processing new Competition entity. Ref={Ref}", externalDto.Ref);
+            await ProcessNewEntity(command, externalDto, command.Season.Value, contestId);
         }
         else
         {
-            await ProcessUpdate(
-                command,
-                externalDto,
-                entity);
+            _logger.LogInformation("Processing Competition update. CompetitionId={CompetitionId}, Ref={Ref}", entity.Id, externalDto.Ref);
+            await ProcessUpdate(command, externalDto, entity);
         }
     }
 
@@ -136,6 +138,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         int seasonYear,
         Guid contestId)
     {
+        _logger.LogInformation("Creating new Competition. ContestId={ContestId}", contestId);
+
         var competition = externalDto.AsEntity(
             _externalRefIdentityGenerator,
             contestId,
@@ -148,6 +152,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         await _dataContext.Competitions.AddAsync(competition);
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Competition created. CompetitionId={CompetitionId}", competition.Id);
 
         // Process all child documents - same logic whether new or update
         await ProcessChildDocuments(command, externalDto, competition);
@@ -162,7 +168,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (venue?.Ref is null)
         {
-            _logger.LogWarning("No venue information provided in the competition document.");
+            _logger.LogDebug("No venue information provided in the competition document.");
             return;
         }
 
@@ -181,7 +187,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         else
         {
             var venueHash = HashProvider.GenerateHashFromUri(venue.Ref);
-            _logger.LogWarning("Venue not found for hash {VenueHash}, publishing sourcing request.", venueHash);
+            _logger.LogWarning("Venue not found, publishing sourcing request. VenueHash={VenueHash}", venueHash);
+            
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: venueHash,
                 ParentId: null,
@@ -208,6 +215,11 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
     {
         if (linkDto?.Ref is null)
             return;
+
+        _logger.LogInformation("Requesting child document. CompetitionId={CompId}, DocumentType={DocType}, Ref={Ref}", 
+            competition.Id,
+            documentType,
+            linkDto.Ref);
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: HashProvider.GenerateHashFromUri(linkDto.Ref),
@@ -251,7 +263,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
                 .ToList();
 
             _logger.LogInformation(
-                "Updating Competition {CompetitionId}. Changed properties: {Changes}",
+                "Updating Competition. CompetitionId={CompetitionId}, ChangedProperties={Changes}",
                 competition.Id,
                 string.Join(", ", changedProperties));
 
@@ -259,8 +271,9 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
             if (competition.Date != originalDate)
             {
                 _logger.LogInformation(
-                    "Competition date changed from {OldDate} to {NewDate}, publishing ContestStartTimeUpdated",
-                    originalDate, competition.Date);
+                    "Competition date changed. OldDate={OldDate}, NewDate={NewDate}",
+                    originalDate, 
+                    competition.Date);
 
                 await _publishEndpoint.Publish(
                     new ContestStartTimeUpdated(
@@ -277,15 +290,13 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Updated Competition {CompetitionId} with {PropertyCount} property changes",
+                "Competition updated. CompetitionId={CompetitionId}, PropertyCount={PropertyCount}",
                 competition.Id,
                 changedProperties.Count);
         }
         else
         {
-            _logger.LogInformation(
-                "No property changes detected for Competition {CompetitionId}",
-                competition.Id);
+            _logger.LogInformation("No property changes detected. CompetitionId={CompetitionId}", competition.Id);
         }
 
         // Process all child documents - same logic whether new or update
@@ -302,6 +313,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventCompetitionDto dto,
         Competition competition)
     {
+        _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}", competition.Id);
+
         // All the simple $ref child documents - one line each using the generic helper
         await ProcessChildDocumentRef(command, dto.Odds, competition, DocumentType.EventCompetitionOdds);
         await ProcessChildDocumentRef(command, dto.Status, competition, DocumentType.EventCompetitionStatus);
@@ -318,6 +331,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         await ProcessCompetitors(command, dto, competition);
 
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Completed processing child documents for Competition. CompetitionId={CompId}", competition.Id);
     }
 
     private async Task ProcessCompetitors(
@@ -325,13 +340,21 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         EspnEventCompetitionDto externalDto,
         Competition competition)
     {
+        _logger.LogInformation("Requesting {Count} competitors. CompetitionId={CompId}", 
+            externalDto.Competitors.Count, 
+            competition.Id);
+
         foreach (var competitorDto in externalDto.Competitors)
         {
             if (competitorDto?.Ref is null)
             {
-                _logger.LogError("Competitor reference is null, skipping competitor processing.");
+                _logger.LogWarning("Competitor reference is null, skipping.");
                 continue;
             }
+
+            _logger.LogDebug("Requesting competitor. CompetitionId={CompId}, CompetitorRef={Ref}", 
+                competition.Id,
+                competitorDto.Ref);
 
             await _publishEndpoint.Publish(new DocumentRequested(
                 Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
@@ -392,58 +415,5 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
                 SourceUrlHash = HashProvider.GenerateHashFromUri(link.Href)
             });
         }
-    }
-
-    private async Task<bool> ProcessSituation(
-    ProcessDocumentCommand command,
-    EspnEventCompetitionDto externalDto,
-    Competition competition)
-    {
-        if (externalDto.Situation?.Ref is not null)
-        {
-            var situationIdentity = _externalRefIdentityGenerator.Generate(externalDto.Situation.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: situationIdentity.UrlHash,
-                ParentId: competition.Id.ToString(),
-                Uri: new Uri(situationIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionSituation,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private async Task<bool> ProcessStatus(
-        ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
-        Competition competition)
-    {
-        if (externalDto.Status?.Ref is null)
-        {
-            _logger.LogWarning("No status information provided in the competition document.");
-            return false;
-        }
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(externalDto.Status.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: externalDto.Status.Ref,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.EventCompetitionStatus,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-
-        return true;
     }
 }

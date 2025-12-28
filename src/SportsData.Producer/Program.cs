@@ -6,7 +6,6 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents;
-using SportsData.Producer.Application.Events;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -96,7 +95,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        services.AddInstrumentation(builder.Environment.ApplicationName, config);
+        //services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
         switch (mode)
         {
@@ -154,9 +153,7 @@ public class Program
         });
 
         app.UseAuthorization();
-
         app.UseCommonFeatures();
-
         app.MapControllers();
         
         // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled

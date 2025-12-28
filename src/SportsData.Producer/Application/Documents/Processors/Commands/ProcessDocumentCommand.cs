@@ -1,4 +1,5 @@
 ﻿using SportsData.Core.Common;
+using System.Text.Json;
 
 namespace SportsData.Producer.Application.Documents.Processors.Commands;
 
@@ -46,4 +47,46 @@ public class ProcessDocumentCommand(
     public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; } = includeLinkedDocumentTypes;
 
     public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Extracts the ESPN $ref URI from the JSON document for logging purposes.
+    /// Returns null if $ref cannot be found or parsed.
+    /// </summary>
+    /// <returns>The $ref URI as a string, or null if not found</returns>
+    public string? GetDocumentRef()
+    {
+        try
+        {
+            using var jsonDoc = JsonDocument.Parse(Document);
+            if (jsonDoc.RootElement.TryGetProperty("$ref", out var refElement))
+            {
+                return refElement.GetString();
+            }
+        }
+        catch
+        {
+            // Silently ignore parsing errors - this is best-effort logging
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a safe subset of command properties for logging (excludes large Document JSON).
+    /// </summary>
+    /// <returns>Anonymous object with safe logging properties</returns>
+    public object ToSafeLogObject()
+    {
+        return new
+        {
+            DocumentType,
+            Sport,
+            Season,
+            ParentId,
+            UrlHash,
+            AttemptCount,
+            Ref = GetDocumentRef(), // ✅ ESPN $ref URI for Postman debugging
+            SourceUri = SourceUri.ToString()
+        };
+    }
 }

@@ -39,7 +39,7 @@ public class OutboxTestDocumentProcessor<TDataContext> : IProcessDocuments
         }))
         {
             _logger.LogInformation(
-                "TEST PROCESSOR (BaseDataContext): Processing with DbContext type: {DbContextType}, Generic parameter: {GenericType}",
+                "OUTBOX_TEST PROCESSOR (BaseDataContext): Processing with DbContext type: {DbContextType}, Generic parameter: {GenericType}",
                 _dataContext.GetType().Name,
                 typeof(TDataContext).Name);
 
@@ -81,7 +81,7 @@ public class OutboxTestDocumentProcessor<TDataContext> : IProcessDocuments
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
-                "TEST PROCESSOR (BaseDataContext): Completed. Events published via {DbContextType}",
+                "OUTBOX_TEST PROCESSOR (BaseDataContext): Completed. Events published via {DbContextType}",
                 _dataContext.GetType().Name);
         }
     }

@@ -40,18 +40,25 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("EventCompetitionPredictionDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
 
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionPredictionDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionPredictionDocumentProcessor failed.");
                 throw;
             }
         }
@@ -63,19 +70,19 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionPredictorDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionPredictorDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionPredictorDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionPredictorDto Ref is null or empty.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("ParentId is missing or invalid for CompetitionPrediction: {parentId}", command.ParentId);
+            _logger.LogError("ParentId is missing or invalid for CompetitionPrediction. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -97,7 +104,9 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         if (homeFranchiseSeasonId is null || awayFranchiseSeasonId is null)
         {
-            _logger.LogWarning("FranchiseSeason resolution failed for predictor. Home: {home}, Away: {away}", homeFranchiseSeasonId, awayFranchiseSeasonId);
+            _logger.LogWarning("FranchiseSeason resolution failed for predictor. Home={Home}, Away={Away}", 
+                homeFranchiseSeasonId, 
+                awayFranchiseSeasonId);
             return;
         }
 
@@ -128,7 +137,11 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         if (newMetrics.Any())
         {
-            _logger.LogInformation("Discovered {count} new prediction metrics.", newMetrics.Count);
+            _logger.LogInformation("Discovered {Count} new prediction metrics. CompetitionId={CompId}, NewMetrics={Metrics}", 
+                newMetrics.Count,
+                competitionId,
+                string.Join(", ", newMetrics.Select(m => m.Name)));
+            
             await _dataContext.PredictionMetrics.AddRangeAsync(newMetrics);
             await _dataContext.SaveChangesAsync(); // save so they get their PKs
         }
@@ -158,6 +171,11 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
                 .Where(v => existingPredictionIds.Contains(v.CompetitionPredictionId))
                 .ToListAsync();
 
+            _logger.LogInformation("Removing existing predictions (hard replace). CompetitionId={CompId}, Predictions={PredictionCount}, Values={ValueCount}", 
+                competitionId,
+                existingPredictionIds.Count,
+                toRemove.Count);
+
             _dataContext.CompetitionPredictionValues.RemoveRange(toRemove);
 
             var predictionsToRemove = await _dataContext.CompetitionPredictions
@@ -179,7 +197,9 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : IProces
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CompetitionPredictions and {count} values for competition {id}", predictionValues.Count, competitionId);
+        _logger.LogInformation("Persisted CompetitionPredictions. CompetitionId={CompId}, Predictions={PredictionCount}, Values={ValueCount}", 
+            competitionId,
+            predictions.Count,
+            predictionValues.Count);
     }
-
 }

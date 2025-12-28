@@ -38,17 +38,25 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionPlayDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionPlayDocumentProcessor completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionPlayDocumentProcessor failed.");
                 throw;
             }
         }
@@ -60,31 +68,31 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
             
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionPlayDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionPlayDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionPlayDto Ref is null. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionPlayDto Ref is null.");
             return;
         }
 
         if (!command.Season.HasValue)
         {
-            _logger.LogError("Command must have a SeasonYear defined");
+            _logger.LogError("Command missing SeasonYear.");
             return;
         }
 
         if (string.IsNullOrEmpty(command.ParentId))
         {
-            _logger.LogError("Command must have a ParentId defined for the CompetitionId");
+            _logger.LogError("Command missing ParentId for CompetitionId.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("CompetitionId could not be parsed");
+            _logger.LogError("CompetitionId could not be parsed. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -105,7 +113,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found for {CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
             throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
         }
 
@@ -125,12 +133,6 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
             externalIdsNav: "ExternalIds",
             key: fs => fs.Id);
 
-        // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        //var entity = await _dataContext.CompetitionPlays
-        //    .Include(x => x.ExternalIds)
-        //    .FirstOrDefaultAsync(x =>
-        //        x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
-        //                               z.Provider == command.SourceDataProvider));
         var playIdentity = _externalRefIdentityGenerator.Generate(externalDto.Ref);
 
         var entity = await _dataContext.CompetitionPlays
@@ -139,6 +141,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
 
         if (entity is null)
         {
+            _logger.LogInformation("Processing new CompetitionPlay entity. Ref={Ref}", externalDto.Ref);
             await ProcessNewEntity(
                 command,
                 externalDto,
@@ -149,6 +152,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
         }
         else
         {
+            _logger.LogInformation("Processing CompetitionPlay update. PlayId={PlayId}, Ref={Ref}", entity.Id, externalDto.Ref);
             await ProcessUpdate(
                 command,
                 externalDto,
@@ -167,6 +171,11 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
+        _logger.LogInformation("Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}", 
+            competition.Id,
+            competitionDriveId,
+            externalDto.Type?.Text);
+
         var play = externalDto.AsEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
@@ -177,9 +186,12 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
 
         // if the competition is underway,
         // broadcast a CompetitionPlayCompleted event
-        // CompetitionPlayCompleted
         if (competition.Status is not null && !competition.Status.IsCompleted)
         {
+            _logger.LogInformation("Competition in progress, publishing CompetitionPlayCompleted event. CompetitionId={CompId}, PlayId={PlayId}",
+                competition.Id,
+                play.Id);
+
             await _publishEndpoint.Publish(new CompetitionPlayCompleted(
                 CompetitionPlayId: play.Id,
                 CompetitionId: competition.Id,
@@ -191,6 +203,11 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
 
         await _dataContext.CompetitionPlays.AddAsync(play);
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Persisted CompetitionPlay. CompetitionId={CompId}, PlayId={PlayId}, Sequence={Sequence}", 
+            competition.Id,
+            play.Id,
+            play.SequenceNumber);
     }
 
     private async Task ProcessUpdate(
@@ -201,9 +218,16 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : IProcessDocum
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
+        _logger.LogInformation("Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}", 
+            entity.Id,
+            competitionDriveId);
+
         entity.StartFranchiseSeasonId = startFranchiseSeasonId;
         entity.EndFranchiseSeasonId = endFranchiseSeasonId;
         entity.DriveId = competitionDriveId;
+        
         await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Persisted CompetitionPlay update. PlayId={PlayId}", entity.Id);
     }
 }

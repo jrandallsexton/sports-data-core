@@ -116,11 +116,12 @@ select * from public."Contest" where "Id" = '9c1dd681-8a67-91bb-1492-95742699410
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = '860ab8de-e4bd-b936-b124-1e7d1e520af1'
+select * from public."Competition" where "ContestId" = '8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb'
+select * from public."CompetitionExternalId" where "CompetitionId" = '5e83718e-e1e4-2c73-804f-0c4a1f19f850'
 select * from public."CompetitionCompetitor" where "CompetitionId" = '8cc5e162-fefb-2785-4ae7-e858edcb2a2d'
 select * from public."CompetitionNote" where "CompetitionId" = '7690d4e5-b401-4c6d-749d-0233f902994a'
 select * from public."CompetitionStatus" where "CompetitionId" = 'cd68bd61-707f-90ad-26ae-f5f2ecd7d0cc'
-select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '6be990ce-8ece-7d23-ed9f-f04687a062d9'
+select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '9d78cf9e-c5a7-d063-d41f-486aaec62ed0'
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
 select * from public."CompetitionPlay" where "CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by "SequenceNumber"::int
 
@@ -148,9 +149,9 @@ select count(*) from public."CompetitionDrive"
 
 select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
 select * from public."Contest" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f'
-select * from public."Competition" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+select * from public."Competition" where "ContestId" = '2508b4ac-a021-c3fe-f157-ca0694943621'
 select * from public."CompetitionStatus" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
+select * from public."CompetitionCompetitor" where "CompetitionId" = '94298b10-80c6-b1e3-a899-6534715ba956'
 select * from public."CompetitionOdds" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 
 select * from public."CompetitionProbability" where "CompetitionId" = 'af18ebe5-033d-a056-84c5-8358f412685f' order by "SequenceNumber"::int

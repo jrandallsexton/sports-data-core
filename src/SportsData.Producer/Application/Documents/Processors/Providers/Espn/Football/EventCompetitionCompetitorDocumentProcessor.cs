@@ -44,25 +44,33 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = command.CorrelationId
+                   ["CorrelationId"] = command.CorrelationId,
+                   ["DocumentType"] = command.DocumentType,
+                   ["Season"] = command.Season ?? 0,
+                   ["CompetitionId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("EventCompetitionCompetitorDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+                command.GetDocumentRef(),
+                command.UrlHash);
+
             try
             {
                 await ProcessInternal(command);
+                
+                _logger.LogInformation("EventCompetitionCompetitorDocumentProcessor completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
                 await _publishEndpoint.Publish(docCreated);
-
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "EventCompetitionCompetitorDocumentProcessor failed.");
                 throw;
             }
         }
@@ -74,31 +82,31 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnEventCompetitionCompetitorDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize EspnEventCompetitionCompetitorDto.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionCompetitorDto Ref is null. {@Command}", command);
+            _logger.LogError("EspnEventCompetitionCompetitorDto Ref is null.");
             return;
         }
 
         if (!command.Season.HasValue)
         {
-            _logger.LogError("Command must have a SeasonYear defined");
+            _logger.LogError("Command missing SeasonYear.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(command.ParentId))
         {
-            _logger.LogError("Command must have a ParentId defined for the CompetitionId");
+            _logger.LogError("Command missing ParentId for CompetitionId.");
             return;
         }
 
         if (!Guid.TryParse(command.ParentId, out var competitionId))
         {
-            _logger.LogError("CompetitionId could not be parsed");
+            _logger.LogError("CompetitionId could not be parsed. ParentId={ParentId}", command.ParentId);
             return;
         }
 
@@ -126,12 +134,8 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             }
             else
             {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "Competition not found. Raising DocumentRequested (override mode). CompetitionId={CompetitionId}",
-                    competitionId);
+                _logger.LogWarning("Competition not found, raising DocumentRequested. CompetitionId={CompetitionId}", competitionId);
 
-                // raise an event to source the competition competitor
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: competitionIdentity.UrlHash,
                     ParentId: contestIdentity.CanonicalId.ToString(),
@@ -143,6 +147,8 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
                     CorrelationId: command.CorrelationId,
                     CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
                 ));
+
+
 
                 throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");
             }
@@ -158,7 +164,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 
         if (franchiseSeasonId is null)
         {
-            _logger.LogError("FranchiseSeason could not be resolved from DTO reference: {@DtoRef}", dto.Team?.Ref);
+            _logger.LogError("FranchiseSeason could not be resolved. DtoRef={DtoRef}", dto.Team?.Ref);
             throw new InvalidOperationException("FranchiseSeason could not be resolved from DTO reference.");
         }
 
@@ -170,12 +176,27 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 
         if (entity is null)
         {
+            _logger.LogInformation("Processing new CompetitionCompetitor entity. Ref={Ref}", dto.Ref);
             await ProcessNewEntity(command, dto, competitionId, franchiseSeasonId.Value);
         }
         else
         {
+            _logger.LogInformation("Processing CompetitionCompetitor update. CompetitorId={CompetitorId}, Ref={Ref}", entity.Id, dto.Ref);
             await ProcessUpdate(command, dto, entity);
         }
+
+        _logger.LogInformation(
+            "?? SAVING_CHANGES: About to call SaveChangesAsync to persist CompetitionCompetitor and flush outbox. " +
+            "CompetitionId={CompetitionId}, HasPendingChanges={HasChanges}",
+            competitionId,
+            _dataContext.ChangeTracker.HasChanges());
+
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "? SAVE_COMPLETED: SaveChangesAsync completed. All outbox messages should now be flushed to service bus. " +
+            "CompetitionId={CompetitionId}",
+            competitionId);
     }
 
     private async Task ProcessNewEntity(
@@ -184,6 +205,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         Guid competitionId,
         Guid franchiseSeasonId)
     {
+        _logger.LogInformation(
+            "?? CREATE_COMPETITOR: Creating new CompetitionCompetitor. " +
+            "CompetitionId={CompetitionId}, FranchiseSeasonId={FranchiseSeasonId}, HomeAway={HomeAway}",
+            competitionId,
+            franchiseSeasonId,
+            dto.HomeAway);
+
         var canonicalEntity = dto.AsEntity(
             competitionId,
             franchiseSeasonId,
@@ -191,20 +219,28 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             command.CorrelationId);
 
         await _dataContext.CompetitionCompetitors.AddAsync(canonicalEntity);
-        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "? COMPETITOR_CREATED: CompetitionCompetitor entity created. " +
+            "CompetitorId={CompetitorId}, CompetitionId={CompetitionId}",
+            canonicalEntity.Id,
+            competitionId);
+
+        _logger.LogInformation(
+            "?? PROCESS_DOWNSTREAM: Processing downstream documents (Scores and LineScores). CompetitorId={CompetitorId}",
+            canonicalEntity.Id);
 
         await ProcessScores(canonicalEntity.Id, dto, command);
-
         await ProcessLineScores(canonicalEntity.Id, dto, command);
 
+        _logger.LogInformation(
+            "? DOWNSTREAM_COMPLETED: Downstream processing completed. CompetitorId={CompetitorId}",
+            canonicalEntity.Id);
+
         // TODO: ProcessRoster
-
         // TODO: ProcessStatistics
-
         // TODO: ProcessLeaders
-
         // TODO: ProcessRecord
-
         // TODO: ProcessRanks
     }
 
@@ -213,9 +249,22 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         EspnEventCompetitionCompetitorDto dto,
         CompetitionCompetitor entity)
     {
-        await ProcessScores(entity.Id, dto, command);
+        _logger.LogInformation(
+            "?? UPDATE_COMPETITOR: Updating existing CompetitionCompetitor. " +
+            "CompetitorId={CompetitorId}, HomeAway={HomeAway}",
+            entity.Id,
+            dto.HomeAway);
 
+        _logger.LogInformation(
+            "?? PROCESS_DOWNSTREAM: Processing downstream documents (Scores and LineScores). CompetitorId={CompetitorId}",
+            entity.Id);
+
+        await ProcessScores(entity.Id, dto, command);
         await ProcessLineScores(entity.Id, dto, command);
+
+        _logger.LogInformation(
+            "? DOWNSTREAM_COMPLETED: Downstream processing completed. CompetitorId={CompetitorId}",
+            entity.Id);
     }
 
     private async Task ProcessScores(
@@ -223,10 +272,27 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         EspnEventCompetitionCompetitorDto externalProviderDto,
         ProcessDocumentCommand command)
     {
+        _logger.LogInformation(
+            "?? PROCESS_SCORES: Checking for competitor score. CompetitorId={CompetitorId}, HasScoreRef={HasScoreRef}",
+            competitionCompetitorId,
+            externalProviderDto.Score?.Ref != null);
+
         if (externalProviderDto.Score?.Ref is null)
+        {
+            _logger.LogDebug(
+                "?? SKIP_SCORES: No score reference found in DTO. CompetitorId={CompetitorId}",
+                competitionCompetitorId);
             return;
+        }
 
         var competitorScoreIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Score.Ref);
+
+        _logger.LogInformation(
+            "?? PUBLISH_SCORE_REQUEST: Publishing DocumentRequested for competitor score. " +
+            "CompetitorId={CompetitorId}, ScoreUrl={ScoreUrl}, UrlHash={UrlHash}",
+            competitionCompetitorId,
+            competitorScoreIdentity.CleanUrl,
+            competitorScoreIdentity.UrlHash);
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: competitorScoreIdentity.UrlHash,
@@ -239,6 +305,12 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             CorrelationId: command.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
         ));
+
+        _logger.LogInformation(
+            "? SCORE_REQUEST_PUBLISHED: DocumentRequested published for competitor score. " +
+            "CompetitorId={CompetitorId}, DocumentType={DocumentType}",
+            competitionCompetitorId,
+            DocumentType.EventCompetitionCompetitorScore);
     }
 
     private async Task ProcessLineScores(
@@ -246,10 +318,27 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
         EspnEventCompetitionCompetitorDto externalProviderDto,
         ProcessDocumentCommand command)
     {
+        _logger.LogInformation(
+            "?? PROCESS_LINESCORES: Checking for competitor line scores. CompetitorId={CompetitorId}, HasLineScoresRef={HasLineScoresRef}",
+            competitionCompetitorId,
+            externalProviderDto.Linescores?.Ref != null);
+
         if (externalProviderDto.Linescores?.Ref is null)
+        {
+            _logger.LogDebug(
+                "?? SKIP_LINESCORES: No line scores reference found in DTO. CompetitorId={CompetitorId}",
+                competitionCompetitorId);
             return;
+        }
 
         var lineScoresIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Linescores.Ref);
+
+        _logger.LogInformation(
+            "?? PUBLISH_LINESCORES_REQUEST: Publishing DocumentRequested for competitor line scores. " +
+            "CompetitorId={CompetitorId}, LineScoresUrl={LineScoresUrl}, UrlHash={UrlHash}",
+            competitionCompetitorId,
+            lineScoresIdentity.CleanUrl,
+            lineScoresIdentity.UrlHash);
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: lineScoresIdentity.UrlHash,
@@ -262,5 +351,11 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
             CorrelationId: command.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
         ));
+
+        _logger.LogInformation(
+            "? LINESCORES_REQUEST_PUBLISHED: DocumentRequested published for competitor line scores. " +
+            "CompetitorId={CompetitorId}, DocumentType={DocumentType}",
+            competitionCompetitorId,
+            DocumentType.EventCompetitionCompetitorLineScore);
     }
 }

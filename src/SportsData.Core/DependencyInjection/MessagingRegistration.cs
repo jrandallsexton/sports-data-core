@@ -181,6 +181,8 @@ namespace SportsData.Core.DependencyInjection
                     });
                     cfg.ConfigureEndpoints(context);
                 });
+
+                Console.WriteLine($"using: {config[CommonConfigKeys.AzureServiceBus]}");
                 
             });
 

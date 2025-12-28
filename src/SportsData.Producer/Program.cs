@@ -95,7 +95,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        services.AddInstrumentation(builder.Environment.ApplicationName, config);
+        //services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
         switch (mode)
         {
@@ -153,9 +153,7 @@ public class Program
         });
 
         app.UseAuthorization();
-
         app.UseCommonFeatures();
-
         app.MapControllers();
         
         // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
@@ -48,6 +49,7 @@ public class OutboxTestController : ControllerBase
     public async Task<IActionResult> ComprehensiveOutboxTest()
     {
         var testId = Guid.NewGuid();
+        var correlationId = Guid.NewGuid();
 
         _logger.LogInformation("OUTBOX TEST START: Publishing DocumentCreated event. TestId={TestId}", testId);
 
@@ -66,7 +68,7 @@ public class OutboxTestController : ControllerBase
             SeasonYear: 2024,
             DocumentType: DocumentType.OutboxTest,
             SourceDataProvider: SourceDataProvider.Espn,
-            CorrelationId: Guid.NewGuid(),
+            CorrelationId: correlationId,
             CausationId: Guid.NewGuid(),
             AttemptCount: 0,
             IncludeLinkedDocumentTypes: null
@@ -100,13 +102,14 @@ public class OutboxTestController : ControllerBase
         return Ok(new
         {
             testId,
+            correlationId,
             success,
             cascadeSuccess = fullCascadeSuccess,
             verdict = fullCascadeSuccess
-                ? "✅ PASS - Full cascade works! Both BaseDataContext AND TeamSportDataContext processors validated!"
+                ? "PASS - Full cascade works! Both BaseDataContext AND TeamSportDataContext processors validated!"
                 : success 
-                    ? "⚠️ PARTIAL - First processor works, cascade might need more time or check Hangfire"
-                    : "❌ FAIL - Outbox did not persist events",
+                    ? "PARTIAL - First processor works, cascade might need more time or check Hangfire"
+                    : "FAIL - Outbox did not persist events",
             outboxMessagesBefore = countBefore,
             outboxMessagesAfter = countAfter,
             outboxMessagesAdded = messagesAdded,
@@ -118,11 +121,11 @@ public class OutboxTestController : ControllerBase
                     : "Check Hangfire dashboard for background job status",
             validations = new[]
             {
-                messagesAdded >= 1 ? "✓ DocumentCreated (OutboxTest) event published via outbox" : "✗ Missing DocumentCreated",
-                messagesAdded >= 2 ? "✓ OutboxTestDocumentProcessor<FootballDataContext> worked (BaseDataContext constraint)" : "✗ First processor failed",
-                messagesAdded >= 3 ? "✓ CASCADE: DocumentCreated (OutboxTestTeamSport) published" : "⏳ Cascade event pending",
-                messagesAdded >= 4 ? "✓ CASCADE: OutboxTestTeamSportDocumentProcessor<FootballDataContext> worked (TeamSportDataContext constraint)" : "⏳ Second processor pending",
-                messagesAdded >= 4 ? "✓ FULL INHERITANCE CHAIN VALIDATED: FootballDataContext works with BOTH constraints!" : "⏳ Waiting for cascade completion"
+                messagesAdded >= 1 ? "DocumentCreated (OutboxTest) event published via outbox" : "Missing DocumentCreated",
+                messagesAdded >= 2 ? "OutboxTestDocumentProcessor<FootballDataContext> worked (BaseDataContext constraint)" : "First processor failed",
+                messagesAdded >= 3 ? "CASCADE: DocumentCreated (OutboxTestTeamSport) published" : "Cascade event pending",
+                messagesAdded >= 4 ? "CASCADE: OutboxTestTeamSportDocumentProcessor<FootballDataContext> worked (TeamSportDataContext constraint)" : "Second processor pending",
+                messagesAdded >= 4 ? "FULL INHERITANCE CHAIN VALIDATED: FootballDataContext works with BOTH constraints!" : "Waiting for cascade completion"
             },
             note = "If cascadeSuccess=false but you confirmed via debugger, check Hangfire dashboard - background jobs may be queued",
             debuggerNote = "You confirmed cascade works in debugger - this proves the factory pattern is correct!"
@@ -152,21 +155,6 @@ public class OutboxTestController : ControllerBase
         {
             count = messages.Count,
             messages
-        });
-    }
-
-    /// <summary>
-    /// Check OutboxPing table status (deprecated - OutboxPing no longer used).
-    /// </summary>
-    [HttpGet("outbox-pings")]
-    [Obsolete("OutboxPing pattern has been removed - factory pattern eliminates the need for it")]
-    public IActionResult GetOutboxPings()
-    {
-        return Ok(new
-        {
-            count = 0,
-            message = "✅ OutboxPing pattern removed - factory pattern solved the outbox issue!",
-            note = "DocumentProcessorFactory<TDbContext> now injects concrete types (FootballDataContext) which have outbox interceptors registered."
         });
     }
 

@@ -83,12 +83,24 @@ namespace SportsData.Core.Tests.Unit.Extensions
         }
 
         [Fact]
-        public void Returns_InternalServerError_On_UnknownStatus()
+        public void Returns_Accepted_On_AcceptedSuccess()
+        {
+            var dto = new SampleDto { Value = "Accepted!" };
+            var result = new Success<SampleDto>(dto, ResultStatus.Accepted);
+
+            var actionResult = result.ToActionResult();
+
+            actionResult.Result.Should().BeOfType<AcceptedResult>()
+                .Which.Value.Should().Be(dto);
+        }
+
+        [Fact]
+        public void Returns_InternalServerError_On_UnknownFailureStatus()
         {
             var errors = new List<ValidationFailure> { new("field", "error") };
             var result = new Failure<SampleDto>(
                 value: default!,
-                status: ResultStatus.Accepted, // Not handled specifically
+                status: ResultStatus.Error, // Unknown failure status
                 errors: errors);
 
             var actionResult = result.ToActionResult();

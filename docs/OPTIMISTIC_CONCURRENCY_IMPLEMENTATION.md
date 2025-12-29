@@ -138,18 +138,30 @@ private async Task TryProcessStatistics(
 
 ### 5. Database Migration
 
-**File:** `src/SportsData.Producer/Migrations/20251215000000_AddRowVersionToFranchiseSeason.cs`
+**No Migration Required!**
 
-```sql
-ALTER TABLE "FranchiseSeason" 
-ADD COLUMN IF NOT EXISTS "RowVersion" xid NOT NULL DEFAULT 0;
+PostgreSQL's `xmin` is a **built-in system column** that exists on every table automatically. EF Core simply maps the `RowVersion` property to this existing column.
+
+**Why no migration?**
+- `xmin` is a PostgreSQL system column (like `ctid`, `oid`)
+- Automatically maintained by PostgreSQL on every row
+- Already present on the `FranchiseSeason` table
+- EF Core configuration maps to it via `HasColumnName("xmin")`
+
+**Configuration:**
+```csharp
+builder.Property(t => t.RowVersion)
+    .IsRowVersion()
+    .HasColumnType("xid")          // xmin's data type
+    .HasColumnName("xmin")         // Maps to existing system column
+    .ValueGeneratedOnAddOrUpdate(); // PostgreSQL updates it automatically
 ```
 
-**Migration Features:**
-- Idempotent (`IF NOT EXISTS`)
-- Maps to PostgreSQL `xmin` system column
-- Automatically maintained by PostgreSQL
-- No manual updates required
+**Verification:**
+```sql
+-- xmin already exists on every PostgreSQL table
+SELECT xmin, * FROM "FranchiseSeason" LIMIT 1;
+```
 
 ## How It Works
 
@@ -336,24 +348,24 @@ ERROR: Concurrency conflict persisted after 3 attempts
    - Extracted `TryProcessStatistics()` method
    - Enhanced logging with attempt numbers
 
-3. ? `src/SportsData.Producer/Migrations/20251215000000_AddRowVersionToFranchiseSeason.cs`
-   - Added xmin-based RowVersion column
-
-4. ? `test/unit/SportsData.Producer.Tests.Unit/.../TeamSeasonStatisticsDocumentProcessorTests.cs`
+3. ? `test/unit/SportsData.Producer.Tests.Unit/.../TeamSeasonStatisticsDocumentProcessorTests.cs`
    - Added concurrency conflict test
+
+**No migration required** - PostgreSQL's `xmin` system column is used directly.
 
 ## Migration Checklist
 
 Before deploying to production:
 
-- [ ] Run migration on dev environment
-- [ ] Verify xmin column added to FranchiseSeason table
+- [ ] Verify xmin column exists on FranchiseSeason table (it's a PostgreSQL system column, always present)
 - [ ] Run all unit tests (8/8 passing)
 - [ ] Run integration tests
 - [ ] Deploy to staging environment
 - [ ] Monitor logs for concurrency warnings
 - [ ] Validate statistics updates are correct
 - [ ] Deploy to production
+
+**Note:** No database migration needed because `xmin` is a built-in PostgreSQL system column.
 
 ## Success Criteria
 
@@ -364,11 +376,12 @@ Before deploying to production:
 - Comprehensive logging with correlation IDs
 - All tests passing (8/8)
 - Build successful
-- Migration created
+- **No migration needed** (using PostgreSQL native xmin)
 
 ---
 
 **Implementation Date:** December 15, 2025  
 **Status:** ? Complete and Ready for Production  
 **Test Coverage:** 8/8 tests passing  
-**Build Status:** ? Successful
+**Build Status:** ? Successful  
+**Migration:** ? Not Required (PostgreSQL native xmin)

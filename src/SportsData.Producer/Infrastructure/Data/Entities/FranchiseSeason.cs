@@ -80,6 +80,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         // End Enrichment Properties
 
+        /// <summary>
+        /// Concurrency token using PostgreSQL's xmin system column.
+        /// EF Core automatically updates this on every SaveChanges and checks it for conflicts.
+        /// </summary>
+        public uint RowVersion { get; set; }
+
         public ICollection<FranchiseSeasonExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -108,6 +114,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(t => t.ColorCodeHex).HasMaxLength(7);
                 builder.Property(t => t.ColorCodeAltHex).HasMaxLength(7);
                 builder.Property(t => t.GroupSeasonMap).HasMaxLength(100);
+
+                // Configure PostgreSQL xmin as concurrency token
+                builder.Property(t => t.RowVersion)
+                    .IsRowVersion()
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .ValueGeneratedOnAddOrUpdate();
 
                 builder.HasOne(x => x.Franchise)
                     .WithMany(f => f.Seasons)

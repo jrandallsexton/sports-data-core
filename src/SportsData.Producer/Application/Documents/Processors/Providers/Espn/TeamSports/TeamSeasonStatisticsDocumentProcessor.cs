@@ -53,6 +53,51 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
             return;
         }
 
+        const int maxRetries = 3;
+        var attempt = 0;
+
+        while (attempt < maxRetries)
+        {
+            attempt++;
+
+            try
+            {
+                await TryProcessStatistics(franchiseSeasonId, command, attempt);
+                return; // Success - exit retry loop
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (attempt >= maxRetries)
+                {
+                    _logger.LogError(ex,
+                        "Concurrency conflict persisted after {MaxRetries} attempts. " +
+                        "FranchiseSeasonId={FranchiseSeasonId}, CorrelationId={CorrelationId}",
+                        maxRetries, franchiseSeasonId, command.CorrelationId);
+                    throw;
+                }
+
+                // Exponential backoff: 100ms, 200ms, 400ms
+                var delayMs = 100 * (int)Math.Pow(2, attempt - 1);
+
+                _logger.LogWarning(ex,
+                    "Concurrency conflict detected (attempt {Attempt}/{MaxRetries}). " +
+                    "Another process updated FranchiseSeason concurrently. " +
+                    "Retrying after {DelayMs}ms. FranchiseSeasonId={FranchiseSeasonId}, CorrelationId={CorrelationId}",
+                    attempt, maxRetries, delayMs, franchiseSeasonId, command.CorrelationId);
+
+                await Task.Delay(delayMs);
+                // Loop will retry with fresh data
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to process statistics with optimistic concurrency control.
+    /// Throws DbUpdateConcurrencyException if another process modified FranchiseSeason concurrently.
+    /// </summary>
+    private async Task TryProcessStatistics(Guid franchiseSeasonId, ProcessDocumentCommand command, int attempt)
+    {
+        // Re-fetch fresh data on each attempt to get latest RowVersion
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .Include(f => f.Statistics)
             .ThenInclude(c => c.Stats)
@@ -86,21 +131,18 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
                 if (incomingGamesPlayed.Value < existingGamesPlayed.Value)
                 {
                     _logger.LogWarning(
-                        "Skipping stale statistics update. FranchiseSeasonId={Id}, " +
-                        "ExistingGamesPlayed={ExistingGames}, IncomingGamesPlayed={IncomingGames}",
-                        franchiseSeasonId,
-                        existingGamesPlayed.Value,
-                        incomingGamesPlayed.Value);
+                        "Skipping stale statistics update (attempt {Attempt}). FranchiseSeasonId={Id}, " +
+                        "ExistingGamesPlayed={ExistingGames}, IncomingGamesPlayed={IncomingGames}, CorrelationId={CorrelationId}",
+                        attempt, franchiseSeasonId, existingGamesPlayed.Value, incomingGamesPlayed.Value, command.CorrelationId);
                     return; // Skip update - incoming data is older
                 }
 
                 if (incomingGamesPlayed.Value == existingGamesPlayed.Value)
                 {
                     _logger.LogDebug(
-                        "Statistics snapshot has same games played. FranchiseSeasonId={Id}, GamesPlayed={Games}. " +
-                        "Updating anyway (may include corrections).",
-                        franchiseSeasonId,
-                        incomingGamesPlayed.Value);
+                        "Statistics snapshot has same games played (attempt {Attempt}). FranchiseSeasonId={Id}, GamesPlayed={Games}. " +
+                        "Updating anyway (may include corrections). CorrelationId={CorrelationId}",
+                        attempt, franchiseSeasonId, incomingGamesPlayed.Value, command.CorrelationId);
                 }
             }
         }
@@ -110,10 +152,12 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
         {
             _dataContext.FranchiseSeasonStatistics.RemoveRange(franchiseSeason.Statistics);
             _logger.LogInformation(
-                "Removed existing TeamSeasonStatistics for FranchiseSeason {Id}. GamesPlayed: {ExistingGames} → {IncomingGames}",
-                franchiseSeasonId,
+                "Removed existing TeamSeasonStatistics for FranchiseSeason {Id} (attempt {Attempt}). " +
+                "GamesPlayed: {ExistingGames} → {IncomingGames}, CorrelationId={CorrelationId}",
+                franchiseSeasonId, attempt,
                 ExtractGamesPlayedFromExisting(franchiseSeason.Statistics) ?? 0,
-                incomingGamesPlayed ?? 0);
+                incomingGamesPlayed ?? 0,
+                command.CorrelationId);
         }
 
         // Insert new categories
@@ -123,13 +167,14 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
             await _dataContext.FranchiseSeasonStatistics.AddAsync(newCategory);
         }
 
+        // This will throw DbUpdateConcurrencyException if FranchiseSeason.RowVersion changed
+        // since we loaded it (another process updated it concurrently)
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Inserted new TeamSeasonStatistics snapshot for FranchiseSeason {Id}. GamesPlayed={GamesPlayed}, Categories={CategoryCount}",
-            franchiseSeasonId,
-            incomingGamesPlayed ?? 0,
-            dto.Splits.Categories.Count);
+            "Inserted new TeamSeasonStatistics snapshot for FranchiseSeason {Id} (attempt {Attempt}). " +
+            "GamesPlayed={GamesPlayed}, Categories={CategoryCount}, CorrelationId={CorrelationId}",
+            franchiseSeasonId, attempt, incomingGamesPlayed ?? 0, dto.Splits.Categories.Count, command.CorrelationId);
     }
 
     /// <summary>

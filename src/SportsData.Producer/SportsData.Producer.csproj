@@ -39,7 +39,6 @@
     <Folder Include="Application\Documents\Processors\Providers\Espn\Basketball\" />
     <Folder Include="Application\Documents\Processors\Providers\Yahoo\" />
     <Folder Include="Application\Seasons\" />
-    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

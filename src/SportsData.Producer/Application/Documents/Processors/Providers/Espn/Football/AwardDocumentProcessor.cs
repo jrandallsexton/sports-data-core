@@ -23,6 +23,6 @@ public class AwardDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     {
         _logger.LogInformation("Began with {Command}", command);
         // TODO: Implement processing logic
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

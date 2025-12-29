@@ -51,7 +51,8 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnTeamSeasonRecordAtsDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonRecordAtsDto. {@SafeCommand}", 
+                command.ToSafeLogObject());
             return;
         }
 
@@ -78,14 +79,12 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
 
             if (category == null)
             {
-                _logger.LogError(
-                    "AtsCategory not found for Name '{CategoryName}'. Creating new one with fallback Id.",
-                    item.Type.Name
-                );
+                _logger.LogWarning(
+                    "AtsCategory not found for Name '{CategoryName}'. Creating new one with database-generated Id.",
+                    item.Type.Name);
 
                 category = new FranchiseSeasonRecordAtsCategory
                 {
-                    Id = await GetNextCategoryIdAsync(),
                     Name = item.Type.Name,
                     Description = item.Type.Description,
                     CreatedUtc = DateTime.UtcNow,
@@ -110,14 +109,6 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
         }
 
         await _dataContext.SaveChangesAsync();
-    }
-
-    private async Task<int> GetNextCategoryIdAsync()
-    {
-        var maxId = await _dataContext.FranchiseSeasonRecordAtsCategories
-            .MaxAsync(c => (int?)c.Id) ?? 0;
-
-        return maxId + 1;
     }
 
 

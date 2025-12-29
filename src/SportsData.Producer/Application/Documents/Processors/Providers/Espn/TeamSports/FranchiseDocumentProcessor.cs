@@ -34,7 +34,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             ["CorrelationId"] = command.CorrelationId
         }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("Processing FranchiseDocument. DocumentType={DocumentType}, UrlHash={UrlHash}", 
+                command.DocumentType, 
+                command.UrlHash);
 
             try
             {
@@ -42,7 +44,8 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "Error occurred while processing FranchiseDocument. {@SafeCommand}", 
+                    command.ToSafeLogObject());
                 throw;
             }
         }
@@ -54,13 +57,15 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@SafeCommand}", 
+                command.ToSafeLogObject());
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@SafeCommand}", 
+                command.ToSafeLogObject());
             return;
         }
 

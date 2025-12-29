@@ -150,19 +150,14 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 var franchiseSeasonId = await ResolveFranchiseSeasonIdAsync(leaderDto.Team, command, franchiseSeasonCache);
 
                 var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
-                var statsIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Statistics.Ref);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: statsIdentity.UrlHash,
-                    ParentId: athleteSeasonIdentity.CanonicalId.ToString(),
-                    Uri: new Uri(statsIdentity.CleanUrl),
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionAthleteStatistics,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-                ));
+                // Use base class helper for consistency
+                await PublishChildDocumentRequest(
+                    command,
+                    leaderDto.Statistics,
+                    athleteSeasonIdentity.CanonicalId,
+                    DocumentType.EventCompetitionAthleteStatistics,
+                    CausationId.Producer.EventCompetitionLeadersDocumentProcessor);
 
                 var stat = leaderDto.AsEntity(
                     parentLeaderId: leaderEntity.Id,

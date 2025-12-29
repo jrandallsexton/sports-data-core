@@ -158,7 +158,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
         var stateLower = state?.ToLower();
         var countryLower = country?.ToLower();
 
-        // 1️⃣ Check if it already exists
+        // Check if it already exists
         var location = await _dataContext.Locations
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
@@ -168,8 +168,8 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         if (location is null)
         {
-            // 2️⃣ Create it
-            var newLocation = new Location
+            // Create new location
+            location = new Location
             {
                 Id = Guid.NewGuid(),
                 City = city,
@@ -177,21 +177,13 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 Country = country
             };
 
-            await _dataContext.Locations.AddAsync(newLocation);
+            await _dataContext.Locations.AddAsync(location);
             await _dataContext.SaveChangesAsync();
 
-            // 3️⃣ Re-fetch to confirm it's actually persisted
-            location = await _dataContext.Locations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(l => l.Id == newLocation.Id);
-
-            if (location is null)
-            {
-                throw new InvalidOperationException($"Failed to persist Location for athlete {newEntity.Id}. FK assignment aborted.");
-            }
+            // EF Core automatically assigns the ID after SaveChangesAsync, so location.Id is now populated
         }
 
-        // 4️⃣ Safe to assign FK
+        // Safe to assign FK
         newEntity.BirthLocationId = location.Id;
     }
 
@@ -217,7 +209,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         var nameLower = name.ToLower();
 
-        // 1️⃣ Look for existing
+        // Look for existing
         var status = await _dataContext.AthleteStatuses
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
@@ -225,8 +217,8 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         if (status is null)
         {
-            // 2️⃣ Create new
-            var newStatus = new AthleteStatus
+            // Create new status
+            status = new AthleteStatus
             {
                 Id = Guid.NewGuid(),
                 Name = name,
@@ -235,21 +227,13 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 ExternalId = externalId.ToString()
             };
 
-            await _dataContext.AthleteStatuses.AddAsync(newStatus);
+            await _dataContext.AthleteStatuses.AddAsync(status);
             await _dataContext.SaveChangesAsync();
 
-            // 3️⃣ Confirm it's persisted
-            status = await _dataContext.AthleteStatuses
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == newStatus.Id);
-
-            if (status is null)
-            {
-                throw new InvalidOperationException($"Failed to persist AthleteStatus for athlete {newEntity.Id}. FK assignment aborted.");
-            }
+            // EF Core automatically assigns the ID after SaveChangesAsync, so status.Id is now populated
         }
 
-        // 4️⃣ Always safe assignment
+        // Always safe assignment
         newEntity.StatusId = status.Id;
     }
 

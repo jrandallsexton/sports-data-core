@@ -52,7 +52,7 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
         }
 
         // TODO: Implement deserialization and processing logic for TeamSeasonInjuries
-        _logger.LogInformation("TODO: Implement TeamSeasonInjuriesDocument processing");
-        await Task.Delay(100);
+        _logger.LogWarning("TODO: Implement TeamSeasonInjuriesDocument processing");
+        await Task.CompletedTask;
     }
 }

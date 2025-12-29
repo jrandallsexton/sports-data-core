@@ -174,6 +174,6 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
     private async Task ProcessExistingEntity()
     {
         _logger.LogError("Update detected. Not implemented");
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

@@ -109,7 +109,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                             DocumentType.Venue => tierDelays.Venue,
                             DocumentType.TeamSeason => tierDelays.TeamSeason,
                             DocumentType.AthleteSeason => tierDelays.AthleteSeason,
-                            _ => 0
+                            _ => LogUnexpectedDocumentType(job.DocumentType)
                         };
 
                         var delay = TimeSpan.FromMinutes(delayMinutes);
@@ -271,6 +271,22 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             TeamSeason = 60,
             AthleteSeason = 240
         };
+    }
+
+    /// <summary>
+    /// Logs a warning when an unexpected DocumentType is encountered and returns default delay of 0.
+    /// This helps identify potential data inconsistencies or configuration issues.
+    /// </summary>
+    /// <param name="documentType">The unexpected document type</param>
+    /// <returns>Default delay of 0 minutes</returns>
+    private int LogUnexpectedDocumentType(DocumentType documentType)
+    {
+        _logger.LogWarning(
+            "Unexpected DocumentType encountered in historical sourcing. " +
+            "DocumentType={DocumentType}. Using default delay of 0 minutes. " +
+            "This may indicate a data inconsistency or missing configuration.",
+            documentType);
+        return 0;
     }
 
     private record TierDefinition(DocumentType DocumentType, ResourceShape Shape, int DelayMinutes);

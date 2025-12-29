@@ -228,7 +228,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
     private async Task ProcessEventLog()
     {
         // TODO: Implement
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 
     private async Task ProcessStatistics(

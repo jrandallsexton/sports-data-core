@@ -27,7 +27,15 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
                }))
         {
             _logger.LogInformation("Processing TeamSeasonAwardDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@SafeCommand}", command.ToSafeLogObject());
+                throw;
+            }
         }
     }
 
@@ -35,6 +43,6 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
     {
         // TODO: Implement deserialization and processing logic for TeamSeasonAward
         _logger.LogError("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

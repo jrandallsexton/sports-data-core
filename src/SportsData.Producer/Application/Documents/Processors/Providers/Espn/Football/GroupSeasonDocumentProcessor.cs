@@ -242,6 +242,6 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
     private async Task HandleExisting()
     {
         _logger.LogError("Updated detected. Not Implemented");
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

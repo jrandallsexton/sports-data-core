@@ -29,7 +29,15 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         }))
         {
             _logger.LogInformation("Processing TeamSeasonLeadersDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@SafeCommand}", command.ToSafeLogObject());
+                throw;
+            }
         }
     }
 
@@ -52,7 +60,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         }
 
         // TODO: Implement deserialization and processing logic for TeamSeasonLeaders
-        _logger.LogInformation("TODO: Implement TeamSeasonLeadersDocument processing");
-        await Task.Delay(100);
+        _logger.LogWarning("TODO: Implement TeamSeasonLeadersDocument processing");
+        await Task.CompletedTask;
     }
 }

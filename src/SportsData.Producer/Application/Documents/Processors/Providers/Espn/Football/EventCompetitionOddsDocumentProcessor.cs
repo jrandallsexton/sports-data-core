@@ -8,7 +8,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -132,20 +131,15 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             correlationId: command.CorrelationId,
             contentHash: contentHash);
 
-        // --- HARD REPLACE (no transactions; EF InMemory friendly) ---
+        // Remove existing odds if present (EF Core cascade delete handles children)
         if (existing is not null)
         {
             _logger.LogInformation("Updating CompetitionOdds (hard replace). CompetitionId={CompId}, OddsId={OddsId}", 
                 competition.Id, 
                 existing.Id);
 
-            // Remove children first if you don't 100% trust cascade in all environments
-            if (existing.Teams?.Count > 0) _dataContext.CompetitionTeamOdds.RemoveRange(existing.Teams);
-            if (existing.Links?.Count > 0) _dataContext.Set<CompetitionOddsLink>().RemoveRange(existing.Links);
-            if (existing.ExternalIds?.Count > 0) _dataContext.Set<CompetitionOddsExternalId>().RemoveRange(existing.ExternalIds);
-
             _dataContext.CompetitionOdds.Remove(existing);
-            await _dataContext.SaveChangesAsync(); // ensure delete completed (and frees key)
+            // Cascade delete configured in entity configuration removes Teams, Links, and ExternalIds automatically
         }
         else
         {
@@ -153,7 +147,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         }
 
         await _dataContext.CompetitionOdds.AddAsync(incoming);
-        await _dataContext.SaveChangesAsync();
+        await _dataContext.SaveChangesAsync(); // Atomic: both delete + insert in single transaction
         
         // Publish after success
         if (existing is null)

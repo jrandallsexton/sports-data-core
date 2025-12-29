@@ -18,13 +18,9 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeason)]
-public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
+public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<TeamSeasonDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public TeamSeasonDocumentProcessor(
@@ -33,11 +29,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
@@ -70,14 +63,16 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         return shouldSpawn;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
                    ["CorrelationId"] = command.CorrelationId
                }))
         {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
+            _logger.LogInformation("Processing TeamSeasonDocument. DocumentType={DocumentType}, UrlHash={UrlHash}",
+                command.DocumentType,
+                command.UrlHash);
             try
             {
                 await ProcessInternal(command);
@@ -92,7 +87,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "Error occurred while processing. {@SafeCommand}", command.ToSafeLogObject());
                 throw;
             }
         }

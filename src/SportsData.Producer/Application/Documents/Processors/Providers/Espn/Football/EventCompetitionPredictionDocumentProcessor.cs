@@ -127,7 +127,7 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : Documen
             })
             .ToList();
 
-        if (newMetrics.Any())
+        if (newMetrics.Count > 0)
         {
             _logger.LogInformation("Discovered {Count} new prediction metrics. CompetitionId={CompId}, NewMetrics={Metrics}", 
                 newMetrics.Count,

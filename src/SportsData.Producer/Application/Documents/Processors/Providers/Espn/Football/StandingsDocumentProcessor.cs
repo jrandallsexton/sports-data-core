@@ -21,8 +21,8 @@ public class StandingsDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
     public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
-        _logger.LogInformation("Began with {Command}", command);
+        _logger.LogInformation("Began with {Command}", command.ToSafeLogObject());
         // TODO: Implement processing logic
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

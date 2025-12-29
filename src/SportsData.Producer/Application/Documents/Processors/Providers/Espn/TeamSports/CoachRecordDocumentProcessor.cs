@@ -74,9 +74,10 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
         var coach = await _dataContext.Coaches
             .Include(x => x.Records)
-            .ThenInclude(r => r.Stats)
-            .Include(x => x.ExternalIds).Include(coach => coach.Records)
-            .ThenInclude(coachRecord => coachRecord.ExternalIds)
+                .ThenInclude(r => r.Stats)
+            .Include(x => x.Records)
+                .ThenInclude(r => r.ExternalIds)
+            .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.Id == coachId);
 
         if (coach is null)

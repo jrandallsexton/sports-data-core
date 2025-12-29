@@ -89,7 +89,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             {
                 _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", existing.Id);
                 _dataContext.AthleteSeasonStatistics.Remove(existing);
-                await _dataContext.SaveChangesAsync();
             }
 
             var entity = dto.AsEntity(
@@ -99,6 +98,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
 
+            // Save both remove and add in a single transaction
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(

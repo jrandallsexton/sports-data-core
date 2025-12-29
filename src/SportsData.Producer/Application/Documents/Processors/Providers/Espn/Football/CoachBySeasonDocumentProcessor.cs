@@ -198,7 +198,7 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
     private async Task ProcessUpdate(ProcessDocumentCommand command, EspnCoachSeasonDto dto)
     {
-        await Task.Delay(100);
+        await Task.CompletedTask;
         _logger.LogWarning("Update detected; not implemented");
     }
 }

@@ -65,7 +65,34 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
-        var identity = _externalRefIdentityGenerator.Generate(linkDto.Ref);
+        ExternalRefIdentity identity;
+        Uri uri;
+
+        try
+        {
+            identity = _externalRefIdentityGenerator.Generate(linkDto.Ref);
+            uri = new Uri(identity.CleanUrl);
+        }
+        catch (UriFormatException ex)
+        {
+            _logger.LogError(ex,
+                "❌ INVALID_CHILD_URI: Failed to parse URI for child document. " +
+                "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, InvalidUrl={InvalidUrl}",
+                parentId,
+                documentType,
+                linkDto.Ref?.ToString() ?? "null");
+            return;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity for child document. " +
+                "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, Ref={Ref}",
+                parentId,
+                documentType,
+                linkDto.Ref?.ToString() ?? "null");
+            return;
+        }
 
         _logger.LogInformation(
             "📤 PUBLISH_CHILD_REQUEST: Publishing DocumentRequested for child document. " +
@@ -78,7 +105,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: identity.UrlHash,
             ParentId: parentId?.ToString() ?? string.Empty,
-            Uri: new Uri(identity.CleanUrl),
+            Uri: uri,
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: documentType,

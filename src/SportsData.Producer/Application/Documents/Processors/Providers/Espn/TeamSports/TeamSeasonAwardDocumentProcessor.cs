@@ -42,7 +42,7 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
         // TODO: Implement deserialization and processing logic for TeamSeasonAward
-        _logger.LogError("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
+        _logger.LogWarning("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
         await Task.CompletedTask;
     }
 }

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -507,25 +509,28 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
     /// <summary>
     /// Generates a stable PostgreSQL advisory lock ID from season/provider/sport combination.
-    /// Uses a hash to ensure consistent lock IDs across requests for the same season.
+    /// Uses SHA256 hashing to ensure consistent lock IDs across application restarts and different runtimes.
     /// PostgreSQL advisory locks use bigint (64-bit) IDs.
     /// </summary>
     /// <param name="provider">Data provider</param>
     /// <param name="sport">Sport type</param>
     /// <param name="seasonYear">Season year</param>
-    /// <returns>64-bit advisory lock ID</returns>
+    /// <returns>Stable 64-bit advisory lock ID (always positive)</returns>
     private static long GetAdvisoryLockId(SourceDataProvider provider, Sport sport, int seasonYear)
     {
         // Combine into a unique string
         var lockString = $"HistoricalSeasonForce:{provider}:{sport}:{seasonYear}";
         
-        // Use GetHashCode for a stable 32-bit hash, then extend to 64-bit
-        // PostgreSQL advisory locks use bigint, so we need a 64-bit value
-        var hashCode = lockString.GetHashCode();
+        // Compute SHA256 hash for stable, deterministic hashing
+        var bytes = Encoding.UTF8.GetBytes(lockString);
+        var hashBytes = SHA256.HashData(bytes);
         
-        // Convert to long (64-bit) for PostgreSQL advisory lock
-        // Use positive values only (advisory locks support negative, but positive is clearer)
-        return Math.Abs((long)hashCode);
+        // Take first 8 bytes and convert to 64-bit integer
+        var lockId = BitConverter.ToInt64(hashBytes, 0);
+        
+        // Normalize to positive value (PostgreSQL advisory locks support negative, but positive is clearer)
+        // Handle Int64.MinValue edge case: use & with long.MaxValue to avoid overflow
+        return lockId == long.MinValue ? long.MaxValue : Math.Abs(lockId);
     }
 
     private record TierDefinition(DocumentType DocumentType, ResourceShape Shape, int DelayMinutes);

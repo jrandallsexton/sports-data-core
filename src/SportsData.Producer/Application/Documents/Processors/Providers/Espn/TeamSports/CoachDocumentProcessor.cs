@@ -14,27 +14,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Coach)]
-public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
+public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<CoachDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-
     public CoachDocumentProcessor(
         ILogger<CoachDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -89,22 +81,17 @@ public class CoachDocumentProcessor<TDataContext> : IProcessDocuments
     {
         var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
-        // CareerRecords
+        // CareerRecords - use base class helper
         if (dto.CareerRecords?.Count > 0)
         {
             foreach (var recordDto in dto.CareerRecords)
             {
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: HashProvider.GenerateHashFromUri(recordDto.Ref),
-                    ParentId: newEntity.Id.ToString(),
-                    Uri: recordDto.Ref,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.CoachRecord,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.CoachDocumentProcessor
-                ));
+                await PublishChildDocumentRequest(
+                    command,
+                    recordDto,
+                    newEntity.Id,
+                    DocumentType.CoachRecord,
+                    CausationId.Producer.CoachDocumentProcessor);
             }
         }
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -11,24 +12,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonProjection)]
-public class TeamSeasonProjectionDocumentProcessor<TDataContext> : IProcessDocuments
+public class TeamSeasonProjectionDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly TDataContext _dataContext;
-    private readonly ILogger<TeamSeasonProjectionDocumentProcessor<TDataContext>> _logger;
-    private readonly IEventBus _publishEndpoint;
-
     public TeamSeasonProjectionDocumentProcessor(
-        TDataContext dataContext,
         ILogger<TeamSeasonProjectionDocumentProcessor<TDataContext>> logger,
-        IEventBus publishEndpoint)
+        TDataContext dataContext,
+        IEventBus publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _dataContext = dataContext;
-        _logger = logger;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {

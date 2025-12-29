@@ -17,29 +17,23 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeason)]
-public class AthleteSeasonDocumentProcessor : IProcessDocuments
+public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : FootballDataContext
 {
-    private readonly ILogger<AthleteSeasonDocumentProcessor> _logger;
-    private readonly FootballDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public AthleteSeasonDocumentProcessor(
-        ILogger<AthleteSeasonDocumentProcessor> logger,
-        FootballDataContext dataContext,
+        ILogger<AthleteSeasonDocumentProcessor<TDataContext>> logger,
+        TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -97,7 +91,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
                 _logger.LogWarning(
                     "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                     DocumentType.Athlete,
-                    nameof(AthleteSeasonDocumentProcessor),
+                    nameof(AthleteSeasonDocumentProcessor<TDataContext>),
                     athleteIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"Athlete not found for {athleteIdentity.CleanUrl}. Will retry when available.");
@@ -242,22 +236,13 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
         EspnAthleteSeasonDto dto,
         Guid athleteSeasonId)
     {
-        if (dto.Statistics?.Ref is null)
-            return;
-
-        var statisticsIdentity = _externalRefIdentityGenerator.Generate(dto.Statistics.Ref);
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: statisticsIdentity.CanonicalId.ToString(),
-            ParentId: athleteSeasonId.ToString(),
-            Uri: dto.Statistics.Ref.ToCleanUri(),
-            Sport: Sport.FootballNcaa,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.AthleteSeasonStatistics,
-            SourceDataProvider: SourceDataProvider.Espn,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-        ));
+        // Use base class helper for child document request
+        await PublishChildDocumentRequest(
+            command,
+            dto.Statistics,
+            athleteSeasonId,
+            DocumentType.AthleteSeasonStatistics,
+            CausationId.Producer.AthleteSeasonDocumentProcessor);
     }
 
     private async Task ProcessHeadshot(
@@ -307,7 +292,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             _logger.LogWarning(
                 "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                 DocumentType.TeamSeason,
-                nameof(AthleteSeasonDocumentProcessor),
+                nameof(AthleteSeasonDocumentProcessor<TDataContext>),
                 dto.Team.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"Franchise season not found for {dto.Team.Ref}. Will retry when available.");
@@ -359,7 +344,7 @@ public class AthleteSeasonDocumentProcessor : IProcessDocuments
             _logger.LogWarning(
                 "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                 DocumentType.AthletePosition,
-                nameof(AthleteSeasonDocumentProcessor),
+                nameof(AthleteSeasonDocumentProcessor<TDataContext>),
                 dto.Position.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"Position not found for {dto.Position.Ref}. Will retry when available.");

@@ -6,33 +6,25 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeasonStatistics)]
-    public class AthleteSeasonStatisticsDocumentProcessor : IProcessDocuments
+    public class AthleteSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+        where TDataContext : FootballDataContext
     {
-        private readonly ILogger<AthleteSeasonStatisticsDocumentProcessor> _logger;
-        private readonly FootballDataContext _dataContext;
-        private readonly IEventBus _publishEndpoint;
-        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-
         public AthleteSeasonStatisticsDocumentProcessor(
-            ILogger<AthleteSeasonStatisticsDocumentProcessor> logger,
-            FootballDataContext dataContext,
+            ILogger<AthleteSeasonStatisticsDocumentProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IEventBus publishEndpoint,
             IGenerateExternalRefIdentities externalRefIdentityGenerator)
+            : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
         {
-            _logger = logger;
-            _dataContext = dataContext;
-            _publishEndpoint = publishEndpoint;
-            _externalRefIdentityGenerator = externalRefIdentityGenerator;
         }
 
-        public async Task ProcessAsync(ProcessDocumentCommand command)
+        public override async Task ProcessAsync(ProcessDocumentCommand command)
         {
             using (_logger.BeginScope(new Dictionary<string, object>
                    {

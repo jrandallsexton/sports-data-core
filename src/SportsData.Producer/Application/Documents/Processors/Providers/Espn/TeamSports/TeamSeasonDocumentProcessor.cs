@@ -174,6 +174,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
         {
             await ProcessNewEntity(franchise, command.Season.Value, externalProviderDto, command);
         }
+
+        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessDependencies(
@@ -279,8 +281,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
             canonicalEntity.ToCanonicalModel(),
             command.CorrelationId,
             CausationId.Producer.TeamSeasonDocumentProcessor));
-
-        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessDependents(
@@ -641,7 +641,5 @@ public class TeamSeasonDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
             await ProcessStatistics(existing.Id, dto, command);
-        
-        await _dataContext.SaveChangesAsync();
     }
 }

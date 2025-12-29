@@ -5,7 +5,6 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
@@ -15,27 +14,19 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonRanking)]
-public class FootballSeasonRankingDocumentProcessor<TDataContext> : IProcessDocuments
+public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<FootballSeasonRankingDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
-
     public FootballSeasonRankingDocumentProcessor(
         ILogger<FootballSeasonRankingDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {

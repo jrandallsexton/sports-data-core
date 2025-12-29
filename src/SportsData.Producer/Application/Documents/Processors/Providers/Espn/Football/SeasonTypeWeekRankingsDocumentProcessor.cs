@@ -17,13 +17,9 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonTypeWeekRankings)]
-public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDocuments
+public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
     private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekRankingsDocumentProcessor(
@@ -32,15 +28,12 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -250,10 +243,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : IProcessDoc
             franchiseDictionary,
             command.CorrelationId);
 
-        // for every FranchiseSeason affected (ranked, dropped out, etc)
-        // we will request the FranchiseSeason document for it
-        // and allow the appropriate FranchiseSeasonDocumentProcessor to handle updating
-        // an existing entity - which would include rankings
+        // Request FranchiseSeason updates for all affected teams (ranked, dropped out, etc) using base helper
         foreach (var ranking in dto.Ranks)
         {
             var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);

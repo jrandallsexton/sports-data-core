@@ -19,13 +19,9 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Event)]
-public class EventDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly ILogger<EventDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public EventDocumentProcessor(
@@ -34,15 +30,12 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -147,7 +140,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         await AddVenue(command, externalDto, contest);
 
         // process competitions
-        await ProcessCompetition(command, externalDto, contest);
+        await ProcessCompetitions(command, externalDto, contest);
 
         await _dataContext.AddAsync(contest);
 
@@ -269,7 +262,7 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
         return seasonPhaseId.Value;
     }
 
-    private async Task ProcessCompetition(
+    private async Task ProcessCompetitions(
         ProcessDocumentCommand command,
         EspnEventDto externalDto,
         Contest contest)
@@ -283,11 +276,12 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
             _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}", 
                 competition.Ref);
 
-            // raise an event to source the competition
+            var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
+
             await _publishEndpoint.Publish(new DocumentRequested(
-                Id: HashProvider.GenerateHashFromUri(competition.Ref),
+                Id: competitionIdentity.UrlHash,
                 ParentId: contest.Id.ToString(),
-                Uri: competition.Ref.ToCleanUri(),
+                Uri: new Uri(competitionIdentity.CleanUrl),
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetition,
@@ -345,25 +339,19 @@ public class EventDocumentProcessor<TDataContext> : IProcessDocuments
             }
             else
             {
-                var venueHash = HashProvider.GenerateHashFromUri(venue.Ref);
-
                 _logger.LogError(
                     "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Publishing DocumentRequested. Ref={Ref}",
                     DocumentType.Venue,
                     nameof(EventDocumentProcessor<TDataContext>),
                     venue.Ref);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: venueHash,
-                    ParentId: string.Empty,
-                    Uri: venue.Ref.ToCleanUri(),
-                    Sport: Sport.FootballNcaa,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.Venue,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor
-                ));
+                // Use base class helper for Venue request
+                await PublishChildDocumentRequest(
+                    command,
+                    venue,
+                    string.Empty,
+                    DocumentType.Venue,
+                    CausationId.Producer.EventDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Venue not found for {venue.Ref} in command {command.CorrelationId}");

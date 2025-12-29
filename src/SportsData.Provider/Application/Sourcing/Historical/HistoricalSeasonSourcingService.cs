@@ -82,6 +82,54 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
             if (existingSeasonJob != null)
             {
+                if (request.Force)
+                {
+                    _logger.LogInformation(
+                        "Historical sourcing for {Year} already exists, but Force=true. Re-scheduling jobs. ResourceIndexId={Id}",
+                        request.SeasonYear, existingSeasonJob.Id);
+
+                    // Fetch all related jobs for this season
+                    var existingJobs = await _dataContext.ResourceIndexJobs
+                        .AsNoTracking()
+                        .Where(x =>
+                            x.Provider == request.SourceDataProvider &&
+                            x.SportId == request.Sport &&
+                            x.SeasonYear == request.SeasonYear &&
+                            (x.DocumentType == DocumentType.Season ||
+                             x.DocumentType == DocumentType.Venue ||
+                             x.DocumentType == DocumentType.TeamSeason ||
+                             x.DocumentType == DocumentType.AthleteSeason))
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var job in existingJobs)
+                    {
+                        var delayMinutes = job.DocumentType switch
+                        {
+                            DocumentType.Season => tierDelays.Season,
+                            DocumentType.Venue => tierDelays.Venue,
+                            DocumentType.TeamSeason => tierDelays.TeamSeason,
+                            DocumentType.AthleteSeason => tierDelays.AthleteSeason,
+                            _ => 0
+                        };
+
+                        var delay = TimeSpan.FromMinutes(delayMinutes);
+                        var jobDefinition = new DocumentJobDefinition(job);
+
+                        _backgroundJobProvider.Schedule<ResourceIndexJob>(
+                            j => j.ExecuteAsync(jobDefinition),
+                            delay);
+
+                        _logger.LogInformation(
+                            "Re-scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
+                            job.DocumentType, job.Id, delay);
+                    }
+
+                    return new HistoricalSeasonSourcingResponse
+                    {
+                        CorrelationId = existingSeasonJob.CreatedBy
+                    };
+                }
+
                 _logger.LogWarning(
                     "Historical sourcing for {Year} already exists. ResourceIndexId={Id}, CreatedUtc={CreatedUtc}",
                     request.SeasonYear, existingSeasonJob.Id, existingSeasonJob.CreatedUtc);

@@ -21,13 +21,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 /// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/leaders?lang=en
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionLeaders)]
-public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<EventCompetitionLeadersDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionLeadersDocumentProcessor(
@@ -36,15 +32,12 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalIdentityGenerator = externalIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -156,8 +149,8 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
                 var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
                 var franchiseSeasonId = await ResolveFranchiseSeasonIdAsync(leaderDto.Team, command, franchiseSeasonCache);
 
-                var athleteSeasonIdentity = _externalIdentityGenerator.Generate(leaderDto.Athlete.Ref);
-                var statsIdentity = _externalIdentityGenerator.Generate(leaderDto.Statistics.Ref);
+                var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
+                var statsIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Statistics.Ref);
 
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: statsIdentity.UrlHash,
@@ -204,7 +197,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
         if (cache.TryGetValue(key, out var cachedId))
             return cachedId;
 
-        var athleteSeasonIdentity = _externalIdentityGenerator.Generate(athleteDto.Ref);
+        var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(athleteDto.Ref);
 
         var athleteSeason = await _dataContext.AthleteSeasons
             .Include(x => x.ExternalIds)
@@ -228,7 +221,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
             else
             {
                 var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
-                var athleteIdentity = _externalIdentityGenerator.Generate(athleteRef);
+                var athleteIdentity = _externalRefIdentityGenerator.Generate(athleteRef);
 
                 _logger.LogWarning("AthleteSeason not found, raising DocumentRequested. Url={Url}", athleteSeasonIdentity.CleanUrl);
 
@@ -275,9 +268,9 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : IProcessDo
         if (franchiseSeasonId is null)
         {
             var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(teamDto.Ref);
-            var franchiseIdentity = _externalIdentityGenerator.Generate(franchiseRef);
+            var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseRef);
 
-            var franchiseSeasonIdentity = _externalIdentityGenerator.Generate(teamDto.Ref);
+            var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(teamDto.Ref);
                 
             _logger.LogWarning("FranchiseSeason not found, requesting source. Hash={Hash}", franchiseSeasonIdentity.UrlHash);
 

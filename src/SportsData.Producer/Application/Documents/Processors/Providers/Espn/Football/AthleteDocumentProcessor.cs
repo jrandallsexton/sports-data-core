@@ -12,7 +12,6 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -21,29 +20,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 // TODO: Rename to FootballAthleteDocumentProcessor
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-public class AthleteDocumentProcessor : IProcessDocuments
+public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : FootballDataContext
 {
-    private readonly ILogger<AthleteDocumentProcessor> _logger;
-    private readonly FootballDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public AthleteDocumentProcessor(
-        ILogger<AthleteDocumentProcessor> logger,
-        FootballDataContext dataContext,
+        ILogger<AthleteDocumentProcessor<TDataContext>> logger,
+        TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -283,7 +276,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 _logger.LogWarning(
                     "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                     DocumentType.AthletePosition,
-                    nameof(AthleteDocumentProcessor),
+                    nameof(AthleteDocumentProcessor<TDataContext>),
                     positionIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"AthletePosition {positionIdentity.CleanUrl} not found. Will retry when available.");

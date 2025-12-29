@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -16,24 +17,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Test;
 /// Inheritance chain: FootballDataContext ? TeamSportDataContext ? BaseDataContext
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.OutboxTestTeamSport)]
-public class OutboxTestTeamSportDocumentProcessor<TDataContext> : IProcessDocuments
+public class OutboxTestTeamSportDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<OutboxTestTeamSportDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _bus;
-
     public OutboxTestTeamSportDocumentProcessor(
         ILogger<OutboxTestTeamSportDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IEventBus bus)
+        IEventBus bus,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _bus = bus;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -63,7 +59,7 @@ public class OutboxTestTeamSportDocumentProcessor<TDataContext> : IProcessDocume
                 PublishedUtc: DateTime.UtcNow
             );
 
-            await _bus.Publish(evt);
+            await _publishEndpoint.Publish(evt);
 
             // Save changes (should flush outbox WITHOUT OutboxPing)
             await _dataContext.SaveChangesAsync();

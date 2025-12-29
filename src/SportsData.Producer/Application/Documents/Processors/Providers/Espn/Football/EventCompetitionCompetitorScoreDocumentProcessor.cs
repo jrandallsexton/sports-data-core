@@ -16,13 +16,9 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionCompetitorScore)]
-public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<EventCompetitionCompetitorScoreDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _bus;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionCompetitorScoreDocumentProcessor(
@@ -31,15 +27,12 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
         IEventBus bus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _bus = bus;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -64,7 +57,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
                 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _bus.Publish(docCreated);
+                await _publishEndpoint.Publish(docCreated);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -122,7 +115,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : IP
                 _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorUrl={CompetitorUrl}", 
                     competitionCompetitorIdentity.CleanUrl);
 
-                await _bus.Publish(new DocumentRequested(
+                await _publishEndpoint.Publish(new DocumentRequested(
                     Id: competitionCompetitorIdentity.UrlHash,
                     ParentId: competitionIdentity.CanonicalId.ToString(),
                     Uri: new Uri(competitionCompetitorIdentity.CleanUrl),

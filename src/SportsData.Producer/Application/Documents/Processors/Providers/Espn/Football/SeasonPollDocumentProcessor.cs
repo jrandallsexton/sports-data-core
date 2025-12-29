@@ -13,27 +13,19 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonPoll)]
-public class SeasonPollDocumentProcessor<TDataContext> : IProcessDocuments
+public class SeasonPollDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<SeasonPollDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
-
     public SeasonPollDocumentProcessor(
         ILogger<SeasonPollDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -109,18 +101,12 @@ public class SeasonPollDocumentProcessor<TDataContext> : IProcessDocuments
 
         foreach (var rank in dto.Rankings)
         {
-            var rankIdentity = _externalRefIdentityGenerator.Generate(rank.Ref);
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: rankIdentity.UrlHash,
-                ParentId: dtoIdentity.CanonicalId.ToString(),
-                Uri: new Uri(rankIdentity.CleanUrl),
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.SeasonTypeWeekRankings,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                rank,
+                dtoIdentity.CanonicalId,
+                DocumentType.SeasonTypeWeekRankings,
+                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
         }
 
         await _dataContext.SaveChangesAsync();

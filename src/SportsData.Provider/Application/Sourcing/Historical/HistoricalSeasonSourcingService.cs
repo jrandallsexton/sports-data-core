@@ -341,11 +341,21 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
         _logger.LogInformation("ResourceIndex records persisted. Scheduling {Count} jobs...", resourceIndexes.Count);
 
-        ScheduleTierJobs(resourceIndexes);
+        var (scheduledCount, failedCount) = ScheduleTierJobs(resourceIndexes);
 
-        _logger.LogInformation(
-            "Historical season sourcing initiated. {TierCount} tiers scheduled. CorrelationId={CorrelationId}",
-            tiers.Length, correlationId);
+        if (failedCount > 0)
+        {
+            _logger.LogWarning(
+                "Historical season sourcing completed with scheduling failures. " +
+                "ScheduledJobs={ScheduledCount}, FailedJobs={FailedCount}, TotalJobs={TotalJobs}, CorrelationId={CorrelationId}",
+                scheduledCount, failedCount, resourceIndexes.Count, correlationId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Historical season sourcing initiated successfully. {TierCount} tiers scheduled. CorrelationId={CorrelationId}",
+                tiers.Length, correlationId);
+        }
 
         return new HistoricalSeasonSourcingResponse
         {
@@ -435,22 +445,43 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     }
 
     /// <summary>
-    /// Schedules background jobs for all tier ResourceIndex records.
+    /// Schedules background jobs for all tier ResourceIndex records with error handling.
+    /// Continues scheduling remaining jobs even if individual jobs fail.
+    /// Returns tuple of (scheduledCount, failedCount).
     /// </summary>
-    private void ScheduleTierJobs(List<(ResourceIndexEntity Entity, TimeSpan Delay)> resourceIndexes)
+    private (int scheduledCount, int failedCount) ScheduleTierJobs(List<(ResourceIndexEntity Entity, TimeSpan Delay)> resourceIndexes)
     {
+        var scheduledCount = 0;
+        var failedCount = 0;
+
         foreach (var (resourceIndex, delay) in resourceIndexes)
         {
-            var jobDefinition = new DocumentJobDefinition(resourceIndex);
+            try
+            {
+                var jobDefinition = new DocumentJobDefinition(resourceIndex);
 
-            _backgroundJobProvider.Schedule<ResourceIndexJob>(
-                job => job.ExecuteAsync(jobDefinition),
-                delay);
+                _backgroundJobProvider.Schedule<ResourceIndexJob>(
+                    job => job.ExecuteAsync(jobDefinition),
+                    delay);
 
-            _logger.LogInformation(
-                "Scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
-                resourceIndex.DocumentType, resourceIndex.Id, delay);
+                scheduledCount++;
+
+                _logger.LogInformation(
+                    "Scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
+                    resourceIndex.DocumentType, resourceIndex.Id, delay);
+            }
+            catch (Exception ex)
+            {
+                failedCount++;
+
+                _logger.LogError(ex,
+                    "Failed to schedule job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}. " +
+                    "Continuing with remaining jobs.",
+                    resourceIndex.DocumentType, resourceIndex.Id, delay);
+            }
         }
+
+        return (scheduledCount, failedCount);
     }
 
     private TierDelays GetTierDelays(HistoricalSeasonSourcingRequest request)

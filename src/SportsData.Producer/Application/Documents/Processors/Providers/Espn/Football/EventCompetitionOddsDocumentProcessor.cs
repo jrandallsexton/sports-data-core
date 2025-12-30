@@ -8,19 +8,14 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
-public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _db;
-    private readonly IEventBus _bus;
-    private readonly IGenerateExternalRefIdentities _idGen;
     private readonly IJsonHashCalculator _jsonHash;
 
     public EventCompetitionOddsDocumentProcessor(
@@ -29,15 +24,12 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         IEventBus bus,
         IGenerateExternalRefIdentities idGen,
         IJsonHashCalculator jsonHash)
+        : base(logger, db, bus, idGen)
     {
-        _logger = logger;
-        _db = db;
-        _bus = bus;
-        _idGen = idGen;
         _jsonHash = jsonHash;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -87,7 +79,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
             return;
         }
 
-        var competition = await _db.Competitions
+        var competition = await _dataContext.Competitions
             .AsNoTracking()
             .Include(x => x.Contest)
             .FirstOrDefaultAsync(x => x.Id == competitionId);
@@ -99,11 +91,11 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
         }
 
         // --- Identity + hash ---
-        var identity = _idGen.Generate(dto.Ref); // stable odds id from $ref
+        var identity = _externalRefIdentityGenerator.Generate(dto.Ref); // stable odds id from $ref
         var contentHash = _jsonHash.NormalizeAndHash(command.Document);
 
         // Prefer canonical id lookup; fallback to ExternalIds (back-compat)
-        var existing = await _db.CompetitionOdds
+        var existing = await _dataContext.CompetitionOdds
             .Include(o => o.ExternalIds)
             .Include(o => o.Teams)
             .Include(o => o.Links)
@@ -112,7 +104,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
 
         if (existing is null)
         {
-            existing = await _db.CompetitionOdds
+            existing = await _dataContext.CompetitionOdds
                 .Include(o => o.Teams)
                 .Include(o => o.Links)
                 .Include(competitionOdds => competitionOdds.ExternalIds)
@@ -132,45 +124,40 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : IProcessDocum
 
         // Build the authoritative incoming graph
         var incoming = dto.AsEntity(
-            externalRefIdentityGenerator: _idGen,
+            externalRefIdentityGenerator: _externalRefIdentityGenerator,
             competitionId: competition.Id,
             homeFranchiseSeasonId: competition.Contest.HomeTeamFranchiseSeasonId,
             awayFranchiseSeasonId: competition.Contest.AwayTeamFranchiseSeasonId,
             correlationId: command.CorrelationId,
             contentHash: contentHash);
 
-        // --- HARD REPLACE (no transactions; EF InMemory friendly) ---
+        // Remove existing odds if present (EF Core cascade delete handles children)
         if (existing is not null)
         {
             _logger.LogInformation("Updating CompetitionOdds (hard replace). CompetitionId={CompId}, OddsId={OddsId}", 
                 competition.Id, 
                 existing.Id);
 
-            // Remove children first if you don't 100% trust cascade in all environments
-            if (existing.Teams?.Count > 0) _db.CompetitionTeamOdds.RemoveRange(existing.Teams);
-            if (existing.Links?.Count > 0) _db.Set<CompetitionOddsLink>().RemoveRange(existing.Links);
-            if (existing.ExternalIds?.Count > 0) _db.Set<CompetitionOddsExternalId>().RemoveRange(existing.ExternalIds);
-
-            _db.CompetitionOdds.Remove(existing);
-            await _db.SaveChangesAsync(); // ensure delete completed (and frees key)
+            _dataContext.CompetitionOdds.Remove(existing);
+            // Cascade delete configured in entity configuration removes Teams, Links, and ExternalIds automatically
         }
         else
         {
             _logger.LogInformation("Creating new CompetitionOdds. CompetitionId={CompId}", competition.Id);
         }
 
-        await _db.CompetitionOdds.AddAsync(incoming);
-        await _db.SaveChangesAsync();
+        await _dataContext.CompetitionOdds.AddAsync(incoming);
+        await _dataContext.SaveChangesAsync(); // Atomic: both delete + insert in single transaction
         
         // Publish after success
         if (existing is null)
         {
-            await _bus.Publish(new ContestOddsCreated(
+            await _publishEndpoint.Publish(new ContestOddsCreated(
                 competition.Contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
         }
         else
         {
-            await _bus.Publish(new ContestOddsUpdated(
+            await _publishEndpoint.Publish(new ContestOddsUpdated(
                 competition.Contest.Id, "ContestOddsUpdated", command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
         }
 

@@ -16,7 +16,7 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
-public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureDocumentProcessor>
+public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureDocumentProcessor<FootballDataContext>>
 {
     [Fact]
     public async Task WhenEntityDoesNotExist_IsAdded()
@@ -25,7 +25,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor>();
+        var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor<FootballDataContext>>();
         var season = new Season
         {
             Id = Guid.NewGuid(),
@@ -70,7 +70,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor>();
+        var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor<FootballDataContext>>();
 
         var season = Fixture.Build<Season>()
             .With(s => s.Id, Guid.NewGuid())

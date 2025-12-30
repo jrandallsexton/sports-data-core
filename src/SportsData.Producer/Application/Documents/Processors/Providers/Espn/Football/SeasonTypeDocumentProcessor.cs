@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
@@ -14,27 +13,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonType)]
-public class SeasonTypeDocumentProcessor<TDataContext> : IProcessDocuments
+public class SeasonTypeDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly ILogger<SeasonTypeDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
-
     public SeasonTypeDocumentProcessor(
         ILogger<SeasonTypeDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -124,37 +115,21 @@ public class SeasonTypeDocumentProcessor<TDataContext> : IProcessDocuments
             existingSeasonType.Phases.Add(seasonPhase);
         }
 
-        // Source Groups
-        if (dto.Groups?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: seasonPhase.Id.ToString(),
-                Uri: dto.Groups.Ref,
-                Sport: Sport.FootballNcaa,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.GroupSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonTypeDocumentProcessor
-            ));
-        }
+        // Source Groups using base class helper
+        await PublishChildDocumentRequest(
+            command,
+            dto.Groups,
+            seasonPhase.Id,
+            DocumentType.GroupSeason,
+            CausationId.Producer.SeasonTypeDocumentProcessor);
 
-        // Source Weeks
-        if (dto.Weeks?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: seasonPhase.Id.ToString(),
-                Uri: dto.Weeks.Ref,
-                Sport: Sport.FootballNcaa,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.SeasonTypeWeek,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonTypeDocumentProcessor
-            ));
-        }
+        // Source Weeks using base class helper
+        await PublishChildDocumentRequest(
+            command,
+            dto.Weeks,
+            seasonPhase.Id,
+            DocumentType.SeasonTypeWeek,
+            CausationId.Producer.SeasonTypeDocumentProcessor);
 
         await _dataContext.SaveChangesAsync();
     }

@@ -14,6 +14,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
@@ -25,7 +26,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// </summary>
 [Collection("Sequential")]
 public class AthleteSeasonStatisticsDocumentProcessorTests :
-    ProducerTestBase<AthleteSeasonStatisticsDocumentProcessor>
+    ProducerTestBase<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>
 {
     /// <summary>
     /// Validates that when a valid AthleteSeason exists and a valid statistics document is provided,
@@ -39,7 +40,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
         var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
@@ -128,7 +129,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
         var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
@@ -228,7 +229,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
 
@@ -265,7 +266,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
 
@@ -299,7 +300,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var athleteSeason = Fixture.Build<FootballAthleteSeason>()
             .WithAutoProperties()
@@ -340,7 +341,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var athleteSeason = Fixture.Build<FootballAthleteSeason>()
             .WithAutoProperties()
@@ -384,7 +385,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor>();
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
 

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -62,108 +64,399 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 "Starting historical season sourcing. Sport={Sport}, Provider={Provider}, Year={Year}",
                 request.Sport, request.SourceDataProvider, request.SeasonYear);
 
-            // Get tier delays (from request or config defaults)
             var tierDelays = GetTierDelays(request);
+            ValidateTierDelays(tierDelays);
 
-            if (tierDelays.Season < 0 || tierDelays.Venue < 0 || tierDelays.TeamSeason < 0 || tierDelays.AthleteSeason < 0)
-            {
-                throw new ArgumentException("Tier delays cannot be negative.");
-            }
-
-            // Idempotency Check: Ensure we haven't already sourced this season
-            var existingSeasonJob = await _dataContext.ResourceIndexJobs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.Provider == request.SourceDataProvider &&
-                    x.SportId == request.Sport &&
-                    x.DocumentType == DocumentType.Season &&
-                    x.SeasonYear == request.SeasonYear,
-                    cancellationToken);
+            var existingSeasonJob = await FindExistingSeasonJobAsync(request, cancellationToken);
 
             if (existingSeasonJob != null)
             {
-                _logger.LogWarning(
-                    "Historical sourcing for {Year} already exists. ResourceIndexId={Id}, CreatedUtc={CreatedUtc}",
-                    request.SeasonYear, existingSeasonJob.Id, existingSeasonJob.CreatedUtc);
-
-                // Return the existing correlation ID if we can find it (stored in CreatedBy)
-                // Note: In a real scenario, we might want to return a 409 Conflict, but for now we'll return success with the existing ID
-                // to be idempotent.
-                return new HistoricalSeasonSourcingResponse
-                {
-                    CorrelationId = existingSeasonJob.CreatedBy
-                };
+                return await HandleExistingSeasonAsync(request, existingSeasonJob, tierDelays, correlationId, cancellationToken);
             }
 
-            // Define the tiers to process
-            var tiers = new[]
+            return await CreateNewSeasonSourcingAsync(request, tierDelays, correlationId, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Finds an existing ResourceIndex job for the specified season, if any.
+    /// </summary>
+    private async Task<ResourceIndexEntity?> FindExistingSeasonJobAsync(
+        HistoricalSeasonSourcingRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await _dataContext.ResourceIndexJobs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.Provider == request.SourceDataProvider &&
+                x.SportId == request.Sport &&
+                x.DocumentType == DocumentType.Season &&
+                x.SeasonYear == request.SeasonYear,
+                cancellationToken);
+    }
+
+    /// <summary>
+    /// Validates that all tier delays are non-negative.
+    /// </summary>
+    private static void ValidateTierDelays(TierDelays tierDelays)
+    {
+        if (tierDelays.Season < 0 || tierDelays.Venue < 0 || tierDelays.TeamSeason < 0 || tierDelays.AthleteSeason < 0)
+        {
+            throw new ArgumentException("Tier delays cannot be negative.");
+        }
+    }
+
+    /// <summary>
+    /// Handles a request for a season that already has ResourceIndex jobs created.
+    /// Returns idempotent response or force-reschedules if requested.
+    /// </summary>
+    private async Task<HistoricalSeasonSourcingResponse> HandleExistingSeasonAsync(
+        HistoricalSeasonSourcingRequest request,
+        ResourceIndexEntity existingSeasonJob,
+        TierDelays tierDelays,
+        Guid correlationId,
+        CancellationToken cancellationToken)
+    {
+        if (request.Force)
+        {
+            return await ForceRescheduleSeasonAsync(request, existingSeasonJob, tierDelays, correlationId, cancellationToken);
+        }
+
+        _logger.LogWarning(
+            "Historical sourcing for {Year} already exists. ResourceIndexId={Id}, CreatedUtc={CreatedUtc}",
+            request.SeasonYear, existingSeasonJob.Id, existingSeasonJob.CreatedUtc);
+
+        return new HistoricalSeasonSourcingResponse
+        {
+            CorrelationId = existingSeasonJob.CreatedBy
+        };
+    }
+
+    /// <summary>
+    /// Force-reschedules all tier jobs for an existing season.
+    /// Uses PostgreSQL advisory lock to prevent concurrent force requests.
+    /// </summary>
+    private async Task<HistoricalSeasonSourcingResponse> ForceRescheduleSeasonAsync(
+        HistoricalSeasonSourcingRequest request,
+        ResourceIndexEntity existingSeasonJob,
+        TierDelays tierDelays,
+        Guid correlationId,
+        CancellationToken cancellationToken)
+    {
+        var lockId = GetAdvisoryLockId(request.SourceDataProvider, request.Sport, request.SeasonYear);
+        var lockAcquired = false;
+
+        try
+        {
+            lockAcquired = await TryAcquireAdvisoryLockAsync(lockId, cancellationToken);
+
+            if (!lockAcquired)
             {
-                new TierDefinition(DocumentType.Season, ResourceShape.Leaf, tierDelays.Season),
-                new TierDefinition(DocumentType.Venue, ResourceShape.Index, tierDelays.Venue),
-                new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason),
-                new TierDefinition(DocumentType.AthleteSeason, ResourceShape.Index, tierDelays.AthleteSeason)
+                return HandleConcurrentForceRequest(request, correlationId, lockId);
+            }
+
+            _logger.LogInformation(
+                "Force reschedule lock acquired. Sport={Sport}, Provider={Provider}, Year={Year}, LockId={LockId}",
+                request.Sport, request.SourceDataProvider, request.SeasonYear, lockId);
+
+            var existingJobs = await FetchExistingTierJobsAsync(request, cancellationToken);
+            var (scheduledCount, failedCount) = RescheduleTierJobs(existingJobs, tierDelays);
+
+            _logger.LogInformation(
+                "Force reschedule completed. ScheduledJobs={ScheduledCount}, FailedJobs={FailedCount}, TotalJobs={TotalJobs}",
+                scheduledCount, failedCount, existingJobs.Count);
+
+            if (failedCount > 0 && scheduledCount == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to schedule all {failedCount} jobs. See logs for details.");
+            }
+
+            return new HistoricalSeasonSourcingResponse
+            {
+                CorrelationId = existingSeasonJob.CreatedBy,
+                Message = BuildForceRescheduleMessage(scheduledCount, failedCount, existingJobs.Count)
             };
-
-            var startTime = DateTime.UtcNow;
-            
-            // Use timestamp-based ordinals to avoid race conditions with concurrent requests
-            // Format: YYYYMMDDHHmmssfff (17 digits) + tier index (2 digits)
-            // Example: 20251214103045123 + 00 = 2025121410304512300
-            var baseOrdinal = long.Parse(startTime.ToString("yyyyMMddHHmmssfff"));
-
-            // Create ResourceIndex records (collect them for scheduling after persistence)
-            var createdResourceIndexes = new List<(ResourceIndexEntity Entity, TimeSpan Delay)>();
-
-            for (var i = 0; i < tiers.Length; i++)
+        }
+        finally
+        {
+            if (lockAcquired)
             {
-                var tier = tiers[i];
-                var uri = _uriBuilder.BuildUri(tier.DocumentType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+                await ReleaseAdvisoryLockAsync(lockId);
+            }
+        }
+    }
 
-                var resourceIndex = new ResourceIndexEntity
+    /// <summary>
+    /// Tries to acquire a PostgreSQL advisory lock for the given lock ID.
+    /// </summary>
+    private async Task<bool> TryAcquireAdvisoryLockAsync(long lockId, CancellationToken cancellationToken)
+    {
+        return await _dataContext.Database
+            .SqlQueryRaw<bool>("SELECT pg_try_advisory_lock({0})", lockId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Handles the case where a concurrent force request is already in progress.
+    /// </summary>
+    private HistoricalSeasonSourcingResponse HandleConcurrentForceRequest(
+        HistoricalSeasonSourcingRequest request,
+        Guid correlationId,
+        long lockId)
+    {
+        _logger.LogWarning(
+            "Concurrent Force request detected. Another force reschedule is in progress. " +
+            "Sport={Sport}, Provider={Provider}, Year={Year}, LockId={LockId}",
+            request.Sport, request.SourceDataProvider, request.SeasonYear, lockId);
+
+        return new HistoricalSeasonSourcingResponse
+        {
+            CorrelationId = correlationId,
+            Message = "Another force reschedule is already in progress for this season. Please try again in a few minutes."
+        };
+    }
+
+    /// <summary>
+    /// Fetches all existing tier jobs for the specified season.
+    /// </summary>
+    private async Task<List<ResourceIndexEntity>> FetchExistingTierJobsAsync(
+        HistoricalSeasonSourcingRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await _dataContext.ResourceIndexJobs
+            .AsNoTracking()
+            .Where(x =>
+                x.Provider == request.SourceDataProvider &&
+                x.SportId == request.Sport &&
+                x.SeasonYear == request.SeasonYear &&
+                (x.DocumentType == DocumentType.Season ||
+                 x.DocumentType == DocumentType.Venue ||
+                 x.DocumentType == DocumentType.TeamSeason ||
+                 x.DocumentType == DocumentType.AthleteSeason))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Reschedules all tier jobs with error handling.
+    /// Returns tuple of (scheduledCount, failedCount).
+    /// </summary>
+    private (int scheduledCount, int failedCount) RescheduleTierJobs(
+        List<ResourceIndexEntity> jobs,
+        TierDelays tierDelays)
+    {
+        var scheduledCount = 0;
+        var failedCount = 0;
+
+        foreach (var job in jobs)
+        {
+            try
+            {
+                var delayMinutes = job.DocumentType switch
                 {
-                    Id = Guid.NewGuid(),
-                    Ordinal = baseOrdinal * 100L + i, // Timestamp + tier index ensures uniqueness (use long to avoid overflow)
-                    Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
-                    IsRecurring = false,
-                    IsQueued = false,
-                    CronExpression = null,
-                    IsEnabled = true,
-                    Provider = request.SourceDataProvider,
-                    DocumentType = tier.DocumentType,
-                    Shape = tier.Shape,
-                    SportId = request.Sport,
-                    Uri = uri,
-                    SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
-                    SeasonYear = request.SeasonYear,
-                    IsSeasonSpecific = true,
-                    LastAccessedUtc = null,
-                    LastCompletedUtc = null,
-                    LastPageIndex = null,
-                    TotalPageCount = null,
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = correlationId // Use correlationId to track which historical sourcing job created this
+                    DocumentType.Season => tierDelays.Season,
+                    DocumentType.Venue => tierDelays.Venue,
+                    DocumentType.TeamSeason => tierDelays.TeamSeason,
+                    DocumentType.AthleteSeason => tierDelays.AthleteSeason,
+                    _ => LogUnexpectedDocumentType(job.DocumentType)
                 };
 
-                await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
+                var delay = TimeSpan.FromMinutes(delayMinutes);
+                var jobDefinition = new DocumentJobDefinition(job);
 
-                // Store for scheduling after persistence
-                var delayTimeSpan = TimeSpan.FromMinutes(tier.DelayMinutes);
-                createdResourceIndexes.Add((resourceIndex, delayTimeSpan));
+                _backgroundJobProvider.Schedule<ResourceIndexJob>(
+                    j => j.ExecuteAsync(jobDefinition),
+                    delay);
+
+                scheduledCount++;
 
                 _logger.LogInformation(
-                    "Created ResourceIndex for tier. Tier={TierName}, DocumentType={DocumentType}, Delay={DelayMinutes}min, " +
-                    "Ordinal={Ordinal}, ResourceIndexId={ResourceIndexId}, Uri={Uri}",
-                    tier.DocumentType, tier.DocumentType, tier.DelayMinutes,
-                    resourceIndex.Ordinal, resourceIndex.Id, uri);
+                    "Re-scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
+                    job.DocumentType, job.Id, delay);
             }
+            catch (Exception ex)
+            {
+                failedCount++;
 
-            // Persist all ResourceIndex records BEFORE scheduling jobs
-            await _dataContext.SaveChangesAsync(cancellationToken);
+                _logger.LogError(ex,
+                    "Failed to schedule job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}. " +
+                    "Continuing with remaining jobs.",
+                    job.DocumentType, job.Id);
+            }
+        }
 
-            _logger.LogInformation("ResourceIndex records persisted. Scheduling {Count} jobs...", createdResourceIndexes.Count);
+        return (scheduledCount, failedCount);
+    }
 
-            // Now schedule jobs against persisted records
-            foreach (var (resourceIndex, delay) in createdResourceIndexes)
+    /// <summary>
+    /// Builds a descriptive message about the force reschedule operation.
+    /// </summary>
+    private static string BuildForceRescheduleMessage(int scheduledCount, int failedCount, int totalCount)
+    {
+        return failedCount > 0
+            ? $"Force reschedule completed with {failedCount} failures. {scheduledCount}/{totalCount} jobs scheduled successfully."
+            : $"Force reschedule completed successfully. {scheduledCount} jobs scheduled.";
+    }
+
+    /// <summary>
+    /// Releases a PostgreSQL advisory lock.
+    /// </summary>
+    private async Task ReleaseAdvisoryLockAsync(long lockId)
+    {
+        try
+        {
+            await _dataContext.Database.ExecuteSqlRawAsync(
+                "SELECT pg_advisory_unlock({0})",
+                lockId);
+
+            _logger.LogInformation(
+                "Force reschedule lock released. LockId={LockId}",
+                lockId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to release force reschedule lock. LockId={LockId}. " +
+                "Lock will be automatically released when database connection closes.",
+                lockId);
+        }
+    }
+
+    /// <summary>
+    /// Creates new historical season sourcing by creating ResourceIndex records and scheduling tier jobs.
+    /// </summary>
+    private async Task<HistoricalSeasonSourcingResponse> CreateNewSeasonSourcingAsync(
+        HistoricalSeasonSourcingRequest request,
+        TierDelays tierDelays,
+        Guid correlationId,
+        CancellationToken cancellationToken)
+    {
+        var tiers = DefineTiers(tierDelays);
+        var baseOrdinal = GenerateBaseOrdinal();
+
+        var resourceIndexes = await CreateResourceIndexRecordsAsync(
+            request, tiers, baseOrdinal, correlationId, cancellationToken);
+
+        await _dataContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("ResourceIndex records persisted. Scheduling {Count} jobs...", resourceIndexes.Count);
+
+        var (scheduledCount, failedCount) = ScheduleTierJobs(resourceIndexes);
+
+        if (failedCount > 0)
+        {
+            _logger.LogWarning(
+                "Historical season sourcing completed with scheduling failures. " +
+                "ScheduledJobs={ScheduledCount}, FailedJobs={FailedCount}, TotalJobs={TotalJobs}, CorrelationId={CorrelationId}",
+                scheduledCount, failedCount, resourceIndexes.Count, correlationId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Historical season sourcing initiated successfully. {TierCount} tiers scheduled. CorrelationId={CorrelationId}",
+                tiers.Length, correlationId);
+        }
+
+        return new HistoricalSeasonSourcingResponse
+        {
+            CorrelationId = correlationId
+        };
+    }
+
+    /// <summary>
+    /// Defines the tier configuration for historical sourcing.
+    /// </summary>
+    private static TierDefinition[] DefineTiers(TierDelays tierDelays)
+    {
+        return
+        [
+            new TierDefinition(DocumentType.Season, ResourceShape.Leaf, tierDelays.Season),
+            new TierDefinition(DocumentType.Venue, ResourceShape.Index, tierDelays.Venue),
+            new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason),
+            new TierDefinition(DocumentType.AthleteSeason, ResourceShape.Index, tierDelays.AthleteSeason)
+        ];
+    }
+
+    /// <summary>
+    /// Generates a timestamp-based ordinal for ResourceIndex records.
+    /// Format: YYYYMMDDHHmmssfff (17 digits)
+    /// </summary>
+    private static long GenerateBaseOrdinal()
+    {
+        var startTime = DateTime.UtcNow;
+        return long.Parse(startTime.ToString("yyyyMMddHHmmssfff"));
+    }
+
+    /// <summary>
+    /// Creates ResourceIndex records for all tiers and returns them with their delays for scheduling.
+    /// </summary>
+    private async Task<List<(ResourceIndexEntity Entity, TimeSpan Delay)>> CreateResourceIndexRecordsAsync(
+        HistoricalSeasonSourcingRequest request,
+        TierDefinition[] tiers,
+        long baseOrdinal,
+        Guid correlationId,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<(ResourceIndexEntity Entity, TimeSpan Delay)>();
+
+        for (var i = 0; i < tiers.Length; i++)
+        {
+            var tier = tiers[i];
+            var uri = _uriBuilder.BuildUri(tier.DocumentType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+
+            var resourceIndex = new ResourceIndexEntity
+            {
+                Id = Guid.NewGuid(),
+                Ordinal = baseOrdinal * 100L + i,
+                Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
+                IsRecurring = false,
+                IsQueued = false,
+                CronExpression = null,
+                IsEnabled = true,
+                Provider = request.SourceDataProvider,
+                DocumentType = tier.DocumentType,
+                Shape = tier.Shape,
+                SportId = request.Sport,
+                Uri = uri,
+                SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
+                SeasonYear = request.SeasonYear,
+                IsSeasonSpecific = true,
+                LastAccessedUtc = null,
+                LastCompletedUtc = null,
+                LastPageIndex = null,
+                TotalPageCount = null,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = correlationId
+            };
+
+            await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
+
+            var delayTimeSpan = TimeSpan.FromMinutes(tier.DelayMinutes);
+            result.Add((resourceIndex, delayTimeSpan));
+
+            _logger.LogInformation(
+                "Created ResourceIndex for tier. Tier={TierName}, DocumentType={DocumentType}, Delay={DelayMinutes}min, " +
+                "Ordinal={Ordinal}, ResourceIndexId={ResourceIndexId}, Uri={Uri}",
+                tier.DocumentType, tier.DocumentType, tier.DelayMinutes,
+                resourceIndex.Ordinal, resourceIndex.Id, uri);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Schedules background jobs for all tier ResourceIndex records with error handling.
+    /// Continues scheduling remaining jobs even if individual jobs fail.
+    /// Returns tuple of (scheduledCount, failedCount).
+    /// </summary>
+    private (int scheduledCount, int failedCount) ScheduleTierJobs(List<(ResourceIndexEntity Entity, TimeSpan Delay)> resourceIndexes)
+    {
+        var scheduledCount = 0;
+        var failedCount = 0;
+
+        foreach (var (resourceIndex, delay) in resourceIndexes)
+        {
+            try
             {
                 var jobDefinition = new DocumentJobDefinition(resourceIndex);
 
@@ -171,20 +464,24 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                     job => job.ExecuteAsync(jobDefinition),
                     delay);
 
+                scheduledCount++;
+
                 _logger.LogInformation(
                     "Scheduled job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}",
                     resourceIndex.DocumentType, resourceIndex.Id, delay);
             }
-
-            _logger.LogInformation(
-                "Historical season sourcing initiated. {TierCount} tiers scheduled. CorrelationId={CorrelationId}",
-                tiers.Length, correlationId);
-
-            return new HistoricalSeasonSourcingResponse
+            catch (Exception ex)
             {
-                CorrelationId = correlationId
-            };
+                failedCount++;
+
+                _logger.LogError(ex,
+                    "Failed to schedule job for tier. DocumentType={DocumentType}, ResourceIndexId={ResourceIndexId}, Delay={Delay}. " +
+                    "Continuing with remaining jobs.",
+                    resourceIndex.DocumentType, resourceIndex.Id, delay);
+            }
         }
+
+        return (scheduledCount, failedCount);
     }
 
     private TierDelays GetTierDelays(HistoricalSeasonSourcingRequest request)
@@ -223,6 +520,48 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             TeamSeason = 60,
             AthleteSeason = 240
         };
+    }
+
+    /// <summary>
+    /// Logs a warning when an unexpected DocumentType is encountered and returns default delay of 0.
+    /// This helps identify potential data inconsistencies or configuration issues.
+    /// </summary>
+    /// <param name="documentType">The unexpected document type</param>
+    /// <returns>Default delay of 0 minutes</returns>
+    private int LogUnexpectedDocumentType(DocumentType documentType)
+    {
+        _logger.LogWarning(
+            "Unexpected DocumentType encountered in historical sourcing. " +
+            "DocumentType={DocumentType}. Using default delay of 0 minutes. " +
+            "This may indicate a data inconsistency or missing configuration.",
+            documentType);
+        return 0;
+    }
+
+    /// <summary>
+    /// Generates a stable PostgreSQL advisory lock ID from season/provider/sport combination.
+    /// Uses SHA256 hashing to ensure consistent lock IDs across application restarts and different runtimes.
+    /// PostgreSQL advisory locks use bigint (64-bit) IDs.
+    /// </summary>
+    /// <param name="provider">Data provider</param>
+    /// <param name="sport">Sport type</param>
+    /// <param name="seasonYear">Season year</param>
+    /// <returns>Stable 64-bit advisory lock ID (always positive)</returns>
+    private static long GetAdvisoryLockId(SourceDataProvider provider, Sport sport, int seasonYear)
+    {
+        // Combine into a unique string
+        var lockString = $"HistoricalSeasonForce:{provider}:{sport}:{seasonYear}";
+        
+        // Compute SHA256 hash for stable, deterministic hashing
+        var bytes = Encoding.UTF8.GetBytes(lockString);
+        var hashBytes = SHA256.HashData(bytes);
+        
+        // Take first 8 bytes and convert to 64-bit integer
+        var lockId = BitConverter.ToInt64(hashBytes, 0);
+        
+        // Normalize to positive value (PostgreSQL advisory locks support negative, but positive is clearer)
+        // Handle Int64.MinValue edge case: use & with long.MaxValue to avoid overflow
+        return lockId == long.MinValue ? long.MaxValue : Math.Abs(lockId);
     }
 
     private record TierDefinition(DocumentType DocumentType, ResourceShape Shape, int DelayMinutes);

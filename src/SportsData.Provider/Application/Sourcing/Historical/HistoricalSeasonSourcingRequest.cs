@@ -29,6 +29,11 @@ public record HistoricalSeasonSourcingRequest : IValidatableObject
     /// </summary>
     public Dictionary<string, int>? TierDelays { get; init; }
 
+    /// <summary>
+    /// If true, re-schedules jobs even if the season has already been sourced.
+    /// </summary>
+    public bool Force { get; init; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (SeasonYear > DateTime.UtcNow.Year)

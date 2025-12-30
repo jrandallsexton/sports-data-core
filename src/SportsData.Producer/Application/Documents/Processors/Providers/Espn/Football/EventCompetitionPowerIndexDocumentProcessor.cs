@@ -14,27 +14,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionPowerIndex)]
-public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _identityGenerator;
-
     public EventCompetitionPowerIndexDocumentProcessor(
         ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities identityGenerator)
+        : base(logger, dataContext, publishEndpoint, identityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _identityGenerator = identityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -158,7 +150,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : IProces
             }
 
             var index = stat.AsEntity(
-                _identityGenerator,
+                _externalRefIdentityGenerator,
                 dto.Ref,
                 powerIndex.Id,
                 competitionId,

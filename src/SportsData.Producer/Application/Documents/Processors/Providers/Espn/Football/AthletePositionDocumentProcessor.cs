@@ -15,27 +15,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Position)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthletePosition)]
-public class AthletePositionDocumentProcessor<TDataContext> : IProcessDocuments
+public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<AthletePositionDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-
     public AthletePositionDocumentProcessor(
         ILogger<AthletePositionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {

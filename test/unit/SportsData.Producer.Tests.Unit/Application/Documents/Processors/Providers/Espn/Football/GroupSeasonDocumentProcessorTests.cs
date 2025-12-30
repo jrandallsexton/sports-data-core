@@ -11,11 +11,12 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football;
 using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
-public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDocumentProcessor>
+public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDocumentProcessor<FootballDataContext>>
 {
     [Fact]
     public async Task WhenGroupAndSeasonDoNotExist_Sec2024_IsCreated()
@@ -23,7 +24,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         // arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
-        var sut = Mocker.CreateInstance<GroupSeasonDocumentProcessor>();
+        var sut = Mocker.CreateInstance<GroupSeasonDocumentProcessor<FootballDataContext>>();
 
         var documentJson = await LoadJsonTestData("EspnFootballNcaaGroupSeason_Sec2024.json");
         var dto = documentJson.FromJson<EspnGroupSeasonDto>();
@@ -76,7 +77,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         // arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
-        var sut = Mocker.CreateInstance<GroupSeasonDocumentProcessor>();
+        var sut = Mocker.CreateInstance<GroupSeasonDocumentProcessor<FootballDataContext>>();
 
         var json2024 = await LoadJsonTestData("EspnFootballNcaaGroupSeason_Sec2024.json");
         var json2025 = await LoadJsonTestData("EspnFootballNcaaGroupSeason_Sec2025.json");

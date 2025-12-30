@@ -17,7 +17,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
             public void Configure(EntityTypeBuilder<FranchiseSeasonRecordAtsCategory> builder)
             {
                 builder.Property(c => c.Id)
-                    .ValueGeneratedNever();
+                    .ValueGeneratedOnAdd();  // Use database-generated identity
 
                 builder.ToTable("lkRecordAtsCategory");
 

@@ -16,29 +16,23 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeason)]
-public class GroupSeasonDocumentProcessor : IProcessDocuments
+public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : FootballDataContext
 {
-    private readonly ILogger<GroupSeasonDocumentProcessor> _logger;
-    private readonly FootballDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public GroupSeasonDocumentProcessor(
-        ILogger<GroupSeasonDocumentProcessor> logger,
-        FootballDataContext dataContext,
+        ILogger<GroupSeasonDocumentProcessor<TDataContext>> logger,
+        TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -116,7 +110,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                     _logger.LogWarning(
                         "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                         DocumentType.Season,
-                        nameof(GroupSeasonDocumentProcessor),
+                        nameof(GroupSeasonDocumentProcessor<TDataContext>),
                         dto.Season.Ref);
                     throw new ExternalDocumentNotSourcedException(
                         $"Season {dto.Season.Ref} not found. Will retry when available.");
@@ -166,7 +160,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
                     _logger.LogWarning(
                         "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                         DocumentType.GroupSeason,
-                        nameof(GroupSeasonDocumentProcessor),
+                        nameof(GroupSeasonDocumentProcessor<TDataContext>),
                         dto.Parent.Ref);
                     throw new ExternalDocumentNotSourcedException(
                         $"GroupSeason {dto.Parent.Ref} not found. Will retry.");
@@ -247,7 +241,7 @@ public class GroupSeasonDocumentProcessor : IProcessDocuments
 
     private async Task HandleExisting()
     {
-        _logger.LogError("Updated detected. Not Implemented");
-        await Task.Delay(100);
+        _logger.LogWarning("Update detected. Not Implemented");
+        await Task.CompletedTask;
     }
 }

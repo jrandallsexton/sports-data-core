@@ -17,31 +17,18 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetition)]
-public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly ILogger<EventCompetitionDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IProvideProviders _provider;
 
     public EventCompetitionDocumentProcessor(
         ILogger<EventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IProvideProviders provider
-    )
-    {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _provider = provider;
-    }
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator) { }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -203,37 +190,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
         }
     }
 
-    /// <summary>
-    /// Generic helper to process child documents that have a $ref property.
-    /// Eliminates repetitive null checks and DocumentRequested publishing.
-    /// </summary>
-    private async Task ProcessChildDocumentRef(
-        ProcessDocumentCommand command,
-        EspnLinkDto? linkDto,
-        Competition competition,
-        DocumentType documentType)
-    {
-        if (linkDto?.Ref is null)
-            return;
-
-        _logger.LogInformation("Requesting child document. CompetitionId={CompId}, DocumentType={DocType}, Ref={Ref}", 
-            competition.Id,
-            documentType,
-            linkDto.Ref);
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: HashProvider.GenerateHashFromUri(linkDto.Ref),
-            ParentId: competition.Id.ToString(),
-            Uri: linkDto.Ref.ToCleanUri(),
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: documentType,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-        ));
-    }
-
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto dto,
@@ -315,17 +271,17 @@ public class EventCompetitionDocumentProcessor<TDataContext> : IProcessDocuments
     {
         _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}", competition.Id);
 
-        // All the simple $ref child documents - one line each using the generic helper
-        await ProcessChildDocumentRef(command, dto.Odds, competition, DocumentType.EventCompetitionOdds);
-        await ProcessChildDocumentRef(command, dto.Status, competition, DocumentType.EventCompetitionStatus);
-        await ProcessChildDocumentRef(command, dto.Situation, competition, DocumentType.EventCompetitionSituation);
-        await ProcessChildDocumentRef(command, dto.Broadcasts, competition, DocumentType.EventCompetitionBroadcast);
-        await ProcessChildDocumentRef(command, dto.Details, competition, DocumentType.EventCompetitionPlay);
-        await ProcessChildDocumentRef(command, dto.Leaders, competition, DocumentType.EventCompetitionLeaders);
-        await ProcessChildDocumentRef(command, dto.Predictor, competition, DocumentType.EventCompetitionPrediction);
-        await ProcessChildDocumentRef(command, dto.Probabilities, competition, DocumentType.EventCompetitionProbability);
-        await ProcessChildDocumentRef(command, dto.PowerIndexes, competition, DocumentType.EventCompetitionPowerIndex);
-        await ProcessChildDocumentRef(command, dto.Drives, competition, DocumentType.EventCompetitionDrive);
+        // All the simple $ref child documents - one line each using the base class helper
+        await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Status, competition.Id, DocumentType.EventCompetitionStatus, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Situation, competition.Id, DocumentType.EventCompetitionSituation, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Broadcasts, competition.Id, DocumentType.EventCompetitionBroadcast, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Details, competition.Id, DocumentType.EventCompetitionPlay, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Leaders, competition.Id, DocumentType.EventCompetitionLeaders, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Predictor, competition.Id, DocumentType.EventCompetitionPrediction, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Probabilities, competition.Id, DocumentType.EventCompetitionProbability, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex, CausationId.Producer.EventCompetitionDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive, CausationId.Producer.EventCompetitionDocumentProcessor);
         
         // Competitors (special handling for collections)
         await ProcessCompetitors(command, dto, competition);

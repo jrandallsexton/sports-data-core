@@ -16,27 +16,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Season)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Seasons)]
-public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
+public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly ILogger<SeasonDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
-
     public SeasonDocumentProcessor(
         ILogger<SeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -131,7 +123,6 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
             await _dataContext.SaveChangesAsync();
         }
 
-
         _logger.LogInformation("Linked ActivePhaseId for Season {SeasonId} -> Phase {PhaseId}",
             season.Id, seasonPhase.Id);
 
@@ -201,6 +192,6 @@ public class SeasonDocumentProcessor<TDataContext> : IProcessDocuments
     private async Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
     {
         _logger.LogError("Season update detected. Not implemented");
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

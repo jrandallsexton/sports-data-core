@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -13,24 +14,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Test;
 /// 3. Factory creates processor with correct DbContext type (FootballDataContext, etc.)
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.OutboxTest)]
-public class OutboxTestDocumentProcessor<TDataContext> : IProcessDocuments
+public class OutboxTestDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly ILogger<OutboxTestDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _bus;
-
     public OutboxTestDocumentProcessor(
         ILogger<OutboxTestDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
-        IEventBus bus)
+        IEventBus bus,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _bus = bus;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -51,7 +47,7 @@ public class OutboxTestDocumentProcessor<TDataContext> : IProcessDocuments
                 PublishedUtc: DateTime.UtcNow
             );
 
-            await _bus.Publish(evt);
+            await _publishEndpoint.Publish(evt);
 
             // Cascade test: Publish DocumentCreated event for TeamSport processor
             // This validates the ENTIRE inheritance chain works
@@ -75,7 +71,7 @@ public class OutboxTestDocumentProcessor<TDataContext> : IProcessDocuments
                 IncludeLinkedDocumentTypes: null
             );
 
-            await _bus.Publish(teamSportTestEvent);
+            await _publishEndpoint.Publish(teamSportTestEvent);
 
             // Save changes (should flush outbox WITHOUT OutboxPing)
             await _dataContext.SaveChangesAsync();

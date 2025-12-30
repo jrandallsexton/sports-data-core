@@ -17,13 +17,9 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonTypeWeek)]
-public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
+public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly ILogger<SeasonTypeWeekDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IEventBus _publishEndpoint;
     private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekDocumentProcessor(
@@ -32,15 +28,12 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IEventBus publishEndpoint,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _publishEndpoint = publishEndpoint;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object> {
                    ["CorrelationId"] = command.CorrelationId,
@@ -181,6 +174,6 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : IProcessDocuments
     private async Task ProcessExistingEntity()
     {
         _logger.LogError("Update detected. Not implemented");
-        await Task.Delay(100);
+        await Task.CompletedTask;
     }
 }

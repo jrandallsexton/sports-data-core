@@ -12,27 +12,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionCompetitorStatistics)]
-public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext> : IProcessDocuments
+public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _eventBus;
-    private readonly IGenerateExternalRefIdentities _identityGenerator;
-
     public EventCompetitionCompetitorStatisticsDocumentProcessor(
         ILogger<EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus eventBus,
         IGenerateExternalRefIdentities identityGenerator)
+        : base(logger, dataContext, eventBus, identityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _eventBus = eventBus;
-        _identityGenerator = identityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -79,7 +71,7 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
         }
 
         // Resolve FranchiseSeason
-        var franchiseSeasonIdentity = _identityGenerator.Generate(dto.Team.Ref);
+        var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == franchiseSeasonIdentity.UrlHash));
@@ -110,7 +102,7 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
         var entity = dto.AsEntity(
             franchiseSeasonId: franchiseSeason.Id,
             competitionId: competition.Id,
-            externalRefIdentityGenerator: _identityGenerator,
+            externalRefIdentityGenerator: _externalRefIdentityGenerator,
             correlationId: command.CorrelationId);
 
         await _dataContext.CompetitionCompetitorStatistics.AddAsync(entity);

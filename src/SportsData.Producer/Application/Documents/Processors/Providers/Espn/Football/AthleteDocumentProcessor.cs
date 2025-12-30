@@ -12,7 +12,6 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -21,29 +20,23 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 // TODO: Rename to FootballAthleteDocumentProcessor
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-public class AthleteDocumentProcessor : IProcessDocuments
+public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : FootballDataContext
 {
-    private readonly ILogger<AthleteDocumentProcessor> _logger;
-    private readonly FootballDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly DocumentProcessingConfig _config;
 
     public AthleteDocumentProcessor(
-        ILogger<AthleteDocumentProcessor> logger,
-        FootballDataContext dataContext,
+        ILogger<AthleteDocumentProcessor<TDataContext>> logger,
+        TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         DocumentProcessingConfig config)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _config = config;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -165,7 +158,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
         var stateLower = state?.ToLower();
         var countryLower = country?.ToLower();
 
-        // 1️⃣ Check if it already exists
+        // Check if it already exists
         var location = await _dataContext.Locations
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
@@ -175,8 +168,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         if (location is null)
         {
-            // 2️⃣ Create it
-            var newLocation = new Location
+            // Create new location
+            location = new Location
             {
                 Id = Guid.NewGuid(),
                 City = city,
@@ -184,21 +177,13 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 Country = country
             };
 
-            await _dataContext.Locations.AddAsync(newLocation);
+            await _dataContext.Locations.AddAsync(location);
             await _dataContext.SaveChangesAsync();
 
-            // 3️⃣ Re-fetch to confirm it's actually persisted
-            location = await _dataContext.Locations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(l => l.Id == newLocation.Id);
-
-            if (location is null)
-            {
-                throw new InvalidOperationException($"Failed to persist Location for athlete {newEntity.Id}. FK assignment aborted.");
-            }
+            // EF Core automatically assigns the ID after SaveChangesAsync, so location.Id is now populated
         }
 
-        // 4️⃣ Safe to assign FK
+        // Safe to assign FK
         newEntity.BirthLocationId = location.Id;
     }
 
@@ -224,7 +209,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         var nameLower = name.ToLower();
 
-        // 1️⃣ Look for existing
+        // Look for existing
         var status = await _dataContext.AthleteStatuses
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
@@ -232,8 +217,8 @@ public class AthleteDocumentProcessor : IProcessDocuments
 
         if (status is null)
         {
-            // 2️⃣ Create new
-            var newStatus = new AthleteStatus
+            // Create new status
+            status = new AthleteStatus
             {
                 Id = Guid.NewGuid(),
                 Name = name,
@@ -242,21 +227,13 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 ExternalId = externalId.ToString()
             };
 
-            await _dataContext.AthleteStatuses.AddAsync(newStatus);
+            await _dataContext.AthleteStatuses.AddAsync(status);
             await _dataContext.SaveChangesAsync();
 
-            // 3️⃣ Confirm it's persisted
-            status = await _dataContext.AthleteStatuses
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == newStatus.Id);
-
-            if (status is null)
-            {
-                throw new InvalidOperationException($"Failed to persist AthleteStatus for athlete {newEntity.Id}. FK assignment aborted.");
-            }
+            // EF Core automatically assigns the ID after SaveChangesAsync, so status.Id is now populated
         }
 
-        // 4️⃣ Always safe assignment
+        // Always safe assignment
         newEntity.StatusId = status.Id;
     }
 
@@ -283,7 +260,7 @@ public class AthleteDocumentProcessor : IProcessDocuments
                 _logger.LogWarning(
                     "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                     DocumentType.AthletePosition,
-                    nameof(AthleteDocumentProcessor),
+                    nameof(AthleteDocumentProcessor<TDataContext>),
                     positionIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"AthletePosition {positionIdentity.CleanUrl} not found. Will retry when available.");

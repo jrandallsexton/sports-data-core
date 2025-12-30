@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -6,24 +7,19 @@ using SportsData.Producer.Infrastructure.Data.Common;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonAward)]
-public class TeamSeasonAwardDocumentProcessor<TDataContext> : IProcessDocuments
+public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly TDataContext _dataContext;
-    private readonly ILogger<TeamSeasonAwardDocumentProcessor<TDataContext>> _logger;
-    private readonly IEventBus _publishEndpoint;
-
     public TeamSeasonAwardDocumentProcessor(
-        TDataContext dataContext,
         ILogger<TeamSeasonAwardDocumentProcessor<TDataContext>> logger,
-        IEventBus publishEndpoint)
+        TDataContext dataContext,
+        IEventBus publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _dataContext = dataContext;
-        _logger = logger;
-        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
                {
@@ -31,14 +27,22 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : IProcessDocuments
                }))
         {
             _logger.LogInformation("Processing TeamSeasonAwardDocument for FranchiseSeason {ParentId}", command.ParentId);
-            await ProcessInternal(command);
+            try
+            {
+                await ProcessInternal(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while processing. {@SafeCommand}", command.ToSafeLogObject());
+                throw;
+            }
         }
     }
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
         // TODO: Implement deserialization and processing logic for TeamSeasonAward
-        _logger.LogError("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
-        await Task.Delay(100);
+        _logger.LogWarning("TODO: Implement TeamSeasonAwardDocumentProcessor.ProcessInternal");
+        await Task.CompletedTask;
     }
 }

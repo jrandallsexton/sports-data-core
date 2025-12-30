@@ -12,27 +12,19 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachRecord)]
-public class CoachRecordDocumentProcessor<TDataContext> : IProcessDocuments
+public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<CoachRecordDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-
     public CoachRecordDocumentProcessor(
         ILogger<CoachRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -82,9 +74,10 @@ public class CoachRecordDocumentProcessor<TDataContext> : IProcessDocuments
 
         var coach = await _dataContext.Coaches
             .Include(x => x.Records)
-            .ThenInclude(r => r.Stats)
-            .Include(x => x.ExternalIds).Include(coach => coach.Records)
-            .ThenInclude(coachRecord => coachRecord.ExternalIds)
+                .ThenInclude(r => r.Stats)
+            .Include(x => x.Records)
+                .ThenInclude(r => r.ExternalIds)
+            .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.Id == coachId);
 
         if (coach is null)

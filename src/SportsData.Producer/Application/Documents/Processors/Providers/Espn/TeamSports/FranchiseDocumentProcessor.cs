@@ -12,39 +12,31 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Franchise)]
-public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
+public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly ILogger<FranchiseDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-
     public FranchiseDocumentProcessor(
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
+    public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
             ["CorrelationId"] = command.CorrelationId
         }))
         {
-            _logger.LogInformation("Began with {@command}", command);
+            _logger.LogInformation("Processing FranchiseDocument. DocumentType={DocumentType}, UrlHash={UrlHash}", 
+                command.DocumentType, 
+                command.UrlHash);
 
             try
             {
@@ -52,7 +44,8 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
+                _logger.LogError(ex, "Error occurred while processing FranchiseDocument. {@SafeCommand}", 
+                    command.ToSafeLogObject());
                 throw;
             }
         }
@@ -64,13 +57,15 @@ public class FranchiseDocumentProcessor<TDataContext> : IProcessDocuments
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@SafeCommand}", 
+                command.ToSafeLogObject());
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@SafeCommand}", 
+                command.ToSafeLogObject());
             return;
         }
 

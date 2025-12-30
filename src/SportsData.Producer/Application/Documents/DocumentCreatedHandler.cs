@@ -52,10 +52,11 @@ namespace SportsData.Producer.Application.Documents
                 {
                     _logger.LogError(
                         "HANDLER_MAX_RETRIES: Maximum retry attempts ({Max}) reached for document. Dropping message. " +
-                        "DocumentId={DocumentId}, DocumentType={DocumentType}",
+                        "DocumentId={DocumentId}, DocumentType={DocumentType}, Ref={Ref}",
                         maxAttempts, 
                         message.Id,
-                        message.DocumentType);
+                        message.DocumentType,
+                        message.Ref);
                     return;
                 }
 

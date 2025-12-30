@@ -128,60 +128,46 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
             .AsSplitQuery()
             .FirstAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                     z.Provider == command.SourceDataProvider));
-        var updated = false;
 
-        if (venue.Name != dto.FullName)
+        // Map DTO to a temporary entity with all properties populated
+        var updatedEntity = dto.AsEntity(
+            _externalRefIdentityGenerator,
+            command.CorrelationId);
+
+        // Preserve immutable fields before SetValues overwrites them
+        var originalId = venue.Id;
+        var originalCreatedBy = venue.CreatedBy;
+        var originalCreatedUtc = venue.CreatedUtc;
+
+        // Use EF Core's SetValues to update all scalar properties automatically
+        // This compares every property and marks only changed ones as Modified
+        var entry = _dataContext.Entry(venue);
+        entry.CurrentValues.SetValues(updatedEntity);
+
+        // Restore immutable fields - SetValues overwrites in-memory values
+        venue.Id = originalId;
+        venue.CreatedBy = originalCreatedBy;
+        venue.CreatedUtc = originalCreatedUtc;
+
+        // Check if EF detected any changes to scalar properties
+        var scalarPropertiesChanged = entry.State == EntityState.Modified;
+
+        // Log which properties changed (helpful for debugging)
+        if (scalarPropertiesChanged)
         {
-            _logger.LogInformation("Updating FullName from {Old} to {New}", venue.Name, dto.FullName);
-            venue.Name = dto.FullName;
-            updated = true;
+            var changedProperties = entry
+                .Properties
+                .Where(p => p.IsModified)
+                .Select(p => $"{p.Metadata.Name}: {p.OriginalValue} -> {p.CurrentValue}")
+                .ToList();
+
+            _logger.LogInformation(
+                "Updating Venue. VenueId={VenueId}, ChangedProperties={Changes}",
+                venue.Id,
+                string.Join(", ", changedProperties));
         }
 
-        if (venue.IsGrass != dto.Grass)
-        {
-            _logger.LogInformation("Updating Grass from {Old} to {New}", venue.IsGrass, dto.Grass);
-            venue.IsGrass = dto.Grass;
-            updated = true;
-        }
-
-        if (venue.IsIndoor != dto.Indoor)
-        {
-            _logger.LogInformation("Updating Indoor from {Old} to {New}", venue.IsIndoor, dto.Indoor);
-            venue.IsIndoor = dto.Indoor;
-            updated = true;
-        }
-
-        if (venue.Capacity != dto.Capacity)
-        {
-            _logger.LogInformation("Updating Capacity from {Old} to {New}", venue.Capacity, dto.Capacity);
-            venue.Capacity = dto.Capacity;
-            updated = true;
-        }
-
-        var address = dto.Address;
-
-        // Normalize values (null/whitespace from ESPN ? empty string or null in DB)
-        var incomingCity = address?.City ?? string.Empty;
-        var incomingState = string.IsNullOrWhiteSpace(address?.State) ? string.Empty : address.State;
-        var incomingPostalCode = address?.ZipCode.ToString() ?? string.Empty;
-        var incomingCountry = string.IsNullOrWhiteSpace(address?.Country) ? null : address.Country;
-
-        if (venue.City != incomingCity ||
-            venue.State != incomingState ||
-            venue.PostalCode != incomingPostalCode ||
-            venue.Country != incomingCountry)
-        {
-            _logger.LogInformation("Updating address from ({OldCity}, {OldState}, {OldZip}, {OldCountry}) to ({NewCity}, {NewState}, {NewZip}, {NewCountry})",
-                venue.City, venue.State, venue.PostalCode, venue.Country ?? "(null)",
-                incomingCity, incomingState, incomingPostalCode, incomingCountry ?? "(null)");
-            venue.City = incomingCity;
-            venue.State = incomingState;
-            venue.PostalCode = incomingPostalCode;
-            venue.Country = incomingCountry;
-            updated = true;
-        }
-
-        // === Detect new images
+        // Detect new images
         var newImages = dto.Images?
             .Where(img => !venue.Images.Any(v => v.OriginalUrlHash == HashProvider.GenerateHashFromUri(img.Href)))
             .ToList();
@@ -208,22 +194,31 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                     0,
                     null,
                     command.CorrelationId,
-                    CausationId.Producer.FranchiseDocumentProcessor));
+                    CausationId.Producer.VenueDocumentProcessor));
             }
 
             await _publishEndpoint.PublishBatch(imageEvents, CancellationToken.None);
         }
 
-        if (updated || newImages?.Count > 0)
+        // Save if there were any changes (scalar properties or new images)
+        if (scalarPropertiesChanged || newImages?.Count > 0)
         {
+            // Update audit fields
+            venue.ModifiedUtc = DateTime.UtcNow;
+            venue.ModifiedBy = command.CorrelationId;
+
             await _dataContext.SaveChangesAsync();
 
             var evt = new VenueUpdated(venue.AsCanonical(), command.CorrelationId,
-                CausationId.Producer.VenueCreatedDocumentProcessor);
+                CausationId.Producer.VenueDocumentProcessor);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
 
-            _logger.LogInformation("Updated venue {@Venue}", evt);
+            _logger.LogInformation(
+                "Venue updated. VenueId={VenueId}, ScalarChanges={ScalarChanges}, NewImages={NewImages}",
+                venue.Id,
+                scalarPropertiesChanged,
+                newImages?.Count ?? 0);
         }
         else
         {

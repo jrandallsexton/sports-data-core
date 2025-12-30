@@ -62,8 +62,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityExists_IsUpdated()
         {
             // Arrange
-            var existingVenueId = Guid.NewGuid();
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
             var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en";
+            // Use the same deterministic Id that AsEntity will generate from the Ref URL
+            var existingVenueId = generator.Generate(venueUrl).CanonicalId;
 
             var originalVenue = new Venue
             {
@@ -132,6 +136,83 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             bus.Verify(x =>
                 x.Publish(It.Is<VenueUpdated>(v => v.Canonical.Name == "Nissan Stadium"), It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public async Task WhenEntityExists_ImmutableFieldsArePreserved()
+        {
+            // Arrange
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/venues/3810?lang=en";
+            // Use the same deterministic Id that AsEntity will generate from the Ref URL
+            var existingVenueId = generator.Generate(venueUrl).CanonicalId;
+            var originalCreatedBy = Guid.NewGuid();
+            var originalCreatedUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var originalVenue = new Venue
+            {
+                Id = existingVenueId,
+                Name = "Old Name",
+                City = "Old City",
+                State = "TX",
+                PostalCode = "00000",
+                Country = "USA",
+                Capacity = 40000,
+                IsGrass = false,
+                IsIndoor = false,
+                Slug = "old-name",
+                ShortName = "Old Name",
+                CreatedBy = originalCreatedBy,
+                CreatedUtc = originalCreatedUtc,
+                ExternalIds =
+                [
+                    new VenueExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = venueUrl.UrlHash(),
+                        SourceUrlHash = venueUrl.UrlHash(),
+                        SourceUrl = venueUrl
+                    }
+                ],
+                Images = []
+            };
+
+            FootballDataContext.Venues.Add(originalVenue);
+            await FootballDataContext.SaveChangesAsync();
+
+            var updatedJson = await LoadJsonTestData("EspnFootballNflVenue.json");
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.Venue)
+                .With(x => x.Document, updatedJson)
+                .With(x => x.UrlHash, venueUrl.UrlHash())
+                .OmitAutoProperties()
+                .Create();
+
+            var bus = Mocker.GetMock<IEventBus>();
+
+            var sut = Mocker.CreateInstance<VenueDocumentProcessor<FootballDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert
+            var updatedVenue = await FootballDataContext.Venues
+                .AsNoTracking()
+                .FirstAsync(v => v.Id == existingVenueId);
+
+            // Verify immutable fields are preserved
+            updatedVenue.Id.Should().Be(existingVenueId);
+            updatedVenue.CreatedBy.Should().Be(originalCreatedBy);
+            updatedVenue.CreatedUtc.Should().Be(originalCreatedUtc);
+
+            // Verify mutable fields were updated
+            updatedVenue.Name.Should().Be("Nissan Stadium");
         }
 
     }

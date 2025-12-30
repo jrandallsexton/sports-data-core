@@ -114,7 +114,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '9c1dd681-8a67-91bb-1492-95742699410e'
 select count(*) from public."Contest" where "SeasonYear" = 2024
-select * from public."Contest" where "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
+select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."Competition" where "ContestId" = '8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb'
 select * from public."CompetitionExternalId" where "CompetitionId" = '5e83718e-e1e4-2c73-804f-0c4a1f19f850'

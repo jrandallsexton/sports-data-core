@@ -204,9 +204,17 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
         // Store the original date for comparison (needed for ContestStartTimeUpdated event)
         var originalDate = competition.Date;
 
+        // Preserve immutable fields before SetValues overwrites them
+        var originalCreatedBy = competition.CreatedBy;
+        var originalCreatedUtc = competition.CreatedUtc;
+
         // Use EF Core's SetValues to update all scalar properties automatically
         // This compares every property and marks only changed ones as Modified
         _dataContext.Entry(competition).CurrentValues.SetValues(updatedEntity);
+
+        // Restore immutable fields - SetValues overwrites in-memory values
+        competition.CreatedBy = originalCreatedBy;
+        competition.CreatedUtc = originalCreatedUtc;
 
         // Check if EF detected any changes
         if (_dataContext.Entry(competition).State == EntityState.Modified)

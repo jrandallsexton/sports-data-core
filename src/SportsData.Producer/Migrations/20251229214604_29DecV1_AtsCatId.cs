@@ -25,7 +25,7 @@ namespace SportsData.Producer.Migrations
             migrationBuilder.Sql(@"
                 -- Set the sequence to MAX(Id) + 1 to avoid conflicts with existing data
                 SELECT setval(
-                    pg_get_serial_sequence('""lkRecordAtsCategory""', '""Id""'),
+                    pg_get_serial_sequence('""lkRecordAtsCategory""', 'Id'),
                     COALESCE((SELECT MAX(""Id"") FROM ""lkRecordAtsCategory""), 0) + 1,
                     false
                 );

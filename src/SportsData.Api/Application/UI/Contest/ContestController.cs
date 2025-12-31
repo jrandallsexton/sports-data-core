@@ -1,40 +1,51 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
+using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
+using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 
-namespace SportsData.Api.Application.UI.Contest
+namespace SportsData.Api.Application.UI.Contest;
+
+[ApiController]
+[Route("ui/contest")]
+public class ContestController : ApiControllerBase
 {
-    [ApiController]
-    [Route("ui/contest")]
-    public class ContestController : ControllerBase
+    [HttpGet("{id}/overview")]
+    public async Task<ActionResult<ContestOverviewDto>> GetContestById(
+        [FromRoute] Guid id,
+        [FromServices] IGetContestOverviewQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        private readonly IContestService _contestService;
+        var query = new GetContestOverviewQuery { ContestId = id };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
-        public ContestController(IContestService contestService)
-        {
-            _contestService = contestService;
-        }
+        return result.ToActionResult();
+    }
 
-        [HttpGet("{id}/overview")]
-        public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
-        {
-            var result = await _contestService.GetContestOverviewByContestId(id);
-            return result.ToActionResult();
-        }
+    [HttpPost("{id}/refresh")]
+    public async Task<ActionResult<Guid>> RefreshContestById(
+        [FromRoute] Guid id,
+        [FromServices] IRefreshContestCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshContestCommand { ContestId = id };
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-        [HttpPost("{id}/refresh")]
-        public async Task<ActionResult<Guid>> RefreshContestById([FromRoute] Guid id)
-        {
-            var result = await _contestService.RefreshContestByContestId(id);
-            return result.ToActionResult();
-        }
+        return result.ToActionResult();
+    }
 
-        [HttpPost("{id}/media/refresh")]
-        public async Task<ActionResult<Guid>> RefreshContestMediaById([FromRoute] Guid id)
-        {
-            var result = await _contestService.RefreshContestMediaByContestId(id);
-            return result.ToActionResult();
-        }
+    [HttpPost("{id}/media/refresh")]
+    public async Task<ActionResult<Guid>> RefreshContestMediaById(
+        [FromRoute] Guid id,
+        [FromServices] IRefreshContestMediaCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshContestMediaCommand { ContestId = id };
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
     }
 }

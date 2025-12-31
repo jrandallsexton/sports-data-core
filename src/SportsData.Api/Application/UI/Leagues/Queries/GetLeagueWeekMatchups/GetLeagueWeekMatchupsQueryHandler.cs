@@ -2,7 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.UI.Contest;
+using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;

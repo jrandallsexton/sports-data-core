@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Leaderboard.Dtos;
+using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
+using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboardWidget;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -13,21 +15,15 @@ namespace SportsData.Api.Application.UI.Leaderboard;
 [Authorize]
 public class LeaderboardController : ApiControllerBase
 {
-    private readonly ILeaderboardService _leaderboardService;
-
-    public LeaderboardController(ILeaderboardService leaderboardService)
-    {
-        _leaderboardService = leaderboardService;
-    }
-
     [HttpGet("{groupId}")]
     [Authorize]
     public async Task<ActionResult<List<LeaderboardUserDto>>> GetLeaderboard(
         [FromRoute] Guid groupId,
+        [FromServices] IGetLeaderboardQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await _leaderboardService
-            .GetLeaderboardAsync(groupId, cancellationToken);
+        var query = new GetLeaderboardQuery { GroupId = groupId };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -36,13 +32,13 @@ public class LeaderboardController : ApiControllerBase
     [HttpGet("widget")]
     [Authorize]
     public async Task<ActionResult<LeaderboardWidgetDto>> GetLeaderboardWidget(
+        [FromServices] IGetLeaderboardWidgetQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        // TODO: Make season year dynamic
-        var result = await _leaderboardService
-            .GetLeaderboardWidgetForUser(userId, 2025, cancellationToken);
+        var query = new GetLeaderboardWidgetQuery { UserId = userId };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }

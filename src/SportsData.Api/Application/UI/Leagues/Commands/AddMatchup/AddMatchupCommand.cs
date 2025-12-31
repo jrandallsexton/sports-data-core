@@ -6,7 +6,5 @@ public class AddMatchupCommand
 
     public required Guid ContestId { get; init; }
 
-    public required Guid UserId { get; init; }
-
     public Guid CorrelationId { get; init; } = Guid.NewGuid();
 }

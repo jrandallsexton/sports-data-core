@@ -13,7 +13,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 
 public interface IAddMatchupCommandHandler
 {
-    Task<Result<Guid>> ExecuteAsync(AddMatchupCommand command, CancellationToken cancellationToken = default);
+    Task<Result<Guid>> ExecuteAsync(AddMatchupCommand command, Guid userId, CancellationToken cancellationToken = default);
 }
 
 public class AddMatchupCommandHandler : IAddMatchupCommandHandler
@@ -37,11 +37,12 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
 
     public async Task<Result<Guid>> ExecuteAsync(
         AddMatchupCommand command,
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(
             "AddMatchupCommandHandler executing. LeagueId={LeagueId}, ContestId={ContestId}, UserId={UserId}",
-            command.LeagueId, command.ContestId, command.UserId);
+            command.LeagueId, command.ContestId, userId);
 
         // 1. Verify league exists and user is commissioner
         var league = await _dbContext.PickemGroups
@@ -53,11 +54,11 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
-        if (league.CommissionerUserId != command.UserId)
+        if (league.CommissionerUserId != userId)
             return new Failure<Guid>(
                 default,
                 ResultStatus.Unauthorized,
-                [new ValidationFailure(nameof(command.UserId), "Only the league commissioner can add matchups.")]);
+                [new ValidationFailure(nameof(userId), "Only the league commissioner can add matchups.")]);
 
         // 2. Check if matchup already exists for this league and contest
         var existingMatchup = await _dbContext.PickemGroupMatchups
@@ -103,32 +104,32 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
         var newMatchup = new PickemGroupMatchup
         {
             Id = Guid.NewGuid(),
-            GroupId = command.LeagueId,
+            AwayConferenceLosses = matchup.AwayConferenceLosses,
+            AwayConferenceWins = matchup.AwayConferenceWins,
+            AwayLosses = matchup.AwayLosses,
+            AwayRank = matchup.AwayRank,
+            AwaySpread = matchup.AwaySpread,
+            AwayWins = matchup.AwayWins,
             ContestId = command.ContestId,
+            CreatedBy = userId,
+            CreatedUtc = DateTime.UtcNow,
+            GroupId = command.LeagueId,
+            GroupWeek = groupWeek,
+            Headline = matchup.Headline,
+            HomeConferenceLosses = matchup.HomeConferenceLosses,
+            HomeConferenceWins = matchup.HomeConferenceWins,
+            HomeLosses = matchup.HomeLosses,
+            HomeRank = matchup.HomeRank,
+            HomeSpread = matchup.HomeSpread,
+            HomeWins = matchup.HomeWins,
+            OverOdds = matchup.OverOdds,
+            OverUnder = matchup.OverUnder,
+            SeasonWeek = groupWeek.SeasonWeek,
             SeasonWeekId = matchup.SeasonWeekId,
             SeasonYear = matchup.SeasonYear,
-            SeasonWeek = matchup.SeasonWeek,
-            Headline = matchup.Headline,
-            StartDateUtc = matchup.StartDateUtc,
             Spread = matchup.Spread,
-            AwaySpread = matchup.AwaySpread,
-            HomeSpread = matchup.HomeSpread,
-            AwayRank = matchup.AwayRank,
-            HomeRank = matchup.HomeRank,
-            AwayWins = matchup.AwayWins,
-            AwayLosses = matchup.AwayLosses,
-            AwayConferenceWins = matchup.AwayConferenceWins,
-            AwayConferenceLosses = matchup.AwayConferenceLosses,
-            HomeWins = matchup.HomeWins,
-            HomeLosses = matchup.HomeLosses,
-            HomeConferenceWins = matchup.HomeConferenceWins,
-            HomeConferenceLosses = matchup.HomeConferenceLosses,
-            OverUnder = matchup.OverUnder,
-            OverOdds = matchup.OverOdds,
+            StartDateUtc = matchup.StartDateUtc,
             UnderOdds = matchup.UnderOdds,
-            CreatedBy = command.UserId,
-            CreatedUtc = DateTime.UtcNow,
-            GroupWeek = groupWeek
         };
 
         await _dbContext.PickemGroupMatchups.AddAsync(newMatchup, cancellationToken);

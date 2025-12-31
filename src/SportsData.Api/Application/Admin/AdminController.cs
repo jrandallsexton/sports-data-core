@@ -4,7 +4,8 @@ using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Application.UI.Contest;
+using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
+using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -21,7 +22,6 @@ namespace SportsData.Api.Application.Admin
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAdminService _adminService;
-        private readonly IContestService _contestService;
         private readonly IAiService _aiService;
         private readonly ILogger<AdminController> _logger;
 
@@ -29,14 +29,12 @@ namespace SportsData.Api.Application.Admin
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideBackgroundJobs backgroundJobProvider,
             IAdminService adminService,
-            IContestService contestService,
             IAiService aiService,
             ILogger<AdminController> logger)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _backgroundJobProvider = backgroundJobProvider;
             _adminService = adminService;
-            _contestService = contestService;
             _aiService = aiService;
             _logger = logger;
         }
@@ -186,11 +184,19 @@ namespace SportsData.Api.Application.Admin
         [Route("ai-predictions/{syntheticId}")]
         public async Task<IActionResult> PostBulkPicks(
             [FromRoute] string syntheticId,
-            [FromBody] List<ContestPredictionDto> predictions)
+            [FromBody] List<ContestPredictionDto> predictions,
+            [FromServices] ISubmitContestPredictionsCommandHandler handler,
+            CancellationToken cancellationToken)
         {
             var userId = Guid.Parse(syntheticId);
 
-            var result = await _contestService.SubmitContestPredictions(userId, predictions);
+            var command = new SubmitContestPredictionsCommand
+            {
+                UserId = userId,
+                Predictions = predictions
+            };
+
+            var result = await handler.ExecuteAsync(command, cancellationToken);
 
             if (result.IsSuccess)
                 return Created();

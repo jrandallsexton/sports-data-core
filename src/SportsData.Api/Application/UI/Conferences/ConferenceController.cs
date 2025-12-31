@@ -1,42 +1,24 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
-namespace SportsData.Api.Application.UI.Conferences
+using SportsData.Api.Application.UI.Conferences.Dtos;
+using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
+using SportsData.Core.Common;
+using SportsData.Core.Extensions;
+
+namespace SportsData.Api.Application.UI.Conferences;
+
+[ApiController]
+[Route("ui/conferences")]
+public class ConferenceController : ApiControllerBase
 {
-    [ApiController]
-    [Route("ui/conferences")]
-    public class ConferenceController : ControllerBase
+    [HttpGet]
+    public async Task<ActionResult<List<ConferenceNameAndSlugDto>>> GetConferenceNamesAndSlugs(
+        [FromServices] IGetConferenceNamesAndSlugsQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        private readonly IConferenceService _conferenceService;
+        var query = new GetConferenceNamesAndSlugsQuery();
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
-        public ConferenceController(IConferenceService conferenceService)
-        {
-            _conferenceService = conferenceService;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<ConferenceNameAndSlugDto>>> GetConferenceNamesAndSlugs(CancellationToken cancellationToken)
-        {
-            var conferencesAndSlugs = await _conferenceService.GetConferenceNamesAndSlugs(cancellationToken);
-            
-            var result = conferencesAndSlugs
-                .Select(item => new ConferenceNameAndSlugDto
-                {
-                    ShortName = item.ShortName,
-                    Slug = item.Slug,
-                    Division = item.Division
-                })
-                .ToList();
-
-            return Ok(result);
-        }
-    }
-
-    public class ConferenceNameAndSlugDto
-    {
-        public required string Division { get; set; }
-
-        public required string ShortName { get; set; }
-
-        public required string Slug { get; set; }
+        return result.ToActionResult();
     }
 }

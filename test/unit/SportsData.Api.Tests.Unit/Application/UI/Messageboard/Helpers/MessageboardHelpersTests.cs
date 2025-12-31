@@ -271,7 +271,7 @@ public class MessageboardHelpersTests
         public void ToFixedBase36_WithLargeValue_ReturnsCorrectConversion()
         {
             // Arrange
-            int value = 1296; // 10 in base-36 is "ZZ"
+            int value = 1296; // 1296 in base-36 is "100"
             int width = 3;
 
             // Act

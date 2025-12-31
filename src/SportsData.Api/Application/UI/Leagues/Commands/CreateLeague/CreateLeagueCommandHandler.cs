@@ -77,10 +77,11 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
                     [new ValidationFailure(nameof(request.TiebreakerTiePolicy), $"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}")]);
 
             // === Canonical Resolution ===
+            var seasonYear = request.SeasonYear ?? DateTime.UtcNow.Year;
             var conferenceIds = request.ConferenceSlugs.Count > 0
                 ? await _canonicalDataProvider.GetConferenceIdsBySlugsAsync(
                     Sport.FootballNcaa,
-                    2025, // TODO: Replace with dynamic year
+                    seasonYear,
                     request.ConferenceSlugs)
                 : new Dictionary<Guid, string>();
 
@@ -147,14 +148,6 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
                 });
             }
 
-            var evt = new PickemGroupCreated(
-                group.Id,
-                Guid.NewGuid(),
-                Guid.NewGuid());
-
-            _logger.LogInformation("Raising PickemGroupCreated {@Evt}", evt);
-            await _eventBus.Publish(evt, cancellationToken);
-
             await _dbContext.PickemGroups.AddAsync(group, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -163,6 +156,15 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
                 group.Id,
                 group.Name,
                 currentUserId);
+
+            // Publish event after successful persistence
+            var evt = new PickemGroupCreated(
+                group.Id,
+                Guid.NewGuid(),
+                Guid.NewGuid());
+
+            _logger.LogInformation("Publishing PickemGroupCreated {@Evt}", evt);
+            await _eventBus.Publish(evt, cancellationToken);
 
             return new Success<Guid>(group.Id);
         }

@@ -42,7 +42,7 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
             Id = x.Id,
             Name = x.Name,
             Description = x.Description ?? string.Empty,
-            Commissioner = x.CommissionerUser.DisplayName,
+            Commissioner = x.CommissionerUser?.DisplayName ?? "Unknown",
             RankingFilter = (int?)x.RankingFilter ?? 0,
             PickType = (int)x.PickType,
             UseConfidencePoints = x.UseConfidencePoints,

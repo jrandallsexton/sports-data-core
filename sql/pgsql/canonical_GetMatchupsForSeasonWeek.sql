@@ -1,6 +1,8 @@
 
 SELECT
   sw."Id" as "SeasonWeekId",
+  s."Year" AS "SeasonYear",
+  sw."Number" AS "SeasonWeek",
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
   cs."StatusTypeName" as "Status",

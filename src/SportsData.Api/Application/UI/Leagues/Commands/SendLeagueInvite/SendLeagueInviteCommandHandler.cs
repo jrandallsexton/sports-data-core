@@ -45,7 +45,7 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
         // TODO: Dynamically set the domain based on environment
-        var inviteUrl = $"https://dev.sportdeets.com/app/join/{league.Id.ToString().Replace("-", string.Empty)}";
+        var inviteUrl = $"https://{_notificationConfig.Email.UrlBase}/app/join/{league.Id.ToString().Replace("-", string.Empty)}";
 
         await _notificationService.SendEmailAsync(
             command.Email,

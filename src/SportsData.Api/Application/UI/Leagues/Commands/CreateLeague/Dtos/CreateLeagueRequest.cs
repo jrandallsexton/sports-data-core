@@ -20,4 +20,10 @@ public class CreateLeagueRequest
     public bool IsPublic { get; set; }
 
     public int? DropLowWeeksCount { get; set; }
+
+    /// <summary>
+    /// The season year for conference resolution. Defaults to current year if not specified.
+    /// For college football, this is the year the season starts (e.g., 2025 for the 2025-26 season).
+    /// </summary>
+    public int? SeasonYear { get; set; }
 }

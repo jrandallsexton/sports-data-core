@@ -83,7 +83,9 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
             canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= DateTime.UtcNow;
             canonicalContest.WinnerFranchiseSeasonId = canonicalContest.AwayScore > canonicalContest.HomeScore
                 ? canonicalContest.AwayFranchiseSeasonId
-                : canonicalContest.HomeFranchiseSeasonId;
+                : canonicalContest.HomeScore > canonicalContest.AwayScore
+                    ? canonicalContest.HomeFranchiseSeasonId
+                    : null; // Tie - no winner
 
             // Determine spread winner based on the matchup spread
             if (matchup is { AwaySpread: not null, HomeSpread: not null })

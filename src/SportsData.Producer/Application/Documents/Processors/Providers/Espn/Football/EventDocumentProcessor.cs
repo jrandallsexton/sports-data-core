@@ -134,7 +134,14 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         AddLinks(externalDto, contest);
 
         // Get the team IDs from the external DTO
-        await AddTeams(command, externalDto, contest);
+        var teamsAdded = await AddTeams(command, externalDto, contest);
+        if (!teamsAdded)
+        {
+            _logger.LogError(
+                "Skipping contest creation due to missing competition data. CorrelationId={CorrelationId}",
+                command.CorrelationId);
+            return;
+        }
 
         // Attempt to resolve Venue from $ref
         await AddVenue(command, externalDto, contest);
@@ -359,12 +366,22 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         }
     }
 
-    private async Task AddTeams(
+    private async Task<bool> AddTeams(
         ProcessDocumentCommand command,
         EspnEventDto externalDto,
         Contest contest)
     {
-        var competitors = externalDto.Competitions.First().Competitors;
+        var competition = externalDto.Competitions.FirstOrDefault();
+        if (competition is null)
+        {
+            _logger.LogError(
+                "No competitions found in ESPN event document. CorrelationId={CorrelationId}, Ref={Ref}",
+                command.CorrelationId,
+                command.GetDocumentRef());
+            return false;
+        }
+
+        var competitors = competition.Competitors;
 
         var awayTeamFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
             command, competitors, "away");
@@ -378,6 +395,8 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         {
             await SetContestShortName(contest, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
         }
+
+        return true;
     }
 
     private async Task<Guid> ResolveFranchiseSeasonIdAsync(

@@ -1,8 +1,10 @@
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.UI.Articles.Dtos;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
@@ -18,13 +20,16 @@ public interface IGetArticleByIdQueryHandler
 public class GetArticleByIdQueryHandler : IGetArticleByIdQueryHandler
 {
     private readonly ILogger<GetArticleByIdQueryHandler> _logger;
+    private readonly ApiConfig _config;
     private readonly AppDataContext _dataContext;
 
     public GetArticleByIdQueryHandler(
         ILogger<GetArticleByIdQueryHandler> logger,
+        IOptions<ApiConfig> config,
         AppDataContext dataContext)
     {
         _logger = logger;
+        _config = config.Value;
         _dataContext = dataContext;
     }
 
@@ -44,7 +49,7 @@ public class GetArticleByIdQueryHandler : IGetArticleByIdQueryHandler
                     ContestId = a.ContestId!.Value,
                     Title = a.Title,
                     Content = a.Content,
-                    Url = $"http://localhost:5262/ui/articles/{a.Id}",
+                    Url = $"{_config.BaseUrl}/ui/articles/{a.Id}",
                     ImageUrls = a.ImageUrls,
                     GroupSeasonMap = a.FranchiseSeasons.OrderBy(fs => fs.DisplayOrder).FirstOrDefault()!.GroupSeasonMap,
                 }

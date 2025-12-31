@@ -1,8 +1,11 @@
 using FluentAssertions;
 
+using Microsoft.Extensions.Options;
+
 using Moq;
 
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
@@ -13,10 +16,19 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Articles.Queries.GetArticles;
 
 public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
 {
+    private void SetupApiConfig()
+    {
+        var apiConfig = new ApiConfig { BaseUrl = "http://localhost:5262" };
+        Mocker.GetMock<IOptions<ApiConfig>>()
+            .Setup(x => x.Value)
+            .Returns(apiConfig);
+    }
+
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNotFound_WhenCurrentSeasonWeekNotFound()
     {
         // Arrange
+        SetupApiConfig();
         Mocker.GetMock<IProvideCanonicalData>()
             .Setup(x => x.GetCurrentSeasonWeek())
             .ReturnsAsync((SeasonWeek?)null);
@@ -36,6 +48,7 @@ public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
     public async Task ExecuteAsync_ShouldReturnEmptyList_WhenNoArticlesExist()
     {
         // Arrange
+        SetupApiConfig();
         var seasonWeek = new SeasonWeek
         {
             Id = Guid.NewGuid(),

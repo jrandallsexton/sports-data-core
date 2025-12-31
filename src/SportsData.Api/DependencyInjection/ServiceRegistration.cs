@@ -47,6 +47,8 @@ using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Canonical;
@@ -124,7 +126,6 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetPickAccuracyByWeekQueryHandler, GetPickAccuracyByWeekQueryHandler>();
 
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
-            services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
@@ -134,8 +135,11 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
 
+            // TeamCard Queries
+            services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
+            services.AddScoped<IGetTeamStatisticsQueryHandler, GetTeamStatisticsQueryHandler>();
+            services.AddScoped<IGetTeamMetricsQueryHandler, GetTeamMetricsQueryHandler>();
             services.AddScoped<IStatFormattingService, StatFormattingService>();
-            services.AddScoped<ITeamCardService, TeamCardService>();
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();

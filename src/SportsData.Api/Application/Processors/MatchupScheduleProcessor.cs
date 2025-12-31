@@ -84,7 +84,7 @@ namespace SportsData.Api.Application.Processors
             // 2. are there conferences to always be included?
             var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
 
-            var allMatchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+            var allMatchups = await _canonicalDataProvider.GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
 
             IEnumerable<Matchup>? groupMatchups;
 
@@ -154,13 +154,23 @@ namespace SportsData.Api.Application.Processors
 
             groupWeek.AreMatchupsGenerated = true;
 
-            await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
-                    group.Id,
-                    command.SeasonYear,
-                    command.SeasonWeek,
-                    command.CorrelationId,
-                    Guid.NewGuid()),
-                CancellationToken.None);
+            // Only publish event if the week is not completed
+            var isWeekCompleted = allMatchups.All(m => m.Status == "Final" || m.Status == "Completed");
+            if (!isWeekCompleted)
+            {
+                await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
+                        group.Id,
+                        command.SeasonYear,
+                        command.SeasonWeek,
+                        command.CorrelationId,
+                        Guid.NewGuid()),
+                    CancellationToken.None);
+            }
+            else
+            {
+                _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
+                    group.Id, command.SeasonYear, command.SeasonWeek);
+            }
 
             await _dataContext.SaveChangesAsync();
         }

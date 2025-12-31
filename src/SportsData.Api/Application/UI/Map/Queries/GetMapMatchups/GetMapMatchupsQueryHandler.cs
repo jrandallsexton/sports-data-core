@@ -29,7 +29,7 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug(
-            "Getting map matchups. LeagueId={LeagueId}, WeekNumber={WeekNumber}",
+            "Getting map matchups. LeagueId={LeagueId}, SeasonYear={SeasonYear}, WeekNumber={WeekNumber}",
             query.LeagueId,
             query.WeekNumber);
 

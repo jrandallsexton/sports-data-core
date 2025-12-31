@@ -151,6 +151,13 @@ public class GetPickAccuracyByWeekQueryHandler : IGetPickAccuracyByWeekQueryHand
             })
             .ToList();
 
+        // Calculate overall accuracy the same way as in ExecuteAsync
+        var totalCorrect = syntheticPicks.Count(p => p.IsCorrect == true);
+        var totalPicks = syntheticPicks.Count(p => p.IsCorrect != null);
+        var overallPercent = totalPicks > 0
+            ? Math.Round((double)totalCorrect / totalPicks * 100, 1)
+            : 0;
+
         var result = new PickAccuracyByWeekDto
         {
             UserId = synthetic.Id,
@@ -158,7 +165,7 @@ public class GetPickAccuracyByWeekQueryHandler : IGetPickAccuracyByWeekQueryHand
             LeagueId = Guid.Empty,
             LeagueName = "All Groups",
             WeeklyAccuracy = groupedByWeek,
-            OverallAccuracyPercent = 0
+            OverallAccuracyPercent = overallPercent
         };
 
         return new Success<PickAccuracyByWeekDto>(result);

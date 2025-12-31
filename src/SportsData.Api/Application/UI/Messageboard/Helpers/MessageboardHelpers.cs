@@ -32,9 +32,28 @@ public static class MessageboardHelpers
 
     public static string ToFixedBase36(int value, int width)
     {
+        // Validate inputs - fail fast
+        if (value < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value),
+                value,
+                "Value must be >= 0.");
+        }
+
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(width),
+                width,
+                "Width must be > 0.");
+        }
+
         const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         var stack = new Stack<char>();
-        int v = Math.Max(0, value);
+        
+        // Use the original value after validation (no Math.Max coercion)
+        int v = value;
         do
         {
             stack.Push(alphabet[v % 36]);

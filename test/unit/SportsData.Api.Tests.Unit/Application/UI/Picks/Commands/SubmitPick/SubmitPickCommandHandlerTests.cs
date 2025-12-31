@@ -217,6 +217,8 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
         pick.FranchiseId.Should().Be(command.FranchiseSeasonId);
         pick.ConfidencePoints.Should().Be(command.ConfidencePoints);
         pick.TiebreakerGuessTotal.Should().Be(command.TiebreakerGuessTotal);
+        pick.TiebreakerGuessHome.Should().Be(command.TiebreakerGuessHome);
+        pick.TiebreakerGuessAway.Should().Be(command.TiebreakerGuessAway);
     }
 
     [Fact]
@@ -286,5 +288,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
         updated.OverUnder.Should().Be(OverUnderPick.Under);
         updated.ConfidencePoints.Should().Be(3);
         updated.TiebreakerGuessTotal.Should().Be(45);
+        updated.TiebreakerGuessHome.Should().Be(21);
+        updated.TiebreakerGuessAway.Should().Be(24);
     }
 }

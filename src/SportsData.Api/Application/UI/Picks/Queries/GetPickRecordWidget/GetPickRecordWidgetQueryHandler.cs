@@ -70,10 +70,8 @@ public class GetPickRecordWidgetQueryHandler : IGetPickRecordWidgetQueryHandler
                 .Where(p => p.PickemGroupId == groupId && p.PointsAwarded != null)
                 .MaxAsync(p => (int?)p.Week, cancellationToken) ?? 0;
 
-            if (asOfWeek == 0)
-            {
-                asOfWeek = currentWeek;
-            }
+            // Accumulate the maximum week across all groups
+            asOfWeek = Math.Max(asOfWeek, currentWeek);
 
             var groupName = await _dataContext.PickemGroups
                 .AsNoTracking()

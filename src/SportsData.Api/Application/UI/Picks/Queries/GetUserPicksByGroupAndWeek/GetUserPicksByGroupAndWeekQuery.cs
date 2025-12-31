@@ -2,9 +2,9 @@ namespace SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek
 
 public class GetUserPicksByGroupAndWeekQuery
 {
-    public Guid UserId { get; set; }
+    public required Guid UserId { get; init; }
 
-    public Guid GroupId { get; set; }
+    public required Guid GroupId { get; init; }
 
-    public int WeekNumber { get; set; }
+    public required int WeekNumber { get; init; }
 }

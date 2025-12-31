@@ -2,9 +2,9 @@ namespace SportsData.Api.Application.UI.Picks.Queries.GetPickRecordWidget;
 
 public class GetPickRecordWidgetQuery
 {
-    public Guid UserId { get; set; }
+    public required Guid UserId { get; init; }
 
-    public int SeasonYear { get; set; }
+    public required int SeasonYear { get; init; }
 
-    public bool ForSynthetic { get; set; }
+    public required bool ForSynthetic { get; init; }
 }

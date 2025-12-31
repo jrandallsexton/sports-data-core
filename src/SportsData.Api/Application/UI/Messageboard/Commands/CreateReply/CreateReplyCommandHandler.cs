@@ -67,7 +67,6 @@ public class CreateReplyCommandHandler : ICreateReplyCommandHandler
             }
         }
 
-        var parentPath = parent?.Path ?? "0001";
         var depth = (parent?.Depth ?? 0) + 1;
 
         var siblingCount = await _dataContext.Set<MessagePost>()
@@ -75,7 +74,7 @@ public class CreateReplyCommandHandler : ICreateReplyCommandHandler
             .CountAsync(cancellationToken);
 
         var segment = MessageboardHelpers.ToFixedBase36(siblingCount + 1, 4);
-        var path = parent is null ? parentPath : $"{parentPath}.{segment}";
+        var path = parent is null ? segment : $"{parent.Path}.{segment}";
 
         var reply = new MessagePost
         {

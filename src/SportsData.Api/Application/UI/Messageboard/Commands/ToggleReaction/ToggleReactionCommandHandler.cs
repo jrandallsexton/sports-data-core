@@ -60,8 +60,11 @@ public class ToggleReactionCommandHandler : IToggleReactionCommandHandler
         }
 
         // Upsert / toggle / flip
+        ReactionType? resultType;
+
         if (existing is null)
         {
+            // Add new reaction
             _dataContext.Add(new MessageReaction
             {
                 Id = Guid.NewGuid(),
@@ -72,27 +75,30 @@ public class ToggleReactionCommandHandler : IToggleReactionCommandHandler
                 CreatedUtc = DateTime.UtcNow
             });
             MessageboardHelpers.AdjustReactionCounts(post, command.Type.Value, decrement: false);
+            resultType = command.Type.Value;
         }
         else if (existing.Type == command.Type.Value)
         {
-            // Toggle off
+            // Toggle off - same reaction clicked again
             MessageboardHelpers.AdjustReactionCounts(post, existing.Type, decrement: true);
             _dataContext.Remove(existing);
+            resultType = null;
         }
         else
         {
-            // Flip
+            // Flip - change to different reaction type
             MessageboardHelpers.AdjustReactionCounts(post, existing.Type, decrement: true);
             existing.Type = command.Type.Value;
             existing.ModifiedBy = command.UserId;
             existing.ModifiedUtc = DateTime.UtcNow;
             _dataContext.Update(existing);
             MessageboardHelpers.AdjustReactionCounts(post, command.Type.Value, decrement: false);
+            resultType = command.Type.Value;
         }
 
         _dataContext.Update(post);
         await _dataContext.SaveChangesAsync(cancellationToken);
 
-        return new Success<ReactionType?>(command.Type.Value);
+        return new Success<ReactionType?>(resultType);
     }
 }

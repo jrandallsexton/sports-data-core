@@ -59,4 +59,6 @@ public interface IProvideCanonicalData
     Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear);
 
     Task<List<Guid>> GetCompletedFbsContestIdsBySeasonWeekId(Guid seasonWeekId);
+
+    Task<Matchup?> GetMatchupByContestId(Guid contestId);
 }

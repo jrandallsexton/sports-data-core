@@ -8,8 +8,8 @@ using Moq;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.Admin.SyntheticPicks;
-using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -21,13 +21,13 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.SyntheticPicks;
 public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
 {
     private readonly Mock<ISyntheticPickStyleProvider> _mockPickStyleProvider;
-    private readonly Mock<ILeagueService> _mockLeagueService;
+    private readonly Mock<IGetLeagueWeekMatchupsQueryHandler> _mockGetLeagueWeekMatchupsHandler;
     private readonly SyntheticPickService _sut;
 
     public SyntheticPickServiceTests()
     {
         _mockPickStyleProvider = Mocker.GetMock<ISyntheticPickStyleProvider>();
-        _mockLeagueService = Mocker.GetMock<ILeagueService>();
+        _mockGetLeagueWeekMatchupsHandler = Mocker.GetMock<IGetLeagueWeekMatchupsQueryHandler>();
         _sut = Mocker.CreateInstance<SyntheticPickService>();
     }
 
@@ -38,8 +38,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         var pickemGroupId = Guid.NewGuid();
         var syntheticId = Guid.NewGuid();
         
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Failure<LeagueWeekMatchupsDto>(
                 default!,
                 ResultStatus.NotFound,
@@ -83,8 +84,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         // Act
@@ -116,8 +118,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         // No prediction in database
@@ -164,8 +167,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         // Act
@@ -218,8 +222,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         _mockPickStyleProvider
@@ -273,8 +278,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         _mockPickStyleProvider
@@ -330,8 +336,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         _mockPickStyleProvider
@@ -385,8 +392,9 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             .With(m => m.Matchups, new List<LeagueWeekMatchupsDto.MatchupForPickDto> { matchup })
             .Create();
 
-        _mockLeagueService
-            .Setup(x => x.GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, 14, It.IsAny<CancellationToken>()))
+        _mockGetLeagueWeekMatchupsHandler
+            .Setup(x => x.ExecuteAsync(It.Is<GetLeagueWeekMatchupsQuery>(q =>
+                q.UserId == syntheticId && q.LeagueId == pickemGroupId && q.Week == 14), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<LeagueWeekMatchupsDto>(matchupsDto));
 
         _mockPickStyleProvider

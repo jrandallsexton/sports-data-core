@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Application.UI.Leagues;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
@@ -52,7 +52,7 @@ namespace SportsData.Api.Application.Admin
         private readonly IProvideCanonicalData _canonicalData;
         private readonly IProvideCanonicalAdminData _canonicalAdminData;
         private readonly ISyntheticPickService _syntheticPickService;
-        private readonly ILeagueService _leagueService;
+        private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public AdminService(
@@ -61,16 +61,15 @@ namespace SportsData.Api.Application.Admin
             IProvideCanonicalData canonicalData,
             IProvideCanonicalAdminData canonicalAdminData,
             ISyntheticPickService syntheticPickService,
-            ILeagueService leagueService,
-            ILeagueWeekScoringService leagueWeekScoringService
-            )
+            IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler,
+            ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
             _canonicalData = canonicalData;
             _canonicalAdminData = canonicalAdminData;
             _syntheticPickService = syntheticPickService;
-            _leagueService = leagueService;
+            _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
             _leagueWeekScoringService = leagueWeekScoringService;
         }
 
@@ -146,8 +145,13 @@ namespace SportsData.Api.Application.Admin
             foreach (var group in allGroups)
             {
                 // get the matchups for the group
-                var groupMatchupsResult = await _leagueService
-                        .GetMatchupsForLeagueWeekAsync(statbotId, group.Id, currentWeek.WeekNumber, CancellationToken.None);
+                var query = new GetLeagueWeekMatchupsQuery
+                {
+                    UserId = statbotId,
+                    LeagueId = group.Id,
+                    Week = currentWeek.WeekNumber
+                };
+                var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query);
 
                 if (!groupMatchupsResult.IsSuccess)
                 {

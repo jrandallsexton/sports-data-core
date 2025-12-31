@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.JoinLeague
+﻿namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
 {
     public class JoinLeagueCommand
     {

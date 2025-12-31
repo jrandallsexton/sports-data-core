@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.LeagueInvitation.Dtos;
+﻿namespace SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 
 public class SendLeagueInviteRequest
 {

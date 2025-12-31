@@ -13,6 +13,8 @@
 
 SELECT
   nw."SeasonWeekId",
+  nw."SeasonYear" AS "SeasonYear",
+  nw."WeekNumber" AS "SeasonWeek",
   c."Id" AS "ContestId",
   cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",

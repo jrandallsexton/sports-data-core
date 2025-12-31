@@ -1,9 +1,9 @@
-
 SELECT
-  sw."Id" as "SeasonWeekId",
+  c."SeasonWeekId" AS "SeasonWeekId",
   s."Year" AS "SeasonYear",
   sw."Number" AS "SeasonWeek",
   c."Id" AS "ContestId",
+  cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",
   cs."StatusTypeName" as "Status",
 
@@ -21,7 +21,8 @@ SELECT
   fsAway."Losses"           as "AwayLosses",
   fsAway."ConferenceWins"   as "AwayConferenceWins",
   fsAway."ConferenceLosses" as "AwayConferenceLosses",
-  gsAway."Slug"             as "AwayConferenceSlug",  
+  gsAway."Slug"             as "AwayConferenceSlug",
+  fsAway."GroupSeasonMap"   as "AwayGroupSeasonMap",
 
   fHome."Slug"              as "HomeSlug",
   fHome."ColorCodeHex"      as "HomeColor",
@@ -32,6 +33,7 @@ SELECT
   fsHome."ConferenceWins"   as "HomeConferenceWins",
   fsHome."ConferenceLosses" as "HomeConferenceLosses",
   gsHome."Slug"             as "HomeConferenceSlug",
+  fsHome."GroupSeasonMap"   as "HomeGroupSeasonMap",
 
   co."Details"        as "Spread",
   (co."Spread" * -1)  as "AwaySpread",
@@ -39,13 +41,22 @@ SELECT
   co."OverUnder"      as "OverUnder",
   co."OverOdds"       as "OverOdds",
   co."UnderOdds"      as "UnderOdds"
-FROM public."SeasonWeek" sw
-INNER JOIN public."Season" s on s."Id" = sw."SeasonId"
-inner join public."Contest" c ON c."SeasonWeekId" = sw."Id"
+FROM public."Contest" c
 inner join public."Competition" comp on comp."ContestId" = c."Id"
-left  join public."CompetitionOdds" co on co."CompetitionId" = comp."Id" AND co."ProviderId" = '58'
+left join public."CompetitionNote" cn on cn."CompetitionId" = comp."Id" and cn."Type" = 'event'
+
+-- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
+LEFT JOIN LATERAL (
+  SELECT *
+  FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id"
+    AND "ProviderId" IN ('58', '100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+
 left  join public."CompetitionStatus" cs on cs."CompetitionId" = comp."Id"
-inner join public."Venue" v on v."Id" = c."VenueId"
+left  join public."Venue" v on v."Id" = c."VenueId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
 inner join public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
@@ -54,11 +65,12 @@ inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
 inner join public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 left  join public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
     fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
-    fsrAway."SeasonWeekId" = sw."Id"
+    fsrAway."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 left  join public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
     fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
-    fsrHome."SeasonWeekId" = sw."Id"
+    fsrHome."SeasonWeekId" = c."SeasonWeekId"
 left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-WHERE s."Year" = @SeasonYear and sw."Number" = @SeasonWeekNumber
-ORDER BY "StartDateUtc", fHome."Slug"
+inner join public."SeasonWeek" sw on sw."Id" = c."SeasonWeekId"
+inner join public."Season" s on s."Id" = sw."SeasonId"
+WHERE c."Id" = @ContestId

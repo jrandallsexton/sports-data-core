@@ -4,6 +4,10 @@
     {
         public Guid SeasonWeekId { get; set; }
 
+        public int SeasonYear { get; set; }
+
+        public int SeasonWeek { get; set; }
+
         public Guid ContestId { get; set; }
 
         public string? Headline { get; set; }

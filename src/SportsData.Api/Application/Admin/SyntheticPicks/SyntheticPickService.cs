@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -16,18 +16,18 @@ public class SyntheticPickService : ISyntheticPickService
     private readonly ISyntheticPickStyleProvider _pickStyleProvider;
     private readonly ILogger<SyntheticPickService> _logger;
     private readonly AppDataContext _dataContext;
-    private readonly ILeagueService _leagueService;
+    private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
 
     public SyntheticPickService(
         ISyntheticPickStyleProvider pickStyleProvider,
         ILogger<SyntheticPickService> logger,
         AppDataContext dataContext,
-        ILeagueService leagueService)
+        IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler)
     {
         _pickStyleProvider = pickStyleProvider;
         _logger = logger;
         _dataContext = dataContext;
-        _leagueService = leagueService;
+        _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
     }
 
     public async Task GenerateMetricBasedPicksForSynthetic(
@@ -38,8 +38,13 @@ public class SyntheticPickService : ISyntheticPickService
         int seasonWeekNumber)
     {
         // get the matchups for the group
-        var groupMatchupsResult = await _leagueService
-            .GetMatchupsForLeagueWeekAsync(syntheticId, pickemGroupId, seasonWeekNumber, CancellationToken.None);
+        var query = new GetLeagueWeekMatchupsQuery
+        {
+            UserId = syntheticId,
+            LeagueId = pickemGroupId,
+            Week = seasonWeekNumber
+        };
+        var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query);
 
         if (!groupMatchupsResult.IsSuccess)
         {

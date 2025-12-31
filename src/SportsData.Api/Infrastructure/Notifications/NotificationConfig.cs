@@ -11,6 +11,8 @@
             public required string FromEmail { get; set; }
 
             public required string TemplateIdInvitation { get; set; }
+
+            public required string UrlBase { get; set; }
         }
 
         public class SmsConfig

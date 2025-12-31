@@ -3,7 +3,6 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Previews;
-using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;

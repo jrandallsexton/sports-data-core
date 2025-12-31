@@ -46,12 +46,15 @@ public class GetArticleByIdQueryHandler : IGetArticleByIdQueryHandler
                 Article = new ArticleDto
                 {
                     ArticleId = a.Id,
-                    ContestId = a.ContestId!.Value,
+                    ContestId = a.ContestId,
                     Title = a.Title,
                     Content = a.Content,
                     Url = $"{_config.BaseUrl}/ui/articles/{a.Id}",
                     ImageUrls = a.ImageUrls,
-                    GroupSeasonMap = a.FranchiseSeasons.OrderBy(fs => fs.DisplayOrder).FirstOrDefault()!.GroupSeasonMap,
+                    GroupSeasonMap = a.FranchiseSeasons
+                        .OrderBy(fs => fs.DisplayOrder)
+                        .Select(fs => fs.GroupSeasonMap)
+                        .FirstOrDefault(),
                 }
             })
             .FirstOrDefaultAsync(cancellationToken);

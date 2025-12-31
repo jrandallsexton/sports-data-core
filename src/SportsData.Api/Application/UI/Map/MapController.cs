@@ -16,6 +16,7 @@ public class MapController : ApiControllerBase
     [Authorize]
     public async Task<ActionResult<GetMapMatchupsResponse>> GetMatchups(
         [FromQuery] Guid? leagueId,
+        [FromQuery] int? seasonYear,
         [FromQuery] int? weekNumber,
         [FromServices] IGetMapMatchupsQueryHandler handler,
         CancellationToken cancellationToken)
@@ -23,6 +24,7 @@ public class MapController : ApiControllerBase
         var query = new GetMapMatchupsQuery
         {
             LeagueId = leagueId,
+            SeasonYear = seasonYear,
             WeekNumber = weekNumber
         };
 

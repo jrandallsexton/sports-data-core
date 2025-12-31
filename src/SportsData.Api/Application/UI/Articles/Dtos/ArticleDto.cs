@@ -4,7 +4,7 @@ public class ArticleDto
 {
     public Guid ArticleId { get; set; }
 
-    public Guid ContestId { get; set; }
+    public Guid? ContestId { get; set; }
 
     public Guid? AwayFranchiseSeasonId { get; set; }
 

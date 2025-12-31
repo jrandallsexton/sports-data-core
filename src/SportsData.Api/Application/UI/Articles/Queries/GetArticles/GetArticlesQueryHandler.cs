@@ -1,7 +1,6 @@
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.UI.Articles.Dtos;
 using SportsData.Api.Config;
@@ -27,12 +26,12 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
 
     public GetArticlesQueryHandler(
         ILogger<GetArticlesQueryHandler> logger,
-        IOptions<ApiConfig> config,
+        ApiConfig config,
         AppDataContext dataContext,
         IProvideCanonicalData canonicalDataProvider)
     {
         _logger = logger;
-        _config = config.Value;
+        _config = config;
         _dataContext = dataContext;
         _canonicalDataProvider = canonicalDataProvider;
     }
@@ -56,11 +55,11 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
 
         var articles = await _dataContext.Articles
             .OrderBy(x => x.Title)
-            .Where(x => x.SeasonWeekId == currentSeasonWeek.Id)
+            .Where(x => x.ContestId != null && x.FranchiseSeasons.Any() && x.SeasonWeekId == currentSeasonWeek.Id)
             .Select(a => new ArticleSummaryDto
             {
                 ArticleId = a.Id,
-                ContestId = a.ContestId!.Value,
+                ContestId = a.ContestId,
                 Title = a.Title,
                 Url = $"{_config.BaseUrl}/ui/articles/{a.Id}",
                 ImageUrls = a.ImageUrls,

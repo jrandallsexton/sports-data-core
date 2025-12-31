@@ -40,12 +40,14 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
                 [new ValidationFailure(nameof(query.GroupId), "Group ID cannot be empty")]);
         }
 
-        // Verify group exists
-        var groupExists = await _dataContext.PickemGroups
+        // Fetch group to verify it exists and get its name
+        var group = await _dataContext.PickemGroups
             .AsNoTracking()
-            .AnyAsync(g => g.Id == query.GroupId, cancellationToken);
+            .Where(g => g.Id == query.GroupId)
+            .Select(g => new { g.Id, g.Name })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!groupExists)
+        if (group is null)
         {
             _logger.LogWarning("Group not found: {GroupId}", query.GroupId);
             return new Failure<List<LeaderboardUserDto>>(
@@ -61,13 +63,13 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
             .MaxAsync(p => (int?)p.Week, cancellationToken) ?? 0;
 
         var leaderboard = await _dataContext.UserPicks
-            .Include(p => p.Group)
+            .AsNoTracking()
             .Where(p => p.PickemGroupId == query.GroupId && p.PointsAwarded != null && p.ScoredAt != null)
             .GroupBy(p => new { p.UserId, p.User.DisplayName, p.User.IsSynthetic })
             .Select(g => new
             {
-                LeagueId = query.GroupId,
-                LeagueName = g.First().Group.Name,
+                LeagueId = group.Id,
+                LeagueName = group.Name,
                 g.Key.UserId,
                 g.Key.DisplayName,
                 g.Key.IsSynthetic,

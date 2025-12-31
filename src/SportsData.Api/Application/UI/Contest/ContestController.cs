@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
@@ -11,6 +12,7 @@ namespace SportsData.Api.Application.UI.Contest;
 
 [ApiController]
 [Route("ui/contest")]
+[Authorize]
 public class ContestController : ApiControllerBase
 {
     [HttpGet("{id}/overview")]

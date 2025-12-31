@@ -55,10 +55,23 @@ public class RefreshContestMediaCommandHandler : IRefreshContestMediaCommandHand
                 "Error refreshing contest media. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 command.ContestId,
                 correlationId);
+
+            var (status, message) = ex switch
+            {
+                ArgumentException or ArgumentNullException =>
+                    (ResultStatus.Validation, "Invalid request parameters."),
+                TimeoutException or HttpRequestException or TaskCanceledException =>
+                    (ResultStatus.Error, "The service is temporarily unavailable. Please try again later."),
+                InvalidOperationException =>
+                    (ResultStatus.BadRequest, "The operation could not be completed."),
+                _ =>
+                    (ResultStatus.Error, "An error occurred while refreshing contest media.")
+            };
+
             return new Failure<Guid>(
-                default,
-                ResultStatus.BadRequest,
-                [new ValidationFailure("Error", ex.Message)]);
+                correlationId,
+                status,
+                [new ValidationFailure("Error", $"{message} Reference: {correlationId}")]);
         }
     }
 }

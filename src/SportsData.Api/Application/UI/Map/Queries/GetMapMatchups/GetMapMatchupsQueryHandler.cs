@@ -35,6 +35,7 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
 
         if (query.LeagueId is null && query.WeekNumber is null)
         {
+            // TODO: Honor WeekNumber when LeagueId is provided
             var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse

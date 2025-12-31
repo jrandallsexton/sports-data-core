@@ -364,132 +364,102 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         EspnEventDto externalDto,
         Contest contest)
     {
-        /* Home Team */
-        var homeTeam = externalDto
-            .Competitions.First()
-            .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "home");
+        var competitors = externalDto.Competitions.First().Competitors;
 
-        var homeTeamFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            homeTeam.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
+        var awayTeamFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            command, competitors, "away");
+        contest.AwayTeamFranchiseSeasonId = awayTeamFranchiseSeasonId;
 
-        if (homeTeamFranchiseSeasonId == null)
-        {
-            var homeFranchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(homeTeam.Team.Ref);
-            var homeFranchiseIdentity = _externalRefIdentityGenerator.Generate(homeFranchiseUri);
-
-            if (!_config.EnableDependencyRequests)
-            {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref} Team={Team}",
-                    DocumentType.TeamSeason,
-                    nameof(EventDocumentProcessor<TDataContext>),
-                    homeTeam.Team.Ref,
-                    "Home");
-                throw new ExternalDocumentNotSourcedException(
-                    $"Home team franchise season not found for {homeTeam.Ref} in command {command.CorrelationId}");
-            }
-            else
-            {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "Home FranchiseSeason not found. Raising DocumentRequested (override mode). TeamRef={TeamRef}",
-                    homeTeam.Team.Ref);
-                
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    homeTeam.Team.Ref.ToCleanUrl(),
-                    homeFranchiseIdentity.CanonicalId.ToString(),
-                    homeTeam.Team.Ref,
-                    command.Sport,
-                    command.Season,
-                    DocumentType.TeamSeason,
-                    command.SourceDataProvider,
-                    command.CorrelationId,
-                    CausationId.Producer.EventDocumentProcessor));
-                
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"Home team franchise season not found for {homeTeam.Ref} in command {command.CorrelationId}");
-            }
-        }
-        contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId.Value;
-
-        /* Away Team */
-        var awayTeam = externalDto
-            .Competitions.First()
-            .Competitors.First(x => x.HomeAway.ToLowerInvariant() == "away");
-
-        var awayTeamFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            awayTeam.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
-
-        if (awayTeamFranchiseSeasonId == null)
-        {
-            var awayFranchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(awayTeam.Team.Ref);
-            var awayFranchiseIdentity = _externalRefIdentityGenerator.Generate(awayFranchiseUri);
-
-            if (!_config.EnableDependencyRequests)
-            {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref} Team={Team}",
-                    DocumentType.TeamSeason,
-                    nameof(EventDocumentProcessor<TDataContext>),
-                    awayTeam.Team.Ref,
-                    "Away");
-                throw new ExternalDocumentNotSourcedException(
-                    $"Away team franchise season not found for {awayTeam.Ref} in command {command.CorrelationId}");
-            }
-            else
-            {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "Away FranchiseSeason not found. Raising DocumentRequested (override mode). TeamRef={TeamRef}",
-                    awayTeam.Team.Ref);
-                
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    awayTeam.Team.Ref.ToCleanUrl(),
-                    awayFranchiseIdentity.CanonicalId.ToString(),
-                    awayTeam.Team.Ref.ToCleanUri(),
-                    command.Sport,
-                    command.Season,
-                    DocumentType.TeamSeason,
-                    command.SourceDataProvider,
-                    command.CorrelationId,
-                    CausationId.Producer.EventDocumentProcessor));
-
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"Away team franchise season not found for {awayTeam.Ref} in command {command.CorrelationId}");
-            }
-        }
-        contest.AwayTeamFranchiseSeasonId = awayTeamFranchiseSeasonId.Value;
+        var homeTeamFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            command, competitors, "home");
+        contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId;
 
         if (string.IsNullOrEmpty(contest.ShortName))
         {
-            var awayFranchise = await _dataContext.FranchiseSeasons
-                .Include(s => s.Franchise)
-                .Where(x => x.Id == awayTeamFranchiseSeasonId)
-                .FirstOrDefaultAsync();
+            await SetContestShortName(contest, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
+        }
+    }
 
-            var homeFranchise = await _dataContext.FranchiseSeasons
-                .Include(s => s.Franchise)
-                .Where(x => x.Id == homeTeamFranchiseSeasonId)
-                .FirstOrDefaultAsync();
+    private async Task<Guid> ResolveFranchiseSeasonIdAsync(
+        ProcessDocumentCommand command,
+        IEnumerable<EspnEventCompetitionCompetitorDto> competitors,
+        string homeAway)
+    {
+        var competitor = competitors.First(x =>
+            x.HomeAway.Equals(homeAway, StringComparison.OrdinalIgnoreCase));
 
-            if (awayFranchise != null && homeFranchise != null)
-            {
-                contest.ShortName = $"{homeFranchise.Franchise.Abbreviation ?? homeFranchise.Franchise.Name} @ {awayFranchise.Franchise.Abbreviation ?? awayFranchise.Franchise.Name}";
-            }
+        var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+            FranchiseSeason, FranchiseSeasonExternalId>(
+            competitor.Team,
+            command.SourceDataProvider,
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
+
+        if (franchiseSeasonId != null)
+        {
+            return franchiseSeasonId.Value;
+        }
+
+        var teamLabel = char.ToUpper(homeAway[0]) + homeAway[1..].ToLower();
+
+        if (!_config.EnableDependencyRequests)
+        {
+            _logger.LogWarning(
+                "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref} Team={Team}",
+                DocumentType.TeamSeason,
+                nameof(EventDocumentProcessor<TDataContext>),
+                competitor.Team.Ref,
+                teamLabel);
+
+            throw new ExternalDocumentNotSourcedException(
+                $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}");
+        }
+
+        // Legacy mode: publish DocumentRequested
+        _logger.LogWarning(
+            "{Team} FranchiseSeason not found. Raising DocumentRequested (override mode). TeamRef={TeamRef}",
+            teamLabel,
+            competitor.Team.Ref);
+
+        var franchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(competitor.Team.Ref);
+        var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
+
+        await _publishEndpoint.Publish(new DocumentRequested(
+            competitor.Team.Ref.ToCleanUrl(),
+            franchiseIdentity.CanonicalId.ToString(),
+            competitor.Team.Ref.ToCleanUri(),
+            command.Sport,
+            command.Season,
+            DocumentType.TeamSeason,
+            command.SourceDataProvider,
+            command.CorrelationId,
+            CausationId.Producer.EventDocumentProcessor));
+
+        await _dataContext.SaveChangesAsync();
+
+        throw new ExternalDocumentNotSourcedException(
+            $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}");
+    }
+
+    private async Task SetContestShortName(
+        Contest contest,
+        Guid awayTeamFranchiseSeasonId,
+        Guid homeTeamFranchiseSeasonId)
+    {
+        var franchiseSeasons = await _dataContext.FranchiseSeasons
+            .Include(s => s.Franchise)
+            .Where(x => x.Id == homeTeamFranchiseSeasonId || x.Id == awayTeamFranchiseSeasonId)
+            .ToListAsync();
+
+        var homeFranchise = franchiseSeasons.FirstOrDefault(x => x.Id == homeTeamFranchiseSeasonId);
+        var awayFranchise = franchiseSeasons.FirstOrDefault(x => x.Id == awayTeamFranchiseSeasonId);
+
+        if (awayFranchise != null && homeFranchise != null)
+        {
+            var awayName = awayFranchise.Franchise.Abbreviation ?? awayFranchise.Franchise.Name;
+            var homeName = homeFranchise.Franchise.Abbreviation ?? homeFranchise.Franchise.Name;
+            contest.ShortName = $"{awayName} @ {homeName}";
         }
     }
 

@@ -1,15 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
 
+using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
+using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 using SportsData.Api.Application.UI.Leagues.Dtos;
-using SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
-using SportsData.Api.Application.UI.Leagues.LeagueInvitation.Dtos;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
+using SportsData.Api.Application.UI.Leagues.Queries.GetPublicLeagues;
+using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Extensions;
-using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
@@ -19,111 +25,69 @@ namespace SportsData.Api.Application.UI.Leagues;
 [Route("ui/leagues")]
 public class LeagueController : ApiControllerBase
 {
-    private readonly ILeagueService _iLeagueService;
-    private readonly AppDataContext _dbContext;
-    private readonly INotificationService _notificationService;
-    private readonly NotificationConfig _notificationConfig;
-    private readonly ILogger<LeagueController> _logger;
-
-    public LeagueController(
-        ILeagueService iLeagueService,
-        AppDataContext dbContext,
-        INotificationService notificationService,
-        IOptions<NotificationConfig> notificationConfig,
-        ILogger<LeagueController> logger)
-    {
-        _iLeagueService = iLeagueService;
-        _dbContext = dbContext;
-        _notificationService = notificationService;
-        _notificationConfig = notificationConfig.Value;
-        _logger = logger;
-    }
-
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Guid>> Create([FromBody] CreateLeagueRequest request)
+    public async Task<ActionResult<Guid>> Create(
+        [FromBody] CreateLeagueRequest request,
+        [FromServices] ICreateLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _iLeagueService.CreateAsync(request, userId);
+        var result = await handler.ExecuteAsync(request, userId, cancellationToken);
 
         if (result.IsSuccess)
             return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
 
         return result.ToActionResult();
     }
-    
+
     [HttpGet("{id}")]
     [Authorize]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<LeagueDetailDto>> GetById(
+        Guid id,
+        [FromServices] IGetLeagueByIdQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        var league = await _dbContext.PickemGroups
-            .Include(x => x.Conferences)
-            .Include(x => x.Members)
-            .ThenInclude(m => m.User)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var query = new GetLeagueByIdQuery { LeagueId = id };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
-        if (league is null)
-            return NotFound();
-
-        var dto = new LeagueDetailDto
-        {
-            Id = league.Id,
-            Name = league.Name,
-            Description = league.Description,
-            PickType = league.PickType.ToString().ToLowerInvariant(),
-            UseConfidencePoints = league.UseConfidencePoints,
-            TiebreakerType = league.TiebreakerType.ToString().ToLowerInvariant(),
-            TiebreakerTiePolicy = league.TiebreakerTiePolicy.ToString().ToLowerInvariant(),
-            RankingFilter = league.RankingFilter.ToString(),
-            ConferenceSlugs = league.Conferences?.Select(c => c.ConferenceSlug).ToList() ?? new(),
-            IsPublic = league.IsPublic,
-            Members = league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
-            {
-                UserId = m.UserId,
-                Username = m.User?.DisplayName ?? "UNKNOWN",
-                Role = m.Role.ToString().ToLowerInvariant()
-            }).ToList()
-        };
-
-        return Ok(dto);
+        return result.ToActionResult();
     }
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<List<LeagueSummaryDto>>> GetLeagues()
+    public async Task<ActionResult<List<LeagueSummaryDto>>> GetLeagues(
+        [FromServices] IGetUserLeaguesQueryHandler handler,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var leagues = await _dbContext.PickemGroupMembers
-            .Where(m => m.UserId == userId)
-            .Include(m => m.Group)
-            .Select(m => new LeagueSummaryDto
-            {
-                Id = m.Group.Id,
-                Name = m.Group.Name,
-                Sport = m.Group.Sport.ToString(),
-                LeagueType = m.Group.PickType.ToString(),
-                UseConfidencePoints = m.Group.UseConfidencePoints,
-                MemberCount = m.Group.Members.Count
-            })
-            .ToListAsync();
+        var query = new GetUserLeaguesQuery { UserId = userId };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
-        return Ok(leagues);
+        return result.ToActionResult();
     }
 
     [HttpPost("{id}/join")]
     [Authorize]
-    public async Task<ActionResult<Guid?>> JoinLeague([FromRoute] string id)
+    public async Task<ActionResult<Guid?>> JoinLeague(
+        [FromRoute] string id,
+        [FromServices] IJoinLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(id, out var leagueId))
             return BadRequest("Invalid league ID format.");
 
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _iLeagueService.JoinLeague(leagueId, userId);
+        var command = new JoinLeagueCommand
+        {
+            PickemGroupId = leagueId,
+            UserId = userId
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -131,68 +95,42 @@ public class LeagueController : ApiControllerBase
     [HttpGet("{id}/matchups/{week}")]
     [Authorize]
     public async Task<ActionResult<LeagueWeekMatchupsDto>> GetMatchupsForLeagueWeek(
-        [FromRoute]Guid id,
-        [FromRoute]int week)
+        [FromRoute] Guid id,
+        [FromRoute] int week,
+        [FromServices] IGetLeagueWeekMatchupsQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "GetMatchupsForLeagueWeek called with leagueId={LeagueId}, week={Week}", 
-            id, 
-            week);
-        
-        try
+        var userId = HttpContext.GetCurrentUserId();
+
+        var query = new GetLeagueWeekMatchupsQuery
         {
-            var userId = HttpContext.GetCurrentUserId();
-            
-            _logger.LogDebug(
-                "Resolved userId={UserId} for GetMatchupsForLeagueWeek, leagueId={LeagueId}, week={Week}", 
-                userId, 
-                id, 
-                week);
-            
-            var result = await _iLeagueService.GetMatchupsForLeagueWeekAsync(userId, id, week);
-            
-            if (result.IsSuccess)
-            {
-                _logger.LogInformation(
-                    "GetMatchupsForLeagueWeek succeeded for leagueId={LeagueId}, week={Week}, userId={UserId}, returned {Count} matchups", 
-                    id, 
-                    week, 
-                    userId, 
-                    result.Value.Matchups.Count);
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "GetMatchupsForLeagueWeek failed for leagueId={LeagueId}, week={Week}, userId={UserId}, Status={Status}", 
-                    id, 
-                    week, 
-                    userId, 
-                    result.Status);
-            }
-            
-            return result.ToActionResult();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex, 
-                "Unhandled exception in GetMatchupsForLeagueWeek for leagueId={LeagueId}, week={Week}", 
-                id, 
-                week);
-            return BadRequest(ex.Message);
-        }
+            UserId = userId,
+            LeagueId = id,
+            Week = week
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
     }
 
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<ActionResult<Guid>> Delete(
         [FromRoute] Guid id,
+        [FromServices] IDeleteLeagueCommandHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _iLeagueService.DeleteLeague(userId, id, cancellationToken);
-        
+        var command = new DeleteLeagueCommand
+        {
+            UserId = userId,
+            LeagueId = id
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
         if (result.IsSuccess)
             return NoContent();
 
@@ -201,45 +139,44 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost("{id}/invite")]
     [Authorize]
-    public async Task<IActionResult> SendInvite(Guid id, [FromBody] SendLeagueInviteRequest request)
+    public async Task<IActionResult> SendInvite(
+        Guid id,
+        [FromBody] SendLeagueInviteRequest request,
+        [FromServices] ISendLeagueInviteCommandHandler handler,
+        CancellationToken cancellationToken)
     {
         if (id != request.LeagueId)
             return BadRequest("Mismatched league ID in route vs body.");
 
-        var league = await _dbContext.PickemGroups
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var command = new SendLeagueInviteCommand
+        {
+            LeagueId = id,
+            Email = request.Email,
+            InviteeName = request.InviteeName
+        };
 
-        if (league is null)
-            return NotFound();
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-        var userId = HttpContext.GetCurrentUserId();
+        if (result.IsSuccess)
+            return Ok(new { Message = "Invite sent." });
 
-        // You can enhance this later to check if the user is a league admin, etc.
-
-        // TODO: Dynamically set the domain based on environment
-        var inviteUrl = $"https://dev.sportdeets.com/app/join/{league.Id.ToString().Replace("-", string.Empty)}";
-
-        await _notificationService.SendEmailAsync(
-            request.Email,
-            _notificationConfig.Email.TemplateIdInvitation ,
-            new
-            {
-                firstName = request.InviteeName ?? "friend",
-                leagueName = league.Name,
-                joinUrl = inviteUrl
-            });
-
-        return Ok(new { Message = "Invite sent." });
+        return result.Status switch
+        {
+            ResultStatus.NotFound => NotFound(),
+            _ => BadRequest()
+        };
     }
 
     [HttpGet("discover")]
     [Authorize]
-    public async Task<ActionResult<List<PublicLeagueDto>>> GetPublicLeagues()
+    public async Task<ActionResult<List<PublicLeagueDto>>> GetPublicLeagues(
+        [FromServices] IGetPublicLeaguesQueryHandler handler,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _iLeagueService.GetPublicLeagues(userId);
+        var query = new GetPublicLeaguesQuery { UserId = userId };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -248,9 +185,16 @@ public class LeagueController : ApiControllerBase
     [Authorize]
     public async Task<ActionResult<LeagueWeekOverviewDto>> GetLeagueWeekOverview(
         [FromRoute] Guid id,
-        [FromRoute] int week)
+        [FromRoute] int week,
+        [FromServices] IGetLeagueWeekOverviewQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        var result = await _iLeagueService.GetLeagueWeekOverview(id, week);
+        var query = new GetLeagueWeekOverviewQuery
+        {
+            LeagueId = id,
+            Week = week
+        };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -258,10 +202,17 @@ public class LeagueController : ApiControllerBase
     [HttpPost("{id}/previews/{weekId}/generate")]
     public async Task<ActionResult<Guid>> GenerateMatchupPreviews(
         [FromRoute] Guid id,
-        [FromRoute] int weekId)
+        [FromRoute] int weekId,
+        [FromServices] IGenerateLeagueWeekPreviewsCommandHandler handler,
+        CancellationToken cancellationToken)
     {
-        var result = await _iLeagueService.GenerateLeagueWeekPreviews(id, weekId);
-        
+        var command = new GenerateLeagueWeekPreviewsCommand
+        {
+            LeagueId = id,
+            WeekNumber = weekId
+        };
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
         if (result.IsSuccess)
             return Accepted(new { correlationId = result.Value });
 
@@ -272,12 +223,62 @@ public class LeagueController : ApiControllerBase
     /// Gets scores by week for all members of a league.
     /// </summary>
     /// <param name="id">The league ID</param>
+    /// <param name="handler">The query handler</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Weekly scores for all league members</returns>
     [HttpGet("{id}/scores")]
     [Authorize]
-    public async Task<ActionResult<LeagueScoresByWeekDto>> GetLeagueScoresByWeek([FromRoute] Guid id)
+    public async Task<ActionResult<LeagueScoresByWeekDto>> GetLeagueScoresByWeek(
+        [FromRoute] Guid id,
+        [FromServices] IGetLeagueScoresByWeekQueryHandler handler,
+        CancellationToken cancellationToken)
     {
-        var result = await _iLeagueService.GetLeagueScoresByWeek(id);
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = id };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Adds a single matchup to a league. Only the league commissioner can add matchups.
+    /// This is used for post-season games that are not known at the time of matchup generation.
+    /// </summary>
+    /// <param name="id">The league ID</param>
+    /// <param name="command">The command containing the contest ID to add</param>
+    /// <param name="handler">The command handler</param>
+    /// <param name="logger">The logger</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The ID of the newly created matchup</returns>
+    [HttpPost("{id}/matchups")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> AddMatchup(
+        [FromRoute] Guid id,
+        [FromBody] AddMatchupCommand command,
+        [FromServices] IAddMatchupCommandHandler handler,
+        [FromServices] ILogger<LeagueController> logger,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        // Hydrate command with route and auth context
+        var hydratedCommand = new AddMatchupCommand
+        {
+            LeagueId = id,
+            ContestId = command.ContestId,
+            UserId = userId
+        };
+
+        logger.LogInformation(
+            "AddMatchup endpoint called. LeagueId={LeagueId}, ContestId={ContestId}, UserId={UserId}",
+            id, command.ContestId, userId);
+
+        var result = await handler.ExecuteAsync(hydratedCommand, cancellationToken);
+
+        if (result.IsSuccess)
+            return CreatedAtAction(
+                nameof(GetMatchupsForLeagueWeek),
+                new { id, week = 0 }, // Week is not known here, but route needs it
+                new { matchupId = result.Value });
 
         return result.ToActionResult();
     }

@@ -544,5 +544,25 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
 
             return dto ?? throw new Exception("Not found");
         }
+
+        public async Task<Matchup?> GetMatchupByContestId(Guid contestId)
+        {
+            var sql = _queryProvider.GetMatchupByContestId();
+
+            try
+            {
+                var result = await _connection.QuerySingleOrDefaultAsync<Matchup>(
+                    sql,
+                    new { ContestId = contestId },
+                    commandType: CommandType.Text);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get matchup for ContestId={ContestId}", contestId);
+                throw;
+            }
+        }
     }
 }

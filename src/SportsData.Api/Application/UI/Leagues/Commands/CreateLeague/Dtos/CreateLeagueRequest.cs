@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.LeagueCreationPage.Dtos;
+﻿namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
 
 public class CreateLeagueRequest
 {

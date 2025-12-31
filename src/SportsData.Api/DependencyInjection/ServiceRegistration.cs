@@ -12,9 +12,18 @@ using SportsData.Api.Application.UI.Articles;
 using SportsData.Api.Application.UI.Conferences;
 using SportsData.Api.Application.UI.Contest;
 using SportsData.Api.Application.UI.Leaderboard;
-using SportsData.Api.Application.UI.Leagues;
-using SportsData.Api.Application.UI.Leagues.JoinLeague;
-using SportsData.Api.Application.UI.Leagues.LeagueCreationPage;
+using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
+using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
+using SportsData.Api.Application.UI.Leagues.Queries.GetPublicLeagues;
+using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Application.UI.Map;
 using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Application.UI.Messageboard;
@@ -40,13 +49,26 @@ namespace SportsData.Api.DependencyInjection
         {
             services.AddDataPersistenceExternal();
 
-            services.AddScoped<IConferenceService, ConferenceService>();
+            // League Commands
+            services.AddScoped<IAddMatchupCommandHandler, AddMatchupCommandHandler>();
             services.AddScoped<ICreateLeagueCommandHandler, CreateLeagueCommandHandler>();
+            services.AddScoped<IDeleteLeagueCommandHandler, DeleteLeagueCommandHandler>();
+            services.AddScoped<IGenerateLeagueWeekPreviewsCommandHandler, GenerateLeagueWeekPreviewsCommandHandler>();
+            services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
+            services.AddScoped<ISendLeagueInviteCommandHandler, SendLeagueInviteCommandHandler>();
+
+            // League Queries
+            services.AddScoped<IGetLeagueByIdQueryHandler, GetLeagueByIdQueryHandler>();
+            services.AddScoped<IGetLeagueScoresByWeekQueryHandler, GetLeagueScoresByWeekQueryHandler>();
+            services.AddScoped<IGetLeagueWeekMatchupsQueryHandler, GetLeagueWeekMatchupsQueryHandler>();
+            services.AddScoped<IGetLeagueWeekOverviewQueryHandler, GetLeagueWeekOverviewQueryHandler>();
+            services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
+            services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
+
+            services.AddScoped<IConferenceService, ConferenceService>();
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
             services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
-            services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
-            services.AddScoped<ILeagueService, LeagueService>();
             services.AddScoped<IMatchupService, MatchupService>();
             services.AddScoped<IMessageboardService, MessageboardService>();
             services.AddScoped<INotificationService, NotificationService>();

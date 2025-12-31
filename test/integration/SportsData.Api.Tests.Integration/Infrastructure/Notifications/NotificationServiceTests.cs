@@ -40,7 +40,8 @@ namespace SportsData.Api.Tests.Integration.Infrastructure.Notifications
                 {
                     ApiKey = "foo",
                     FromEmail = "bar",
-                    TemplateIdInvitation = "none"
+                    TemplateIdInvitation = "none",
+                    UrlBase = "www.example.com"
                 }
             };
             var options = Options.Create(config);

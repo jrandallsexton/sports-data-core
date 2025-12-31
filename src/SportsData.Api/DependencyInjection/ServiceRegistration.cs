@@ -8,10 +8,15 @@ using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Application.UI.Articles;
-using SportsData.Api.Application.UI.Conferences;
-using SportsData.Api.Application.UI.Contest;
-using SportsData.Api.Application.UI.Leaderboard;
+using SportsData.Api.Application.UI.Articles.Queries.GetArticleById;
+using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
+using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
+using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
+using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
+using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
+using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
+using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
+using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboardWidget;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
@@ -24,7 +29,8 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
 using SportsData.Api.Application.UI.Leagues.Queries.GetPublicLeagues;
 using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
-using SportsData.Api.Application.UI.Map;
+using SportsData.Api.Application.UI.Analytics.Queries.GetFranchiseSeasonMetrics;
+using SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
 using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Application.UI.Messageboard;
 using SportsData.Api.Application.UI.Picks;
@@ -65,7 +71,28 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
 
-            services.AddScoped<IConferenceService, ConferenceService>();
+            // Analytics Queries
+            services.AddScoped<IGetFranchiseSeasonMetricsQueryHandler, GetFranchiseSeasonMetricsQueryHandler>();
+
+            // Articles Queries
+            services.AddScoped<IGetArticlesQueryHandler, GetArticlesQueryHandler>();
+            services.AddScoped<IGetArticleByIdQueryHandler, GetArticleByIdQueryHandler>();
+
+            // Conferences Queries
+            services.AddScoped<IGetConferenceNamesAndSlugsQueryHandler, GetConferenceNamesAndSlugsQueryHandler>();
+
+            // Contest Commands
+            services.AddScoped<IRefreshContestCommandHandler, RefreshContestCommandHandler>();
+            services.AddScoped<IRefreshContestMediaCommandHandler, RefreshContestMediaCommandHandler>();
+            services.AddScoped<ISubmitContestPredictionsCommandHandler, SubmitContestPredictionsCommandHandler>();
+
+            // Contest Queries
+            services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
+
+            // Leaderboard Queries
+            services.AddScoped<IGetLeaderboardQueryHandler, GetLeaderboardQueryHandler>();
+            services.AddScoped<IGetLeaderboardWidgetQueryHandler, GetLeaderboardWidgetQueryHandler>();
+
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
             services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
@@ -98,7 +125,6 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeagueWeekScoringService, LeagueWeekScoringService>();
-            services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IAiService, AiService>();
 
@@ -106,14 +132,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
             services.AddScoped<ISyntheticPickService, SyntheticPickService>();
 
-            services.AddScoped<IContestService, ContestService>();
             services.AddScoped<IRankingsService, RankingsService>();
 
             services.AddScoped<IPreviewService, PreviewService>();
 
-            services.AddScoped<IMapService, MapService>();
-
-            services.AddScoped<IArticleService, ArticleService>();
+            // Map Queries
+            services.AddScoped<IGetMapMatchupsQueryHandler, GetMapMatchupsQueryHandler>();
 
             return services;
         }

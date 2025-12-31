@@ -1,6 +1,6 @@
-﻿using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Api.Infrastructure.Data.Entities;
 
-namespace SportsData.Api.Application.UI.Contest;
+namespace SportsData.Api.Application.UI.Contest.Dtos;
 
 public class ContestPredictionDto
 {

@@ -36,9 +36,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         // Arrange
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand();
+        var userId = Guid.NewGuid();
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, userId);
 
         // Assert
         result.IsSuccess.Should().BeFalse();
@@ -59,10 +60,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, userId: differentUserId);
+        var command = CreateCommand(leagueId: league.Id);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, differentUserId);
 
         // Assert
         result.IsSuccess.Should().BeFalse();
@@ -90,10 +91,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeFalse();
@@ -118,10 +119,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync((Matchup?)null);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeFalse();
@@ -148,10 +149,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync(matchupData);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -188,10 +189,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync(matchupData);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -219,10 +220,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync(matchupData);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -264,10 +265,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync(matchupData);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -299,10 +300,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
             .ReturnsAsync(matchupData);
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
-        var command = CreateCommand(leagueId: league.Id, contestId: contestId, userId: commissionerId);
+        var command = CreateCommand(leagueId: league.Id, contestId: contestId);
 
         // Act
-        var result = await handler.ExecuteAsync(command);
+        var result = await handler.ExecuteAsync(command, commissionerId);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -317,14 +318,12 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
 
     private static AddMatchupCommand CreateCommand(
         Guid? leagueId = null,
-        Guid? contestId = null,
-        Guid? userId = null)
+        Guid? contestId = null)
     {
         return new AddMatchupCommand
         {
             LeagueId = leagueId ?? Guid.NewGuid(),
-            ContestId = contestId ?? Guid.NewGuid(),
-            UserId = userId ?? Guid.NewGuid()
+            ContestId = contestId ?? Guid.NewGuid()
         };
     }
 

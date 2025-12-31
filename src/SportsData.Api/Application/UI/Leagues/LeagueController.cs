@@ -260,19 +260,19 @@ public class LeagueController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        // Hydrate command with route and auth context
+        // Hydrate command with route context
         var hydratedCommand = new AddMatchupCommand
         {
             LeagueId = id,
             ContestId = command.ContestId,
-            UserId = userId
+            CorrelationId = command.CorrelationId
         };
 
         logger.LogInformation(
             "AddMatchup endpoint called. LeagueId={LeagueId}, ContestId={ContestId}, UserId={UserId}",
             id, command.ContestId, userId);
 
-        var result = await handler.ExecuteAsync(hydratedCommand, cancellationToken);
+        var result = await handler.ExecuteAsync(hydratedCommand, userId, cancellationToken);
 
         if (result.IsSuccess)
             return CreatedAtAction(

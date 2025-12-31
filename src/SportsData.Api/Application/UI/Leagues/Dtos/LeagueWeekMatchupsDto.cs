@@ -1,4 +1,4 @@
-﻿using SportsData.Api.Application.UI.Contest;
+﻿using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Dtos

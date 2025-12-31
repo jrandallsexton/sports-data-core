@@ -111,6 +111,7 @@ namespace SportsData.Api
 
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
+            services.Configure<ApiConfig>(config.GetSection("SportsData.Api:ApiConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
             services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
             

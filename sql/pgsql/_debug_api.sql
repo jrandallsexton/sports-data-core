@@ -52,16 +52,17 @@ select * from public."PickemGroupConference" where "PickemGroupId" = '1de3945f-4
 select * from public."PickemGroupWeek" where "GroupId" = 'aa7a482f-2204-429a-bb7c-75bc2dfef92b' order by "SeasonWeek"
 select * from public."PickemGroupWeek" order by "SeasonWeek"
 select * from public."PickemGroupWeek" where "SeasonWeekId" = '66277eb1-12cd-37cc-eb5d-950f10468f6d'
-update public."PickemGroupWeek" set "AreMatchupsGenerated" = false where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7'
+--update public."PickemGroupWeek" set "AreMatchupsGenerated" = false where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7'
 --delete from public."PickemGroupWeek" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
-delete from public."PickemGroupMatchup" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
+--delete from public."PickemGroupMatchup" where "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
 -- https://api-dev.sportdeets.com/ui/matchup//preview
+--update public."PickemGroupMatchup" set "SeasonWeek" = 17 where "ContestId" = 'c94e1efc-4809-bf27-d1e1-fb6d97cb16b7'
 select *
 from public."PickemGroupMatchup"
 where
   --"GroupId" = '4319cb6e-e503-465f-8213-eacae5c0c948' and
-  "SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
-  --"ContestId" = '50a84a03-f14f-ef1f-52a3-67a59c6e583a'
+  --"SeasonWeekId" = '13343d64-6de5-3308-a484-14dc8c2dbcc6'
+  "ContestId" = 'c94e1efc-4809-bf27-d1e1-fb6d97cb16b7'
 order by "StartDateUtc" desc
 
 -- FIX DEV - 07 OCT 2025

@@ -42,7 +42,9 @@ using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.Queries.GetPickAccuracyByWeek;
 using SportsData.Api.Application.UI.Picks.Queries.GetPickRecordWidget;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
-using SportsData.Api.Application.UI.Rankings;
+using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
+using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
+using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.User;
@@ -155,7 +157,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
             services.AddScoped<ISyntheticPickService, SyntheticPickService>();
 
-            services.AddScoped<IRankingsService, RankingsService>();
+            // Rankings Queries
+            services.AddScoped<IGetRankingsBySeasonYearQueryHandler, GetRankingsBySeasonYearQueryHandler>();
+            services.AddScoped<IGetRankingsByPollWeekQueryHandler, GetRankingsByPollWeekQueryHandler>();
+            services.AddScoped<IGetPollRankingsByWeekQueryHandler, GetPollRankingsByWeekQueryHandler>();
 
             services.AddScoped<IPreviewService, PreviewService>();
 

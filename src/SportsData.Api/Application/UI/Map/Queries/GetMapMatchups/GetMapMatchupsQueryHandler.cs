@@ -31,6 +31,7 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         _logger.LogDebug(
             "Getting map matchups. LeagueId={LeagueId}, SeasonYear={SeasonYear}, WeekNumber={WeekNumber}",
             query.LeagueId,
+            query.SeasonYear,
             query.WeekNumber);
 
         if (query.LeagueId is null && query.WeekNumber is null)

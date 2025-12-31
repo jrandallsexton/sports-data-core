@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
-using SportsData.Api.Application.UI.Picks;
+using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
@@ -22,18 +22,18 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
     private readonly ILogger<GetLeagueWeekOverviewQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
     private readonly IProvideCanonicalData _canonicalDataProvider;
-    private readonly IPickService _pickService;
+    private readonly IGetUserPicksByGroupAndWeekQueryHandler _userPicksQueryHandler;
 
     public GetLeagueWeekOverviewQueryHandler(
         ILogger<GetLeagueWeekOverviewQueryHandler> logger,
         AppDataContext dbContext,
         IProvideCanonicalData canonicalDataProvider,
-        IPickService pickService)
+        IGetUserPicksByGroupAndWeekQueryHandler userPicksQueryHandler)
     {
         _logger = logger;
         _dbContext = dbContext;
         _canonicalDataProvider = canonicalDataProvider;
-        _pickService = pickService;
+        _userPicksQueryHandler = userPicksQueryHandler;
     }
 
     public async Task<Result<LeagueWeekOverviewDto>> ExecuteAsync(
@@ -112,8 +112,13 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 
         foreach (var member in league.Members.OrderBy(x => x.User.DisplayName))
         {
-            var userPicksResult = await _pickService
-                .GetUserPicksByGroupAndWeek(member.UserId, query.LeagueId, query.Week, cancellationToken);
+            var userPicksQuery = new GetUserPicksByGroupAndWeekQuery
+            {
+                UserId = member.UserId,
+                GroupId = query.LeagueId,
+                WeekNumber = query.Week
+            };
+            var userPicksResult = await _userPicksQueryHandler.ExecuteAsync(userPicksQuery, cancellationToken);
 
             if (userPicksResult.IsSuccess)
             {

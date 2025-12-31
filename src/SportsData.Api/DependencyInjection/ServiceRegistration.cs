@@ -31,10 +31,17 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetPublicLeagues;
 using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Application.UI.Analytics.Queries.GetFranchiseSeasonMetrics;
 using SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
-using SportsData.Api.Application.UI.Matchups;
-using SportsData.Api.Application.UI.Messageboard;
-using SportsData.Api.Application.UI.Picks;
-using SportsData.Api.Application.UI.Picks.PicksPage;
+using SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
+using SportsData.Api.Application.UI.Messageboard.Commands.CreateReply;
+using SportsData.Api.Application.UI.Messageboard.Commands.CreateThread;
+using SportsData.Api.Application.UI.Messageboard.Commands.ToggleReaction;
+using SportsData.Api.Application.UI.Messageboard.Queries.GetReplies;
+using SportsData.Api.Application.UI.Messageboard.Queries.GetThreads;
+using SportsData.Api.Application.UI.Messageboard.Queries.GetThreadsByUserGroups;
+using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
+using SportsData.Api.Application.UI.Picks.Queries.GetPickAccuracyByWeek;
+using SportsData.Api.Application.UI.Picks.Queries.GetPickRecordWidget;
+using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Application.UI.Rankings;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Handlers;
@@ -93,13 +100,30 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetLeaderboardQueryHandler, GetLeaderboardQueryHandler>();
             services.AddScoped<IGetLeaderboardWidgetQueryHandler, GetLeaderboardWidgetQueryHandler>();
 
+            // Matchups Queries
+            services.AddScoped<IGetMatchupPreviewQueryHandler, GetMatchupPreviewQueryHandler>();
+
+            // Messageboard Commands
+            services.AddScoped<ICreateThreadCommandHandler, CreateThreadCommandHandler>();
+            services.AddScoped<ICreateReplyCommandHandler, CreateReplyCommandHandler>();
+            services.AddScoped<IToggleReactionCommandHandler, ToggleReactionCommandHandler>();
+
+            // Messageboard Queries
+            services.AddScoped<IGetThreadsByUserGroupsQueryHandler, GetThreadsByUserGroupsQueryHandler>();
+            services.AddScoped<IGetThreadsQueryHandler, GetThreadsQueryHandler>();
+            services.AddScoped<IGetRepliesQueryHandler, GetRepliesQueryHandler>();
+
+            // Picks Commands
+            services.AddScoped<ISubmitPickCommandHandler, SubmitPickCommandHandler>();
+
+            // Picks Queries
+            services.AddScoped<IGetUserPicksByGroupAndWeekQueryHandler, GetUserPicksByGroupAndWeekQueryHandler>();
+            services.AddScoped<IGetPickRecordWidgetQueryHandler, GetPickRecordWidgetQueryHandler>();
+            services.AddScoped<IGetPickAccuracyByWeekQueryHandler, GetPickAccuracyByWeekQueryHandler>();
+
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
-            services.AddScoped<IGetUserPicksQueryHandler, GetUserPicksQueryHandler>();
-            services.AddScoped<IMatchupService, MatchupService>();
-            services.AddScoped<IMessageboardService, MessageboardService>();
             services.AddScoped<INotificationService, NotificationService>();
-            services.AddScoped<IPickService, PickService>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
             services.AddSingleton<CanonicalDataQueryProvider>();
@@ -107,7 +131,6 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
-            services.AddScoped<ISubmitUserPickCommandHandler, SubmitUserPickCommandHandler>();
 
             services.AddScoped<IStatFormattingService, StatFormattingService>();
             services.AddScoped<ITeamCardService, TeamCardService>();

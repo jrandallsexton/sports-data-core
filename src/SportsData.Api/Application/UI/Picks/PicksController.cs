@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.Dtos;
-using SportsData.Api.Application.UI.Picks.PicksPage;
+using SportsData.Api.Application.UI.Picks.Queries.GetPickAccuracyByWeek;
+using SportsData.Api.Application.UI.Picks.Queries.GetPickRecordWidget;
+using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -13,13 +16,6 @@ namespace SportsData.Api.Application.UI.Picks;
 [Route("ui/picks")]
 public class PicksController : ApiControllerBase
 {
-    private readonly IPickService _userPickService;
-
-    public PicksController(IPickService userPickService)
-    {
-        _userPickService = userPickService;
-    }
-
     [HttpGet("{sport}/{season}/{week}")]
     [Authorize]
     public async Task<IActionResult> GetPicksForWeek(
@@ -36,11 +32,27 @@ public class PicksController : ApiControllerBase
     [Authorize]
     public async Task<ActionResult<Guid>> SubmitPick(
         [FromBody] SubmitUserPickRequest request,
+        [FromServices] ISubmitPickCommandHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.SubmitPickAsync(userId, request, cancellationToken);
+        var command = new SubmitPickCommand
+        {
+            UserId = userId,
+            PickemGroupId = request.PickemGroupId,
+            ContestId = request.ContestId,
+            Week = request.Week,
+            PickType = request.PickType,
+            FranchiseSeasonId = request.FranchiseSeasonId,
+            OverUnder = request.OverUnder,
+            ConfidencePoints = request.ConfidencePoints,
+            TiebreakerGuessTotal = request.TiebreakerGuessTotal,
+            TiebreakerGuessHome = request.TiebreakerGuessHome,
+            TiebreakerGuessAway = request.TiebreakerGuessAway
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         if (result.IsSuccess)
             return NoContent();
@@ -52,11 +64,19 @@ public class PicksController : ApiControllerBase
     public async Task<ActionResult<List<UserPickDto>>> GetUserPicksByGroupAndWeek(
         Guid groupId,
         int week,
+        [FromServices] IGetUserPicksByGroupAndWeekQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetUserPicksByGroupAndWeek(userId, groupId, week, cancellationToken);
+        var query = new GetUserPicksByGroupAndWeekQuery
+        {
+            UserId = userId,
+            GroupId = groupId,
+            WeekNumber = week
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -64,12 +84,21 @@ public class PicksController : ApiControllerBase
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("{season}/widget")]
     [Authorize]
-    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidget([FromRoute] int season,
+    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidget(
+        [FromRoute] int season,
+        [FromServices] IGetPickRecordWidgetQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickRecordWidget(userId, season, cancellationToken);
+        var query = new GetPickRecordWidgetQuery
+        {
+            UserId = userId,
+            SeasonYear = season,
+            ForSynthetic = false
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -77,12 +106,21 @@ public class PicksController : ApiControllerBase
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     [HttpGet("{season}/widget/synthetic")]
     [Authorize]
-    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic([FromRoute] int season,
+    public async Task<ActionResult<PickRecordWidgetDto>> GetPickRecordWidgetForSynthetic(
+        [FromRoute] int season,
+        [FromServices] IGetPickRecordWidgetQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickRecordWidgetForSynthetic(userId, season, cancellationToken);
+        var query = new GetPickRecordWidgetQuery
+        {
+            UserId = userId,
+            SeasonYear = season,
+            ForSynthetic = true
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -91,11 +129,18 @@ public class PicksController : ApiControllerBase
     [HttpGet("chart")]
     [Authorize]
     public async Task<ActionResult<List<PickAccuracyByWeekDto>>> GetPickAccuracyChart(
+        [FromServices] IGetPickAccuracyByWeekQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickAccuracyByWeek(userId, cancellationToken);
+        var query = new GetPickAccuracyByWeekQuery
+        {
+            UserId = userId,
+            ForSynthetic = false
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -104,11 +149,18 @@ public class PicksController : ApiControllerBase
     [HttpGet("chart/synthetic")]
     [Authorize]
     public async Task<ActionResult<PickAccuracyByWeekDto>> GetPickAccuracyChartForSynthetic(
+        [FromServices] IGetPickAccuracyByWeekQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await _userPickService.GetPickAccuracyByWeekForSynthetic(userId, cancellationToken);
+        var query = new GetPickAccuracyByWeekQuery
+        {
+            UserId = userId,
+            ForSynthetic = true
+        };
+
+        var result = await handler.ExecuteForSyntheticAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }

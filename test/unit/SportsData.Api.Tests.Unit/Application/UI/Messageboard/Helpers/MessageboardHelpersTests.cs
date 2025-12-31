@@ -1,6 +1,7 @@
 using FluentAssertions;
 
 using SportsData.Api.Application.UI.Messageboard.Helpers;
+using SportsData.Api.Infrastructure.Data.Entities;
 
 using Xunit;
 
@@ -8,6 +9,234 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Messageboard.Helpers;
 
 public class MessageboardHelpersTests
 {
+    public class AdjustReactionCountsTests
+    {
+        [Theory]
+        [InlineData(ReactionType.Like)]
+        [InlineData(ReactionType.Laugh)]
+        [InlineData(ReactionType.Surprise)]
+        public void AdjustReactionCounts_ShouldIncrementLikeCount_ForPositiveReactions(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 2
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: false);
+
+            // Assert
+            post.LikeCount.Should().Be(6);
+            post.DislikeCount.Should().Be(2);
+        }
+
+        [Theory]
+        [InlineData(ReactionType.Dislike)]
+        [InlineData(ReactionType.Sad)]
+        [InlineData(ReactionType.Angry)]
+        public void AdjustReactionCounts_ShouldIncrementDislikeCount_ForNegativeReactions(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 2
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: false);
+
+            // Assert
+            post.LikeCount.Should().Be(5);
+            post.DislikeCount.Should().Be(3);
+        }
+
+        [Theory]
+        [InlineData(ReactionType.Like)]
+        [InlineData(ReactionType.Laugh)]
+        [InlineData(ReactionType.Surprise)]
+        public void AdjustReactionCounts_ShouldDecrementLikeCount_ForPositiveReactionsWhenDecrementing(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 2
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
+
+            // Assert
+            post.LikeCount.Should().Be(4);
+            post.DislikeCount.Should().Be(2);
+        }
+
+        [Theory]
+        [InlineData(ReactionType.Dislike)]
+        [InlineData(ReactionType.Sad)]
+        [InlineData(ReactionType.Angry)]
+        public void AdjustReactionCounts_ShouldDecrementDislikeCount_ForNegativeReactionsWhenDecrementing(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 2
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
+
+            // Assert
+            post.LikeCount.Should().Be(5);
+            post.DislikeCount.Should().Be(1);
+        }
+
+        [Theory]
+        [InlineData(ReactionType.Like)]
+        [InlineData(ReactionType.Laugh)]
+        [InlineData(ReactionType.Surprise)]
+        public void AdjustReactionCounts_ShouldNotGoBelowZero_WhenDecrementingLikeCount(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 0,
+                DislikeCount = 5
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
+
+            // Assert
+            post.LikeCount.Should().Be(0, "LikeCount should be clamped to 0");
+            post.DislikeCount.Should().Be(5);
+        }
+
+        [Theory]
+        [InlineData(ReactionType.Dislike)]
+        [InlineData(ReactionType.Sad)]
+        [InlineData(ReactionType.Angry)]
+        public void AdjustReactionCounts_ShouldNotGoBelowZero_WhenDecrementingDislikeCount(ReactionType type)
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 0
+            };
+
+            // Act
+            MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
+
+            // Assert
+            post.LikeCount.Should().Be(5);
+            post.DislikeCount.Should().Be(0, "DislikeCount should be clamped to 0");
+        }
+
+        [Fact]
+        public void AdjustReactionCounts_ShouldThrowArgumentOutOfRangeException_ForInvalidReactionType()
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 5,
+                DislikeCount = 2
+            };
+
+            var invalidType = (ReactionType)999;
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                MessageboardHelpers.AdjustReactionCounts(post, invalidType, decrement: false));
+
+            exception.ParamName.Should().Be("type");
+            exception.Message.Should().Contain("Unknown reaction type");
+        }
+
+        [Fact]
+        public void AdjustReactionCounts_ShouldHandleMultipleDecrements_WithoutGoingNegative()
+        {
+            // Arrange
+            var post = new MessagePost
+            {
+                Id = Guid.NewGuid(),
+                ThreadId = Guid.NewGuid(),
+                Content = "Test",
+                CreatedBy = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                Depth = 0,
+                Path = "0001",
+                LikeCount = 1,
+                DislikeCount = 1
+            };
+
+            // Act - Decrement multiple times
+            MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Like, decrement: true);
+            MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Like, decrement: true);
+            MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Like, decrement: true);
+
+            MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Dislike, decrement: true);
+            MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Dislike, decrement: true);
+
+            // Assert
+            post.LikeCount.Should().Be(0, "should be clamped to 0 after multiple decrements");
+            post.DislikeCount.Should().Be(0, "should be clamped to 0 after multiple decrements");
+        }
+    }
+
     public class ToFixedBase36Tests
     {
         [Fact]

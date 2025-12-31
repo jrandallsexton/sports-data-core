@@ -7,26 +7,41 @@ public static class MessageboardHelpers
     public static void AdjustReactionCounts(MessagePost post, ReactionType type, bool decrement)
     {
         int delta = decrement ? -1 : 1;
+        
         switch (type)
         {
             case ReactionType.Like:
                 post.LikeCount += delta;
+                post.LikeCount = Math.Max(0, post.LikeCount);
                 break;
+                
             case ReactionType.Dislike:
                 post.DislikeCount += delta;
+                post.DislikeCount = Math.Max(0, post.DislikeCount);
                 break;
+                
             case ReactionType.Laugh:
                 post.LikeCount += delta;
+                post.LikeCount = Math.Max(0, post.LikeCount);
                 break;
+                
             case ReactionType.Sad:
                 post.DislikeCount += delta;
+                post.DislikeCount = Math.Max(0, post.DislikeCount);
                 break;
+                
             case ReactionType.Angry:
                 post.DislikeCount += delta;
+                post.DislikeCount = Math.Max(0, post.DislikeCount);
                 break;
+                
             case ReactionType.Surprise:
                 post.LikeCount += delta;
+                post.LikeCount = Math.Max(0, post.LikeCount);
                 break;
+                
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown reaction type");
         }
     }
 

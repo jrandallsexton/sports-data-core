@@ -227,7 +227,6 @@ function MatchupCard({
             className="comparison-button"
             onClick={handleOpenComparison}
             title="Compare Team Stats"
-            style={{ marginLeft: 6, marginRight: 6 }}
             disabled={comparisonLoading}
           >
             <FaClipboardList />
@@ -253,7 +252,6 @@ function MatchupCard({
                     ? (matchup.isPreviewReviewed ? "View Validated Insight" : "View Insight")
                     : "Unlock Insights with Subscription"
             }
-            style={{ marginLeft: 6 }}
           >
             {isInsightUnlocked ? <FaChartLine /> : <FaLock />}
           </button>

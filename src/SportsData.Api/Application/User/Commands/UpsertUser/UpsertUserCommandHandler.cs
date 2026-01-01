@@ -59,6 +59,79 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
             return new Failure<Guid>(default, ResultStatus.BadRequest, validationErrors);
         }
 
+        try
+        {
+            return await UpsertUserInternalAsync(command, firebaseUid, signInProvider, cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // Race condition: another request created the user between our check and insert
+            _logger.LogWarning(ex, 
+                "Unique constraint violation when creating user {FirebaseUid}. Another request likely created this user concurrently. Retrying...", 
+                firebaseUid);
+
+            // Retry once by fetching the existing user
+            var existingUser = await _db.Users
+                .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid, cancellationToken);
+
+            if (existingUser != null)
+            {
+                _logger.LogInformation("Found existing user after constraint violation. UserId={UserId}", existingUser.Id);
+                
+                // Update the existing user
+                // If email changes, reset email verification status
+                if (!string.Equals(existingUser.Email, command.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Email changed for user {UserId} from {OldEmail} to {NewEmail}. Resetting EmailVerified to false.", 
+                        existingUser.Id, existingUser.Email, command.Email);
+                    existingUser.EmailVerified = false;
+                }
+
+                existingUser.Email = command.Email;
+                existingUser.SignInProvider = signInProvider;
+                existingUser.DisplayName = command.DisplayName ?? existingUser.DisplayName;
+                existingUser.LastLoginUtc = DateTime.UtcNow;
+
+                try
+                {
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException saveEx)
+                {
+                    _logger.LogError(saveEx, 
+                        "Database update error when saving user changes after constraint violation. UserId={UserId}, FirebaseUid={FirebaseUid}", 
+                        existingUser.Id, firebaseUid);
+                    return new Failure<Guid>(
+                        default,
+                        ResultStatus.Error,
+                        [new FluentValidation.Results.ValidationFailure("Database", "Failed to save user changes. Please try again.")]);
+                }
+                catch (Exception saveEx)
+                {
+                    _logger.LogError(saveEx, 
+                        "Unexpected error when saving user changes after constraint violation. UserId={UserId}, FirebaseUid={FirebaseUid}", 
+                        existingUser.Id, firebaseUid);
+                    return new Failure<Guid>(
+                        default,
+                        ResultStatus.Error,
+                        [new FluentValidation.Results.ValidationFailure("System", "An unexpected error occurred. Please try again.")]);
+                }
+                
+                return new Success<Guid>(existingUser.Id);
+            }
+
+            // If we still can't find the user, something is very wrong
+            _logger.LogError(ex, "Unique constraint violation but user not found. FirebaseUid={FirebaseUid}", firebaseUid);
+            throw;
+        }
+    }
+
+    private async Task<Result<Guid>> UpsertUserInternalAsync(
+        UpsertUserCommand command,
+        string firebaseUid,
+        string signInProvider,
+        CancellationToken cancellationToken)
+    {
         var user = await _db.Users.FirstOrDefaultAsync(
             u => u.FirebaseUid == firebaseUid,
             cancellationToken);
@@ -83,7 +156,15 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         }
         else
         {
-            _logger.LogInformation("Updating last login for user: {FirebaseUid}", firebaseUid);
+            _logger.LogInformation("Updating user: {FirebaseUid}", firebaseUid);
+
+            // If email changes, reset email verification status
+            if (!string.Equals(user.Email, command.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Email changed for user {UserId} from {OldEmail} to {NewEmail}. Resetting EmailVerified to false.", 
+                    user.Id, user.Email, command.Email);
+                user.EmailVerified = false;
+            }
 
             user.Email = command.Email;
             user.SignInProvider = signInProvider;
@@ -91,10 +172,56 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
             user.LastLoginUtc = DateTime.UtcNow;
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, 
+                "Database update error when upserting user. FirebaseUid={FirebaseUid}, Email={Email}", 
+                firebaseUid, command.Email);
+            return new Failure<Guid>(
+                default,
+                ResultStatus.Error,
+                [new FluentValidation.Results.ValidationFailure("Database", "Failed to save user. Please try again.")]);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, 
+                "Unexpected error when upserting user. FirebaseUid={FirebaseUid}, Email={Email}", 
+                firebaseUid, command.Email);
+            return new Failure<Guid>(
+                default,
+                ResultStatus.Error,
+                [new FluentValidation.Results.ValidationFailure("System", "An unexpected error occurred. Please try again.")]);
+        }
 
         _logger.LogInformation("User upserted successfully. UserId={UserId}", user.Id);
 
         return new Success<Guid>(user.Id);
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        // Check for PostgreSQL unique constraint violation
+        // Error code 23505 is for unique_violation in PostgreSQL
+        if (ex.InnerException?.Message.Contains("23505") == true ||
+            ex.InnerException?.Message.Contains("duplicate key") == true ||
+            ex.InnerException?.Message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return true;
+        }
+
+        // Check for SQL Server unique constraint violation
+        // Error number 2601 is for duplicate key in SQL Server
+        if (ex.InnerException?.Message.Contains("2601") == true ||
+            ex.InnerException?.Message.Contains("2627") == true ||
+            ex.InnerException?.Message.Contains("Cannot insert duplicate key", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

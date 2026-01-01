@@ -229,4 +229,93 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         user.Should().NotBeNull();
         user!.DisplayName.Should().Be("Original Name"); // Preserved
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldResetEmailVerified_WhenEmailChanges()
+    {
+        // Arrange
+        var firebaseUid = "firebase-uid-email-change";
+        var userId = Guid.NewGuid();
+
+        var existingUser = new Infrastructure.Data.Entities.User
+        {
+            Id = userId,
+            FirebaseUid = firebaseUid,
+            Email = "old@example.com",
+            DisplayName = "Test User",
+            SignInProvider = "password",
+            EmailVerified = true, // Email was previously verified
+            CreatedUtc = DateTime.UtcNow.AddDays(-10),
+            LastLoginUtc = DateTime.UtcNow.AddDays(-5)
+        };
+
+        await DataContext.Users.AddAsync(existingUser);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var command = new UpsertUserCommand
+        {
+            Email = "new@example.com", // Different email
+            DisplayName = "Test User"
+        };
+
+        var signInProvider = "google.com";
+
+        // Act
+        var result = await handler.ExecuteAsync(command, firebaseUid, signInProvider);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var user = await DataContext.Users.FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
+        user.Should().NotBeNull();
+        user!.Email.Should().Be("new@example.com");
+        user.EmailVerified.Should().BeFalse(); // Should be reset when email changes
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldPreserveEmailVerified_WhenEmailDoesNotChange()
+    {
+        // Arrange
+        var firebaseUid = "firebase-uid-same-email";
+        var userId = Guid.NewGuid();
+
+        var existingUser = new Infrastructure.Data.Entities.User
+        {
+            Id = userId,
+            FirebaseUid = firebaseUid,
+            Email = "test@example.com",
+            DisplayName = "Test User",
+            SignInProvider = "password",
+            EmailVerified = true, // Email was previously verified
+            CreatedUtc = DateTime.UtcNow.AddDays(-10),
+            LastLoginUtc = DateTime.UtcNow.AddDays(-5)
+        };
+
+        await DataContext.Users.AddAsync(existingUser);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var command = new UpsertUserCommand
+        {
+            Email = "test@example.com", // Same email
+            DisplayName = "Updated Name"
+        };
+
+        var signInProvider = "google.com";
+
+        // Act
+        var result = await handler.ExecuteAsync(command, firebaseUid, signInProvider);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var user = await DataContext.Users.FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
+        user.Should().NotBeNull();
+        user!.Email.Should().Be("test@example.com");
+        user.EmailVerified.Should().BeTrue(); // Should remain true when email doesn't change
+        user.DisplayName.Should().Be("Updated Name");
+    }
 }

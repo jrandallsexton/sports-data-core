@@ -82,8 +82,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
                 // If email changes, reset email verification status
                 if (!string.Equals(existingUser.Email, command.Email, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogInformation("Email changed for user {UserId} from {OldEmail} to {NewEmail}. Resetting EmailVerified to false.", 
-                        existingUser.Id, existingUser.Email, command.Email);
+                    _logger.LogInformation("Email changed for user {UserId}. Resetting EmailVerified to false.", existingUser.Id);
                     existingUser.EmailVerified = false;
                 }
 
@@ -161,8 +160,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
             // If email changes, reset email verification status
             if (!string.Equals(user.Email, command.Email, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("Email changed for user {UserId} from {OldEmail} to {NewEmail}. Resetting EmailVerified to false.", 
-                    user.Id, user.Email, command.Email);
+                _logger.LogInformation("Email changed for user {UserId}. Resetting EmailVerified to false.", user.Id);
                 user.EmailVerified = false;
             }
 
@@ -179,8 +177,8 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         catch (DbUpdateException dbEx)
         {
             _logger.LogError(dbEx, 
-                "Database update error when upserting user. FirebaseUid={FirebaseUid}, Email={Email}", 
-                firebaseUid, command.Email);
+                "Database update error when upserting user. FirebaseUid={FirebaseUid}", 
+                firebaseUid);
             return new Failure<Guid>(
                 default,
                 ResultStatus.Error,
@@ -189,8 +187,8 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, 
-                "Unexpected error when upserting user. FirebaseUid={FirebaseUid}, Email={Email}", 
-                firebaseUid, command.Email);
+                "Unexpected error when upserting user. FirebaseUid={FirebaseUid}", 
+                firebaseUid);
             return new Failure<Guid>(
                 default,
                 ResultStatus.Error,

@@ -11,6 +11,19 @@ public class MessageboardHelpersTests
 {
     public class AdjustReactionCountsTests
     {
+        private static MessagePost CreateTestPost(int likeCount = 5, int dislikeCount = 2) => new()
+        {
+            Id = Guid.NewGuid(),
+            ThreadId = Guid.NewGuid(),
+            Content = "Test",
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            Depth = 0,
+            Path = "0001",
+            LikeCount = likeCount,
+            DislikeCount = dislikeCount
+        };
+
         [Theory]
         [InlineData(ReactionType.Like)]
         [InlineData(ReactionType.Laugh)]
@@ -18,18 +31,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldIncrementLikeCount_ForPositiveReactions(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 2
-            };
+            var post = CreateTestPost();
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: false);
@@ -46,18 +48,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldIncrementDislikeCount_ForNegativeReactions(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 2
-            };
+            var post = CreateTestPost();
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: false);
@@ -74,18 +65,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldDecrementLikeCount_ForPositiveReactionsWhenDecrementing(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 2
-            };
+            var post = CreateTestPost();
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
@@ -102,18 +82,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldDecrementDislikeCount_ForNegativeReactionsWhenDecrementing(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 2
-            };
+            var post = CreateTestPost();
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
@@ -130,18 +99,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldNotGoBelowZero_WhenDecrementingLikeCount(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 0,
-                DislikeCount = 5
-            };
+            var post = CreateTestPost(likeCount: 0, dislikeCount: 5);
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
@@ -158,18 +116,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldNotGoBelowZero_WhenDecrementingDislikeCount(ReactionType type)
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 0
-            };
+            var post = CreateTestPost(likeCount: 5, dislikeCount: 0);
 
             // Act
             MessageboardHelpers.AdjustReactionCounts(post, type, decrement: true);
@@ -183,19 +130,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldThrowArgumentOutOfRangeException_ForInvalidReactionType()
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 5,
-                DislikeCount = 2
-            };
-
+            var post = CreateTestPost();
             var invalidType = (ReactionType)999;
 
             // Act & Assert
@@ -210,18 +145,7 @@ public class MessageboardHelpersTests
         public void AdjustReactionCounts_ShouldHandleMultipleDecrements_WithoutGoingNegative()
         {
             // Arrange
-            var post = new MessagePost
-            {
-                Id = Guid.NewGuid(),
-                ThreadId = Guid.NewGuid(),
-                Content = "Test",
-                CreatedBy = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
-                Depth = 0,
-                Path = "0001",
-                LikeCount = 1,
-                DislikeCount = 1
-            };
+            var post = CreateTestPost(likeCount: 1, dislikeCount: 1);
 
             // Act - Decrement multiple times
             MessageboardHelpers.AdjustReactionCounts(post, ReactionType.Like, decrement: true);
@@ -450,6 +374,23 @@ public class MessageboardHelpersTests
             result.Should().NotBeNullOrEmpty();
             // int.MaxValue in base-36 is "ZIK0ZJ" (6 characters), so with width 10 it should be padded
             result.Length.Should().BeGreaterThanOrEqualTo(6);
+        }
+
+        [Fact]
+        public void ToFixedBase36_WhenConvertedValueExceedsWidth_ReturnsFullStringWithoutTruncation()
+        {
+            // Arrange
+            // 1296 in base-36 is "100" (3 characters), but width is only 2
+            int value = 1296;
+            int width = 2;
+
+            // Act
+            var result = MessageboardHelpers.ToFixedBase36(value, width);
+
+            // Assert
+            // PadLeft does not truncate, so the full "100" string is returned
+            result.Should().Be("100");
+            result.Length.Should().Be(3, "the result exceeds the requested width because PadLeft does not truncate");
         }
     }
 }

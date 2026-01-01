@@ -87,7 +87,7 @@ namespace SportsData.Api.Application.Processors
 
             var allMatchups = await _canonicalDataProvider.GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
 
-            IEnumerable<Matchup>? groupMatchups;
+            List<Matchup> groupMatchups;
 
             if (groupWeek.IsNonStandardWeek && !string.IsNullOrEmpty(group.NonStandardWeekGroupSeasonMapFilter))
             {
@@ -95,7 +95,7 @@ namespace SportsData.Api.Application.Processors
                     .Split('|', StringSplitOptions.RemoveEmptyEntries)
                     .Select(f => f.Trim())
                     .ToArray();
-                
+
                 // this could be ["fbs"] or ["fbs", "foo", "bar"], etc.
                 // AwayGroupSeasonMap and HomeGroupSeasonMap look like this: "NCAAF|yy|d3" or "NCAAF|NCAA|fbs|American" (not exclusive examples)
                 groupMatchups = allMatchups
@@ -106,7 +106,8 @@ namespace SportsData.Api.Application.Processors
                         (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug)) ||
                         (x.AwayGroupSeasonMap != null && groupFilters.Any(filter => x.AwayGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase))) ||
                         (x.HomeGroupSeasonMap != null && groupFilters.Any(filter => x.HomeGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase)))
-                    );
+                    )
+                    .ToList();
             }
             else
             {
@@ -116,7 +117,8 @@ namespace SportsData.Api.Application.Processors
                         (x.HomeRank.HasValue && x.HomeRank <= topX) ||
                         (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
                         (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug))
-                    );
+                    )
+                    .ToList();
             }
 
             foreach (var groupMatchup in groupMatchups)
@@ -158,7 +160,9 @@ namespace SportsData.Api.Application.Processors
             await _dataContext.SaveChangesAsync();
 
             // Only publish event after successful persistence and if the week is not completed
-            var isWeekCompleted = allMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
+            // Check against groupMatchups (not allMatchups) since we only care about this group's matchups
+            // Empty groupMatchups is treated as not completed (publish the event)
+            var isWeekCompleted = groupMatchups.Count > 0 && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
             if (!isWeekCompleted)
             {
                 await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.User.Commands.UpsertUser;
 
@@ -63,7 +64,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         {
             return await UpsertUserInternalAsync(command, firebaseUid, signInProvider, cancellationToken);
         }
-        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
             // Race condition: another request created the user between our check and insert
             _logger.LogWarning(ex, 
@@ -198,28 +199,5 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         _logger.LogInformation("User upserted successfully. UserId={UserId}", user.Id);
 
         return new Success<Guid>(user.Id);
-    }
-
-    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
-    {
-        // Check for PostgreSQL unique constraint violation
-        // Error code 23505 is for unique_violation in PostgreSQL
-        if (ex.InnerException?.Message.Contains("23505") == true ||
-            ex.InnerException?.Message.Contains("duplicate key") == true ||
-            ex.InnerException?.Message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            return true;
-        }
-
-        // Check for SQL Server unique constraint violation
-        // Error number 2601 is for duplicate key in SQL Server
-        if (ex.InnerException?.Message.Contains("2601") == true ||
-            ex.InnerException?.Message.Contains("2627") == true ||
-            ex.InnerException?.Message.Contains("Cannot insert duplicate key", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            return true;
-        }
-
-        return false;
     }
 }

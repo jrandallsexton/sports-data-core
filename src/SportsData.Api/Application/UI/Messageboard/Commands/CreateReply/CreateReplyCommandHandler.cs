@@ -4,6 +4,7 @@ using SportsData.Api.Application.UI.Messageboard.Helpers;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.Messageboard.Commands.CreateReply;
 
@@ -47,7 +48,7 @@ public class CreateReplyCommandHandler : ICreateReplyCommandHandler
             {
                 return await TryCreateReplyAsync(command, cancellationToken);
             }
-            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex) && attempt < MaxRetryAttempts - 1)
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation() && attempt < MaxRetryAttempts - 1)
             {
                 _logger.LogWarning(
                     ex,
@@ -148,29 +149,5 @@ public class CreateReplyCommandHandler : ICreateReplyCommandHandler
         await _dataContext.SaveChangesAsync(cancellationToken);
 
         return new Success<MessagePost>(reply);
-    }
-
-    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
-    {
-        // Check for unique constraint violation
-        // PostgreSQL: "23505" - unique_violation
-        // SQL Server: error number 2601 or 2627
-        var innerException = ex.InnerException;
-        if (innerException is null)
-            return false;
-
-        var message = innerException.Message;
-
-        // PostgreSQL
-        if (message.Contains("23505") || message.Contains("duplicate key"))
-            return true;
-
-        // SQL Server
-        if (message.Contains("2601") || message.Contains("2627") ||
-            message.Contains("Cannot insert duplicate key") ||
-            message.Contains("IX_MessagePost_ThreadId_Path_Unique"))
-            return true;
-
-        return false;
     }
 }

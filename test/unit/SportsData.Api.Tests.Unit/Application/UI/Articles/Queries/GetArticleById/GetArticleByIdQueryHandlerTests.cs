@@ -16,7 +16,7 @@ public class GetArticleByIdQueryHandlerTests : ApiTestBase<GetArticleByIdQueryHa
 {
     private void SetupApiConfig()
     {
-        var apiConfig = new ApiConfig { BaseUrl = "http://localhost:5262" };
+        var apiConfig = new ApiConfig { BaseUrl = "http://localhost:5262", UserIdSystem = Guid.NewGuid() };
         Mocker.GetMock<IOptions<ApiConfig>>()
             .Setup(x => x.Value)
             .Returns(apiConfig);

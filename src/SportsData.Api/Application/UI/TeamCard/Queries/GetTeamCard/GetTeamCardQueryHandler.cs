@@ -1,11 +1,10 @@
 using FluentValidation.Results;
 
 using SportsData.Api.Application.UI.TeamCard.Dtos;
-using SportsData.Api.Application.UI.TeamCard.Queries;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.UI.TeamCard.Handlers;
+namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 
 public interface IGetTeamCardQueryHandler
 {

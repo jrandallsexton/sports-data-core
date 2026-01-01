@@ -1,10 +1,14 @@
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+using Moq;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.User.Dtos;
 using SportsData.Api.Application.User.Queries.GetMe;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
@@ -14,6 +18,19 @@ namespace SportsData.Api.Tests.Unit.Application.User.Queries.GetMe;
 
 public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 {
+    private static readonly Guid SystemUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    public GetMeQueryHandlerTests()
+    {
+        var apiConfig = new ApiConfig
+        {
+            BaseUrl = "http://localhost:5262",
+            UserIdSystem = SystemUserId
+        };
+        Mocker.GetMock<IOptions<ApiConfig>>()
+            .Setup(x => x.Value)
+            .Returns(apiConfig);
+    }
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNotFound_WhenUserDoesNotExist()
     {

@@ -46,7 +46,7 @@ using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Api.Application.UI.TeamCard;
-using SportsData.Api.Application.UI.TeamCard.Handlers;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;

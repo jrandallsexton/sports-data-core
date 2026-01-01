@@ -30,7 +30,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.BadRequest);
         result.Should().BeOfType<Failure<Guid>>();
-        ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "Email");
+        ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "firebaseUid");
     }
 
     [Fact]

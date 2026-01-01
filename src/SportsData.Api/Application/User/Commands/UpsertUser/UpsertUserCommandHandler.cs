@@ -33,13 +33,24 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         string signInProvider,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(firebaseUid) || string.IsNullOrWhiteSpace(command.Email))
+        var validationErrors = new List<FluentValidation.Results.ValidationFailure>();
+
+        if (string.IsNullOrWhiteSpace(firebaseUid))
         {
-            _logger.LogWarning("Missing Firebase UID or Email. Cannot continue.");
-            return new Failure<Guid>(
-                default,
-                ResultStatus.BadRequest,
-                [new FluentValidation.Results.ValidationFailure("Email", "Firebase UID and Email are required.")]);
+            validationErrors.Add(new FluentValidation.Results.ValidationFailure(
+                nameof(firebaseUid), "Firebase UID is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(command.Email))
+        {
+            validationErrors.Add(new FluentValidation.Results.ValidationFailure(
+                nameof(command.Email), "Email is required."));
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            _logger.LogWarning("Validation failed: {Errors}", string.Join(", ", validationErrors.Select(e => e.PropertyName)));
+            return new Failure<Guid>(default, ResultStatus.BadRequest, validationErrors);
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(

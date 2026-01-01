@@ -3,15 +3,14 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.TeamCard.Dtos;
-using SportsData.Api.Application.UI.TeamCard.Handlers;
-using SportsData.Api.Application.UI.TeamCard.Queries;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Tests.Shared;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.UI.TeamCard.Handlers;
+namespace SportsData.Api.Tests.Unit.Application.UI.TeamCard.Queries.GetTeamCard;
 
 public class GetTeamCardQueryHandlerTests : UnitTestBase<GetTeamCardQueryHandler>
 {

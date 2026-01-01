@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.TeamCard.Dtos;
-using SportsData.Api.Application.UI.TeamCard.Handlers;
-using SportsData.Api.Application.UI.TeamCard.Queries;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;

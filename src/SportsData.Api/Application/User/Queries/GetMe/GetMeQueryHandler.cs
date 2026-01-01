@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.User.Dtos;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
@@ -15,13 +17,16 @@ public interface IGetMeQueryHandler
 
 public class GetMeQueryHandler : IGetMeQueryHandler
 {
+    private readonly ApiConfig _config;
     private readonly AppDataContext _db;
     private readonly ILogger<GetMeQueryHandler> _logger;
 
     public GetMeQueryHandler(
+        IOptions<ApiConfig> config,
         AppDataContext db,
         ILogger<GetMeQueryHandler> logger)
     {
+        _config = config.Value;
         _db = db;
         _logger = logger;
     }
@@ -55,7 +60,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
             Email = user.Email,
             DisplayName = user.DisplayName,
             LastLoginUtc = user.LastLoginUtc,
-            IsAdmin = user.IsAdmin || user.Id.ToString() == "11111111-1111-1111-1111-111111111111",
+            IsAdmin = user.IsAdmin || user.Id == _config.UserIdSystem,
             IsReadOnly = user.IsReadOnly,
             Leagues = user.GroupMemberships
                 .Select(m => new UserDto.UserLeagueMembership

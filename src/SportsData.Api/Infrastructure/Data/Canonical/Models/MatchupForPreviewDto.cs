@@ -11,6 +11,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical.Models
 
         public string? HeadLine { get; set; }
         public DateTime StartDateUtc { get; set; }
+        public string? Status { get; set; }
 
         public required string Venue { get; set; }
         public required string VenueCity { get; set; }

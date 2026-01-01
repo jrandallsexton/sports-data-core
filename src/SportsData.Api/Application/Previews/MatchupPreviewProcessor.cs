@@ -48,6 +48,20 @@ namespace SportsData.Api.Application.Previews
 
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
+            if (matchup is null)
+            {
+                _logger.LogWarning(
+                    "Matchup not found for ContestId {ContestId}. Skipping preview generation.",
+                    command.ContestId);
+                return;
+            }
+
+            if (ContestStatusValues.IsCompleted(matchup.Status))
+            {
+                _logger.LogInformation("Skipping preview generation for completed contest {ContestId}. Status: {Status}", command.ContestId, matchup.Status);
+                return;
+            }
+
             matchup.AwayStats = await _canonicalDataProvider
                 .GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
             matchup.HomeStats = await _canonicalDataProvider
@@ -77,101 +91,79 @@ namespace SportsData.Api.Application.Previews
 
             var jsonInput = JsonSerializer.Serialize(matchup);
 
-            const int maxAttempts = 5;
             MatchupPreviewResponse? parsed = null;
             string? rawResponse = null;
             List<string>? validationErrors = null;
 
-            int attempt;
+            var editorNote = rejectedPreview?.RejectionNote != null
+                ? $"\n\nAdditional feedback from the editor:\n\"{rejectedPreview.RejectionNote}\""
+                : string.Empty;
 
-            for (attempt = 1; attempt <= maxAttempts; attempt++)
+            var fullPrompt = $"{promptData.PromptText}\n\n{jsonInput}{editorNote}";
+
+            var aiResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
+            rawResponse = aiResponse.Value;
+
+            if (!aiResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse))
             {
-                var editorNote = attempt == 1 && rejectedPreview?.RejectionNote != null
-                    ? $"\n\nAdditional feedback from the editor:\n\"{rejectedPreview.RejectionNote}\""
-                    : string.Empty;
+                var errorMsg = aiResponse is Failure<string> f 
+                    ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
+                    : "Unknown error";
+                _logger.LogError("AI request failed. Error: {Error}", errorMsg);
+                return;
+            }
 
-                var feedbackSection = validationErrors is { Count: > 0 }
-                    ? $"\n\nNote: Your previous attempt produced invalid results for the following reasons:\n- {string.Join("\n- ", validationErrors)}"
-                    : string.Empty;
-
-                feedbackSection += editorNote;
-
-                var fullPrompt = $"{promptData.PromptText}\n\n{jsonInput}{feedbackSection}";
-
-                var aiResponse = await _aiCommunication.GetResponseAsync(fullPrompt, CancellationToken.None);
-                rawResponse = aiResponse.Value;
-
-                if (!aiResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse))
+            try
+            {
+                parsed = JsonSerializer.Deserialize<MatchupPreviewResponse>(rawResponse, new JsonSerializerOptions
                 {
-                    var errorMsg = aiResponse is Failure<string> f 
-                        ? string.Join(", ", f.Errors.Select(x => x.ErrorMessage)) 
-                        : "Unknown error";
-                    _logger.LogError("Attempt {Attempt} returned empty or failed response from AI. Error: {Error}", attempt, errorMsg);
-                    continue;
-                }
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (JsonException primaryEx)
+            {
+                _logger.LogWarning(primaryEx, "Flat deserialization failed. Trying V2 fallback...");
 
                 try
                 {
-                    parsed = JsonSerializer.Deserialize<MatchupPreviewResponse>(rawResponse, new JsonSerializerOptions
+                    var fallback = JsonSerializer.Deserialize<MatchupPreviewResponseV2>(rawResponse, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
+
+                    parsed = fallback?.ToV1();
                 }
-                catch (JsonException primaryEx)
+                catch (JsonException fallbackEx)
                 {
-                    _logger.LogWarning(primaryEx, "Flat deserialization failed on attempt {Attempt}. Trying V2 fallback...", attempt);
-
-                    try
-                    {
-                        var fallback = JsonSerializer.Deserialize<MatchupPreviewResponseV2>(rawResponse, new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        });
-
-                        parsed = fallback?.ToV1();
-                    }
-                    catch (JsonException fallbackEx)
-                    {
-                        _logger.LogError(fallbackEx, "V2 fallback deserialization also failed on attempt {Attempt}. Raw: {Raw}", attempt, rawResponse);
-                        validationErrors = [
-                            "Previous response was not valid JSON. Please ensure your response is valid JSON as described in the rules."
-                        ];
-                        continue;
-                    }
+                    _logger.LogError(fallbackEx, "V2 fallback deserialization also failed. Raw: {Raw}", rawResponse);
+                    return;
                 }
-
-                // Exit if we still failed to parse anything
-                if (parsed is null)
-                {
-                    _logger.LogError("Attempt {Attempt} produced null after both deserialization strategies. Raw response: {Raw}", attempt, rawResponse);
-                    continue;
-                }
-
-                // Run semantic validation
-                var validation = MatchupPreviewValidator.Validate(
-                    contestId: command.ContestId,
-                    homeScore: parsed.HomeScore,
-                    awayScore: parsed.AwayScore,
-                    homeSpread: matchup.HomeSpread ?? 0,
-                    predictedStraightUpWinner: parsed.PredictedStraightUpWinner,
-                    predictedSpreadWinner: parsed.PredictedSpreadWinner,
-                    homeFranchiseSeasonId: matchup.HomeFranchiseSeasonId,
-                    awayFranchiseSeasonId: matchup.AwayFranchiseSeasonId
-                );
-
-                validationErrors = validation.IsValid ? null : validation.Errors;
-
-                if (validation.IsValid)
-                    break;
-
-                _logger.LogError("Validation failed on attempt {Attempt}. Errors: {Errors}", attempt, validation.Errors);
-
             }
 
-            // If parsing or validation never succeeded
-            if (parsed == null || validationErrors is { Count: > 0 })
+            // Exit if we still failed to parse anything
+            if (parsed is null)
             {
-                _logger.LogError("Failed to generate valid preview after {MaxAttempts} attempts. Last response: {Raw}", maxAttempts, rawResponse);
+                _logger.LogError("Produced null after both deserialization strategies. Raw response: {Raw}", rawResponse);
+                return;
+            }
+
+            // Run semantic validation
+            var validation = MatchupPreviewValidator.Validate(
+                contestId: command.ContestId,
+                homeScore: parsed.HomeScore,
+                awayScore: parsed.AwayScore,
+                homeSpread: matchup.HomeSpread ?? 0,
+                predictedStraightUpWinner: parsed.PredictedStraightUpWinner,
+                predictedSpreadWinner: parsed.PredictedSpreadWinner,
+                homeFranchiseSeasonId: matchup.HomeFranchiseSeasonId,
+                awayFranchiseSeasonId: matchup.AwayFranchiseSeasonId
+            );
+
+            validationErrors = validation.IsValid ? null : validation.Errors;
+
+            if (!validation.IsValid)
+            {
+                _logger.LogError("Validation failed. Errors: {Errors}", validation.Errors);
                 return;
             }
 
@@ -197,7 +189,7 @@ namespace SportsData.Api.Application.Previews
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId,
                 PromptVersion = promptData.PromptName,
-                IterationsRequired = attempt,
+                IterationsRequired = 1,
                 UsedMetrics = matchup.AwayMetrics != null
             };
 

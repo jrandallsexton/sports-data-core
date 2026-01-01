@@ -29,6 +29,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public int DislikeCount { get; set; }
 
+        /// <summary>
+        /// Concurrency token to handle optimistic concurrency control
+        /// </summary>
+        public byte[]? RowVersion { get; set; }
+
         public MessageThread Thread { get; set; } = default!;
 
         public MessagePost? Parent { get; set; }
@@ -43,10 +48,23 @@ namespace SportsData.Api.Infrastructure.Data.Entities
             {
                 b.ToTable(nameof(MessagePost));
                 b.HasKey(x => x.Id);
+                
+                // Existing indexes
                 b.HasIndex(x => new { x.ThreadId, x.Path });
                 b.HasIndex(x => new { x.ThreadId, x.ParentId });
 
+                // UNIQUE constraint on (ThreadId, Path) to prevent race conditions
+                b.HasIndex(x => new { x.ThreadId, x.Path })
+                    .IsUnique()
+                    .HasDatabaseName("IX_MessagePost_ThreadId_Path_Unique");
+
                 b.Property(x => x.Path).HasMaxLength(1024);
+                
+                // Configure RowVersion as concurrency token
+                b.Property(x => x.RowVersion)
+                    .IsRowVersion()
+                    .IsConcurrencyToken();
+
                 b.HasOne(x => x.Thread).WithMany(t => t.Posts).HasForeignKey(x => x.ThreadId);
                 b.HasOne(x => x.Parent).WithMany(p => p.Children).HasForeignKey(x => x.ParentId);
 

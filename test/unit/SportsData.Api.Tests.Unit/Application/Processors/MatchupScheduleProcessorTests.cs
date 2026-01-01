@@ -41,7 +41,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 
             // Assert
             Mocker.GetMock<IProvideCanonicalData>()
-                .Verify(x => x.GetMatchupsForCurrentWeek(), Times.Never);
+                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 
             // Assert
             Mocker.GetMock<IProvideCanonicalData>()
-                .Verify(x => x.GetMatchupsForCurrentWeek(), Times.Never);
+                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             };
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1))
                 .ReturnsAsync(allMatchups);
 
             var command = new ScheduleGroupWeekMatchupsCommand(
@@ -231,7 +231,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             };
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16))
                 .ReturnsAsync(allMatchups);
 
             var command = new ScheduleGroupWeekMatchupsCommand(
@@ -294,7 +294,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             };
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16))
                 .ReturnsAsync(allMatchups);
 
             var command = new ScheduleGroupWeekMatchupsCommand(
@@ -358,7 +358,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             };
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 17))
                 .ReturnsAsync(allMatchups);
 
             var command = new ScheduleGroupWeekMatchupsCommand(
@@ -405,7 +405,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             await DataContext.SaveChangesAsync();
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 5))
                 .ReturnsAsync(new List<Matchup>());
 
             var command = new ScheduleGroupWeekMatchupsCommand(
@@ -453,9 +453,16 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             await DataContext.PickemGroups.AddAsync(group);
             await DataContext.SaveChangesAsync();
 
+            // Include a non-completed matchup so the event will be published
+            var activeMatchup = Fixture.Build<Matchup>()
+                .With(x => x.AwayRank, 10)
+                .With(x => x.HomeRank, (int?)null)
+                .With(x => x.Status, "Scheduled")
+                .Create();
+
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
-                .ReturnsAsync(new List<Matchup>());
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 3))
+                .ReturnsAsync(new List<Matchup> { activeMatchup });
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -477,7 +484,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                         e.GroupId == groupId &&
                         e.SeasonYear == 2024 &&
                         e.CorrelationId == correlationId),
-                    It.IsAny<CancellationToken>()), 
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -516,7 +523,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .Create();
 
             Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForCurrentWeek())
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 8))
                 .ReturnsAsync(new List<Matchup> { sourceMatchup });
 
             var command = new ScheduleGroupWeekMatchupsCommand(

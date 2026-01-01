@@ -4,6 +4,7 @@
 	c."Id" AS "ContestId",
     cn."Headline" AS "Headline",
 	c."StartDateUtc" as "StartDateUtc",
+    cs."StatusTypeName" as "Status",
 
 	v."Name" as "Venue",
 	v."City" as "VenueCity",
@@ -43,6 +44,7 @@
   inner join public."SeasonPhase" sp on sp."Id" = c."SeasonPhaseId"
   inner join public."SeasonWeek" sw on sw."Id" = c."SeasonWeekId"
   inner join public."Venue" v on v."Id" = c."VenueId"
+  inner join public."ContestStatus" cs on cs."Id" = c."StatusId"
   inner join public."Competition" comp on comp."ContestId" = c."Id"
   left join public."CompetitionNote" cn on cn."CompetitionId" = comp."Id" and cn."Type" = 'event'
   

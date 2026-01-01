@@ -602,6 +602,11 @@ namespace SportsData.Api.Migrations
                     b.Property<int>("ReplyCount")
                         .HasColumnType("integer");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.Property<Guid>("ThreadId")
                         .HasColumnType("uuid");
 
@@ -613,7 +618,9 @@ namespace SportsData.Api.Migrations
 
                     b.HasIndex("ThreadId", "ParentId");
 
-                    b.HasIndex("ThreadId", "Path");
+                    b.HasIndex("ThreadId", "Path")
+                        .IsUnique()
+                        .HasDatabaseName("IX_MessagePost_ThreadId_Path_Unique");
 
                     b.ToTable("MessagePost", (string)null);
                 });

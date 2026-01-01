@@ -140,17 +140,26 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
             command.LeagueId, command.ContestId, newMatchup.Id);
 
         // 6. Publish event for AI preview generation
-        await _eventBus.Publish(
-            new PickemGroupMatchupAdded(
-                command.LeagueId,
-                command.ContestId,
-                command.CorrelationId,
-                Guid.NewGuid()),
-            cancellationToken);
+        if (!ContestStatusValues.IsCompleted(matchup.Status))
+        {
+            await _eventBus.Publish(
+                new PickemGroupMatchupAdded(
+                    command.LeagueId,
+                    command.ContestId,
+                    command.CorrelationId,
+                    Guid.NewGuid()),
+                cancellationToken);
 
-        _logger.LogInformation(
-            "Published PickemGroupMatchupAdded event. LeagueId={LeagueId}, ContestId={ContestId}, CorrelationId={CorrelationId}",
-            command.LeagueId, command.ContestId, command.CorrelationId);
+            _logger.LogInformation(
+                "Published PickemGroupMatchupAdded event. LeagueId={LeagueId}, ContestId={ContestId}, CorrelationId={CorrelationId}",
+                command.LeagueId, command.ContestId, command.CorrelationId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Skipping PickemGroupMatchupAdded event for completed game. LeagueId={LeagueId}, ContestId={ContestId}, Status={Status}",
+                command.LeagueId, command.ContestId, matchup.Status);
+        }
 
         return new Success<Guid>(newMatchup.Id);
     }

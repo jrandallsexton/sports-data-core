@@ -1,4 +1,6 @@
-﻿namespace SportsData.Core.Common
+﻿using System;
+
+namespace SportsData.Core.Common
 {
     public enum ContestStatus
     {
@@ -13,5 +15,15 @@
         Final = 8,
         InProgress = 9,
         Halftime = 10
+    }
+
+    public static class ContestStatusValues
+    {
+        public const string Final = "Final";
+        public const string Completed = "Completed";
+
+        public static bool IsCompleted(string? status) =>
+            string.Equals(status, Final, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(status, Completed, StringComparison.OrdinalIgnoreCase);
     }
 }

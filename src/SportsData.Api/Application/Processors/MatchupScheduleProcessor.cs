@@ -4,6 +4,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 
@@ -84,9 +85,9 @@ namespace SportsData.Api.Application.Processors
             // 2. are there conferences to always be included?
             var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
 
-            var allMatchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+            var allMatchups = await _canonicalDataProvider.GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
 
-            IEnumerable<Matchup>? groupMatchups;
+            List<Matchup> groupMatchups;
 
             if (groupWeek.IsNonStandardWeek && !string.IsNullOrEmpty(group.NonStandardWeekGroupSeasonMapFilter))
             {
@@ -94,7 +95,7 @@ namespace SportsData.Api.Application.Processors
                     .Split('|', StringSplitOptions.RemoveEmptyEntries)
                     .Select(f => f.Trim())
                     .ToArray();
-                
+
                 // this could be ["fbs"] or ["fbs", "foo", "bar"], etc.
                 // AwayGroupSeasonMap and HomeGroupSeasonMap look like this: "NCAAF|yy|d3" or "NCAAF|NCAA|fbs|American" (not exclusive examples)
                 groupMatchups = allMatchups
@@ -105,7 +106,8 @@ namespace SportsData.Api.Application.Processors
                         (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug)) ||
                         (x.AwayGroupSeasonMap != null && groupFilters.Any(filter => x.AwayGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase))) ||
                         (x.HomeGroupSeasonMap != null && groupFilters.Any(filter => x.HomeGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase)))
-                    );
+                    )
+                    .ToList();
             }
             else
             {
@@ -115,7 +117,8 @@ namespace SportsData.Api.Application.Processors
                         (x.HomeRank.HasValue && x.HomeRank <= topX) ||
                         (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
                         (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug))
-                    );
+                    )
+                    .ToList();
             }
 
             foreach (var groupMatchup in groupMatchups)
@@ -154,15 +157,27 @@ namespace SportsData.Api.Application.Processors
 
             groupWeek.AreMatchupsGenerated = true;
 
-            await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
-                    group.Id,
-                    command.SeasonYear,
-                    command.SeasonWeek,
-                    command.CorrelationId,
-                    Guid.NewGuid()),
-                CancellationToken.None);
-
             await _dataContext.SaveChangesAsync();
+
+            // Only publish event after successful persistence and if the week is not completed
+            // Check against groupMatchups (not allMatchups) since we only care about this group's matchups
+            // Empty groupMatchups is treated as not completed (publish the event)
+            var isWeekCompleted = groupMatchups.Count > 0 && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
+            if (!isWeekCompleted)
+            {
+                await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
+                        group.Id,
+                        command.SeasonYear,
+                        command.SeasonWeek,
+                        command.CorrelationId,
+                        Guid.NewGuid()),
+                    CancellationToken.None);
+            }
+            else
+            {
+                _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
+                    group.Id, command.SeasonYear, command.SeasonWeek);
+            }
         }
     }
 }

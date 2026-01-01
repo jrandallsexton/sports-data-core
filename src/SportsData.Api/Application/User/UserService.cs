@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.User.Commands.UpsertUser;
+using SportsData.Api.Application.User.Dtos;
+using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Infrastructure.Data;
 
 namespace SportsData.Api.Application.User;
@@ -23,11 +26,19 @@ public class UserService : IUserService
 {
     private readonly AppDataContext _db;
     private readonly ILogger<UserService> _logger;
+    private readonly IUpsertUserCommandHandler _upsertUserHandler;
+    private readonly IGetMeQueryHandler _getMeHandler;
 
-    public UserService(AppDataContext db, ILogger<UserService> logger)
+    public UserService(
+        AppDataContext db,
+        ILogger<UserService> logger,
+        IUpsertUserCommandHandler upsertUserHandler,
+        IGetMeQueryHandler getMeHandler)
     {
         _db = db;
         _logger = logger;
+        _upsertUserHandler = upsertUserHandler;
+        _getMeHandler = getMeHandler;
     }
 
     public async Task<Infrastructure.Data.Entities.User?> GetUserByFirebaseUidAsync(string firebaseUid)
@@ -44,37 +55,13 @@ public class UserService : IUserService
 
     public async Task<UserDto> GetUserDtoById(Guid id)
     {
-        var user = await _db.Users
-            .Include(x => x.GroupMemberships)
-            .ThenInclude(m => m.Group)
-            .ThenInclude(g => g.Weeks)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var query = new GetMeQuery { UserId = id };
+        var result = await _getMeHandler.ExecuteAsync(query);
 
-        if (user is null)
+        if (!result.IsSuccess)
             throw new KeyNotFoundException($"User with ID {id} not found.");
 
-        return new UserDto
-        {
-            Id = user.Id,
-            FirebaseUid = user.FirebaseUid,
-            Email = user.Email,
-            DisplayName = user.DisplayName,
-            LastLoginUtc = user.LastLoginUtc,
-            IsAdmin = user.IsAdmin || user.Id.ToString() == "11111111-1111-1111-1111-111111111111",
-            IsReadOnly = user.IsReadOnly,
-            Leagues = user.GroupMemberships
-                .Select(m => new UserDto.UserLeagueMembership
-                {
-                    Id = m.Group.Id,
-                    Name = m.Group.Name,
-                    MaxSeasonWeek = m.Group.Weeks
-                        .Select(w => (int?)w.SeasonWeek)
-                        .DefaultIfEmpty()
-                        .Max()
-                })
-                .ToList()
-        };
+        return result.Value;
     }
 
     public async Task<Infrastructure.Data.Entities.User> GetOrCreateUserAsync(
@@ -85,44 +72,28 @@ public class UserService : IUserService
         string? signInProvider,
         bool emailVerified)
     {
-        if (string.IsNullOrWhiteSpace(firebaseUid) || string.IsNullOrWhiteSpace(email))
+        var command = new UpsertUserCommand
         {
-            _logger.LogWarning("Missing Firebase UID or Email. Cannot continue.");
-            throw new ArgumentException("Firebase UID and Email are required.");
+            Email = email,
+            DisplayName = displayName
+        };
+
+        var result = await _upsertUserHandler.ExecuteAsync(
+            command,
+            firebaseUid,
+            signInProvider ?? "unknown");
+
+        if (!result.IsSuccess)
+        {
+            _logger.LogError("Failed to upsert user: {FirebaseUid}", firebaseUid);
+            throw new InvalidOperationException("Failed to create or update user.");
         }
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid);
+        // Need to return the actual entity, so fetch it
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == result.Value);
 
         if (user == null)
-        {
-            _logger.LogInformation("Creating new user: {FirebaseUid}", firebaseUid);
-
-            user = new Infrastructure.Data.Entities.User
-            {
-                Id = Guid.NewGuid(),
-                FirebaseUid = firebaseUid,
-                Email = email,
-                EmailVerified = emailVerified,
-                SignInProvider = signInProvider ?? "unknown",
-                DisplayName = displayName ?? DisplayNameGenerator.Generate(),
-                LastLoginUtc = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow
-            };
-
-            _db.Users.Add(user);
-        }
-        else
-        {
-            _logger.LogInformation("Updating last login for user: {FirebaseUid}", firebaseUid);
-
-            user.Email = email;
-            user.EmailVerified = emailVerified;
-            user.SignInProvider = signInProvider ?? user.SignInProvider;
-            user.DisplayName = displayName ?? user.DisplayName;
-            user.LastLoginUtc = DateTime.UtcNow;
-        }
-
-        await _db.SaveChangesAsync();
+            throw new InvalidOperationException("User was created but could not be retrieved.");
 
         return user;
     }

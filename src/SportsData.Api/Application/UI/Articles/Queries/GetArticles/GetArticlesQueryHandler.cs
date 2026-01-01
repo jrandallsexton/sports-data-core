@@ -1,7 +1,7 @@
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Options;
 using SportsData.Api.Application.UI.Articles.Dtos;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
@@ -26,12 +26,12 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
 
     public GetArticlesQueryHandler(
         ILogger<GetArticlesQueryHandler> logger,
-        ApiConfig config,
+        IOptions<ApiConfig> config,
         AppDataContext dataContext,
         IProvideCanonicalData canonicalDataProvider)
     {
         _logger = logger;
-        _config = config;
+        _config = config.Value;
         _dataContext = dataContext;
         _canonicalDataProvider = canonicalDataProvider;
     }

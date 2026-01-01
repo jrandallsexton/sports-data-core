@@ -3,7 +3,7 @@
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
-using SportsData.Api.Application.UI.TeamCard.Queries;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;

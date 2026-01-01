@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.User;
-using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Application.User.Commands.UpsertUser;
 
 using System.Security.Claims;
 
@@ -13,12 +12,14 @@ namespace SportsData.Api.Application.Auth
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDataContext _dbContext;
+        private readonly IUpsertUserCommandHandler _upsertUserHandler;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDataContext dbContext, ILogger<AuthController> logger)
+        public AuthController(
+            IUpsertUserCommandHandler upsertUserHandler,
+            ILogger<AuthController> logger)
         {
-            _dbContext = dbContext;
+            _upsertUserHandler = upsertUserHandler;
             _logger = logger;
         }
 
@@ -134,33 +135,23 @@ namespace SportsData.Api.Application.Auth
         [Authorize]
         public async Task<IActionResult> SyncUser()
         {
-            var userId = User.FindFirstValue("user_id");
+            var firebaseUid = User.FindFirstValue("user_id");
             var email = User.FindFirstValue(ClaimTypes.Email);
             var provider = User.FindFirstValue("sign_in_provider") ?? "unknown";
 
-            if (userId == null || email == null)
+            if (firebaseUid == null || email == null)
                 return Unauthorized();
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.FirebaseUid == userId);
-
-            if (user == null)
+            var command = new UpsertUserCommand
             {
-                user = new Infrastructure.Data.Entities.User
-                {
-                    Id = Guid.NewGuid(),
-                    FirebaseUid = userId,
-                    Email = email,
-                    CreatedUtc = DateTime.UtcNow,
-                    SignInProvider = provider,
-                    LastLoginUtc = DateTime.UtcNow,
-                    DisplayName = DisplayNameGenerator.Generate()
-                };
+                Email = email
+            };
 
-                _dbContext.Users.Add(user);
-                await _dbContext.SaveChangesAsync();
-            }
+            var result = await _upsertUserHandler.ExecuteAsync(command, firebaseUid, provider);
 
-            return Ok(new { message = "User synced", userId = user.Id });
+            return result.IsSuccess
+                ? Ok(new { message = "User synced", userId = result.Value })
+                : Unauthorized();
         }
     }
 

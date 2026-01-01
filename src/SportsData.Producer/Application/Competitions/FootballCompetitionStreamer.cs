@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -29,6 +30,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
     private readonly FootballDataContext _dataContext;
     private readonly HttpClient _httpClient;
     private readonly IEventBus _publishEndpoint;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     // Worker management
     private readonly List<Task> _activeWorkers = new();
@@ -42,12 +44,14 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         ILogger<FootballCompetitionStreamer> logger,
         FootballDataContext dataContext,
         IHttpClientFactory httpClientFactory,
-        IEventBus publishEndpoint)
+        IEventBus publishEndpoint,
+        IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _dataContext = dataContext;
         _httpClient = httpClientFactory.CreateClient();
         _publishEndpoint = publishEndpoint;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task ExecuteAsync(StreamFootballCompetitionCommand command, CancellationToken cancellationToken)
@@ -478,6 +482,10 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         StreamFootballCompetitionCommand command,
         CancellationToken cancellationToken)
     {
+        using var scope = _scopeFactory.CreateScope();
+        var dataContext = scope.ServiceProvider.GetRequiredService<FootballDataContext>();
+        var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+
         var parentId = type is
             DocumentType.EventCompetitionProbability or
             DocumentType.EventCompetitionDrive or
@@ -487,19 +495,24 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
 
         _logger.LogDebug("Publishing {Type} document request for {Uri}", type, refUri);
 
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: Guid.NewGuid().ToString(),
-            ParentId: parentId,
-            Uri: refUri,
-            Sport: command.Sport,
-            SeasonYear: command.SeasonYear,
-            DocumentType: type,
-            SourceDataProvider: command.DataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: command.CorrelationId
-        ), cancellationToken);
+        var strategy = dataContext.Database.CreateExecutionStrategy();
 
-        await _dataContext.SaveChangesAsync(cancellationToken);
+        await strategy.ExecuteAsync(async () =>
+        {
+            await eventBus.Publish(new DocumentRequested(
+                Id: Guid.NewGuid().ToString(),
+                ParentId: parentId,
+                Uri: refUri,
+                Sport: command.Sport,
+                SeasonYear: command.SeasonYear,
+                DocumentType: type,
+                SourceDataProvider: command.DataProvider,
+                CorrelationId: command.CorrelationId,
+                CausationId: command.CorrelationId
+            ), cancellationToken);
+
+            await dataContext.SaveChangesAsync(cancellationToken);
+        });
     }
 
     private async Task UpdateStreamStatusAsync(
@@ -520,7 +533,11 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         stream.ModifiedUtc = DateTime.UtcNow;
         stream.ModifiedBy = Guid.Empty; // System modification
 
-        await _dataContext.SaveChangesAsync(cancellationToken);
+        var strategy = _dataContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        });
 
         _logger.LogInformation("Stream status updated to {Status}", status);
     }

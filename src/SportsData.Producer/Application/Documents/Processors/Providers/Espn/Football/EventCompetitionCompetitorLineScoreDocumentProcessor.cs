@@ -74,9 +74,15 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
 
         if (dto is null)
         {
-            _logger.LogWarning("No line score found to process.");
+            _logger.LogWarning("No line score found to process. Document was null after deserialization.");
             return;
         }
+
+        _logger.LogDebug("Successfully deserialized LineScore DTO. Ref={Ref}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}",
+            dto.Ref,
+            dto.Period,
+            dto.Value,
+            dto.DisplayValue);
 
         if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
         {
@@ -84,9 +90,15 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             return; // fatal. do not retry
         }
 
+        _logger.LogDebug("Parsed CompetitionCompetitorId from ParentId. CompetitorId={CompetitorId}", competitionCompetitorId);
+
         var exists = await _dataContext.CompetitionCompetitors
             .AsNoTracking()
             .AnyAsync(x => x.Id == competitionCompetitorId);
+
+        _logger.LogDebug("CompetitionCompetitor existence check. CompetitorId={CompetitorId}, Exists={Exists}", 
+            competitionCompetitorId, 
+            exists);
 
         if (!exists)
         {
@@ -108,8 +120,9 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             }
             else
             {
-                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorId={CompetitorId}", 
-                    competitionCompetitorId);
+                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorId={CompetitorId}, CompetitorRef={CompetitorRef}", 
+                    competitionCompetitorId,
+                    competitionCompetitorRef);
                 
                 await _publishEndpoint.Publish(new DocumentRequested(
                     Id: competitionCompetitorIdentity.UrlHash,
@@ -128,15 +141,28 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
         }
 
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
+        
+        _logger.LogDebug("Generated identity for LineScore. CanonicalId={CanonicalId}, UrlHash={UrlHash}, CleanUrl={CleanUrl}",
+            identity.CanonicalId,
+            identity.UrlHash,
+            identity.CleanUrl);
+
         var entry = await _dataContext.CompetitionCompetitorLineScores
             .AsTracking()
             .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
 
+        _logger.LogDebug("Database lookup for existing LineScore. CanonicalId={CanonicalId}, Found={Found}",
+            identity.CanonicalId,
+            entry is not null);
+
         if (entry is not null)
         {
-            _logger.LogInformation("Updating existing CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}", 
+            _logger.LogInformation("Updating existing CompetitorLineScore. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, OldValue={OldValue}, NewValue={NewValue}", 
+                entry.Id,
                 competitionCompetitorId, 
-                dto.Period);
+                dto.Period,
+                entry.Value,
+                dto.Value);
 
             entry.Value = dto.Value;
             entry.DisplayValue = dto.DisplayValue;
@@ -146,12 +172,21 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             entry.SourceState = dto.Source?.State;
             entry.ModifiedUtc = DateTime.UtcNow;
             entry.ModifiedBy = command.CorrelationId;
+
+            _logger.LogDebug("Updated LineScore entity properties. Id={Id}, Value={Value}, DisplayValue={DisplayValue}, SourceId={SourceId}, SourceDescription={SourceDescription}",
+                entry.Id,
+                entry.Value,
+                entry.DisplayValue,
+                entry.SourceId,
+                entry.SourceDescription);
         }
         else
         {
-            _logger.LogInformation("Creating new CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}", 
+            _logger.LogInformation("Creating new CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}, Value={Value}, CanonicalId={CanonicalId}", 
                 competitionCompetitorId, 
-                dto.Period);
+                dto.Period,
+                dto.Value,
+                identity.CanonicalId);
 
             var entity = dto.AsEntity(
                 competitionCompetitorId,
@@ -159,14 +194,54 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                 command.SourceDataProvider,
                 command.CorrelationId);
 
+            _logger.LogDebug("Created LineScore entity from DTO. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}, SourceId={SourceId}, SourceDescription={SourceDescription}, ExternalIdCount={ExternalIdCount}",
+                entity.Id,
+                entity.CompetitionCompetitorId,
+                entity.Period,
+                entity.Value,
+                entity.DisplayValue,
+                entity.SourceId,
+                entity.SourceDescription,
+                entity.ExternalIds.Count);
+
             await _dataContext.CompetitionCompetitorLineScores.AddAsync(entity);
+            
+            _logger.LogDebug("Added LineScore entity to DbContext. Id={Id}", entity.Id);
         }
 
-        await _dataContext.SaveChangesAsync();
+        _logger.LogDebug("Saving changes to database...");
         
-        _logger.LogInformation("Persisted CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}, Value={Value}", 
+        var changesCount = await _dataContext.SaveChangesAsync();
+        
+        _logger.LogInformation("Persisted CompetitorLineScore. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}, ChangeCount={ChangeCount}", 
+            identity.CanonicalId,
             competitionCompetitorId, 
             dto.Period,
-            dto.Value);
+            dto.Value,
+            dto.DisplayValue,
+            changesCount);
+
+        // Verify the save by checking the database
+        var verification = await _dataContext.CompetitionCompetitorLineScores
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
+
+        if (verification is null)
+        {
+            _logger.LogError("CRITICAL: LineScore was not found in database after SaveChanges! Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}. This indicates a persistence failure.",
+                identity.CanonicalId,
+                competitionCompetitorId,
+                dto.Period,
+                dto.Value);
+        }
+        else
+        {
+            _logger.LogDebug("Verified LineScore persistence. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}",
+                verification.Id,
+                verification.CompetitionCompetitorId,
+                verification.Period,
+                verification.Value,
+                verification.DisplayValue);
+        }
     }
 }

@@ -4,6 +4,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 
@@ -154,8 +155,10 @@ namespace SportsData.Api.Application.Processors
 
             groupWeek.AreMatchupsGenerated = true;
 
-            // Only publish event if the week is not completed
-            var isWeekCompleted = allMatchups.All(m => m.Status == "Final" || m.Status == "Completed");
+            await _dataContext.SaveChangesAsync();
+
+            // Only publish event after successful persistence and if the week is not completed
+            var isWeekCompleted = allMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
             if (!isWeekCompleted)
             {
                 await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
@@ -171,8 +174,6 @@ namespace SportsData.Api.Application.Processors
                 _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
                     group.Id, command.SeasonYear, command.SeasonWeek);
             }
-
-            await _dataContext.SaveChangesAsync();
         }
     }
 }

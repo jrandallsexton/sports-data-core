@@ -1,3 +1,5 @@
+using FluentValidation.Results;
+
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Core.Common;
@@ -13,6 +15,7 @@ public interface IGetPollRankingsByWeekQueryHandler
 
 public class GetPollRankingsByWeekQueryHandler : IGetPollRankingsByWeekQueryHandler
 {
+    private readonly ILogger<GetPollRankingsByWeekQueryHandler> _logger;
     private readonly IGetRankingsByPollWeekQueryHandler _rankingsByPollWeekHandler;
 
     private const string PollIdAp = "ap";
@@ -20,8 +23,10 @@ public class GetPollRankingsByWeekQueryHandler : IGetPollRankingsByWeekQueryHand
     private const string PollIdCfp = "cfp";
 
     public GetPollRankingsByWeekQueryHandler(
+        ILogger<GetPollRankingsByWeekQueryHandler> logger,
         IGetRankingsByPollWeekQueryHandler rankingsByPollWeekHandler)
     {
+        _logger = logger;
         _rankingsByPollWeekHandler = rankingsByPollWeekHandler;
     }
 
@@ -71,6 +76,19 @@ public class GetPollRankingsByWeekQueryHandler : IGetPollRankingsByWeekQueryHand
         if (coaches.IsSuccess)
         {
             values.Add(coaches.Value);
+        }
+
+        if (values.Count == 0)
+        {
+            _logger.LogWarning(
+                "All poll queries failed for SeasonYear={SeasonYear}, Week={Week}",
+                query.SeasonYear,
+                query.Week);
+
+            return new Failure<List<RankingsByPollIdByWeekDto>>(
+                [],
+                ResultStatus.NotFound,
+                [new ValidationFailure("Rankings", "Unable to retrieve rankings for any poll")]);
         }
 
         return new Success<List<RankingsByPollIdByWeekDto>>(values);

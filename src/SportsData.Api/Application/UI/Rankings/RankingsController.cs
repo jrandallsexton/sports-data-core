@@ -23,7 +23,7 @@ public class RankingsController : ApiControllerBase
         _logger = logger;
     }
 
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(Duration = 6000, Location = ResponseCacheLocation.Client)]
     [OutputCache(Duration = 6000)]
     [HttpGet("{seasonYear}")]
     public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPolls(

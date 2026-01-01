@@ -48,8 +48,15 @@ namespace SportsData.Api.Application.Previews
 
             var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
 
-            if (string.Equals(matchup.Status, "Final", StringComparison.OrdinalIgnoreCase) || 
-                string.Equals(matchup.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            if (matchup is null)
+            {
+                _logger.LogWarning(
+                    "Matchup not found for ContestId {ContestId}. Skipping preview generation.",
+                    command.ContestId);
+                return;
+            }
+
+            if (ContestStatusValues.IsCompleted(matchup.Status))
             {
                 _logger.LogInformation("Skipping preview generation for completed contest {ContestId}. Status: {Status}", command.ContestId, matchup.Status);
                 return;

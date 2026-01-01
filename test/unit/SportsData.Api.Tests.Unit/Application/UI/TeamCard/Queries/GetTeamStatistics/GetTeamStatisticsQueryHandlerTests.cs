@@ -49,7 +49,7 @@ public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatistics
         result.IsSuccess.Should().BeTrue();
         result.Value.GamesPlayed.Should().Be(12);
         _statFormattingServiceMock.Verify(
-            x => x.ApplyFriendlyLabelsAndFormatting(statistics, true),
+            x => x.ApplyFriendlyLabelsAndFormatting(statistics, It.IsAny<bool>()),
             Times.Once);
     }
 

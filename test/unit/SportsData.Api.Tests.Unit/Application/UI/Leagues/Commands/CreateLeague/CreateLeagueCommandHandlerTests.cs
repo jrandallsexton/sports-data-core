@@ -78,6 +78,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
     {
         var request = BuildValidRequest();
         var currentUserId = Guid.NewGuid();
+        var currentYear = DateTime.UtcNow.Year;
 
         var slugToGuid = new Dictionary<Guid, string>
         {
@@ -89,7 +90,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
         request.ConferenceSlugs = ["acc", "big12", "garbage"];
 
         Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetConferenceIdsBySlugsAsync(Sport.FootballNcaa, 2025, request.ConferenceSlugs))
+            .Setup(x => x.GetConferenceIdsBySlugsAsync(Sport.FootballNcaa, currentYear, request.ConferenceSlugs))
             .ReturnsAsync(slugToGuid);
 
         var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();

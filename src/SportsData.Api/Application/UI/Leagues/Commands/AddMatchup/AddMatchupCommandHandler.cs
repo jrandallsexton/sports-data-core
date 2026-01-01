@@ -140,7 +140,7 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
             command.LeagueId, command.ContestId, newMatchup.Id);
 
         // 6. Publish event for AI preview generation
-        if (matchup.Status != "Final" && matchup.Status != "Completed")
+        if (!ContestStatusValues.IsCompleted(matchup.Status))
         {
             await _eventBus.Publish(
                 new PickemGroupMatchupAdded(

@@ -190,7 +190,7 @@ public class GetPollRankingsByWeekQueryHandlerTests : UnitTestBase<GetPollRankin
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnEmptyList_WhenAllPollsFail()
+    public async Task ExecuteAsync_ShouldReturnFailure_WhenAllPollsFail()
     {
         // Arrange
         _rankingsByPollWeekHandlerMock
@@ -206,8 +206,10 @@ public class GetPollRankingsByWeekQueryHandlerTests : UnitTestBase<GetPollRankin
         var result = await handler.ExecuteAsync(query);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+        var failure = result as Failure<List<RankingsByPollIdByWeekDto>>;
+        failure!.Errors.Should().ContainSingle(e => e.ErrorMessage == "Unable to retrieve rankings for any poll");
     }
 
     [Fact]

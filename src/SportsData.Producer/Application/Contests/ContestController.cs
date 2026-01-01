@@ -76,6 +76,42 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
         }
 
+        [HttpPost]
+        [Route("{contestId}/stream")]
+        public async Task<IActionResult> StartStream([FromRoute] Guid contestId, CancellationToken cancellationToken)
+        {
+            var contest = await _dataContext.Contests
+                .FirstOrDefaultAsync(c => c.Id == contestId, cancellationToken);
+
+            if (contest == null)
+            {
+                return NotFound($"Contest {contestId} not found");
+            }
+
+            var competition = await _dataContext.Competitions
+                .FirstOrDefaultAsync(c => c.ContestId == contestId, cancellationToken);
+
+            if (competition == null)
+            {
+                return NotFound($"Competition for contest {contestId} not found");
+            }
+
+            var command = new StreamFootballCompetitionCommand
+            {
+                Sport = contest.Sport,
+                SeasonYear = contest.SeasonYear,
+                DataProvider = SourceDataProvider.Espn,
+                ContestId = contest.Id,
+                CompetitionId = competition.Id,
+                CorrelationId = Guid.NewGuid()
+            };
+
+            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(job => 
+                job.ExecuteAsync(command, CancellationToken.None));
+
+            return Ok(new { Message = "Streamer started", Command = command });
+        }
+
         [HttpGet("{id}/overview")]
         public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
         {

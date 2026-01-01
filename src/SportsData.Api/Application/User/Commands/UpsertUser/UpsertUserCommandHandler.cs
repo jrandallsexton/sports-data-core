@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
@@ -18,13 +19,16 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
 {
     private readonly AppDataContext _db;
     private readonly ILogger<UpsertUserCommandHandler> _logger;
+    private readonly IValidator<UpsertUserCommand> _validator;
 
     public UpsertUserCommandHandler(
         AppDataContext db,
-        ILogger<UpsertUserCommandHandler> logger)
+        ILogger<UpsertUserCommandHandler> logger,
+        IValidator<UpsertUserCommand> validator)
     {
         _db = db;
         _logger = logger;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -35,16 +39,18 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
     {
         var validationErrors = new List<FluentValidation.Results.ValidationFailure>();
 
+        // Validate firebaseUid parameter
         if (string.IsNullOrWhiteSpace(firebaseUid))
         {
             validationErrors.Add(new FluentValidation.Results.ValidationFailure(
                 "FirebaseUid", "Firebase UID is required."));
         }
 
-        if (string.IsNullOrWhiteSpace(command.Email))
+        // Validate command using FluentValidation
+        var commandValidationResult = await _validator.ValidateAsync(command, cancellationToken);
+        if (!commandValidationResult.IsValid)
         {
-            validationErrors.Add(new FluentValidation.Results.ValidationFailure(
-                "Email", "Email is required."));
+            validationErrors.AddRange(commandValidationResult.Errors);
         }
 
         if (validationErrors.Count > 0)

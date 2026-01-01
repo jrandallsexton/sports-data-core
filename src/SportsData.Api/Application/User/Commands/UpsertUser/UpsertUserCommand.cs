@@ -1,11 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace SportsData.Api.Application.User.Commands.UpsertUser;
+﻿namespace SportsData.Api.Application.User.Commands.UpsertUser;
 
 public class UpsertUserCommand
 {
-    [Required]
-    public required string Email { get; init; }
+    public string Email { get; init; } = string.Empty;
 
     public string? DisplayName { get; init; }
 }

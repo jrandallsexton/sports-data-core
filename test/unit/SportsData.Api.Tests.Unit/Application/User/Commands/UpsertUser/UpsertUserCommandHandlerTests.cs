@@ -12,6 +12,11 @@ namespace SportsData.Api.Tests.Unit.Application.User.Commands.UpsertUser;
 
 public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandler>
 {
+    public UpsertUserCommandHandlerTests()
+    {
+        // Register the validator for all tests
+        Mocker.Use<FluentValidation.IValidator<UpsertUserCommand>>(new UpsertUserCommandValidator());
+    }
     [Fact]
     public async Task ExecuteAsync_ShouldReturnBadRequest_WhenFirebaseUidIsEmpty()
     {

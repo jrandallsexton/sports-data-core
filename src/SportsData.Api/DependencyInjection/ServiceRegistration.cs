@@ -1,5 +1,7 @@
 ﻿using Hangfire;
 
+using FluentValidation;
+
 using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.AI;
@@ -145,6 +147,9 @@ namespace SportsData.Api.DependencyInjection
 
             // User Commands
             services.AddScoped<IUpsertUserCommandHandler, UpsertUserCommandHandler>();
+            
+            // User Validators
+            services.AddValidatorsFromAssemblyContaining<Program>();
 
             // User Queries
             services.AddScoped<IGetMeQueryHandler, GetMeQueryHandler>();

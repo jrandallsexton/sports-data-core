@@ -220,28 +220,5 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             dto.Value,
             dto.DisplayValue,
             changesCount);
-
-        // Verify the save by checking the database
-        var verification = await _dataContext.CompetitionCompetitorLineScores
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
-
-        if (verification is null)
-        {
-            _logger.LogError("CRITICAL: LineScore was not found in database after SaveChanges! Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}. This indicates a persistence failure.",
-                identity.CanonicalId,
-                competitionCompetitorId,
-                dto.Period,
-                dto.Value);
         }
-        else
-        {
-            _logger.LogDebug("Verified LineScore persistence. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}",
-                verification.Id,
-                verification.CompetitionCompetitorId,
-                verification.Period,
-                verification.Value,
-                verification.DisplayValue);
-        }
-    }
 }

@@ -116,12 +116,13 @@ select * from public."Contest" where "Id" = '9c1dd681-8a67-91bb-1492-95742699410
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = '8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb'
+select * from public."Competition" where "ContestId" = 'c94e1efc-4809-bf27-d1e1-fb6d97cb16b7'
 select * from public."CompetitionExternalId" where "CompetitionId" = '5e83718e-e1e4-2c73-804f-0c4a1f19f850'
-select * from public."CompetitionCompetitor" where "CompetitionId" = '8cc5e162-fefb-2785-4ae7-e858edcb2a2d'
+select * from public."CompetitionCompetitor" where "CompetitionId" = 'ef5ffae3-2399-ef06-f8a0-c8f1f95e9f54'
 select * from public."CompetitionNote" where "CompetitionId" = '7690d4e5-b401-4c6d-749d-0233f902994a'
 select * from public."CompetitionStatus" where "CompetitionId" = 'cd68bd61-707f-90ad-26ae-f5f2ecd7d0cc'
-select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '9d78cf9e-c5a7-d063-d41f-486aaec62ed0'
+select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '8b8efe9a-1631-9e76-dc79-c4e560fa2f56' order by "Period"
+--delete from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '8b8efe9a-1631-9e76-dc79-c4e560fa2f56' and "SourceDescription" = 'Feed'
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
 select * from public."CompetitionPlay" where "CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by "SequenceNumber"::int
 

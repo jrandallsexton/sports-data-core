@@ -1,19 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SportsData.Api.Application.User
+namespace SportsData.Api.Application.User.Commands.UpsertUser;
+
+public class UpsertUserCommand
 {
-    public class UpsertUserCommand
-    {
-        public string? FirebaseUid { get; set; }
+    [Required]
+    public required string Email { get; init; }
 
-        [Required]
-        public string Email { get; set; } = null!;
-
-        public string? DisplayName { get; set; }
-
-        public string? PhotoUrl { get; set; }
-
-        public string? Timezone { get; set; }
-    }
-
+    public string? DisplayName { get; init; }
 }

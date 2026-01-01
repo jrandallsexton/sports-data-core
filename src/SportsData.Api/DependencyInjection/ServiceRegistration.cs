@@ -50,6 +50,8 @@ using SportsData.Api.Application.UI.TeamCard.Handlers;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
+using SportsData.Api.Application.User.Commands.UpsertUser;
+using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Notifications;
@@ -140,6 +142,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetTeamStatisticsQueryHandler, GetTeamStatisticsQueryHandler>();
             services.AddScoped<IGetTeamMetricsQueryHandler, GetTeamMetricsQueryHandler>();
             services.AddScoped<IStatFormattingService, StatFormattingService>();
+
+            // User Commands
+            services.AddScoped<IUpsertUserCommandHandler, UpsertUserCommandHandler>();
+
+            // User Queries
+            services.AddScoped<IGetMeQueryHandler, GetMeQueryHandler>();
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();

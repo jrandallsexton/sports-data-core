@@ -1,27 +1,27 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.User;
+using SportsData.Api.Application.User.Commands.UpsertUser;
+using SportsData.Api.Application.User.Dtos;
+using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Extensions;
+using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 using System.Security.Claims;
 
+namespace SportsData.Api.Application.User;
+
 [ApiController]
 [Route("[controller]")]
-public class UserController : ControllerBase
+public class UserController : ApiControllerBase
 {
-    private readonly IUserService _userService;
-    private readonly ILogger<UserController> _logger;
-
-    public UserController(IUserService userService, ILogger<UserController> logger)
-    {
-        _userService = userService;
-        _logger = logger;
-    }
-
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> UpsertUser([FromBody] UpsertUserCommand dto)
+    public async Task<ActionResult<Guid>> UpsertUser(
+        [FromBody] UpsertUserCommand command,
+        [FromServices] IUpsertUserCommandHandler handler,
+        CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -32,23 +32,22 @@ public class UserController : ControllerBase
 
         var provider = User.FindFirstValue("sign_in_provider") ?? "unknown";
 
-        var updated = await _userService.GetOrCreateUserAsync(
-            firebaseUid,
-            dto.Email,
-            dto.DisplayName,
-            photoUrl: null, // you could include this in `UpsertUserCommand`
-            signInProvider: provider,
-            emailVerified: false // or wire it through too
-        );
+        var result = await handler.ExecuteAsync(command, firebaseUid, provider, cancellationToken);
 
-        return Ok();
+        return result.ToActionResult();
     }
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<IActionResult> GetMe()
+    public async Task<ActionResult<UserDto>> GetMe(
+        [FromServices] IGetMeQueryHandler handler,
+        CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();
-        return Ok(await _userService.GetUserDtoById(userId));
+
+        var query = new GetMeQuery { UserId = userId };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
     }
 }

@@ -38,13 +38,13 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         if (string.IsNullOrWhiteSpace(firebaseUid))
         {
             validationErrors.Add(new FluentValidation.Results.ValidationFailure(
-                nameof(firebaseUid), "Firebase UID is required."));
+                "FirebaseUid", "Firebase UID is required."));
         }
 
         if (string.IsNullOrWhiteSpace(command.Email))
         {
             validationErrors.Add(new FluentValidation.Results.ValidationFailure(
-                nameof(command.Email), "Email is required."));
+                "Email", "Email is required."));
         }
 
         if (validationErrors.Count > 0)

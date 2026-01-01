@@ -30,7 +30,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.BadRequest);
         result.Should().BeOfType<Failure<Guid>>();
-        ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "firebaseUid");
+        ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "FirebaseUid");
     }
 
     [Fact]
@@ -50,6 +50,30 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.BadRequest);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnBadRequest_WhenBothFirebaseUidAndEmailAreEmpty()
+    {
+        // Arrange
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var command = new UpsertUserCommand
+        {
+            Email = ""
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(command, "", "google.com");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.BadRequest);
+        result.Should().BeOfType<Failure<Guid>>();
+        var failure = (Failure<Guid>)result;
+        failure.Errors.Should().HaveCount(2);
+        failure.Errors.Should().Contain(e => e.PropertyName == "FirebaseUid");
+        failure.Errors.Should().Contain(e => e.PropertyName == "Email");
     }
 
     [Fact]

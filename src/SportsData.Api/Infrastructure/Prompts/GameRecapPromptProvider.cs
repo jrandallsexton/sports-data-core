@@ -9,7 +9,7 @@ public class GameRecapPromptProvider
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly object _lock = new();
-    private Task<(string PromptText, string PromptName)>? _cachedPromptTask;
+    private (string PromptText, string PromptName)? _cachedPrompt;
 
     private const string Container = "prompts";
     private const string BlobName = "game-recap-v1.txt";
@@ -22,15 +22,34 @@ public class GameRecapPromptProvider
     /// <summary>
     /// Gets the game recap prompt (cached after first load)
     /// </summary>
-    public Task<(string PromptText, string PromptName)> GetGameRecapPromptAsync(CancellationToken cancellationToken = default)
+    public ValueTask<(string PromptText, string PromptName)> GetGameRecapPromptAsync(CancellationToken cancellationToken = default)
     {
-        if (_cachedPromptTask != null)
-            return _cachedPromptTask;
+        if (_cachedPrompt.HasValue)
+            return new ValueTask<(string PromptText, string PromptName)>(_cachedPrompt.Value);
+
+        return new ValueTask<(string PromptText, string PromptName)>(LoadAndCachePromptAsync(cancellationToken));
+    }
+
+    private async Task<(string PromptText, string PromptName)> LoadAndCachePromptAsync(CancellationToken cancellationToken)
+    {
+        Task<(string, string)> loadTask;
 
         lock (_lock)
         {
-            return _cachedPromptTask ??= LoadPromptAsync(BlobName, cancellationToken);
+            if (_cachedPrompt.HasValue)
+                return _cachedPrompt.Value;
+
+            loadTask = LoadPromptAsync(BlobName, cancellationToken);
         }
+
+        var result = await loadTask;
+
+        lock (_lock)
+        {
+            _cachedPrompt = result;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -38,11 +57,16 @@ public class GameRecapPromptProvider
     /// </summary>
     public async Task<string> ReloadPromptAsync(CancellationToken cancellationToken = default)
     {
+        lock (_lock)
+        {
+            _cachedPrompt = null;
+        }
+
         var newPrompt = await LoadPromptTextOnlyAsync(BlobName, cancellationToken);
 
         lock (_lock)
         {
-            _cachedPromptTask = Task.FromResult((newPrompt, Path.GetFileNameWithoutExtension(BlobName)));
+            _cachedPrompt = (newPrompt, Path.GetFileNameWithoutExtension(BlobName));
         }
 
         return newPrompt;

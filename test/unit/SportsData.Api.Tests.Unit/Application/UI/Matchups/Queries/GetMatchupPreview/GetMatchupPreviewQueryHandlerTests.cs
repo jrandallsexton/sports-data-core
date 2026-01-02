@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
@@ -34,7 +35,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
     {
         // Arrange
         var contestId = Guid.NewGuid();
-        var preview = new Infrastructure.Data.Entities.MatchupPreview
+        var preview = new MatchupPreview
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
@@ -69,7 +70,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         var awayFranchiseSeasonId = Guid.NewGuid();
         var homeFranchiseSeasonId = Guid.NewGuid();
 
-        var preview = new Infrastructure.Data.Entities.MatchupPreview
+        var preview = new MatchupPreview
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
@@ -123,3 +124,5 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         result.Value.HomeScore.Should().Be(21);
     }
 }
+
+

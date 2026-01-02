@@ -33,9 +33,10 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.Errors.Should().BeGreaterThan(0);
-        result.Message.Should().Contain("Validation failed");
-        result.Message.Should().Contain("greater than 2000");
+        result.IsSuccess.Should().BeFalse();
+        var failure = (Failure<BackfillLeagueScoresResult>)result;
+        failure.Errors.Should().NotBeEmpty();
+        failure.Errors[0].ErrorMessage.Should().Contain("greater than 2000");
     }
 
     [Fact]
@@ -50,8 +51,10 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.Errors.Should().BeGreaterThan(0);
-        result.Message.Should().Contain("Validation failed");
+        result.IsSuccess.Should().BeFalse();
+        var failure = (Failure<BackfillLeagueScoresResult>)result;
+        failure.Errors.Should().NotBeEmpty();
+        failure.Errors[0].ErrorMessage.Should().Contain("future");
     }
 
     [Fact]
@@ -70,11 +73,11 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.SeasonYear.Should().Be(seasonYear);
-        result.TotalWeeks.Should().Be(0);
-        result.ProcessedWeeks.Should().Be(0);
-        result.Errors.Should().Be(0);
-        result.Message.Should().Contain("No completed weeks found");
+        result.Value.SeasonYear.Should().Be(seasonYear);
+        result.Value.TotalWeeks.Should().Be(0);
+        result.Value.ProcessedWeeks.Should().Be(0);
+        result.Value.Errors.Should().Be(0);
+        result.Value.Message.Should().Contain("No completed weeks found");
     }
 
     [Fact]
@@ -137,11 +140,11 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.SeasonYear.Should().Be(seasonYear);
-        result.TotalWeeks.Should().Be(2);
-        result.ProcessedWeeks.Should().Be(4); // 2 leagues × 2 weeks
-        result.Errors.Should().Be(0);
-        result.Message.Should().Contain("Backfill completed");
+        result.Value.SeasonYear.Should().Be(seasonYear);
+        result.Value.TotalWeeks.Should().Be(2);
+        result.Value.ProcessedWeeks.Should().Be(4); // 2 leagues × 2 weeks
+        result.Value.Errors.Should().Be(0);
+        result.Value.Message.Should().Contain("Backfill completed");
 
         // Verify scoring service was called 4 times
         Mocker.GetMock<ILeagueWeekScoringService>()
@@ -191,11 +194,11 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.SeasonYear.Should().Be(seasonYear);
-        result.TotalWeeks.Should().Be(1);
-        result.ProcessedWeeks.Should().Be(1); // One succeeded
-        result.Errors.Should().Be(1); // One failed
-        result.Message.Should().Contain("1 errors");
+        result.Value.SeasonYear.Should().Be(seasonYear);
+        result.Value.TotalWeeks.Should().Be(1);
+        result.Value.ProcessedWeeks.Should().Be(1); // One succeeded
+        result.Value.Errors.Should().Be(1); // One failed
+        result.Value.Message.Should().Contain("1 errors");
     }
 
     [Fact]
@@ -215,9 +218,10 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var result = await handler.ExecuteAsync(command, CancellationToken.None);
 
         // Assert
-        result.SeasonYear.Should().Be(seasonYear);
-        result.Errors.Should().BeGreaterThan(0);
-        result.Message.Should().Contain("Backfill failed");
-        result.Message.Should().Contain("Database error");
+        result.IsSuccess.Should().BeFalse();
+        var failure = (Failure<BackfillLeagueScoresResult>)result;
+        failure.Errors.Should().NotBeEmpty();
+        failure.Errors[0].ErrorMessage.Should().Contain("Backfill failed");
+        failure.Errors[0].ErrorMessage.Should().Contain("Database error");
     }
 }

@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+using SportsData.Api.Application.Admin.Queries.AuditAi;
+using SportsData.Api.Application.Admin.Queries.GetAiResponse;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
-using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
@@ -27,21 +30,15 @@ namespace SportsData.Api.Application.Admin
     {
         private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IAdminService _adminService;
-        private readonly IAiService _aiService;
         private readonly ILogger<AdminController> _logger;
 
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideBackgroundJobs backgroundJobProvider,
-            IAdminService adminService,
-            IAiService aiService,
             ILogger<AdminController> logger)
         {
             _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _backgroundJobProvider = backgroundJobProvider;
-            _adminService = adminService;
-            _aiService = aiService;
             _logger = logger;
         }
 
@@ -67,27 +64,12 @@ namespace SportsData.Api.Application.Admin
         [HttpPost]
         [Route("ai/game-recap")]
         public async Task<ActionResult<GameRecapResponse>> GenerateGameRecap(
-            [FromBody] GenerateGameRecapCommand command)
+            [FromBody] GenerateGameRecapCommand command,
+            [FromServices] IGenerateGameRecapCommandHandler handler,
+            CancellationToken cancellationToken)
         {
-            try
-            {
-                var response = await _aiService.GenerateGameRecapAsync(command, CancellationToken.None);
-                return Ok(response);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Game recap generation failed with invalid operation");
-                return BadRequest(new { error = "Failed to generate game recap", message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error generating game recap");
-                return StatusCode(500, new
-                {
-                    error = "Failed to generate game recap",
-                    message = ex.Message
-                });
-            }
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
         }
 
         [HttpPost]
@@ -136,7 +118,8 @@ namespace SportsData.Api.Application.Admin
         public IActionResult RefreshAiExistence()
         {
             var correlationId = Guid.NewGuid();
-            _backgroundJobProvider.Enqueue<IAdminService>(p => p.RefreshAiExistence(correlationId));
+            var command = new RefreshAiExistenceCommand { CorrelationId = correlationId };
+            _backgroundJobProvider.Enqueue<IRefreshAiExistenceCommandHandler>(p => p.ExecuteAsync(command, CancellationToken.None));
             return Accepted(correlationId);
         }
 
@@ -145,7 +128,8 @@ namespace SportsData.Api.Application.Admin
         public IActionResult AiPreviewsAudit()
         {
             var correlationId = Guid.NewGuid();
-            _backgroundJobProvider.Enqueue<IAdminService>(p => p.AuditAi(correlationId));
+            var query = new AuditAiQuery { CorrelationId = correlationId };
+            _backgroundJobProvider.Enqueue<IAuditAiQueryHandler>(p => p.ExecuteAsync(query, CancellationToken.None));
             return Accepted(correlationId);
         }
 
@@ -231,10 +215,13 @@ namespace SportsData.Api.Application.Admin
 
         [HttpPost]
         [Route("ai-test")]
-        public async Task<IActionResult> TestAiCommunications([FromBody] AiChatCommand command)
+        public async Task<ActionResult<string>> TestAiCommunications(
+            [FromBody] GetAiResponseQuery query,
+            [FromServices] IGetAiResponseQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var response = await _aiService.GetAiResponseAsync(command.Text);
-            return Ok(response);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -245,31 +232,14 @@ namespace SportsData.Api.Application.Admin
         /// <returns>Summary of backfill operation</returns>
         [HttpPost]
         [Route("backfill-league-scores/{seasonYear}")]
-        public async Task<IActionResult> BackfillLeagueScores(
+        public async Task<ActionResult<BackfillLeagueScoresResult>> BackfillLeagueScores(
             int seasonYear,
             [FromServices] IBackfillLeagueScoresCommandHandler handler,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                var command = new BackfillLeagueScoresCommand(seasonYear);
-                var result = await handler.ExecuteAsync(command, cancellationToken);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Error during backfill for season {SeasonYear}",
-                    seasonYear);
-
-                return StatusCode(500, new
-                {
-                    seasonYear,
-                    error = "Backfill failed",
-                    message = ex.Message
-                });
-            }
+            var command = new BackfillLeagueScoresCommand(seasonYear);
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
         }
     }
 }

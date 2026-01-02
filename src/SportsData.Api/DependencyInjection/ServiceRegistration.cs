@@ -2,15 +2,17 @@ using Hangfire;
 
 using FluentValidation;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+using SportsData.Api.Application.Admin.Queries.AuditAi;
+using SportsData.Api.Application.Admin.Queries.GetAiResponse;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
-using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Contests;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Previews;
@@ -96,9 +98,13 @@ namespace SportsData.Api.DependencyInjection
 
             // Admin Commands
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
+            services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
+            services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
 
             // Admin Queries
+            services.AddScoped<IAuditAiQueryHandler, AuditAiQueryHandler>();
+            services.AddScoped<IGetAiResponseQueryHandler, GetAiResponseQueryHandler>();
             services.AddScoped<IGetCompetitionsWithoutCompetitorsQueryHandler, GetCompetitionsWithoutCompetitorsQueryHandler>();
             services.AddScoped<IGetCompetitionsWithoutPlaysQueryHandler, GetCompetitionsWithoutPlaysQueryHandler>();
             services.AddScoped<IGetCompetitionsWithoutDrivesQueryHandler, GetCompetitionsWithoutDrivesQueryHandler>();
@@ -187,8 +193,6 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeagueWeekScoringService, LeagueWeekScoringService>();
-            services.AddScoped<IAdminService, AdminService>();
-            services.AddScoped<IAiService, AiService>();
 
             // Synthetic pick services
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();

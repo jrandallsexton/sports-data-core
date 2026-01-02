@@ -1,16 +1,18 @@
 using FluentValidation;
+using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 
 public interface IBackfillLeagueScoresCommandHandler
 {
-    Task<BackfillLeagueScoresResult> ExecuteAsync(BackfillLeagueScoresCommand command, CancellationToken cancellationToken);
+    Task<Result<BackfillLeagueScoresResult>> ExecuteAsync(BackfillLeagueScoresCommand command, CancellationToken cancellationToken);
 }
 
 public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHandler
@@ -35,7 +37,7 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         _logger = logger;
     }
 
-    public async Task<BackfillLeagueScoresResult> ExecuteAsync(
+    public async Task<Result<BackfillLeagueScoresResult>> ExecuteAsync(
         BackfillLeagueScoresCommand command,
         CancellationToken cancellationToken)
     {
@@ -43,14 +45,10 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            return new BackfillLeagueScoresResult(
-                command.SeasonYear,
-                0,
-                0,
-                1,
-                $"Validation failed: {errors}"
-            );
+            return new Failure<BackfillLeagueScoresResult>(
+                null!,
+                ResultStatus.Validation,
+                validationResult.Errors);
         }
 
         _logger.LogInformation(
@@ -65,13 +63,13 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
             if (seasonWeeks.Count == 0)
             {
                 _logger.LogWarning("No completed weeks found for season year {SeasonYear}", command.SeasonYear);
-                return new BackfillLeagueScoresResult(
+                return new Success<BackfillLeagueScoresResult>(new BackfillLeagueScoresResult(
                     command.SeasonYear,
                     0,
                     0,
                     0,
                     "No completed weeks found for this season"
-                );
+                ));
             }
 
             _logger.LogInformation(
@@ -142,24 +140,24 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
             var message = $"Backfill completed: processed {processedLeagueWeeks} league weeks with {errors} errors";
             _logger.LogInformation(message);
 
-            return new BackfillLeagueScoresResult(
+            return new Success<BackfillLeagueScoresResult>(new BackfillLeagueScoresResult(
                 command.SeasonYear,
                 seasonWeeks.Count,
                 processedLeagueWeeks,
                 errors,
                 message
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Backfill failed for season {SeasonYear}", command.SeasonYear);
-            return new BackfillLeagueScoresResult(
-                command.SeasonYear,
-                0,
-                0,
-                1,
-                $"Backfill failed: {ex.Message}"
-            );
+            return new Failure<BackfillLeagueScoresResult>(
+                null!,
+                ResultStatus.Error,
+                new List<ValidationFailure>
+                {
+                    new ValidationFailure("Backfill.Failed", $"Backfill failed: {ex.Message}")
+                });
         }
     }
 }

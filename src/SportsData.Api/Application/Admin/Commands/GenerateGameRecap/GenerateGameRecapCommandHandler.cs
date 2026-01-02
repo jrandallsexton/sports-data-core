@@ -69,7 +69,7 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
                 _logger.LogError("AI request failed: {Error}", errorMsg);
 
                 return new Failure<GameRecapResponse>(
-                    null!,
+                    GameRecapResponse.Empty(),
                     aiResponse.Status,
                     aiResponse is Failure<string> failure ? failure.Errors : []);
             }
@@ -136,7 +136,7 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
                 "Failed to generate game recap after {Time}ms",
                 sw.ElapsedMilliseconds);
             return new Failure<GameRecapResponse>(
-                null!,
+                GameRecapResponse.Empty(),
                 ResultStatus.Error,
                 new List<ValidationFailure>
                 {

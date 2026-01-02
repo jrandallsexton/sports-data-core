@@ -1,6 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
+using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
@@ -100,9 +106,12 @@ namespace SportsData.Api.Application.Admin
         [Route("matchup/preview/{contestId}")]
         public async Task<ActionResult<Guid>> UpsertContestPreview(
             [FromRoute] Guid contestId,
-            [FromBody] string matchupPreview)
+            [FromBody] string matchupPreview,
+            [FromServices] IUpsertMatchupPreviewCommandHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.UpsertMatchupPreview(matchupPreview);
+            var command = new UpsertMatchupPreviewCommand(matchupPreview);
+            var result = await handler.ExecuteAsync(command, cancellationToken);
 
             if (result.IsSuccess && result.Value == contestId)
                 return Created($"/admin/matchup/preview/{contestId}", new { contestId });
@@ -142,41 +151,57 @@ namespace SportsData.Api.Application.Admin
 
         [HttpGet]
         [Route("matchup/preview/{contestId}")]
-        public async Task<ActionResult<string>> GetAiPreview([FromRoute] Guid contestId)
+        public async Task<ActionResult<string>> GetAiPreview(
+            [FromRoute] Guid contestId,
+            [FromServices] IGetMatchupPreviewQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetMatchupPreview(contestId);
+            var query = new GetMatchupPreviewQuery(contestId);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-competitors")]
-        public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors()
+        public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(
+            [FromServices] IGetCompetitionsWithoutCompetitorsQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetCompetitionsWithoutCompetitors();
+            var query = new GetCompetitionsWithoutCompetitorsQuery();
+            var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-plays")]
-        public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays()
+        public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(
+            [FromServices] IGetCompetitionsWithoutPlaysQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetCompetitionsWithoutPlays();
+            var query = new GetCompetitionsWithoutPlaysQuery();
+            var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-drives")]
-        public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives()
+        public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
+            [FromServices] IGetCompetitionsWithoutDrivesQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetCompetitionsWithoutDrives();
+            var query = new GetCompetitionsWithoutDrivesQuery();
+            var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }
 
         [HttpGet]
         [Route("errors/competitions-without-metrics")]
-        public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics()
+        public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(
+            [FromServices] IGetCompetitionsWithoutMetricsQueryHandler handler,
+            CancellationToken cancellationToken)
         {
-            var result = await _adminService.GetCompetitionsWithoutMetrics();
+            var query = new GetCompetitionsWithoutMetricsQuery();
+            var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }
 
@@ -220,11 +245,15 @@ namespace SportsData.Api.Application.Admin
         /// <returns>Summary of backfill operation</returns>
         [HttpPost]
         [Route("backfill-league-scores/{seasonYear}")]
-        public async Task<IActionResult> BackfillLeagueScores(int seasonYear)
+        public async Task<IActionResult> BackfillLeagueScores(
+            int seasonYear,
+            [FromServices] IBackfillLeagueScoresCommandHandler handler,
+            CancellationToken cancellationToken)
         {
             try
             {
-                var result = await _adminService.BackfillLeagueScoresAsync(seasonYear);
+                var command = new BackfillLeagueScoresCommand(seasonYear);
+                var result = await handler.ExecuteAsync(command, cancellationToken);
                 return Ok(result);
             }
             catch (Exception ex)

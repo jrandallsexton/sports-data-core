@@ -9,6 +9,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 
 public interface IAddMatchupCommandHandler

@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
+using SportsData.Api.Application.Common.Enums;
+
+namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
 
 public class CreateLeagueRequest
 {

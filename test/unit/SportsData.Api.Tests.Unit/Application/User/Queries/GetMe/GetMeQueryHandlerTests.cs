@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 
 using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.User.Dtos;
 using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Config;

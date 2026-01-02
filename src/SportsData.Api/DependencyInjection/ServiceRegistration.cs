@@ -1,8 +1,14 @@
-﻿using Hangfire;
+using Hangfire;
 
 using FluentValidation;
 
 using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
+using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.AI;
 using SportsData.Api.Application.Contests;
@@ -62,6 +68,8 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.DependencyInjection
 {
     public static class ServiceRegistration
@@ -85,6 +93,18 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetLeagueWeekOverviewQueryHandler, GetLeagueWeekOverviewQueryHandler>();
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
+
+            // Admin Commands
+            services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
+            services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
+
+            // Admin Queries
+            services.AddScoped<IGetCompetitionsWithoutCompetitorsQueryHandler, GetCompetitionsWithoutCompetitorsQueryHandler>();
+            services.AddScoped<IGetCompetitionsWithoutPlaysQueryHandler, GetCompetitionsWithoutPlaysQueryHandler>();
+            services.AddScoped<IGetCompetitionsWithoutDrivesQueryHandler, GetCompetitionsWithoutDrivesQueryHandler>();
+            services.AddScoped<IGetCompetitionsWithoutMetricsQueryHandler, GetCompetitionsWithoutMetricsQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetMatchupPreview.IGetMatchupPreviewQueryHandler,
+                SportsData.Api.Application.Admin.Queries.GetMatchupPreview.GetMatchupPreviewQueryHandler>();
 
             // Analytics Queries
             services.AddScoped<IGetFranchiseSeasonMetricsQueryHandler, GetFranchiseSeasonMetricsQueryHandler>();

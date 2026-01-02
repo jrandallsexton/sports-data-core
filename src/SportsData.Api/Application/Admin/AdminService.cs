@@ -14,6 +14,8 @@ using SportsData.Core.Extensions;
 
 using System.Text.Json.Serialization;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.Admin
 {
     public interface IAdminService
@@ -21,29 +23,7 @@ namespace SportsData.Api.Application.Admin
         Task RefreshAiExistence(Guid correlationId);
 
         Task AuditAi(Guid correlationId);
-
-        Task<Result<string>> GetMatchupPreview(Guid contestId);
-
-        Task<Result<Guid>> UpsertMatchupPreview(string jsonContent);
-
-        Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors();
-        
-        Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays();
-        
-        Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives();
-        
-        Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics();
-
-        Task<BackfillLeagueScoresResult> BackfillLeagueScoresAsync(int seasonYear);
     }
-
-    public record BackfillLeagueScoresResult(
-        int SeasonYear,
-        int TotalWeeks,
-        int ProcessedWeeks,
-        int Errors,
-        string Message
-    );
 
     public class AdminService : IAdminService
     {
@@ -455,140 +435,6 @@ namespace SportsData.Api.Application.Admin
                     [new ValidationFailure("competitions", $"Error retrieving competitions without metrics: {ex.Message}")]);
             }
         }
-
-        public async Task<BackfillLeagueScoresResult> BackfillLeagueScoresAsync(int seasonYear)
-        {
-            _logger.LogInformation(
-                "Starting league scores backfill for season year {SeasonYear}",
-                seasonYear);
-
-            try
-            {
-                // Get all completed weeks for the season - matches LeagueWeekScoringJob pattern
-                var seasonWeeks = await _canonicalData.GetCompletedSeasonWeeks(seasonYear);
-
-                if (seasonWeeks.Count == 0)
-                {
-                    _logger.LogWarning("No completed weeks found for season year {SeasonYear}", seasonYear);
-                    return new BackfillLeagueScoresResult(
-                        seasonYear,
-                        0,
-                        0,
-                        0,
-                        "No completed weeks found for this season"
-                    );
-                }
-
-                _logger.LogInformation(
-                    "Found {WeekCount} completed weeks for season {SeasonYear}",
-                    seasonWeeks.Count,
-                    seasonYear);
-
-                var processedLeagueWeeks = 0;
-                var errors = 0;
-
-                // Process each week - EXACTLY like LeagueWeekScoringJob
-                foreach (var seasonWeek in seasonWeeks)
-                {
-                    _logger.LogInformation(
-                        "Processing season year={Year}, week={Week}",
-                        seasonWeek.SeasonYear,
-                        seasonWeek.WeekNumber);
-
-                    try
-                    {
-                        // Get all DISTINCT league/year/week combinations - EXACTLY like LeagueWeekScoringJob
-                        var leagueWeeks = await _dataContext.PickemGroupMatchups
-                            .Where(m => m.SeasonYear == seasonWeek.SeasonYear && m.SeasonWeek == seasonWeek.WeekNumber)
-                            .Select(m => new { m.GroupId, m.SeasonYear, m.SeasonWeek })
-                            .Distinct()
-                            .ToListAsync();
-
-                        _logger.LogInformation(
-                            "Found {Count} leagues with matchups for week {Week}",
-                            leagueWeeks.Count,
-                            seasonWeek.WeekNumber);
-
-                        // Score each league/week combination - EXACTLY like LeagueWeekScoringJob
-                        foreach (var leagueWeek in leagueWeeks)
-                        {
-                            try
-                            {
-                                await _leagueWeekScoringService.ScoreLeagueWeekAsync(
-                                    leagueWeek.GroupId,
-                                    leagueWeek.SeasonYear,
-                                    leagueWeek.SeasonWeek);
-
-                                processedLeagueWeeks++;
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(
-                                    ex,
-                                    "Failed to process league week: leagueId={LeagueId}, year={Year}, week={Week}",
-                                    leagueWeek.GroupId,
-                                    leagueWeek.SeasonYear,
-                                    leagueWeek.SeasonWeek);
-                                errors++;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            ex,
-                            "Failed to process season week {WeekNumber} for year {SeasonYear}",
-                            seasonWeek.WeekNumber,
-                            seasonYear);
-                        errors++;
-                    }
-                }
-
-                _logger.LogInformation(
-                    "Completed backfill for season {SeasonYear}: {ProcessedCount} league-weeks processed, {ErrorCount} errors",
-                    seasonYear,
-                    processedLeagueWeeks,
-                    errors);
-
-                return new BackfillLeagueScoresResult(
-                    seasonYear,
-                    seasonWeeks.Count,
-                    processedLeagueWeeks,
-                    errors,
-                    $"Backfilled {processedLeagueWeeks} league-weeks across {seasonWeeks.Count} weeks for season {seasonYear}"
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Error during backfill for season {SeasonYear}",
-                    seasonYear);
-
-                throw; // Let controller handle it
-            }
-        }
-    }
-
-    public class RejectMatchupPreviewCommand
-    {
-        [JsonPropertyName("previewId")]
-        public Guid PreviewId { get; set; }
-
-        [JsonPropertyName("contestId")]
-        public Guid ContestId { get; set; }
-
-        [JsonPropertyName("rejectionNote")]
-        public required string RejectionNote { get; set; }
-
-        public Guid RejectedByUserId { get; set; }
-    }
-
-    public class ApproveMatchupPreviewCommand
-    {
-        [JsonPropertyName("previewId")]
-        public Guid PreviewId { get; set; }
-
-        public Guid ApprovedByUserId { get; set; }
     }
 }
+

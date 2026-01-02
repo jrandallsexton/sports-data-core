@@ -1,5 +1,7 @@
-﻿using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
+
+using SportsData.Api.Application.Common.Enums;
 
 namespace SportsData.Api.Application.Scoring;
 

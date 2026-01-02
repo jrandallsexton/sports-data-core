@@ -1,4 +1,4 @@
-﻿using SportsData.Api.Application;
+﻿using SportsData.Api.Application.Common.Enums;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical.Models
 {

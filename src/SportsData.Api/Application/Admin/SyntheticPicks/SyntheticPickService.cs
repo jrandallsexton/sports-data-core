@@ -6,6 +6,8 @@ using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.Admin.SyntheticPicks;
 
 /// <summary>

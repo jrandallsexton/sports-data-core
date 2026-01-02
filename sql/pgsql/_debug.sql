@@ -253,4 +253,9 @@ inner join public."Franchise" f on f."Id" = fs."FranchiseId"
 where fsm."OppPointsPerDrive" > fsm."PointsPerDrive"
 order by "PointsPerDrive"
 
+SELECT * FROM "OutboxState" WHERE "OutboxId" = '01000000-9b73-d640-43f5-08de49723593'
 
+SELECT om.*
+       FROM "OutboxMessage" om
+       LEFT JOIN "OutboxState" os ON om."OutboxId" = os."OutboxId"
+       WHERE os."OutboxId" IS NULL;

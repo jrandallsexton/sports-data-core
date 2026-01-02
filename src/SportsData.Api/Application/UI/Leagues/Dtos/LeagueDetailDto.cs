@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Application.UI.Leagues.Dtos
+using SportsData.Api.Application.Common.Enums;
+
+namespace SportsData.Api.Application.UI.Leagues.Dtos
 {
     public class LeagueDetailDto
     {

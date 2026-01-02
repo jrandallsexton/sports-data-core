@@ -80,6 +80,13 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/stream")]
         public async Task<IActionResult> StartStream([FromRoute] Guid contestId, CancellationToken cancellationToken)
         {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+
+            _logger.LogInformation(
+                "StartStream requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                contestId,
+                correlationId);
+
             var contest = await _dataContext.Contests
                 .FirstOrDefaultAsync(c => c.Id == contestId, cancellationToken);
 
@@ -103,7 +110,7 @@ namespace SportsData.Producer.Application.Contests
                 DataProvider = SourceDataProvider.Espn,
                 ContestId = contest.Id,
                 CompetitionId = competition.Id,
-                CorrelationId = Guid.NewGuid()
+                CorrelationId = correlationId
             };
 
             _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(job => 
@@ -232,43 +239,6 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, ContestCount = contestIds.Count });
         }
 
-        [HttpPost("{contestId}/broadcast")]
-        public async Task<IActionResult> BroadcastContest([FromRoute] Guid contestId, CancellationToken cancellationToken)
-        {
-            var correlationId = ActivityExtensions.GetCorrelationId();
-            
-            _logger.LogInformation(
-                "BroadcastContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                contestId,
-                correlationId);
-                
-            var competition = await _dataContext
-                .Competitions.Where(x => x.ContestId == contestId)
-                .FirstOrDefaultAsync(cancellationToken);
 
-            if (competition == null)
-            {
-                _logger.LogWarning(
-                    "Competition not found for broadcast. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                    contestId,
-                    correlationId);
-                return NotFound();
-            }
-
-            var command = new StreamFootballCompetitionCommand()
-            {
-                CompetitionId = competition.Id,
-                ContestId = contestId,
-                Sport = Sport.FootballNcaa,
-                SeasonYear = 2025,
-                DataProvider = SourceDataProvider.Espn,
-                CorrelationId = correlationId
-            };
-
-            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(
-                p => p.ExecuteAsync(command, cancellationToken));
-                
-            return Accepted(new { CorrelationId = correlationId, CompetitionId = competition.Id });
-        }
     }
 }

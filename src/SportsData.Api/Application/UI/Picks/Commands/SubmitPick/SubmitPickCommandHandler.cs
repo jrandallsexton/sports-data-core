@@ -7,6 +7,8 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 
 public interface ISubmitPickCommandHandler

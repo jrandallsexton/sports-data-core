@@ -1,4 +1,5 @@
 using FluentAssertions;
+using SportsData.Api.Application.Common.Enums;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;

@@ -4,6 +4,8 @@ using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 
 public interface IGetTeamCardQueryHandler

@@ -1,9 +1,11 @@
-﻿using MassTransit;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
+
+using SportsData.Api.Application.Common.Enums;
 
 namespace SportsData.Api.Application.Scoring
 {

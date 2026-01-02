@@ -1,4 +1,5 @@
 using AutoFixture;
+using SportsData.Api.Application.Common.Enums;
 
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

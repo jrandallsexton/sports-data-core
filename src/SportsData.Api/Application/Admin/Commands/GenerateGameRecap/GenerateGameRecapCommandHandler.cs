@@ -89,11 +89,26 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
             }
 
             var titleEnd = recap.LastIndexOf("*");
-            var title = titleEnd > 0
-                ? recap.Substring(0, titleEnd).Trim().Trim('*', ' ', '\n', '\r')
-                : "Game Recap";
-
-            recap = recap.Remove(0, titleEnd + 1);
+            string title;
+            
+            if (titleEnd == -1)
+            {
+                // No delimiter found - use entire recap as-is, default title
+                title = "Game Recap";
+                // recap remains unchanged
+            }
+            else if (titleEnd == 0)
+            {
+                // Delimiter at start - no title, remove leading delimiter
+                title = "Game Recap";
+                recap = recap.Substring(1).TrimStart('\n', '\r', ' ', '*');
+            }
+            else
+            {
+                // titleEnd > 0 - extract title before delimiter
+                title = recap.Substring(0, titleEnd).Trim('*', ' ', '\n', '\r');
+                recap = recap.Substring(titleEnd + 1).TrimStart('\n', '\r', ' ', '*');
+            }
 
             var response = new GameRecapResponse
             {

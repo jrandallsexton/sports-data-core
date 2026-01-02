@@ -1,5 +1,4 @@
 using FluentAssertions;
-using SportsData.Api.Application.Common.Enums;
 
 using Moq;
 

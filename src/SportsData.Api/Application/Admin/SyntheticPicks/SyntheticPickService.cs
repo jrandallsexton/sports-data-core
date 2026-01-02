@@ -37,7 +37,8 @@ public class SyntheticPickService : ISyntheticPickService
         PickType pickemGroupPickType,
         Guid syntheticId,
         string syntheticPickStyle,
-        int seasonWeekNumber)
+        int seasonWeekNumber,
+        CancellationToken cancellationToken = default)
     {
         // get the matchups for the group
         var query = new GetLeagueWeekMatchupsQuery
@@ -46,7 +47,7 @@ public class SyntheticPickService : ISyntheticPickService
             LeagueId = pickemGroupId,
             Week = seasonWeekNumber
         };
-        var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query);
+        var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query, cancellationToken);
 
         if (!groupMatchupsResult.IsSuccess)
         {
@@ -103,8 +104,8 @@ public class SyntheticPickService : ISyntheticPickService
                 TiebreakerType = TiebreakerType.TotalPoints
             };
 
-            await _dataContext.UserPicks.AddAsync(synPick);
-            await _dataContext.SaveChangesAsync();
+            await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);
+            await _dataContext.SaveChangesAsync(cancellationToken);
         }
     }
 

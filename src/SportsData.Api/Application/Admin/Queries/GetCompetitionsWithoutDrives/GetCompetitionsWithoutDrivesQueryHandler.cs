@@ -32,7 +32,7 @@ public class GetCompetitionsWithoutDrivesQueryHandler : IGetCompetitionsWithoutD
     {
         try
         {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutDrives();
+            var result = await _canonicalAdminData.GetCompetitionsWithoutDrives(cancellationToken);
             return new Success<List<CompetitionWithoutDrivesDto>>(result);
         }
         catch (Exception ex)

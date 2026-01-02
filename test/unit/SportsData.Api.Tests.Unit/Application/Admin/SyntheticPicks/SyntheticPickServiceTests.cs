@@ -53,7 +53,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -96,7 +97,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -132,7 +134,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -179,7 +182,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.StraightUp,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -238,7 +242,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -294,7 +299,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -352,7 +358,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "aggressive",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
@@ -408,7 +415,8 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
             PickType.AgainstTheSpread,
             syntheticId,
             "moderate",
-            14);
+            14,
+            CancellationToken.None);
 
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();

@@ -32,7 +32,7 @@ public class GetCompetitionsWithoutMetricsQueryHandler : IGetCompetitionsWithout
     {
         try
         {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutMetrics();
+            var result = await _canonicalAdminData.GetCompetitionsWithoutMetrics(cancellationToken);
             return new Success<List<CompetitionWithoutMetricsDto>>(result);
         }
         catch (Exception ex)

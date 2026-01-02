@@ -49,7 +49,7 @@ public class VenuesController : ApiControllerBase
     public async Task<ActionResult<GetVenueByIdResponse>> GetVenueById(
         [FromRoute] string sport,
         [FromRoute] string league,
-        string id)
+        [FromRoute] string id)
     {
         var client = _venueClientFactory.Resolve(sport, league);
         var venues = await client.GetVenueById(id);

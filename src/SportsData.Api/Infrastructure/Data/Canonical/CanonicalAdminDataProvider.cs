@@ -8,10 +8,10 @@ namespace SportsData.Api.Infrastructure.Data.Canonical;
 
 public interface IProvideCanonicalAdminData
 {
-    Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors();
-    Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays();
-    Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives();
-    Task<List<CompetitionWithoutMetricsDto>> GetCompetitionsWithoutMetrics();
+    Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors(CancellationToken cancellationToken = default);
+    Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays(CancellationToken cancellationToken = default);
+    Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives(CancellationToken cancellationToken = default);
+    Task<List<CompetitionWithoutMetricsDto>> GetCompetitionsWithoutMetrics(CancellationToken cancellationToken = default);
 }
 
 public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
@@ -30,13 +30,14 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         _queryProvider = queryProvider;
     }
 
-    public async Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors()
+    public async Task<List<CompetitionWithoutCompetitorsDto>> GetCompetitionsWithoutCompetitors(CancellationToken cancellationToken = default)
     {
         var sql = _queryProvider.GetCompetitionsWithoutCompetitors();
 
         try
         {
-            var results = await _connection.QueryAsync<CompetitionWithoutCompetitorsDto>(sql);
+            var cmd = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var results = await _connection.QueryAsync<CompetitionWithoutCompetitorsDto>(cmd);
             return results.ToList();
         }
         catch (Exception ex)
@@ -46,13 +47,14 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         }
     }
 
-    public async Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays()
+    public async Task<List<CompetitionWithoutPlaysDto>> GetCompetitionsWithoutPlays(CancellationToken cancellationToken = default)
     {
         var sql = _queryProvider.GetCompetitionsWithoutPlays();
 
         try
         {
-            var results = await _connection.QueryAsync<CompetitionWithoutPlaysDto>(sql);
+            var cmd = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var results = await _connection.QueryAsync<CompetitionWithoutPlaysDto>(cmd);
             return results.ToList();
         }
         catch (Exception ex)
@@ -62,13 +64,14 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         }
     }
 
-    public async Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives()
+    public async Task<List<CompetitionWithoutDrivesDto>> GetCompetitionsWithoutDrives(CancellationToken cancellationToken = default)
     {
         var sql = _queryProvider.GetCompetitionsWithoutDrives();
 
         try
         {
-            var results = await _connection.QueryAsync<CompetitionWithoutDrivesDto>(sql);
+            var cmd = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var results = await _connection.QueryAsync<CompetitionWithoutDrivesDto>(cmd);
             return results.ToList();
         }
         catch (Exception ex)
@@ -78,13 +81,14 @@ public class CanonicalAdminDataProvider : IProvideCanonicalAdminData
         }
     }
 
-    public async Task<List<CompetitionWithoutMetricsDto>> GetCompetitionsWithoutMetrics()
+    public async Task<List<CompetitionWithoutMetricsDto>> GetCompetitionsWithoutMetrics(CancellationToken cancellationToken = default)
     {
         var sql = _queryProvider.GetCompetitionsWithoutMetrics();
 
         try
         {
-            var results = await _connection.QueryAsync<CompetitionWithoutMetricsDto>(sql);
+            var cmd = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var results = await _connection.QueryAsync<CompetitionWithoutMetricsDto>(cmd);
             return results.ToList();
         }
         catch (Exception ex)

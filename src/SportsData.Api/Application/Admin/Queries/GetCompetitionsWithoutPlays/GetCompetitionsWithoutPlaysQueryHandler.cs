@@ -32,7 +32,7 @@ public class GetCompetitionsWithoutPlaysQueryHandler : IGetCompetitionsWithoutPl
     {
         try
         {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutPlays();
+            var result = await _canonicalAdminData.GetCompetitionsWithoutPlays(cancellationToken);
             return new Success<List<CompetitionWithoutPlaysDto>>(result);
         }
         catch (Exception ex)

@@ -24,7 +24,7 @@ public class GetCompetitionsWithoutMetricsQueryHandlerTests : ApiTestBase<GetCom
         };
 
         Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutMetrics())
+            .Setup(x => x.GetCompetitionsWithoutMetrics(It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResults);
 
         var handler = Mocker.CreateInstance<GetCompetitionsWithoutMetricsQueryHandler>();
@@ -48,7 +48,7 @@ public class GetCompetitionsWithoutMetricsQueryHandlerTests : ApiTestBase<GetCom
         var expectedResults = new List<CompetitionWithoutMetricsDto>();
 
         Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutMetrics())
+            .Setup(x => x.GetCompetitionsWithoutMetrics(It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResults);
 
         var handler = Mocker.CreateInstance<GetCompetitionsWithoutMetricsQueryHandler>();
@@ -68,7 +68,7 @@ public class GetCompetitionsWithoutMetricsQueryHandlerTests : ApiTestBase<GetCom
     {
         // Arrange
         Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutMetrics())
+            .Setup(x => x.GetCompetitionsWithoutMetrics(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
         var handler = Mocker.CreateInstance<GetCompetitionsWithoutMetricsQueryHandler>();

@@ -208,7 +208,8 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                     group.PickType,
                     metricBot.Id,
                     metricBot.SyntheticPickStyle!,
-                    currentWeek.WeekNumber);
+                    currentWeek.WeekNumber,
+                    cancellationToken);
             }
         }
 

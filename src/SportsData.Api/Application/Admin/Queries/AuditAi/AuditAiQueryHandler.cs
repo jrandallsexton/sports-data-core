@@ -58,7 +58,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
 
                 if (matchup is null)
                 {
-                    _logger.LogCritical("Matchup not found for previewId {previewId}", preview.Id);
+                    _logger.LogError("Matchup not found for previewId {previewId}", preview.Id);
                     errorCount++;
                     continue;
                 }
@@ -67,7 +67,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
                     preview.PredictedStraightUpWinner != matchup.HomeFranchiseSeasonId)
                 {
                     // AI hallucinated the winning franchiseSeasonId
-                    _logger.LogCritical("AI hallucinated the winning franchiseSeasonId for {previewId}", preview.Id);
+                    _logger.LogError("AI hallucinated the winning franchiseSeasonId for {previewId}", preview.Id);
                     errorCount++;
                 }
 
@@ -75,7 +75,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
                 {
                     if (!preview.PredictedSpreadWinner.HasValue)
                     {
-                        _logger.LogCritical("Matchup had a spread but AI did not generate one for previewId {previewId}", preview.Id);
+                        _logger.LogError("Matchup had a spread but AI did not generate one for previewId {previewId}", preview.Id);
                         errorCount++;
                         continue;
                     }
@@ -84,7 +84,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
                         preview.PredictedSpreadWinner != matchup.HomeFranchiseSeasonId)
                     {
                         // AI hallucinated the FranchiseSeasonId of the spread winner
-                        _logger.LogCritical("AI hallucinated the spread winning franchiseSeasonId for {previewId}", preview.Id);
+                        _logger.LogError("AI hallucinated the spread winning franchiseSeasonId for {previewId}", preview.Id);
                         errorCount++;
                     }
                 }

@@ -3,6 +3,7 @@ using FluentAssertions;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 
 using Xunit;
 
@@ -125,5 +126,13 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         result.IsSuccess.Should().BeTrue();
         var json = ((Success<string>)result).Value;
         json.Should().NotBeNullOrWhiteSpace();
+        
+        // Deserialize and verify it's the first preview (preview1)
+        var returnedPreview = json.FromJson<MatchupPreview>();
+        returnedPreview.Should().NotBeNull();
+        returnedPreview!.Id.Should().Be(preview1.Id);
+        returnedPreview.PromptVersion.Should().Be("v1.0");
+        returnedPreview.Overview.Should().Be("First preview");
+        returnedPreview.OverUnderPrediction.Should().Be(OverUnderPrediction.Over);
     }
 }

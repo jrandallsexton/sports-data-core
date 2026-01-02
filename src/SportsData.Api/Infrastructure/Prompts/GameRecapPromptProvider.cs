@@ -22,23 +22,23 @@ public class GameRecapPromptProvider
     /// <summary>
     /// Gets the game recap prompt (cached after first load)
     /// </summary>
-    public Task<(string PromptText, string PromptName)> GetGameRecapPromptAsync()
+    public Task<(string PromptText, string PromptName)> GetGameRecapPromptAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedPromptTask != null)
             return _cachedPromptTask;
 
         lock (_lock)
         {
-            return _cachedPromptTask ??= LoadPromptAsync(BlobName);
+            return _cachedPromptTask ??= LoadPromptAsync(BlobName, cancellationToken);
         }
     }
 
     /// <summary>
     /// Forces a reload of the prompt from blob storage (useful for testing prompt changes)
     /// </summary>
-    public async Task<string> ReloadPromptAsync()
+    public async Task<string> ReloadPromptAsync(CancellationToken cancellationToken = default)
     {
-        var newPrompt = await LoadPromptTextOnlyAsync(BlobName);
+        var newPrompt = await LoadPromptTextOnlyAsync(BlobName, cancellationToken);
 
         lock (_lock)
         {
@@ -48,22 +48,22 @@ public class GameRecapPromptProvider
         return newPrompt;
     }
 
-    private async Task<(string, string)> LoadPromptAsync(string blobName)
+    private async Task<(string, string)> LoadPromptAsync(string blobName, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
 
-        var promptText = await blobStorage.GetFileContentsAsync(Container, blobName);
+        var promptText = await blobStorage.GetFileContentsAsync(Container, blobName, cancellationToken);
         var promptName = Path.GetFileNameWithoutExtension(blobName);
 
         return (promptText, promptName);
     }
 
-    private async Task<string> LoadPromptTextOnlyAsync(string blobName)
+    private async Task<string> LoadPromptTextOnlyAsync(string blobName, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
 
-        return await blobStorage.GetFileContentsAsync(Container, blobName);
+        return await blobStorage.GetFileContentsAsync(Container, blobName, cancellationToken);
     }
 }

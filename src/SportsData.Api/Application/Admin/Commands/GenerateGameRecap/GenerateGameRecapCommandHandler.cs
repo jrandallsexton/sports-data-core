@@ -39,8 +39,8 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
         {
             // Load or reload prompt from blob storage
             var (promptText, promptName) = command.ReloadPrompt
-                ? (await _gameRecapPromptProvider.ReloadPromptAsync(), "game-recap-v2") // TODO: Move to appConfig
-                : await _gameRecapPromptProvider.GetGameRecapPromptAsync();
+                ? (await _gameRecapPromptProvider.ReloadPromptAsync(cancellationToken), "game-recap-v2") // TODO: Move to appConfig
+                : await _gameRecapPromptProvider.GetGameRecapPromptAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Loaded game recap prompt: {PromptName}, Length: {Length} chars",
@@ -80,12 +80,9 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
             {
                 _logger.LogWarning("AI returned empty response for game recap");
                 return new Failure<GameRecapResponse>(
-                    null!,
+                    GameRecapResponse.Empty(),
                     ResultStatus.Error,
-                    new List<ValidationFailure>
-                    {
-                        new ValidationFailure("AI.Response", "AI returned empty response")
-                    });
+                    [new ValidationFailure("AI.Response", "AI returned empty response")]);
             }
 
             var titleEnd = recap.LastIndexOf("*", StringComparison.Ordinal);
@@ -138,10 +135,7 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
             return new Failure<GameRecapResponse>(
                 GameRecapResponse.Empty(),
                 ResultStatus.Error,
-                new List<ValidationFailure>
-                {
-                    new ValidationFailure("GameRecap.GenerationFailed", ex.Message)
-                });
+                [new ValidationFailure("GameRecap.GenerationFailed", ex.Message)]);
         }
     }
 }

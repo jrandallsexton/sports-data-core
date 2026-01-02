@@ -9,6 +9,7 @@ using SportsData.Core.Config;
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Blobs
@@ -16,7 +17,7 @@ namespace SportsData.Core.Infrastructure.Blobs
     public interface IProvideBlobStorage
     {
         Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename);
-        Task<string> GetFileContentsAsync(string containerName, string filename);
+        Task<string> GetFileContentsAsync(string containerName, string filename, CancellationToken cancellationToken = default);
     }
 
     public class BlobStorageProvider : IProvideBlobStorage
@@ -85,7 +86,7 @@ namespace SportsData.Core.Infrastructure.Blobs
             return blob.Uri;
         }
 
-        public async Task<string> GetFileContentsAsync(string containerName, string filename)
+        public async Task<string> GetFileContentsAsync(string containerName, string filename, CancellationToken cancellationToken = default)
         {
             // Normalize names to match your naming conventions
             //containerName = $"{_config.Value.AzureBlobStorageContainerPrefix.ToLower()}-{containerName.ToLower()}";
@@ -107,9 +108,9 @@ namespace SportsData.Core.Infrastructure.Blobs
 
             var blobClient = containerClient.GetBlobClient(filename);
 
-            var response = await blobClient.DownloadAsync();
+            var response = await blobClient.DownloadAsync(cancellationToken);
             using var reader = new StreamReader(response.Value.Content);
-            return await reader.ReadToEndAsync();
+            return await reader.ReadToEndAsync(cancellationToken);
         }
     }
 }

@@ -331,18 +331,20 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return result ?? throw new Exception("Not found");
         }
 
-        public async Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds)
+        public async Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default)
         {
             if (contestIds.Count == 0)
                 return new Dictionary<Guid, MatchupForPreviewDto>();
 
-            var sql = _queryProvider.GetMatchupForPreviewGeneration()
-                .Replace("where c.\"Id\" = @ContestId", "where c.\"Id\" = ANY(@ContestIds)");
+            var sql = _queryProvider.GetMatchupsForPreviewGeneration_Batch();
 
             var results = await _connection.QueryAsync<MatchupForPreviewDto>(
-                sql,
-                new { ContestIds = contestIds.ToArray() },
-                commandType: CommandType.Text
+                new CommandDefinition(
+                    sql,
+                    new { ContestIds = contestIds.ToArray() },
+                    commandType: CommandType.Text,
+                    cancellationToken: cancellationToken
+                )
             );
 
             return results.ToDictionary(m => m.ContestId);

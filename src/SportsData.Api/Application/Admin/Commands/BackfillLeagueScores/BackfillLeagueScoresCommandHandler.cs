@@ -46,7 +46,7 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         if (!validationResult.IsValid)
         {
             return new Failure<BackfillLeagueScoresResult>(
-                null!,
+                BackfillLeagueScoresResult.Empty(),
                 ResultStatus.Validation,
                 validationResult.Errors);
         }
@@ -110,7 +110,8 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
                             await _leagueWeekScoringService.ScoreLeagueWeekAsync(
                                 leagueWeek.GroupId,
                                 leagueWeek.SeasonYear,
-                                leagueWeek.SeasonWeek);
+                                leagueWeek.SeasonWeek,
+                                cancellationToken);
 
                             processedLeagueWeeks++;
                         }

@@ -32,7 +32,7 @@ public interface IProvideCanonicalData
 
     Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
 
-    Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds);
+    Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default);
 
     Task<MatchupResult> GetMatchupResult(Guid contestId);
 

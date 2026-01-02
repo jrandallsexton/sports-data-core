@@ -45,7 +45,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
 
             // Batch load all matchups in a single query
             var contestIds = previews.Select(p => p.ContestId).ToList();
-            var matchupsByContestId = await _canonicalData.GetMatchupsForPreview(contestIds);
+            var matchupsByContestId = await _canonicalData.GetMatchupsForPreview(contestIds, cancellationToken);
 
             var errorCount = 0;
 

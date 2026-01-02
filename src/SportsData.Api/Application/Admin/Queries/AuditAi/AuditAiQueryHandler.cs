@@ -38,25 +38,21 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
     {
         try
         {
-            // load all previews
+            // Load only previews that have associated group matchups (server-side filtering)
             var previews = await _dataContext.MatchupPreviews
+                .Where(mp => _dataContext.PickemGroupMatchups.Any(pgm => pgm.ContestId == mp.ContestId))
                 .ToListAsync(cancellationToken);
 
-            var contestsInGroups = await _dataContext.PickemGroupMatchups
-                .Select(x => x.ContestId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-
-            previews = previews.Where(x => contestsInGroups.Contains(x.ContestId)).ToList();
+            // Batch load all matchups in a single query
+            var contestIds = previews.Select(p => p.ContestId).ToList();
+            var matchupsByContestId = await _canonicalData.GetMatchupsForPreview(contestIds);
 
             var errorCount = 0;
 
             foreach (var preview in previews)
             {
-                // get the matchup used to generate the preview
-                var matchup = await _canonicalData.GetMatchupForPreview(preview.ContestId);
-
-                if (matchup is null)
+                // Look up matchup from dictionary
+                if (!matchupsByContestId.TryGetValue(preview.ContestId, out var matchup))
                 {
                     _logger.LogError("Matchup not found for previewId {previewId}", preview.Id);
                     errorCount++;
@@ -102,7 +98,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
                 ResultStatus.Error,
                 new List<ValidationFailure>
                 {
-                    new ValidationFailure("AuditAi.Failed", $"Failed to audit AI previews: {ex.Message}")
+                    new ValidationFailure("AuditAi.Failed", "An error occurred while auditing AI previews")
                 });
         }
     }

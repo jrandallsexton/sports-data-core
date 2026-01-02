@@ -57,9 +57,9 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
         {
             _logger.LogError(ex, "Error retrieving matchup preview for contest {ContestId}", query.ContestId);
             return new Failure<string>(
-                default!,
+                string.Empty,
                 ResultStatus.Error,
-                [new ValidationFailure("Error", $"Failed to retrieve matchup preview: {ex.Message}")]);
+                [new ValidationFailure("Error", "An error occurred while retrieving the matchup preview")]);
         }
     }
 }

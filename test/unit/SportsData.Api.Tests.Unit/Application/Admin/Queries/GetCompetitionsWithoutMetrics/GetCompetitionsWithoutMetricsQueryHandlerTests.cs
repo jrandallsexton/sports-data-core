@@ -82,6 +82,7 @@ public class GetCompetitionsWithoutMetricsQueryHandlerTests : ApiTestBase<GetCom
         result.Status.Should().Be(ResultStatus.Error);
         result.Should().BeOfType<Failure<List<CompetitionWithoutMetricsDto>>>();
         var failure = (Failure<List<CompetitionWithoutMetricsDto>>)result;
-        failure.Errors.Should().Contain(e => e.ErrorMessage.Contains("Database error"));
+        failure.Errors.Should().Contain(e => e.ErrorMessage == "An error occurred while retrieving competitions without metrics");
+        failure.Value.Should().BeEmpty();
     }
 }

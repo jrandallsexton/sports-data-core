@@ -39,9 +39,9 @@ public class GetCompetitionsWithoutMetricsQueryHandler : IGetCompetitionsWithout
         {
             _logger.LogError(ex, "Failed to get competitions without metrics");
             return new Failure<List<CompetitionWithoutMetricsDto>>(
-                default!,
+                new List<CompetitionWithoutMetricsDto>(),
                 ResultStatus.Error,
-                [new ValidationFailure("competitions", $"Error retrieving competitions without metrics: {ex.Message}")]);
+                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without metrics")]);
         }
     }
 }

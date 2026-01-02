@@ -71,7 +71,7 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
                 return new Failure<GameRecapResponse>(
                     null!,
                     aiResponse.Status,
-                    aiResponse is Failure<string> failure ? failure.Errors : new List<ValidationFailure>());
+                    aiResponse is Failure<string> failure ? failure.Errors : []);
             }
 
             var recap = aiResponse.Value;
@@ -88,26 +88,26 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
                     });
             }
 
-            var titleEnd = recap.LastIndexOf("*");
+            var titleEnd = recap.LastIndexOf("*", StringComparison.Ordinal);
             string title;
             
-            if (titleEnd == -1)
+            switch (titleEnd)
             {
-                // No delimiter found - use entire recap as-is, default title
-                title = "Game Recap";
-                // recap remains unchanged
-            }
-            else if (titleEnd == 0)
-            {
-                // Delimiter at start - no title, remove leading delimiter
-                title = "Game Recap";
-                recap = recap.Substring(1).TrimStart('\n', '\r', ' ', '*');
-            }
-            else
-            {
-                // titleEnd > 0 - extract title before delimiter
-                title = recap.Substring(0, titleEnd).Trim('*', ' ', '\n', '\r');
-                recap = recap.Substring(titleEnd + 1).TrimStart('\n', '\r', ' ', '*');
+                case -1:
+                    // No delimiter found - use entire recap as-is, default title
+                    title = "Game Recap";
+                    // recap remains unchanged
+                    break;
+                case 0:
+                    // Delimiter at start - no title, remove leading delimiter
+                    title = "Game Recap";
+                    recap = recap.Substring(1).TrimStart('\n', '\r', ' ', '*');
+                    break;
+                default:
+                    // titleEnd > 0 - extract title before delimiter
+                    title = recap.Substring(0, titleEnd).Trim('*', ' ', '\n', '\r');
+                    recap = recap.Substring(titleEnd + 1).TrimStart('\n', '\r', ' ', '*');
+                    break;
             }
 
             var response = new GameRecapResponse

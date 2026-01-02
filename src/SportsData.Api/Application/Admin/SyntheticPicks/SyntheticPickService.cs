@@ -56,6 +56,7 @@ public class SyntheticPickService : ISyntheticPickService
         }
 
         var groupMatchups = groupMatchupsResult.Value;
+        var picksAdded = 0;
 
         // iterate each group matchup
         foreach (var matchup in groupMatchups.Matchups)
@@ -65,7 +66,7 @@ public class SyntheticPickService : ISyntheticPickService
                 .Where(x => x.ContestId == matchup.ContestId &&
                             x.PickemGroupId == pickemGroupId &&
                             x.UserId == syntheticId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             // do we already have one?
             if (synPick is not null)
@@ -77,7 +78,7 @@ public class SyntheticPickService : ISyntheticPickService
                 .Where(x => x.ContestId == matchup.ContestId &&
                             x.PredictionType == pickemGroupPickType)
                 .OrderByDescending(x => x.CreatedUtc)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             // no prediction? skip it
             if (prediction is null)
@@ -105,7 +106,15 @@ public class SyntheticPickService : ISyntheticPickService
             };
 
             await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);
+            picksAdded++;
+        }
+
+        // Batch save all picks for this synthetic in this group
+        if (picksAdded > 0)
+        {
             await _dataContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Created {count} metric-based picks for synthetic {syntheticId} in group {groupId}", 
+                picksAdded, syntheticId, pickemGroupId);
         }
     }
 

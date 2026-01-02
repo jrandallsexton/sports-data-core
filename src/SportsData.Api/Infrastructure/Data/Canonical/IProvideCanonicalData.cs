@@ -32,6 +32,8 @@ public interface IProvideCanonicalData
 
     Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
 
+    Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds);
+
     Task<MatchupResult> GetMatchupResult(Guid contestId);
 
     Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);

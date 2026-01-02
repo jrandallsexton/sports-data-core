@@ -82,6 +82,7 @@ public class GetCompetitionsWithoutDrivesQueryHandlerTests : ApiTestBase<GetComp
         result.Status.Should().Be(ResultStatus.Error);
         result.Should().BeOfType<Failure<List<CompetitionWithoutDrivesDto>>>();
         var failure = (Failure<List<CompetitionWithoutDrivesDto>>)result;
-        failure.Errors.Should().Contain(e => e.ErrorMessage.Contains("Database error"));
+        failure.Errors.Should().Contain(e => e.ErrorMessage == "An error occurred while retrieving competitions without drives");
+        failure.Value.Should().BeEmpty();
     }
 }

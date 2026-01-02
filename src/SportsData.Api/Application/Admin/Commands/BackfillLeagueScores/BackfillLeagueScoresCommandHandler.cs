@@ -152,11 +152,11 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         {
             _logger.LogError(ex, "Backfill failed for season {SeasonYear}", command.SeasonYear);
             return new Failure<BackfillLeagueScoresResult>(
-                null!,
+                BackfillLeagueScoresResult.Empty(),
                 ResultStatus.Error,
                 new List<ValidationFailure>
                 {
-                    new ValidationFailure("Backfill.Failed", $"Backfill failed: {ex.Message}")
+                    new ValidationFailure("Backfill.Failed", "An error occurred while backfilling league scores")
                 });
         }
     }

@@ -221,7 +221,8 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         result.IsSuccess.Should().BeFalse();
         var failure = (Failure<BackfillLeagueScoresResult>)result;
         failure.Errors.Should().NotBeEmpty();
-        failure.Errors[0].ErrorMessage.Should().Contain("Backfill failed");
-        failure.Errors[0].ErrorMessage.Should().Contain("Database error");
+        failure.Errors[0].ErrorMessage.Should().Be("An error occurred while backfilling league scores");
+        failure.Value.Should().NotBeNull();
+        failure.Value.Should().Be(BackfillLeagueScoresResult.Empty());
     }
 }

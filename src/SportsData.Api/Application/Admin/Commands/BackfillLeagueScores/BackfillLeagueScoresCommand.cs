@@ -8,4 +8,13 @@ public record BackfillLeagueScoresResult(
     int ProcessedWeeks,
     int Errors,
     string Message
-);
+)
+{
+    public static BackfillLeagueScoresResult Empty() => new(
+        SeasonYear: 0,
+        TotalWeeks: 0,
+        ProcessedWeeks: 0,
+        Errors: 0,
+        Message: string.Empty
+    );
+};

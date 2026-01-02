@@ -39,9 +39,9 @@ public class GetCompetitionsWithoutDrivesQueryHandler : IGetCompetitionsWithoutD
         {
             _logger.LogError(ex, "Failed to get competitions without drives");
             return new Failure<List<CompetitionWithoutDrivesDto>>(
-                default!,
+                new List<CompetitionWithoutDrivesDto>(),
                 ResultStatus.Error,
-                [new ValidationFailure("competitions", $"Error retrieving competitions without drives: {ex.Message}")]);
+                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without drives")]);
         }
     }
 }

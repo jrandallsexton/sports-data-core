@@ -82,6 +82,7 @@ public class GetCompetitionsWithoutCompetitorsQueryHandlerTests : ApiTestBase<Ge
         result.Status.Should().Be(ResultStatus.Error);
         result.Should().BeOfType<Failure<List<CompetitionWithoutCompetitorsDto>>>();
         var failure = (Failure<List<CompetitionWithoutCompetitorsDto>>)result;
-        failure.Errors.Should().Contain(e => e.ErrorMessage.Contains("Database connection failed"));
+        failure.Errors.Should().Contain(e => e.ErrorMessage == "An error occurred while retrieving competitions without competitors");
+        failure.Value.Should().BeEmpty();
     }
 }

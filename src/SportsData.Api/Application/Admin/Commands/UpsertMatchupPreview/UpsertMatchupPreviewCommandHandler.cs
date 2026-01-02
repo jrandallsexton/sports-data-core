@@ -80,7 +80,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
             return new Failure<Guid>(
                 default,
                 ResultStatus.Error,
-                [new ValidationFailure("Error", $"Error upserting preview: {ex.Message}")]);
+                [new ValidationFailure("Error", "An error occurred while upserting the matchup preview")]);
         }
     }
 }

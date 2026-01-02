@@ -42,4 +42,17 @@ public class GameRecapResponse
     /// </summary>
     [JsonPropertyName("generationTimeMs")]
     public long GenerationTimeMs { get; set; }
+
+    /// <summary>
+    /// Creates an empty GameRecapResponse for use in failure scenarios
+    /// </summary>
+    public static GameRecapResponse Empty() => new()
+    {
+        Model = string.Empty,
+        Title = string.Empty,
+        Recap = string.Empty,
+        PromptVersion = string.Empty,
+        EstimatedPromptTokens = 0,
+        GenerationTimeMs = 0
+    };
 }

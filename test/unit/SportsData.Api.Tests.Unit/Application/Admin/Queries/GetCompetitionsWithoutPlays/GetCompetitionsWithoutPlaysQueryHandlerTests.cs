@@ -82,6 +82,7 @@ public class GetCompetitionsWithoutPlaysQueryHandlerTests : ApiTestBase<GetCompe
         result.Status.Should().Be(ResultStatus.Error);
         result.Should().BeOfType<Failure<List<CompetitionWithoutPlaysDto>>>();
         var failure = (Failure<List<CompetitionWithoutPlaysDto>>)result;
-        failure.Errors.Should().Contain(e => e.ErrorMessage.Contains("Database error"));
+        failure.Errors.Should().Contain(e => e.ErrorMessage == "An error occurred while retrieving competitions without plays");
+        failure.Value.Should().BeEmpty();
     }
 }

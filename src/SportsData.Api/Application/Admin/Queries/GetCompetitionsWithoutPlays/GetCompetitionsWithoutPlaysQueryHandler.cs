@@ -39,9 +39,9 @@ public class GetCompetitionsWithoutPlaysQueryHandler : IGetCompetitionsWithoutPl
         {
             _logger.LogError(ex, "Failed to get competitions without plays");
             return new Failure<List<CompetitionWithoutPlaysDto>>(
-                default!,
+                new List<CompetitionWithoutPlaysDto>(),
                 ResultStatus.Error,
-                [new ValidationFailure("competitions", $"Error retrieving competitions without plays: {ex.Message}")]);
+                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without plays")]);
         }
     }
 }

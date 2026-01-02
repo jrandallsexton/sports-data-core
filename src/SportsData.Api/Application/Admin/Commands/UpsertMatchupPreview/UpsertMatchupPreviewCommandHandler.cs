@@ -56,6 +56,9 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
                     [new ValidationFailure(nameof(command.JsonContent), "Invalid preview content")]);
             }
 
+            // Use explicit transaction to ensure atomicity of the upsert operation
+            await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+
             var existing = await _dataContext.MatchupPreviews
                 .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId, cancellationToken);
 
@@ -64,6 +67,8 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
 
             await _dataContext.MatchupPreviews.AddAsync(preview, cancellationToken);
             await _dataContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Upserted matchup preview for contest {ContestId}", preview.ContestId);
 

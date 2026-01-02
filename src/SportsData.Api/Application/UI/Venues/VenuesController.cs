@@ -40,6 +40,11 @@ public class VenuesController : ApiControllerBase
         var client = _venueClientFactory.Resolve(sport, league);
         var venues = await client.GetVenues();
 
+        if (venues is Failure<GetVenuesResponse> failure)
+        {
+            return MapFailure(failure);
+        }
+
         //await _cache.SetRecordAsync(cacheKey, venues.Value);
         return Ok(venues.Value);
     }

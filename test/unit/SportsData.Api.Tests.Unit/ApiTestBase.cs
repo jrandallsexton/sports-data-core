@@ -22,6 +22,7 @@ namespace SportsData.Api.Tests.Unit
             var dbName = Guid.NewGuid().ToString()[..5];
             return new DbContextOptionsBuilder<AppDataContext>()
                 .UseInMemoryDatabase(dbName)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
                 .Options;
         }
     }

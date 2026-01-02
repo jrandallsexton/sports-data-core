@@ -90,7 +90,7 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
                 }
             }
 
-            _logger.LogCritical($"!!! {errorCount} of {previews.Count} AI previews have issues with FranchiseSeasonId !!!");
+            _logger.LogError($"!!! {errorCount} of {previews.Count} AI previews have issues with FranchiseSeasonId !!!");
 
             return new Success<Guid>(query.CorrelationId);
         }

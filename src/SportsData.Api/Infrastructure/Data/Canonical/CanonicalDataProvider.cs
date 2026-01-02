@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Rankings.Dtos;
@@ -318,6 +318,12 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
+        /// <summary>
+        /// Fetches matchup preview data for the specified contest.
+        /// </summary>
+        /// <param name="contestId">The unique identifier of the contest.</param>
+        /// <returns>The <see cref="MatchupForPreviewDto"/> for the specified contest.</returns>
+        /// <exception cref="Exception">Thrown when no matchup is found for the given <paramref name="contestId"/>.</exception>
         public async Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId)
         {
             var sql = _queryProvider.GetMatchupForPreviewGeneration();
@@ -331,6 +337,11 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return result ?? throw new Exception("Not found");
         }
 
+        /// <summary>
+        /// Fetches preview matchup records for the given contest IDs and returns them keyed by contest ID.
+        /// </summary>
+        /// <param name="contestIds">Collection of contest IDs to retrieve preview matchups for.</param>
+        /// <returns>A dictionary mapping each contest `Guid` to its corresponding <see cref="MatchupForPreviewDto"/>. Returns an empty dictionary if <paramref name="contestIds"/> is empty or no records are found.</returns>
         public async Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default)
         {
             if (contestIds.Count == 0)
@@ -350,6 +361,12 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return results.ToDictionary(m => m.ContestId);
         }
 
+        /// <summary>
+        /// Retrieves the matchup result for the specified contest.
+        /// </summary>
+        /// <param name="contestId">The identifier of the contest to fetch the result for.</param>
+        /// <returns>The <see cref="MatchupResult"/> for the contest.</returns>
+        /// <exception cref="Exception">Thrown if no matchup result is found for the provided <paramref name="contestId"/>.</exception>
         public async Task<MatchupResult> GetMatchupResult(Guid contestId)
         {
             var sql = _queryProvider.GetMatchupResultByContestId();

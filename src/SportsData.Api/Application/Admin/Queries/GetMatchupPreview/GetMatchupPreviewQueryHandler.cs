@@ -10,7 +10,14 @@ namespace SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 
 public interface IGetMatchupPreviewQueryHandler
 {
-    Task<Result<string>> ExecuteAsync(GetMatchupPreviewQuery query, CancellationToken cancellationToken);
+    /// <summary>
+/// Retrieves the matchup preview JSON for the contest specified by the query.
+/// </summary>
+/// <param name="query">Query containing the ContestId of the matchup preview to retrieve.</param>
+/// <returns>
+/// A Result containing the preview as a JSON string when successful; a failure Result containing validation failures if the ContestId is empty, a NotFound failure if no preview exists for the specified contest, or an Error failure if an exception occurs during retrieval.
+/// </returns>
+Task<Result<string>> ExecuteAsync(GetMatchupPreviewQuery query, CancellationToken cancellationToken);
 }
 
 public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
@@ -18,6 +25,9 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
     private readonly AppDataContext _dataContext;
     private readonly ILogger<GetMatchupPreviewQueryHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="GetMatchupPreviewQueryHandler"/> with the required dependencies.
+    /// </summary>
     public GetMatchupPreviewQueryHandler(
         AppDataContext dataContext,
         ILogger<GetMatchupPreviewQueryHandler> logger)
@@ -26,6 +36,17 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the matchup preview JSON for the specified contest.
+    /// </summary>
+    /// <param name="query">Query containing the ContestId of the matchup preview to retrieve.</param>
+    /// <returns>
+    /// A Result containing:
+    /// - on success: the preview JSON string;
+    /// - on validation failure: failure with ResultStatus.Validation when ContestId is empty;
+    /// - on not found: failure with ResultStatus.NotFound when no preview exists for the ContestId;
+    /// - on error: failure with ResultStatus.Error when an exception occurs during retrieval.
+    /// </returns>
     public async Task<Result<string>> ExecuteAsync(GetMatchupPreviewQuery query, CancellationToken cancellationToken)
     {
         if (query.ContestId == Guid.Empty)

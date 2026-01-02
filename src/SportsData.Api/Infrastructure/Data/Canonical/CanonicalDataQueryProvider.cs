@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Infrastructure.Data.Canonical;
+namespace SportsData.Api.Infrastructure.Data.Canonical;
 
 public class CanonicalDataQueryProvider
 {
@@ -81,13 +81,29 @@ public class CanonicalDataQueryProvider
 
     public string GetContestResultsByContestIds() => Get("GetContestResultsByContestIds.sql");
 
-    public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
+    /// <summary>
+/// Retrieves the SQL query used to fetch a single matchup for preview generation.
+/// </summary>
+/// <returns>The SQL text contained in "GetMatchupForPreviewGeneration.sql".</returns>
+public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
 
-    public string GetMatchupsForPreviewGeneration_Batch() => Get("GetMatchupsForPreviewGeneration_Batch.sql");
+    /// <summary>
+/// Retrieves the SQL text used to generate matchups previews in batch.
+/// </summary>
+/// <returns>The SQL query string loaded from the embedded resource "GetMatchupsForPreviewGeneration_Batch.sql".</returns>
+public string GetMatchupsForPreviewGeneration_Batch() => Get("GetMatchupsForPreviewGeneration_Batch.sql");
 
-    public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId.sql");
+    /// <summary>
+/// Retrieves the SQL query text used to fetch a matchup result for a specific contest by contest ID.
+/// </summary>
+/// <returns>The SQL query string for retrieving a matchup result by contest ID.</returns>
+public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId.sql");
 
-    public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
+    /// <summary>
+/// Gets the SQL query used to retrieve matchups for the current week.
+/// </summary>
+/// <returns>The SQL query string that returns matchups for the current week.</returns>
+public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
 
     public string GetMatchupsForSeasonWeek() => Get("GetMatchupsForSeasonWeek.sql");
 

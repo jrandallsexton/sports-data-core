@@ -17,7 +17,15 @@ public interface ISyntheticPickService
     /// <param name="syntheticId">The synthetic user ID</param>
     /// <param name="syntheticPickStyle">The pick style to apply (e.g., "moderate", "conservative", "aggressive")</param>
     /// <param name="seasonWeekNumber">The week number to generate picks for</param>
-    /// <param name="cancellationToken">Cancellation token</param>
+    /// <summary>
+        /// Generate metric-based picks for a synthetic user for a specific pickem group and week using the given pick style and group pick type.
+        /// </summary>
+        /// <param name="pickemGroupId">ID of the pickem group to generate picks for.</param>
+        /// <param name="pickemGroupPickType">Pick type for the group (e.g., SU or ATS) that determines how picks are interpreted.</param>
+        /// <param name="syntheticId">ID of the synthetic user receiving the generated picks.</param>
+        /// <param name="syntheticPickStyle">Pick style to apply (e.g., "moderate", "conservative", "aggressive") which influences threshold behavior.</param>
+        /// <param name="seasonWeekNumber">Week number in the season for which to generate picks.</param>
+        /// <param name="cancellationToken">Token to observe for cooperative cancellation.</param>
     Task GenerateMetricBasedPicksForSynthetic(
         Guid pickemGroupId,
         PickType pickemGroupPickType,

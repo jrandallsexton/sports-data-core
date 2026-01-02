@@ -12,7 +12,13 @@ namespace SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 
 public interface IUpsertMatchupPreviewCommandHandler
 {
-    Task<Result<Guid>> ExecuteAsync(UpsertMatchupPreviewCommand command, CancellationToken cancellationToken);
+    /// <summary>
+/// Validates the provided command and upserts the contained matchup preview, returning the associated contest identifier on success.
+/// </summary>
+/// <param name="command">The upsert command containing JSON preview content and related metadata.</param>
+/// <param name="cancellationToken">Token to observe while waiting for the operation to complete.</param>
+/// <returns>A Result containing the contest ID of the upserted matchup preview on success; on failure contains validation or error details.</returns>
+Task<Result<Guid>> ExecuteAsync(UpsertMatchupPreviewCommand command, CancellationToken cancellationToken);
 }
 
 public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHandler
@@ -21,6 +27,9 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
     private readonly IValidator<UpsertMatchupPreviewCommand> _validator;
     private readonly ILogger<UpsertMatchupPreviewCommandHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of UpsertMatchupPreviewCommandHandler with the required data context, validator, and logger.
+    /// </summary>
     public UpsertMatchupPreviewCommandHandler(
         AppDataContext dataContext,
         IValidator<UpsertMatchupPreviewCommand> validator,
@@ -31,6 +40,12 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
         _logger = logger;
     }
 
+    /// <summary>
+    /// Upserts a matchup preview from the provided command and returns the preview's ContestId on success.
+    /// </summary>
+    /// <param name="command">Command containing the JSON representation of the MatchupPreview to upsert.</param>
+    /// <param name="cancellationToken">Cancellation token for the operation.</param>
+    /// <returns>Success containing the preview's ContestId when the upsert completes; Failure with ResultStatus.Validation if validation fails or the JSON content is invalid; Failure with ResultStatus.Error for unexpected errors.</returns>
     public async Task<Result<Guid>> ExecuteAsync(UpsertMatchupPreviewCommand command, CancellationToken cancellationToken)
     {
         // Validate command

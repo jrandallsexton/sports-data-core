@@ -1,4 +1,4 @@
-﻿using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
@@ -30,13 +30,34 @@ public interface IProvideCanonicalData
 
     Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds);
 
-    Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
+    /// <summary>
+/// Retrieves a preview representation of the matchup for the specified contest.
+/// </summary>
+/// <param name="contestId">The unique identifier of the contest.</param>
+/// <returns>A MatchupForPreviewDto representing the matchup for the specified contest.</returns>
+Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
 
-    Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default);
+    /// <summary>
+/// Retrieves preview matchup data for multiple contest IDs.
+/// </summary>
+/// <param name="contestIds">A collection of contest IDs to retrieve previews for.</param>
+/// <param name="cancellationToken">A token to cancel the operation.</param>
+/// <returns>A dictionary mapping each found contest ID to its <see cref="MatchupForPreviewDto"/>; contest IDs that are not found are omitted.</returns>
+Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default);
 
-    Task<MatchupResult> GetMatchupResult(Guid contestId);
+    /// <summary>
+/// Fetches the matchup result for the specified contest identifier.
+/// </summary>
+/// <param name="contestId">The unique identifier of the contest to retrieve the result for.</param>
+/// <returns>The matchup result for the specified contest.</returns>
+Task<MatchupResult> GetMatchupResult(Guid contestId);
 
-    Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
+    /// <summary>
+/// Retrieves the contest IDs that have been finalized for the specified season week.
+/// </summary>
+/// <param name="seasonWeekId">The identifier of the season week to query.</param>
+/// <returns>A list of contest GUIDs that are finalized for the given season week; an empty list if there are none.</returns>
+Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
 
     Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId);
 

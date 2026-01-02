@@ -10,7 +10,13 @@ namespace SportsData.Api.Application.Admin.Queries.AuditAi;
 
 public interface IAuditAiQueryHandler
 {
-    Task<Result<Guid>> ExecuteAsync(AuditAiQuery query, CancellationToken cancellationToken = default);
+    /// <summary>
+/// Audit AI-generated preview predictions for consistency against canonical matchup data.
+/// </summary>
+/// <param name="query">The audit request containing the CorrelationId and any parameters required to identify the previews to check.</param>
+/// <param name="cancellationToken">A token to cancel the audit operation.</param>
+/// <returns>A <see cref="Result{Guid}"/> containing the query's CorrelationId when the audit succeeds; on failure the result contains error details.</returns>
+Task<Result<Guid>> ExecuteAsync(AuditAiQuery query, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -24,6 +30,9 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
     private readonly AppDataContext _dataContext;
     private readonly IProvideCanonicalData _canonicalData;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="AuditAiQueryHandler"/> with the provided logger, data context, and canonical data provider.
+    /// </summary>
     public AuditAiQueryHandler(
         ILogger<AuditAiQueryHandler> logger,
         AppDataContext dataContext,
@@ -34,6 +43,11 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
         _canonicalData = canonicalData;
     }
 
+    /// <summary>
+    /// Audits AI-generated matchup previews for inconsistent or missing franchise season IDs and logs any issues detected.
+    /// </summary>
+    /// <param name="query">The audit query whose CorrelationId is returned on success.</param>
+    /// <returns>The query's CorrelationId wrapped in a success result when the audit completes; on error returns a failure result with error status and a ValidationFailure indicating the audit failed.</returns>
     public async Task<Result<Guid>> ExecuteAsync(AuditAiQuery query, CancellationToken cancellationToken = default)
     {
         try

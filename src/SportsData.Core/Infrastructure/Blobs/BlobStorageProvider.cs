@@ -16,8 +16,22 @@ namespace SportsData.Core.Infrastructure.Blobs
 {
     public interface IProvideBlobStorage
     {
-        Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename);
-        Task<string> GetFileContentsAsync(string containerName, string filename, CancellationToken cancellationToken = default);
+        /// <summary>
+/// Uploads an image stream to the specified blob container and returns the blob's URI.
+/// </summary>
+/// <param name="stream">Stream containing the image data. If the stream supports seeking, its position will be reset to 0 before upload.</param>
+/// <param name="containerName">Name of the target blob container (normalized to lowercase).</param>
+/// <param name="filename">Name to assign to the uploaded blob within the container.</param>
+/// <returns>The URI of the uploaded blob.</returns>
+Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename);
+        /// <summary>
+/// Retrieves the contents of the specified blob and returns them as a string.
+/// </summary>
+/// <param name="containerName">The name of the container containing the blob.</param>
+/// <param name="filename">The name of the blob/file to read.</param>
+/// <param name="cancellationToken">Token to cancel the download and read operations.</param>
+/// <returns>The blob's contents as a string.</returns>
+Task<string> GetFileContentsAsync(string containerName, string filename, CancellationToken cancellationToken = default);
     }
 
     public class BlobStorageProvider : IProvideBlobStorage
@@ -29,6 +43,13 @@ namespace SportsData.Core.Infrastructure.Blobs
             _config = config;
         }
 
+        /// <summary>
+        /// Uploads an image stream to the specified blob container and returns the blob's URI.
+        /// </summary>
+        /// <param name="stream">Stream containing the image data to upload. If the stream supports seeking, its position will be reset to the start.</param>
+        /// <param name="containerName">Name of the target blob container; the name will be normalized to lowercase.</param>
+        /// <param name="filename">The blob name (filename) to create or overwrite in the container.</param>
+        /// <returns>The <see cref="Uri"/> of the uploaded blob.</returns>
         public async Task<Uri> UploadImageAsync(Stream stream, string containerName, string filename)
         {
             // Normalize names
@@ -86,6 +107,13 @@ namespace SportsData.Core.Infrastructure.Blobs
             return blob.Uri;
         }
 
+        /// <summary>
+        /// Retrieves the contents of a blob from the specified container and returns it as a string.
+        /// </summary>
+        /// <param name="containerName">The name of the blob container to read from.</param>
+        /// <param name="filename">The name (path) of the blob within the container.</param>
+        /// <param name="cancellationToken">A token to cancel the download and read operations.</param>
+        /// <returns>The full contents of the blob as a string.</returns>
         public async Task<string> GetFileContentsAsync(string containerName, string filename, CancellationToken cancellationToken = default)
         {
             // Normalize names to match your naming conventions

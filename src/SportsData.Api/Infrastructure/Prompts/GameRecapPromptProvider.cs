@@ -21,7 +21,11 @@ public class GameRecapPromptProvider
 
     /// <summary>
     /// Gets the game recap prompt (cached after first load)
+    /// <summary>
+    /// Get the cached game recap prompt, loading and caching it from blob storage if not already cached.
     /// </summary>
+    /// <param name="cancellationToken">Token to cancel the underlying blob load when a cache miss requires fetching the prompt.</param>
+    /// <returns>A tuple containing `PromptText` (the prompt content) and `PromptName` (the blob file name without its extension).</returns>
     public ValueTask<(string PromptText, string PromptName)> GetGameRecapPromptAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedPrompt.HasValue)
@@ -30,6 +34,11 @@ public class GameRecapPromptProvider
         return new ValueTask<(string PromptText, string PromptName)>(LoadAndCachePromptAsync(cancellationToken));
     }
 
+    /// <summary>
+    /// Loads the prompt from blob storage if it is not already cached and updates the in-memory cache.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token used to cancel the underlying blob I/O operation.</param>
+    /// <returns>A tuple containing the prompt text and the prompt name (the blob file name without extension).</returns>
     private async Task<(string PromptText, string PromptName)> LoadAndCachePromptAsync(CancellationToken cancellationToken)
     {
         Task<(string, string)> loadTask;
@@ -54,7 +63,11 @@ public class GameRecapPromptProvider
 
     /// <summary>
     /// Forces a reload of the prompt from blob storage (useful for testing prompt changes)
+    /// <summary>
+    /// Force reloads the game recap prompt from blob storage and updates the in-memory cache.
     /// </summary>
+    /// <param name="cancellationToken">A token to observe while waiting for the reload operation to complete.</param>
+    /// <returns>The reloaded prompt text.</returns>
     public async Task<string> ReloadPromptAsync(CancellationToken cancellationToken = default)
     {
         lock (_lock)
@@ -72,6 +85,12 @@ public class GameRecapPromptProvider
         return newPrompt;
     }
 
+    /// <summary>
+    /// Load the prompt text from the configured blob container and derive the prompt name from the blob file name.
+    /// </summary>
+    /// <param name="blobName">The blob file name to load (including extension).</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the blob I/O operation.</param>
+    /// <returns>A tuple containing the prompt text and the prompt name (file name without extension).</returns>
     private async Task<(string, string)> LoadPromptAsync(string blobName, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -83,6 +102,12 @@ public class GameRecapPromptProvider
         return (promptText, promptName);
     }
 
+    /// <summary>
+    /// Load the prompt text for the specified blob from the configured prompts container in blob storage.
+    /// </summary>
+    /// <param name="blobName">The blob name (including extension) to read.</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the I/O operation.</param>
+    /// <returns>The contents of the blob as a string.</returns>
     private async Task<string> LoadPromptTextOnlyAsync(string blobName, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();

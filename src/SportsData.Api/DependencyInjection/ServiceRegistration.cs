@@ -76,6 +76,11 @@ namespace SportsData.Api.DependencyInjection
 {
     public static class ServiceRegistration
     {
+        /// <summary>
+        /// Registers application-local services, command/query handlers, processors, and providers into the dependency injection container.
+        /// </summary>
+        /// <param name="mode">The sport mode used to influence registrations or downstream behavior for sport-specific services.</param>
+        /// <returns>The <see cref="IServiceCollection"/> with the local services registered.</returns>
         public static IServiceCollection AddLocalServices(this IServiceCollection services, Sport mode)
         {
             services.AddDataPersistenceExternal();

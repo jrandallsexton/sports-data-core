@@ -8,7 +8,14 @@ namespace SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompeti
 
 public interface IGetCompetitionsWithoutCompetitorsQueryHandler
 {
-    Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
+    /// <summary>
+        /// Retrieves competitions that have no associated competitors.
+        /// </summary>
+        /// <param name="query">Parameters controlling which competitions to retrieve.</param>
+        /// <returns>
+        /// A Result containing a list of CompetitionWithoutCompetitorsDto on success; on failure the Result contains an error status and validation failure details describing the problem.
+        /// </returns>
+        Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
         GetCompetitionsWithoutCompetitorsQuery query, 
         CancellationToken cancellationToken);
 }
@@ -18,6 +25,9 @@ public class GetCompetitionsWithoutCompetitorsQueryHandler : IGetCompetitionsWit
     private readonly IProvideCanonicalAdminData _canonicalAdminData;
     private readonly ILogger<GetCompetitionsWithoutCompetitorsQueryHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="GetCompetitionsWithoutCompetitorsQueryHandler"/> with the required dependencies.
+    /// </summary>
     public GetCompetitionsWithoutCompetitorsQueryHandler(
         IProvideCanonicalAdminData canonicalAdminData,
         ILogger<GetCompetitionsWithoutCompetitorsQueryHandler> logger)
@@ -26,6 +36,14 @@ public class GetCompetitionsWithoutCompetitorsQueryHandler : IGetCompetitionsWit
         _logger = logger;
     }
 
+    /// <summary>
+    /// Fetches the list of competitions that have no competitors.
+    /// </summary>
+    /// <param name="query">Query parameters identifying which competitions to retrieve.</param>
+    /// <returns>
+    /// A Result containing the retrieved list of <see cref="CompetitionWithoutCompetitorsDto"/>.
+    /// On success the result is a success wrapping the list; on failure the result is a failure with an empty list, <see cref="ResultStatus.Error"/>, and a single <see cref="ValidationFailure"/> for the "competitions" key describing the error.
+    /// </returns>
     public async Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
         GetCompetitionsWithoutCompetitorsQuery query,
         CancellationToken cancellationToken)

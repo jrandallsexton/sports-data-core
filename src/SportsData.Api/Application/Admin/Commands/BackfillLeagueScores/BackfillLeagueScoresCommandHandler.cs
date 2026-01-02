@@ -12,7 +12,15 @@ namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 
 public interface IBackfillLeagueScoresCommandHandler
 {
-    Task<Result<BackfillLeagueScoresResult>> ExecuteAsync(BackfillLeagueScoresCommand command, CancellationToken cancellationToken);
+    /// <summary>
+/// Runs a backfill of league scores for the season specified by the command.
+/// </summary>
+/// <param name="command">The backfill command containing the target SeasonYear and related options.</param>
+/// <param name="cancellationToken">Token to observe for cancellation of the backfill operation.</param>
+/// <returns>
+/// A Result containing a BackfillLeagueScoresResult on success with the season year, total completed weeks processed, number of league-weeks scored, number of errors encountered, and a summary message; on failure returns a Result with validation or error details.
+/// </returns>
+Task<Result<BackfillLeagueScoresResult>> ExecuteAsync(BackfillLeagueScoresCommand command, CancellationToken cancellationToken);
 }
 
 public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHandler
@@ -23,6 +31,9 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
     private readonly IValidator<BackfillLeagueScoresCommand> _validator;
     private readonly ILogger<BackfillLeagueScoresCommandHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="BackfillLeagueScoresCommandHandler"/> with the required dependencies.
+    /// </summary>
     public BackfillLeagueScoresCommandHandler(
         AppDataContext dataContext,
         IProvideCanonicalData canonicalData,
@@ -37,6 +48,12 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         _logger = logger;
     }
 
+    /// <summary>
+    /// Runs a backfill of league scores for the specified season, processing each completed week and scoring every league-week combination found.
+    /// </summary>
+    /// <param name="command">The backfill command containing the SeasonYear to process.</param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>A Result containing a BackfillLeagueScoresResult with the season year, total completed weeks found, number of processed league-week entries, error count, and a summary message; returns a Failure with validation errors if the command is invalid or a Failure with an error result if an unexpected error occurs.</returns>
     public async Task<Result<BackfillLeagueScoresResult>> ExecuteAsync(
         BackfillLeagueScoresCommand command,
         CancellationToken cancellationToken)

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Infrastructure.Data;
@@ -20,6 +20,15 @@ namespace SportsData.Api.Application.Contests
         private readonly IEventBus _publishEndpoint;
         private readonly IDateTimeProvider _dateTimeProvider;
 
+        /// <summary>
+        /// Initializes a new instance of ContestRecapProcessor with required services and data providers.
+        /// </summary>
+        /// <param name="logger">Logger for informational and error messages.</param>
+        /// <param name="canonicalDataProvider">Provides canonical contest overview data used to build recaps.</param>
+        /// <param name="dataContext">Entity Framework data context for persisting articles.</param>
+        /// <param name="generateGameRecapHandler">Handler that generates AI-based game recap content.</param>
+        /// <param name="publishEndpoint">Event bus used to publish domain events after an article is created.</param>
+        /// <param name="dateTimeProvider">Provider for the current UTC date/time used when setting timestamps.</param>
         public ContestRecapProcessor(
             ILogger<ContestRecapProcessor> logger,
             IProvideCanonicalData canonicalDataProvider,
@@ -36,6 +45,15 @@ namespace SportsData.Api.Application.Contests
             _dateTimeProvider = dateTimeProvider;
         }
 
+        /// <summary>
+        /// Orchestrates generation and publication of a contest recap article for the specified contest.
+        /// </summary>
+        /// <remarks>
+        /// If an article already exists for the contest the method returns without making changes.
+        /// Otherwise it obtains the canonical contest overview, requests an AI-generated recap, and on success creates and persists an Article and publishes a ContestRecapArticlePublished event.
+        /// If recap generation fails the method returns without creating or publishing an article.
+        /// </remarks>
+        /// <param name="contestId">The identifier of the contest to process.</param>
         public async Task ProcessAsync(Guid contestId)
         {
             // if we already have a recap for this contest, skip processing

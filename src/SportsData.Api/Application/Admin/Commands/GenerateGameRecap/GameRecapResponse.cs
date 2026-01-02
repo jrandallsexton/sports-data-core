@@ -45,7 +45,10 @@ public class GameRecapResponse
 
     /// <summary>
     /// Creates an empty GameRecapResponse for use in failure scenarios
+    /// <summary>
+    /// Create an empty GameRecapResponse used as a failure or placeholder result.
     /// </summary>
+    /// <returns>A GameRecapResponse with all string properties set to empty and numeric properties set to zero.</returns>
     public static GameRecapResponse Empty() => new()
     {
         Model = string.Empty,

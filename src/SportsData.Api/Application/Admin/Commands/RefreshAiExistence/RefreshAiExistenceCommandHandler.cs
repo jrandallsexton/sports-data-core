@@ -14,7 +14,12 @@ namespace SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 
 public interface IRefreshAiExistenceCommandHandler
 {
-    Task<Result<Guid>> ExecuteAsync(RefreshAiExistenceCommand command, CancellationToken cancellationToken = default);
+    /// <summary>
+/// Ensures synthetic users are members of all pickem groups, creates missing synthetic picks for the current season week, and triggers metric-based pick generation for metric bots.
+/// </summary>
+/// <param name="command">The refresh command whose CorrelationId will be returned on success.</param>
+/// <returns>`Result<Guid>` containing the command CorrelationId on success; on failure contains validation failures describing issues (for example: missing current week, failed matchup retrievals, or other errors encountered while refreshing AI existence).</returns>
+Task<Result<Guid>> ExecuteAsync(RefreshAiExistenceCommand command, CancellationToken cancellationToken = default);
 }
 
 public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandler
@@ -24,6 +29,14 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
     private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
     private readonly ILogger<RefreshAiExistenceCommandHandler> _logger;
     private readonly ISyntheticPickService _syntheticPickService;
+    /// <summary>
+    /// Initializes a new instance of <see cref="RefreshAiExistenceCommandHandler"/> with its required dependencies.
+    /// </summary>
+    /// <param name="logger">Logger for diagnostic and operational messages.</param>
+    /// <param name="dataContext">Database context for reading and persisting application data.</param>
+    /// <param name="canonicalData">Provider for canonical application data such as the current season week.</param>
+    /// <param name="syntheticPickService">Service responsible for generating metric-based synthetic picks.</param>
+    /// <param name="getLeagueWeekMatchupsHandler">Query handler used to retrieve league week matchups for a given user and league.</param>
     public RefreshAiExistenceCommandHandler(
         ILogger<RefreshAiExistenceCommandHandler> logger,
         AppDataContext dataContext,
@@ -38,6 +51,11 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
         _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
     }
 
+    /// <summary>
+    /// Refresh synthetic users' existence across leagues for the current season week and generate their picks.
+    /// </summary>
+    /// <param name="command">Command containing the correlation identifier returned on success.</param>
+    /// <returns>`command.CorrelationId` wrapped in a success `Result` when processing completes; a failure `Result` when the current week cannot be found (NotFound) or an error occurs during processing.</returns>
     public async Task<Result<Guid>> ExecuteAsync(RefreshAiExistenceCommand command, CancellationToken cancellationToken = default)
     {
         try

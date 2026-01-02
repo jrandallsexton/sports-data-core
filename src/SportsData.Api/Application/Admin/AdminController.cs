@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
@@ -32,6 +32,9 @@ namespace SportsData.Api.Application.Admin
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly ILogger<AdminController> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of AdminController with dependencies required for generating external identities, enqueuing background jobs, and logging.
+        /// </summary>
         public AdminController(
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideBackgroundJobs backgroundJobProvider,
@@ -60,7 +63,12 @@ namespace SportsData.Api.Application.Admin
         /// Test game recap generation with large prompt + JSON data
         /// Example: POST /admin/ai/game-recap
         /// Body: { "gameDataJson": "{ ... your large JSON ... }", "reloadPrompt": false }
+        /// <summary>
+        /// Generates an AI-produced game recap based on the supplied command.
         /// </summary>
+        /// <param name="command">Parameters identifying the game and options used to produce the recap.</param>
+        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <returns>An ActionResult containing the generated GameRecapResponse on success, or an appropriate error ActionResult otherwise.</returns>
         [HttpPost]
         [Route("ai/game-recap")]
         public async Task<ActionResult<GameRecapResponse>> GenerateGameRecap(
@@ -72,6 +80,11 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Enqueues generation of matchup previews for the specified contest.
+        /// </summary>
+        /// <param name="contestId">Identifier of the contest whose matchup previews should be generated.</param>
+        /// <returns>202 Accepted response containing an object with the command's CorrelationId.</returns>
         [HttpPost]
         [Route("matchup/preview/{contestId}/reset")]
         public IActionResult ResetContestPreview([FromRoute] Guid contestId)
@@ -84,6 +97,16 @@ namespace SportsData.Api.Application.Admin
             return Accepted(new { cmd.CorrelationId });
         }
 
+        /// <summary>
+        /// Upserts a matchup preview for the specified contest.
+        /// </summary>
+        /// <param name="contestId">The contest identifier the preview should be associated with.</param>
+        /// <param name="matchupPreview">The preview content to upsert for the contest.</param>
+        /// <returns>
+        /// An ActionResult containing the contest ID when the upsert succeeds and matches <paramref name="contestId"/> (201 Created),
+        /// a 400 Bad Request with a message if the upsert succeeds but the returned ID does not match <paramref name="contestId"/>,
+        /// or the handler's resulting action result on failure.
+        /// </returns>
         [HttpPost]
         [Route("matchup/preview/{contestId}")]
         public async Task<ActionResult<Guid>> UpsertContestPreview(
@@ -113,6 +136,10 @@ namespace SportsData.Api.Application.Admin
             return Accepted(new { cmd.CorrelationId });
         }
 
+        /// <summary>
+        /// Enqueues a background job to refresh AI existence and returns an accepted response containing a correlation identifier.
+        /// </summary>
+        /// <returns>An HTTP 202 Accepted response whose body is the correlation id for the enqueued refresh operation.</returns>
         [HttpPost]
         [Route("ai-refresh")]
         public IActionResult RefreshAiExistence()
@@ -123,6 +150,10 @@ namespace SportsData.Api.Application.Admin
             return Accepted(correlationId);
         }
 
+        /// <summary>
+        /// Enqueues an asynchronous audit of AI-generated previews and returns a correlation identifier.
+        /// </summary>
+        /// <returns>Accepted (202) containing the correlation id for the enqueued audit.</returns>
         [HttpPost]
         [Route("ai-audit")]
         public IActionResult AiPreviewsAudit()
@@ -133,6 +164,11 @@ namespace SportsData.Api.Application.Admin
             return Accepted(correlationId);
         }
 
+        /// <summary>
+        /// Retrieves the AI-generated matchup preview for the specified contest.
+        /// </summary>
+        /// <param name="contestId">The unique identifier of the contest to fetch the matchup preview for.</param>
+        /// <returns>The matchup preview text when successful; otherwise an appropriate HTTP error result.</returns>
         [HttpGet]
         [Route("matchup/preview/{contestId}")]
         public async Task<ActionResult<string>> GetAiPreview(
@@ -145,6 +181,10 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Retrieves competitions that have no associated competitors.
+        /// </summary>
+        /// <returns>An ActionResult containing a list of CompetitionWithoutCompetitorsDto representing competitions without competitors.</returns>
         [HttpGet]
         [Route("errors/competitions-without-competitors")]
         public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(
@@ -156,6 +196,10 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Retrieves competitions that have no recorded plays.
+        /// </summary>
+        /// <returns>A list of competitions that have no recorded play records.</returns>
         [HttpGet]
         [Route("errors/competitions-without-plays")]
         public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(
@@ -167,6 +211,10 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Retrieves competitions that have no drives.
+        /// </summary>
+        /// <returns>A 200 response containing a list of <see cref="CompetitionWithoutDrivesDto"/> when successful, or an error <see cref="ActionResult"/> otherwise.</returns>
         [HttpGet]
         [Route("errors/competitions-without-drives")]
         public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
@@ -178,6 +226,10 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Retrieves competitions that have no associated metrics.
+        /// </summary>
+        /// <returns>An ActionResult containing a list of CompetitionWithoutMetricsDto for competitions that lack metrics.</returns>
         [HttpGet]
         [Route("errors/competitions-without-metrics")]
         public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(
@@ -213,6 +265,11 @@ namespace SportsData.Api.Application.Admin
             return BadRequest();
         }
 
+        /// <summary>
+        /// Execute an AI response query and return the handler's result.
+        /// </summary>
+        /// <param name="query">The query containing the prompt and options for generating the AI response.</param>
+        /// <returns>An ActionResult containing the AI response string on success, or an appropriate error result otherwise.</returns>
         [HttpPost]
         [Route("ai-test")]
         public async Task<ActionResult<string>> TestAiCommunications(
@@ -229,7 +286,11 @@ namespace SportsData.Api.Application.Admin
         /// Processes all completed weeks for the specified season year.
         /// </summary>
         /// <param name="seasonYear">The season year to backfill (e.g., 2024, 2025)</param>
-        /// <returns>Summary of backfill operation</returns>
+        /// <summary>
+        /// Initiates a backfill of league scores for the specified season and returns the operation result.
+        /// </summary>
+        /// <param name="seasonYear">The year of the season to backfill scores for.</param>
+        /// <returns>A <see cref="BackfillLeagueScoresResult"/> describing the outcome of the backfill operation.</returns>
         [HttpPost]
         [Route("backfill-league-scores/{seasonYear}")]
         public async Task<ActionResult<BackfillLeagueScoresResult>> BackfillLeagueScores(

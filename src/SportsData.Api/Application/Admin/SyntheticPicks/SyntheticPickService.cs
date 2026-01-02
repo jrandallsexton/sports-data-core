@@ -32,6 +32,22 @@ public class SyntheticPickService : ISyntheticPickService
         _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
     }
 
+    /// <summary>
+    /// Generates metric-based synthetic picks for a synthetic user in a pick'em group for a specific week by applying the configured pick style thresholds to existing contest predictions.
+    /// </summary>
+    /// <param name="pickemGroupId">The pick'em group (league) identifier to generate picks for.</param>
+    /// <param name="pickemGroupPickType">The prediction type (StraightUp or AgainstTheSpread) to use when selecting predictions.</param>
+    /// <param name="syntheticId">The synthetic user's identifier for which picks will be created.</param>
+    /// <param name="syntheticPickStyle">The pick style key used to obtain required confidence thresholds when evaluating against-the-spread predictions.</param>
+    /// <param name="seasonWeekNumber">The season week number whose matchups and predictions will be used to generate picks.</param>
+    /// <param name="cancellationToken">Cancellation token to observe while performing database and handler operations.</param>
+    /// <remarks>
+    /// For each matchup in the group, the method:
+    /// - Skips if the synthetic already has a pick for the contest.
+    /// - Uses the most recent matching ContestPrediction to determine a pick via DeterminePickWithThreshold.
+    /// - Adds a new PickemGroupUserPick when appropriate and saves all new picks in a single batch.
+    /// If retrieving matchups fails, the method logs a warning and exits without creating picks.
+    /// </remarks>
     public async Task GenerateMetricBasedPicksForSynthetic(
         Guid pickemGroupId,
         PickType pickemGroupPickType,

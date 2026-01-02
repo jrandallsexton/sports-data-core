@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -38,6 +38,13 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
     private static readonly TimeSpan MaxStreamDuration = TimeSpan.FromHours(5);
     private const int MaxConsecutiveFailures = 10;
 
+    /// <summary>
+    /// Initializes a new FootballCompetitionStreamer with the services required for data access, HTTP calls, publishing, and logging.
+    /// </summary>
+    /// <param name="logger">Logger for diagnostic and operational messages.</param>
+    /// <param name="dataContext">Data context for accessing and updating football-related persistence.</param>
+    /// <param name="httpClientFactory">Factory used to create an HttpClient for external API requests.</param>
+    /// <param name="publishEndpoint">Event bus used to publish document request events.</param>
     public FootballCompetitionStreamer(
         ILogger<FootballCompetitionStreamer> logger,
         FootballDataContext dataContext,
@@ -50,6 +57,11 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         _publishEndpoint = publishEndpoint;
     }
 
+    /// <summary>
+    /// Starts and manages the live-streaming broadcast process for a football competition.
+    /// </summary>
+    /// <param name="command">Contains identifiers and metadata required to locate the competition and coordinate the broadcast (e.g., CompetitionId, CorrelationId).</param>
+    /// <param name="cancellationToken">Token to cancel the overall broadcast operation.</param>
     public async Task ExecuteAsync(StreamFootballCompetitionCommand command, CancellationToken cancellationToken)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
@@ -472,6 +484,13 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         }
     }
 
+    /// <summary>
+    /// Publishes a DocumentRequested event for the specified resource URI and persists the resulting change in the data context.
+    /// </summary>
+    /// <param name="refUri">The URI of the ESPN resource to request as a document.</param>
+    /// <param name="type">The type of document to request.</param>
+    /// <param name="command">The stream command providing metadata (sport, season, data provider, correlation id, and competition id used as ParentId for certain document types).</param>
+    /// <param name="cancellationToken">Cancellation token to observe while publishing and saving.</param>
     private async Task PublishDocumentRequestAsync(
         Uri refUri,
         DocumentType type,
@@ -503,6 +522,13 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         await _dataContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Update the given CompetitionStream's status, timestamps, and failure reason (if any), persist the change, and log the update.
+    /// </summary>
+    /// <param name="stream">The <see cref="CompetitionStream"/> entity to update.</param>
+    /// <param name="status">The new <see cref="CompetitionStreamStatus"/> to assign to the stream.</param>
+    /// <param name="cancellationToken">Token to observe while saving changes to the data store.</param>
+    /// <param name="failureReason">Optional failure message; when <paramref name="status"/> is <see cref="CompetitionStreamStatus.Failed"/>, the message will be stored truncated to 512 characters if longer.</param>
     private async Task UpdateStreamStatusAsync(
         CompetitionStream stream,
         CompetitionStreamStatus status,

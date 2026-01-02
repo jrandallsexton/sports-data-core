@@ -10,7 +10,13 @@ namespace SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 
 public interface IGenerateGameRecapCommandHandler
 {
-    Task<Result<GameRecapResponse>> ExecuteAsync(GenerateGameRecapCommand command, CancellationToken cancellationToken = default);
+    /// <summary>
+/// Generate a game recap from the provided game data using the configured AI prompt.
+/// </summary>
+/// <param name="command">The command containing the game data JSON and options (for example, whether to reload the prompt).</param>
+/// <param name="cancellationToken">A token to cancel the generation operation.</param>
+/// <returns>A Result containing the generated GameRecapResponse on success; on failure contains an error status and validation failures describing what went wrong.</returns>
+Task<Result<GameRecapResponse>> ExecuteAsync(GenerateGameRecapCommand command, CancellationToken cancellationToken = default);
 }
 
 public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
@@ -19,6 +25,12 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
     private readonly GameRecapPromptProvider _gameRecapPromptProvider;
     private readonly ILogger<GenerateGameRecapCommandHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="GenerateGameRecapCommandHandler"/> with the required dependencies.
+    /// </summary>
+    /// <param name="ai">Service used to send prompts to and receive responses from the AI provider.</param>
+    /// <param name="gameRecapPromptProvider">Provider responsible for loading or reloading the game recap prompt.</param>
+    /// <param name="logger">Logger for recording informational messages, warnings, and errors.</param>
     public GenerateGameRecapCommandHandler(
         IProvideAiCommunication ai,
         GameRecapPromptProvider gameRecapPromptProvider,
@@ -29,6 +41,11 @@ public class GenerateGameRecapCommandHandler : IGenerateGameRecapCommandHandler
         _logger = logger;
     }
 
+    /// <summary>
+    /// Generate a game recap from the provided game data using the configured AI provider.
+    /// </summary>
+    /// <param name="command">Command containing the input game JSON (GameDataJson) and a ReloadPrompt flag to optionally reload the prompt template before generation.</param>
+    /// <returns>A Result&lt;GameRecapResponse&gt; that is a Success containing the generated recap (model, title, recap text, prompt version, token estimate, generation time) or a Failure with an empty GameRecapResponse and validation errors (for AI errors, empty AI response, or exceptions during generation).</returns>
     public async Task<Result<GameRecapResponse>> ExecuteAsync(
         GenerateGameRecapCommand command,
         CancellationToken cancellationToken = default)

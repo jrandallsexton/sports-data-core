@@ -1,4 +1,4 @@
-﻿using MassTransit.Initializers;
+using MassTransit.Initializers;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +76,15 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
         }
 
+        /// <summary>
+        /// Starts background streaming for the competition associated with the specified contest.
+        /// </summary>
+        /// <param name="contestId">The identifier of the contest whose competition should be streamed.</param>
+        /// <returns>
+        /// An <see cref="IActionResult"/>:
+        /// - HTTP 200 OK containing a message and the enqueued stream command when streaming is started.
+        /// - HTTP 404 NotFound if the contest or its competition cannot be found.
+        /// </returns>
         [HttpPost]
         [Route("{contestId}/stream")]
         public async Task<IActionResult> StartStream([FromRoute] Guid contestId, CancellationToken cancellationToken)
@@ -198,6 +207,12 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, ContestId = id });
         }
 
+        /// <summary>
+        /// Enqueues replay jobs for all contests in the specified season year and week.
+        /// </summary>
+        /// <param name="seasonYear">The season year containing the week to replay.</param>
+        /// <param name="seasonWeekNumber">The season week number whose contests should be replayed.</param>
+        /// <returns>HTTP 202 Accepted with an object containing the CorrelationId and the number of contests enqueued as ContestCount.</returns>
         [HttpPost("/seasonYear/{seasonYear}/week/{seasonWeekNumber}/replay")]
         public async Task<IActionResult> ReplaySeasonWeekContests(
             [FromRoute] int seasonYear, 

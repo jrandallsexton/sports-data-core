@@ -6,6 +6,8 @@ using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.Admin.SyntheticPicks;
 
 /// <summary>
@@ -35,7 +37,8 @@ public class SyntheticPickService : ISyntheticPickService
         PickType pickemGroupPickType,
         Guid syntheticId,
         string syntheticPickStyle,
-        int seasonWeekNumber)
+        int seasonWeekNumber,
+        CancellationToken cancellationToken = default)
     {
         // get the matchups for the group
         var query = new GetLeagueWeekMatchupsQuery
@@ -44,7 +47,7 @@ public class SyntheticPickService : ISyntheticPickService
             LeagueId = pickemGroupId,
             Week = seasonWeekNumber
         };
-        var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query);
+        var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query, cancellationToken);
 
         if (!groupMatchupsResult.IsSuccess)
         {
@@ -53,6 +56,7 @@ public class SyntheticPickService : ISyntheticPickService
         }
 
         var groupMatchups = groupMatchupsResult.Value;
+        var picksAdded = 0;
 
         // iterate each group matchup
         foreach (var matchup in groupMatchups.Matchups)
@@ -62,7 +66,7 @@ public class SyntheticPickService : ISyntheticPickService
                 .Where(x => x.ContestId == matchup.ContestId &&
                             x.PickemGroupId == pickemGroupId &&
                             x.UserId == syntheticId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             // do we already have one?
             if (synPick is not null)
@@ -74,7 +78,7 @@ public class SyntheticPickService : ISyntheticPickService
                 .Where(x => x.ContestId == matchup.ContestId &&
                             x.PredictionType == pickemGroupPickType)
                 .OrderByDescending(x => x.CreatedUtc)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             // no prediction? skip it
             if (prediction is null)
@@ -101,8 +105,16 @@ public class SyntheticPickService : ISyntheticPickService
                 TiebreakerType = TiebreakerType.TotalPoints
             };
 
-            await _dataContext.UserPicks.AddAsync(synPick);
-            await _dataContext.SaveChangesAsync();
+            await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);
+            picksAdded++;
+        }
+
+        // Batch save all picks for this synthetic in this group
+        if (picksAdded > 0)
+        {
+            await _dataContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Created {count} metric-based picks for synthetic {syntheticId} in group {groupId}", 
+                picksAdded, syntheticId, pickemGroupId);
         }
     }
 

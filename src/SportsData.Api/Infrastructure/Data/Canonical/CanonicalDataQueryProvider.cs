@@ -18,6 +18,7 @@ public class CanonicalDataQueryProvider
         "GetFranchiseSeasonStatisticsForPreviewGeneration.sql",
         "GetLeagueMatchupsByContestIds.sql",
         "GetMatchupForPreviewGeneration.sql",
+        "GetMatchupsForPreviewGeneration_Batch.sql",
         "GetMatchupResultByContestId.sql",
         "GetMatchupsForCurrentWeek.sql",
         "GetMatchupsForSeasonWeek.sql",
@@ -81,6 +82,8 @@ public class CanonicalDataQueryProvider
     public string GetContestResultsByContestIds() => Get("GetContestResultsByContestIds.sql");
 
     public string GetMatchupForPreviewGeneration() => Get("GetMatchupForPreviewGeneration.sql");
+
+    public string GetMatchupsForPreviewGeneration_Batch() => Get("GetMatchupsForPreviewGeneration_Batch.sql");
 
     public string GetMatchupResultByContestId() => Get("GetMatchupResultByContestId.sql");
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 
 using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.User.Dtos;
 using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Config;
@@ -13,6 +14,8 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
+
+using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
 
 namespace SportsData.Api.Tests.Unit.Application.User.Queries.GetMe;
 
@@ -53,7 +56,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new Infrastructure.Data.Entities.User
+        var user = new UserEntity
         {
             Id = userId,
             FirebaseUid = "firebase-123",
@@ -96,7 +99,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         var groupId = Guid.NewGuid();
         var weekId = Guid.NewGuid();
 
-        var user = new Infrastructure.Data.Entities.User
+        var user = new UserEntity
         {
             Id = userId,
             FirebaseUid = "firebase-456",
@@ -166,7 +169,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         var userId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
 
-        var user = new Infrastructure.Data.Entities.User
+        var user = new UserEntity
         {
             Id = userId,
             FirebaseUid = "firebase-789",
@@ -254,7 +257,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
     {
         // Arrange
         var adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var user = new Infrastructure.Data.Entities.User
+        var user = new UserEntity
         {
             Id = adminId,
             FirebaseUid = "firebase-admin",
@@ -288,7 +291,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new Infrastructure.Data.Entities.User
+        var user = new UserEntity
         {
             Id = userId,
             FirebaseUid = "firebase-admin2",
@@ -317,3 +320,6 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         result.Value.IsAdmin.Should().BeTrue();
     }
 }
+
+
+

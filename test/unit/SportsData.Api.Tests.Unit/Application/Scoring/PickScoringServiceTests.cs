@@ -1,9 +1,10 @@
-﻿using AutoFixture;
+using AutoFixture;
 using FluentAssertions;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Api.Application.Common.Enums;
 using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.Scoring;

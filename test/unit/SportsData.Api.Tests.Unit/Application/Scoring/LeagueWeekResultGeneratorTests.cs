@@ -1,9 +1,9 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
-using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;

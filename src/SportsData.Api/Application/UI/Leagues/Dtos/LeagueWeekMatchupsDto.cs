@@ -1,5 +1,7 @@
-﻿using SportsData.Api.Application.UI.Contest.Dtos;
+using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Core.Common;
+
+using SportsData.Api.Application.Common.Enums;
 
 namespace SportsData.Api.Application.UI.Leagues.Dtos
 {

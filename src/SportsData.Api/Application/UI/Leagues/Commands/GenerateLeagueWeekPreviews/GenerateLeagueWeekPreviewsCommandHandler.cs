@@ -7,6 +7,8 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 
 public interface IGenerateLeagueWeekPreviewsCommandHandler

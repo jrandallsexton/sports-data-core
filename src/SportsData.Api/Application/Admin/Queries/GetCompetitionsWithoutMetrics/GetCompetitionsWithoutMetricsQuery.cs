@@ -1,0 +1,3 @@
+namespace SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
+
+public record GetCompetitionsWithoutMetricsQuery;

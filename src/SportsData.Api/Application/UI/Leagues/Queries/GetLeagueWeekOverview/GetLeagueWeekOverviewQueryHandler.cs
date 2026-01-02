@@ -8,6 +8,8 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
 
 public interface IGetLeagueWeekOverviewQueryHandler

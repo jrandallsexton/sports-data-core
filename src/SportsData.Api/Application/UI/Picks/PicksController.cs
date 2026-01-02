@@ -10,6 +10,8 @@ using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Picks;
 
 [ApiController]

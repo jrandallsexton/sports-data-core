@@ -2,6 +2,8 @@ using System.Text.Json.Serialization;
 
 using SportsData.Core.Common;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.UI.Picks.Dtos;
 
 public class SubmitUserPickRequest

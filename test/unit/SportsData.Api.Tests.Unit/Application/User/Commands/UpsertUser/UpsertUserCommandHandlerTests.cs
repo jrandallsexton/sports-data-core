@@ -8,6 +8,8 @@ using SportsData.Core.Common;
 
 using Xunit;
 
+using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
+
 namespace SportsData.Api.Tests.Unit.Application.User.Commands.UpsertUser;
 
 public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandler>
@@ -145,7 +147,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var firebaseUid = "firebase-uid-789";
         var userId = Guid.NewGuid();
 
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = userId,
             FirebaseUid = firebaseUid,
@@ -194,7 +196,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var firebaseUid = "firebase-uid-999";
         var userId = Guid.NewGuid();
 
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = userId,
             FirebaseUid = firebaseUid,
@@ -237,7 +239,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var firebaseUid = "firebase-uid-email-change";
         var userId = Guid.NewGuid();
 
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = userId,
             FirebaseUid = firebaseUid,
@@ -281,7 +283,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var firebaseUid = "firebase-uid-same-email";
         var userId = Guid.NewGuid();
 
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = userId,
             FirebaseUid = firebaseUid,
@@ -382,7 +384,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
 
         // First, create a user directly in the database (simulating it was created by another request)
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
@@ -536,7 +538,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         var firebaseUid = "firebase-uid-created-utc";
         var originalCreatedUtc = DateTime.UtcNow.AddDays(-30);
         
-        var existingUser = new Infrastructure.Data.Entities.User
+        var existingUser = new UserEntity
         {
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
@@ -571,3 +573,6 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         user.LastLoginUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5)); // Should be updated
     }
 }
+
+
+

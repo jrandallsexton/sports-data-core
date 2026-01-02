@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Infrastructure.Data.Entities;

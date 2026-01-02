@@ -2,14 +2,13 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
 
-using League = SportsData.Api.Application.League;
 using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;

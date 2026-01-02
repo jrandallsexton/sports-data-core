@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Application.UI.Picks.Dtos;
+using SportsData.Api.Application.Common.Enums;
+
+namespace SportsData.Api.Application.UI.Picks.Dtos;
 
 public record UserPickDto
 {

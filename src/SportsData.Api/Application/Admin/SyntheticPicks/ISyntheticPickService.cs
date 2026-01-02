@@ -2,6 +2,8 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
+using SportsData.Api.Application.Common.Enums;
+
 namespace SportsData.Api.Application.Admin.SyntheticPicks;
 
 public interface ISyntheticPickService
@@ -15,10 +17,12 @@ public interface ISyntheticPickService
     /// <param name="syntheticId">The synthetic user ID</param>
     /// <param name="syntheticPickStyle">The pick style to apply (e.g., "moderate", "conservative", "aggressive")</param>
     /// <param name="seasonWeekNumber">The week number to generate picks for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task GenerateMetricBasedPicksForSynthetic(
         Guid pickemGroupId,
         PickType pickemGroupPickType,
         Guid syntheticId,
         string syntheticPickStyle,
-        int seasonWeekNumber);
+        int seasonWeekNumber,
+        CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
-﻿using AutoFixture;
+using AutoFixture;
+using SportsData.Api.Application.Common.Enums;
 
 using Moq;
 

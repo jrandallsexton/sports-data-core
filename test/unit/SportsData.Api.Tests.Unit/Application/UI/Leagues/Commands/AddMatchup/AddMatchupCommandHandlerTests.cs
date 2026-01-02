@@ -1,4 +1,5 @@
 using FluentAssertions;
+using SportsData.Api.Application.Common.Enums;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -8,14 +9,11 @@ using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Api.Application;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 
 using Xunit;
-
-using League = SportsData.Api.Application.League;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.AddMatchup;
 

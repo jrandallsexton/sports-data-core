@@ -331,6 +331,25 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return result ?? throw new Exception("Not found");
         }
 
+        public async Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default)
+        {
+            if (contestIds.Count == 0)
+                return new Dictionary<Guid, MatchupForPreviewDto>();
+
+            var sql = _queryProvider.GetMatchupsForPreviewGeneration_Batch();
+
+            var results = await _connection.QueryAsync<MatchupForPreviewDto>(
+                new CommandDefinition(
+                    sql,
+                    new { ContestIds = contestIds.ToArray() },
+                    commandType: CommandType.Text,
+                    cancellationToken: cancellationToken
+                )
+            );
+
+            return results.ToDictionary(m => m.ContestId);
+        }
+
         public async Task<MatchupResult> GetMatchupResult(Guid contestId)
         {
             var sql = _queryProvider.GetMatchupResultByContestId();

@@ -29,6 +29,7 @@ namespace SportsData.Producer.Application.Contests
                 .AsNoTracking()
                 .Where(sw => sw.StartDate < DateTime.UtcNow &&
                              sw.EndDate > DateTime.UtcNow)
+                .OrderByDescending(sw => sw.StartDate)
                 .Take(2)
                 .ToListAsync();
 

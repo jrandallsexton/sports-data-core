@@ -2,7 +2,7 @@ using FluentAssertions;
 
 using Moq;
 
-using SportsData.Api.Application;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -10,8 +10,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
 using Xunit;
-
-using League = SportsData.Api.Application.League;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 

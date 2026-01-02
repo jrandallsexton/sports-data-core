@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Admin;
-using SportsData.Api.Application.AI;
+using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -17,7 +16,7 @@ namespace SportsData.Api.Application.Contests
         private readonly ILogger<ContestRecapProcessor> _logger;
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly AppDataContext _dataContext;
-        private readonly IAiService _aiService;
+        private readonly IGenerateGameRecapCommandHandler _generateGameRecapHandler;
         private readonly IEventBus _publishEndpoint;
         private readonly IDateTimeProvider _dateTimeProvider;
 
@@ -25,14 +24,14 @@ namespace SportsData.Api.Application.Contests
             ILogger<ContestRecapProcessor> logger,
             IProvideCanonicalData canonicalDataProvider,
             AppDataContext dataContext,
-            IAiService aiService,
+            IGenerateGameRecapCommandHandler generateGameRecapHandler,
             IEventBus publishEndpoint,
             IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
             _dataContext = dataContext;
-            _aiService = aiService;
+            _generateGameRecapHandler = generateGameRecapHandler;
             _publishEndpoint = publishEndpoint;
             _dateTimeProvider = dateTimeProvider;
         }
@@ -52,11 +51,19 @@ namespace SportsData.Api.Application.Contests
             // get the contest overview
             var overview = await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
 
-            // generate the recap using AI service
-            var recap = await _aiService.GenerateGameRecapAsync(new GenerateGameRecapCommand()
+            // generate the recap using AI handler
+            var recapResult = await _generateGameRecapHandler.ExecuteAsync(new GenerateGameRecapCommand
             {
                 GameDataJson = overview.ToJson(),
             });
+
+            if (!recapResult.IsSuccess)
+            {
+                _logger.LogError("Failed to generate recap for contest ID {ContestId}", contestId);
+                return;
+            }
+
+            var recap = recapResult.Value;
 
             // save the recap to the database
             var article = new Article

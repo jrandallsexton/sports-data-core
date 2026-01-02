@@ -1,24 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SportsData.Api.Application.Admin;
-
-/// <summary>
-/// Command for testing game recap generation with large JSON data
-/// </summary>
-public class GenerateGameRecapCommand
-{
-    /// <summary>
-    /// Complete game data JSON (from your wku_at_lsu.json example)
-    /// </summary>
-    [JsonPropertyName("gameData")]
-    public required string GameDataJson { get; set; }
-
-    /// <summary>
-    /// Optional: Force reload of prompt from blob storage
-    /// </summary>
-    [JsonPropertyName("reloadPrompt")]
-    public bool ReloadPrompt { get; set; } = false;
-}
+namespace SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 
 /// <summary>
 /// Response from game recap generation
@@ -60,4 +42,17 @@ public class GameRecapResponse
     /// </summary>
     [JsonPropertyName("generationTimeMs")]
     public long GenerationTimeMs { get; set; }
+
+    /// <summary>
+    /// Creates an empty GameRecapResponse for use in failure scenarios
+    /// </summary>
+    public static GameRecapResponse Empty() => new()
+    {
+        Model = string.Empty,
+        Title = string.Empty,
+        Recap = string.Empty,
+        PromptVersion = string.Empty,
+        EstimatedPromptTokens = 0,
+        GenerationTimeMs = 0
+    };
 }

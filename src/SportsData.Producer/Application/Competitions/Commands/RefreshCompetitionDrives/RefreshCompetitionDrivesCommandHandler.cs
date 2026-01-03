@@ -37,7 +37,9 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
         CancellationToken cancellationToken = default)
     {
         var competition = await _dataContext.Competitions
-            .Include(x => x.ExternalIds.Where(y => y.CompetitionId == command.CompetitionId))
+            .Include(x => x.Contest)
+            .Include(x => x.ExternalIds.Where(y => y.Provider == SourceDataProvider.Espn))
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == command.CompetitionId, cancellationToken);
 
         if (competition is null)
@@ -50,14 +52,14 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
         }
 
         var competitionExternalId = competition.ExternalIds
-            .FirstOrDefault();
+            .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
 
         if (competitionExternalId is null)
         {
             return new Failure<Guid>(
                 command.CompetitionId,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(command.CompetitionId), "Competition ExternalId Not Found")]
+                [new ValidationFailure(nameof(command.CompetitionId), "Competition ESPN ExternalId Not Found")]
             );
         }
 
@@ -81,19 +83,19 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
 
         var drivesRef = EspnUriMapper.CompetitionRefToCompetitionDrivesRef(sourceUrl);
         var drivesIdentity = _externalRefIdentityGenerator.Generate(drivesRef);
-
+        
         // request sourcing?
         await _eventBus.Publish(new DocumentRequested(
             Id: drivesIdentity.UrlHash,
             ParentId: command.CompetitionId.ToString(),
             Uri: new Uri(drivesIdentity.CleanUrl),
-            Sport: Sport.FootballNcaa, // TODO: remove hard-coding
-            SeasonYear: 2025, // TODO: remove hard-coding
+            Sport: competition.Contest.Sport,
+            SeasonYear: competition.Contest.SeasonYear,
             DocumentType: DocumentType.EventCompetitionDrive,
             SourceDataProvider: SourceDataProvider.Espn, // TODO: remove hard-coding
             CorrelationId: Guid.NewGuid(),
             CausationId: CausationId.Producer.CompetitionService
-        ));
+        ), cancellationToken);
 
         await _dataContext.SaveChangesAsync(cancellationToken);
 

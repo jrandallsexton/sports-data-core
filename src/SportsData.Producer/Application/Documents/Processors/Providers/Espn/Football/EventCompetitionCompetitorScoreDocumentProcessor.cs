@@ -181,10 +181,8 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             score.ModifiedBy = command.CorrelationId;
             score.ModifiedUtc = DateTime.UtcNow;
 
-            await _dataContext.SaveChangesAsync();
-
-            // Publish event for Contest update (navigation properties validated above)
-            _logger.LogInformation("Publishing CompetitorScoreUpdated event. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
+            // Publish event BEFORE SaveChangesAsync to use MassTransit outbox pattern (navigation properties validated above)
+            _logger.LogInformation("Queueing CompetitorScoreUpdated event to outbox. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
                 competitor.Competition!.ContestId,
                 competitor.FranchiseSeasonId,
                 (int)dto.Value);
@@ -196,6 +194,12 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));
+
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Score update persisted and event queued. CompetitorId={CompetitorId}, Value={Value}", 
+                competitionCompetitorId, 
+                dto.Value);
         }
         else
         {
@@ -209,10 +213,8 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
 
             await _dataContext.CompetitionCompetitorScores.AddAsync(entity);
             
-            await _dataContext.SaveChangesAsync();
-
-            // Publish event for new score (initial score creation, navigation properties validated above)
-            _logger.LogInformation("New score created, publishing CompetitorScoreUpdated event. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
+            // Publish event BEFORE SaveChangesAsync to use MassTransit outbox pattern (navigation properties validated above)
+            _logger.LogInformation("Queueing CompetitorScoreUpdated event to outbox. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
                 competitor.Competition!.ContestId,
                 competitor.FranchiseSeasonId,
                 (int)dto.Value);
@@ -224,9 +226,15 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));
+
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("New score persisted and event queued. CompetitorId={CompetitorId}, Value={Value}", 
+                competitionCompetitorId, 
+                dto.Value);
         }
 
-        _logger.LogInformation("Persisted CompetitorScore. CompetitorId={CompetitorId}, Value={Value}", 
+        _logger.LogInformation("CompetitorScore processing completed. CompetitorId={CompetitorId}, Value={Value}", 
             competitionCompetitorId, 
             dto.Value);
     }

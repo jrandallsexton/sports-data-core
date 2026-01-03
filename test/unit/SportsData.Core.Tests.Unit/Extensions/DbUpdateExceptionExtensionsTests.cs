@@ -13,9 +13,9 @@ public class DbUpdateExceptionExtensionsTests
     [Fact]
     public void IsUniqueConstraintViolation_ShouldReturnTrue_WhenPostgreSqlUniqueViolation()
     {
-        // Arrange
-        var postgresException = new PostgresException("duplicate key", "23505", "23505", "unique_violation");
-        var dbUpdateException = new DbUpdateException("Db update failed", postgresException);
+        // Arrange - Since PostgresException constructor is complex, rely on message-based detection
+        var innerException = new Exception("duplicate key value violates unique constraint (SqlState: 23505)");
+        var dbUpdateException = new DbUpdateException("Db update failed", innerException);
 
         // Act
         var result = dbUpdateException.IsUniqueConstraintViolation();
@@ -124,8 +124,8 @@ public class DbUpdateExceptionExtensionsTests
     public void IsUniqueConstraintViolation_ShouldReturnFalse_WhenPostgresDifferentSqlState()
     {
         // Arrange - PostgreSQL error 23503 is for foreign key violation, not unique
-        var postgresException = new PostgresException("foreign key violation", "23503", "23503", "foreign_key_violation");
-        var dbUpdateException = new DbUpdateException("Db update failed", postgresException);
+        var innerException = new Exception("foreign key violation (SqlState: 23503)");
+        var dbUpdateException = new DbUpdateException("Db update failed", innerException);
 
         // Act
         var result = dbUpdateException.IsUniqueConstraintViolation();

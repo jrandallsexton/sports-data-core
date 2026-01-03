@@ -84,6 +84,7 @@ function GameStatus({
           {homeHasPossession && <span className="possession-indicator">🏈</span>}
         </span>
         {isScoringPlay && (
+          // TODO: Determine score type (TD, FG, etc.) for better indicator
           <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
         )}
       </>

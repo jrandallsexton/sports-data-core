@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -84,20 +85,19 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
         }
 
-        var competitionCompetitorExists = await _dataContext.CompetitionCompetitors
+        // Fetch the competitor with navigation properties to get Contest and FranchiseSeason info
+        var competitor = await _dataContext.CompetitionCompetitors
+            .Include(x => x.Competition)
+                .ThenInclude(x => x.Contest)
             .AsNoTracking()
-            .AnyAsync(x => x.Id == competitionCompetitorId);
+            .FirstOrDefaultAsync(x => x.Id == competitionCompetitorId);
 
-        if (!competitionCompetitorExists)
+        if (competitor is null)
         {
-            var competitionCompetitorRef =
-                EspnUriMapper.CompetitionCompetitorScoreRefToCompetitionCompetitorRef(dto.Ref);
-            var competitionCompetitorIdentity =
-                _externalRefIdentityGenerator.Generate(competitionCompetitorRef);
+            var competitionCompetitorRef = EspnUriMapper.CompetitionCompetitorScoreRefToCompetitionCompetitorRef(dto.Ref);
+            var competitionCompetitorIdentity = _externalRefIdentityGenerator.Generate(competitionCompetitorRef);
 
-            var competitionRef =
-                EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(new Uri(competitionCompetitorIdentity
-                    .CleanUrl));
+            var competitionRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(new Uri(competitionCompetitorIdentity.CleanUrl));
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
 
             if (!_config.EnableDependencyRequests)
@@ -133,6 +133,21 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             }
         }
 
+        // Validate navigation properties are loaded
+        if (competitor.Competition is null)
+        {
+            _logger.LogError("Competition not loaded for CompetitionCompetitor. CompetitorId={CompetitorId}", competitionCompetitorId);
+            throw new InvalidOperationException($"Competition not loaded for CompetitionCompetitor {competitionCompetitorId}");
+        }
+
+        if (competitor.Competition.Contest is null)
+        {
+            _logger.LogError("Contest not loaded for Competition. CompetitorId={CompetitorId}, CompetitionId={CompetitionId}", 
+                competitionCompetitorId,
+                competitor.Competition.Id);
+            throw new InvalidOperationException($"Contest not loaded for Competition {competitor.Competition.Id}");
+        }
+
         var scoreIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
         var score = await _dataContext.CompetitionCompetitorScores
@@ -141,15 +156,46 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
 
         if (score != null)
         {
-            _logger.LogInformation("Updating existing CompetitorScore. CompetitorId={CompetitorId}, ScoreId={ScoreId}", 
+            _logger.LogInformation("Existing CompetitorScore found. CompetitorId={CompetitorId}, ScoreId={ScoreId}", 
                 competitionCompetitorId, 
                 scoreIdentity.CanonicalId);
 
+            // Check if score actually changed before updating
+            bool scoreChanged = score.Value != dto.Value || score.DisplayValue != dto.DisplayValue;
+            
+            if (!scoreChanged)
+            {
+                _logger.LogInformation("Score unchanged, skipping update. CompetitorId={CompetitorId}, Value={Value}",
+                    competitionCompetitorId,
+                    dto.Value);
+                return;
+            }
+
+            _logger.LogInformation("Score changed, updating. CompetitorId={CompetitorId}, OldValue={OldValue}, NewValue={NewValue}",
+                competitionCompetitorId,
+                score.Value,
+                dto.Value);
+            
             score.Value = dto.Value;
             score.DisplayValue = dto.DisplayValue;
             score.ModifiedBy = command.CorrelationId;
             score.ModifiedUtc = DateTime.UtcNow;
-            score.SourceDescription = dto.Source?.Description ?? score.SourceDescription;
+
+            await _dataContext.SaveChangesAsync();
+
+            // Publish event for Contest update (navigation properties validated above)
+            _logger.LogInformation("Publishing CompetitorScoreUpdated event. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
+                competitor.Competition!.ContestId,
+                competitor.FranchiseSeasonId,
+                (int)dto.Value);
+
+            await _publishEndpoint.Publish(new CompetitorScoreUpdated(
+                ContestId: competitor.Competition!.ContestId,
+                FranchiseSeasonId: competitor.FranchiseSeasonId,
+                Score: (int)dto.Value,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
+            ));
         }
         else
         {
@@ -162,9 +208,23 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 command.CorrelationId);
 
             await _dataContext.CompetitionCompetitorScores.AddAsync(entity);
-        }
+            
+            await _dataContext.SaveChangesAsync();
 
-        await _dataContext.SaveChangesAsync();
+            // Publish event for new score (initial score creation, navigation properties validated above)
+            _logger.LogInformation("New score created, publishing CompetitorScoreUpdated event. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
+                competitor.Competition!.ContestId,
+                competitor.FranchiseSeasonId,
+                (int)dto.Value);
+
+            await _publishEndpoint.Publish(new CompetitorScoreUpdated(
+                ContestId: competitor.Competition!.ContestId,
+                FranchiseSeasonId: competitor.FranchiseSeasonId,
+                Score: (int)dto.Value,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
+            ));
+        }
 
         _logger.LogInformation("Persisted CompetitorScore. CompetitorId={CompetitorId}, Value={Value}", 
             competitionCompetitorId, 

@@ -72,20 +72,37 @@ function GameStatus({
     const awayHasPossession = possessionFranchiseSeasonId === awayFranchiseSeasonId;
     const homeHasPossession = possessionFranchiseSeasonId === homeFranchiseSeasonId;
 
+    const liveContent = (
+      <>
+        <span className="result-label live-indicator">LIVE</span>
+        {period && clock && (
+          <span className="game-clock">{period} - {clock}</span>
+        )}
+        <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
+          {awayHasPossession && <span className="possession-indicator">🏈</span>}
+          {awayShort} {awayScore} - {homeScore} {homeShort}
+          {homeHasPossession && <span className="possession-indicator">🏈</span>}
+        </span>
+        {isScoringPlay && (
+          <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+        )}
+      </>
+    );
+
     return (
       <div className={`game-result ${isScoringPlay ? 'scoring-play' : ''}`}>
         <div className="final-score">
-          <span className="result-label live-indicator">LIVE</span>
-          {period && clock && (
-            <span className="game-clock">{period} - {clock}</span>
-          )}
-          <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
-            {awayHasPossession && <span className="possession-indicator">🏈</span>}
-            {awayShort} {awayScore} - {homeScore} {homeShort}
-            {homeHasPossession && <span className="possession-indicator">🏈</span>}
-          </span>
-          {isScoringPlay && (
-            <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+          {contestId ? (
+            <Link
+              to={`/app/sport/football/ncaa/contest/${contestId}`}
+              className="final-score-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {liveContent}
+            </Link>
+          ) : (
+            liveContent
           )}
         </div>
       </div>

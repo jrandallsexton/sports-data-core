@@ -81,9 +81,30 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
             );
         }
 
-        var drivesRef = EspnUriMapper.CompetitionRefToCompetitionDrivesRef(sourceUrl);
+        Uri drivesRef;
+        try
+        {
+            drivesRef = EspnUriMapper.CompetitionRefToCompetitionDrivesRef(sourceUrl);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new Failure<Guid>(
+                command.CompetitionId,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(competitionExternalId.SourceUrl), $"ESPN URI mapping failed: {ex.Message}. SourceUrl: {competitionExternalId.SourceUrl}")]
+            );
+        }
+        catch (Exception ex)
+        {
+            return new Failure<Guid>(
+                command.CompetitionId,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(competitionExternalId.SourceUrl), $"Unexpected error mapping ESPN URI: {ex.Message}. SourceUrl: {competitionExternalId.SourceUrl}")]
+            );
+        }
+
         var drivesIdentity = _externalRefIdentityGenerator.Generate(drivesRef);
-        
+
         // request sourcing?
         await _eventBus.Publish(new DocumentRequested(
             Id: drivesIdentity.UrlHash,

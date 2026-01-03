@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
+
+public record CalculateCompetitionMetricsCommand(Guid CompetitionId);

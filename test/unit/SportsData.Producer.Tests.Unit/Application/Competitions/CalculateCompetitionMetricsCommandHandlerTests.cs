@@ -8,7 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Producer.Application.Competitions;
+using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
@@ -19,11 +19,11 @@ using Xunit.Abstractions;
 namespace SportsData.Producer.Tests.Unit.Application.Competitions
 {
     /// <summary>
-    /// Tests for CompetitionMetricsService using real game data.
+    /// Tests for CalculateCompetitionMetricsCommandHandler using real game data.
     /// Optimized to reduce test setup overhead by consolidating related tests.
     /// </summary>
     [Collection("Sequential")] // Force sequential to avoid DB contention
-    public class CompetitionMetricServiceTests : ProducerTestBase<CompetitionMetricsService>, IAsyncLifetime
+    public class CalculateCompetitionMetricsCommandHandlerTests : ProducerTestBase<CalculateCompetitionMetricsCommandHandler>, IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
         
@@ -33,7 +33,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         private Guid _awayTeamId;
         private Competition? _competition;
 
-        public CompetitionMetricServiceTests(ITestOutputHelper output)
+        public CalculateCompetitionMetricsCommandHandlerTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -60,16 +60,20 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         #region CalculateCompetitionMetrics Tests
 
         [Fact]
-        public async Task CalculateCompetitionMetrics_WhenCompetitionNotFound_LogsErrorAndReturns()
+        public async Task ExecuteAsync_WhenCompetitionNotFound_ReturnsFailure()
         {
             // Arrange
             var nonExistentCompetitionId = Guid.NewGuid();
-            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            var command = new CalculateCompetitionMetricsCommand(nonExistentCompetitionId);
 
             // Act
-            await sut.CalculateCompetitionMetrics(nonExistentCompetitionId);
+            var result = await sut.ExecuteAsync(command, CancellationToken.None);
 
             // Assert
+            result.Should().BeOfType<Failure<Guid>>();
+            result.Status.Should().Be(ResultStatus.NotFound);
+
             var metrics = await FootballDataContext.CompetitionMetrics
                 .Where(m => m.CompetitionId == nonExistentCompetitionId)
                 .ToListAsync();
@@ -77,19 +81,23 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         }
 
         [Fact]
-        public async Task CalculateCompetitionMetrics_WithRealGameData_CreatesMetricsForBothTeams()
+        public async Task ExecuteAsync_WithRealGameData_CreatesMetricsForBothTeams()
         {
             // Arrange
-            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            var command = new CalculateCompetitionMetricsCommand(_competitionId);
 
             // Act
-            await sut.CalculateCompetitionMetrics(_competitionId);
+            var result = await sut.ExecuteAsync(command, CancellationToken.None);
 
             // Assert
+            result.Should().BeOfType<Success<Guid>>();
+            result.Value.Should().Be(_competitionId);
+
             var metrics = await FootballDataContext.CompetitionMetrics
                 .Where(m => m.CompetitionId == _competitionId)
                 .ToListAsync();
-            
+
             metrics.Should().HaveCount(2);
             metrics.Should().Contain(m => m.FranchiseSeasonId == _homeTeamId);
             metrics.Should().Contain(m => m.FranchiseSeasonId == _awayTeamId);
@@ -104,15 +112,18 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         /// This replaces multiple individual metric tests to improve performance.
         /// </summary>
         [Fact]
-        public async Task CalculateCompetitionMetrics_WithRealGameData_ProducesValidMetricsForAllCategories()
+        public async Task ExecuteAsync_WithRealGameData_ProducesValidMetricsForAllCategories()
         {
             // Arrange
-            var sut = Mocker.CreateInstance<CompetitionMetricsService>();
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            var command = new CalculateCompetitionMetricsCommand(_competitionId);
 
             // Act
-            await sut.CalculateCompetitionMetrics(_competitionId);
+            var result = await sut.ExecuteAsync(command, CancellationToken.None);
 
             // Assert
+            result.Should().BeOfType<Success<Guid>>();
+
             var homeMetric = await FootballDataContext.CompetitionMetrics
                 .FirstAsync(m => m.FranchiseSeasonId == _homeTeamId);
             var awayMetric = await FootballDataContext.CompetitionMetrics

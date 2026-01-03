@@ -4,6 +4,12 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
+using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
+using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
+using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
@@ -130,8 +136,14 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<ISeasonWeekService, SeasonWeekService>();
 
-            services.AddScoped<ICompetitionMetricService, CompetitionMetricsService>();
-            services.AddScoped<ICompetitionService, CompetitionService>();
+            // Competition Commands
+            services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
+            services.AddScoped<ICalculateCompetitionMetricsCommandHandler, CalculateCompetitionMetricsCommandHandler>();
+            services.AddScoped<IEnqueueCompetitionMetricsCalculationCommandHandler, EnqueueCompetitionMetricsCalculationCommandHandler>();
+            services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
+            services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
+            services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
+            services.AddScoped<IRefreshAllCompetitionMediaCommandHandler, RefreshAllCompetitionMediaCommandHandler>();
 
             services.AddScoped<IFranchiseSeasonMetricsService, FranchiseSeasonMetricsService>();
 

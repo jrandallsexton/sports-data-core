@@ -8,6 +8,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -176,8 +177,9 @@ namespace SportsData.Producer.Application.Contests
                 competitionId,
                 correlationId);
 
-            _backgroundJobProvider.Enqueue<ICompetitionService>(
-                p => p.RefreshCompetitionMedia(competitionId, true));
+            var command = new RefreshCompetitionMediaCommand(competitionId, RemoveExisting: true);
+            _backgroundJobProvider.Enqueue<IRefreshCompetitionMediaCommandHandler>(
+                h => h.ExecuteAsync(command, CancellationToken.None));
                 
             return Accepted(correlationId);
         }

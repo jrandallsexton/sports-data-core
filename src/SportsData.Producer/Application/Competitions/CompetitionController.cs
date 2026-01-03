@@ -1,90 +1,75 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Core.Common;
-using SportsData.Core.Processing;
+using SportsData.Core.Extensions;
+using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
+using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
+using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
 
-namespace SportsData.Producer.Application.Competitions
+namespace SportsData.Producer.Application.Competitions;
+
+[Route("api/competition")]
+[ApiController]
+public class CompetitionController : ControllerBase
 {
-    [Route("api/competition")]
-    [ApiController]
-    public class CompetitionController : ControllerBase
+    [HttpPost("{competitionId}/metrics/generate")]
+    public async Task<ActionResult<Guid>> GenerateMetrics(
+        [FromRoute] Guid competitionId,
+        [FromServices] IEnqueueCompetitionMetricsCalculationCommandHandler handler,
+        CancellationToken cancellationToken)
     {
-        private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly ICompetitionService _competitionService;
+        var command = new EnqueueCompetitionMetricsCalculationCommand(competitionId);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-        public CompetitionController(
-            IProvideBackgroundJobs backgroundJobProvider,
-            ICompetitionService competitionService)
-        {
-            _backgroundJobProvider = backgroundJobProvider;
-            _competitionService = competitionService;
-        }
+        return result.ToActionResult();
+    }
 
-        [HttpPost]
-        [Route("{competitionId}/metrics/generate")]
-        public IActionResult GenerateMetrics([FromRoute] Guid competitionId)
-        {
-            _backgroundJobProvider.Enqueue<ICompetitionMetricService>(p =>
-                p.CalculateCompetitionMetrics(competitionId));
+    [HttpPost("metrics/generate/{seasonYear}")]
+    public async Task<ActionResult<RefreshCompetitionMetricsResult>> RefreshCompetitionMetrics(
+        [FromRoute] int seasonYear,
+        [FromServices] IRefreshCompetitionMetricsCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshCompetitionMetricsCommand(seasonYear);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-            return Accepted(new { Message = $"Competition {competitionId} metric generation initiated." });
-        }
+        return result.ToActionResult();
+    }
 
-        [HttpPost]
-        [Route("metrics/generate")]
-        public IActionResult RefreshCompetitionMetrics()
-        {
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMetrics(2025)); // TODO: Remove this hard-coded value
+    [HttpPost("{competitionId}/drives/refresh")]
+    public async Task<ActionResult<Guid>> RefreshDrives(
+        [FromRoute] Guid competitionId,
+        [FromServices] IRefreshCompetitionDrivesCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshCompetitionDrivesCommand(competitionId);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-            return Accepted(new { Message = $"Competition metric generation initiated." });
-        }
+        return result.ToActionResult();
+    }
 
-        [HttpPost]
-        [Route("{competitionId}/drives/refresh")]
-        public async Task<IActionResult> RefreshDrives([FromRoute] Guid competitionId)
-        {
-            var result = await _competitionService.RefreshCompetitionDrives(competitionId);
+    [HttpPost("{competitionId}/media/refresh")]
+    public async Task<ActionResult<Guid>> RefreshMedia(
+        [FromRoute] Guid competitionId,
+        [FromServices] IEnqueueCompetitionMediaRefreshCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new EnqueueCompetitionMediaRefreshCommand(competitionId, RemoveExisting: true);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-            if (result.IsSuccess)
-            {
-                return Accepted(new { Message = $"Competition {competitionId} drives refresh initiated." });
-            }
+        return result.ToActionResult();
+    }
 
-            // TODO: refactor common failure handling
-            if (result is Failure<Guid> failure)
-            {
-                return result.Status switch
-                {
-                    ResultStatus.Validation => BadRequest(new { failure.Errors }),
-                    ResultStatus.NotFound => NotFound(new { failure.Errors }),
-                    ResultStatus.Unauthorized => Unauthorized(new { failure.Errors }),
-                    ResultStatus.Forbid => Forbid(),
-                    _ => StatusCode(500, new { failure.Errors })
-                };
-            }
+    [HttpPost("media/refresh/{seasonYear}")]
+    public async Task<ActionResult<RefreshAllCompetitionMediaResult>> RefreshAllMedia(
+        [FromRoute] int seasonYear,
+        [FromServices] IRefreshAllCompetitionMediaCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshAllCompetitionMediaCommand(seasonYear);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-            return StatusCode(500); // fallback safety
-        }
-
-        [HttpPost]
-        [Route("{competitionId}/media/refresh")]
-        public Task<IActionResult> RefreshMedia([FromRoute] Guid competitionId)
-        {
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(competitionId, true));
-
-            return Task.FromResult<IActionResult>(
-                Accepted(new { Message = $"Competition media generation initiated." }));
-        }
-
-        [HttpPost]
-        [Route("media/refresh")]
-        public Task<IActionResult> RefreshMedia()
-        {
-            // TODO: Remove hard-coding
-            _backgroundJobProvider.Enqueue<ICompetitionService>(p => p.RefreshCompetitionMedia(2025));
-
-            return Task.FromResult<IActionResult>(
-                Accepted(new { Message = $"Competition media generation initiated." }));
-        }
+        return result.ToActionResult();
     }
 }

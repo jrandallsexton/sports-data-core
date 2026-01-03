@@ -7,7 +7,6 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
@@ -62,7 +61,23 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
             );
         }
 
-        var sourceUrl = new Uri(competitionExternalId.SourceUrl);
+        if (string.IsNullOrWhiteSpace(competitionExternalId.SourceUrl))
+        {
+            return new Failure<Guid>(
+                command.CompetitionId,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(competitionExternalId.SourceUrl), "Competition SourceUrl is null or empty")]
+            );
+        }
+
+        if (!Uri.TryCreate(competitionExternalId.SourceUrl, UriKind.Absolute, out var sourceUrl))
+        {
+            return new Failure<Guid>(
+                command.CompetitionId,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(competitionExternalId.SourceUrl), $"Competition SourceUrl is not a valid absolute URI: {competitionExternalId.SourceUrl}")]
+            );
+        }
 
         var drivesRef = EspnUriMapper.CompetitionRefToCompetitionDrivesRef(sourceUrl);
         var drivesIdentity = _externalRefIdentityGenerator.Generate(drivesRef);

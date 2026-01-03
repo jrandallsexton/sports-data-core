@@ -44,8 +44,10 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
             .AsNoTracking()
             .Where(c => c.Contest.FinalizedUtc != null &&
                         !c.Media.Any() &&
-                        (fbsGroupIds.Contains(c.Contest.AwayTeamFranchiseSeason.GroupSeasonId!.Value) ||
-                         fbsGroupIds.Contains(c.Contest.HomeTeamFranchiseSeason.GroupSeasonId!.Value)))
+                        ((c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.HasValue &&
+                          fbsGroupIds.Contains(c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.Value)) ||
+                         (c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.HasValue &&
+                          fbsGroupIds.Contains(c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.Value))))
             .OrderByDescending(x => x.Contest.StartDateUtc)
             .Select(c => c.Id)
             .ToListAsync(cancellationToken);

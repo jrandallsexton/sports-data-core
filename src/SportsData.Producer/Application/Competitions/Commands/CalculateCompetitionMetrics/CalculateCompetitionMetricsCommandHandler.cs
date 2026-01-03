@@ -65,6 +65,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var homeFranchiseSeasonId = competition.Contest.HomeTeamFranchiseSeasonId;
 
         var (awayMetric, homeMetric) = CalculateMetrics(
+            competition.Contest.SeasonYear,
             command.CompetitionId,
             competition.Plays.ToList(),
             competition.Drives.ToList(),
@@ -81,6 +82,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
     private (CompetitionMetric, CompetitionMetric) CalculateMetrics(
+        int seasonYear,
         Guid competitionId,
         List<CompetitionPlay> plays,
         List<CompetitionDrive> drives,
@@ -91,7 +93,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         {
             CompetitionId = competitionId,
             FranchiseSeasonId = awayFranchiseSeasonId,
-            Season = DateTime.UtcNow.Year, // TODO: Get from competition/contest
+            Season = seasonYear,
             Ypp = CalculateYpp(awayFranchiseSeasonId, plays),
             SuccessRate = CalculateSuccessRate(awayFranchiseSeasonId, plays),
             ExplosiveRate = CalculateExplosiveRate(awayFranchiseSeasonId, plays),

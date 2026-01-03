@@ -48,12 +48,41 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitorId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        
+        // Create Contest first (required by Competition)
+        var contest = new Contest
+        {
+            Id = contestId,
+            Name = "Test Contest",
+            ShortName = "Test",
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024,
+            SeasonWeekId = Guid.NewGuid(),
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            StartDateUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        await FootballDataContext.Contests.AddAsync(contest);
+        
+        // Create Competition (required by CompetitionCompetitor)
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
         
         // OPTIMIZATION: Direct instantiation instead of AutoFixture (was taking 29 seconds!)
         var competitor = new CompetitionCompetitor
         {
             Id = competitorId,
-            CompetitionId = Guid.NewGuid(),
+            CompetitionId = competitionId,
             FranchiseSeasonId = Guid.NewGuid(),
             Order = 1,
             HomeAway = "home",

@@ -15,7 +15,7 @@ public class AppConfigurationTests : IntegrationTestBase<AppConfigurationTests>
     {
         CommonConfig.Logging.Should().NotBeNull();
         CommonConfig.Logging.MinimumLevel.Should().Be("Warning");
-        CommonConfig.Logging.SeqMinimumLevel.Should().Be("Warning");
+        CommonConfig.Logging.SeqMinimumLevel.Should().Be("Information");  // Dev environment uses Information level
 
         CommonConfig.Logging.Overrides.Should().ContainKey("Microsoft");
         CommonConfig.Logging.Overrides["Microsoft"].Should().Be("Error");

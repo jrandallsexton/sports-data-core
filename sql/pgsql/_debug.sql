@@ -112,16 +112,17 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
     select * from public."Contest" where "Id" = '4368b706-e7fe-7dc1-786a-c54f8eda67cd'
 
 select * from public."CompetitionStream"
-select * from public."Contest" where "Id" = '9c1dd681-8a67-91bb-1492-95742699410e'
+select * from public."Contest" where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
+update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = 'c94e1efc-4809-bf27-d1e1-fb6d97cb16b7'
+select * from public."Competition" where "ContestId" = '5895bacc-e67e-1a10-ef6f-59f49aeb29a5'
 select * from public."CompetitionExternalId" where "CompetitionId" = '5e83718e-e1e4-2c73-804f-0c4a1f19f850'
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'ef5ffae3-2399-ef06-f8a0-c8f1f95e9f54'
+select * from public."CompetitionCompetitor" where "CompetitionId" = '7bdca3c8-5c1c-fc0d-4128-83f38976d5eb'
 select * from public."CompetitionNote" where "CompetitionId" = '7690d4e5-b401-4c6d-749d-0233f902994a'
 select * from public."CompetitionStatus" where "CompetitionId" = 'cd68bd61-707f-90ad-26ae-f5f2ecd7d0cc'
-select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '8b8efe9a-1631-9e76-dc79-c4e560fa2f56' order by "Period"
+select * from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '50a68ed8-e4d1-8bc0-08b1-dfb11bd1800e' order by "Period"
 --delete from public."CompetitionCompetitorLineScore" where "CompetitionCompetitorId" = '8b8efe9a-1631-9e76-dc79-c4e560fa2f56' and "SourceDescription" = 'Feed'
 select * from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50' order by "SequenceNumber"
 select * from public."CompetitionPlay" where "CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by "SequenceNumber"::int

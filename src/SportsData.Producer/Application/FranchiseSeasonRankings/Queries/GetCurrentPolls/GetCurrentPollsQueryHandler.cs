@@ -115,9 +115,9 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
         try
         {
             var mostRecentPoll = await _dataContext.FranchiseSeasonRankings
-                .Where(x => x.SeasonYear == seasonYear && x.Type == pollId)
+                .Where(x => x.SeasonYear == seasonYear && x.Type == pollId && x.Date != null)
                 .OrderByDescending(x => x.Date)
-                .Select(x => new { x.SeasonWeekId, x.Date, x.ShortHeadline })
+                .Select(x => new { x.SeasonWeekId, Date = x.Date!.Value, x.ShortHeadline })
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (mostRecentPoll is null)
@@ -202,7 +202,7 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
                 HasFirstPlaceVotes = pollEntries.Sum(x => x.FirstPlaceVotes) > 0,
                 HasPoints = pollEntries.Sum(x => x.Points) > 0,
                 HasTrends = pollEntries.Any(x => x.Trend != null),
-                PollDateUtc = mostRecentPoll.Date!.Value
+                PollDateUtc = mostRecentPoll.Date
             };
 
             _logger.LogInformation(

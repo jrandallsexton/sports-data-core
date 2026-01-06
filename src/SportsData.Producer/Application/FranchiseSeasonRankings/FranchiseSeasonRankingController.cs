@@ -1,61 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 
 namespace SportsData.Producer.Application.FranchiseSeasonRankings
 {
     [Route("api/franchise-season-ranking")]
-    public class FranchiseSeasonRankingController : ControllerBase
+    public class FranchiseSeasonRankingController : ApiControllerBase
     {
-        private readonly IFranchiseSeasonRankingService _service;
-        private readonly ILogger<FranchiseSeasonRankingController> _logger;
-
-        public FranchiseSeasonRankingController(
-            IFranchiseSeasonRankingService service,
-            ILogger<FranchiseSeasonRankingController> logger)
+        [HttpGet("seasonYear/{seasonYear}")]
+        public async Task<ActionResult<List<FranchiseSeasonPollDto>>> GetCurrentPolls(
+            [FromRoute] int seasonYear,
+            [FromServices] IGetCurrentPollsQueryHandler handler,
+            CancellationToken cancellationToken = default)
         {
-            _service = service;
-            _logger = logger;
-        }
-
-        [HttpGet]
-        [Route("seasonYear/{seasonYear}")]
-        public async Task<ActionResult<List<FranchiseSeasonPollDto>>> GetCurrentPolls([FromRoute] int seasonYear)
-        {
-            _logger.LogInformation(
-                "FranchiseSeasonRankingController.GetCurrentPolls called with seasonYear={SeasonYear}", 
-                seasonYear);
-            
-            try
-            {
-                var result = await _service.GetCurrentPolls(seasonYear);
-                
-                if (result.IsSuccess)
-                {
-                    _logger.LogInformation(
-                        "GetCurrentPolls succeeded for seasonYear={SeasonYear}, returned {Count} polls", 
-                        seasonYear, 
-                        result.Value.Count);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "GetCurrentPolls failed for seasonYear={SeasonYear}, Status={Status}", 
-                        seasonYear, 
-                        result.Status);
-                }
-                
-                return result.ToActionResult();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex, 
-                    "Unhandled exception in GetCurrentPolls for seasonYear={SeasonYear}", 
-                    seasonYear);
-                throw;
-            }
+            var query = new GetCurrentPollsQuery { SeasonYear = seasonYear };
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
         }
     }
 }

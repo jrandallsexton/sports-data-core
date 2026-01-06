@@ -97,7 +97,7 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
             
             return new Failure<List<FranchiseSeasonPollDto>>(
                 new List<FranchiseSeasonPollDto>(),
-                ResultStatus.BadRequest,
+                ResultStatus.Error,
                 [new ValidationFailure("Error", ex.Message)]);
         }
     }
@@ -152,22 +152,19 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
                 seasonYear);
 
             var pollEntries = await _dataContext.FranchiseSeasonRankings
-                .Include(x => x.Rank)
-                .Include(x => x.FranchiseSeason)
-                    .ThenInclude(x => x.Franchise)
-                .Include(x => x.FranchiseSeason)
-                    .ThenInclude(x => x.Logos)
                 .Where(x => x.SeasonWeekId == mostRecentPoll.SeasonWeekId && x.Type == pollId)
                 .OrderBy(x => x.Rank.Current)
                 .Select(x => new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto()
                 {
-                    FranchiseLogoUrl = x.FranchiseSeason.Logos.ToList().First().Uri.OriginalString,
+                    FranchiseLogoUrl = x.FranchiseSeason.Logos.FirstOrDefault() != null 
+                        ? x.FranchiseSeason.Logos.FirstOrDefault()!.Uri.OriginalString 
+                        : string.Empty,
                     FranchiseName = x.Franchise.DisplayNameShort,
                     FranchiseSlug = x.Franchise.Slug,
                     Rank = x.Rank.Current,
                     FirstPlaceVotes = x.Rank.FirstPlaceVotes,
                     FranchiseSeasonId = x.FranchiseSeasonId,
-                    Points = int.Parse(x.Rank.Points.ToString()),
+                    Points = (int)x.Rank.Points,
                     Trend = x.Rank.Trend,
                     Losses = x.FranchiseSeason.Losses,
                     PreviousRank = x.Rank.Previous,
@@ -226,7 +223,7 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
             
             return new Failure<FranchiseSeasonPollDto>(
                 default!,
-                ResultStatus.BadRequest,
+                ResultStatus.Error,
                 [new ValidationFailure("Error", ex.Message)]);
         }
     }

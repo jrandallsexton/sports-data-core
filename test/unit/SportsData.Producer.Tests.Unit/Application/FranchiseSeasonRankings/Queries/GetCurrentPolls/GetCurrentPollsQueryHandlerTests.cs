@@ -193,7 +193,7 @@ public class GetCurrentPollsQueryHandlerTests : ProducerTestBase<GetCurrentPolls
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnBadRequest_WhenExceptionThrown()
+    public async Task ExecuteAsync_ShouldReturnError_WhenExceptionThrown()
     {
         // Arrange - Force an exception by disposing the context
         await TeamSportDataContext.DisposeAsync();
@@ -206,7 +206,7 @@ public class GetCurrentPollsQueryHandlerTests : ProducerTestBase<GetCurrentPolls
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Status.Should().Be(ResultStatus.BadRequest);
+        result.Status.Should().Be(ResultStatus.Error);
         var failure = result as Failure<List<FranchiseSeasonPollDto>>;
         failure!.Errors.Should().ContainSingle(e => e.PropertyName == "Error");
     }

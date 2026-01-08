@@ -36,12 +36,14 @@ public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchise
             command.SeasonYear);
 
         var competitionIds = await _dataContext.Contests
+            .AsNoTracking()
             .Where(x => x.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ||
                         x.HomeTeamFranchiseSeasonId == command.FranchiseSeasonId)
             .SelectMany(x => x.Competitions.Select(c => c.Id))
             .ToListAsync(cancellationToken);
 
         var metrics = await _dataContext.CompetitionMetrics
+            .AsNoTracking()
             .Where(cm => competitionIds.Contains(cm.CompetitionId) && cm.FranchiseSeasonId == command.FranchiseSeasonId)
             .ToListAsync(cancellationToken);
 
@@ -93,30 +95,30 @@ public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchise
             GamesPlayed = metrics.Count,
 
             // Offense
-            Ypp = metrics.Average(m => m.Ypp),
-            SuccessRate = metrics.Average(m => m.SuccessRate),
             ExplosiveRate = metrics.Average(m => m.ExplosiveRate),
             PointsPerDrive = metrics.Average(m => m.PointsPerDrive),
-            ThirdFourthRate = metrics.Average(m => m.ThirdFourthRate),
-            RzTdRate = SafeAvg(m => m.RzTdRate),
             RzScoreRate = SafeAvg(m => m.RzScoreRate),
+            RzTdRate = SafeAvg(m => m.RzTdRate),
+            SuccessRate = metrics.Average(m => m.SuccessRate),
+            ThirdFourthRate = metrics.Average(m => m.ThirdFourthRate),
             TimePossRatio = metrics.Average(m => m.TimePossRatio),
+            Ypp = metrics.Average(m => m.Ypp),
 
             // Defense
-            OppYpp = metrics.Average(m => m.OppYpp),
-            OppSuccessRate = metrics.Average(m => m.OppSuccessRate),
             OppExplosiveRate = metrics.Average(m => m.OppExplosiveRate),
             OppPointsPerDrive = metrics.Average(m => m.OppPointsPerDrive),
-            OppThirdFourthRate = metrics.Average(m => m.OppThirdFourthRate),
             OppRzTdRate = SafeAvg(m => m.OppRzTdRate),
             OppScoreTdRate = SafeAvg(m => m.OppScoreTdRate),
+            OppSuccessRate = metrics.Average(m => m.OppSuccessRate),
+            OppThirdFourthRate = metrics.Average(m => m.OppThirdFourthRate),
+            OppYpp = metrics.Average(m => m.OppYpp),
 
             // ST / Discipline
-            NetPunt = metrics.Average(m => m.NetPunt),
             FgPctShrunk = metrics.Average(m => m.FgPctShrunk),
             FieldPosDiff = metrics.Average(m => m.FieldPosDiff),
-            TurnoverMarginPerDrive = metrics.Average(m => m.TurnoverMarginPerDrive),
+            NetPunt = metrics.Average(m => m.NetPunt),
             PenaltyYardsPerPlay = metrics.Average(m => m.PenaltyYardsPerPlay),
+            TurnoverMarginPerDrive = metrics.Average(m => m.TurnoverMarginPerDrive),
 
             ComputedUtc = DateTime.UtcNow
         };

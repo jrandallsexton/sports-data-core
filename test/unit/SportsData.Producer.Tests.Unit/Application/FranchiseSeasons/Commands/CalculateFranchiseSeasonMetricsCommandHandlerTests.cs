@@ -4,7 +4,6 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Core.Common;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;

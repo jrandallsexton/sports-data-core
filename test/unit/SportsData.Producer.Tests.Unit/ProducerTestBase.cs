@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -19,6 +21,15 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         Mocker.Use(typeof(BaseDataContext), FootballDataContext);
         Mocker.Use(typeof(TeamSportDataContext), FootballDataContext);
         Mocker.Use(FootballDataContext);
+        
+        // Override mapper with Producer-specific mapping profile
+        var mapperConfig = new MapperConfiguration(c =>
+        {
+            c.AddProfile(new DynamicMappingProfile());
+            c.AddProfile(new Mapping.MappingProfile());
+        });
+        var mapper = mapperConfig.CreateMapper();
+        Mocker.Use(typeof(IMapper), mapper);
     }
 
     private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()

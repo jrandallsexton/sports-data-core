@@ -15,11 +15,17 @@ using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
-using SportsData.Producer.Application.FranchiseSeasons;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
-using SportsData.Producer.Application.SeasonWeek;
+using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
 using SportsData.Producer.Application.Venues;
+using SportsData.Producer.Application.Venues.Commands.GeocodeVenue;
+using SportsData.Producer.Application.Venues.Queries.GetAllVenues;
+using SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
 using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -134,7 +140,8 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IContestOverviewService, ContestOverviewService>();
 
-            services.AddScoped<ISeasonWeekService, SeasonWeekService>();
+            // SeasonWeek Commands
+            services.AddScoped<IEnqueueSeasonWeekContestsUpdateCommandHandler, EnqueueSeasonWeekContestsUpdateCommandHandler>();
 
             // Competition Commands
             services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
@@ -145,7 +152,13 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
             services.AddScoped<IRefreshAllCompetitionMediaCommandHandler, RefreshAllCompetitionMediaCommandHandler>();
 
-            services.AddScoped<IFranchiseSeasonMetricsService, FranchiseSeasonMetricsService>();
+            // FranchiseSeason Commands
+            services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
+            services.AddScoped<ICalculateFranchiseSeasonMetricsCommandHandler, CalculateFranchiseSeasonMetricsCommandHandler>();
+
+            // FranchiseSeason Queries
+            services.AddScoped<IGetFranchiseSeasonMetricsByIdQueryHandler, GetFranchiseSeasonMetricsByIdQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonMetricsBySeasonYearQueryHandler, GetFranchiseSeasonMetricsBySeasonYearQueryHandler>();
 
             services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
 
@@ -156,7 +169,13 @@ namespace SportsData.Producer.DependencyInjection
             // FranchiseSeasonRanking Queries
             services.AddScoped<IGetCurrentPollsQueryHandler, GetCurrentPollsQueryHandler>();
 
-            services.AddScoped<IVenueService, VenueService>();
+            // Venue Commands
+            services.AddScoped<IGeocodeVenueCommandHandler, GeocodeVenueCommandHandler>();
+
+            // Venue Queries
+            services.AddScoped<IGetAllVenuesQueryHandler, GetAllVenuesQueryHandler>();
+            services.AddScoped<IGetVenueByIdentifierQueryHandler, GetVenueByIdentifierQueryHandler>();
+
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
 

@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
+
+public record CalculateFranchiseSeasonMetricsCommand(Guid FranchiseSeasonId, int SeasonYear);

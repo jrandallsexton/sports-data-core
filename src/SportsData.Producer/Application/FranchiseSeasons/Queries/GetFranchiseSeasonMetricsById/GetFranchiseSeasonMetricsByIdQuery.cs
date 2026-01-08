@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
+
+public record GetFranchiseSeasonMetricsByIdQuery(Guid FranchiseSeasonId);

@@ -4,7 +4,7 @@ namespace SportsData.Core.Dtos.Canonical
 {
     public abstract class LogoDtoBase
     {
-        public Uri Url { get; init; } = default!;
+        public required Uri Url { get; init; }
 
         public int? Height { get; init; }
 

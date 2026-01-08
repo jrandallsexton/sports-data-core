@@ -2,8 +2,10 @@
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Producer;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Mapping;
 using SportsData.Tests.Shared;
 
 namespace SportsData.Producer.Tests.Unit;
@@ -26,7 +28,7 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         var mapperConfig = new MapperConfiguration(c =>
         {
             c.AddProfile(new DynamicMappingProfile());
-            c.AddProfile(new Mapping.MappingProfile());
+            c.AddProfile(new MappingProfile());
         });
         var mapper = mapperConfig.CreateMapper();
         Mocker.Use(typeof(IMapper), mapper);

@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
+
+public record EnqueueSeasonWeekContestsUpdateCommand(Guid SeasonWeekId);

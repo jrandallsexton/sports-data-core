@@ -1,24 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
-namespace SportsData.Producer.Application.SeasonWeek
+using SportsData.Core.Extensions;
+using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
+
+namespace SportsData.Producer.Application.SeasonWeek;
+
+[Route("api/seasonWeek")]
+[ApiController]
+public class SeasonWeekController : ControllerBase
 {
-    [Route("api/seasonWeek")]
-    [ApiController]
-    public class SeasonWeekController : ControllerBase
+    [HttpPost("{seasonWeekId}/update")]
+    public async Task<ActionResult<Guid>> UpdateSeasonWeekContests(
+        [FromRoute] Guid seasonWeekId,
+        [FromServices] IEnqueueSeasonWeekContestsUpdateCommandHandler handler,
+        CancellationToken cancellationToken)
     {
-        private readonly ISeasonWeekService _seasonWeekService;
+        var command = new EnqueueSeasonWeekContestsUpdateCommand(seasonWeekId);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
-        public SeasonWeekController(ISeasonWeekService seasonWeekService)
-        {
-            _seasonWeekService = seasonWeekService;
-        }
-
-        [HttpPost]
-        [Route("{seasonWeekId}/update")]
-        public async Task<IActionResult> UpdateSeasonWeekContests([FromRoute] Guid seasonWeekId)
-        {
-            await _seasonWeekService.UpdateSeasonWeekContests(seasonWeekId);
-            return Accepted(seasonWeekId);
-        }
+        return result.ToActionResult();
     }
 }

@@ -37,23 +37,12 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Refresh token every 50 minutes (tokens expire after 1 hour)
-  // Firebase handles this automatically, but we force it to ensure fresh tokens
-  useEffect(() => {
-    if (!user) return;
-
-    const refreshInterval = setInterval(async () => {
-      console.log('Forcing Firebase token refresh...');
-      try {
-        await user.getIdToken(true); // Force refresh
-        console.log('Token refreshed successfully');
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-      }
-    }, 50 * 60 * 1000); // 50 minutes
-
-    return () => clearInterval(refreshInterval);
-  }, [user]);
+  // NOTE: Interval-based token refresh removed - it doesn't work when tab is suspended.
+  // Instead, we now:
+  // 1. Check token expiration on each API request (apiClient.js request interceptor)
+  // 2. Refresh proactively if token expires in <5 minutes
+  // 3. Verify auth state when tab resumes from suspension (firebase.js visibility listener)
+  // This is more reliable than a timer that doesn't run during tab suspension.
 
   return (
     <AuthContext.Provider value={{ user, loading, handleSignOut }}>

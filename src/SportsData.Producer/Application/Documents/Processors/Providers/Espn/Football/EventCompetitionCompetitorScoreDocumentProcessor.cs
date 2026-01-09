@@ -119,6 +119,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                     Id: competitionCompetitorIdentity.UrlHash,
                     ParentId: competitionIdentity.CanonicalId.ToString(),
                     Uri: new Uri(competitionCompetitorIdentity.CleanUrl),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.EventCompetitionCompetitor,
@@ -191,14 +192,17 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 ContestId: competitor.Competition!.ContestId,
                 FranchiseSeasonId: competitor.FranchiseSeasonId,
                 Score: (int)dto.Value,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));
 
             await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation("Score update persisted and event queued. CompetitorId={CompetitorId}, Value={Value}", 
-                competitionCompetitorId, 
+            _logger.LogInformation("Score update persisted and event queued. CompetitorId={CompetitorId}, Value={Value}",
+                competitionCompetitorId,
                 dto.Value);
         }
         else
@@ -212,7 +216,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 command.CorrelationId);
 
             await _dataContext.CompetitionCompetitorScores.AddAsync(entity);
-            
+
             // Publish event BEFORE SaveChangesAsync to use MassTransit outbox pattern (navigation properties validated above)
             _logger.LogInformation("Queueing CompetitorScoreUpdated event to outbox. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
                 competitor.Competition!.ContestId,
@@ -223,6 +227,9 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 ContestId: competitor.Competition!.ContestId,
                 FranchiseSeasonId: competitor.FranchiseSeasonId,
                 Score: (int)dto.Value,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));

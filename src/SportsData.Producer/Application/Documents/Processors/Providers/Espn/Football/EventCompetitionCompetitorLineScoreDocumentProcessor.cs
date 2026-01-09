@@ -128,6 +128,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                     Id: competitionCompetitorIdentity.UrlHash,
                     ParentId: competitionIdentity.CanonicalId.ToString(),
                     Uri: competitionCompetitorRef,
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.EventCompetitionCompetitor,

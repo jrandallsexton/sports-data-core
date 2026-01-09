@@ -31,7 +31,7 @@ namespace SportsData.Api.Application.PickemGroups
                    {
                        ["CorrelationId"] = context.Message.CorrelationId,
                        ["GroupId"] = context.Message.GroupId,
-                       ["SeasonYear"] = context.Message.SeasonYear,
+                       ["SeasonYear"] = context.Message.SeasonYear ?? 0,
                        ["WeekNumber"] = context.Message.WeekNumber
                    }))
             {

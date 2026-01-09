@@ -142,6 +142,9 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             command.SourceDataProvider.ToString().ToLowerInvariant(),
             dto.Ref?.ToString() ?? string.Empty,
             dto.SequenceNumber,
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.EventCompetitionProbabilityDocumentProcessor
         ));

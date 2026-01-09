@@ -155,9 +155,9 @@ namespace SportsData.Producer.Application.Documents.Processors
                 document,
                 evt.CorrelationId,
                 evt.ParentId,
-                evt.Ref,
-                evt.SourceUrlHash,
                 evt.SourceRef,
+                evt.SourceUrlHash,
+                evt.Ref,
                 evt.AttemptCount,
                 evt.IncludeLinkedDocumentTypes));
 

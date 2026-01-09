@@ -121,6 +121,9 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
             await _publishEndpoint.Publish(new CompetitionStatusChanged(
                 competitionId,
                 entity.StatusTypeName,
+                null,
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));

@@ -123,6 +123,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
                     Id: seasonPhaseIdentity.UrlHash,
                     ParentId: null,
                     Uri: seasonPhaseRef,
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.SeasonType,

@@ -63,7 +63,10 @@ namespace SportsData.Producer.Application.Contests
             await _eventBus.Publish(new ContestStatusChanged(
                 contestId,
                 ContestStatus.InProgress.ToString(),
-                "0","15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
+                "0", "15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
+                null,
+                Sport.FootballNcaa,
+                contest.SeasonYear,
                 correlationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
@@ -81,6 +84,9 @@ namespace SportsData.Producer.Application.Contests
                     play.HomeScore,
                     play.StartFranchiseSeasonId,
                     play.ScoringPlay,
+                    null,
+                    Sport.FootballNcaa,
+                    contest.SeasonYear,
                     correlationId,
                     CausationId.Producer.EventCompetitionStatusDocumentProcessor
                 ), ct);

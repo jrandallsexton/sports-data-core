@@ -99,6 +99,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 imgId,
                 franchise.Id,
                 $"{franchise.Id}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,
@@ -191,6 +192,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         await _publishEndpoint.Publish(
             new FranchiseCreated(
                 newEntity.ToCanonicalModel(),
+                null,
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor));
 
@@ -297,6 +301,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
             var evt = new FranchiseUpdated(
                 franchise.ToCanonicalModel(),
+                null,
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor);
 

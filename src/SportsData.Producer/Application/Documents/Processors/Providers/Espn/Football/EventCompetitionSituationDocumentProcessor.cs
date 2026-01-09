@@ -119,6 +119,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                         Id: lastPlayIdentity.UrlHash,
                         ParentId: competitionId.ToString(),
                         Uri: dto.LastPlay.Ref,
+                        Ref: null,
                         Sport: command.Sport,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.EventCompetitionPlay,

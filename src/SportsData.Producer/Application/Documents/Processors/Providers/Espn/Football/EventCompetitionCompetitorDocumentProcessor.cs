@@ -133,6 +133,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
                     Id: competitionIdentity.UrlHash,
                     ParentId: contestIdentity.CanonicalId.ToString(),
                     Uri: competitionRef,
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.EventCompetition,

@@ -189,6 +189,9 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
                 CompetitionId: competition.Id,
                 ContestId: competition.ContestId,
                 PlayDescription: play.Text,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.Season,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
         }

@@ -114,6 +114,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 imgId,
                 entity.Id,
                 $"{entity.Id}-{imgId}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,
@@ -126,6 +127,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         await _publishEndpoint.Publish(new AthleteCreated(
             entity.ToCanonicalModel(),
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.AthleteDocumentProcessor));
 
@@ -275,7 +279,8 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                     Id: positionIdentity.CanonicalId.ToString(),
                     ParentId: null,
                     Uri: externalProviderDto.Position.Ref.ToCleanUri(),
-                    Sport: Sport.FootballNcaa,
+                    Ref: null,
+                    Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.AthletePosition,
                     SourceDataProvider: SourceDataProvider.Espn,
@@ -309,6 +314,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 imgId,
                 entity.Id,
                 $"{entity.Id}-{imgId}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,

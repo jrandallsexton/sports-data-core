@@ -76,6 +76,9 @@ namespace SportsData.Producer.Application.Franchises
 
             await _eventBus.Publish(new FranchiseSeasonEnrichmentCompleted(
                 command.FranchiseSeasonId,
+                null,
+                Sport.FootballNcaa,
+                command.SeasonYear,
                 command.CorrelationId,
                 Guid.NewGuid()));
 
@@ -209,6 +212,7 @@ namespace SportsData.Producer.Application.Franchises
                 Id: externalId.SourceUrlHash,
                 ParentId: franchiseSeason.FranchiseId.ToString(),
                 Uri: new Uri(externalId.SourceUrl),
+                Ref: null,
                 Sport: Sport.FootballNcaa,
                 SeasonYear: command.SeasonYear,
                 DocumentType: DocumentType.TeamSeason,

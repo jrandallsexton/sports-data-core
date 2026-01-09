@@ -95,6 +95,9 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
         var canonical = entity.AsCanonical();
         await _publishEndpoint.Publish(new FranchiseSeasonRecordCreated(
             canonical,
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.TeamSeasonRecordDocumentProcessor));
 

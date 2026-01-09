@@ -26,6 +26,7 @@ namespace SportsData.Core.Eventing.Events
                     Guid.NewGuid(),                       // ImageId
                     parentId,                             // ParentEntityId
                     $"{parentId}-{index}.png",            // Name
+                    null,                                 // Ref
                     sport,                                // Sport
                     season,                               // SeasonYear
                     documentType,                         // DocumentType

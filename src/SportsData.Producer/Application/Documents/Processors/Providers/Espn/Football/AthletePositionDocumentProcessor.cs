@@ -141,6 +141,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
 
         var evt = new AthletePositionCreated(
             entity.AsCanonical(),
+            null,
+            command.Sport,
             command.CorrelationId,
             CausationId.Producer.AthletePositionDocumentProcessor);
 
@@ -211,6 +213,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
 
             var evt = new AthletePositionUpdated(
                 entity.AsCanonical(),
+                null,
+                command.Sport,
                 command.CorrelationId,
                 CausationId.Producer.AthletePositionDocumentProcessor);
 

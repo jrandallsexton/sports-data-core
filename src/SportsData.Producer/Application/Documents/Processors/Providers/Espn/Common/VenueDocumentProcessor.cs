@@ -110,6 +110,9 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
         // 2. raise an integration event with the canonical model
         var evt = new VenueCreated(
             newEntity.AsCanonical(),
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.VenueCreatedDocumentProcessor);
 
@@ -186,6 +189,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                     Guid.NewGuid(),
                     venue.Id,
                     $"{venue.Id}-u{i}.png",
+                    null,
                     command.Sport,
                     command.Season,
                     command.DocumentType,
@@ -209,7 +213,12 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
 
             await _dataContext.SaveChangesAsync();
 
-            var evt = new VenueUpdated(venue.AsCanonical(), command.CorrelationId,
+            var evt = new VenueUpdated(
+                venue.AsCanonical(),
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
                 CausationId.Producer.VenueDocumentProcessor);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);

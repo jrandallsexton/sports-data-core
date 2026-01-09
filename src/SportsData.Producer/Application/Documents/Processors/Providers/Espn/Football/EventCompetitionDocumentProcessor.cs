@@ -180,7 +180,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 Id: venueHash,
                 ParentId: null,
                 Uri: venue.Ref.ToCleanUri(),
-                Sport: Sport.FootballNcaa,
+                Ref: null,
+                Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.Venue,
                 SourceDataProvider: SourceDataProvider.Espn,
@@ -243,6 +244,9 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                     new ContestStartTimeUpdated(
                         competition.ContestId,
                         competition.Date,
+                        null,
+                        command.Sport,
+                        command.Season,
                         command.CorrelationId,
                         CausationId.Producer.EventCompetitionDocumentProcessor));
             }
@@ -324,6 +328,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
                 ParentId: competition.Id.ToString(),
                 Uri: competitorDto.Ref.ToCleanUri(),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetitionCompetitor,

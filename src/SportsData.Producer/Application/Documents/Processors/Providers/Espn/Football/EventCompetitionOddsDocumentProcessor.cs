@@ -153,12 +153,23 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         if (existing is null)
         {
             await _publishEndpoint.Publish(new ContestOddsCreated(
-                competition.Contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+                competition.Contest.Id,
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
+                CausationId.Producer.EventDocumentProcessor));
         }
         else
         {
             await _publishEndpoint.Publish(new ContestOddsUpdated(
-                competition.Contest.Id, "ContestOddsUpdated", command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+                competition.Contest.Id,
+                "ContestOddsUpdated",
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
+                CausationId.Producer.EventDocumentProcessor));
         }
 
         _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",

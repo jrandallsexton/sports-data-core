@@ -1,4 +1,5 @@
 ﻿  SELECT
+    c."Sport" as "Sport",
 	sp."Year" as "SeasonYear",
 	sw."Number" as "WeekNumber",
 	c."Id" AS "ContestId",

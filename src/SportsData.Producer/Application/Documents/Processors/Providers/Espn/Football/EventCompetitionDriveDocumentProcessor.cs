@@ -208,6 +208,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
                         Id: playIdentity.UrlHash,
                         ParentId: competitionId.ToString(),
                         Uri: new Uri(playIdentity.CleanUrl),
+                        Ref: null,
                         Sport: command.Sport,
                         SeasonYear: command.Season!.Value,
                         DocumentType: DocumentType.EventCompetitionPlay,

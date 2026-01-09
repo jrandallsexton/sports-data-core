@@ -106,6 +106,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             Id: identity.UrlHash,
             ParentId: parentId?.ToString() ?? string.Empty,
             Uri: uri,
+            Ref: null,
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: documentType,

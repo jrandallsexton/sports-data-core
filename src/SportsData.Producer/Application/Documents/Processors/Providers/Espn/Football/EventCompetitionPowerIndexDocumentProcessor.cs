@@ -106,6 +106,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
                 Id: teamHash,
                 ParentId: string.Empty,
                 Uri: dto.Team.Ref.ToCleanUri(),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.TeamSeason,

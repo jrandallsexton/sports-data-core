@@ -34,7 +34,7 @@ public class GetAllVenuesQueryHandlerTests :
         var result = await sut.ExecuteAsync(query, CancellationToken.None);
 
         // Assert
-        result.Should().BeOfType<Success<List<VenueDto>>>();
+        result.Should().BeOfType<Success<GetAllVenuesResponse>>();
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(3);
     }
@@ -50,7 +50,7 @@ public class GetAllVenuesQueryHandlerTests :
         var result = await sut.ExecuteAsync(query, CancellationToken.None);
 
         // Assert
-        result.Should().BeOfType<Success<List<VenueDto>>>();
+        result.Should().BeOfType<Success<GetAllVenuesResponse>>();
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
     }

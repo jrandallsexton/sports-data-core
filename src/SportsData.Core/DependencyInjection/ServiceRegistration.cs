@@ -24,6 +24,7 @@ using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
@@ -142,6 +143,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
             services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();
             services.AddSingleton<IGenerateExternalRefIdentities, ExternalRefIdentityGenerator>();
+            services.AddSingleton<IGenerateResourceRefs, ResourceRefGenerator>();
             return services;
         }
 

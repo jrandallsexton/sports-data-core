@@ -10,6 +10,8 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
@@ -23,8 +25,9 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         TDataContext db,
         IEventBus bus,
         IGenerateExternalRefIdentities idGen,
+        IGenerateResourceRefs refs,
         IJsonHashCalculator jsonHash)
-        : base(logger, db, bus, idGen)
+        : base(logger, db, bus, idGen, refs)
     {
         _jsonHash = jsonHash;
     }

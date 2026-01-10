@@ -7,7 +7,7 @@ namespace SportsData.Core.Eventing.Events.Venues;
 
 public record VenueCreated(
     VenueDto Canonical,
-    Uri? Ref,
+    Uri Ref,
     Sport Sport,
     int? SeasonYear,
     Guid CorrelationId,

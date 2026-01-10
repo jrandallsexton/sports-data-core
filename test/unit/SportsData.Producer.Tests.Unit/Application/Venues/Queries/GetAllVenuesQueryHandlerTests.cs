@@ -36,7 +36,7 @@ public class GetAllVenuesQueryHandlerTests :
         // Assert
         result.Should().BeOfType<Success<List<VenueDto>>>();
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(3);
+        result.Value.Items.Should().HaveCount(3);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class GetAllVenuesQueryHandlerTests :
         // Assert
         result.Should().BeOfType<Success<List<VenueDto>>>();
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.Value.Items.Should().BeEmpty();
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public class GetAllVenuesQueryHandlerTests :
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Images.Should().HaveCount(1);
+        result.Value.Count.Should().Be(1);
+        result.Value.Items[0].Images.Should().HaveCount(1);
     }
 
     private Venue CreateVenue(string name, string slug, Guid? id = null)

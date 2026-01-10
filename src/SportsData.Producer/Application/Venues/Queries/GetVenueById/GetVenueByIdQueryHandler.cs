@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
@@ -13,28 +14,31 @@ namespace SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
 public interface IGetVenueByIdentifierQueryHandler
 {
     Task<Result<VenueDto>> ExecuteAsync(
-        GetVenueByIdentifierQuery query,
+        GetVenueByIdQuery query,
         CancellationToken cancellationToken = default);
 }
 
-public class GetVenueByIdentifierQueryHandler : IGetVenueByIdentifierQueryHandler
+public class GetVenueByIdQueryHandler : IGetVenueByIdentifierQueryHandler
 {
-    private readonly ILogger<GetVenueByIdentifierQueryHandler> _logger;
+    private readonly ILogger<GetVenueByIdQueryHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IMapper _mapper;
+    private readonly IGenerateResourceRefs _refGenerator;
 
-    public GetVenueByIdentifierQueryHandler(
-        ILogger<GetVenueByIdentifierQueryHandler> logger,
+    public GetVenueByIdQueryHandler(
+        ILogger<GetVenueByIdQueryHandler> logger,
         TeamSportDataContext dataContext,
-        IMapper mapper)
+        IMapper mapper,
+        IGenerateResourceRefs refGenerator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _mapper = mapper;
+        _refGenerator = refGenerator;
     }
 
     public async Task<Result<VenueDto>> ExecuteAsync(
-        GetVenueByIdentifierQuery query,
+        GetVenueByIdQuery query,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(
@@ -81,6 +85,7 @@ public class GetVenueByIdentifierQueryHandler : IGetVenueByIdentifierQueryHandle
         }
 
         var dto = _mapper.Map<VenueDto>(venue);
+        dto.Ref = _refGenerator.ForVenue(venue.Id);
 
         return new Success<VenueDto>(dto);
     }

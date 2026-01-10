@@ -14,6 +14,8 @@ using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionCompetitorScore)]
@@ -27,8 +29,9 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
         TDataContext dataContext,
         IEventBus bus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, bus, externalRefIdentityGenerator)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }

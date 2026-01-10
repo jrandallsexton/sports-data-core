@@ -12,7 +12,7 @@ namespace SportsData.Producer.Application.Venues;
 public class VenuesController : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<VenueDto>>> GetVenues(
+    public async Task<ActionResult<GetAllVenuesResponse>> GetVenues(
         [FromServices] IGetAllVenuesQueryHandler handler,
         CancellationToken cancellationToken)
     {
@@ -28,7 +28,7 @@ public class VenuesController : ControllerBase
         [FromServices] IGetVenueByIdentifierQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetVenueByIdentifierQuery(id);
+        var query = new GetVenueByIdQuery(id);
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

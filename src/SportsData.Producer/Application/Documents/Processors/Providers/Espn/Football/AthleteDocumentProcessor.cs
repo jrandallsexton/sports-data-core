@@ -16,6 +16,8 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 // TODO: Rename to FootballAthleteDocumentProcessor
@@ -30,8 +32,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refGenerator,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
         _config = config;
     }
@@ -43,7 +46,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                    ["CorrelationId"] = command.CorrelationId
                }))
         {
+
             _logger.LogInformation("Processing EventDocument with {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);

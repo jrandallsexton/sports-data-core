@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;
 
@@ -39,8 +40,10 @@ namespace SportsData.Api.Tests.Unit.Application.PickemGroups
             var message = new PickemGroupWeekMatchupsGenerated
             (
                 groupId,
-                2025,
                 1,
+                null,
+                Sport.FootballNcaa,
+                2025,
                 Guid.NewGuid(),
                 Guid.NewGuid()
             );

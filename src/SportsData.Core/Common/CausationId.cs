@@ -7,6 +7,7 @@ namespace SportsData.Core.Common
         public static class Api
         {
             public static Guid ContestScoringProcessor = new Guid("10000000-2000-0000-0000-000000000001");
+            public static Guid MatchupPreviewProcessor = new Guid("10000000-3000-0000-0000-000000000001");
         }
 
         public static class Producer

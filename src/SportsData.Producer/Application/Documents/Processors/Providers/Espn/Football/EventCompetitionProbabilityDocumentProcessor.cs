@@ -11,6 +11,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionProbability)]
@@ -21,8 +23,9 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
         ILogger<EventCompetitionProbabilityDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
     }
 
@@ -142,6 +145,9 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             command.SourceDataProvider.ToString().ToLowerInvariant(),
             dto.Ref?.ToString() ?? string.Empty,
             dto.SequenceNumber,
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.EventCompetitionProbabilityDocumentProcessor
         ));

@@ -5,6 +5,8 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 /// <summary>

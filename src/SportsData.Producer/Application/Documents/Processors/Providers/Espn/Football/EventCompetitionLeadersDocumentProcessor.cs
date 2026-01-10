@@ -15,6 +15,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 /// <summary>
@@ -31,8 +33,9 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -224,6 +227,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                     Id: athleteSeasonIdentity.UrlHash,
                     ParentId: athleteIdentity.CanonicalId.ToString(),
                     Uri: new Uri(athleteSeasonIdentity.CleanUrl),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.AthleteSeason,
@@ -273,6 +277,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 Id: franchiseSeasonIdentity.UrlHash,
                 ParentId: franchiseIdentity.CanonicalId.ToString(),
                 Uri: new Uri(franchiseSeasonIdentity.CleanUrl),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.TeamSeason,

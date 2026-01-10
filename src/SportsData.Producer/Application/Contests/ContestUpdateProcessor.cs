@@ -110,6 +110,7 @@ namespace SportsData.Producer.Application.Contests
                 Id: contestIdentity.UrlHash,
                 ParentId: null,
                 Uri: new Uri(contestIdentity.CleanUrl),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: contest.SeasonYear,
                 DocumentType: DocumentType.Event,

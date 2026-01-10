@@ -174,7 +174,7 @@ namespace SportsData.Producer.DependencyInjection
 
             // Venue Queries
             services.AddScoped<IGetAllVenuesQueryHandler, GetAllVenuesQueryHandler>();
-            services.AddScoped<IGetVenueByIdentifierQueryHandler, GetVenueByIdentifierQueryHandler>();
+            services.AddScoped<IGetVenueByIdentifierQueryHandler, GetVenueByIdQueryHandler>();
 
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();

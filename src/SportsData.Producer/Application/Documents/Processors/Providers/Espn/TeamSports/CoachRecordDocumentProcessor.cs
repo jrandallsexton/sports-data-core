@@ -9,6 +9,8 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachRecord)]
@@ -19,8 +21,9 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
         ILogger<CoachRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
     }
 

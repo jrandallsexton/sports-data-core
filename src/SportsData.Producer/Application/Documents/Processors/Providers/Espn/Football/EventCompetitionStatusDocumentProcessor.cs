@@ -10,6 +10,8 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionStatus)]
@@ -20,8 +22,9 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
         ILogger<EventCompetitionStatusDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
     }
 
@@ -121,6 +124,9 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
             await _publishEndpoint.Publish(new CompetitionStatusChanged(
                 competitionId,
                 entity.StatusTypeName,
+                _refGenerator.ForCompetition(competitionId),
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));

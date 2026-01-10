@@ -492,6 +492,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
             Id: Guid.NewGuid().ToString(),
             ParentId: parentId,
             Uri: refUri,
+            Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,
             DocumentType: type,

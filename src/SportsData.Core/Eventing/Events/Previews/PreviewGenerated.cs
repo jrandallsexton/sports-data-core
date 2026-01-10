@@ -1,11 +1,15 @@
 ﻿using System;
+using SportsData.Core.Common;
 
 namespace SportsData.Core.Eventing.Events.Previews
 {
     public record PreviewGenerated(
         Guid ContestId,
         string Message,
+        Uri? Ref,
+        Sport Sport,
+        int? SeasonYear,
         Guid CorrelationId,
         Guid CausationId
-    ) : EventBase(CorrelationId, CausationId);
+    ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);
 }

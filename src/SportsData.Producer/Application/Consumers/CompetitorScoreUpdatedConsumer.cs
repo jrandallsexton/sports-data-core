@@ -79,6 +79,9 @@ public class CompetitorScoreUpdatedConsumer : IConsumer<CompetitorScoreUpdated>
             ContestId: message.ContestId,
             FranchiseSeasonId: message.FranchiseSeasonId,
             Score: message.Score,
+            Ref: null,
+            Sport: message.Sport,
+            SeasonYear: message.SeasonYear,
             CorrelationId: message.CorrelationId,
             CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
         ));

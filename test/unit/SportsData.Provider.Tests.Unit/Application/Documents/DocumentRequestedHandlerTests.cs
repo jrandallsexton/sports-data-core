@@ -219,6 +219,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var evt = new DocumentRequested(Guid.NewGuid().ToString(),
             null,
             new Uri(targetUrl),
+            null,
             Sport.FootballNcaa, 2025, documentType, SourceDataProvider.Espn, Guid.NewGuid(),
             Guid.NewGuid());
 
@@ -260,6 +261,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var evt = new DocumentRequested(Guid.NewGuid().ToString(),
             null,
             new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/36?lang=en"),
+            null,
             Sport.FootballNcaa, 2025, DocumentType.Venue, SourceDataProvider.Espn, Guid.NewGuid(),
             Guid.NewGuid());
 

@@ -111,7 +111,11 @@ namespace SportsData.Api.Application.Contests
                 contestId,
                 article.Id,
                 article.Title,
-                Guid.NewGuid(), Guid.NewGuid());
+                null,
+                Sport.FootballNcaa,
+                article.SeasonYear,
+                Guid.NewGuid(),
+                Guid.NewGuid());
             await _publishEndpoint.Publish(evt);
 
             await _dataContext.SaveChangesAsync();

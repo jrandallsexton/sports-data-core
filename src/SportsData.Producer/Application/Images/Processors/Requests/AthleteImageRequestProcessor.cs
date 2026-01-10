@@ -111,6 +111,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 urlHash,
                 request.ParentEntityId,
                 request.Name,
+                null,
                 request.Sport,
                 request.SeasonYear,
                 logoDocType,

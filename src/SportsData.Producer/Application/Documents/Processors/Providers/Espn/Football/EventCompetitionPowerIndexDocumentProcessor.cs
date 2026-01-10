@@ -11,6 +11,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionPowerIndex)]
@@ -21,8 +23,9 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
         ILogger<EventCompetitionPowerIndexDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities identityGenerator)
-        : base(logger, dataContext, publishEndpoint, identityGenerator)
+        IGenerateExternalRefIdentities identityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, identityGenerator, refs)
     {
     }
 
@@ -106,6 +109,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
                 Id: teamHash,
                 ParentId: string.Empty,
                 Uri: dto.Team.Ref.ToCleanUri(),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.TeamSeason,

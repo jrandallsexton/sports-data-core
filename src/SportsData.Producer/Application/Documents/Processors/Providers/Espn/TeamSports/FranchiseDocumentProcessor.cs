@@ -12,6 +12,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Franchise)]
@@ -22,8 +24,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         ILogger<FranchiseDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
     }
 
@@ -99,6 +102,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 imgId,
                 franchise.Id,
                 $"{franchise.Id}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,
@@ -191,6 +195,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         await _publishEndpoint.Publish(
             new FranchiseCreated(
                 newEntity.ToCanonicalModel(),
+                null,
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor));
 
@@ -297,6 +304,9 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
             var evt = new FranchiseUpdated(
                 franchise.ToCanonicalModel(),
+                null,
+                command.Sport,
+                command.Season,
                 command.CorrelationId,
                 CausationId.Producer.FranchiseDocumentProcessor);
 

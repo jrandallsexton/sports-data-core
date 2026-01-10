@@ -166,6 +166,9 @@ namespace SportsData.Producer.Application.Contests
                     await _bus.Publish(
                         new ContestEnrichmentCompleted(
                             command.ContestId,
+                            null,
+                            contest.Sport,
+                            contest.SeasonYear,
                             command.CorrelationId,
                             Guid.NewGuid()));
                     await _dataContext.SaveChangesAsync();
@@ -238,6 +241,9 @@ namespace SportsData.Producer.Application.Contests
                 await _bus.Publish(
                     new ContestEnrichmentCompleted(
                         command.ContestId,
+                        null,
+                        Sport.FootballNcaa,
+                        contest.SeasonYear,
                         command.CorrelationId,
                         Guid.NewGuid()));
                 await _dataContext.SaveChangesAsync();

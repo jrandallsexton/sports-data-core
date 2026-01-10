@@ -11,6 +11,11 @@
         "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
         "Action": "Start",
         "DebugTarget": "http.FootballNcaa"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
       }
     ]
   }

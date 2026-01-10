@@ -162,6 +162,9 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
             // Publish event after successful persistence
             var evt = new PickemGroupCreated(
                 group.Id,
+                null,
+                group.Sport,
+                seasonYear,
                 Guid.NewGuid(),
                 Guid.NewGuid());
 

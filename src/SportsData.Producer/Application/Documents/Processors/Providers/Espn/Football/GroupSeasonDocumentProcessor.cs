@@ -13,6 +13,8 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeason)]
@@ -26,8 +28,9 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -126,6 +129,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         Id: Guid.NewGuid().ToString(),
                         ParentId: null,
                         Uri: dto.Season.Ref,
+                        Ref: null,
                         Sport: command.Sport,
                         SeasonYear: command.Season!.Value,
                         DocumentType: DocumentType.Season,
@@ -176,6 +180,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         Id: Guid.NewGuid().ToString(),
                         ParentId: null,
                         Uri: dto.Parent.Ref,
+                        Ref: null,
                         Sport: command.Sport,
                         SeasonYear: command.Season!.Value,
                         DocumentType: DocumentType.GroupSeason,
@@ -209,6 +214,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 Id: Guid.NewGuid().ToString(),
                 ParentId: groupSeasonEntity.Id.ToString(),
                 Uri: dto.Children.Ref,
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season!.Value,
                 DocumentType: DocumentType.GroupSeason,

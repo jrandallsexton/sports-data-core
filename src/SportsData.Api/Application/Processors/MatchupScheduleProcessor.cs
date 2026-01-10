@@ -167,8 +167,10 @@ namespace SportsData.Api.Application.Processors
             {
                 await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
                         group.Id,
-                        command.SeasonYear,
                         command.SeasonWeek,
+                        null,
+                        group.Sport,
+                        command.SeasonYear,
                         command.CorrelationId,
                         Guid.NewGuid()),
                     CancellationToken.None);

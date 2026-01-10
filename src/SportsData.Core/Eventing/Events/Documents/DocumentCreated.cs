@@ -10,7 +10,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         string Id,
         string? ParentId,
         string Name,
-        Uri Ref,
+        Uri? Ref,
         Uri SourceRef,
         string? DocumentJson,
         string SourceUrlHash,
@@ -22,5 +22,5 @@ namespace SportsData.Core.Eventing.Events.Documents
         Guid CausationId,
         int AttemptCount = 0,
         IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null
-    ) : EventBase(CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
+    ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
 }

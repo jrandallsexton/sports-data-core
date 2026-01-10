@@ -10,6 +10,8 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
@@ -23,8 +25,9 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         TDataContext db,
         IEventBus bus,
         IGenerateExternalRefIdentities idGen,
+        IGenerateResourceRefs refs,
         IJsonHashCalculator jsonHash)
-        : base(logger, db, bus, idGen)
+        : base(logger, db, bus, idGen, refs)
     {
         _jsonHash = jsonHash;
     }
@@ -153,12 +156,23 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         if (existing is null)
         {
             await _publishEndpoint.Publish(new ContestOddsCreated(
-                competition.Contest.Id, command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+                competition.Contest.Id,
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
+                CausationId.Producer.EventDocumentProcessor));
         }
         else
         {
             await _publishEndpoint.Publish(new ContestOddsUpdated(
-                competition.Contest.Id, "ContestOddsUpdated", command.CorrelationId, CausationId.Producer.EventDocumentProcessor));
+                competition.Contest.Id,
+                "ContestOddsUpdated",
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
+                CausationId.Producer.EventDocumentProcessor));
         }
 
         _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",

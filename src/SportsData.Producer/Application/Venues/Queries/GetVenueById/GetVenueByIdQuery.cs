@@ -1,3 +1,3 @@
 namespace SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
 
-public record GetVenueByIdentifierQuery(string Identifier);
+public record GetVenueByIdQuery(string Identifier);

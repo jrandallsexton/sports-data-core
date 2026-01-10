@@ -46,6 +46,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 evt.Id,
                 evt.ParentId,
                 evt.Uri,
+                evt.Ref,
                 evt.Sport,
                 evt.SeasonYear,
                 evt.DocumentType,

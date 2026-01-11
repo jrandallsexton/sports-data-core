@@ -64,13 +64,34 @@ public class ContestClient(HttpClient httpClient) : IContestClient
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            
+            // Map HTTP status codes to ResultStatus
+            var resultStatus = (int)response.StatusCode switch
+            {
+                404 => ResultStatus.NotFound,
+                401 => ResultStatus.Unauthorized,
+                400 => ResultStatus.BadRequest,
+                >= 500 and < 600 => ResultStatus.Error, // Server errors
+                _ => ResultStatus.Error
+            };
+            
             return new Failure<GetContestByIdResponse>(
                 default!,
-                ResultStatus.NotFound,
-                [new FluentValidation.Results.ValidationFailure("StatusCode", $"Failed to get contest: {response.StatusCode}. Response: {errorContent}")]);
+                resultStatus,
+                [new FluentValidation.Results.ValidationFailure("StatusCode", 
+                    $"Failed to get contest: {response.StatusCode}. Response: {errorContent}")]);
         }
 
         var contest = await response.Content.ReadFromJsonAsync<SeasonContestDto>(cancellationToken: cancellationToken);
+        
+        if (contest is null)
+        {
+            return new Failure<GetContestByIdResponse>(
+                default!,
+                ResultStatus.NotFound,
+                [new FluentValidation.Results.ValidationFailure("Contest", 
+                    "Response body was empty or invalid - could not deserialize contest")]);
+        }
         
         return new Success<GetContestByIdResponse>(new GetContestByIdResponse(contest));
     }

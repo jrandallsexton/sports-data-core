@@ -152,7 +152,7 @@ public class ResourceRefGeneratorTests
 
         // Assert
         result.Should().NotBeNull();
-        result.AbsoluteUri.Should().Be($"http://producer-svc-football-ncaa/api/competition/{competitionId}");
+        result.AbsoluteUri.Should().Be($"http://producer-svc-football-ncaa/api/competitions/{competitionId}");
     }
 
     [Fact]
@@ -411,7 +411,7 @@ public class ResourceRefGeneratorTests
         var uri = _generator.ForCompetition(Guid.NewGuid());
 
         // Assert
-        uri.AbsolutePath.Should().Contain("/api/competition/");
+        uri.AbsolutePath.Should().Contain("/api/competitions/");
         uri.AbsolutePath.Should().NotContain("Competition"); // Ensure lowercase
     }
 

@@ -59,36 +59,16 @@ namespace SportsData.Producer.Application.Contests
 
             var finalizedPrev = contest.FinalizedUtc;
 
-            contest.FinalizedUtc = null;
-
-            await _dataContext.SaveChangesAsync(ct);
-
-            await _eventBus.Publish(new ContestStatusChanged(
-                contestId,
-                nameof(ContestStatus.InProgress),
-                "0", "15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
-                null,
-                contest.Sport,
-                contest.SeasonYear,
-                correlationId,
-                CausationId.Producer.EventCompetitionStatusDocumentProcessor
-            ), ct);
-
-            await _dataContext.SaveChangesAsync(ct);
-
-            var plays = competition.Plays.OrderBy(x => int.Parse(x.SequenceNumber)).ToList();
-
-            foreach (var play in plays)
+            try
             {
+                contest.FinalizedUtc = null;
+
+                await _dataContext.SaveChangesAsync(ct);
+
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
                     nameof(ContestStatus.InProgress),
-                    $"Q{play.PeriodNumber}",
-                    play.ClockDisplayValue ?? "UNK",
-                    play.AwayScore,
-                    play.HomeScore,
-                    play.StartFranchiseSeasonId,
-                    play.ScoringPlay,
+                    "0", "15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
                     null,
                     contest.Sport,
                     contest.SeasonYear,
@@ -98,11 +78,37 @@ namespace SportsData.Producer.Application.Contests
 
                 await _dataContext.SaveChangesAsync(ct);
 
-                await Task.Delay(1000, ct);
-            }
+                var plays = competition.Plays.OrderBy(x => int.Parse(x.SequenceNumber)).ToList();
 
-            contest.FinalizedUtc = finalizedPrev;
-            await _dataContext.SaveChangesAsync(ct);
+                foreach (var play in plays)
+                {
+                    await _eventBus.Publish(new ContestStatusChanged(
+                        contestId,
+                        nameof(ContestStatus.InProgress),
+                        $"Q{play.PeriodNumber}",
+                        play.ClockDisplayValue ?? "UNK",
+                        play.AwayScore,
+                        play.HomeScore,
+                        play.StartFranchiseSeasonId,
+                        play.ScoringPlay,
+                        null,
+                        contest.Sport,
+                        contest.SeasonYear,
+                        correlationId,
+                        CausationId.Producer.EventCompetitionStatusDocumentProcessor
+                    ), ct);
+
+                    await _dataContext.SaveChangesAsync(ct);
+
+                    await Task.Delay(1000, ct);
+                }
+            }
+            finally
+            {
+                // Always restore FinalizedUtc, even if an exception occurred
+                contest.FinalizedUtc = finalizedPrev;
+                await _dataContext.SaveChangesAsync(ct);
+            }
         }
     }
 }

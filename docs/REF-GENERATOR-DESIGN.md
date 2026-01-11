@@ -188,7 +188,7 @@ public class ResourceRefGenerator : IGenerateResourceRefs
 
     // Producer resources
     public Uri ForCompetition(Guid competitionId) =>
-        new Uri($"{_producerBaseUrl}/api/competition/{competitionId}");
+        new Uri($"{_producerBaseUrl}/api/competitions/{competitionId}");
 
     public Uri ForFranchiseSeason(Guid franchiseSeasonId) =>
         new Uri($"{_producerBaseUrl}/api/franchiseseason/{franchiseSeasonId}");
@@ -363,13 +363,13 @@ public class CompetitionStatusChangedConsumer : IConsumer<CompetitionStatusChang
 ### Local Development
 ```
 Base URL: http://localhost:5001
-Generated: http://localhost:5001/api/competition/{guid}
+Generated: http://localhost:5001/api/competitions/{guid}
 ```
 
 ### Kubernetes (Dev/QA/Prod)
 ```
 Base URL: http://producer-svc-football-ncaa
-Generated: http://producer-svc-football-ncaa/api/competition/{guid}
+Generated: http://producer-svc-football-ncaa/api/competitions/{guid}
 ```
 
 The DNS resolution happens automatically within the cluster.
@@ -395,11 +395,11 @@ Future consideration for versioning:
 ```csharp
 // Option A: Version in path
 public Uri ForCompetition(Guid competitionId) =>
-    new Uri($"{_producerBaseUrl}/api/v1/competition/{competitionId}");
+    new Uri($"{_producerBaseUrl}/api/v1/competitions/{competitionId}");
 
 // Option B: Version in header (ref stays versionless)
 public Uri ForCompetition(Guid competitionId) =>
-    new Uri($"{_producerBaseUrl}/api/competition/{competitionId}");
+    new Uri($"{_producerBaseUrl}/api/competitions/{competitionId}");
 ```
 
 ### 3. External vs Internal Refs
@@ -411,8 +411,8 @@ public interface IGenerateResourceRefs
     Uri ForCompetition(Guid competitionId, bool external = false);
 }
 
-// Internal: http://producer-svc-football-ncaa/api/competition/{id}
-// External: https://api.sportdeets.com/producer/api/competition/{id}
+// Internal: http://producer-svc-football-ncaa/api/competitions/{id}
+// External: https://api.sportdeets.com/producer/api/competitions/{id}
 ```
 
 ### 4. Route Consistency

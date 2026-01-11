@@ -44,7 +44,7 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdQueryHandler
 
         // Get canonical data from internal service (Producer)
         var client = _venueClientFactory.Resolve(query.Sport, query.League);
-        var venueResult = await client.GetVenueById(query.Id);
+        var venueResult = await client.GetVenueById(query.Id, cancellationToken);
 
         if (venueResult is Failure<GetVenueByIdResponse> failure)
         {

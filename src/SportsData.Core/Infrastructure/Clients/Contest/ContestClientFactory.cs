@@ -42,13 +42,13 @@ public class ContestClientFactory : IContestClientFactory
 
         if (!_clientCache.TryGetValue(mode, out var client))
         {
-            var configKey = CommonConfigKeys.GetFranchiseProviderUri();
+            var configKey = CommonConfigKeys.GetContestProviderUri(mode);
             var apiUrl = _configuration[configKey];
 
             if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", mode, configKey);
-                throw new InvalidOperationException($"Producer API URL not configured for mode {mode}");
+                _logger.LogError("Missing Contest API URL for mode {Mode}. Config key: {ConfigKey}", mode, configKey);
+                throw new InvalidOperationException($"Contest API URL not configured for mode {mode}. Config key: {configKey}");
             }
 
             _logger.LogInformation("Creating contest client for mode {Mode} with base URL: {ApiUrl}", mode, apiUrl);

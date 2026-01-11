@@ -35,7 +35,7 @@ public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
                 [new FluentValidation.Results.ValidationFailure("ContestId", $"Contest '{query.ContestId}' not found")]);
         }
 
-        var contest = ((Success<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse>)contestResult).Value.Contest!;
+        var contest = ((Success<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse>)contestResult).Value.Contest;
         var response = EnrichContest(contest, query.Sport, query.League);
 
         return new Success<ContestDetailResponseDto>(response);

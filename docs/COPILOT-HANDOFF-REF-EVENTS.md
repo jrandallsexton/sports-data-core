@@ -172,7 +172,7 @@ public class FootballRefGenerator : TeamSportRefGenerator
 ## Next Steps (Phase 4 - Optional)
 
 1. **Add GET endpoints to Producer API** - Make refs resolvable:
-   - `/api/competition/{id}` endpoint
+   - `/api/competitions/{id}` endpoint
    - `/api/athlete/{id}` endpoint
    - `/api/season/{year}` endpoint
    - etc.

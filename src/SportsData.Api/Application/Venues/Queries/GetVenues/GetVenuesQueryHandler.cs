@@ -40,7 +40,7 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
 
         // Get canonical data from internal service (Producer)
         var client = _venueClientFactory.Resolve(query.Sport, query.League);
-        var venuesResult = await client.GetVenues(query.PageNumber, query.PageSize);
+        var venuesResult = await client.GetVenues(query.PageNumber, query.PageSize, cancellationToken);
 
         if (venuesResult is Failure<GetVenuesResponse> failure)
         {

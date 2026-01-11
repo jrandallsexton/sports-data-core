@@ -39,7 +39,7 @@ public class ResourceRefGenerator : IGenerateResourceRefs
 
     // Producer resources
     public Uri ForCompetition(Guid competitionId) =>
-        new Uri($"{_producerBaseUrl}/competition/{competitionId}");
+        new Uri($"{_producerBaseUrl}/competitions/{competitionId}");
 
     public Uri ForFranchiseSeason(Guid franchiseSeasonId) =>
         new Uri($"{_producerBaseUrl}/franchiseseason/{franchiseSeasonId}");

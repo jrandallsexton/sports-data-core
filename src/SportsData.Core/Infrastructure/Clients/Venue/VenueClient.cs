@@ -9,14 +9,15 @@ using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Core.Middleware.Health;
 
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Venue;
 
 public interface IProvideVenues : IProvideHealthChecks
 {
-    Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50);
-    Task<Result<GetVenueByIdResponse>> GetVenueById(string id);
+    Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default);
+    Task<Result<GetVenueByIdResponse>> GetVenueById(string id, CancellationToken cancellationToken = default);
 }
 
 public class VenueClient : ClientBase, IProvideVenues
@@ -31,10 +32,10 @@ public class VenueClient : ClientBase, IProvideVenues
         _logger = logger;
     }
 
-    public async Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50)
+    public async Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"venues?pageNumber={pageNumber}&pageSize={pageSize}");
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await HttpClient.GetAsync($"venues?pageNumber={pageNumber}&pageSize={pageSize}", cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -59,10 +60,10 @@ public class VenueClient : ClientBase, IProvideVenues
         return new Failure<GetVenuesResponse>(new GetVenuesResponse(), status, errors);
     }
 
-    public async Task<Result<GetVenueByIdResponse>> GetVenueById(string id)
+    public async Task<Result<GetVenueByIdResponse>> GetVenueById(string id, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"venues/{id}");
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await HttpClient.GetAsync($"venues/{id}", cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {

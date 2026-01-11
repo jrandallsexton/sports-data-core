@@ -134,7 +134,7 @@ spec:
 /// Generates absolute URIs for resources across all microservices.
 /// Supports HATEOAS links in DTOs and integration events.
 /// </summary>
-public interface IResourceRefGenerator
+public interface IGenerateResourceRefs
 {
     // Producer resources
     Uri ForCompetition(Guid competitionId);
@@ -160,7 +160,7 @@ public interface IResourceRefGenerator
 /// Generates resource URIs using Azure AppConfig service URLs.
 /// Thread-safe singleton service.
 /// </summary>
-public class ResourceRefGenerator : IResourceRefGenerator
+public class ResourceRefGenerator : IGenerateResourceRefs
 {
     private readonly string _producerBaseUrl;
     private readonly string _contestBaseUrl;
@@ -229,7 +229,7 @@ public static IServiceCollection AddCoreServices(
     services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
     services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();
     services.AddSingleton<IGenerateExternalRefIdentities, ExternalRefIdentityGenerator>();
-    services.AddSingleton<IResourceRefGenerator, ResourceRefGenerator>(); // ← ADD THIS
+    services.AddSingleton<IGenerateResourceRefs, ResourceRefGenerator>(); // ← ADD THIS
     return services;
 }
 ```
@@ -248,14 +248,14 @@ public abstract class DocumentProcessorBase<TDataContext>
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
     protected readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    protected readonly IResourceRefGenerator _refGenerator; // ← ADD THIS
+    protected readonly IGenerateResourceRefs _refGenerator; // ← ADD THIS
 
     protected DocumentProcessorBase(
         ILogger logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IResourceRefGenerator refGenerator) // ← ADD PARAMETER
+        IGenerateResourceRefs refGenerator) // ← ADD PARAMETER
     {
         _logger = logger;
         _dataContext = dataContext;
@@ -406,7 +406,7 @@ public Uri ForCompetition(Guid competitionId) =>
 Currently assumes internal Kubernetes DNS. For external consumers, may need:
 
 ```csharp
-public interface IResourceRefGenerator
+public interface IGenerateResourceRefs
 {
     Uri ForCompetition(Guid competitionId, bool external = false);
 }
@@ -467,7 +467,7 @@ public class ContestDto
 ## File Locations
 
 ### New Files to Create
-- `src/SportsData.Core/Infrastructure/Refs/IResourceRefGenerator.cs`
+- `src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs`
 - `src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs`
 
 ### Files to Modify
@@ -481,7 +481,7 @@ public class ContestDto
 ## Migration Path
 
 1. **Phase 1: Core Implementation**
-   - Create `IResourceRefGenerator` interface
+   - Create `IGenerateResourceRefs` interface
    - Implement `ResourceRefGenerator`
    - Add DI registration
    - Write unit tests
@@ -516,7 +516,7 @@ public class ContestDto
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-01-08 | Use existing Azure AppConfig for service URLs | Already configured and used by HttpClients |
-| 2026-01-08 | Create single IResourceRefGenerator for all services | Centralized, reusable, cross-service support |
+| 2026-01-08 | Create single IGenerateResourceRefs for all services | Centralized, reusable, cross-service support |
 | 2026-01-08 | Generate absolute URIs | Required for service-to-service communication |
 | 2026-01-08 | Use template-based approach (not route-based) | Simpler, works in background jobs without HttpContext |
 

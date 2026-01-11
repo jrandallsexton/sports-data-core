@@ -22,7 +22,7 @@ This document captures the architectural decisions around exposing internal micr
 ### External API (SportsData.Api)
 - **Purpose:** Consumer-facing interface with discoverability
 - **DTOs:** Enriched with HATEOAS refs and navigation links
-- **Adds refs:** Uses `IResourceRefGenerator` to inject links
+- **Adds refs:** Uses `IGenerateResourceRefs` to inject links
 - **Consumer-focused:** Optimized for external client navigation
 - **Example:** API's VenueController returns enriched response with refs
 
@@ -137,7 +137,7 @@ public class VenueResponseDto
 public class VenueController : ControllerBase
 {
     private readonly IVenueClient _venueClient;
-    private readonly IResourceRefGenerator _refGenerator;
+    private readonly IGenerateResourceRefs _refGenerator;
 
     [HttpGet("{id}")]
     public async Task<ActionResult<VenueResponseDto>> GetVenue(Guid id)
@@ -153,7 +153,7 @@ public class VenueController : ControllerBase
             City = canonicalVenue.City,
             State = canonicalVenue.State,
             
-            // Add refs using IResourceRefGenerator
+            // Add refs using IGenerateResourceRefs
             Ref = _refGenerator.ForVenue(canonicalVenue.Id),
             Links = new Dictionary<string, Uri>
             {
@@ -234,7 +234,7 @@ await _publishEndpoint.Publish(new VenueCreated(
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  VenueController                                     │   │
 │  │  - Gets canonical DTO from VenueClient               │   │
-│  │  - Enriches with refs via IResourceRefGenerator      │   │
+│  │  - Enriches with refs via IGenerateResourceRefs      │   │
 │  │  - Returns VenueResponseDto with HATEOAS             │   │
 │  └──────────────────┬───────────────────────────────────┘   │
 │                     │                                        │
@@ -352,7 +352,7 @@ public class VenueDto
 ```
 **Why:** Canonical DTOs should be pure data, reusable across internal services.
 
-### ❌ Don't: Have Internal Services Call IResourceRefGenerator
+### ❌ Don't: Have Internal Services Call IGenerateResourceRefs
 ```csharp
 // BAD - in Producer
 public async Task<VenueDto> GetVenue(Guid id)

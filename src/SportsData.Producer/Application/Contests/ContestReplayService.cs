@@ -57,19 +57,24 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            var finalizedPrev = contest.FinalizedUtc;
+
             contest.FinalizedUtc = null;
+
             await _dataContext.SaveChangesAsync(ct);
 
             await _eventBus.Publish(new ContestStatusChanged(
                 contestId,
-                ContestStatus.InProgress.ToString(),
+                nameof(ContestStatus.InProgress),
                 "0", "15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
                 null,
-                Sport.FootballNcaa,
+                contest.Sport,
                 contest.SeasonYear,
                 correlationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ), ct);
+
+            await _dataContext.SaveChangesAsync(ct);
 
             var plays = competition.Plays.OrderBy(x => int.Parse(x.SequenceNumber)).ToList();
 
@@ -77,7 +82,7 @@ namespace SportsData.Producer.Application.Contests
             {
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
-                    ContestStatus.InProgress.ToString(),
+                    nameof(ContestStatus.InProgress),
                     $"Q{play.PeriodNumber}",
                     play.ClockDisplayValue ?? "UNK",
                     play.AwayScore,
@@ -85,14 +90,19 @@ namespace SportsData.Producer.Application.Contests
                     play.StartFranchiseSeasonId,
                     play.ScoringPlay,
                     null,
-                    Sport.FootballNcaa,
+                    contest.Sport,
                     contest.SeasonYear,
                     correlationId,
                     CausationId.Producer.EventCompetitionStatusDocumentProcessor
                 ), ct);
 
+                await _dataContext.SaveChangesAsync(ct);
+
                 await Task.Delay(1000, ct);
             }
+
+            contest.FinalizedUtc = finalizedPrev;
+            await _dataContext.SaveChangesAsync(ct);
         }
     }
 }

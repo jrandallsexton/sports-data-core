@@ -1,11 +1,6 @@
+using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
-using SportsData.Api.Infrastructure.Refs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SportsData.Api.Application.Venues.Queries.GetVenues;
 

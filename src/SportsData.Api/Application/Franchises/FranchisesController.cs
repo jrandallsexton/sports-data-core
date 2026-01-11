@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
@@ -16,7 +17,7 @@ namespace SportsData.Api.Application.Franchises;
 public class FranchisesController : ApiControllerBase
 {
     [HttpGet(Name = "GetFranchises")]
-    [Produces<GetFranchisesResponseDto>]
+    [ProducesResponseType(typeof(GetFranchisesResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<GetFranchisesResponseDto>> GetFranchises(
         [FromServices] IGetFranchisesQueryHandler handler,
         [FromRoute] string sport,
@@ -32,7 +33,7 @@ public class FranchisesController : ApiControllerBase
     }
 
     [HttpGet("{franchiseIdOrSlug}")]
-    [Produces<FranchiseResponseDto>]
+    [ProducesResponseType(typeof(FranchiseResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<FranchiseResponseDto>> GetFranchiseById(
         [FromServices] IGetFranchiseByIdQueryHandler handler,
         [FromRoute] string sport,
@@ -47,7 +48,7 @@ public class FranchisesController : ApiControllerBase
     }
 
     [HttpGet("{franchiseIdOrSlug}/seasons")]
-    [Produces<GetFranchiseSeasonsResponseDto>]
+    [ProducesResponseType(typeof(GetFranchiseSeasonsResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<GetFranchiseSeasonsResponseDto>> GetFranchiseSeasons(
         [FromServices] IGetFranchiseSeasonsQueryHandler handler,
         [FromRoute] string sport,
@@ -62,7 +63,7 @@ public class FranchisesController : ApiControllerBase
     }
 
     [HttpGet("{franchiseIdOrSlug}/seasons/{seasonYear}")]
-    [Produces<FranchiseSeasonResponseDto>]
+    [ProducesResponseType(typeof(FranchiseSeasonResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<FranchiseSeasonResponseDto>> GetFranchiseSeasonById(
         [FromServices] IGetFranchiseSeasonByIdQueryHandler handler,
         [FromRoute] string sport,
@@ -78,7 +79,7 @@ public class FranchisesController : ApiControllerBase
     }
 
     [HttpGet("{franchiseIdOrSlug}/seasons/{seasonYear}/contests")]
-    [Produces<GetSeasonContestsResponseDto>]
+    [ProducesResponseType(typeof(GetSeasonContestsResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<GetSeasonContestsResponseDto>> GetSeasonContests(
         [FromServices] IGetSeasonContestsQueryHandler handler,
         [FromRoute] string sport,

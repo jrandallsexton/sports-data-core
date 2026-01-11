@@ -12,7 +12,7 @@ namespace SportsData.Api.Application.Venues;
 public class VenuesController : ApiControllerBase
 {
     [HttpGet(Name = "GetVenues")]
-    [Produces<GetVenuesResponseDto>]
+    [ProducesResponseType(typeof(GetVenuesResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<GetVenuesResponseDto>> GetVenues(
         [FromServices] IGetVenuesQueryHandler handler,
         [FromRoute] string sport,
@@ -35,7 +35,7 @@ public class VenuesController : ApiControllerBase
     }
 
     [HttpGet("{id}")]
-    [Produces<VenueResponseDto>]
+    [ProducesResponseType(typeof(VenueResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<VenueResponseDto>> GetVenueById(
         [FromServices] IGetVenueByIdQueryHandler handler,
         [FromRoute] string sport,

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SportsData.Api.Application.Contests.Queries.GetContestById;
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
@@ -10,6 +11,7 @@ namespace SportsData.Api.Application.Contests;
 public class ContestsController : ControllerBase
 {
     [HttpGet("{contestId:guid}")]
+    [ProducesResponseType(typeof(ContestDetailResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ContestDetailResponseDto>> GetContestById(
         [FromServices] IGetContestByIdQueryHandler handler,
         [FromRoute] string sport,

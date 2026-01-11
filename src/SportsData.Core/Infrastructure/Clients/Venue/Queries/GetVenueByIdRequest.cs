@@ -1,4 +1,4 @@
-﻿using SportsData.Core.Infrastructure.Clients.Venue.DTOs;
+﻿using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Core.Infrastructure.Clients.Venue.Queries
 {

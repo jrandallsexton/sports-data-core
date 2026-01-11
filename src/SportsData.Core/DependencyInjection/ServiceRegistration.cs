@@ -20,6 +20,7 @@ using SportsData.Core.Config;
 using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.YouTube;
@@ -401,20 +402,32 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            // VenueClient is handled via factory instead
+            // Client factories handle resolution by sport/league mode
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
+            services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
+            services.AddSingleton<IFranchiseSeasonClientFactory, FranchiseSeasonClientFactory>();
+            services.AddSingleton<IContestClientFactory, ContestClientFactory>();
 
-            // Register venue clients by mode (for use by factory)
+            // Register venue and franchise clients by mode (for use by factories)
             var supportedModes = configuration.GetSection("CommonConfig:Api:SupportedModes").Get<Sport[]>();
             if (supportedModes != null)
             {
                 foreach (var sport in supportedModes)
                 {
-                    var apiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
-                    if (!string.IsNullOrEmpty(apiUrl))
+                    // Venue client registration
+                    var venueApiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
+                    if (!string.IsNullOrEmpty(venueApiUrl))
                     {
-                        var clientName = $"{HttpClients.VenueClient}";
-                        services.AddHttpClient(clientName, client => client.BaseAddress = new Uri(apiUrl));
+                        var venueClientName = $"{HttpClients.VenueClient}";
+                        services.AddHttpClient(venueClientName, client => client.BaseAddress = new Uri(venueApiUrl));
+                    }
+
+                    // Franchise client registration
+                    var franchiseApiUrl = configuration[CommonConfigKeys.GetFranchiseProviderUri()];
+                    if (!string.IsNullOrEmpty(franchiseApiUrl))
+                    {
+                        var franchiseClientName = $"{HttpClients.FranchiseClient}";
+                        services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
                     }
                 }
             }

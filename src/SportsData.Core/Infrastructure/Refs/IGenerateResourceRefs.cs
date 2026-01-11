@@ -27,7 +27,9 @@ public interface IGenerateResourceRefs
 
     // Venue resources
     Uri ForVenue(Guid venueId);
+    Uri ForVenues(int? pageNumber = null, int? pageSize = null);
     
     // Franchise resources
     Uri ForFranchise(Guid franchiseId);
+    Uri ForFranchises(int? pageNumber = null, int? pageSize = null);
 }

@@ -1,11 +1,6 @@
-﻿using SportsData.Core.Dtos.Canonical;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 
-namespace SportsData.Producer.Application.Venues.Queries.GetAllVenues
-{
-    public class GetAllVenuesResponse
-    {
-        public int Count { get; set; }
+namespace SportsData.Producer.Application.Venues.Queries.GetAllVenues;
 
-        public List<VenueDto> Items { get; set; } = [];
-    }
-}
+public class GetAllVenuesResponse : PaginatedResponse<VenueDto> { }

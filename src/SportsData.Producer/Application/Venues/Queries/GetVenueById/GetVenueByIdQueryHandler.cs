@@ -9,7 +9,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Infrastructure.Data.Common;
 
-namespace SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
+namespace SportsData.Producer.Application.Venues.Queries.GetVenueById;
 
 public interface IGetVenueByIdentifierQueryHandler
 {
@@ -85,7 +85,6 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdentifierQueryHandler
         }
 
         var dto = _mapper.Map<VenueDto>(venue);
-        dto.Ref = _refGenerator.ForVenue(venue.Id);
 
         return new Success<VenueDto>(dto);
     }

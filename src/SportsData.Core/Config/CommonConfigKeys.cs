@@ -53,6 +53,9 @@ namespace SportsData.Core.Config
         public static string GetFranchiseProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(FranchiseClientConfig)}:{mode}:{nameof(FranchiseClientConfig.ApiUrl)}";
 
+        public static string GetFranchiseProviderUri() =>
+            $"{nameof(CommonConfig)}:{nameof(FranchiseClientConfig)}:{nameof(FranchiseClientConfig.ApiUrl)}";
+
         public static string GetNotificationProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(NotificationClientConfig)}:{mode}:{nameof(NotificationClientConfig.ApiUrl)}";
 

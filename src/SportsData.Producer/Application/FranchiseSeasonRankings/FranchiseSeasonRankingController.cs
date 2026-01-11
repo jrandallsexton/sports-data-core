@@ -7,7 +7,7 @@ using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrent
 
 namespace SportsData.Producer.Application.FranchiseSeasonRankings
 {
-    [Route("api/franchise-season-ranking")]
+    [Route("api/franchise-season-rankings")]
     public class FranchiseSeasonRankingController : ApiControllerBase
     {
         [HttpGet("seasonYear/{seasonYear}")]

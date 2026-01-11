@@ -26,7 +26,7 @@ We successfully updated integration events in a .NET sports data application to 
    - `DocumentRequestedHandlerTests` - added missing Ref parameter (2 locations)
 
 ### Phase 3 (by Copilot) - Ref Generator Implementation ✅
-1. ✅ **Created IResourceRefGenerator interface** (`src/SportsData.Core/Infrastructure/Refs/IResourceRefGenerator.cs`)
+1. ✅ **Created IGenerateResourceRefs interface** (`src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs`)
    - 15 methods for all resource types across microservices
    - Supports Producer, Contest, Venue, and Franchise resources
    - **No Sport parameter** - Sport configured at startup via IAppMode
@@ -34,14 +34,14 @@ We successfully updated integration events in a .NET sports data application to 
    - Reads base URLs from Azure AppConfig
    - Constructor takes `IConfiguration` and `IAppMode`
    - **Sport-specific at construction** - Resolves sport-specific URLs once at startup
-   - **Virtual methods** - Designed for inheritance hierarchy (e.g., FootballRefGenerator : TeamSportRefGenerator : ResourceRefGenerator)
+   - **Non-virtual methods** - Designed for inheritance; derived classes add new methods rather than override
    - Generates absolute URIs in format: `{baseUrl}/api/{resourceType}/{id}`
 3. ✅ **Registered in DI container** (`ServiceRegistration.cs`)
    - Singleton lifetime (stateless and thread-safe)
    - One instance per service, configured for that service's sport
 4. ✅ **Injected into all document processors** (47 files)
-   - Updated DocumentProcessorBase to accept IResourceRefGenerator
-   - All derived processors now have `_refGenerator` available
+   - Updated DocumentProcessorBase to accept IGenerateResourceRefs
+   - All derived processors now have `Refs` field available
 5. ✅ **Created comprehensive unit tests** (`ResourceRefGeneratorTests.cs`)
    - 22 tests covering all scenarios
    - All tests passing ✅
@@ -95,7 +95,7 @@ We successfully updated integration events in a .NET sports data application to 
 
 ## What's Ready to Use
 
-The ref generator infrastructure is fully implemented and available in all document processors via `_refGenerator`. You can now replace `null` refs with actual URIs:
+The ref generator infrastructure is fully implemented and available in all document processors via `Refs`. You can now replace `null` refs with actual URIs:
 
 **Example:**
 ```csharp
@@ -114,7 +114,7 @@ await _publishEndpoint.Publish(new CompetitionStatusChanged(
 await _publishEndpoint.Publish(new CompetitionStatusChanged(
     competitionId,
     entity.StatusTypeName,
-    _refGenerator.ForCompetition(competitionId),  // ← actual ref! No Sport param needed
+    Refs.ForCompetition(competitionId),  // ← actual ref! No Sport param needed
     command.Sport,
     command.Season,
     command.CorrelationId,
@@ -184,7 +184,7 @@ public class FootballRefGenerator : TeamSportRefGenerator
 
 3. **Add HATEOAS to API DTOs** - Include refs in API responses:
    - Update DTO classes to include ref properties
-   - Update mappers to populate refs using `_refGenerator`
+   - Inject `IGenerateResourceRefs` into controllers/services and populate refs
 
 4. **Document ref patterns** - Create guide for developers:
    - When to include refs vs leave null

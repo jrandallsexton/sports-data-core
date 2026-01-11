@@ -4,7 +4,7 @@ using FluentAssertions;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
+using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 using Xunit;

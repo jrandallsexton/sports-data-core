@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using System;
+using System.Collections.Generic;
 
 namespace SportsData.Core.Infrastructure.Refs;
 
@@ -78,7 +79,37 @@ public class ResourceRefGenerator : IGenerateResourceRefs
     public Uri ForVenue(Guid venueId) =>
         new Uri($"{_producerBaseUrl}/venues/{venueId}");
 
+    public Uri ForVenues(int? pageNumber = null, int? pageSize = null)
+    {
+        var queryParams = new List<string>();
+        
+        if (pageNumber.HasValue)
+            queryParams.Add($"pageNumber={pageNumber.Value}");
+            
+        if (pageSize.HasValue)
+            queryParams.Add($"pageSize={pageSize.Value}");
+        
+        var query = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : string.Empty;
+        
+        return new Uri($"{_producerBaseUrl}/venues{query}");
+    }
+
     // Franchise resources
     public Uri ForFranchise(Guid franchiseId) =>
-        new Uri($"{_producerBaseUrl}/franchise/{franchiseId}");
+        new Uri($"{_producerBaseUrl}/franchises/{franchiseId}");
+
+    public Uri ForFranchises(int? pageNumber = null, int? pageSize = null)
+    {
+        var queryParams = new List<string>();
+        
+        if (pageNumber.HasValue)
+            queryParams.Add($"pageNumber={pageNumber.Value}");
+            
+        if (pageSize.HasValue)
+            queryParams.Add($"pageSize={pageSize.Value}");
+        
+        var query = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : string.Empty;
+        
+        return new Uri($"{_producerBaseUrl}/franchises{query}");
+    }
 }

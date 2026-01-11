@@ -1,21 +1,21 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentValidation.Results;
+
+using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.Venue.DTOs;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Core.Middleware.Health;
 
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using FluentValidation.Results;
 
 namespace SportsData.Core.Infrastructure.Clients.Venue;
 
 public interface IProvideVenues : IProvideHealthChecks
 {
-    Task<Result<GetVenuesResponse>> GetVenues();
+    Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50);
     Task<Result<GetVenueByIdResponse>> GetVenueById(string id);
 }
 
@@ -31,22 +31,27 @@ public class VenueClient : ClientBase, IProvideVenues
         _logger = logger;
     }
 
-    public async Task<Result<GetVenuesResponse>> GetVenues()
+    public async Task<Result<GetVenuesResponse>> GetVenues(int pageNumber = 1, int pageSize = 50)
     {
-        var response = await HttpClient.GetAsync("venues");
+        var response = await HttpClient.GetAsync($"venues?pageNumber={pageNumber}&pageSize={pageSize}");
         var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
         {
-            var venues = content.FromJson<List<VenueDto>>() ?? [];
+            var result = content.FromJson<GetVenuesResponse>();
 
-            return new Success<GetVenuesResponse>(new GetVenuesResponse
+            if (result == null)
             {
-                Venues = venues
-            });
+                return new Failure<GetVenuesResponse>(
+                    new GetVenuesResponse(),
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure("Response", "Unable to deserialize venues response")]);
+            }
+
+            return new Success<GetVenuesResponse>(result);
         }
 
-        var failure = content.FromJson<Failure<List<VenueDto>>>();
+        var failure = content.FromJson<Failure<GetVenuesResponse>>();
 
         var status = failure?.Status ?? ResultStatus.BadRequest;
         var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing venue data")];

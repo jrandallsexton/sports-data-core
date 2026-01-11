@@ -8,7 +8,7 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 
 namespace SportsData.Producer.Application.FranchiseSeasons;
 
-[Route("api/franchise-season")]
+[Route("api/franchise-seasons")]
 [ApiController]
 public class FranchiseSeasonController : ControllerBase
 {

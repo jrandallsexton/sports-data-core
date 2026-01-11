@@ -13,14 +13,22 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
-using SportsData.Api.Application.Contests;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticleById;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
+using SportsData.Api.Application.Franchises.Queries.GetFranchises;
+using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
+using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
+using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
+using SportsData.Api.Application.Franchises.Seasons.Contests;
+using SportsData.Api.Application.Contests.Queries.GetContestById;
+using SportsData.Api.Application.Venues.Queries.GetVenues;
+using SportsData.Api.Application.Venues.Queries.GetVenueById;
 using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
+using SportsData.Api.Infrastructure.Refs;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
@@ -119,6 +127,18 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetArticlesQueryHandler, GetArticlesQueryHandler>();
             services.AddScoped<IGetArticleByIdQueryHandler, GetArticleByIdQueryHandler>();
 
+            // Franchises Queries
+            services.AddScoped<IGetFranchisesQueryHandler, GetFranchisesQueryHandler>();
+            services.AddScoped<IGetFranchiseByIdQueryHandler, GetFranchiseByIdQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonsQueryHandler, GetFranchiseSeasonsQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonByIdQueryHandler, GetFranchiseSeasonByIdQueryHandler>();
+            services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
+            services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
+
+            // Venues Queries
+            services.AddScoped<IGetVenuesQueryHandler, GetVenuesQueryHandler>();
+            services.AddScoped<IGetVenueByIdQueryHandler, GetVenueByIdQueryHandler>();
+
             // Conferences Queries
             services.AddScoped<IGetConferenceNamesAndSlugsQueryHandler, GetConferenceNamesAndSlugsQueryHandler>();
 
@@ -164,6 +184,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
+            
+            // HATEOAS Ref Generator (external API)
+            services.AddSingleton<IGenerateApiResourceRefs, ApiResourceRefGenerator>();
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
@@ -188,13 +211,14 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<ContestScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();
 
-            services.AddScoped<ContestRecapJob>();
-            services.AddScoped<ContestRecapProcessor>();
+            // TODO: Restore after Contest processing is refactored
+            // services.AddScoped<ContestRecapJob>();
+            // services.AddScoped<ContestRecapProcessor>();
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeagueWeekScoringService, LeagueWeekScoringService>();
 
-            // Synthetic pick services
+            // Synthetic pick services (required by other services)
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
             services.AddScoped<ISyntheticPickService, SyntheticPickService>();
 

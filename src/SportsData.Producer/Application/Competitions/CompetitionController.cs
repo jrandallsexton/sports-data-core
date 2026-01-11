@@ -9,7 +9,7 @@ using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMe
 
 namespace SportsData.Producer.Application.Competitions;
 
-[Route("api/competition")]
+[Route("api/competitions")]
 [ApiController]
 public class CompetitionController : ControllerBase
 {

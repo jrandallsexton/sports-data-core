@@ -38,7 +38,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear)
         {
-            var response = await HttpClient.GetAsync($"franchise-season/seasonYear/{seasonYear}/metrics");
+            var response = await HttpClient.GetAsync($"franchise-seasons/seasonYear/{seasonYear}/metrics");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var metrics = tmp.FromJson<List<FranchiseSeasonMetricsDto>>();
@@ -47,7 +47,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
         {
-            var response = await HttpClient.GetAsync($"franchise-season/id/{franchiseSeasonId}/metrics");
+            var response = await HttpClient.GetAsync($"franchise-seasons/id/{franchiseSeasonId}/metrics");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var metrics = tmp.FromJson<FranchiseSeasonMetricsDto>();
@@ -56,7 +56,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<VenueDto?> GetVenue(string id)
         {
-            var response = await HttpClient.GetAsync($"venue/{id}");
+            var response = await HttpClient.GetAsync($"venues/{id}");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var venue = tmp.FromJson<Success<VenueDto>>();
@@ -66,7 +66,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 
         public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
         {
-            var response = await HttpClient.GetAsync($"contest/{contestId}/overview");
+            var response = await HttpClient.GetAsync($"contests/{contestId}/overview");
             response.EnsureSuccessStatusCode();
             var tmp = await response.Content.ReadAsStringAsync();
             var overview = tmp.FromJson<ContestOverviewDto>();
@@ -77,14 +77,14 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
         public async Task RefreshContestByContestId(Guid contestId)
         {
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"contest/{contestId}/update", content);
+            var response = await HttpClient.PostAsync($"contests/{contestId}/update", content);
             response.EnsureSuccessStatusCode();
         }
 
         public async Task RefreshContestMediaByContestId(Guid contestId)
         {
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"contest/{contestId}/media/refresh", content);
+            var response = await HttpClient.PostAsync($"contests/{contestId}/media/refresh", content);
             response.EnsureSuccessStatusCode();
         }
 
@@ -96,7 +96,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             
             try
             {
-                var url = $"franchise-season-ranking/seasonYear/{seasonYear}";
+                var url = $"franchise-season-rankings/seasonYear/{seasonYear}";
                 _logger.LogDebug(
                     "Making HTTP GET request to Producer: {Url}", 
                     url);

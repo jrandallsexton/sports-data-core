@@ -10,6 +10,7 @@ public record ProcessImageRequest(
     Guid ImageId,
     Guid ParentEntityId,
     string Name,
+    Uri? Ref,
     Sport Sport,
     int? SeasonYear,
     DocumentType DocumentType,
@@ -19,7 +20,7 @@ public record ProcessImageRequest(
     List<string>? Rel,
     Guid CorrelationId,
     Guid CausationId
-) : EventBase(CorrelationId, CausationId)
+) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId)
 {
     public List<string> Rel { get; init; } = Rel ?? new();
 }

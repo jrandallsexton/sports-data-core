@@ -14,6 +14,8 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeason)]
@@ -27,8 +29,9 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -106,6 +109,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                     Id: athleteIdentity.UrlHash,
                     ParentId: null,
                     Uri: new Uri(athleteIdentity.CleanUrl),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.Athlete,
@@ -260,6 +264,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             imgIdentity.CanonicalId,
             entity.Id,
             $"{entity.Id}-{imgIdentity.CanonicalId}.png",
+            null,
             command.Sport,
             command.Season,
             command.DocumentType,
@@ -303,6 +308,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                 Id: franchiseSeasonIdentity.CanonicalId.ToString(),
                 ParentId: null,
                 Uri: dto.Team.Ref.ToCleanUri(),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.TeamSeason,
@@ -355,6 +361,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                 Id: positionIdentity.CanonicalId.ToString(),
                 ParentId: null,
                 Uri: dto.Position.Ref.ToCleanUri(),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.AthletePosition,

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.Venues.Queries.GetAllVenues;
-using SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
+using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 
 namespace SportsData.Producer.Application.Venues;
 
@@ -12,11 +12,18 @@ namespace SportsData.Producer.Application.Venues;
 public class VenuesController : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<VenueDto>>> GetVenues(
+    public async Task<ActionResult<GetAllVenuesResponse>> GetVenues(
         [FromServices] IGetAllVenuesQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetAllVenuesQuery();
+        var query = new GetAllVenuesQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+        
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
@@ -24,11 +31,11 @@ public class VenuesController : ControllerBase
 
     [HttpGet("{id}")]
     public async Task<ActionResult<VenueDto>> GetVenueById(
-        [FromRoute] string id,
         [FromServices] IGetVenueByIdentifierQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromRoute] string id,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetVenueByIdentifierQuery(id);
+        var query = new GetVenueByIdQuery(id);
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

@@ -5,15 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Contests.Overview;
+using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
-    [Route("api/contest")]
+    [Route("api/contests")]
     [ApiController]
     public class ContestController : ControllerBase
     {
@@ -32,6 +34,18 @@ namespace SportsData.Producer.Application.Contests
             _backgroundJobProvider = backgroundJobProvider;
             _contestOverviewService = contestOverviewService;
             _dataContext = dataContext;
+        }
+
+        [HttpGet("{contestId}")]
+        public async Task<ActionResult<SeasonContestDto>> GetContestById(
+            [FromServices] IGetContestByIdQueryHandler handler,
+            [FromRoute] Guid contestId,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new GetContestByIdQuery(contestId);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+
+            return result.ToActionResult();
         }
 
         [HttpPost]
@@ -239,7 +253,5 @@ namespace SportsData.Producer.Application.Contests
 
             return Accepted(new { CorrelationId = correlationId, ContestCount = contestIds.Count });
         }
-
-
     }
 }

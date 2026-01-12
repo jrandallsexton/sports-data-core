@@ -3,6 +3,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -20,17 +21,21 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
     protected readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    protected readonly IGenerateResourceRefs _refGenerator;
 
     protected DocumentProcessorBase(
         ILogger logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refGenerator
+        )
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _refGenerator = refGenerator;
     }
 
     /// <summary>
@@ -106,6 +111,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             Id: identity.UrlHash,
             ParentId: parentId?.ToString() ?? string.Empty,
             Uri: uri,
+            Ref: null,
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: documentType,

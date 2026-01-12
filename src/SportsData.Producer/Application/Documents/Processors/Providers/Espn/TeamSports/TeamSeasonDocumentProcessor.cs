@@ -15,6 +15,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeason)]
@@ -28,8 +30,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -143,6 +146,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                     Id: franchiseIdentity.UrlHash,
                     ParentId: null,
                     Uri: new Uri(franchiseIdentity.CleanUrl),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.Franchise,
@@ -237,6 +241,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                     Id: groupSeasonIdentity.UrlHash,
                     ParentId: null,
                     Uri: new Uri(groupSeasonIdentity.CleanUrl),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.GroupSeason,
@@ -274,6 +279,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         await _publishEndpoint.Publish(new FranchiseSeasonCreated(
             canonicalEntity.ToCanonicalModel(),
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.TeamSeasonDocumentProcessor));
     }
@@ -338,6 +346,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             Guid.NewGuid().ToString(),
             franchiseSeasonId.ToString(),
             dto.Ranks.Ref.ToCleanUri(),
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonRank,
@@ -362,6 +371,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Projection.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Projection.Ref.ToCleanUri(),
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonProjection,
@@ -386,6 +396,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Events.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Events.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.Event,
@@ -410,6 +421,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Coaches.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Coaches.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonCoach,
@@ -434,6 +446,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Awards.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Awards.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonAward,
@@ -458,6 +471,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.AgainstTheSpreadRecords.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.AgainstTheSpreadRecords.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonRecordAts,
@@ -482,6 +496,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Injuries.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Injuries.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonInjuries,
@@ -506,6 +521,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Athletes.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Athletes.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.AthleteSeason,
@@ -530,6 +546,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Leaders.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Leaders.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonLeaders,
@@ -554,6 +571,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Statistics.Ref.ToCleanUrl(),
             franchiseSeasonId.ToString(),
             dto.Statistics.Ref,
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonStatistics,
@@ -580,6 +598,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             recordIdentity.CanonicalId.ToString(),
             franchiseSeasonId.ToString(),
             new Uri(recordIdentity.CleanUrl),
+            null,
             command.Sport,
             command.Season,
             DocumentType.TeamSeasonRecord,

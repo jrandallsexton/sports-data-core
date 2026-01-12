@@ -5,7 +5,7 @@ using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekConte
 
 namespace SportsData.Producer.Application.SeasonWeek;
 
-[Route("api/seasonWeek")]
+[Route("api/season-weeks")]
 [ApiController]
 public class SeasonWeekController : ControllerBase
 {

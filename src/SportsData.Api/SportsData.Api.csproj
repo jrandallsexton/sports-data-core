@@ -114,4 +114,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Application\Venues\" />
+  </ItemGroup>
+
 </Project>

@@ -1,9 +1,11 @@
-﻿using SportsData.Core.Dtos.Canonical;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical.Models
 {
     public class MatchupForPreviewDto
     {
+        public Sport Sport { get; set; }
         public int SeasonYear { get; set; }
         public int WeekNumber { get; set; }
 

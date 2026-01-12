@@ -148,6 +148,9 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
                 new PickemGroupMatchupAdded(
                     command.LeagueId,
                     command.ContestId,
+                    null,
+                    Sport.FootballNcaa,
+                    matchup.SeasonYear,
                     command.CorrelationId,
                     Guid.NewGuid()),
                 cancellationToken);

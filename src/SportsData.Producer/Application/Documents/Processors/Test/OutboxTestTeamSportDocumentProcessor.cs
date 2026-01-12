@@ -6,6 +6,8 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Test;
 
 /// <summary>
@@ -24,8 +26,9 @@ public class OutboxTestTeamSportDocumentProcessor<TDataContext> : DocumentProces
         ILogger<OutboxTestTeamSportDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, bus, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs)
     {
     }
 

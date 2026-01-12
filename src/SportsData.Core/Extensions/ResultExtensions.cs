@@ -13,7 +13,8 @@ namespace SportsData.Core.Extensions
                 // ✅ Handle Success<T> with different ResultStatus values
                 return result.Status switch
                 {
-                    ResultStatus.Accepted => new AcceptedResult(location: null, value: result.Value), // 202 Accepted
+                    ResultStatus.Created => new CreatedResult((string?)null, result.Value), // 201 Created
+                    ResultStatus.Accepted => new AcceptedResult((string?)null, result.Value), // 202 Accepted
                     _ => new OkObjectResult(result.Value) // 200 OK (default for Success)
                 };
             }
@@ -22,11 +23,12 @@ namespace SportsData.Core.Extensions
             {
                 return result.Status switch
                 {
-                    ResultStatus.Validation => new BadRequestObjectResult(new { failure.Errors }),
-                    ResultStatus.NotFound => new NotFoundObjectResult(new { failure.Errors }),
-                    ResultStatus.Unauthorized => new UnauthorizedObjectResult(new { failure.Errors }),
-                    ResultStatus.Forbid => new ForbidResult(),
-                    _ => new ObjectResult(new { failure.Errors }) { StatusCode = 500 }
+                    ResultStatus.BadRequest => new BadRequestObjectResult(new { failure.Errors }), // 400 Bad Request
+                    ResultStatus.Validation => new BadRequestObjectResult(new { failure.Errors }), // 400 Validation
+                    ResultStatus.Unauthorized => new UnauthorizedObjectResult(new { failure.Errors }), // 401 Unauthorized
+                    ResultStatus.Forbid => new ForbidResult(), // 403 Forbidden
+                    ResultStatus.NotFound => new NotFoundObjectResult(new { failure.Errors }), // 404 Not Found
+                    _ => new ObjectResult(new { failure.Errors }) { StatusCode = 500 } // 500 Internal Server Error
                 };
             }
 

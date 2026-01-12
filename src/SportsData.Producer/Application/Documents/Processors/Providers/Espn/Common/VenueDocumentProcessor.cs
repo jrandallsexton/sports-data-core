@@ -8,6 +8,7 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -22,17 +23,21 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
     private readonly TDataContext _dataContext;
     private readonly IEventBus _publishEndpoint;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly IGenerateResourceRefs _resourceRefGenerator;
 
     public VenueDocumentProcessor(
         ILogger<VenueDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs resourceRefGenerator
+        )
     {
         _logger = logger;
         _dataContext = dataContext;
         _publishEndpoint = publishEndpoint;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _resourceRefGenerator = resourceRefGenerator;
     }
 
     public async Task ProcessAsync(ProcessDocumentCommand command)
@@ -110,6 +115,9 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
         // 2. raise an integration event with the canonical model
         var evt = new VenueCreated(
             newEntity.AsCanonical(),
+            _resourceRefGenerator.ForVenue(newEntity.Id),
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.VenueCreatedDocumentProcessor);
 
@@ -186,6 +194,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                     Guid.NewGuid(),
                     venue.Id,
                     $"{venue.Id}-u{i}.png",
+                    null,
                     command.Sport,
                     command.Season,
                     command.DocumentType,
@@ -209,7 +218,12 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
 
             await _dataContext.SaveChangesAsync();
 
-            var evt = new VenueUpdated(venue.AsCanonical(), command.CorrelationId,
+            var evt = new VenueUpdated(
+                venue.AsCanonical(),
+                null,
+                command.Sport,
+                command.Season,
+                command.CorrelationId,
                 CausationId.Producer.VenueDocumentProcessor);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);

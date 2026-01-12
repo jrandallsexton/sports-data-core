@@ -16,9 +16,13 @@ namespace SportsData.Core.Dtos.Canonical
 
         public int Capacity { get; set; } = 0;
 
-        public List<VenueImageDto> Images { get; set; } = new List<VenueImageDto>();
+        public List<VenueImageDto> Images { get; set; } = [];
 
         public AddressDto? Address { get; set; }
+
+        public decimal? Latitude { get; set; }
+
+        public decimal? Longitude { get; set; }
 
         // TODO: Get a physical address on this thing
     }

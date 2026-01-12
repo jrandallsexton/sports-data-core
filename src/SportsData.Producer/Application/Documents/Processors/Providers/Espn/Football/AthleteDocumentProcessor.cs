@@ -16,6 +16,8 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 // TODO: Rename to FootballAthleteDocumentProcessor
@@ -30,8 +32,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refGenerator,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
         _config = config;
     }
@@ -43,7 +46,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                    ["CorrelationId"] = command.CorrelationId
                }))
         {
+
             _logger.LogInformation("Processing EventDocument with {@Command}", command);
+
             try
             {
                 await ProcessInternal(command);
@@ -114,6 +119,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 imgId,
                 entity.Id,
                 $"{entity.Id}-{imgId}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,
@@ -126,6 +132,9 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         await _publishEndpoint.Publish(new AthleteCreated(
             entity.ToCanonicalModel(),
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.AthleteDocumentProcessor));
 
@@ -275,7 +284,8 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                     Id: positionIdentity.CanonicalId.ToString(),
                     ParentId: null,
                     Uri: externalProviderDto.Position.Ref.ToCleanUri(),
-                    Sport: Sport.FootballNcaa,
+                    Ref: null,
+                    Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.AthletePosition,
                     SourceDataProvider: SourceDataProvider.Espn,
@@ -309,6 +319,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 imgId,
                 entity.Id,
                 $"{entity.Id}-{imgId}.png",
+                null,
                 command.Sport,
                 command.Season,
                 command.DocumentType,

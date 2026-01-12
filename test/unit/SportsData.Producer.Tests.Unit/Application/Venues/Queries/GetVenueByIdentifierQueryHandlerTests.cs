@@ -4,7 +4,7 @@ using FluentAssertions;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Producer.Application.Venues.Queries.GetVenueByIdentifier;
+using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 using Xunit;
@@ -12,13 +12,13 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Venues.Queries;
 
 public class GetVenueByIdentifierQueryHandlerTests :
-    ProducerTestBase<GetVenueByIdentifierQueryHandler>
+    ProducerTestBase<GetVenueByIdQueryHandler>
 {
     [Fact]
     public async Task WhenVenueExistsById_ShouldReturnSuccessWithVenue()
     {
         // Arrange
-        var sut = Mocker.CreateInstance<GetVenueByIdentifierQueryHandler>();
+        var sut = Mocker.CreateInstance<GetVenueByIdQueryHandler>();
 
         var venueId = Guid.NewGuid();
         var venue = CreateVenue("Test Stadium", "test-stadium", venueId);
@@ -26,7 +26,7 @@ public class GetVenueByIdentifierQueryHandlerTests :
         await FootballDataContext.Venues.AddAsync(venue);
         await FootballDataContext.SaveChangesAsync();
 
-        var query = new GetVenueByIdentifierQuery(venueId.ToString());
+        var query = new GetVenueByIdQuery(venueId.ToString());
 
         // Act
         var result = await sut.ExecuteAsync(query, CancellationToken.None);
@@ -42,7 +42,7 @@ public class GetVenueByIdentifierQueryHandlerTests :
     public async Task WhenVenueExistsBySlug_ShouldReturnSuccessWithVenue()
     {
         // Arrange
-        var sut = Mocker.CreateInstance<GetVenueByIdentifierQueryHandler>();
+        var sut = Mocker.CreateInstance<GetVenueByIdQueryHandler>();
 
         var venue = CreateVenue("Memorial Stadium", "memorial-stadium");
         venue.Capacity = 90000;
@@ -50,7 +50,7 @@ public class GetVenueByIdentifierQueryHandlerTests :
         await FootballDataContext.Venues.AddAsync(venue);
         await FootballDataContext.SaveChangesAsync();
 
-        var query = new GetVenueByIdentifierQuery("memorial-stadium");
+        var query = new GetVenueByIdQuery("memorial-stadium");
 
         // Act
         var result = await sut.ExecuteAsync(query, CancellationToken.None);
@@ -66,9 +66,9 @@ public class GetVenueByIdentifierQueryHandlerTests :
     public async Task WhenVenueDoesNotExistById_ShouldReturnFailureNotFound()
     {
         // Arrange
-        var sut = Mocker.CreateInstance<GetVenueByIdentifierQueryHandler>();
+        var sut = Mocker.CreateInstance<GetVenueByIdQueryHandler>();
         var nonExistentId = Guid.NewGuid();
-        var query = new GetVenueByIdentifierQuery(nonExistentId.ToString());
+        var query = new GetVenueByIdQuery(nonExistentId.ToString());
 
         // Act
         var result = await sut.ExecuteAsync(query, CancellationToken.None);
@@ -83,8 +83,8 @@ public class GetVenueByIdentifierQueryHandlerTests :
     public async Task WhenVenueDoesNotExistBySlug_ShouldReturnFailureNotFound()
     {
         // Arrange
-        var sut = Mocker.CreateInstance<GetVenueByIdentifierQueryHandler>();
-        var query = new GetVenueByIdentifierQuery("non-existent-stadium");
+        var sut = Mocker.CreateInstance<GetVenueByIdQueryHandler>();
+        var query = new GetVenueByIdQuery("non-existent-stadium");
 
         // Act
         var result = await sut.ExecuteAsync(query, CancellationToken.None);

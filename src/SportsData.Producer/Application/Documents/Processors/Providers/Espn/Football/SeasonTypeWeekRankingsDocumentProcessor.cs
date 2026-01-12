@@ -14,6 +14,8 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonTypeWeekRankings)]
@@ -26,9 +28,10 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         IEventBus publishEndpoint,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -140,6 +143,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
                         ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
                         Uri: dto.Season.Type.Week.Ref,
+                        Ref: null,
                         Sport: Sport.FootballNcaa,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.SeasonTypeWeek,
@@ -220,6 +224,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         Id: missing.Key.ToString(),
                         ParentId: franchiseId.ToString(),
                         Uri: missing.Value,
+                        Ref: null,
                         Sport: Sport.FootballNcaa,
                         SeasonYear: command.Season!.Value,
                         DocumentType: DocumentType.TeamSeason,
@@ -283,6 +288,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
             Id: identity.UrlHash,
             ParentId: null,
             Uri: new Uri(identity.CleanUrl),
+            Ref: null,
             Sport: command.Sport,
             SeasonYear: command.Season,
             DocumentType: DocumentType.TeamSeason,

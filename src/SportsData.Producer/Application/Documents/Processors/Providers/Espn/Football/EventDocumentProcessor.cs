@@ -16,6 +16,8 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
+using SportsData.Core.Infrastructure.Refs;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Event)]
@@ -29,8 +31,9 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs,
         DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
     }
@@ -155,6 +158,9 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         await _publishEndpoint.Publish(new ContestCreated(
             contest.ToCanonicalModel(),
+            null,
+            command.Sport,
+            command.Season,
             command.CorrelationId,
             CausationId.Producer.EventDocumentProcessor));
 
@@ -199,6 +205,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         Id: Guid.NewGuid().ToString(),
                         ParentId: null, // TODO: could be seasonPhaseId? FML.
                         Uri: externalDto.Week.Ref.ToCleanUri(),
+                        Ref: null,
                         Sport: command.Sport,
                         SeasonYear: command.Season,
                         DocumentType: DocumentType.SeasonTypeWeek,
@@ -253,6 +260,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     Id: Guid.NewGuid().ToString(),
                     ParentId: null,
                     Uri: externalDto.SeasonType.Ref.ToCleanUri(),
+                    Ref: null,
                     Sport: command.Sport,
                     SeasonYear: command.Season,
                     DocumentType: DocumentType.SeasonType,
@@ -289,6 +297,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 Id: competitionIdentity.UrlHash,
                 ParentId: contest.Id.ToString(),
                 Uri: new Uri(competitionIdentity.CleanUrl),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetition,
@@ -445,15 +454,16 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            competitor.Team.Ref.ToCleanUrl(),
-            franchiseIdentity.CanonicalId.ToString(),
-            competitor.Team.Ref.ToCleanUri(),
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeason,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.EventDocumentProcessor));
+            Id: competitor.Team.Ref.ToCleanUrl(),
+            ParentId: franchiseIdentity.CanonicalId.ToString(),
+            Uri: competitor.Team.Ref.ToCleanUri(),
+            Ref: null,
+            Sport: command.Sport,
+            SeasonYear: command.Season,
+            DocumentType: DocumentType.TeamSeason,
+            SourceDataProvider: command.SourceDataProvider,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.EventDocumentProcessor));
 
         await _dataContext.SaveChangesAsync();
 
@@ -516,6 +526,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 Id: competitionIdentity.UrlHash,
                 ParentId: contest.Id.ToString(),
                 Uri: new Uri(competitionIdentity.CleanUrl),
+                Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.Season,
                 DocumentType: DocumentType.EventCompetition,

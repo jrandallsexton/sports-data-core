@@ -8,6 +8,7 @@ public record DocumentRequested(
     string Id,
     string? ParentId,
     Uri Uri,
+    Uri? Ref,
     Sport Sport,
     int? SeasonYear,
     DocumentType DocumentType,
@@ -15,4 +16,4 @@ public record DocumentRequested(
     Guid CorrelationId,
     Guid CausationId,
     Dictionary<string, string>? PropertyBag = null
-) : EventBase(CorrelationId, CausationId);
+) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);

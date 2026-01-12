@@ -110,6 +110,7 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
             Id: drivesIdentity.UrlHash,
             ParentId: command.CompetitionId.ToString(),
             Uri: new Uri(drivesIdentity.CleanUrl),
+            Ref: null,
             Sport: competition.Contest.Sport,
             SeasonYear: competition.Contest.SeasonYear,
             DocumentType: DocumentType.EventCompetitionDrive,

@@ -1,4 +1,5 @@
 ﻿using System;
+using SportsData.Core.Common;
 
 namespace SportsData.Core.Eventing.Events.Contests
 {
@@ -11,9 +12,12 @@ namespace SportsData.Core.Eventing.Events.Contests
         int SecondsLeft,
         DateTime EspnLastModifiedUtc,
         string Source,
-        string Ref,
+        string SourceRef,
         string SequenceNumber,
+        Uri? Ref,
+        Sport Sport,
+        int? SeasonYear,
         Guid CorrelationId,
         Guid CausationId
-    ) : EventBase(CorrelationId, CausationId);
+    ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);
 }

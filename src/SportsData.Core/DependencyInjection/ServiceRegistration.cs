@@ -20,10 +20,14 @@ using SportsData.Core.Config;
 using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
+using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
@@ -142,6 +146,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
             services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();
             services.AddSingleton<IGenerateExternalRefIdentities, ExternalRefIdentityGenerator>();
+            services.AddSingleton<IGenerateResourceRefs, ResourceRefGenerator>();
             return services;
         }
 
@@ -399,22 +404,31 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            // VenueClient is handled via factory instead
+            // Client factories handle resolution by sport/league mode
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
+            services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
+            services.AddSingleton<IContestClientFactory, ContestClientFactory>();
 
-            // Register venue clients by mode (for use by factory)
-            var supportedModes = configuration.GetSection("CommonConfig:Api:SupportedModes").Get<Sport[]>();
-            if (supportedModes != null)
+            // Register mode-agnostic clients (same URL for all sports)
+            var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];
+            if (!string.IsNullOrEmpty(contestApiUrl))
             {
-                foreach (var sport in supportedModes)
-                {
-                    var apiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
-                    if (!string.IsNullOrEmpty(apiUrl))
-                    {
-                        var clientName = $"{HttpClients.VenueClient}";
-                        services.AddHttpClient(clientName, client => client.BaseAddress = new Uri(apiUrl));
-                    }
-                }
+                var contestClientName = $"{HttpClients.ContestClient}";
+                services.AddHttpClient(contestClientName, client => client.BaseAddress = new Uri(contestApiUrl));
+            }
+
+            var venueApiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
+            if (!string.IsNullOrEmpty(venueApiUrl))
+            {
+                var venueClientName = $"{HttpClients.VenueClient}";
+                services.AddHttpClient(venueClientName, client => client.BaseAddress = new Uri(venueApiUrl));
+            }
+
+            var franchiseApiUrl = configuration[CommonConfigKeys.GetFranchiseProviderUri()];
+            if (!string.IsNullOrEmpty(franchiseApiUrl))
+            {
+                var franchiseClientName = $"{HttpClients.FranchiseClient}";
+                services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
             }
 
             return services;

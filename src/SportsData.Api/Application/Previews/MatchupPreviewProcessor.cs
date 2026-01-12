@@ -198,8 +198,11 @@ namespace SportsData.Api.Application.Previews
             await _eventBus.Publish(new PreviewGenerated(
                 matchup.ContestId,
                 $"{matchup.Home} @ {matchup.Away} preview generated",
+                null,
+                matchup.Sport,
+                matchup.SeasonYear,
                 command.CorrelationId,
-                Guid.NewGuid()));
+                CausationId.Api.MatchupPreviewProcessor));
 
             await _dataContext.SaveChangesAsync();
 

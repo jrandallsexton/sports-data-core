@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using SportsData.Core.Common;
@@ -37,20 +39,40 @@ public class ContestClient(HttpClient httpClient) : IContestClient
         var weekParam = week.HasValue ? $"&week={week.Value}" : string.Empty;
         var url = $"franchises/{franchiseId}/seasons/{seasonYear}/contests?pageNumber={pageNumber}&pageSize={pageSize}{weekParam}";
         
-        var response = await httpClient.GetAsync(url, cancellationToken);
+        using var response = await httpClient.GetAsync(url, cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
             return new Failure<GetSeasonContestsResponse>(
                 default!,
-                ResultStatus.NotFound,
+                MapStatus(response.StatusCode),
                 [new FluentValidation.Results.ValidationFailure("StatusCode", $"Failed to get season contests: {response.StatusCode}. Response: {errorContent}")]);
         }
 
-        var contests = await response.Content.ReadFromJsonAsync<List<SeasonContestDto>>(cancellationToken: cancellationToken);
+        // Producer endpoint returns JSON array of SeasonContestDto
+        List<SeasonContestDto>? contests;
+        try
+        {
+            contests = await response.Content.ReadFromJsonAsync<List<SeasonContestDto>>(cancellationToken: cancellationToken);
+        }
+        catch (JsonException)
+        {
+            return new Failure<GetSeasonContestsResponse>(
+                default!,
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contests response")]);
+        }
         
-        return new Success<GetSeasonContestsResponse>(new GetSeasonContestsResponse(contests ?? []));
+        if (contests is null)
+        {
+            return new Failure<GetSeasonContestsResponse>(
+                default!,
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contests response")]);
+        }
+        
+        return new Success<GetSeasonContestsResponse>(new GetSeasonContestsResponse(contests));
     }
 
     public async Task<Result<GetContestByIdResponse>> GetContestById(
@@ -59,40 +81,51 @@ public class ContestClient(HttpClient httpClient) : IContestClient
     {
         var url = $"contests/{contestId}";
         
-        var response = await httpClient.GetAsync(url, cancellationToken);
+        using var response = await httpClient.GetAsync(url, cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
             
-            // Map HTTP status codes to ResultStatus
-            var resultStatus = (int)response.StatusCode switch
-            {
-                404 => ResultStatus.NotFound,
-                401 => ResultStatus.Unauthorized,
-                400 => ResultStatus.BadRequest,
-                >= 500 and < 600 => ResultStatus.Error, // Server errors
-                _ => ResultStatus.Error
-            };
-            
             return new Failure<GetContestByIdResponse>(
                 default!,
-                resultStatus,
+                MapStatus(response.StatusCode),
                 [new FluentValidation.Results.ValidationFailure("StatusCode", 
                     $"Failed to get contest: {response.StatusCode}. Response: {errorContent}")]);
         }
 
-        var contest = await response.Content.ReadFromJsonAsync<SeasonContestDto>(cancellationToken: cancellationToken);
+        // Deserialize contest from response
+        SeasonContestDto? contest;
+        try
+        {
+            contest = await response.Content.ReadFromJsonAsync<SeasonContestDto>(cancellationToken: cancellationToken);
+        }
+        catch (JsonException)
+        {
+            return new Failure<GetContestByIdResponse>(
+                default!,
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contest response")]);
+        }
         
         if (contest is null)
         {
             return new Failure<GetContestByIdResponse>(
                 default!,
-                ResultStatus.NotFound,
-                [new FluentValidation.Results.ValidationFailure("Contest", 
-                    "Response body was empty or invalid - could not deserialize contest")]);
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contest response")]);
         }
         
         return new Success<GetContestByIdResponse>(new GetContestByIdResponse(contest));
     }
+
+    private static ResultStatus MapStatus(HttpStatusCode statusCode) => (int)statusCode switch
+    {
+        400 => ResultStatus.BadRequest,
+        401 => ResultStatus.Unauthorized,
+        403 => ResultStatus.Forbid,
+        404 => ResultStatus.NotFound,
+        >= 500 and < 600 => ResultStatus.Error,
+        _ => ResultStatus.Error
+    };
 }

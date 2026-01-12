@@ -21,6 +21,7 @@ using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.YouTube;

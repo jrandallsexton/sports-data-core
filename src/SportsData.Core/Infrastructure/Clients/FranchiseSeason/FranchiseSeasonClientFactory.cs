@@ -4,11 +4,12 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
 using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
+
+namespace SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 
 public interface IFranchiseSeasonClientFactory
 {

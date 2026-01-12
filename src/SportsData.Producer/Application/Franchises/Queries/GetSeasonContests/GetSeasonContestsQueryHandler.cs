@@ -7,7 +7,7 @@ namespace SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 
 public interface IGetSeasonContestsQueryHandler
 {
-    Task<Result<List<SeasonContestDto>>> Handle(GetSeasonContestsQuery query, CancellationToken cancellationToken);
+    Task<Result<List<SeasonContestDto>>> ExecuteAsync(GetSeasonContestsQuery query, CancellationToken cancellationToken);
 }
 
 public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
@@ -19,7 +19,7 @@ public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
         _context = context;
     }
 
-    public async Task<Result<List<SeasonContestDto>>> Handle(GetSeasonContestsQuery query, CancellationToken cancellationToken)
+    public async Task<Result<List<SeasonContestDto>>> ExecuteAsync(GetSeasonContestsQuery query, CancellationToken cancellationToken)
     {
         var contestsQuery = _context.Contests
             .AsNoTracking()

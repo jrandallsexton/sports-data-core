@@ -80,7 +80,7 @@ public class FranchisesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new GetSeasonContestsQuery(franchiseId, seasonYear, week, pageNumber, pageSize);
-        var result = await handler.Handle(query, cancellationToken);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }

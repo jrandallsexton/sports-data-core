@@ -58,7 +58,22 @@ public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
                 franchiseFailure.Errors);
         }
 
-        var franchise = (franchiseResult as Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)!.Value.Franchise!;
+        if (franchiseResult is not Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse> franchiseSuccess ||
+            franchiseSuccess.Value?.Franchise == null)
+        {
+            _logger.LogError(
+                "Franchise result success but franchise is null. Sport={Sport}, League={League}, IdOrSlug={IdOrSlug}",
+                query.Sport,
+                query.League,
+                query.FranchiseIdOrSlug);
+
+            return new Failure<GetFranchiseSeasonsResponseDto>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure("Franchise", "Franchise data is unexpectedly null")]);
+        }
+
+        var franchise = franchiseSuccess.Value.Franchise;
 
         // Now get seasons for this franchise using the GUID
         var seasonsResult = await franchiseClient.GetFranchiseSeasons(franchise.Id);
@@ -78,7 +93,22 @@ public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
                 seasonsFailure.Errors);
         }
 
-        var canonicalSeasons = (seasonsResult as Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonsResponse>)!.Value.Seasons;
+        if (seasonsResult is not Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonsResponse> seasonsSuccess ||
+            seasonsSuccess.Value?.Seasons == null)
+        {
+            _logger.LogError(
+                "Seasons result success but seasons data is null. Sport={Sport}, League={League}, FranchiseId={FranchiseId}",
+                query.Sport,
+                query.League,
+                franchise.Id);
+
+            return new Failure<GetFranchiseSeasonsResponseDto>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure("Seasons", "Seasons data is unexpectedly null")]);
+        }
+
+        var canonicalSeasons = seasonsSuccess.Value.Seasons;
 
         // Enrich with HATEOAS
         var enrichedResponse = new GetFranchiseSeasonsResponseDto

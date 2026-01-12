@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 
@@ -22,7 +23,7 @@ public class FranchiseClientFactory : IFranchiseClientFactory
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<FranchiseClientFactory> _logger;
     private readonly IConfiguration _configuration;
-    private readonly Dictionary<Sport, IProvideFranchises> _clientCache;
+    private readonly ConcurrentDictionary<Sport, IProvideFranchises> _clientCache;
 
     public FranchiseClientFactory(
         ILoggerFactory loggerFactory,
@@ -33,7 +34,7 @@ public class FranchiseClientFactory : IFranchiseClientFactory
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = loggerFactory.CreateLogger<FranchiseClientFactory>();
-        _clientCache = new Dictionary<Sport, IProvideFranchises>();
+        _clientCache = new ConcurrentDictionary<Sport, IProvideFranchises>();
     }
 
     public IProvideFranchises Resolve(string sport, string league)
@@ -42,27 +43,24 @@ public class FranchiseClientFactory : IFranchiseClientFactory
         _logger.LogDebug("Resolving franchise client for sport: {Sport}, league: {League}, mode: {Mode}",
             sport, league, mode);
 
-        if (!_clientCache.TryGetValue(mode, out var client))
+        return _clientCache.GetOrAdd(mode, m =>
         {
             var configKey = CommonConfigKeys.GetFranchiseProviderUri();
             var apiUrl = _configuration[configKey];
 
             if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", mode, configKey);
-                throw new InvalidOperationException($"Missing configuration for franchise client: {mode}");
+                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
+                throw new InvalidOperationException($"Missing configuration for franchise client: {m}");
             }
 
-            _logger.LogInformation("Creating new FranchiseClient for mode: {Mode}", mode);
+            _logger.LogInformation("Creating new FranchiseClient for mode: {Mode}", m);
 
             var logger = _loggerFactory.CreateLogger<FranchiseClient>();
             var clientName = $"{HttpClients.FranchiseClient}";
             var httpClient = _httpClientFactory.CreateClient(clientName);
 
-            client = new FranchiseClient(logger, httpClient);
-            _clientCache[mode] = client;
-        }
-
-        return client;
+            return new FranchiseClient(logger, httpClient);
+        });
     }
 }

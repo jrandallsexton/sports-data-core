@@ -2,6 +2,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
@@ -19,7 +21,8 @@ public class ContestClientTests
     {
         _handler = new TestHttpMessageHandler();
         _httpClient = new HttpClient(_handler) { BaseAddress = new Uri("http://localhost/api/") };
-        _sut = new ContestClient(_httpClient);
+        var logger = NullLogger<ContestClient>.Instance;
+        _sut = new ContestClient(logger, _httpClient);
     }
 
     [Fact]

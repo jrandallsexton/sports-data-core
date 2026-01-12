@@ -31,14 +31,16 @@ We successfully updated integration events in a .NET sports data application to 
    - Supports Producer, Contest, Venue, and Franchise resources
    - **No Sport parameter** - Sport configured at startup via IAppMode
 2. ✅ **Implemented ResourceRefGenerator** (`src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs`)
-   - Reads base URLs from Azure AppConfig
+   - Reads base URLs from Azure AppConfig (**URLs must include `/api/` segment**)
    - Constructor takes `IConfiguration` and `IAppMode`
    - **Sport-specific at construction** - Resolves sport-specific URLs once at startup
    - **Non-virtual methods** - Designed for inheritance; derived classes add new methods rather than override
-   - Generates absolute URIs in format: `{baseUrl}/api/{resourceType}/{id}`
+   - Generates absolute URIs by appending resource path to configured base URL: `{configuredBaseUrl}/{resourceType}/{id}`
+   - **Note:** The configured base URL from Azure AppConfig is used as-is; it must be a full base URL including the `/api` segment (e.g., `http://localhost:5262/api`)
 3. ✅ **Registered in DI container** (`ServiceRegistration.cs`)
    - Singleton lifetime (stateless and thread-safe)
    - One instance per service, configured for that service's sport
+   - **Configuration requirement:** Azure AppConfig keys for Producer, Contest, Venue, and Franchise URLs must include the `/api/` segment
 4. ✅ **Injected into all document processors** (47 files)
    - Updated DocumentProcessorBase to accept IGenerateResourceRefs
    - All derived processors now have `Refs` field available
@@ -161,11 +163,12 @@ public class FootballRefGenerator : TeamSportRefGenerator
     }
     
     // Add new football-specific methods (not overriding base methods)
+    // Note: _producerBaseUrl already includes /api/ from Azure AppConfig
     public Uri ForDrive(Guid driveId) => 
-        new Uri($"{_producerBaseUrl}/api/drive/{driveId}");
+        new Uri($"{_producerBaseUrl}/drives/{driveId}");
     
     public Uri ForPlay(Guid playId) => 
-        new Uri($"{_producerBaseUrl}/api/play/{playId}");
+        new Uri($"{_producerBaseUrl}/plays/{playId}");
 }
 ```
 

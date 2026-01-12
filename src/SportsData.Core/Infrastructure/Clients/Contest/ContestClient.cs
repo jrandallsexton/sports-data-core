@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 
@@ -26,7 +27,7 @@ public interface IContestClient
         CancellationToken cancellationToken = default);
 }
 
-public class ContestClient(HttpClient httpClient) : IContestClient
+public class ContestClient(ILogger<ContestClient> logger, HttpClient httpClient) : IContestClient
 {
     public async Task<Result<GetSeasonContestsResponse>> GetSeasonContests(
         Guid franchiseId, 
@@ -63,6 +64,13 @@ public class ContestClient(HttpClient httpClient) : IContestClient
                 ResultStatus.BadRequest,
                 [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contests response")]);
         }
+        catch (NotSupportedException)
+        {
+            return new Failure<GetSeasonContestsResponse>(
+                default!,
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Response", "Unable to deserialize contests response")]);
+        }
         
         if (contests is null)
         {
@@ -86,12 +94,14 @@ public class ContestClient(HttpClient httpClient) : IContestClient
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError("Failed to get contest {ContestId}. Status: {StatusCode}. Response: {ErrorContent}", 
+                contestId, response.StatusCode, errorContent);
             
             return new Failure<GetContestByIdResponse>(
                 default!,
                 MapStatus(response.StatusCode),
                 [new FluentValidation.Results.ValidationFailure("StatusCode", 
-                    $"Failed to get contest: {response.StatusCode}. Response: {errorContent}")]);
+                    "Failed to get contest from external service")]);
         }
 
         // Deserialize contest from response
@@ -100,8 +110,9 @@ public class ContestClient(HttpClient httpClient) : IContestClient
         {
             contest = await response.Content.ReadFromJsonAsync<SeasonContestDto>(cancellationToken: cancellationToken);
         }
-        catch (JsonException)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to deserialize contest response for {ContestId}", contestId);
             return new Failure<GetContestByIdResponse>(
                 default!,
                 ResultStatus.BadRequest,
@@ -110,6 +121,7 @@ public class ContestClient(HttpClient httpClient) : IContestClient
         
         if (contest is null)
         {
+            logger.LogWarning("Contest response deserialized to null for {ContestId}", contestId);
             return new Failure<GetContestByIdResponse>(
                 default!,
                 ResultStatus.BadRequest,

@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Venue;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 
@@ -22,7 +23,7 @@ public class VenueClientFactory : IVenueClientFactory
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<VenueClientFactory> _logger;
     private readonly IConfiguration _configuration;
-    private readonly Dictionary<Sport, IProvideVenues> _clientCache;
+    private readonly ConcurrentDictionary<Sport, IProvideVenues> _clientCache;
 
     public VenueClientFactory(
         ILoggerFactory loggerFactory,
@@ -33,7 +34,7 @@ public class VenueClientFactory : IVenueClientFactory
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = loggerFactory.CreateLogger<VenueClientFactory>();
-        _clientCache = new Dictionary<Sport, IProvideVenues>();
+        _clientCache = new ConcurrentDictionary<Sport, IProvideVenues>();
     }
 
     public IProvideVenues Resolve(string sport, string league)
@@ -42,27 +43,24 @@ public class VenueClientFactory : IVenueClientFactory
         _logger.LogDebug("Resolving venue client for sport: {Sport}, league: {League}, mode: {Mode}",
             sport, league, mode);
 
-        if (!_clientCache.TryGetValue(mode, out var client))
+        return _clientCache.GetOrAdd(mode, m =>
         {
             var configKey = CommonConfigKeys.GetVenueProviderUri();
             var apiUrl = _configuration[configKey];
 
             if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", mode, configKey);
-                throw new InvalidOperationException($"Missing configuration for venue client: {mode}");
+                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
+                throw new InvalidOperationException($"Missing configuration for venue client: {m}");
             }
 
-            _logger.LogInformation("Creating new VenueClient for mode: {Mode}", mode);
+            _logger.LogInformation("Creating new VenueClient for mode: {Mode}", m);
 
             var logger = _loggerFactory.CreateLogger<VenueClient>();
             var clientName = $"{HttpClients.VenueClient}";
-            var httpClient = _httpClientFactory.CreateClient(clientName); // ✅ Correct usage
+            var httpClient = _httpClientFactory.CreateClient(clientName);
 
-            client = new VenueClient(logger, httpClient);
-            _clientCache[mode] = client;
-        }
-
-        return client;
+            return new VenueClient(logger, httpClient);
+        });
     }
 }

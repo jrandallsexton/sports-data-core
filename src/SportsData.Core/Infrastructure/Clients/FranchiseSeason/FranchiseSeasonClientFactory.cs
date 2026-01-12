@@ -6,6 +6,7 @@ using SportsData.Core.Config;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 
@@ -20,7 +21,7 @@ public class FranchiseSeasonClientFactory : IFranchiseSeasonClientFactory
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<FranchiseSeasonClientFactory> _logger;
     private readonly IConfiguration _configuration;
-    private readonly Dictionary<Sport, IProvideFranchiseSeasons> _clientCache;
+    private readonly ConcurrentDictionary<Sport, IProvideFranchiseSeasons> _clientCache;
 
     public FranchiseSeasonClientFactory(
         ILoggerFactory loggerFactory,
@@ -31,7 +32,7 @@ public class FranchiseSeasonClientFactory : IFranchiseSeasonClientFactory
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = loggerFactory.CreateLogger<FranchiseSeasonClientFactory>();
-        _clientCache = new Dictionary<Sport, IProvideFranchiseSeasons>();
+        _clientCache = new ConcurrentDictionary<Sport, IProvideFranchiseSeasons>();
     }
 
     public IProvideFranchiseSeasons Resolve(string sport, string league)
@@ -40,27 +41,24 @@ public class FranchiseSeasonClientFactory : IFranchiseSeasonClientFactory
         _logger.LogDebug("Resolving franchise season client for sport: {Sport}, league: {League}, mode: {Mode}",
             sport, league, mode);
 
-        if (!_clientCache.TryGetValue(mode, out var client))
+        return _clientCache.GetOrAdd(mode, m =>
         {
             var configKey = CommonConfigKeys.GetFranchiseProviderUri();
             var apiUrl = _configuration[configKey];
 
             if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", mode, configKey);
-                throw new InvalidOperationException($"Missing configuration for franchise season client: {mode}");
+                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
+                throw new InvalidOperationException($"Missing configuration for franchise season client: {m}");
             }
 
-            _logger.LogInformation("Creating new FranchiseSeasonClient for mode: {Mode}", mode);
+            _logger.LogInformation("Creating new FranchiseSeasonClient for mode: {Mode}", m);
 
             var logger = _loggerFactory.CreateLogger<FranchiseSeasonClient>();
             var clientName = $"{HttpClients.FranchiseClient}"; // Same base URL as FranchiseClient
             var httpClient = _httpClientFactory.CreateClient(clientName);
 
-            client = new FranchiseSeasonClient(logger, httpClient);
-            _clientCache[mode] = client;
-        }
-
-        return client;
+            return new FranchiseSeasonClient(logger, httpClient);
+        });
     }
 }

@@ -27,18 +27,25 @@ public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
             query.ContestId,
             cancellationToken);
 
-        if (contestResult is Failure<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse>)
+        return contestResult switch
         {
-            return new Failure<ContestDetailResponseDto>(
-                default!,
-                ResultStatus.NotFound,
-                [new FluentValidation.Results.ValidationFailure("ContestId", $"Contest '{query.ContestId}' not found")]);
-        }
-
-        var contest = ((Success<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse>)contestResult).Value.Contest;
-        var response = EnrichContest(contest, query.Sport, query.League);
-
-        return new Success<ContestDetailResponseDto>(response);
+            Failure<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse> failure when failure.Status == ResultStatus.NotFound =>
+                new Failure<ContestDetailResponseDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new FluentValidation.Results.ValidationFailure("ContestId", $"Contest '{query.ContestId}' not found")]),
+            
+            Failure<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse> failure =>
+                new Failure<ContestDetailResponseDto>(
+                    default!,
+                    failure.Status,
+                    failure.Errors),
+            
+            Success<Core.Infrastructure.Clients.Contest.Queries.GetContestByIdResponse> success =>
+                new Success<ContestDetailResponseDto>(EnrichContest(success.Value.Contest, query.Sport, query.League)),
+            
+            _ => throw new InvalidOperationException("Unexpected result type")
+        };
     }
 
     private ContestDetailResponseDto EnrichContest(

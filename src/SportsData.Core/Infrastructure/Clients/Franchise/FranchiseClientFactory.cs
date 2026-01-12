@@ -5,12 +5,13 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
 using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
+
+namespace SportsData.Core.Infrastructure.Clients.Franchise;
 
 public interface IFranchiseClientFactory
 {
@@ -45,15 +46,6 @@ public class FranchiseClientFactory : IFranchiseClientFactory
 
         return _clientCache.GetOrAdd(mode, m =>
         {
-            var configKey = CommonConfigKeys.GetFranchiseProviderUri();
-            var apiUrl = _configuration[configKey];
-
-            if (string.IsNullOrWhiteSpace(apiUrl))
-            {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
-                throw new InvalidOperationException($"Missing configuration for franchise client: {m}");
-            }
-
             _logger.LogInformation("Creating new FranchiseClient for mode: {Mode}", m);
 
             var logger = _loggerFactory.CreateLogger<FranchiseClient>();

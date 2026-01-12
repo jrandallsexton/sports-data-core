@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
 using SportsData.Api.Infrastructure.Refs;
 using System;

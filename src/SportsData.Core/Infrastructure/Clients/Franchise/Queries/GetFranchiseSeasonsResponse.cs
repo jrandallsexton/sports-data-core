@@ -1,7 +1,7 @@
 using SportsData.Core.Dtos.Canonical;
 using System.Collections.Generic;
 
-namespace SportsData.Core.Infrastructure.Clients.FranchiseSeason.Queries;
+namespace SportsData.Core.Infrastructure.Clients.Franchise.Queries;
 
 public record GetFranchiseSeasonsResponse
 {

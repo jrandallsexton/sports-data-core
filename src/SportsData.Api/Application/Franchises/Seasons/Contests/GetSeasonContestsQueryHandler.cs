@@ -30,14 +30,14 @@ public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
     {
         // Step 1: Resolve franchise slug to GUID
         var franchiseClient = _franchiseClientFactory.Resolve(query.Sport, query.League);
-        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseSlugOrId);
+        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseId);
 
         if (franchiseResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)
         {
             return new Failure<GetSeasonContestsResponseDto>(
                 default!,
                 ResultStatus.NotFound,
-                [new FluentValidation.Results.ValidationFailure("FranchiseSlugOrId", $"Franchise '{query.FranchiseSlugOrId}' not found")]);
+                [new FluentValidation.Results.ValidationFailure("FranchiseSlugOrId", $"Franchise '{query.FranchiseId}' not found")]);
         }
 
         var franchise = ((Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)franchiseResult).Value.Franchise!;

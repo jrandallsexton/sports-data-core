@@ -54,7 +54,7 @@ public class GetAllFranchisesQueryHandler : IGetAllFranchisesQueryHandler
         // Get paginated data
         var dtos = await _dataContext.Franchises
             .AsNoTracking()
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.DisplayName)
             .Skip(skip)
             .Take(pageSize)
             .Select(f => new FranchiseDto

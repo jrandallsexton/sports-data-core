@@ -1,5 +1,6 @@
 using FluentValidation.Results;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Api.Infrastructure.Refs;
 using System;

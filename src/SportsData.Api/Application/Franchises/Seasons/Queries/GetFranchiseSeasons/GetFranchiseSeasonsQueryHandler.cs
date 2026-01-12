@@ -1,6 +1,5 @@
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 using SportsData.Api.Infrastructure.Refs;
 using System;
 using System.Collections.Generic;
@@ -20,18 +19,15 @@ public interface IGetFranchiseSeasonsQueryHandler
 public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
 {
     private readonly IFranchiseClientFactory _franchiseClientFactory;
-    private readonly IFranchiseSeasonClientFactory _franchiseSeasonClientFactory;
     private readonly IGenerateApiResourceRefs _refGenerator;
     private readonly ILogger<GetFranchiseSeasonsQueryHandler> _logger;
 
     public GetFranchiseSeasonsQueryHandler(
         IFranchiseClientFactory franchiseClientFactory,
-        IFranchiseSeasonClientFactory franchiseSeasonClientFactory,
         IGenerateApiResourceRefs refGenerator,
         ILogger<GetFranchiseSeasonsQueryHandler> logger)
     {
         _franchiseClientFactory = franchiseClientFactory;
-        _franchiseSeasonClientFactory = franchiseSeasonClientFactory;
         _refGenerator = refGenerator;
         _logger = logger;
     }
@@ -65,10 +61,9 @@ public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
         var franchise = (franchiseResult as Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)!.Value.Franchise!;
 
         // Now get seasons for this franchise using the GUID
-        var seasonClient = _franchiseSeasonClientFactory.Resolve(query.Sport, query.League);
-        var seasonsResult = await seasonClient.GetFranchiseSeasons(franchise.Id);
+        var seasonsResult = await franchiseClient.GetFranchiseSeasons(franchise.Id);
 
-        if (seasonsResult is Failure<Core.Infrastructure.Clients.FranchiseSeason.Queries.GetFranchiseSeasonsResponse> seasonsFailure)
+        if (seasonsResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonsResponse> seasonsFailure)
         {
             _logger.LogWarning(
                 "GetFranchiseSeasons failed. Sport={Sport}, League={League}, FranchiseId={FranchiseId}, Status={Status}",
@@ -83,7 +78,7 @@ public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
                 seasonsFailure.Errors);
         }
 
-        var canonicalSeasons = (seasonsResult as Success<Core.Infrastructure.Clients.FranchiseSeason.Queries.GetFranchiseSeasonsResponse>)!.Value.Seasons;
+        var canonicalSeasons = (seasonsResult as Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonsResponse>)!.Value.Seasons;
 
         // Enrich with HATEOAS
         var enrichedResponse = new GetFranchiseSeasonsResponseDto

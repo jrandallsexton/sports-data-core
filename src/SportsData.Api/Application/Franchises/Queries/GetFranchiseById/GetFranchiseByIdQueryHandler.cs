@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
 using SportsData.Api.Infrastructure.Refs;
 using System;
@@ -36,13 +37,13 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("GetFranchiseById query: sport={Sport}, league={League}, idOrSlug={IdOrSlug}",
-            query.Sport, query.League, query.IdOrSlug);
+            query.Sport, query.League, query.Id);
 
         // Resolve the appropriate client for this sport/league
         var client = _franchiseClientFactory.Resolve(query.Sport, query.League);
 
         // Get canonical response from Producer
-        var franchiseResult = await client.GetFranchiseById(query.IdOrSlug);
+        var franchiseResult = await client.GetFranchiseById(query.Id);
 
         if (franchiseResult is Failure<GetFranchiseByIdResponse> failure)
         {
@@ -50,7 +51,7 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
                 "GetFranchiseById failed. Sport={Sport}, League={League}, IdOrSlug={IdOrSlug}, Status={Status}",
                 query.Sport,
                 query.League,
-                query.IdOrSlug,
+                query.Id,
                 failure.Status);
             
             return new Failure<FranchiseResponseDto>(

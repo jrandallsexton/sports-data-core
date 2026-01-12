@@ -50,6 +50,9 @@ namespace SportsData.Core.Config
         public static string GetContestProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(ContestClientConfig)}:{mode}:{nameof(ContestClientConfig.ApiUrl)}";
 
+        public static string GetContestProviderUri() =>
+            $"{nameof(CommonConfig)}:{nameof(ContestClientConfig)}:{nameof(ContestClientConfig.ApiUrl)}";
+
         public static string GetFranchiseProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(FranchiseClientConfig)}:{mode}:{nameof(FranchiseClientConfig.ApiUrl)}";
 

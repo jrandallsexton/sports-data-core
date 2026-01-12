@@ -1,18 +1,19 @@
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
+
+using System;
+using System.Collections.Concurrent;
+using System.Net.Http;
 
 namespace SportsData.Core.Infrastructure.Clients.Contest;
 
 public interface IContestClientFactory
 {
-    IContestClient Resolve(string sport, string league);
+    IProvideContests Resolve(string sport, string league);
 }
 
 public class ContestClientFactory : IContestClientFactory
@@ -21,7 +22,7 @@ public class ContestClientFactory : IContestClientFactory
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ContestClientFactory> _logger;
     private readonly IConfiguration _configuration;
-    private readonly ConcurrentDictionary<Sport, IContestClient> _clientCache;
+    private readonly ConcurrentDictionary<Sport, IProvideContests> _clientCache;
 
     public ContestClientFactory(
         ILoggerFactory loggerFactory,
@@ -32,10 +33,10 @@ public class ContestClientFactory : IContestClientFactory
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = loggerFactory.CreateLogger<ContestClientFactory>();
-        _clientCache = new ConcurrentDictionary<Sport, IContestClient>();
+        _clientCache = new ConcurrentDictionary<Sport, IProvideContests>();
     }
 
-    public IContestClient Resolve(string sport, string league)
+    public IProvideContests Resolve(string sport, string league)
     {
         var mode = ModeMapper.ResolveMode(sport, league);
         _logger.LogDebug("Resolving contest client for sport: {Sport}, league: {League}, mode: {Mode}",
@@ -43,20 +44,9 @@ public class ContestClientFactory : IContestClientFactory
 
         return _clientCache.GetOrAdd(mode, m =>
         {
-            var configKey = CommonConfigKeys.GetContestProviderUri(m);
-            var apiUrl = _configuration[configKey];
+            _logger.LogInformation("Creating contest client for mode {Mode}", m);
 
-            if (string.IsNullOrWhiteSpace(apiUrl))
-            {
-                _logger.LogError("Missing Contest API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
-                throw new InvalidOperationException($"Contest API URL not configured for mode {m}. Config key: {configKey}");
-            }
-
-            _logger.LogInformation("Creating contest client for mode {Mode} with base URL: {ApiUrl}", m, apiUrl);
-
-            var httpClient = _httpClientFactory.CreateClient($"ContestClient_{m}");
-            httpClient.BaseAddress = new Uri(apiUrl);
-
+            var httpClient = _httpClientFactory.CreateClient($"{HttpClients.ContestClient}");
             var contestLogger = _loggerFactory.CreateLogger<ContestClient>();
             return new ContestClient(contestLogger, httpClient);
         });

@@ -4,7 +4,6 @@ using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.FranchiseSeason;
 
 namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
 
@@ -16,16 +15,13 @@ public interface IGetFranchiseSeasonByIdQueryHandler
 public class GetFranchiseSeasonByIdQueryHandler : IGetFranchiseSeasonByIdQueryHandler
 {
     private readonly IFranchiseClientFactory _franchiseClientFactory;
-    private readonly IFranchiseSeasonClientFactory _franchiseSeasonClientFactory;
     private readonly IGenerateApiResourceRefs _refGenerator;
 
     public GetFranchiseSeasonByIdQueryHandler(
         IFranchiseClientFactory franchiseClientFactory,
-        IFranchiseSeasonClientFactory franchiseSeasonClientFactory,
         IGenerateApiResourceRefs refGenerator)
     {
         _franchiseClientFactory = franchiseClientFactory;
-        _franchiseSeasonClientFactory = franchiseSeasonClientFactory;
         _refGenerator = refGenerator;
     }
 
@@ -48,10 +44,9 @@ public class GetFranchiseSeasonByIdQueryHandler : IGetFranchiseSeasonByIdQueryHa
         var franchise = ((Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)franchiseResult).Value.Franchise!;
 
         // Step 2: Get season from Producer
-        var seasonClient = _franchiseSeasonClientFactory.Resolve(query.Sport, query.League);
-        var seasonResult = await seasonClient.GetFranchiseSeasonById(franchise.Id, query.SeasonYear);
+        var seasonResult = await franchiseClient.GetFranchiseSeasonById(franchise.Id, query.SeasonYear);
 
-        if (seasonResult is Failure<Core.Infrastructure.Clients.FranchiseSeason.Queries.GetFranchiseSeasonByIdResponse>)
+        if (seasonResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonByIdResponse>)
         {
             return new Failure<FranchiseSeasonResponseDto>(
                 default!,
@@ -59,7 +54,7 @@ public class GetFranchiseSeasonByIdQueryHandler : IGetFranchiseSeasonByIdQueryHa
                 [new ValidationFailure("SeasonYear", $"Season {query.SeasonYear} not found for franchise '{franchise.Slug}'")]);
         }
 
-        var season = ((Success<Core.Infrastructure.Clients.FranchiseSeason.Queries.GetFranchiseSeasonByIdResponse>)seasonResult).Value.Season!;
+        var season = ((Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseSeasonByIdResponse>)seasonResult).Value.Season!;
 
         // Step 3: Enrich with HATEOAS
         var response = new FranchiseSeasonResponseDto

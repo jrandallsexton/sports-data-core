@@ -3,14 +3,11 @@ using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
-using SportsData.Core.Config;
-using SportsData.Core.Infrastructure.Clients;
-using SportsData.Core.Infrastructure.Clients.Venue;
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Http;
+
+namespace SportsData.Core.Infrastructure.Clients.Venue;
 
 public interface IVenueClientFactory
 {
@@ -46,15 +43,6 @@ public class VenueClientFactory : IVenueClientFactory
         // TODO: Revisit when launch multi-sport
         return _clientCache.GetOrAdd(mode, m =>
         {
-            var configKey = CommonConfigKeys.GetVenueProviderUri();
-            var apiUrl = _configuration[configKey];
-
-            if (string.IsNullOrWhiteSpace(apiUrl))
-            {
-                _logger.LogError("Missing API URL for mode {Mode}. Config key: {ConfigKey}", m, configKey);
-                throw new InvalidOperationException($"Missing configuration for venue client: {m}");
-            }
-
             _logger.LogInformation("Creating new VenueClient for mode: {Mode}", m);
 
             var logger = _loggerFactory.CreateLogger<VenueClient>();

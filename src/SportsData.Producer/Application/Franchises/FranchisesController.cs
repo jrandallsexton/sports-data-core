@@ -55,6 +55,7 @@ public class FranchisesController : ControllerBase
 
         return result.ToActionResult();
     }
+
     [HttpGet("{franchiseId}/seasons/{seasonYear}")]
     public async Task<ActionResult<FranchiseSeasonDto>> GetFranchiseSeasonById(
         [FromServices] IGetFranchiseSeasonByIdQueryHandler handler,
@@ -67,6 +68,7 @@ public class FranchisesController : ControllerBase
 
         return result.ToActionResult();
     }
+
     [HttpGet("{franchiseId}/seasons/{seasonYear}/contests")]
     public async Task<ActionResult<List<SeasonContestDto>>> GetSeasonContests(
         [FromServices] IGetSeasonContestsQueryHandler handler,

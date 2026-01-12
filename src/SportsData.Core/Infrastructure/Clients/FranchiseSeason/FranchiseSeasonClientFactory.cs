@@ -42,6 +42,7 @@ public class FranchiseSeasonClientFactory : IFranchiseSeasonClientFactory
         _logger.LogDebug("Resolving franchise season client for sport: {Sport}, league: {League}, mode: {Mode}",
             sport, league, mode);
 
+        // TODO: Revisit when launch multi-sport
         return _clientCache.GetOrAdd(mode, m =>
         {
             var configKey = CommonConfigKeys.GetFranchiseProviderUri();

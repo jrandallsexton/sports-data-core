@@ -10,11 +10,8 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
-using SportsData.Core.Extensions;
 
 namespace SportsData.Core.Infrastructure.Clients.Contest;
 
@@ -34,9 +31,9 @@ public interface IProvideContests : IProvideHealthChecks
 
     Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
-    Task RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
 
-    Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
 }
 
 public class ContestClient : ClientBase, IProvideContests
@@ -109,17 +106,21 @@ public class ContestClient : ClientBase, IProvideContests
             cancellationToken);
     }
 
-    public async Task RefreshContest(Guid contestId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default)
     {
-        var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-        using var response = await HttpClient.PostAsync($"contests/{contestId}/update", content, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        return await PostWithResultAsync(
+            $"contests/{contestId}/update",
+            contestId,
+            "RefreshContest",
+            cancellationToken);
     }
 
-    public async Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
     {
-        var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-        using var response = await HttpClient.PostAsync($"contests/{contestId}/media/refresh", content, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        return await PostWithResultAsync(
+            $"contests/{contestId}/media/refresh",
+            contestId,
+            "RefreshContestMedia",
+            cancellationToken);
     }
 }

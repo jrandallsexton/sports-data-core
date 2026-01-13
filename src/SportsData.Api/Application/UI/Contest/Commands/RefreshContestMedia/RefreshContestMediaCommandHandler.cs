@@ -33,48 +33,35 @@ public class RefreshContestMediaCommandHandler : IRefreshContestMediaCommandHand
     {
         var correlationId = ActivityExtensions.GetCorrelationId();
 
-        try
-        {
-            _logger.LogInformation(
-                "RefreshContestMedia initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
-                command.ContestId,
-                command.Sport,
-                correlationId);
+        _logger.LogInformation(
+            "RefreshContestMedia initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
+            command.ContestId,
+            command.Sport,
+            correlationId);
 
-            var client = _contestClientFactory.Resolve(command.Sport);
-            await client.RefreshContestMediaByContestId(command.ContestId, cancellationToken);
+        var client = _contestClientFactory.Resolve(command.Sport);
+        var result = await client.RefreshContestMediaByContestId(command.ContestId, cancellationToken);
 
-            _logger.LogInformation(
-                "RefreshContestMedia completed. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                command.ContestId,
-                correlationId);
-
-            return new Success<Guid>(correlationId, ResultStatus.Accepted);
-        }
-        catch (Exception ex)
+        if (!result.IsSuccess)
         {
             _logger.LogError(
-                ex,
-                "Error refreshing contest media. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "RefreshContestMedia failed. ContestId={ContestId}, Status={Status}, CorrelationId={CorrelationId}",
                 command.ContestId,
+                result.Status,
                 correlationId);
 
-            var (status, message) = ex switch
-            {
-                ArgumentException or ArgumentNullException =>
-                    (ResultStatus.Validation, "Invalid request parameters."),
-                TimeoutException or HttpRequestException or TaskCanceledException =>
-                    (ResultStatus.Error, "The service is temporarily unavailable. Please try again later."),
-                InvalidOperationException =>
-                    (ResultStatus.BadRequest, "The operation could not be completed."),
-                _ =>
-                    (ResultStatus.Error, "An error occurred while refreshing contest media.")
-            };
-
+            var failure = (Failure<bool>)result;
             return new Failure<Guid>(
                 correlationId,
-                status,
-                [new ValidationFailure("Error", $"{message} Reference: {correlationId}")]);
+                result.Status,
+                failure.Errors);
         }
+
+        _logger.LogInformation(
+            "RefreshContestMedia completed. ContestId={ContestId}, CorrelationId={CorrelationId}",
+            command.ContestId,
+            correlationId);
+
+        return new Success<Guid>(correlationId, ResultStatus.Accepted);
     }
 }

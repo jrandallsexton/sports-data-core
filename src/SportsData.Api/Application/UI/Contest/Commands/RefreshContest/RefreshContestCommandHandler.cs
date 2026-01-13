@@ -1,5 +1,3 @@
-using FluentValidation.Results;
-
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
@@ -32,37 +30,37 @@ public class RefreshContestCommandHandler : IRefreshContestCommandHandler
     {
         var correlationId = ActivityExtensions.GetCorrelationId();
 
-        try
-        {
-            _logger.LogInformation(
-                "RefreshContest initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
-                command.ContestId,
-                command.Sport,
-                correlationId);
+        _logger.LogInformation(
+            "RefreshContest initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
+            command.ContestId,
+            command.Sport,
+            correlationId);
 
-            var contestClient = _contestClientFactory.Resolve(command.Sport);
-            await contestClient.RefreshContest(command.ContestId, cancellationToken);
+        var contestClient = _contestClientFactory.Resolve(command.Sport);
+        var result = await contestClient.RefreshContest(command.ContestId, cancellationToken);
 
-            _logger.LogInformation(
-                "RefreshContest completed. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
-                command.ContestId,
-                command.Sport,
-                correlationId);
-
-            return new Success<Guid>(correlationId, ResultStatus.Accepted);
-        }
-        catch (Exception ex)
+        if (!result.IsSuccess)
         {
             _logger.LogError(
-                ex,
-                "Error refreshing contest. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
+                "RefreshContest failed. ContestId={ContestId}, Sport={Sport}, Status={Status}, CorrelationId={CorrelationId}",
                 command.ContestId,
                 command.Sport,
+                result.Status,
                 correlationId);
+
+            var failure = (Failure<bool>)result;
             return new Failure<Guid>(
-                default,
-                ResultStatus.BadRequest,
-                [new ValidationFailure("Error", ex.Message)]);
+                correlationId,
+                result.Status,
+                failure.Errors);
         }
+
+        _logger.LogInformation(
+            "RefreshContest completed. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
+            command.ContestId,
+            command.Sport,
+            correlationId);
+
+        return new Success<Guid>(correlationId, ResultStatus.Accepted);
     }
 }

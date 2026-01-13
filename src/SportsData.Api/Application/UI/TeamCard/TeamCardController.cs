@@ -62,6 +62,7 @@ public class TeamCardController : ApiControllerBase
 
     [HttpGet("metrics")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FranchiseSeasonMetricsDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetTeamMetrics(
         string sport,
         string league,
@@ -72,7 +73,16 @@ public class TeamCardController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         // TODO: Rework this to get the franchiseSeasonId from the other parameters
-        var mode = ModeMapper.ResolveMode(sport, league);
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(sport, league);
+        }
+        catch (NotSupportedException)
+        {
+            return BadRequest($"Unsupported sport/league combination: {sport}/{league}");
+        }
+
         var result = await handler.ExecuteAsync(
             new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = mode },
             cancellationToken);

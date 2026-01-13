@@ -46,7 +46,7 @@ public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
 
         // Step 1: Resolve franchise slug to GUID
         var franchiseClient = _franchiseClientFactory.Resolve(mode);
-        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseId);
+        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseId, cancellationToken);
 
         if (franchiseResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)
         {

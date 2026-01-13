@@ -110,7 +110,6 @@ public class ContestClient : ClientBase, IProvideContests
     {
         return await PostWithResultAsync(
             $"contests/{contestId}/update",
-            contestId,
             "RefreshContest",
             cancellationToken);
     }
@@ -119,7 +118,6 @@ public class ContestClient : ClientBase, IProvideContests
     {
         return await PostWithResultAsync(
             $"contests/{contestId}/media/refresh",
-            contestId,
             "RefreshContestMedia",
             cancellationToken);
     }

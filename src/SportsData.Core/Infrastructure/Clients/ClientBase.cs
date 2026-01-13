@@ -281,6 +281,57 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
         }
     }
 
+    /// <summary>
+    /// Performs an HTTP POST request without a body and returns Result pattern.
+    /// Use this for POST operations that only need route parameters and proper error handling without exceptions.
+    /// </summary>
+    protected async Task<Result<bool>> PostWithResultAsync(
+        string url,
+        string operationName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await HttpClient.PostAsync(url, null, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new Success<bool>(true, ResultStatus.Accepted);
+            }
+
+            // Try to deserialize error response
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            Failure<bool>? failure = null;
+            try
+            {
+                failure = responseContent.FromJson<Failure<bool>>();
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Response body is not valid JSON, use defaults
+            }
+
+            var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
+            var errors = failure?.Errors ?? [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")];
+
+            return new Failure<bool>(false, status, errors);
+        }
+        catch (HttpRequestException ex)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} failed: {ex.Message}")]);
+        }
+        catch (TaskCanceledException ex)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} timed out: {ex.Message}")]);
+        }
+    }
+
     public string GetProviderName() =>
         HttpClient?.BaseAddress?.Host ?? "Unknown";
 

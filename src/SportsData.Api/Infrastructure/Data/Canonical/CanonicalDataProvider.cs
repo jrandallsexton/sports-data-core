@@ -224,11 +224,6 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             return results.ToList();
         }
 
-        public async Task RefreshContestByContestId(Guid contestId)
-        {
-            await _producerClient.RefreshContestByContestId(contestId);
-        }
-
         public async Task RefreshContestMediaByContestId(Guid contestId)
         {
             await _producerClient.RefreshContestMediaByContestId(contestId);
@@ -555,13 +550,6 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             )).ToList();
 
             return contestIds;
-        }
-
-        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
-        {
-            var dto = await _producerClient.GetContestOverviewByContestId(contestId);
-
-            return dto ?? throw new Exception("Not found");
         }
 
         public async Task<Matchup?> GetMatchupByContestId(Guid contestId)

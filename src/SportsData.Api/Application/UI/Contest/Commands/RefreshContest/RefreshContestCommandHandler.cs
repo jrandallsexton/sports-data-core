@@ -1,8 +1,8 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 
@@ -16,14 +16,14 @@ public interface IRefreshContestCommandHandler
 public class RefreshContestCommandHandler : IRefreshContestCommandHandler
 {
     private readonly ILogger<RefreshContestCommandHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public RefreshContestCommandHandler(
         ILogger<RefreshContestCommandHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -35,15 +35,18 @@ public class RefreshContestCommandHandler : IRefreshContestCommandHandler
         try
         {
             _logger.LogInformation(
-                "RefreshContest initiated. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "RefreshContest initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
                 command.ContestId,
+                command.Sport,
                 correlationId);
 
-            await _canonicalDataProvider.RefreshContestByContestId(command.ContestId);
+            var contestClient = _contestClientFactory.Resolve(command.Sport);
+            await contestClient.RefreshContest(command.ContestId, cancellationToken);
 
             _logger.LogInformation(
-                "RefreshContest completed. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "RefreshContest completed. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
                 command.ContestId,
+                command.Sport,
                 correlationId);
 
             return new Success<Guid>(correlationId, ResultStatus.Accepted);
@@ -52,8 +55,9 @@ public class RefreshContestCommandHandler : IRefreshContestCommandHandler
         {
             _logger.LogError(
                 ex,
-                "Error refreshing contest. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "Error refreshing contest. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
                 command.ContestId,
+                command.Sport,
                 correlationId);
             return new Failure<Guid>(
                 default,

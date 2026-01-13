@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Contest;
 
 public interface IContestClientFactory
 {
-    IProvideContests Resolve(string sport, string league);
+    IProvideContests Resolve(Sport mode);
 }
 
 public class ContestClientFactory : ClientFactoryBase<ContestClient, IProvideContests>, IContestClientFactory

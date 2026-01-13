@@ -1,6 +1,7 @@
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using Microsoft.Extensions.Logging;
 using FluentValidation.Results;
@@ -27,10 +28,11 @@ public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
         GetContestByIdQuery query,
         CancellationToken cancellationToken)
     {
-        IProvideContests contestClient;
+        // Resolve sport/league to mode
+        Sport mode;
         try
         {
-            contestClient = _contestClientFactory.Resolve(query.Sport, query.League);
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
         }
         catch (NotSupportedException ex)
         {
@@ -43,6 +45,7 @@ public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
                 [new ValidationFailure("Sport/League", ex.Message)]);
         }
 
+        var contestClient = _contestClientFactory.Resolve(mode);
         var contestResult = await contestClient.GetContestById(
             query.ContestId,
             cancellationToken);

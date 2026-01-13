@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
-using SportsData.Core.Common.Mapping;
 
 using System;
 using System.Collections.Concurrent;
@@ -33,12 +32,8 @@ public abstract class ClientFactoryBase<TClient, TInterface>
         Configuration = configuration;
     }
 
-    public TInterface Resolve(string sport, string league)
+    public TInterface Resolve(Sport mode)
     {
-        var mode = ModeMapper.ResolveMode(sport, league);
-        _logger.LogDebug("Resolving {ClientType} for sport: {Sport}, league: {League}, mode: {Mode}",
-            typeof(TClient).Name, sport, league, mode);
-
         return _clientCache.GetOrAdd(mode, m =>
         {
             _logger.LogInformation("Creating new {ClientType} for mode: {Mode}", typeof(TClient).Name, m);

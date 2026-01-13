@@ -1,5 +1,6 @@
 using FluentValidation.Results;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 using SportsData.Api.Infrastructure.Refs;
@@ -43,11 +44,11 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdQueryHandler
             query.League,
             query.Id);
 
-        // Get canonical data from internal service (Producer)
-        IProvideVenues client;
+        // Resolve sport/league to mode
+        Sport mode;
         try
         {
-            client = _venueClientFactory.Resolve(query.Sport, query.League);
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
         }
         catch (NotSupportedException ex)
         {
@@ -59,6 +60,9 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdQueryHandler
                 ResultStatus.BadRequest,
                 [new ValidationFailure("Sport/League", ex.Message)]);
         }
+
+        // Get canonical data from internal service (Producer)
+        var client = _venueClientFactory.Resolve(mode);
 
         var venueResult = await client.GetVenueById(query.Id, cancellationToken);
 

@@ -1,5 +1,6 @@
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 
@@ -39,11 +40,11 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
             query.PageNumber,
             query.PageSize);
 
-        // Get canonical data from internal service (Producer)
-        IProvideVenues client;
+        // Resolve sport/league to mode
+        Sport mode;
         try
         {
-            client = _venueClientFactory.Resolve(query.Sport, query.League);
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
         }
         catch (NotSupportedException ex)
         {
@@ -55,6 +56,9 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
                 ResultStatus.BadRequest,
                 [new FluentValidation.Results.ValidationFailure("Sport/League", ex.Message)]);
         }
+
+        // Get canonical data from internal service (Producer)
+        var client = _venueClientFactory.Resolve(mode);
 
         var venuesResult = await client.GetVenues(query.PageNumber, query.PageSize, cancellationToken);
 

@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Venue;
 
 public interface IVenueClientFactory
 {
-    IProvideVenues Resolve(string sport, string league);
+    IProvideVenues Resolve(Sport mode);
 }
 
 public class VenueClientFactory : ClientFactoryBase<VenueClient, IProvideVenues>, IVenueClientFactory

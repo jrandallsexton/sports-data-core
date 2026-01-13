@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 
-using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Middleware.Health;
@@ -16,12 +15,12 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
 {
     public interface IProvideProducers : IProvideHealthChecks
     {
-        Task<VenueDto?> GetVenue(string id, CancellationToken cancellationToken = default);
-        Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
         Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
+
         Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
-        Task RefreshContestByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
         Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
         Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
     }
 
@@ -51,29 +50,6 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
                 $"franchise-seasons/id/{franchiseSeasonId}/metrics",
                 new FranchiseSeasonMetricsDto(),
                 cancellationToken);
-        }
-
-        public async Task<VenueDto?> GetVenue(string id, CancellationToken cancellationToken = default)
-        {
-            return await GetOrDefaultAsync<VenueDto?, Success<VenueDto>>(
-                $"venues/{id}",
-                venue => venue?.Value,
-                cancellationToken);
-        }
-
-        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
-        {
-            return await GetOrDefaultAsync(
-                $"contests/{contestId}/overview",
-                new ContestOverviewDto(),
-                cancellationToken);
-        }
-
-        public async Task RefreshContestByContestId(Guid contestId, CancellationToken cancellationToken = default)
-        {
-            var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"contests/{contestId}/update", content, cancellationToken);
-            response.EnsureSuccessStatusCode();
         }
 
         public async Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)

@@ -4,6 +4,7 @@ using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
 
@@ -17,20 +18,22 @@ public interface IGetContestOverviewQueryHandler
 public class GetContestOverviewQueryHandler : IGetContestOverviewQueryHandler
 {
     private readonly ILogger<GetContestOverviewQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public GetContestOverviewQueryHandler(
         ILogger<GetContestOverviewQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<ContestOverviewDto>> ExecuteAsync(
         GetContestOverviewQuery query,
         CancellationToken cancellationToken = default)
     {
+        var contestClient = _contestClientFactory.Resolve(query.Sport);
+
         var correlationId = ActivityExtensions.GetCorrelationId();
 
         _logger.LogInformation(
@@ -38,7 +41,7 @@ public class GetContestOverviewQueryHandler : IGetContestOverviewQueryHandler
             query.ContestId,
             correlationId);
 
-        var result = await _canonicalDataProvider.GetContestOverviewByContestId(query.ContestId);
+        var result = await contestClient.GetContestOverviewByContestId(query.ContestId, cancellationToken);
 
         if (result == null)
         {

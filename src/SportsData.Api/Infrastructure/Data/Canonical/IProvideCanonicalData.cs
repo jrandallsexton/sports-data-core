@@ -46,13 +46,9 @@ public interface IProvideCanonicalData
 
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
 
-    Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
-
     Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks();
 
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
-
-    Task RefreshContestByContestId(Guid contestId);
 
     Task RefreshContestMediaByContestId(Guid contestId);
 

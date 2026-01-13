@@ -1,7 +1,7 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
-using IProvideFranchises = SportsData.Core.Infrastructure.Clients.Franchise.IProvideFranchises;
 using SportsData.Api.Infrastructure.Refs;
 using System;
 using System.Collections.Generic;
@@ -40,11 +40,11 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
         _logger.LogInformation("GetFranchiseById query: sport={Sport}, league={League}, idOrSlug={IdOrSlug}",
             query.Sport, query.League, query.Id);
 
-        // Resolve the appropriate client for this sport/league
-        IProvideFranchises client;
+        // Resolve sport/league to mode
+        Sport mode;
         try
         {
-            client = _franchiseClientFactory.Resolve(query.Sport, query.League);
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
         }
         catch (NotSupportedException ex)
         {
@@ -58,6 +58,7 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
         }
 
         // Get canonical response from Producer
+        var client = _franchiseClientFactory.Resolve(mode);
         var franchiseResult = await client.GetFranchiseById(query.Id);
 
         if (franchiseResult is Failure<GetFranchiseByIdResponse> failure)

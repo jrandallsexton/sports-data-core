@@ -8,6 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.Contests
 {
@@ -19,6 +20,7 @@ namespace SportsData.Api.Application.Contests
         private readonly IGenerateGameRecapCommandHandler _generateGameRecapHandler;
         private readonly IEventBus _publishEndpoint;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IContestClientFactory _contestClientFactory;
 
         public ContestRecapProcessor(
             ILogger<ContestRecapProcessor> logger,
@@ -26,7 +28,8 @@ namespace SportsData.Api.Application.Contests
             AppDataContext dataContext,
             IGenerateGameRecapCommandHandler generateGameRecapHandler,
             IEventBus publishEndpoint,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IContestClientFactory contestClientFactory)
         {
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
@@ -34,10 +37,14 @@ namespace SportsData.Api.Application.Contests
             _generateGameRecapHandler = generateGameRecapHandler;
             _publishEndpoint = publishEndpoint;
             _dateTimeProvider = dateTimeProvider;
+            _contestClientFactory = contestClientFactory;
         }
 
         public async Task ProcessAsync(Guid contestId)
         {
+            // TODO: Support multiple sports - pass Sport as parameter
+            var contestClient = _contestClientFactory.Resolve(Sport.FootballNcaa);
+
             // if we already have a recap for this contest, skip processing
             var recapExists = await _dataContext.Articles
                 .AnyAsync(x => x.ContestId == contestId);
@@ -49,7 +56,7 @@ namespace SportsData.Api.Application.Contests
             }
 
             // get the contest overview
-            var overview = await _canonicalDataProvider.GetContestOverviewByContestId(contestId);
+            var overview = await contestClient.GetContestOverviewByContestId(contestId);
 
             // generate the recap using AI handler
             var recapResult = await _generateGameRecapHandler.ExecuteAsync(new GenerateGameRecapCommand

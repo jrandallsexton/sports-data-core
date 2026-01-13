@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Producer;
 
 public interface IProducerClientFactory
 {
-    IProvideProducers Resolve(string sport, string league);
+    IProvideProducers Resolve(Sport mode);
 }
 
 public class ProducerClientFactory : ClientFactoryBase<ProducerClient, IProvideProducers>, IProducerClientFactory

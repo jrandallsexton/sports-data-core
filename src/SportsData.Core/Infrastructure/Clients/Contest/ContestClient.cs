@@ -3,30 +3,38 @@
 using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Middleware.Health;
 
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+using SportsData.Core.Extensions;
 
 namespace SportsData.Core.Infrastructure.Clients.Contest;
 
 public interface IProvideContests : IProvideHealthChecks
 {
     Task<Result<GetSeasonContestsResponse>> GetSeasonContests(
-        Guid franchiseId, 
-        int seasonYear, 
+        Guid franchiseId,
+        int seasonYear,
         int? week = null,
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken cancellationToken = default);
-    
+
     Task<Result<GetContestByIdResponse>> GetContestById(
         Guid contestId,
         CancellationToken cancellationToken = default);
+
+    Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
 }
 
 public class ContestClient : ClientBase, IProvideContests
@@ -89,5 +97,20 @@ public class ContestClient : ClientBase, IProvideContests
             "Contest",
             ResultStatus.NotFound,
             cancellationToken);
+    }
+
+    public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"contests/{contestId}/overview",
+            new ContestOverviewDto(),
+            cancellationToken);
+    }
+
+    public async Task RefreshContest(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
+        using var response = await HttpClient.PostAsync($"contests/{contestId}/update", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }

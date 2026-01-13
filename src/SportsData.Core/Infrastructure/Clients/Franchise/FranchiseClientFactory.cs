@@ -11,7 +11,7 @@ namespace SportsData.Core.Infrastructure.Clients.Franchise;
 
 public interface IFranchiseClientFactory
 {
-    IProvideFranchises Resolve(string sport, string league);
+    IProvideFranchises Resolve(Sport mode);
 }
 
 public class FranchiseClientFactory : ClientFactoryBase<FranchiseClient, IProvideFranchises>, IFranchiseClientFactory

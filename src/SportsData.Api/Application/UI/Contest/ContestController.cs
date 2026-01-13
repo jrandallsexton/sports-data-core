@@ -21,7 +21,8 @@ public class ContestController : ApiControllerBase
         [FromServices] IGetContestOverviewQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetContestOverviewQuery { ContestId = id };
+        // TODO: Support multiple sports
+        var query = new GetContestOverviewQuery { ContestId = id, Sport = Sport.FootballNcaa};
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
@@ -33,7 +34,8 @@ public class ContestController : ApiControllerBase
         [FromServices] IRefreshContestCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new RefreshContestCommand { ContestId = id };
+        // TODO: Support multiple sports
+        var command = new RefreshContestCommand { ContestId = id, Sport = Sport.FootballNcaa };
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

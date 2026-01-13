@@ -8,21 +8,22 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Provider
 {
     public interface IProvideProviders : IProvideHealthChecks
     {
-        Task<string> GetDocumentByUrlHash(string urlHash);
+        Task<string> GetDocumentByUrlHash(string urlHash, CancellationToken cancellationToken = default);
 
-        Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, long documentId, int? seasonId);
+        Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, long documentId, int? seasonId, CancellationToken cancellationToken = default);
 
-        Task PublishDocumentEvents(PublishDocumentEventsCommand command);
+        Task PublishDocumentEvents(PublishDocumentEventsCommand command, CancellationToken cancellationToken = default);
 
-        Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query);
+        Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query, CancellationToken cancellationToken = default);
 
-        Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query);
+        Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query, CancellationToken cancellationToken = default);
     }
 
     public class ProviderClient : ClientBase, IProvideProviders
@@ -36,29 +37,19 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             _logger = logger;
         }
 
-        public async Task<string> GetDocumentByUrlHash(string urlHash)
+        public async Task<string> GetDocumentByUrlHash(string urlHash, CancellationToken cancellationToken = default)
         {
             var url = $"document/urlHash/{urlHash}";
-            _logger.LogInformation("Using {@BaseAddress} with {@Uri}", HttpClient.BaseAddress, url);
 
-            try
+            using var response = await HttpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
             {
-                var response = await HttpClient.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Failed to obtain document from Provider, status code: {StatusCode}", response.StatusCode);
-                    return string.Empty;
-                }
-
-                var tmp = await response.Content.ReadAsStringAsync();
-                return tmp;
+                _logger.LogWarning("Failed to obtain document from Provider, status code: {StatusCode}", response.StatusCode);
+                return string.Empty;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to obtain document from Provider");
-                throw;
-            }
+
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
         public async Task<string> GetDocumentByIdAsync(
@@ -66,63 +57,50 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             Sport sportId,
             DocumentType typeId,
             long documentId,
-            int? seasonId)
+            int? seasonId,
+            CancellationToken cancellationToken = default)
         {
             var url = seasonId.HasValue
                 ? $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}"
                 : $"document/{providerId}/{sportId}/{typeId}/{documentId}";
 
-            _logger.LogInformation("Using {@BaseAddress} with {@Uri}", HttpClient.BaseAddress, url);
-
-            try
-            {
-                var response = await HttpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to obtain document from Provider");
-                throw;
-            }
+            return await GetStringAsync(url, cancellationToken);
         }
 
-        public async Task PublishDocumentEvents(PublishDocumentEventsCommand command)
+        public async Task PublishDocumentEvents(PublishDocumentEventsCommand command, CancellationToken cancellationToken = default)
         {
-            var content = new StringContent(command.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync("document/publish/", content);
-            response.EnsureSuccessStatusCode();
+            await PostAsync("document/publish/", command, cancellationToken);
         }
 
-        public async Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query)
+        public async Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query, CancellationToken cancellationToken = default)
         {
-            var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync("document/external/document/", content);
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            return tmp.FromJson<GetExternalDocumentResponse>() ?? new GetExternalDocumentResponse
-            {
-                CanonicalId = string.Empty,
-                Uri = new Uri(string.Empty),
-                Id = string.Empty,
-                IsSuccess = false,
-                Data = string.Empty
-            };
+            return await PostOrDefaultAsync(
+                "document/external/document/",
+                query,
+                new GetExternalDocumentResponse
+                {
+                    CanonicalId = string.Empty,
+                    Uri = new Uri("about:blank"),
+                    Id = string.Empty,
+                    IsSuccess = false,
+                    Data = string.Empty
+                },
+                cancellationToken);
         }
 
-        public async Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query)
+        public async Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query, CancellationToken cancellationToken = default)
         {
-            var content = new StringContent(query.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync("document/external/image/", content);
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            return tmp.FromJson<GetExternalImageResponse>() ?? new GetExternalImageResponse
-            {
-                CanonicalId = string.Empty,
-                Uri = new Uri(string.Empty),
-                Id = string.Empty,
-                IsSuccess = false
-            };
+            return await PostOrDefaultAsync(
+                "document/external/image/",
+                query,
+                new GetExternalImageResponse
+                {
+                    CanonicalId = string.Empty,
+                    Uri = new Uri("about:blank"),
+                    Id = string.Empty,
+                    IsSuccess = false
+                },
+                cancellationToken);
         }
     }
 }

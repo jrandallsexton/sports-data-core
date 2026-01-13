@@ -9,19 +9,20 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Producer
 {
     public interface IProvideProducers : IProvideHealthChecks
     {
-        Task<VenueDto?> GetVenue(string id);
-        Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId);
-        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear);
-        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId);
-        Task RefreshContestByContestId(Guid contestId);
-        Task RefreshContestMediaByContestId(Guid contestId);
-        Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear);
+        Task<VenueDto?> GetVenue(string id, CancellationToken cancellationToken = default);
+        Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
+        Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
+        Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+        Task RefreshContestByContestId(Guid contestId, CancellationToken cancellationToken = default);
+        Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
+        Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
     }
 
     public class ProducerClient : ClientBase, IProvideProducers
@@ -36,121 +37,58 @@ namespace SportsData.Core.Infrastructure.Clients.Producer
             _logger = logger;
         }
 
-        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear)
+        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default)
         {
-            var response = await HttpClient.GetAsync($"franchise-seasons/seasonYear/{seasonYear}/metrics");
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            var metrics = tmp.FromJson<List<FranchiseSeasonMetricsDto>>();
-            return metrics ?? [];
+            return await GetOrDefaultAsync(
+                $"franchise-seasons/seasonYear/{seasonYear}/metrics",
+                new List<FranchiseSeasonMetricsDto>(),
+                cancellationToken);
         }
 
-        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId)
+        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
         {
-            var response = await HttpClient.GetAsync($"franchise-seasons/id/{franchiseSeasonId}/metrics");
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            var metrics = tmp.FromJson<FranchiseSeasonMetricsDto>();
-            return metrics ?? new FranchiseSeasonMetricsDto();
+            return await GetOrDefaultAsync(
+                $"franchise-seasons/id/{franchiseSeasonId}/metrics",
+                new FranchiseSeasonMetricsDto(),
+                cancellationToken);
         }
 
-        public async Task<VenueDto?> GetVenue(string id)
+        public async Task<VenueDto?> GetVenue(string id, CancellationToken cancellationToken = default)
         {
-            var response = await HttpClient.GetAsync($"venues/{id}");
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            var venue = tmp.FromJson<Success<VenueDto>>();
-
-            return venue?.Value;
+            return await GetOrDefaultAsync<VenueDto?, Success<VenueDto>>(
+                $"venues/{id}",
+                venue => venue?.Value,
+                cancellationToken);
         }
 
-        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId)
+        public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
         {
-            var response = await HttpClient.GetAsync($"contests/{contestId}/overview");
-            response.EnsureSuccessStatusCode();
-            var tmp = await response.Content.ReadAsStringAsync();
-            var overview = tmp.FromJson<ContestOverviewDto>();
-
-            return overview ?? new ContestOverviewDto();
+            return await GetOrDefaultAsync(
+                $"contests/{contestId}/overview",
+                new ContestOverviewDto(),
+                cancellationToken);
         }
 
-        public async Task RefreshContestByContestId(Guid contestId)
+        public async Task RefreshContestByContestId(Guid contestId, CancellationToken cancellationToken = default)
         {
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"contests/{contestId}/update", content);
+            var response = await HttpClient.PostAsync($"contests/{contestId}/update", content, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task RefreshContestMediaByContestId(Guid contestId)
+        public async Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
         {
             var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync($"contests/{contestId}/media/refresh", content);
+            var response = await HttpClient.PostAsync($"contests/{contestId}/media/refresh", content, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear)
+        public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation(
-                "ProducerClient.GetFranchiseSeasonRankings called with seasonYear={SeasonYear}", 
-                seasonYear);
-            
-            try
-            {
-                var url = $"franchise-season-rankings/seasonYear/{seasonYear}";
-                _logger.LogDebug(
-                    "Making HTTP GET request to Producer: {Url}", 
-                    url);
-                
-                var response = await HttpClient.GetAsync(url);
-                
-                _logger.LogInformation(
-                    "Received HTTP response from Producer, StatusCode={StatusCode}, seasonYear={SeasonYear}", 
-                    response.StatusCode, 
-                    seasonYear);
-                
-                response.EnsureSuccessStatusCode();
-                
-                var tmp = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogDebug(
-                    "Response body length: {Length} characters for seasonYear={SeasonYear}", 
-                    tmp?.Length ?? 0, 
-                    seasonYear);
-                
-                if (string.IsNullOrEmpty(tmp))
-                {
-                    _logger.LogWarning(
-                        "Empty response body received from Producer for seasonYear={SeasonYear}", 
-                        seasonYear);
-                    return [];
-                }
-                
-                var metrics = tmp.FromJson<List<FranchiseSeasonPollDto>>();
-                
-                _logger.LogInformation(
-                    "Successfully deserialized {Count} polls for seasonYear={SeasonYear}", 
-                    metrics?.Count ?? 0, 
-                    seasonYear);
-                
-                return metrics ?? [];
-            }
-            catch (HttpRequestException httpEx)
-            {
-                _logger.LogError(
-                    httpEx, 
-                    "HTTP request failed in ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}, StatusCode={StatusCode}", 
-                    seasonYear,
-                    httpEx.StatusCode);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex, 
-                    "Error in ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
-                    seasonYear);
-                throw;
-            }
+            return await GetOrDefaultAsync(
+                $"franchise-season-rankings/seasonYear/{seasonYear}",
+                new List<FranchiseSeasonPollDto>(),
+                cancellationToken);
         }
     }
 }

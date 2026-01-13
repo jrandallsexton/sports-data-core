@@ -29,7 +29,7 @@ public interface IProvideContests : IProvideHealthChecks
         Guid contestId,
         CancellationToken cancellationToken = default);
 
-    Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
+    Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
     Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
 
@@ -98,11 +98,22 @@ public class ContestClient : ClientBase, IProvideContests
             cancellationToken);
     }
 
-    public async Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    public async Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
     {
-        return await GetOrDefaultAsync(
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await GetAsync<ContestOverviewDto, ContestOverviewDto>(
             $"contests/{contestId}/overview",
-            new ContestOverviewDto(),
+            overview => overview,
+            default!,
+            "Contest overview",
+            ResultStatus.NotFound,
             cancellationToken);
     }
 

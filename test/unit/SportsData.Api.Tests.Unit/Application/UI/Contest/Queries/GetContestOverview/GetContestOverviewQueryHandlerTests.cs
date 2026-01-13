@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentValidation.Results;
 
 using Moq;
 
@@ -35,7 +36,7 @@ public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOvervie
 
         _contestClientMock
             .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedOverview);
+            .ReturnsAsync(new Success<ContestOverviewDto>(expectedOverview));
 
         var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
         var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };
@@ -58,7 +59,10 @@ public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOvervie
 
         _contestClientMock
             .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ContestOverviewDto?)null);
+            .ReturnsAsync(new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.NotFound,
+                []));
 
         var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
         var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };

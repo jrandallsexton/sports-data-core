@@ -43,18 +43,14 @@ public class GetContestOverviewQueryHandler : IGetContestOverviewQueryHandler
 
         var result = await contestClient.GetContestOverviewByContestId(query.ContestId, cancellationToken);
 
-        if (result == null)
+        if (!result.IsSuccess)
         {
             _logger.LogWarning(
-                "Contest overview not found. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "Failed to get contest overview. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 query.ContestId,
                 correlationId);
-            return new Failure<ContestOverviewDto>(
-                default!,
-                ResultStatus.NotFound,
-                [new ValidationFailure(nameof(query.ContestId), $"Contest with ID {query.ContestId} not found")]);
         }
 
-        return new Success<ContestOverviewDto>(result);
+        return result;
     }
 }

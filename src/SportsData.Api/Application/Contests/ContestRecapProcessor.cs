@@ -56,7 +56,15 @@ namespace SportsData.Api.Application.Contests
             }
 
             // get the contest overview
-            var overview = await contestClient.GetContestOverviewByContestId(contestId);
+            var overviewResult = await contestClient.GetContestOverviewByContestId(contestId);
+
+            if (!overviewResult.IsSuccess)
+            {
+                _logger.LogError("Failed to get contest overview for contest ID {ContestId}", contestId);
+                return;
+            }
+
+            var overview = overviewResult.Value;
 
             // generate the recap using AI handler
             var recapResult = await _generateGameRecapHandler.ExecuteAsync(new GenerateGameRecapCommand

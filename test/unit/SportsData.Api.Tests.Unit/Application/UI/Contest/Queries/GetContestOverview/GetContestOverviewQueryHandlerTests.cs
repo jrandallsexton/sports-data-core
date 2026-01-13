@@ -1,58 +1,73 @@
-//using FluentAssertions;
+using FluentAssertions;
 
-//using Moq;
+using Moq;
 
-//using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
-//using SportsData.Api.Infrastructure.Data.Canonical;
-//using SportsData.Core.Common;
-//using SportsData.Core.Dtos.Canonical;
+using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
+using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
-//using Xunit;
+using Xunit;
 
-//namespace SportsData.Api.Tests.Unit.Application.UI.Contest.Queries.GetContestOverview;
+namespace SportsData.Api.Tests.Unit.Application.UI.Contest.Queries.GetContestOverview;
 
-//public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOverviewQueryHandler>
-//{
-//    [Fact]
-//    public async Task ExecuteAsync_ShouldReturnSuccess_WhenContestExists()
-//    {
-//        // Arrange
-//        var contestId = Guid.NewGuid();
-//        var expectedOverview = new ContestOverviewDto();
+public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOverviewQueryHandler>
+{
+    private readonly Mock<IProvideContests> _contestClientMock;
+    private readonly Mock<IContestClientFactory> _contestClientFactoryMock;
 
-//        Mocker.GetMock<IProvideCanonicalData>()
-//            .Setup(x => x.GetContestOverviewByContestId(contestId))
-//            .ReturnsAsync(expectedOverview);
+    public GetContestOverviewQueryHandlerTests()
+    {
+        _contestClientMock = new Mock<IProvideContests>();
+        _contestClientFactoryMock = Mocker.GetMock<IContestClientFactory>();
+        _contestClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
+    }
 
-//        var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
-//        var query = new GetContestOverviewQuery { ContestId = contestId };
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnSuccess_WhenContestExists()
+    {
+        // Arrange
+        var contestId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
+        var expectedOverview = new ContestOverviewDto();
 
-//        // Act
-//        var result = await sut.ExecuteAsync(query);
+        _contestClientMock
+            .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedOverview);
 
-//        // Assert
-//        result.IsSuccess.Should().BeTrue();
-//        result.Value.Should().NotBeNull();
-//    }
+        var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
+        var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };
 
-//    [Fact]
-//    public async Task ExecuteAsync_ShouldReturnNotFound_WhenContestDoesNotExist()
-//    {
-//        // Arrange
-//        var contestId = Guid.NewGuid();
+        // Act
+        var result = await sut.ExecuteAsync(query);
 
-//        Mocker.GetMock<IProvideCanonicalData>()
-//            .Setup(x => x.GetContestOverviewByContestId(contestId))
-//            .ReturnsAsync((ContestOverviewDto?)null);
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Should().BeSameAs(expectedOverview);
+    }
 
-//        var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
-//        var query = new GetContestOverviewQuery { ContestId = contestId };
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnNotFound_WhenContestDoesNotExist()
+    {
+        // Arrange
+        var contestId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
 
-//        // Act
-//        var result = await sut.ExecuteAsync(query);
+        _contestClientMock
+            .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ContestOverviewDto?)null);
 
-//        // Assert
-//        result.IsSuccess.Should().BeFalse();
-//        result.Status.Should().Be(ResultStatus.NotFound);
-//    }
-//}
+        var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
+        var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };
+
+        // Act
+        var result = await sut.ExecuteAsync(query);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+    }
+}

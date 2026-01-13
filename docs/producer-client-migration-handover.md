@@ -137,7 +137,7 @@ dotnet test sports-data.sln --no-build --filter "FullyQualifiedName~.Tests.Unit"
 - `src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs`
 - `src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs`
 - `src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs`
-- `src/SportsData.Core/Infrastructure/Clients/Producer/ProducerClient.cs` (to be deleted)
+- ~~`src/SportsData.Core/Infrastructure/Clients/Producer/ProducerClient.cs`~~ (deleted)
 
 ### CanonicalDataProvider (API intermediary - being phased out for domain clients)
 - `src/SportsData.Api/Infrastructure/Data/Canonical/IProvideCanonicalData.cs`
@@ -153,13 +153,14 @@ dotnet test sports-data.sln --no-build --filter "FullyQualifiedName~.Tests.Unit"
 CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl
 CommonConfig:FranchiseClientConfig:FootballNcaa:ApiUrl
 CommonConfig:VenueClientConfig:FootballNcaa:ApiUrl
-CommonConfig:ProducerClientConfig:FootballNcaa:ApiUrl
+
+# ProducerClientConfig kept for HATEOAS link generation (ResourceRefGenerator)
+CommonConfig:ProducerClientConfig:ApiUrl
 
 # Fallback (if mode-specific not set)
 CommonConfig:ContestClientConfig:ApiUrl
 CommonConfig:FranchiseClientConfig:ApiUrl
 CommonConfig:VenueClientConfig:ApiUrl
-CommonConfig:ProducerClientConfig:ApiUrl
 ```
 
 ## UI Controllers (BFF)
@@ -177,8 +178,8 @@ var command = new RefreshContestCommand { ContestId = id, Sport = Sport.Football
 
 ## Notes
 
-- `GetVenue` in ProducerClient appears unused - verify before migrating
 - `CanonicalDataProvider` is being phased out as an intermediary; handlers should use domain client factories directly
 - All domain clients currently point to Producer service URLs; this will change when services are split
 - Producer and Provider services run in single-mode (one Sport per instance)
 - API will run in mixed-mode (handles all sports, routes to appropriate backend)
+- ProducerClientConfig is retained only for `ResourceRefGenerator` to generate HATEOAS links pointing to Producer's canonical data endpoints

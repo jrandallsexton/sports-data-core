@@ -35,6 +35,8 @@ public interface IProvideContests : IProvideHealthChecks
     Task<ContestOverviewDto> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
     Task RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
 }
 
 public class ContestClient : ClientBase, IProvideContests
@@ -111,6 +113,13 @@ public class ContestClient : ClientBase, IProvideContests
     {
         var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
         using var response = await HttpClient.PostAsync($"contests/{contestId}/update", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        var content = new StringContent(contestId.ToJson(), Encoding.UTF8, "application/json");
+        using var response = await HttpClient.PostAsync($"contests/{contestId}/media/refresh", content, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

@@ -9,7 +9,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 
 using System.Data;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using static SportsData.Api.Application.UI.Rankings.Dtos.RankingsByPollIdByWeekDto;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical
@@ -19,23 +18,15 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         private readonly IDbConnection _connection;
         private readonly ILogger<CanonicalDataProvider> _logger;
         private readonly CanonicalDataQueryProvider _queryProvider;
-        private readonly IProvideProducers _producerClient;
 
         public CanonicalDataProvider(
             ILogger<CanonicalDataProvider> logger,
             IDbConnection connection,
-            CanonicalDataQueryProvider queryProvider,
-            IProvideProducers producerClient)
+            CanonicalDataQueryProvider queryProvider)
         {
             _logger = logger;
             _connection = connection;
             _queryProvider = queryProvider;
-            _producerClient = producerClient;
-        }
-
-        public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsBySeasonYear(int seasonYear)
-        {
-            return await _producerClient.GetFranchiseSeasonMetrics(seasonYear);
         }
 
         public async Task<TeamCardDto?> GetTeamCard(
@@ -222,11 +213,6 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             );
 
             return results.ToList();
-        }
-
-        public async Task RefreshContestMediaByContestId(Guid contestId)
-        {
-            await _producerClient.RefreshContestMediaByContestId(contestId);
         }
 
         public async Task<List<Matchup>> GetMatchupsForCurrentWeek()
@@ -492,51 +478,6 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             };
 
             return dto;
-        }
-
-        public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetrics(Guid franchiseSeasonId)
-        {
-            return await _producerClient.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId);
-        }
-
-        public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear)
-        {
-            _logger.LogInformation(
-                "CanonicalDataProvider.GetFranchiseSeasonRankings called with seasonYear={SeasonYear}", 
-                seasonYear);
-            
-            try
-            {
-                _logger.LogDebug(
-                    "Calling ProducerClient.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
-                    seasonYear);
-                
-                var dto = await _producerClient.GetFranchiseSeasonRankings(seasonYear);
-
-                _logger.LogInformation(
-                    "Received {Count} polls from ProducerClient for seasonYear={SeasonYear}", 
-                    dto?.Count ?? 0, 
-                    seasonYear);
-
-                return dto?.ToList() ?? [];
-            }
-            catch (HttpRequestException httpEx)
-            {
-                _logger.LogError(
-                    httpEx, 
-                    "HTTP error calling Producer service for GetFranchiseSeasonRankings, seasonYear={SeasonYear}, StatusCode={StatusCode}", 
-                    seasonYear,
-                    httpEx.StatusCode);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex, 
-                    "Error in CanonicalDataProvider.GetFranchiseSeasonRankings for seasonYear={SeasonYear}", 
-                    seasonYear);
-                throw;
-            }
         }
 
         public async Task<List<Guid>> GetCompletedFbsContestIdsBySeasonWeekId(Guid seasonWeekId)

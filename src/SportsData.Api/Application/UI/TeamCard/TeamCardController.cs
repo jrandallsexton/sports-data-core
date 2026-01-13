@@ -6,6 +6,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 
@@ -71,8 +72,9 @@ public class TeamCardController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         // TODO: Rework this to get the franchiseSeasonId from the other parameters
+        var mode = ModeMapper.ResolveMode(sport, league);
         var result = await handler.ExecuteAsync(
-            new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId },
+            new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = mode },
             cancellationToken);
 
         return result.ToActionResult();

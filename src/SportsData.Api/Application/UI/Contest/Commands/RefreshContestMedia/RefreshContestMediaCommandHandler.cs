@@ -1,8 +1,9 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 
@@ -16,14 +17,14 @@ public interface IRefreshContestMediaCommandHandler
 public class RefreshContestMediaCommandHandler : IRefreshContestMediaCommandHandler
 {
     private readonly ILogger<RefreshContestMediaCommandHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public RefreshContestMediaCommandHandler(
         ILogger<RefreshContestMediaCommandHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -35,11 +36,13 @@ public class RefreshContestMediaCommandHandler : IRefreshContestMediaCommandHand
         try
         {
             _logger.LogInformation(
-                "RefreshContestMedia initiated. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "RefreshContestMedia initiated. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
                 command.ContestId,
+                command.Sport,
                 correlationId);
 
-            await _canonicalDataProvider.RefreshContestMediaByContestId(command.ContestId);
+            var client = _contestClientFactory.Resolve(command.Sport);
+            await client.RefreshContestMediaByContestId(command.ContestId, cancellationToken);
 
             _logger.LogInformation(
                 "RefreshContestMedia completed. ContestId={ContestId}, CorrelationId={CorrelationId}",

@@ -3,9 +3,9 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Tests.Shared;
 
 using Xunit;
@@ -14,17 +14,23 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Rankings.Queries.GetRankingsB
 
 public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankingsBySeasonYearQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
 
     public GetRankingsBySeasonYearQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
     }
 
     [Fact]
     public async Task ExecuteAsync_ShouldReturnSuccess_WhenPollsExist()
     {
         // Arrange
+        var sport = Sport.FootballNcaa;
         var polls = new List<FranchiseSeasonPollDto>
         {
             new()
@@ -45,12 +51,12 @@ public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankings
             }
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonRankings(2025))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonRankings(2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync(polls);
 
         var handler = Mocker.CreateInstance<GetRankingsBySeasonYearQueryHandler>();
-        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025 };
+        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -64,12 +70,13 @@ public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankings
     public async Task ExecuteAsync_ShouldReturnEmptyList_WhenNoPollsExist()
     {
         // Arrange
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonRankings(2025))
+        var sport = Sport.FootballNcaa;
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonRankings(2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<FranchiseSeasonPollDto>());
 
         var handler = Mocker.CreateInstance<GetRankingsBySeasonYearQueryHandler>();
-        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025 };
+        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -83,12 +90,13 @@ public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankings
     public async Task ExecuteAsync_ShouldReturnEmptyList_WhenPollsAreNull()
     {
         // Arrange
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonRankings(2025))
+        var sport = Sport.FootballNcaa;
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonRankings(2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync((List<FranchiseSeasonPollDto>?)null);
 
         var handler = Mocker.CreateInstance<GetRankingsBySeasonYearQueryHandler>();
-        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025 };
+        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -102,12 +110,13 @@ public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankings
     public async Task ExecuteAsync_ShouldReturnError_WhenExceptionThrown()
     {
         // Arrange
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonRankings(2025))
+        var sport = Sport.FootballNcaa;
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonRankings(2025, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
         var handler = Mocker.CreateInstance<GetRankingsBySeasonYearQueryHandler>();
-        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025 };
+        var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);

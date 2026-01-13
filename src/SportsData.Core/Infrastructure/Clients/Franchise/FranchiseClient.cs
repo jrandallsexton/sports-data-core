@@ -22,6 +22,9 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<GetFranchiseByIdResponse>> GetFranchiseById(string id, CancellationToken cancellationToken = default);
     Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId, CancellationToken cancellationToken = default);
     Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear, CancellationToken cancellationToken = default);
+    Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
+    Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -93,6 +96,30 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             new GetFranchiseSeasonByIdResponse(null),
             "FranchiseSeason",
             ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/seasonYear/{seasonYear}/metrics",
+            new List<FranchiseSeasonMetricsDto>(),
+            cancellationToken);
+    }
+
+    public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/metrics",
+            new FranchiseSeasonMetricsDto(),
+            cancellationToken);
+    }
+
+    public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-season-rankings/seasonYear/{seasonYear}",
+            new List<FranchiseSeasonPollDto>(),
             cancellationToken);
     }
 }

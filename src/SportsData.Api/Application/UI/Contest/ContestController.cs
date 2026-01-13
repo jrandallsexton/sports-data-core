@@ -47,7 +47,8 @@ public class ContestController : ApiControllerBase
         [FromServices] IRefreshContestMediaCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new RefreshContestMediaCommand { ContestId = id };
+        // TODO: Support multiple sports
+        var command = new RefreshContestMediaCommand { ContestId = id, Sport = Sport.FootballNcaa };
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

@@ -22,7 +22,6 @@ using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.YouTube;
@@ -394,21 +393,10 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            services
-                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-                {
-                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
-                    c.Timeout = TimeSpan.FromSeconds(15);
-                    c.DefaultRequestVersion = HttpVersion.Version20;
-                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-                })
-                .AddPolicyHandlerFromRegistry("HttpRetry");
-
             // Client factories handle resolution by sport/league mode
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
-            services.AddSingleton<IProducerClientFactory, ProducerClientFactory>();
 
             // Register mode-agnostic clients (same URL for all sports)
             var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];

@@ -35,8 +35,9 @@ public class RankingsController : ApiControllerBase
 
         try
         {
+            // TODO: Support multiple sports
             var result = await handler.ExecuteAsync(
-                new GetRankingsBySeasonYearQuery { SeasonYear = seasonYear },
+                new GetRankingsBySeasonYearQuery { SeasonYear = seasonYear, Sport = Sport.FootballNcaa },
                 cancellationToken);
 
             if (result.IsSuccess)

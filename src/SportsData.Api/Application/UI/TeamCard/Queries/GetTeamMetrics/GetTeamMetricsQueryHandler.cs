@@ -1,8 +1,8 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 
@@ -16,14 +16,14 @@ public interface IGetTeamMetricsQueryHandler
 public class GetTeamMetricsQueryHandler : IGetTeamMetricsQueryHandler
 {
     private readonly ILogger<GetTeamMetricsQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
 
     public GetTeamMetricsQueryHandler(
         ILogger<GetTeamMetricsQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
     }
 
     public async Task<Result<FranchiseSeasonMetricsDto>> ExecuteAsync(
@@ -40,7 +40,8 @@ public class GetTeamMetricsQueryHandler : IGetTeamMetricsQueryHandler
 
         try
         {
-            var dto = await _canonicalDataProvider.GetFranchiseSeasonMetrics(query.FranchiseSeasonId);
+            var client = _franchiseClientFactory.Resolve(query.Sport);
+            var dto = await client.GetFranchiseSeasonMetricsByFranchiseSeasonId(query.FranchiseSeasonId, cancellationToken);
 
             if (dto == null)
             {

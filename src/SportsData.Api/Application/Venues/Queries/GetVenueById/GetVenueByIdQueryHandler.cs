@@ -44,7 +44,22 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdQueryHandler
             query.Id);
 
         // Get canonical data from internal service (Producer)
-        var client = _venueClientFactory.Resolve(query.Sport, query.League);
+        IProvideVenues client;
+        try
+        {
+            client = _venueClientFactory.Resolve(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<VenueResponseDto>(
+                null!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         var venueResult = await client.GetVenueById(query.Id, cancellationToken);
 
         if (venueResult is Failure<GetVenueByIdResponse> failure)

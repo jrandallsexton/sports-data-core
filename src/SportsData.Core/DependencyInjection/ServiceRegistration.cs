@@ -408,6 +408,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
+            services.AddSingleton<IProducerClientFactory, ProducerClientFactory>();
 
             // Register mode-agnostic clients (same URL for all sports)
             var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];

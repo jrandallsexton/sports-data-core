@@ -1,3 +1,5 @@
+using FluentValidation.Results;
+
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
@@ -40,7 +42,21 @@ public class GetFranchisesQueryHandler : IGetFranchisesQueryHandler
             query.Sport, query.League, query.PageNumber, query.PageSize);
 
         // Resolve the appropriate client for this sport/league
-        var client = _franchiseClientFactory.Resolve(query.Sport, query.League);
+        IProvideFranchises client;
+        try
+        {
+            client = _franchiseClientFactory.Resolve(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<GetFranchisesResponseDto>(
+                new GetFranchisesResponseDto(),
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
 
         // Get canonical response from Producer
         var franchisesResult = await client.GetFranchises(query.PageNumber, query.PageSize);

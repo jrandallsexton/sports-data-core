@@ -40,7 +40,22 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
             query.PageSize);
 
         // Get canonical data from internal service (Producer)
-        var client = _venueClientFactory.Resolve(query.Sport, query.League);
+        IProvideVenues client;
+        try
+        {
+            client = _venueClientFactory.Resolve(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<GetVenuesResponseDto>(
+                new GetVenuesResponseDto(),
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         var venuesResult = await client.GetVenues(query.PageNumber, query.PageSize, cancellationToken);
 
         if (venuesResult is Failure<GetVenuesResponse> failure)

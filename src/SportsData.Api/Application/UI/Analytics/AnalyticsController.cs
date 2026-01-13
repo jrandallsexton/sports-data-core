@@ -17,7 +17,8 @@ public class AnalyticsController : ApiControllerBase
         [FromServices] IGetFranchiseSeasonMetricsQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetFranchiseSeasonMetricsQuery { SeasonYear = seasonYear };
+        // TODO: Support multiple sports
+        var query = new GetFranchiseSeasonMetricsQuery { SeasonYear = seasonYear, Sport = Sport.FootballNcaa };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

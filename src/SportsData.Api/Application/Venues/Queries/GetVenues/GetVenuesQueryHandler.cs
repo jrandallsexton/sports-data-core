@@ -1,5 +1,6 @@
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 
@@ -39,8 +40,26 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
             query.PageNumber,
             query.PageSize);
 
+        // Resolve sport/league to mode
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<GetVenuesResponseDto>(
+                new GetVenuesResponseDto(),
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         // Get canonical data from internal service (Producer)
-        var client = _venueClientFactory.Resolve(query.Sport, query.League);
+        var client = _venueClientFactory.Resolve(mode);
+
         var venuesResult = await client.GetVenues(query.PageNumber, query.PageSize, cancellationToken);
 
         if (venuesResult is Failure<GetVenuesResponse> failure)

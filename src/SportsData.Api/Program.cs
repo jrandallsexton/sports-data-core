@@ -11,7 +11,6 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 using SportsData.Api.Application.Auth;
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Events;
 using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;

@@ -22,7 +22,6 @@ using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.YouTube;
@@ -388,16 +387,6 @@ namespace SportsData.Core.DependencyInjection
                 .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
                 {
                     c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProviderProviderUri()]!);
-                    c.Timeout = TimeSpan.FromSeconds(15);
-                    c.DefaultRequestVersion = HttpVersion.Version20;
-                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-                })
-                .AddPolicyHandlerFromRegistry("HttpRetry");
-
-            services
-                .AddHttpClient<IProvideProducers, ProducerClient>(HttpClients.ProducerClient, c =>
-                {
-                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]!);
                     c.Timeout = TimeSpan.FromSeconds(15);
                     c.DefaultRequestVersion = HttpVersion.Version20;
                     c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;

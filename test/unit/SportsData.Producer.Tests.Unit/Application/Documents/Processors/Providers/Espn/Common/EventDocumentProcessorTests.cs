@@ -152,7 +152,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         Mocker.GetMock<IProvideProviders>()
-            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>()))
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
                 .OmitAutoProperties()
                 .Create());
@@ -230,7 +230,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         Mocker.GetMock<IProvideProviders>()
-            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>()))
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
                 .OmitAutoProperties()
                 .Create());

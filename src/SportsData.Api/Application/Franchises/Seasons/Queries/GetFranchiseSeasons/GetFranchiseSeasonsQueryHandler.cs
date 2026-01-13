@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Api.Infrastructure.Refs;
 using System;
@@ -39,8 +40,25 @@ public class GetFranchiseSeasonsQueryHandler : IGetFranchiseSeasonsQueryHandler
         _logger.LogInformation("GetFranchiseSeasons query: sport={Sport}, league={League}, franchiseIdOrSlug={FranchiseIdOrSlug}",
             query.Sport, query.League, query.FranchiseIdOrSlug);
 
+        // Resolve sport/league to mode
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<GetFranchiseSeasonsResponseDto>(
+                new GetFranchiseSeasonsResponseDto(),
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         // First, resolve franchise slug to ID if needed
-        var franchiseClient = _franchiseClientFactory.Resolve(query.Sport, query.League);
+        var franchiseClient = _franchiseClientFactory.Resolve(mode);
         var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseIdOrSlug);
 
         if (franchiseResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse> franchiseFailure)

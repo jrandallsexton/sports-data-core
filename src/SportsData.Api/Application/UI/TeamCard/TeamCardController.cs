@@ -6,6 +6,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 
@@ -61,6 +62,7 @@ public class TeamCardController : ApiControllerBase
 
     [HttpGet("metrics")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FranchiseSeasonMetricsDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetTeamMetrics(
         string sport,
         string league,
@@ -71,8 +73,18 @@ public class TeamCardController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         // TODO: Rework this to get the franchiseSeasonId from the other parameters
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(sport, league);
+        }
+        catch (NotSupportedException)
+        {
+            return BadRequest($"Unsupported sport/league combination: {sport}/{league}");
+        }
+
         var result = await handler.ExecuteAsync(
-            new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId },
+            new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = mode },
             cancellationToken);
 
         return result.ToActionResult();

@@ -11,16 +11,20 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.Clients.Franchise;
 
 public interface IProvideFranchises : IProvideHealthChecks
 {
-    Task<Result<GetFranchisesResponse>> GetFranchises(int pageNumber = 1, int pageSize = 50);
-    Task<Result<GetFranchiseByIdResponse>> GetFranchiseById(string id);
-    Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId);
-    Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear);
+    Task<Result<GetFranchisesResponse>> GetFranchises(int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default);
+    Task<Result<GetFranchiseByIdResponse>> GetFranchiseById(string id, CancellationToken cancellationToken = default);
+    Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId, CancellationToken cancellationToken = default);
+    Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear, CancellationToken cancellationToken = default);
+    Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
+    Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -35,117 +39,88 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         _logger = logger;
     }
 
-    public async Task<Result<GetFranchisesResponse>> GetFranchises(int pageNumber = 1, int pageSize = 50)
+    public async Task<Result<GetFranchisesResponse>> GetFranchises(int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"franchises?pageNumber={pageNumber}&pageSize={pageSize}");
-        var content = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
+        var paginationError = ValidatePagination(pageNumber, pageSize);
+        if (paginationError is not null)
         {
-            var result = content.FromJson<GetFranchisesResponse>();
-
-            if (result == null)
-            {
-                return new Failure<GetFranchisesResponse>(
-                    new GetFranchisesResponse(),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Response", "Unable to deserialize franchises response")]);
-            }
-
-            return new Success<GetFranchisesResponse>(result);
+            return new Failure<GetFranchisesResponse>(
+                new GetFranchisesResponse(),
+                ResultStatus.BadRequest,
+                [paginationError]);
         }
 
-        var failure = content.FromJson<Failure<GetFranchisesResponse>>();
-
-        var status = failure?.Status ?? ResultStatus.BadRequest;
-        var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing franchise data")];
-
-        return new Failure<GetFranchisesResponse>(new GetFranchisesResponse(), status, errors);
+        return await GetAsync(
+            $"franchises?pageNumber={pageNumber}&pageSize={pageSize}",
+            new GetFranchisesResponse(),
+            "Response",
+            ResultStatus.BadRequest,
+            cancellationToken);
     }
 
-    public async Task<Result<GetFranchiseByIdResponse>> GetFranchiseById(string id)
+    public async Task<Result<GetFranchiseByIdResponse>> GetFranchiseById(string id, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"franchises/{id}");
-        var content = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            var franchise = content.FromJson<FranchiseDto>();
-
-            if (franchise is null)
-            {
-                return new Failure<GetFranchiseByIdResponse>(
-                    new GetFranchiseByIdResponse(null),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Franchise", $"Unable to deserialize franchise with id '{id}'")]
-                );
-            }
-
-            return new Success<GetFranchiseByIdResponse>(new GetFranchiseByIdResponse(franchise));
+            return new Failure<GetFranchiseByIdResponse>(
+                new GetFranchiseByIdResponse(null),
+                ResultStatus.BadRequest,
+                [new ValidationFailure("id", "Franchise ID cannot be null or empty")]);
         }
 
-        var failure = content.FromJson<Failure<GetFranchiseByIdResponse>>();
-
-        var status = failure?.Status ?? ResultStatus.NotFound;
-        var errors = failure?.Errors ?? [new ValidationFailure("Franchise", $"Franchise with id '{id}' not found")];
-
-        return new Failure<GetFranchiseByIdResponse>(new GetFranchiseByIdResponse(null), status, errors);
+        return await GetAsync<GetFranchiseByIdResponse, FranchiseDto>(
+            $"franchises/{id}",
+            franchise => new GetFranchiseByIdResponse(franchise),
+            new GetFranchiseByIdResponse(null),
+            "Franchise",
+            ResultStatus.NotFound,
+            cancellationToken);
     }
 
-    public async Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId)
+    public async Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"franchises/{franchiseId}/seasons");
-        var content = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
-        {
-            var seasons = content.FromJson<List<FranchiseSeasonDto>>();
-
-            if (seasons == null)
-            {
-                return new Failure<GetFranchiseSeasonsResponse>(
-                    new GetFranchiseSeasonsResponse(),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Response", "Unable to deserialize franchise seasons response")]);
-            }
-
-            return new Success<GetFranchiseSeasonsResponse>(new GetFranchiseSeasonsResponse { Seasons = seasons });
-        }
-
-        var failure = content.FromJson<Failure<GetFranchiseSeasonsResponse>>();
-
-        var status = failure?.Status ?? ResultStatus.BadRequest;
-        var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing franchise season data")];
-
-        return new Failure<GetFranchiseSeasonsResponse>(new GetFranchiseSeasonsResponse(), status, errors);
+        return await GetAsync<GetFranchiseSeasonsResponse, List<FranchiseSeasonDto>>(
+            $"franchises/{franchiseId}/seasons",
+            seasons => new GetFranchiseSeasonsResponse { Seasons = seasons },
+            new GetFranchiseSeasonsResponse(),
+            "Response",
+            ResultStatus.BadRequest,
+            cancellationToken);
     }
 
-    public async Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear)
+    public async Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.GetAsync($"franchises/{franchiseId}/seasons/{seasonYear}");
-        var content = await response.Content.ReadAsStringAsync();
+        return await GetAsync<GetFranchiseSeasonByIdResponse, FranchiseSeasonDto>(
+            $"franchises/{franchiseId}/seasons/{seasonYear}",
+            season => new GetFranchiseSeasonByIdResponse(season),
+            new GetFranchiseSeasonByIdResponse(null),
+            "FranchiseSeason",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
 
-        if (response.IsSuccessStatusCode)
-        {
-            var season = content.FromJson<FranchiseSeasonDto>();
+    public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/seasonYear/{seasonYear}/metrics",
+            new List<FranchiseSeasonMetricsDto>(),
+            cancellationToken);
+    }
 
-            if (season == null)
-            {
-                return new Failure<GetFranchiseSeasonByIdResponse>(
-                    new GetFranchiseSeasonByIdResponse(null),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Response", "Unable to deserialize franchise season response")]);
-            }
+    public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/metrics",
+            new FranchiseSeasonMetricsDto(),
+            cancellationToken);
+    }
 
-            return new Success<GetFranchiseSeasonByIdResponse>(new GetFranchiseSeasonByIdResponse(season));
-        }
-
-        var failure = content.FromJson<Failure<GetFranchiseSeasonByIdResponse>>();
-
-        var status = failure?.Status ?? ResultStatus.BadRequest;
-        var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing franchise season data")];
-
-        return new Failure<GetFranchiseSeasonByIdResponse>(new GetFranchiseSeasonByIdResponse(null), status, errors);
+    public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-season-rankings/seasonYear/{seasonYear}",
+            new List<FranchiseSeasonPollDto>(),
+            cancellationToken);
     }
 }
 

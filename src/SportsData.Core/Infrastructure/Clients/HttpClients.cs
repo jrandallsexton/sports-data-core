@@ -6,7 +6,6 @@
         public const string FranchiseClient = "FranchiseClient";
         public const string NotificationClient = "NotificationClient";
         public const string PlayerClient = "PlayerClient";
-        public const string ProducerClient = "ProducerClient";
         public const string ProviderClient = "ProviderClient";
         public const string SeasonClient = "SeasonClient";
         public const string VenueClient = "VenueClient";

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Middleware.Health;
 
@@ -19,16 +18,22 @@ namespace SportsData.Core.Infrastructure.Clients.Contest;
 public interface IProvideContests : IProvideHealthChecks
 {
     Task<Result<GetSeasonContestsResponse>> GetSeasonContests(
-        Guid franchiseId, 
-        int seasonYear, 
+        Guid franchiseId,
+        int seasonYear,
         int? week = null,
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken cancellationToken = default);
-    
+
     Task<Result<GetContestByIdResponse>> GetContestById(
         Guid contestId,
         CancellationToken cancellationToken = default);
+
+    Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
 }
 
 public class ContestClient : ClientBase, IProvideContests
@@ -51,65 +56,31 @@ public class ContestClient : ClientBase, IProvideContests
         int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        // Input validation
-        if (pageNumber < 1)
+        var paginationError = ValidatePagination(pageNumber, pageSize);
+        if (paginationError is not null)
         {
             return new Failure<GetSeasonContestsResponse>(
                 new GetSeasonContestsResponse([]),
                 ResultStatus.BadRequest,
-                [new ValidationFailure("pageNumber", "Page number must be greater than or equal to 1")]);
-        }
-
-        if (pageSize < 1)
-        {
-            return new Failure<GetSeasonContestsResponse>(
-                new GetSeasonContestsResponse([]),
-                ResultStatus.BadRequest,
-                [new ValidationFailure("pageSize", "Page size must be greater than or equal to 1")]);
-        }
-
-        if (pageSize > 500)
-        {
-            return new Failure<GetSeasonContestsResponse>(
-                new GetSeasonContestsResponse([]),
-                ResultStatus.BadRequest,
-                [new ValidationFailure("pageSize", "Page size must not exceed 500")]);
+                [paginationError]);
         }
 
         var weekParam = week.HasValue ? $"&week={week.Value}" : string.Empty;
         var url = $"franchises/{franchiseId}/seasons/{seasonYear}/contests?pageNumber={pageNumber}&pageSize={pageSize}{weekParam}";
-        
-        using var response = await HttpClient.GetAsync(url, cancellationToken);
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        if (response.IsSuccessStatusCode)
-        {
-            var contests = content.FromJson<List<SeasonContestDto>>();
-
-            if (contests == null)
-            {
-                return new Failure<GetSeasonContestsResponse>(
-                    new GetSeasonContestsResponse([]),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Response", "Unable to deserialize contests response")]);
-            }
-
-            return new Success<GetSeasonContestsResponse>(new GetSeasonContestsResponse(contests));
-        }
-
-        var failure = content.FromJson<Failure<GetSeasonContestsResponse>>();
-
-        var status = failure?.Status ?? ResultStatus.BadRequest;
-        var errors = failure?.Errors ?? [new ValidationFailure("Response", "Unknown error deserializing contest data")];
-
-        return new Failure<GetSeasonContestsResponse>(new GetSeasonContestsResponse([]), status, errors);
+        return await GetAsync<GetSeasonContestsResponse, List<SeasonContestDto>>(
+            url,
+            contests => new GetSeasonContestsResponse(contests),
+            new GetSeasonContestsResponse([]),
+            "Response",
+            ResultStatus.BadRequest,
+            cancellationToken);
     }
 
     public async Task<Result<GetContestByIdResponse>> GetContestById(
         Guid contestId,
         CancellationToken cancellationToken = default)
     {
-        // Input validation
         if (contestId == Guid.Empty)
         {
             return new Failure<GetContestByIdResponse>(
@@ -118,29 +89,63 @@ public class ContestClient : ClientBase, IProvideContests
                 [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
         }
 
-        using var response = await HttpClient.GetAsync($"contests/{contestId}", cancellationToken);
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        return await GetAsync<GetContestByIdResponse, SeasonContestDto>(
+            $"contests/{contestId}",
+            contest => new GetContestByIdResponse(contest),
+            new GetContestByIdResponse(default!),
+            "Contest",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
 
-        if (response.IsSuccessStatusCode)
+    public async Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
         {
-            var contest = content.FromJson<SeasonContestDto>();
-
-            if (contest is null)
-            {
-                return new Failure<GetContestByIdResponse>(
-                    new GetContestByIdResponse(default!),
-                    ResultStatus.BadRequest,
-                    [new ValidationFailure("Contest", $"Unable to deserialize contest with id {contestId}")]);
-            }
-
-            return new Success<GetContestByIdResponse>(new GetContestByIdResponse(contest));
+            return new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
         }
 
-        var failure = content.FromJson<Failure<GetContestByIdResponse>>();
+        return await GetAsync<ContestOverviewDto, ContestOverviewDto>(
+            $"contests/{contestId}/overview",
+            overview => overview,
+            default!,
+            "Contest overview",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
 
-        var status = failure?.Status ?? ResultStatus.NotFound;
-        var errors = failure?.Errors ?? [new ValidationFailure("Contest", $"Contest with id {contestId} not found")];
+    public async Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
 
-        return new Failure<GetContestByIdResponse>(new GetContestByIdResponse(default!), status, errors);
+        return await PostWithResultAsync(
+            $"contests/{contestId}/update",
+            "RefreshContest",
+            cancellationToken);
+    }
+
+    public async Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await PostWithResultAsync(
+            $"contests/{contestId}/media/refresh",
+            "RefreshContestMedia",
+            cancellationToken);
     }
 }

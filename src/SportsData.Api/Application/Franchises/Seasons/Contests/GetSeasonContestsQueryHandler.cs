@@ -1,5 +1,7 @@
+using FluentValidation.Results;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
@@ -28,9 +30,23 @@ public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
 
     public async Task<Result<GetSeasonContestsResponseDto>> ExecuteAsync(GetSeasonContestsQuery query, CancellationToken cancellationToken)
     {
+        // Resolve sport/league to mode
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            return new Failure<GetSeasonContestsResponseDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         // Step 1: Resolve franchise slug to GUID
-        var franchiseClient = _franchiseClientFactory.Resolve(query.Sport, query.League);
-        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseId);
+        var franchiseClient = _franchiseClientFactory.Resolve(mode);
+        var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseId, cancellationToken);
 
         if (franchiseResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)
         {
@@ -43,7 +59,7 @@ public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
         var franchise = ((Success<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)franchiseResult).Value.Franchise!;
 
         // Step 2: Get contests from Producer
-        var contestClient = _contestClientFactory.Resolve(query.Sport, query.League);
+        var contestClient = _contestClientFactory.Resolve(mode);
         var contestsResult = await contestClient.GetSeasonContests(
             franchise.Id,
             query.SeasonYear,

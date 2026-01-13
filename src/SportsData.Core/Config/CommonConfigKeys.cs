@@ -3,7 +3,6 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Player;
-using SportsData.Core.Infrastructure.Clients.Producer;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Infrastructure.Clients.Venue;
@@ -65,14 +64,21 @@ namespace SportsData.Core.Config
         public static string GetPlayerProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(PlayerClientConfig)}:{mode}:{nameof(PlayerClientConfig.ApiUrl)}";
 
+        // Producer config - kept for ResourceRefGenerator HATEOAS link generation
+        public static string GetProducerProviderUri(Sport mode) =>
+            $"{nameof(CommonConfig)}:ProducerClientConfig:{mode}:ApiUrl";
+
         public static string GetProducerProviderUri() =>
-            $"{nameof(CommonConfig)}:{nameof(ProducerClientConfig)}:{nameof(ProducerClientConfig.ApiUrl)}";
+            $"{nameof(CommonConfig)}:ProducerClientConfig:ApiUrl";
 
         public static string GetProviderProviderUri() =>
             $"{nameof(CommonConfig)}:{nameof(ProviderClientConfig)}:{nameof(ProviderClientConfig.ApiUrl)}";
 
         public static string GetSeasonProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(SeasonClientConfig)}:{mode}:{nameof(SeasonClientConfig.ApiUrl)}";
+
+        public static string GetVenueProviderUri(Sport mode) =>
+            $"{nameof(CommonConfig)}:{nameof(VenueClientConfig)}:{mode}:{nameof(VenueClientConfig.ApiUrl)}";
 
         public static string GetVenueProviderUri() =>
             $"{nameof(CommonConfig)}:{nameof(VenueClientConfig)}:{nameof(VenueClientConfig.ApiUrl)}";

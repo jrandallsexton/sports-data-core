@@ -1,11 +1,12 @@
 using FluentAssertions;
+using FluentValidation.Results;
 
 using Moq;
 
 using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -13,19 +14,32 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Contest.Queries.GetContestOve
 
 public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOverviewQueryHandler>
 {
+    private readonly Mock<IProvideContests> _contestClientMock;
+    private readonly Mock<IContestClientFactory> _contestClientFactoryMock;
+
+    public GetContestOverviewQueryHandlerTests()
+    {
+        _contestClientMock = new Mock<IProvideContests>();
+        _contestClientFactoryMock = Mocker.GetMock<IContestClientFactory>();
+        _contestClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
+    }
+
     [Fact]
     public async Task ExecuteAsync_ShouldReturnSuccess_WhenContestExists()
     {
         // Arrange
         var contestId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
         var expectedOverview = new ContestOverviewDto();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetContestOverviewByContestId(contestId))
-            .ReturnsAsync(expectedOverview);
+        _contestClientMock
+            .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<ContestOverviewDto>(expectedOverview));
 
         var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
-        var query = new GetContestOverviewQuery { ContestId = contestId };
+        var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };
 
         // Act
         var result = await sut.ExecuteAsync(query);
@@ -33,6 +47,7 @@ public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOvervie
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
+        result.Value.Should().BeSameAs(expectedOverview);
     }
 
     [Fact]
@@ -40,13 +55,17 @@ public class GetContestOverviewQueryHandlerTests : ApiTestBase<GetContestOvervie
     {
         // Arrange
         var contestId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetContestOverviewByContestId(contestId))
-            .ReturnsAsync((ContestOverviewDto?)null);
+        _contestClientMock
+            .Setup(x => x.GetContestOverviewByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.NotFound,
+                []));
 
         var sut = Mocker.CreateInstance<GetContestOverviewQueryHandler>();
-        var query = new GetContestOverviewQuery { ContestId = contestId };
+        var query = new GetContestOverviewQuery { ContestId = contestId, Sport = sport };
 
         // Act
         var result = await sut.ExecuteAsync(query);

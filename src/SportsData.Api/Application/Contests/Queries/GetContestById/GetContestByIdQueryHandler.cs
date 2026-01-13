@@ -1,7 +1,10 @@
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Contest;
+using Microsoft.Extensions.Logging;
+using FluentValidation.Results;
 
 namespace SportsData.Api.Application.Contests.Queries.GetContestById;
 
@@ -9,20 +12,40 @@ public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
 {
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IGenerateApiResourceRefs _refGenerator;
+    private readonly ILogger<GetContestByIdQueryHandler> _logger;
 
     public GetContestByIdQueryHandler(
         IContestClientFactory contestClientFactory,
-        IGenerateApiResourceRefs refGenerator)
+        IGenerateApiResourceRefs refGenerator,
+        ILogger<GetContestByIdQueryHandler> logger)
     {
         _contestClientFactory = contestClientFactory;
         _refGenerator = refGenerator;
+        _logger = logger;
     }
 
     public async Task<Result<ContestDetailResponseDto>> ExecuteAsync(
         GetContestByIdQuery query,
         CancellationToken cancellationToken)
     {
-        var contestClient = _contestClientFactory.Resolve(query.Sport, query.League);
+        // Resolve sport/league to mode
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unsupported sport/league combination. Sport={Sport}, League={League}",
+                query.Sport, query.League);
+            return new Failure<ContestDetailResponseDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
+
+        var contestClient = _contestClientFactory.Resolve(mode);
         var contestResult = await contestClient.GetContestById(
             query.ContestId,
             cancellationToken);

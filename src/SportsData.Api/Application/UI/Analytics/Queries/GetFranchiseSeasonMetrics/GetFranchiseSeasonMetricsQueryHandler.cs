@@ -1,6 +1,6 @@
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Analytics.Queries.GetFranchiseSeasonMetrics;
 
@@ -14,23 +14,25 @@ public interface IGetFranchiseSeasonMetricsQueryHandler
 public class GetFranchiseSeasonMetricsQueryHandler : IGetFranchiseSeasonMetricsQueryHandler
 {
     private readonly ILogger<GetFranchiseSeasonMetricsQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
 
     public GetFranchiseSeasonMetricsQueryHandler(
         ILogger<GetFranchiseSeasonMetricsQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
     }
 
     public async Task<Result<List<FranchiseSeasonMetricsDto>>> ExecuteAsync(
         GetFranchiseSeasonMetricsQuery query,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Getting franchise season metrics for season year {SeasonYear}", query.SeasonYear);
+        _logger.LogDebug("Getting franchise season metrics for season year {SeasonYear}, Sport={Sport}", 
+            query.SeasonYear, query.Sport);
 
-        var metrics = await _canonicalDataProvider.GetFranchiseSeasonMetricsBySeasonYear(query.SeasonYear);
+        var client = _franchiseClientFactory.Resolve(query.Sport);
+        var metrics = await client.GetFranchiseSeasonMetrics(query.SeasonYear, cancellationToken);
 
         _logger.LogInformation(
             "Found {Count} franchise season metrics for season year {SeasonYear}",

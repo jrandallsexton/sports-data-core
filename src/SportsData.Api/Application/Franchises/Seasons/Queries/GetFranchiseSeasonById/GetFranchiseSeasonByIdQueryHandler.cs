@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
@@ -29,8 +30,22 @@ public class GetFranchiseSeasonByIdQueryHandler : IGetFranchiseSeasonByIdQueryHa
         GetFranchiseSeasonByIdQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Resolve sport/league to mode
+        Sport mode;
+        try
+        {
+            mode = ModeMapper.ResolveMode(query.Sport, query.League);
+        }
+        catch (NotSupportedException ex)
+        {
+            return new Failure<FranchiseSeasonResponseDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("Sport/League", ex.Message)]);
+        }
+
         // Step 1: Resolve franchise slug to GUID
-        var franchiseClient = _franchiseClientFactory.Resolve(query.Sport, query.League);
+        var franchiseClient = _franchiseClientFactory.Resolve(mode);
         var franchiseResult = await franchiseClient.GetFranchiseById(query.FranchiseSlugOrId);
 
         if (franchiseResult is Failure<Core.Infrastructure.Clients.Franchise.Queries.GetFranchiseByIdResponse>)

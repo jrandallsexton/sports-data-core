@@ -3,9 +3,9 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Tests.Shared;
 
 using Xunit;
@@ -14,11 +14,16 @@ namespace SportsData.Api.Tests.Unit.Application.UI.TeamCard.Queries.GetTeamMetri
 
 public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
 
     public GetTeamMetricsQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
     }
 
     [Fact]
@@ -26,6 +31,7 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
     {
         // Arrange
         var franchiseSeasonId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
         var metrics = new FranchiseSeasonMetricsDto
         {
             FranchiseName = "Alabama Crimson Tide",
@@ -36,12 +42,12 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
             SuccessRate = 0.48m
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonMetrics(franchiseSeasonId))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(metrics);
 
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
-        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId };
+        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -58,8 +64,9 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
     public async Task ExecuteAsync_ShouldReturnValidationError_WhenFranchiseSeasonIdIsEmpty()
     {
         // Arrange
+        var sport = Sport.FootballNcaa;
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
-        var query = new GetTeamMetricsQuery { FranchiseSeasonId = Guid.Empty };
+        var query = new GetTeamMetricsQuery { FranchiseSeasonId = Guid.Empty, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -76,13 +83,14 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
     {
         // Arrange
         var franchiseSeasonId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonMetrics(franchiseSeasonId))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((FranchiseSeasonMetricsDto?)null);
 
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
-        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId };
+        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -97,13 +105,14 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
     {
         // Arrange
         var franchiseSeasonId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonMetrics(franchiseSeasonId))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
-        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId };
+        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
 
         // Act
         var result = await handler.ExecuteAsync(query);

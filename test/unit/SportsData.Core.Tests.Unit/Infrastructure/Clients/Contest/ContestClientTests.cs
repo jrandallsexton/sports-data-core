@@ -2,9 +2,9 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Core.Common;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using Xunit;
@@ -34,7 +34,7 @@ public class ContestClientTests
         {
             new() { Id = Guid.NewGuid(), Slug = "test-contest", Name = "Test Contest" }
         };
-        _handler.SetResponse(HttpStatusCode.OK, JsonSerializer.Serialize(contests));
+        _handler.SetResponse(HttpStatusCode.OK, contests.ToJson());
 
         // Act
         var result = await _sut.GetSeasonContests(franchiseId, 2025);
@@ -101,7 +101,7 @@ public class ContestClientTests
         // Arrange
         var contestId = Guid.NewGuid();
         var contest = new SeasonContestDto { Id = contestId, Slug = "test-contest", Name = "Test Contest" };
-        _handler.SetResponse(HttpStatusCode.OK, JsonSerializer.Serialize(contest));
+        _handler.SetResponse(HttpStatusCode.OK, contest.ToJson());
 
         // Act
         var result = await _sut.GetContestById(contestId);
@@ -158,7 +158,7 @@ public class ContestClientTests
         result.Should().BeOfType<Failure<GetContestByIdResponse>>();
         var failure = (Failure<GetContestByIdResponse>)result;
         failure.Status.Should().Be(ResultStatus.BadRequest);
-        failure.Errors.Should().ContainSingle(e => e.PropertyName == "Response");
+        failure.Errors.Should().ContainSingle(e => e.PropertyName == "Contest");
     }
 
     private class TestHttpMessageHandler : HttpMessageHandler

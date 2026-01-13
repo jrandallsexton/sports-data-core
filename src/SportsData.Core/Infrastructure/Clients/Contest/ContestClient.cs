@@ -119,6 +119,14 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default)
     {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
         return await PostWithResultAsync(
             $"contests/{contestId}/update",
             "RefreshContest",
@@ -127,6 +135,14 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default)
     {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
         return await PostWithResultAsync(
             $"contests/{contestId}/media/refresh",
             "RefreshContestMedia",

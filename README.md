@@ -12,7 +12,7 @@
 
 # Sports Data Platform
 
-A cloud-native sports analytics platform built on a modular monolith architecture, designed for independent service extraction when scaling demands justify the operational complexity.
+A hybrid cloud sports analytics platform built on a modular monolith architecture, designed for independent service extraction when scaling demands justify the operational complexity.
 
 ## **Overview**
 
@@ -22,18 +22,19 @@ Sports data aggregation and analysis platform that ingests data from multiple ex
 
 - **Multi-source data aggregation** - Unified interface to ESPN, CBS, Yahoo!, and commercial sports data APIs
 - **Event-driven architecture** - Azure Service Bus messaging for decoupled domain communication
-- **Cloud-native deployment** - Kubernetes orchestration with GitOps workflow
+- **Hybrid cloud deployment** - Self-hosted Kubernetes on bare metal, leveraging Azure managed services for specific workloads
 - **Domain-driven design** - Clear bounded contexts prepared for microservices extraction
 - **Modular monolith** - Logical service boundaries without distributed system complexity
+- **Cost-optimized architecture** - Pragmatic mix of on-premises compute and cloud-managed services
 
 ### Tech Stack
 
 **Backend:** .NET 9, ASP.NET Core, Entity Framework Core  
-**Infrastructure:** Azure (AKS, Blob Storage, Service Bus, Static Web Apps), Kubernetes, Docker  
+**Infrastructure:** Kubernetes (on-prem), Docker, Azure (Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps, DevOps)  
 **Frontend:** React, TypeScript  
 **CI/CD:** Azure Pipelines, GitHub Actions, GitOps  
 **Monitoring:** OpenTelemetry, Prometheus  
-**Data:** PostgreSQL, Redis
+**Data:** PostgreSQL, Redis, Cosmos DB
 
 ## Architecture
 
@@ -234,14 +235,15 @@ flowchart BT
 
 ## Deployment
 
+**Architecture:**
+- **Production** - Self-hosted Kubernetes cluster (4-node bare metal cluster + dedicated PostgreSQL node, Intel NUCs with 32GB RAM)
+- **Azure Managed Services** - Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps
+- **Hybrid approach** - On-premises compute, Azure for managed services (born from Azure credit constraints, evolved into pragmatic architecture)
+
 **CI/CD Pipeline:**
 - GitHub Actions - PR validation, automated testing, code review
 - Azure Pipelines - Build, containerization, deployment
 - GitOps - Kubernetes manifests managed in [sports-data-config](https://github.com/jrandallsexton/sports-data-config)
-
-**Environments:**
-- **Development** - Azure Static Web Apps (dev slot)
-- **Production** - Azure Kubernetes Service (AKS) with auto-scaling
 
 **Configuration:**
 - Azure App Configuration - centralized configuration management

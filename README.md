@@ -238,6 +238,7 @@ flowchart BT
 **Architecture:**
 - **Production** - Self-hosted Kubernetes cluster on bare metal
   - 4-node cluster: AMD Ryzen 5 7640HS (6-core/12-thread @ 5.0GHz), ~31.5GB usable RAM (BIOS tuned, iGPU allocation minimized), 1TB NVMe PCIe 4.0 SSD
+  - Cluster totals: 24 cores, 48 threads, ~126GB RAM, 4TB NVMe storage
   - Dedicated PostgreSQL node: Same specs, isolated for database workload
   - Dual 2.5GbE networking per node
 - **Azure Managed Services** - Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps

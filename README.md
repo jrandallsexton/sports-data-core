@@ -21,18 +21,18 @@ Project aims to capture sports data from external sources, convert them into dom
 | ---------------------------- | ------- |
 | [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
 | [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
-| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | Domain boundary established via `ContestClient`. Planned extraction as independent service. |
-| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary established via `FranchiseClient`. Planned extraction as independent service. |
+| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | Domain boundary established via [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs). Planned extraction as independent service. |
+| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary established via [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs). Planned extraction as independent service. |
 | [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | Domain boundary established. Planned extraction as independent service. |
 | [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Domain boundary established. Planned extraction as independent service. |
 | [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Responsible for converting external JSON files to domain objects and broadcasting eventing information about those domain/integration events. |
 | [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
 | [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | Domain boundary established. Planned extraction as independent service. |
-| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary established via `VenueClient`. Planned extraction as independent service. |
+| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary established via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). Planned extraction as independent service. |
 
 ### Architecture Approach
 
-The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients (`ContestClient`, `FranchiseClient`, `VenueClient`, etc.) that communicate with their respective service modules. This approach provides:
+The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients ([`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs), etc.) that communicate with their respective service modules. This approach provides:
 
 - **Clear domain boundaries** - Each domain has its own client interface and can be developed independently
 - **Service extraction readiness** - When business needs justify it, domains can be extracted as microservices with minimal refactoring
@@ -41,7 +41,7 @@ The project follows a **modular monolith** architecture pattern. Domain boundari
 
 #### Current Implementation
 
-**All domain clients currently point to the Producer API.** While `ContestClient`, `FranchiseClient`, and `VenueClient` are separate HTTP clients with distinct interfaces, they all resolve to the Producer service's API endpoints via configuration.
+**All domain clients currently point to the Producer API.** While [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), and [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs) are separate HTTP clients with distinct interfaces, they all resolve to the Producer service's API endpoints via configuration.
 
 **Why this works:**
 - Each client has its own configuration key (e.g., `ContestClientConfig:ApiUrl`, `FranchiseClientConfig:ApiUrl`)

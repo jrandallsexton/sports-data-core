@@ -9,57 +9,98 @@
 [![Copilot code review](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer)
 
 [![Build Status](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)
-## sports-data-core
 
-Mono repo for Sports Data project. All projects except for sports-data-core are independent services.  Build pipelines exist for all services within the repo.
+# Sports Data Platform
+
+A cloud-native sports analytics platform built on a modular monolith architecture, designed for independent service extraction when scaling demands justify the operational complexity.
 
 ## **Overview**
 
-Project aims to capture sports data from external sources, convert them into domain objects that all applications will use, and persist said data for future analysis and ML processing.  Initial effort only includes NCAAF, but others will follow (NFL, MLB, PGA, etc).
+Sports data aggregation and analysis platform that ingests data from multiple external sources (ESPN, CBS Sports, Yahoo!, sportsData.io), transforms it into canonical domain models, and exposes it through a unified API. Currently focused on NCAA Football with planned expansion to NFL, MLB, and PGA.
 
-| Project/Service              | Purpose |
-| ---------------------------- | ------- |
-| [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
-| [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
-| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | Domain boundary established via [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs). Planned extraction as independent service. |
-| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary established via [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs). Planned extraction as independent service. |
-| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | Domain boundary established. Planned extraction as independent service. |
-| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Domain boundary established. Planned extraction as independent service. |
-| [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Responsible for converting external JSON files to domain objects and broadcasting eventing information about those domain/integration events. |
-| [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
-| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | Domain boundary established. Planned extraction as independent service. |
-| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary established via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). Planned extraction as independent service. |
+### Key Features
 
-### Architecture Approach
+- **Multi-source data aggregation** - Unified interface to ESPN, CBS, Yahoo!, and commercial sports data APIs
+- **Event-driven architecture** - Azure Service Bus messaging for decoupled domain communication
+- **Cloud-native deployment** - Kubernetes orchestration with GitOps workflow
+- **Domain-driven design** - Clear bounded contexts prepared for microservices extraction
+- **Modular monolith** - Logical service boundaries without distributed system complexity
 
-The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients ([`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs), etc.) that communicate with their respective service modules. This approach provides:
+### Tech Stack
 
+**Backend:** .NET 9, ASP.NET Core, Entity Framework Core  
+**Infrastructure:** Azure (AKS, Blob Storage, Service Bus, Static Web Apps), Kubernetes, Docker  
+**Frontend:** React, TypeScript  
+**CI/CD:** Azure Pipelines, GitHub Actions, GitOps  
+**Monitoring:** OpenTelemetry, Prometheus  
+**Data:** PostgreSQL, Redis
+
+## Architecture
+
+### Modular Monolith Pattern
+
+The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients ([`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs), etc.) that communicate with their respective service modules.
+
+**Design Principles:**
 - **Clear domain boundaries** - Each domain has its own client interface and can be developed independently
-- **Service extraction readiness** - When business needs justify it, domains can be extracted as microservices with minimal refactoring
+- **Service extraction readiness** - Domains can be extracted as microservices with minimal refactoring
 - **Development velocity** - Reduced operational complexity while maintaining architectural discipline
-- **Flexibility** - Services can evolve at different paces and be extracted based on scaling requirements
+- **Pragmatic evolution** - Services scale independently based on actual needs, not speculation
 
 #### Current Implementation
 
 **All domain clients currently point to the Producer API.** While [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), and [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs) are separate HTTP clients with distinct interfaces, they all resolve to the Producer service's API endpoints via configuration.
 
-**Why this works:**
-- Each client has its own configuration key (e.g., `ContestClientConfig:ApiUrl`, `FranchiseClientConfig:ApiUrl`)
-- Currently all configs point to the same Producer API URL
-- When a domain needs independent scaling, simply:
-  1. Deploy that domain as a separate service
-  2. Update the configuration to point to the new service URL
-  3. **No code changes required** - the abstraction boundary already exists
+**Migration path:**
+1. Each client has its own configuration key (e.g., `ContestClientConfig:ApiUrl`, `FranchiseClientConfig:ApiUrl`)
+2. Currently all configs point to the same Producer API URL
+3. When a domain needs independent scaling:
+   - Deploy that domain as a separate service
+   - Update the configuration to point to the new service URL
+   - **No code changes required** - the abstraction boundary already exists
 
 This approach maintains the architectural seams for future distribution without the operational overhead of managing multiple services prematurely.
 
+### Data Flow
+
+```
+External APIs → Provider Service → Data Lake (Azure Blob) 
+                                        ↓
+                                   Producer Service → Canonical Domain Models → PostgreSQL
+                                        ↓
+                              Azure Service Bus (Events)
+                                        ↓
+                         Domain Services (Contest, Franchise, Venue, etc.)
+                                        ↓
+                                   API Gateway → Clients (Web, Mobile)
+```
+
+## Project Structure
+
+| Project/Service              | Purpose |
+| ---------------------------- | ------- |
+| [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | Shared services, components, and middleware consumed by all services |
+| [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway - unified entry point for all client applications |
+| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contest) | Domain boundary via [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs). Manages games, scores, statistics. Planned extraction. |
+| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary via [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs). Teams, rosters, and metadata. Planned extraction. |
+| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | Domain boundary established. User notifications and alerts. Planned extraction. |
+| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Domain boundary established. Athlete profiles and statistics. Planned extraction. |
+| [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Transforms external JSON into canonical domain objects. Publishes integration events. |
+| [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Ingests data from external sources (ESPN, CBS, Yahoo!, sportsData.io). Stores raw JSON in data lake. |
+| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | Domain boundary established. Season schedules and calendars. Planned extraction. |
+| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). Stadium and location data. Planned extraction. |
+
+### Related Repositories
+
 | Repository      | Purpose |
 | --------------- | ------- |
-| [sports-data-core](https://github.com/jrandallsexton/sports-data-core) | This repository (source lives here) |
-| [sports-data-config](https://github.com/jrandallsexton/sports-data-config) | Kubernetes cluster definition & Gitops |
-| [sports-data-provision](https://github.com/jrandallsexton/sports-data-provision) | Cloud-based resource definitions |
+| [sports-data-core](https://github.com/jrandallsexton/sports-data-core) | This repository - application source code |
+| [sports-data-config](https://github.com/jrandallsexton/sports-data-config) | Kubernetes cluster definitions & GitOps configuration |
+| [sports-data-provision](https://github.com/jrandallsexton/sports-data-provision) | Infrastructure as Code - Azure resource definitions |
 
-**Project Diagram - Level 0**
+## System Diagrams
+
+**High-Level Architecture**
 ```mermaid
 flowchart TD
     PV[Provider]
@@ -103,7 +144,8 @@ flowchart TD
     WCWEB --> API
     WCMOB --> API
 ```
-**Project Diagram - Level 1**
+
+**Detailed Service Architecture**
 ```mermaid
 flowchart BT
     subgraph Provider
@@ -189,3 +231,29 @@ flowchart BT
     WCMOB-->API
     WCAPP-->API
 ```
+
+## Deployment
+
+**CI/CD Pipeline:**
+- GitHub Actions - PR validation, automated testing, code review
+- Azure Pipelines - Build, containerization, deployment
+- GitOps - Kubernetes manifests managed in [sports-data-config](https://github.com/jrandallsexton/sports-data-config)
+
+**Environments:**
+- **Development** - Azure Static Web Apps (dev slot)
+- **Production** - Azure Kubernetes Service (AKS) with auto-scaling
+
+**Configuration:**
+- Azure App Configuration - centralized configuration management
+- Azure Key Vault - secrets and sensitive configuration
+- Environment-specific overrides via Azure DevOps pipelines
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). 
+
+Any derivative works must also be open source and distributed under the same GPL-3.0 license. This ensures the community benefits from improvements and contributions.
+
+---
+
+**Note:** This is an active development project. Architecture and implementation details are subject to change as requirements evolve.

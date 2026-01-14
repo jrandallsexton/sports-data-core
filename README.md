@@ -236,7 +236,10 @@ flowchart BT
 ## Deployment
 
 **Architecture:**
-- **Production** - Self-hosted Kubernetes cluster (4-node bare metal cluster + dedicated PostgreSQL node, Intel NUCs with 32GB RAM)
+- **Production** - Self-hosted Kubernetes cluster on bare metal
+  - 4-node cluster: AMD Ryzen 5 7640HS (6-core/12-thread @ 5.0GHz), ~31.5GB usable RAM (BIOS tuned, iGPU allocation minimized), 1TB NVMe PCIe 4.0 SSD
+  - Dedicated PostgreSQL node: Same specs, isolated for database workload
+  - Dual 2.5GbE networking per node
 - **Azure Managed Services** - Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps
 - **Hybrid approach** - On-premises compute, Azure for managed services (born from Azure credit constraints, evolved into pragmatic architecture)
 

@@ -39,6 +39,20 @@ The project follows a **modular monolith** architecture pattern. Domain boundari
 - **Development velocity** - Reduced operational complexity while maintaining architectural discipline
 - **Flexibility** - Services can evolve at different paces and be extracted based on scaling requirements
 
+#### Current Implementation
+
+**All domain clients currently point to the Producer API.** While `ContestClient`, `FranchiseClient`, and `VenueClient` are separate HTTP clients with distinct interfaces, they all resolve to the Producer service's API endpoints via configuration.
+
+**Why this works:**
+- Each client has its own configuration key (e.g., `ContestClientConfig:ApiUrl`, `FranchiseClientConfig:ApiUrl`)
+- Currently all configs point to the same Producer API URL
+- When a domain needs independent scaling, simply:
+  1. Deploy that domain as a separate service
+  2. Update the configuration to point to the new service URL
+  3. **No code changes required** - the abstraction boundary already exists
+
+This approach maintains the architectural seams for future distribution without the operational overhead of managing multiple services prematurely.
+
 | Repository      | Purpose |
 | --------------- | ------- |
 | [sports-data-core](https://github.com/jrandallsexton/sports-data-core) | This repository (source lives here) |

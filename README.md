@@ -21,14 +21,23 @@ Project aims to capture sports data from external sources, convert them into dom
 | ---------------------------- | ------- |
 | [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | shared services, components, and middleware to be consumed by the various services that compose the entire application |
 | [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway |
-| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | [more soon] |
-| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | [more soon] |
-| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | [more soon] |
-| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | [more soon] |
+| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contestt) | Domain boundary established via `ContestClient`. Planned extraction as independent service. |
+| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary established via `FranchiseClient`. Planned extraction as independent service. |
+| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | Domain boundary established. Planned extraction as independent service. |
+| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Domain boundary established. Planned extraction as independent service. |
 | [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Responsible for converting external JSON files to domain objects and broadcasting eventing information about those domain/integration events. |
 | [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Responsible for gathering data from external data sources (ESPN, CBS, Yahoo!, sportsData.io, etc) and shoving the resulting JSON into a data lake.  Once a resource has been sourced and the JSON stored, it will broadcast an event for others to consume. |
-| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | [more soon] |
-| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | [more soon]
+| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | Domain boundary established. Planned extraction as independent service. |
+| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary established via `VenueClient`. Planned extraction as independent service. |
+
+### Architecture Approach
+
+The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients (`ContestClient`, `FranchiseClient`, `VenueClient`, etc.) that communicate with their respective service modules. This approach provides:
+
+- **Clear domain boundaries** - Each domain has its own client interface and can be developed independently
+- **Service extraction readiness** - When business needs justify it, domains can be extracted as microservices with minimal refactoring
+- **Development velocity** - Reduced operational complexity while maintaining architectural discipline
+- **Flexibility** - Services can evolve at different paces and be extracted based on scaling requirements
 
 | Repository      | Purpose |
 | --------------- | ------- |

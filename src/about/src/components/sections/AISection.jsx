@@ -28,7 +28,7 @@ const AISection = ({ id }) => {
               <strong>Ollama Local LLM:</strong> sportDeets runs large language
               models locally via
               <code> Ollama </code>, preserving full control over prompt
-              engineering, data privacy, and performance—while avoiding
+              engineering, data privacy, and performance - while avoiding
               third-party API costs entirely.
             </li>
             <li>

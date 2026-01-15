@@ -49,7 +49,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
 
         Mocker.GetMock<IProvideCanonicalData>()
             .Setup(x => x.GetMatchupForPreview(contestId))
-            .ReturnsAsync((MatchupForPreviewDto?)null);
+            .ReturnsAsync((MatchupForPreviewDto)null!);
 
         var sut = Mocker.CreateInstance<GetMatchupPreviewQueryHandler>();
         var query = new GetMatchupPreviewQuery { ContestId = contestId };

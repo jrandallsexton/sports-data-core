@@ -93,7 +93,7 @@ public class GetRankingsBySeasonYearQueryHandlerTests : UnitTestBase<GetRankings
         var sport = Sport.FootballNcaa;
         _franchiseClientMock
             .Setup(x => x.GetFranchiseSeasonRankings(2025, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((List<FranchiseSeasonPollDto>?)null);
+            .ReturnsAsync((List<FranchiseSeasonPollDto>)null!);
 
         var handler = Mocker.CreateInstance<GetRankingsBySeasonYearQueryHandler>();
         var query = new GetRankingsBySeasonYearQuery { SeasonYear = 2025, Sport = sport };

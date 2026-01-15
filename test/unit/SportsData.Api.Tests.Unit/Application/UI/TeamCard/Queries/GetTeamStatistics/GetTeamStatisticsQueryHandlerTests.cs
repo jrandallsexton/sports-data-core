@@ -78,7 +78,7 @@ public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatistics
 
         _canonicalDataProviderMock
             .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId))
-            .ReturnsAsync((FranchiseSeasonStatisticDto?)null);
+            .ReturnsAsync((FranchiseSeasonStatisticDto)null!);
 
         var handler = Mocker.CreateInstance<GetTeamStatisticsQueryHandler>();
         var query = new GetTeamStatisticsQuery { FranchiseSeasonId = franchiseSeasonId };

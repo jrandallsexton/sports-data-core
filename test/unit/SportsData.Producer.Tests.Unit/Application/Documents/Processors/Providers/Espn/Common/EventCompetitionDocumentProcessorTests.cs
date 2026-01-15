@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -445,7 +445,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
-                .With(x => x.ParentId, (string?)null) // Missing ParentId
+                .With(x => x.ParentId, (string)null!) // Missing ParentId
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.Season, 2024)

@@ -1,3 +1,5 @@
+#nullable enable
+
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;

@@ -29,7 +29,7 @@ Sports data aggregation and analysis platform that ingests data from multiple ex
 
 ### Tech Stack
 
-**Backend:** .NET 9, ASP.NET Core, Entity Framework Core  
+**Backend:** .NET 10, ASP.NET Core, Entity Framework Core  
 **Infrastructure:** Kubernetes (on-prem), Docker, Azure (Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps, DevOps)  
 **Frontend:** React, TypeScript  
 **CI/CD:** Azure Pipelines, GitHub Actions, GitOps  

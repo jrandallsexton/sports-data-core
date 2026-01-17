@@ -54,10 +54,10 @@ stages:
       displayName: BuildAndTest
       steps:
         - task: UseDotNet@2
-          displayName: 'Use .NET 9 SDK'
+          displayName: 'Use .NET 10 SDK'
           inputs:
             packageType: 'sdk'
-            version: '9.0.x'
+            version: '10.0.x'
             includePreviewVersions: true
 
         - task: NuGetCommand@2

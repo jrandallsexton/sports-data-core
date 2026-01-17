@@ -1,3 +1,5 @@
+#nullable enable
+
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

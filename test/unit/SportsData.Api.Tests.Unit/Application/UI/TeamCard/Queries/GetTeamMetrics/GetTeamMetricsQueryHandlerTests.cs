@@ -87,7 +87,7 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
 
         _franchiseClientMock
             .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((FranchiseSeasonMetricsDto?)null);
+            .ReturnsAsync((FranchiseSeasonMetricsDto)null!);
 
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
         var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };

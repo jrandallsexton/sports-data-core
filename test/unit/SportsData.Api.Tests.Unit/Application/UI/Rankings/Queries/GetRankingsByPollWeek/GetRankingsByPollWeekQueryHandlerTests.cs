@@ -131,7 +131,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         // Arrange
         _canonicalDataProviderMock
             .Setup(x => x.GetRankingsByPollIdByWeek("ap", 2025, 5))
-            .ReturnsAsync((RankingsByPollIdByWeekDto?)null);
+            .ReturnsAsync((RankingsByPollIdByWeekDto)null!);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
         var query = new GetRankingsByPollWeekQuery { SeasonYear = 2025, Week = 5, Poll = "ap" };

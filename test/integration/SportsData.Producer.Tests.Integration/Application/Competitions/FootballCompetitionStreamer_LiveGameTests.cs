@@ -1,3 +1,5 @@
+#nullable enable
+
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
     public void Dispose()
     {
         _scope.Dispose();
+        GC.SuppressFinalize(this);
     }
     
     /// <summary>
@@ -104,7 +107,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
             eventBus);
         
         // Act - Run the complete game stream
-        // With 18 status responses × ~30 second polling = ~9 minutes max
+        // With 18 status responses ï¿½ ~30 second polling = ~9 minutes max
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
         
         await sut.ExecuteAsync(command, cts.Token);
@@ -165,7 +168,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         Console.WriteLine($"? Postman collection path: {postmanPath}");
     }
     
-    private string GetPostmanCollectionPath()
+    private static string GetPostmanCollectionPath()
     {
         // Data folder is in the integration test project itself
         var currentDir = Directory.GetCurrentDirectory();

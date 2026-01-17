@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Net;
 using System.Text.Json;
 

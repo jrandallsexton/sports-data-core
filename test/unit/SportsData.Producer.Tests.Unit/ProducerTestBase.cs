@@ -2,7 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Producer;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Mapping;

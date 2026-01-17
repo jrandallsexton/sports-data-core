@@ -1,8 +1,8 @@
 using FluentValidation;
-using FluentValidation.AspNetCore;
 
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
+using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Venue.Application;
@@ -12,7 +12,6 @@ using SportsData.Venue.Infrastructure.Data;
 
 using System.Net;
 using System.Reflection;
-using SportsData.Core.Common;
 
 namespace SportsData.Venue
 {
@@ -75,10 +74,6 @@ namespace SportsData.Venue
             //.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             services.AddValidatorsFromAssemblyContaining<GetVenueById.Validator>();
-            services.AddFluentValidationAutoValidation(cfg =>
-            {
-                cfg.DisableDataAnnotationsValidation = true;
-            });
 
             // Apply Migrations
             await services.ApplyMigrations<AppDataContext>(null);

@@ -80,7 +80,7 @@
 - **Polyglot Persistence**: Choose storage based on access pattern
 
 ### .NET Patterns
-- **Target Framework**: .NET 9
+- **Target Framework**: .NET 10
 - **Validation**: FluentValidation
 - **Messaging**: MassTransit with PostgreSQL outbox
 - **Background Jobs**: Hangfire

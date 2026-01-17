@@ -14,7 +14,6 @@ namespace SportsData.Provider.Tests.Unit
         {
             DataContext = new AppDataContext(GetAppDataContextOptions());
             Mocker.Use(typeof(AppDataContext), DataContext);
-            Mocker.Use(DataContext);
         }
 
         private static DbContextOptions<AppDataContext> GetAppDataContextOptions()

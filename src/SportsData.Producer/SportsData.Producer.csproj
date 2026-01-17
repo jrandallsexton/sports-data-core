@@ -38,7 +38,6 @@
     <Folder Include="Application\Documents\Processors\Providers\Cbs\" />
     <Folder Include="Application\Documents\Processors\Providers\Espn\Basketball\" />
     <Folder Include="Application\Documents\Processors\Providers\Yahoo\" />
-    <Folder Include="Application\Seasons\" />
   </ItemGroup>
 
 </Project>

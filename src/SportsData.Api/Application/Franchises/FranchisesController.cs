@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Api.Application.Franchises.Queries.GetFranchises;
 using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Application.Franchises.Seasons.Contests;
-using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
+using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 

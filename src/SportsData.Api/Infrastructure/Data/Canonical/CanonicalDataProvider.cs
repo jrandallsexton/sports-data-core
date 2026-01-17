@@ -151,57 +151,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
                 return [];
             }
         }
-
-        public async Task<List<SeasonWeek>> GetCompletedSeasonWeeks(int seasonYear)
-        {
-            var sql = _queryProvider.GetCompletedSeasonWeeks();
-
-            try
-            {
-                var result = await _connection.QueryAsync<SeasonWeek>(
-                    sql,
-                    new { SeasonYear = seasonYear });
-                return result.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to resolve completed season weeks for year {SeasonYear}", seasonYear);
-                return [];
-            }
-        }
-
-        public async Task<SeasonWeek?> GetCurrentSeasonWeek()
-        {
-            var sql = _queryProvider.GetCurrentSeasonWeek();
-
-            try
-            {
-                var result = await _connection.QueryFirstOrDefaultAsync<SeasonWeek>(sql);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to resolve current season week.");
-                return null;
-            }
-        }
-
-        public async Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks()
-        {
-            var sql = _queryProvider.GetCurrentAndLastWeekSeasonWeeks();
-
-            try
-            {
-                var result = await _connection.QueryAsync<SeasonWeek>(sql);
-                return result.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to resolve current season week.");
-                return [];
-            }
-        }
-
+        
         public async Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId)
         {
             var sql = _queryProvider.GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId();

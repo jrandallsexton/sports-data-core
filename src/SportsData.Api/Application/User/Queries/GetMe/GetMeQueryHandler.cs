@@ -38,6 +38,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
         _logger.LogDebug("Getting user details for UserId={UserId}", query.UserId);
 
         var userDto = await _db.Users
+            .AsNoTracking()
             .Where(x => x.Id == query.UserId)
             .Select(user => new UserDto
             {

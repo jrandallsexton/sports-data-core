@@ -90,10 +90,19 @@ public class FirebaseAuthenticationMiddleware
                 return dbUser;
             });
 
+            // ✅ Defensive check - user should never be null but handle it
+            if (user == null)
+            {
+                _logger.LogError("CRITICAL: Failed to create or retrieve user after token validation. FirebaseUid: {FirebaseUid}", firebaseUid);
+                context.Response.StatusCode = 401;
+                await context.Response.WriteAsJsonAsync(new { error = "User authentication failed" });
+                return;
+            }
+
             // ✅ Add claims to ClaimsPrincipal for ASP.NET Core authorization
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user!.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("firebase_uid", user.FirebaseUid),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim("display_name", user.DisplayName ?? "Unknown")
@@ -181,7 +190,9 @@ public class FirebaseAuthenticationMiddleware
 
         if (user == null)
         {
-            _logger.LogWarning("Failed to create or retrieve user: {FirebaseUid}", firebaseUid);
+            _logger.LogError("CRITICAL: Failed to create or retrieve user for FirebaseUid: {FirebaseUid}. Returning 401.", firebaseUid);
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsJsonAsync(new { error = "User authentication failed" });
             return;
         }
 
@@ -211,6 +222,14 @@ public class FirebaseAuthenticationMiddleware
 
             // Store in Items for backward compatibility
             context.Items["User"] = user;
+        }
+        else
+        {
+            // Identity is not ClaimsIdentity - this should never happen but handle it defensively
+            _logger.LogError("CRITICAL: User identity is not ClaimsIdentity for FirebaseUid: {FirebaseUid}. Returning 401.", firebaseUid);
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsJsonAsync(new { error = "Invalid identity type" });
+            return;
         }
     }
 }

@@ -37,14 +37,30 @@ public class GetMeQueryHandler : IGetMeQueryHandler
     {
         _logger.LogDebug("Getting user details for UserId={UserId}", query.UserId);
 
-        var user = await _db.Users
-            .Include(x => x.GroupMemberships)
-            .ThenInclude(m => m.Group)
-            .ThenInclude(g => g.Weeks)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == query.UserId, cancellationToken);
+        var userDto = await _db.Users
+            .Where(x => x.Id == query.UserId)
+            .Select(user => new UserDto
+            {
+                Id = user.Id,
+                FirebaseUid = user.FirebaseUid,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                LastLoginUtc = user.LastLoginUtc,
+                IsAdmin = user.IsAdmin || user.Id == _config.UserIdSystem,
+                IsReadOnly = user.IsReadOnly,
+                Leagues = user.GroupMemberships
+                    .Select(m => new UserDto.UserLeagueMembership
+                    {
+                        Id = m.Group.Id,
+                        Name = m.Group.Name,
+                        MaxSeasonWeek = m.Group.Weeks
+                            .Max(w => (int?)w.SeasonWeek)
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (user is null)
+        if (userDto is null)
         {
             _logger.LogWarning("User not found. UserId={UserId}", query.UserId);
             return new Failure<UserDto>(
@@ -53,30 +69,8 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 [new FluentValidation.Results.ValidationFailure("UserId", $"User with ID {query.UserId} not found.")]);
         }
 
-        var dto = new UserDto
-        {
-            Id = user.Id,
-            FirebaseUid = user.FirebaseUid,
-            Email = user.Email,
-            DisplayName = user.DisplayName,
-            LastLoginUtc = user.LastLoginUtc,
-            IsAdmin = user.IsAdmin || user.Id == _config.UserIdSystem,
-            IsReadOnly = user.IsReadOnly,
-            Leagues = user.GroupMemberships
-                .Select(m => new UserDto.UserLeagueMembership
-                {
-                    Id = m.Group.Id,
-                    Name = m.Group.Name,
-                    MaxSeasonWeek = m.Group.Weeks
-                        .Select(w => (int?)w.SeasonWeek)
-                        .DefaultIfEmpty()
-                        .Max()
-                })
-                .ToList()
-        };
-
         _logger.LogInformation("User retrieved successfully. UserId={UserId}", query.UserId);
 
-        return new Success<UserDto>(dto);
+        return new Success<UserDto>(userDto);
     }
 }

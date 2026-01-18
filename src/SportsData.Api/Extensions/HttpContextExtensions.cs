@@ -13,7 +13,7 @@ public static class HttpContextExtensions
         // Defensive logging - helps diagnose auth middleware issues
         var logger = context.RequestServices.GetRequiredService<ILogger<HttpContext>>();
         logger.LogError(
-            "CRITICAL: User not found in HttpContext.Items. Path: {Path}, IsAuthenticated: {IsAuthenticated}, UserId: {UserId}",
+            "User not found in HttpContext.Items. Path: {Path}, IsAuthenticated: {IsAuthenticated}, UserId: {UserId}",
             context.Request.Path,
             context.User?.Identity?.IsAuthenticated ?? false,
             context.User?.FindFirst("user_id")?.Value ?? "null"

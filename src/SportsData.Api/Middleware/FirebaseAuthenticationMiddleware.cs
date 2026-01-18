@@ -93,7 +93,9 @@ public class FirebaseAuthenticationMiddleware
             // ✅ Defensive check - user should never be null but handle it
             if (user == null)
             {
-                _logger.LogError("CRITICAL: Failed to create or retrieve user after token validation. FirebaseUid: {FirebaseUid}", firebaseUid);
+                // Remove from cache to avoid caching transient failures
+                _cache.Remove(cacheKey);
+                _logger.LogError("CRITICAL: Failed to create or retrieve user after token validation. FirebaseUid: {FirebaseUid}. Cache entry removed.", firebaseUid);
                 context.Response.StatusCode = 401;
                 await context.Response.WriteAsJsonAsync(new { error = "User authentication failed" });
                 return;
@@ -190,7 +192,9 @@ public class FirebaseAuthenticationMiddleware
 
         if (user == null)
         {
-            _logger.LogError("CRITICAL: Failed to create or retrieve user for FirebaseUid: {FirebaseUid}. Returning 401.", firebaseUid);
+            // Remove from cache to avoid caching transient failures
+            _cache.Remove(cacheKey);
+            _logger.LogError("CRITICAL: Failed to create or retrieve user for FirebaseUid: {FirebaseUid}. Cache entry removed. Returning 401.", firebaseUid);
             context.Response.StatusCode = 401;
             await context.Response.WriteAsJsonAsync(new { error = "User authentication failed" });
             return;

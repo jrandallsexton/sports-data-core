@@ -1,6 +1,7 @@
 // src/hooks/useSignalRClient.js
 import { useEffect, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
+import { getAuth } from "firebase/auth";
 
 export default function useSignalRClient({
   userId,
@@ -13,9 +14,23 @@ export default function useSignalRClient({
   useEffect(() => {
     // Use separate SignalR URL if provided, otherwise fall back to API base URL
     const signalRUrl = process.env.REACT_APP_SIGNALR_URL || process.env.REACT_APP_API_BASE_URL || "http://localhost:5262";
+    
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${signalRUrl}/hubs/notifications`, {
-        withCredentials: true,
+        accessTokenFactory: async () => {
+          // Get Firebase ID token for authentication
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (user) {
+            try {
+              return await user.getIdToken();
+            } catch (error) {
+              console.error("Failed to get Firebase token for SignalR:", error);
+              return null;
+            }
+          }
+          return null;
+        }
       })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)

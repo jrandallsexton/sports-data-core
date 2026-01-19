@@ -20,6 +20,11 @@ namespace SportsData.Venue
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add services to the container.
+            var config = builder.Configuration;
+            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+
             builder.UseCommon();
 
             if (builder.Environment.EnvironmentName == "Development")
@@ -38,10 +43,6 @@ namespace SportsData.Venue
                     });
                 });
             }
-
-            // Add services to the container.
-            var config = builder.Configuration;
-            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
             var services = builder.Services;
 

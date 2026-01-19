@@ -20,6 +20,8 @@ namespace SportsData.Contest
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
 
+            builder.UseCommon();
+
             var cc = config.GetSection("CommonConfig");
 
             var services = builder.Services;
@@ -27,9 +29,6 @@ namespace SportsData.Contest
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-
-            // Add Serilog
-            builder.UseCommon();
 
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);

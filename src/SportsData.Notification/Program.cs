@@ -11,11 +11,12 @@ namespace SportsData.Notification
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.UseCommon();
 
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+
+            builder.UseCommon();
 
             var services = builder.Services;
             services.AddCoreServices(config);
@@ -26,9 +27,6 @@ namespace SportsData.Notification
             services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, Sport.All);
-
-            // Add Serilog
-            builder.UseCommon();
 
             var app = builder.Build();
 

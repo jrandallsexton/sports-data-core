@@ -102,11 +102,11 @@ namespace SportsData.Api
             // 3. Add Authorization middleware
             //builder.Services.AddAuthorization();
 
-            builder.UseCommon();
-
             // Add services to the container.
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+
+            builder.UseCommon();
 
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));

@@ -20,14 +20,13 @@ namespace SportsData.Player
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
 
+            builder.UseCommon();
+
             var services = builder.Services;
             services.AddCoreServices(config);
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-
-            // Add Serilog
-            builder.UseCommon();
 
             services.AddClients(config);
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);

@@ -64,14 +64,10 @@ public class FranchiseSeasonRankingDetail : CanonicalEntityBase<Guid>
                 .HasForeignKey<FranchiseSeasonRankingDetail>(x => x.FranchiseSeasonRankingId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.OwnsOne(x => x.Record, record =>
-            {
-                record.Property(r => r.Summary)
-                      .HasColumnName("RecordSummary")
-                      .HasMaxLength(20);
-
-                record.Navigation(r => r.Stats).HasField("_stats"); // optional, if backing field used
-            });
+            builder.HasOne(x => x.Record)
+                .WithOne(x => x.FranchiseSeasonRankingDetail)
+                .HasForeignKey<FranchiseSeasonRankingDetailRecord>(x => x.FranchiseSeasonRankingDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -222,6 +222,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRanking.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingDetail.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingOccurrence.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingNote.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingExternalId.EntityConfiguration());

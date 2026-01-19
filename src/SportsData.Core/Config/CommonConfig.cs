@@ -14,8 +14,6 @@ namespace SportsData.Core.Config
 
         public required string SqlBaseConnectionString { get; set; }
 
-        public required string SeqUri { get; set; }
-
         public required string RedisUri { get; set; }
 
         public required Dictionary<Sport, ProviderConfig> ContestClientConfigs { get; set; }
@@ -36,14 +34,18 @@ namespace SportsData.Core.Config
 
         public required string FirebaseConfigJson { get; set; }
 
-        public LoggingConfig Logging { get; set; } = new();
+        public LoggingConfig Logging { get; set; } = null!;
 
 
         public class LoggingConfig
         {
             public string MinimumLevel { get; set; } = "Information";
+            
             public Dictionary<string, string> Overrides { get; set; } = new();
+            
             public string SeqMinimumLevel { get; set; } = "Information";
+            
+            public required string SeqUri { get; set; }
         }
 
     }

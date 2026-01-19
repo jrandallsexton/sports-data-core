@@ -134,23 +134,16 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                 }
                 else
                 {
-                    // Legacy mode: keep existing DocumentRequested logic
                     _logger.LogWarning(
                         "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
                         dto.Season.Type.Week.Ref);
                     
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
-                        ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
-                        Uri: dto.Season.Type.Week.Ref,
-                        Ref: null,
-                        Sport: Sport.FootballNcaa,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.SeasonTypeWeek,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest(
+                        command,
+                        dto.Season.Type.Week,
+                        seasonPhaseIdentity.CanonicalId,
+                        DocumentType.SeasonTypeWeek,
+                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -251,16 +244,14 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         // Request FranchiseSeason updates for all affected teams (ranked, dropped out, etc) using base helper
         foreach (var ranking in dto.Ranks)
         {
-            var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
-            await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+            await PublishChildDocumentRequest(command, ranking.Team, (Guid?)null, DocumentType.TeamSeason, CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
         }
 
         if (dto.Others != null)
         {
             foreach (var ranking in dto.Others)
             {
-                var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
-                await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+                await PublishChildDocumentRequest(command, ranking.Team, (Guid?)null, DocumentType.TeamSeason, CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
             }
         }
 
@@ -268,8 +259,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         {
             foreach (var ranking in dto.DroppedOut)
             {
-                var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(ranking.Team.Ref);
-                await PublishFranchiseSeasonDocumentRequestedEvent(command, franchiseSeasonIdentity);
+                await PublishChildDocumentRequest(command, ranking.Team, (Guid?)null, DocumentType.TeamSeason, CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
             }
         }
 
@@ -278,24 +268,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created SeasonPollWeek entity {@SeasonRankingId}", entity.Id);
-    }
-
-    private async Task PublishFranchiseSeasonDocumentRequestedEvent(
-        ProcessDocumentCommand command,
-        ExternalRefIdentity identity)
-    {
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: identity.UrlHash,
-            ParentId: null,
-            Uri: new Uri(identity.CleanUrl),
-            Ref: null,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.TeamSeason,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-        ));
     }
 
     private static async Task<(Dictionary<string, Guid> franchiseDictionary, Dictionary<Guid, Uri> missingFranchiseSeasons)>

@@ -36,6 +36,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -209,15 +210,14 @@ namespace SportsData.Core.DependencyInjection
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName)
                 //.AddCheck<CachingHealthCheck>("caching")
-                .AddCheck<LoggingHealthCheck>("logging")
+                //.AddCheck<LoggingHealthCheck>("logging")
                 //.AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 //.AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
                 //.AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
                 //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
-                //.AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
                 .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient);
-            //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
-            //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
+                //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
+                //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
 
             services.AddHostedService<HeartbeatPublisher<TPublisher>>();
 

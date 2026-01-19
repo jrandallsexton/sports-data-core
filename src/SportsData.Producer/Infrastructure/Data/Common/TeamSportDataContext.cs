@@ -109,6 +109,12 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<FranchiseSeasonProjection> FranchiseSeasonProjections { get; set; }
 
         public DbSet<FranchiseSeasonRanking> FranchiseSeasonRankings { get; set; }
+        public DbSet<FranchiseSeasonRankingDetail> FranchiseSeasonRankingDetails { get; set; }
+        public DbSet<FranchiseSeasonRankingOccurrence> FranchiseSeasonRankingOccurrences { get; set; }
+        public DbSet<FranchiseSeasonRankingNote> FranchiseSeasonRankingNotes { get; set; }
+        public DbSet<FranchiseSeasonRankingExternalId> FranchiseSeasonRankingExternalIds { get; set; }
+        public DbSet<FranchiseSeasonRankingDetailRecord> FranchiseSeasonRankingDetailRecords { get; set; }
+        public DbSet<FranchiseSeasonRankingDetailRecordStat> FranchiseSeasonRankingDetailRecordStats { get; set; }
 
         public DbSet<FranchiseSeasonRecord> FranchiseSeasonRecords { get; set; }
 
@@ -216,6 +222,11 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRanking.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingOccurrence.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingNote.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingDetailRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonRankingDetailRecordStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecord.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAts.EntityConfiguration());

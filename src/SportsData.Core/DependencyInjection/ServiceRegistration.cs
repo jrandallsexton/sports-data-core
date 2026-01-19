@@ -36,7 +36,6 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using SportsData.Core.Infrastructure.Clients.Season;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -349,13 +348,31 @@ namespace SportsData.Core.DependencyInjection
             var registry = services.AddPolicyRegistry();
             registry.Add("HttpRetry", RetryPolicy.GetRetryPolicy());
 
-            // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
+            services.AddSeqClient();
+            services.AddEspnClient(configuration);
+            services.AddYouTubeClient(configuration);
+            services.AddProviderClient(configuration);
+            services.AddClientFactories();
+            services.AddModeAgnosticClients(configuration);
 
-            /* ESPN */
+            return services;
+        }
+
+        private static IServiceCollection AddSeqClient(this IServiceCollection services)
+        {
+            services.AddHttpClient("Seq", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(5);
+            });
+
+            return services;
+        }
+
+        private static IServiceCollection AddEspnClient(this IServiceCollection services, IConfiguration configuration)
+        {
             services.Configure<EspnApiClientConfig>(
-                configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
-            );
+                configuration.GetSection("SportsData.Provider:EspnApiClientConfig"));
 
             services.AddHttpClient<EspnHttpClient>(client =>
                 {
@@ -364,14 +381,17 @@ namespace SportsData.Core.DependencyInjection
                 .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
-            /* End ESPN */
 
-            /* YouTube */
+            return services;
+        }
+
+        private static IServiceCollection AddYouTubeClient(this IServiceCollection services, IConfiguration configuration)
+        {
             services.Configure<YouTubeClientConfig>(
                 configuration.GetSection("CommonConfig:YouTubeClientConfig"));
 
             services
-                .AddHttpClient<IProvideYouTube, YouTubeHttpClient>(HttpClients.YouTubeClient,(sp, c) =>
+                .AddHttpClient<IProvideYouTube, YouTubeHttpClient>(HttpClients.YouTubeClient, (sp, c) =>
                 {
                     var config = sp.GetRequiredService<IOptions<YouTubeClientConfig>>().Value;
                     c.BaseAddress = new Uri("https://youtube.googleapis.com/youtube/v3/");
@@ -380,9 +400,12 @@ namespace SportsData.Core.DependencyInjection
                     c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
-            /* End YouTube */
 
-            // Register single-mode services
+            return services;
+        }
+
+        private static IServiceCollection AddProviderClient(this IServiceCollection services, IConfiguration configuration)
+        {
             services
                 .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
                 {
@@ -393,31 +416,36 @@ namespace SportsData.Core.DependencyInjection
                 })
                 .AddPolicyHandlerFromRegistry("HttpRetry");
 
-            // Client factories handle resolution by sport/league mode
+            return services;
+        }
+
+        private static IServiceCollection AddClientFactories(this IServiceCollection services)
+        {
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
 
-            // Register mode-agnostic clients (same URL for all sports)
+            return services;
+        }
+
+        private static IServiceCollection AddModeAgnosticClients(this IServiceCollection services, IConfiguration configuration)
+        {
             var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];
             if (!string.IsNullOrEmpty(contestApiUrl))
             {
-                var contestClientName = $"{HttpClients.ContestClient}";
-                services.AddHttpClient(contestClientName, client => client.BaseAddress = new Uri(contestApiUrl));
+                services.AddHttpClient(HttpClients.ContestClient, client => client.BaseAddress = new Uri(contestApiUrl));
             }
 
             var venueApiUrl = configuration[CommonConfigKeys.GetVenueProviderUri()];
             if (!string.IsNullOrEmpty(venueApiUrl))
             {
-                var venueClientName = $"{HttpClients.VenueClient}";
-                services.AddHttpClient(venueClientName, client => client.BaseAddress = new Uri(venueApiUrl));
+                services.AddHttpClient(HttpClients.VenueClient, client => client.BaseAddress = new Uri(venueApiUrl));
             }
 
             var franchiseApiUrl = configuration[CommonConfigKeys.GetFranchiseProviderUri()];
             if (!string.IsNullOrEmpty(franchiseApiUrl))
             {
-                var franchiseClientName = $"{HttpClients.FranchiseClient}";
-                services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
+                services.AddHttpClient(HttpClients.FranchiseClient, client => client.BaseAddress = new Uri(franchiseApiUrl));
             }
 
             return services;

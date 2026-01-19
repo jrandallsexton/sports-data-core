@@ -25,7 +25,7 @@ namespace SportsData.Core.Middleware.Health
             CancellationToken cancellationToken)
         {
             var httpClient = _httpClientFactory.CreateClient("Seq");
-            var response = await httpClient.GetAsync(_config.Value.Logging.SeqUri, cancellationToken);
+            using var response = await httpClient.GetAsync(_config.Value.Logging.SeqUri, cancellationToken);
 
             return response.IsSuccessStatusCode ?
                 HealthCheckResult.Healthy() :

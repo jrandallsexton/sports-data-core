@@ -291,320 +291,23 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        // logos
+        // Logos - special handling (uses EventFactory and PublishBatch)
         await ProcessLogos(canonicalEntity.Id, dto, command);
 
-        // Wins/Losses/PtsFor/PtsAgainst
-        await ProcessRecord(canonicalEntity.Id, dto, command);
-
-        // rankings
-        await ProcessRanks(canonicalEntity.Id, dto, command);
-
-        // stats
-        await ProcessStatistics(canonicalEntity.Id, dto, command);
-
-        // athletes
-        await ProcessAthletes(canonicalEntity.Id, dto, command);
-
-        // leaders
-        await ProcessLeaders(canonicalEntity.Id, dto, command);
-
-        // injuries
-        await ProcessInjuries(canonicalEntity.Id, dto, command);
+        // All other child documents - one line each using base class helper
+        await PublishChildDocumentRequest(command, dto.Record, canonicalEntity.Id, DocumentType.TeamSeasonRecord, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Ranks, canonicalEntity.Id, DocumentType.TeamSeasonRank, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Statistics, canonicalEntity.Id, DocumentType.TeamSeasonStatistics, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Athletes, canonicalEntity.Id, DocumentType.AthleteSeason, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Leaders, canonicalEntity.Id, DocumentType.TeamSeasonLeaders, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Injuries, canonicalEntity.Id, DocumentType.TeamSeasonInjuries, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.AgainstTheSpreadRecords, canonicalEntity.Id, DocumentType.TeamSeasonRecordAts, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Awards, canonicalEntity.Id, DocumentType.TeamSeasonAward, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Projection, canonicalEntity.Id, DocumentType.TeamSeasonProjection, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Events, canonicalEntity.Id, DocumentType.Event, CausationId.Producer.TeamSeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Coaches, canonicalEntity.Id, DocumentType.TeamSeasonCoach, CausationId.Producer.TeamSeasonDocumentProcessor);
 
         // TODO: MED: Request sourcing of team season notes (data not available when following link)
-
-        // Process record ATS (Against The Spread)
-        await ProcessRecordAts(canonicalEntity.Id, dto, command);
-
-        // Process awards
-        await ProcessAwards(canonicalEntity.Id, dto, command);
-
-        // Process projection
-        await ProcessProjection(canonicalEntity.Id, dto, command);
-
-        // Process events (schedule)
-        await ProcessEvents(canonicalEntity.Id, dto, command);
-
-        // Process coaches
-        await ProcessCoaches(canonicalEntity.Id, dto, command);
-    }
-
-    private async Task ProcessRanks(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Ranks?.Ref is null)
-        {
-            _logger.LogInformation("No ranking reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season ranks
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Guid.NewGuid().ToString(),
-            franchiseSeasonId.ToString(),
-            dto.Ranks.Ref.ToCleanUri(),
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonRank,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessProjection(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Projection?.Ref is null)
-        {
-            _logger.LogInformation("No projection reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season projection
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Projection.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Projection.Ref.ToCleanUri(),
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonProjection,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessEvents(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Events?.Ref is null)
-        {
-            _logger.LogWarning("No events reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season events (schedule)
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Events.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Events.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.Event,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessCoaches(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Coaches?.Ref is null)
-        {
-            _logger.LogInformation("No coaches reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season coaches
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Coaches.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Coaches.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonCoach,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessAwards(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Awards?.Ref is null)
-        {
-            _logger.LogInformation("No awards reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season awards
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Awards.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Awards.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonAward,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessRecordAts(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.AgainstTheSpreadRecords?.Ref is null)
-        {
-            _logger.LogInformation("No record reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season record ATS (Against The Spread)
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.AgainstTheSpreadRecords.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.AgainstTheSpreadRecords.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonRecordAts,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessInjuries(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Injuries?.Ref is null)
-        {
-            _logger.LogInformation("No injuries reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season injuries
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Injuries.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Injuries.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonInjuries,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessAthletes(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Athletes?.Ref is null)
-        {
-            _logger.LogInformation("No athletes reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season athletes
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Athletes.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Athletes.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.AthleteSeason,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessLeaders(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Leaders?.Ref is null)
-        {
-            _logger.LogInformation("No leaders reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season leaders
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Leaders.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Leaders.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonLeaders,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessStatistics(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Statistics?.Ref is null)
-        {
-            _logger.LogInformation("No statistics reference found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season statistics
-        await _publishEndpoint.Publish(new DocumentRequested(
-            dto.Statistics.Ref.ToCleanUrl(),
-            franchiseSeasonId.ToString(),
-            dto.Statistics.Ref,
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonStatistics,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
-    }
-
-    private async Task ProcessRecord(
-        Guid franchiseSeasonId,
-        EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
-    {
-        if (dto.Record?.Ref is null)
-        {
-            _logger.LogInformation("No record found in the DTO for TeamSeason {Season}", command.Season);
-            return;
-        }
-
-        // Request sourcing of team season record
-        var recordIdentity = _externalRefIdentityGenerator.Generate(dto.Record.Ref);
-
-        await _publishEndpoint.Publish(new DocumentRequested(
-            recordIdentity.CanonicalId.ToString(),
-            franchiseSeasonId.ToString(),
-            new Uri(recordIdentity.CleanUrl),
-            null,
-            command.Sport,
-            command.Season,
-            DocumentType.TeamSeasonRecord,
-            command.SourceDataProvider,
-            command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
     }
 
     private async Task ProcessLogos(
@@ -640,20 +343,20 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        // request updated statistics
+        // Request updated child documents based on inclusion filter
         if (ShouldSpawn(DocumentType.AthleteSeason, command))
-            await ProcessAthletes(existing.Id, dto, command);
+            await PublishChildDocumentRequest(command, dto.Athletes, existing.Id, DocumentType.AthleteSeason, CausationId.Producer.TeamSeasonDocumentProcessor);
 
         if (ShouldSpawn(DocumentType.Event, command))
-            await ProcessEvents(existing.Id, dto, command);
+            await PublishChildDocumentRequest(command, dto.Events, existing.Id, DocumentType.Event, CausationId.Producer.TeamSeasonDocumentProcessor);
 
         if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
-            await ProcessLeaders(existing.Id, dto, command);
+            await PublishChildDocumentRequest(command, dto.Leaders, existing.Id, DocumentType.TeamSeasonLeaders, CausationId.Producer.TeamSeasonDocumentProcessor);
 
         if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
-            await ProcessRanks(existing.Id, dto, command);
+            await PublishChildDocumentRequest(command, dto.Ranks, existing.Id, DocumentType.TeamSeasonRank, CausationId.Producer.TeamSeasonDocumentProcessor);
 
         if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
-            await ProcessStatistics(existing.Id, dto, command);
+            await PublishChildDocumentRequest(command, dto.Statistics, existing.Id, DocumentType.TeamSeasonStatistics, CausationId.Producer.TeamSeasonDocumentProcessor);
     }
 }

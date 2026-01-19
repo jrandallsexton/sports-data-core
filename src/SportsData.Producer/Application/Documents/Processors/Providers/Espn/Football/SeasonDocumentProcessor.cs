@@ -3,16 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-
-using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -129,27 +127,12 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
         _logger.LogInformation("Linked ActivePhaseId for Season {SeasonId} -> Phase {PhaseId}",
             season.Id, seasonPhase.Id);
 
-        var publishEvents = false;
-
-        if (dto.Types?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: season.Id.ToString(),
-                Uri: dto.Types.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.SeasonType,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonDocumentProcessor
-            ));
-            _logger.LogInformation("Found {Count} season phases", dto.Types.Count);
-            publishEvents = true;
-        }
+        // Publish child document requests using base class helper
+        await PublishChildDocumentRequest(command, dto.Types, season.Id, DocumentType.SeasonType, CausationId.Producer.SeasonDocumentProcessor);
+        await PublishChildDocumentRequest(command, dto.Futures, season.Id, DocumentType.SeasonFuture, CausationId.Producer.SeasonDocumentProcessor);
 
         // Rankings are here, but cannot be processed until we have FranchiseSeason entities created
+        // Leaders are here, but cannot be processed until we have AthleteSeason entities created
 
         // Had to remove this for now as it creates a circular dependency between SeasonDocumentProcessor and AthleteSeasonDocumentProcessor
         //if (dto.Athletes?.Ref is not null)
@@ -167,29 +150,7 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
         //    ));
         //}
 
-        if (dto.Futures?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: season.Id.ToString(),
-                Uri: dto.Futures.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.SeasonFuture,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonDocumentProcessor
-            ));
-            publishEvents = true;
-        }
-
-        // Leaders are here, but cannot be processed until we have AthleteSeason entities created
-
-        if (publishEvents)
-        {
-            await _dataContext.SaveChangesAsync();
-        }
+        await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created new Season entity: {SeasonId}", season.Id);
     }

@@ -208,21 +208,8 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         GroupSeason groupSeasonEntity,
         ProcessDocumentCommand command)
     {
-        if (dto.Children?.Ref is not null)
-        {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: groupSeasonEntity.Id.ToString(),
-                Uri: dto.Children.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season!.Value,
-                DocumentType: DocumentType.GroupSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-            ));
-        }
+        // Use base class helper for child document request
+        await PublishChildDocumentRequest(command, dto.Children, groupSeasonEntity.Id, DocumentType.GroupSeason, CausationId.Producer.GroupSeasonDocumentProcessor);
 
         // TODO: standings?
 

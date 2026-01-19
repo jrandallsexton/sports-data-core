@@ -4,10 +4,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
@@ -15,8 +15,6 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
-
-using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -196,23 +194,16 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 }
                 else
                 {
-                    // Legacy mode: keep existing DocumentRequested logic
                     _logger.LogWarning(
                         "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
                         externalDto.Week.Ref);
 
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: Guid.NewGuid().ToString(),
-                        ParentId: null, // TODO: could be seasonPhaseId? FML.
-                        Uri: externalDto.Week.Ref.ToCleanUri(),
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.SeasonTypeWeek,
-                        SourceDataProvider: command.SourceDataProvider,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest(
+                        command,
+                        externalDto.Week,
+                        (Guid?)null,
+                        DocumentType.SeasonTypeWeek,
+                        CausationId.Producer.EventDocumentProcessor);
                 }
 
                 throw new ExternalDocumentNotSourcedException(
@@ -251,23 +242,16 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             }
             else
             {
-                // Legacy mode: keep existing DocumentRequested logic
                 _logger.LogWarning(
                     "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonType={SeasonType}",
                     externalDto.SeasonType);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: Guid.NewGuid().ToString(),
-                    ParentId: null,
-                    Uri: externalDto.SeasonType.Ref.ToCleanUri(),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.SeasonType,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor
-                ));
+                await PublishChildDocumentRequest(
+                    command,
+                    externalDto.SeasonType,
+                    (Guid?)null,
+                    DocumentType.SeasonType,
+                    CausationId.Producer.EventDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
@@ -288,23 +272,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         foreach (var competition in externalDto.Competitions)
         {
-            _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}", 
-                competition.Ref);
-
-            var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: competitionIdentity.UrlHash,
-                ParentId: contest.Id.ToString(),
-                Uri: new Uri(competitionIdentity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition,
+                CausationId.Producer.EventDocumentProcessor);
         }
     }
 
@@ -444,7 +417,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}");
         }
 
-        // Legacy mode: publish DocumentRequested
+        // Publish DocumentRequested using base class helper
         _logger.LogWarning(
             "{Team} FranchiseSeason not found. Raising DocumentRequested (override mode). TeamRef={TeamRef}",
             teamLabel,
@@ -453,17 +426,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var franchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(competitor.Team.Ref);
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
 
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: competitor.Team.Ref.ToCleanUrl(),
-            ParentId: franchiseIdentity.CanonicalId.ToString(),
-            Uri: competitor.Team.Ref.ToCleanUri(),
-            Ref: null,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.TeamSeason,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventDocumentProcessor));
+        await PublishChildDocumentRequest(
+            command,
+            competitor.Team,
+            franchiseIdentity.CanonicalId,
+            DocumentType.TeamSeason,
+            CausationId.Producer.EventDocumentProcessor);
 
         await _dataContext.SaveChangesAsync();
 
@@ -511,8 +479,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             await _dataContext.SaveChangesAsync();
         }
 
-        // I'm not sure if there is anything to update here,
-        // but we will request sourcing of competitions again
+        // Re-source competitions using base class helper
         _logger.LogInformation(
             "Re-sourcing {Count} competitions for updated Contest. ContestId={ContestId}",
             dto.Competitions.Count(),
@@ -520,23 +487,15 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         foreach (var competition in dto.Competitions)
         {
-            var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: competitionIdentity.UrlHash,
-                ParentId: contest.Id.ToString(),
-                Uri: new Uri(competitionIdentity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventDocumentProcessor
-            ));
-            
-            await _dataContext.SaveChangesAsync();
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition,
+                CausationId.Producer.EventDocumentProcessor);
         }
+        
+        await _dataContext.SaveChangesAsync();
         
         _logger.LogInformation("Contest update completed. ContestId={ContestId}", contest.Id);
     }

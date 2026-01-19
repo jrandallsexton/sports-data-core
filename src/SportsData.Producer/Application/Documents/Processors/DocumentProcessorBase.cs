@@ -3,6 +3,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -48,14 +49,14 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// Eliminates 10+ lines of boilerplate per child document request.
     /// </summary>
     /// <param name="command">The parent document processing command (provides correlation context)</param>
-    /// <param name="linkDto">The ESPN link DTO containing the $ref to the child document</param>
+    /// <param name="linkDto">The ESPN reference object containing the $ref to the child document (EspnLinkDto or EspnResourceIndexItem)</param>
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
     /// <param name="causationId">The causation ID identifying which processor is requesting the document</param>
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
-        EspnLinkDto? linkDto,
+        IHasRef? linkDto,
         TParentId parentId,
         DocumentType documentType,
         Guid causationId)

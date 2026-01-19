@@ -1,5 +1,7 @@
 ﻿using Azure.Identity;
 
+using MassTransit;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -30,9 +32,9 @@ namespace SportsData.Core.DependencyInjection
             builder.Host.UseSerilog((context, configuration) =>
             {
                 var loggingSection = context.Configuration.GetSection("CommonConfig:Logging");
-                var loggingConfig = loggingSection.Get<CommonConfig.LoggingConfig>() ?? new CommonConfig.LoggingConfig();
-
-                var seqUri = context.Configuration["CommonConfig:SeqUri"];
+                
+                var loggingConfig = loggingSection.Get<CommonConfig.LoggingConfig>() ??
+                                    throw new ConfigurationException("Could not load logging config");
 
                 // Parse global minimum level
                 var globalLevel = ParseLevel(loggingConfig.MinimumLevel, LogEventLevel.Information);
@@ -67,10 +69,10 @@ namespace SportsData.Core.DependencyInjection
                     .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName);
 
                 // Seq sink (optional)
-                if (!string.IsNullOrWhiteSpace(seqUri))
+                if (!string.IsNullOrWhiteSpace(loggingConfig.SeqUri))
                 {
                     var seqLevel = ParseLevel(loggingConfig.SeqMinimumLevel, globalLevel);
-                    configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: seqLevel);
+                    configuration.WriteTo.Seq(loggingConfig.SeqUri, restrictedToMinimumLevel: seqLevel);
                 }
 
                 // Serilog internal debug (optional)

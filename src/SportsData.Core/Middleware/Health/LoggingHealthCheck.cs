@@ -20,9 +20,9 @@ namespace SportsData.Core.Middleware.Health
 
         public async Task<HealthCheckResult> CheckHealthAsync(
             HealthCheckContext context,
-            CancellationToken cancellationToken = new CancellationToken())
+            CancellationToken cancellationToken)
         {
-            var response = await new HttpClient().GetAsync(_config.Value.SeqUri, cancellationToken);
+            var response = await new HttpClient().GetAsync(_config.Value.Logging.SeqUri, cancellationToken);
 
             return response.IsSuccessStatusCode ?
                 HealthCheckResult.Healthy() :

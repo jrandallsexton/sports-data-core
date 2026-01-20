@@ -223,18 +223,12 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
 
                 _logger.LogWarning("AthleteSeason not found, raising DocumentRequested. Url={Url}", athleteSeasonIdentity.CleanUrl);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: athleteSeasonIdentity.UrlHash,
-                    ParentId: athleteIdentity.CanonicalId.ToString(),
-                    Uri: new Uri(athleteSeasonIdentity.CleanUrl),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.AthleteSeason,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-                ));
+                await PublishChildDocumentRequest(
+                    command,
+                    athleteDto,
+                    athleteIdentity.CanonicalId.ToString(),
+                    DocumentType.AthleteSeason,
+                    CausationId.Producer.EventCompetitionLeadersDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Missing AthleteSeason for ref {athleteDto.Ref}");
@@ -273,18 +267,12 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 
             _logger.LogWarning("FranchiseSeason not found, requesting source. Hash={Hash}", franchiseSeasonIdentity.UrlHash);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: franchiseSeasonIdentity.UrlHash,
-                ParentId: franchiseIdentity.CanonicalId.ToString(),
-                Uri: new Uri(franchiseSeasonIdentity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionLeadersDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                teamDto,
+                franchiseIdentity.CanonicalId.ToString(),
+                DocumentType.TeamSeason,
+                CausationId.Producer.EventCompetitionLeadersDocumentProcessor);
 
             throw new ExternalDocumentNotSourcedException($"Missing FranchiseSeason for ref {teamDto.Ref}");
         }

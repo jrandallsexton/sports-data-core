@@ -122,18 +122,12 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                     "Coach not found. Raising DocumentRequested (override mode). {@Identity}",
                     coachIdentity);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: coachIdentity.UrlHash,
-                    ParentId: null,
-                    Uri: dto.Person.Ref,
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.Coach,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
-                ));
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    dto.Person,
+                    parentId: null,
+                    DocumentType.Coach,
+                    CausationId.Producer.CoachSeasonDocumentProcessor);
 
                 await _dataContext.SaveChangesAsync();
 
@@ -165,18 +159,12 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                     "FranchiseSeason not found. Raising DocumentRequested (override mode). {@Identity}",
                     franchiseSeasonIdentity);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: franchiseSeasonIdentity.UrlHash,
-                    ParentId: null,
-                    Uri: dto.Team.Ref.ToCleanUri(),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.TeamSeason,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.CoachSeasonDocumentProcessor
-                ));
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    dto.Team,
+                    parentId: null,
+                    DocumentType.TeamSeason,
+                    CausationId.Producer.CoachSeasonDocumentProcessor);
 
                 await _dataContext.SaveChangesAsync();
 

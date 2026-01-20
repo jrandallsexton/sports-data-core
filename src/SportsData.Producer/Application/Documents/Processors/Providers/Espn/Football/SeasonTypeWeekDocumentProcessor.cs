@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
@@ -122,18 +123,12 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
                     "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonPhaseId={SeasonPhaseId}",
                     seasonPhaseId);
                 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: seasonPhaseIdentity.UrlHash,
-                    ParentId: null,
-                    Uri: seasonPhaseRef,
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.SeasonType,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.SeasonTypeWeekDocumentProcessor
-                ));
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    new EspnLinkDto { Ref = seasonPhaseRef },
+                    parentId: null,
+                    DocumentType.SeasonType,
+                    CausationId.Producer.SeasonTypeWeekDocumentProcessor);
                 
                 await _dataContext.SaveChangesAsync();
 

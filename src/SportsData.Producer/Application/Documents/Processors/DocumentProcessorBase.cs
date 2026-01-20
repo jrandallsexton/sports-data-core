@@ -3,6 +3,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -55,12 +56,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
-        EspnLinkDto? linkDto,
+        IHasRef? hasRef,
         TParentId parentId,
         DocumentType documentType,
         Guid causationId)
     {
-        if (linkDto?.Ref is null)
+        if (hasRef?.Ref is null)
         {
             _logger.LogDebug(
                 "⏭️ SKIP_CHILD_DOCUMENT: No reference found for child document. " +
@@ -75,7 +76,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
 
         try
         {
-            identity = _externalRefIdentityGenerator.Generate(linkDto.Ref);
+            identity = _externalRefIdentityGenerator.Generate(hasRef.Ref);
             uri = new Uri(identity.CleanUrl);
         }
         catch (UriFormatException ex)
@@ -85,7 +86,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, InvalidUrl={InvalidUrl}",
                 parentId,
                 documentType,
-                linkDto.Ref?.ToString() ?? "null");
+                hasRef.Ref?.ToString() ?? "null");
             return;
         }
         catch (Exception ex)
@@ -95,7 +96,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, Ref={Ref}",
                 parentId,
                 documentType,
-                linkDto.Ref?.ToString() ?? "null");
+                hasRef.Ref?.ToString() ?? "null");
             return;
         }
 
@@ -108,8 +109,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             identity.UrlHash);
 
         await _publishEndpoint.Publish(new DocumentRequested(
-            Id: identity.UrlHash,
-            ParentId: parentId?.ToString() ?? string.Empty,
+            Id: identity.CanonicalId.ToString(),
+            ParentId: parentId?.ToString() ?? null,
             Uri: uri,
             Ref: null,
             Sport: command.Sport,

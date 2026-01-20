@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
@@ -139,18 +140,12 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
                         dto.Season.Type.Week.Ref);
                     
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: HashProvider.GenerateHashFromUri(dto.Season.Type.Week.Ref),
-                        ParentId: seasonPhaseIdentity.CanonicalId.ToString(),
-                        Uri: dto.Season.Type.Week.Ref,
-                        Ref: null,
-                        Sport: Sport.FootballNcaa,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.SeasonTypeWeek,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest(
+                        command,
+                        dto.Season.Type.Week,
+                        seasonPhaseIdentity.CanonicalId,
+                        DocumentType.SeasonTypeWeek,
+                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -220,18 +215,14 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                     var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
                     var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
 
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: missing.Key.ToString(),
-                        ParentId: franchiseId.ToString(),
-                        Uri: missing.Value,
-                        Ref: null,
-                        Sport: Sport.FootballNcaa,
-                        SeasonYear: command.Season!.Value,
-                        DocumentType: DocumentType.TeamSeason,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-                    ));
+                    // Create a temporary EspnLinkDto for the helper method
+                    var teamLinkDto = new EspnLinkDto { Ref = missing.Value };
+                    await PublishChildDocumentRequest(
+                        command,
+                        teamLinkDto,
+                        franchiseId,
+                        DocumentType.TeamSeason,
+                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
                 }
 
                 await _dataContext.SaveChangesAsync();
@@ -284,18 +275,24 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         ProcessDocumentCommand command,
         ExternalRefIdentity identity)
     {
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: identity.UrlHash,
-            ParentId: null,
-            Uri: new Uri(identity.CleanUrl),
-            Ref: null,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.TeamSeason,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor
-        ));
+        try
+        {
+            // Create a temporary EspnLinkDto for the helper method
+            var teamLinkDto = new EspnLinkDto { Ref = new Uri(identity.CleanUrl) };
+            await PublishChildDocumentRequest<string?>(
+                command,
+                teamLinkDto,
+                parentId: null,
+                DocumentType.TeamSeason,
+                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+        }
+        catch (UriFormatException ex)
+        {
+            _logger.LogError(ex,
+                "❌ INVALID_URI: Failed to parse URI for FranchiseSeason document request. " +
+                "InvalidUrl={InvalidUrl}",
+                identity.CleanUrl);
+        }
     }
 
     private static async Task<(Dictionary<string, Guid> franchiseDictionary, Dictionary<Guid, Uri> missingFranchiseSeasons)>

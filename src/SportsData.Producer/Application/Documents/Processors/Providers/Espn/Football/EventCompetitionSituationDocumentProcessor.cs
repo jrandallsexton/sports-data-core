@@ -118,18 +118,12 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                 {
                     _logger.LogWarning("LastPlay not found, raising DocumentRequested. PlayRef={PlayRef}", dto.LastPlay.Ref);
                     
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: lastPlayIdentity.UrlHash,
-                        ParentId: competitionId.ToString(),
-                        Uri: dto.LastPlay.Ref,
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.EventCompetitionPlay,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionSituationDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest(
+                        command,
+                        dto.LastPlay,
+                        competitionId,
+                        DocumentType.EventCompetitionPlay,
+                        CausationId.Producer.EventCompetitionSituationDocumentProcessor);
                     
                     await _dataContext.SaveChangesAsync();
 

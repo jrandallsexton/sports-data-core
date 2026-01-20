@@ -133,18 +133,12 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
 
         if (dto.Types?.Ref is not null)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: season.Id.ToString(),
-                Uri: dto.Types.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.SeasonType,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                dto.Types,
+                season.Id,
+                DocumentType.SeasonType,
+                CausationId.Producer.SeasonDocumentProcessor);
             _logger.LogInformation("Found {Count} season phases", dto.Types.Count);
             publishEvents = true;
         }
@@ -169,18 +163,12 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
 
         if (dto.Futures?.Ref is not null)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: season.Id.ToString(),
-                Uri: dto.Futures.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: dto.Year,
-                DocumentType: DocumentType.SeasonFuture,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.SeasonDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                dto.Futures,
+                season.Id,
+                DocumentType.SeasonFuture,
+                CausationId.Producer.SeasonDocumentProcessor);
             publishEvents = true;
         }
 

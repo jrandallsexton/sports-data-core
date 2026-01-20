@@ -105,18 +105,12 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
 
             _logger.LogWarning("FranchiseSeason not found, publishing sourcing request. Hash={Hash}", teamHash);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: teamHash,
-                ParentId: string.Empty,
-                Uri: dto.Team.Ref.ToCleanUri(),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionPowerIndexDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                dto.Team,
+                parentId: string.Empty,
+                DocumentType.TeamSeason,
+                CausationId.Producer.EventCompetitionPowerIndexDocumentProcessor);
 
             await _dataContext.SaveChangesAsync();
 

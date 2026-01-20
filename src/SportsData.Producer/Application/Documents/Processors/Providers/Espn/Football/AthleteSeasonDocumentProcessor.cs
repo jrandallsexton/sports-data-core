@@ -7,6 +7,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
@@ -105,18 +106,14 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                     "Athlete not found. Raising DocumentRequested (override mode). {@Identity} {cmdRef}",
                     athleteIdentity, dto.Ref);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: athleteIdentity.UrlHash,
-                    ParentId: null,
-                    Uri: new Uri(athleteIdentity.CleanUrl),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.Athlete,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-                ));
+                // Create a temp wrapper with the athlete ref (not the athlete season ref)
+                var athleteLinkDto = new EspnLinkDto { Ref = athleteRef };
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    athleteLinkDto,
+                    parentId: null,
+                    DocumentType.Athlete,
+                    CausationId.Producer.AthleteSeasonDocumentProcessor);
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
@@ -304,18 +301,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         }
         else
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: franchiseSeasonIdentity.CanonicalId.ToString(),
-                ParentId: null,
-                Uri: dto.Team.Ref.ToCleanUri(),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-            ));
+            await PublishChildDocumentRequest<string?>(
+                command,
+                dto.Team,
+                parentId: null,
+                DocumentType.TeamSeason,
+                CausationId.Producer.AthleteSeasonDocumentProcessor);
             await _dataContext.SaveChangesAsync();
 
             _logger.LogWarning(
@@ -357,18 +348,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         }
         else
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: positionIdentity.CanonicalId.ToString(),
-                ParentId: null,
-                Uri: dto.Position.Ref.ToCleanUri(),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.AthletePosition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.AthleteSeasonDocumentProcessor
-            ));
+            await PublishChildDocumentRequest<string?>(
+                command,
+                dto.Position,
+                parentId: null,
+                DocumentType.AthletePosition,
+                CausationId.Producer.AthleteSeasonDocumentProcessor);
             await _dataContext.SaveChangesAsync();
 
             throw new ExternalDocumentNotSourcedException(

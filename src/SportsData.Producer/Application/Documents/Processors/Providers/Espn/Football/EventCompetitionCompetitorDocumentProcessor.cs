@@ -132,20 +132,12 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             {
                 _logger.LogWarning("Competition not found, raising DocumentRequested. CompetitionId={CompetitionId}", competitionId);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: competitionIdentity.UrlHash,
-                    ParentId: contestIdentity.CanonicalId.ToString(),
-                    Uri: competitionRef,
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetition,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
-                ));
-
-
+                await PublishChildDocumentRequest(
+                    command,
+                    new EspnLinkDto { Ref = competitionRef },
+                    contestIdentity.CanonicalId.ToString(),
+                    DocumentType.EventCompetition,
+                    CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");
             }

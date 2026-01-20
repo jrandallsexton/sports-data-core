@@ -128,12 +128,26 @@ namespace SportsData.Producer.Migrations
                 oldClrType: typeof(string),
                 oldType: "text");
 
+            // Update existing NULL values before making columns non-nullable
+            migrationBuilder.Sql(
+                """
+                UPDATE "FranchiseSeasonRankingDetail"
+                SET "LastUpdated" = NOW()
+                WHERE "LastUpdated" IS NULL
+                """);
+
+            migrationBuilder.Sql(
+                """
+                UPDATE "FranchiseSeasonRankingDetail"
+                SET "Date" = NOW()
+                WHERE "Date" IS NULL
+                """);
+
             migrationBuilder.AlterColumn<DateTime>(
                 name: "LastUpdated",
                 table: "FranchiseSeasonRankingDetail",
                 type: "timestamp with time zone",
                 nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone",
                 oldNullable: true);
@@ -143,7 +157,6 @@ namespace SportsData.Producer.Migrations
                 table: "FranchiseSeasonRankingDetail",
                 type: "timestamp with time zone",
                 nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone",
                 oldNullable: true);

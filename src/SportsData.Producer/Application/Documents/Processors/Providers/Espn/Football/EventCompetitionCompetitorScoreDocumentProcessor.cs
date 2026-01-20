@@ -118,18 +118,12 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorUrl={CompetitorUrl}", 
                     competitionCompetitorIdentity.CleanUrl);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: competitionCompetitorIdentity.UrlHash,
-                    ParentId: competitionIdentity.CanonicalId.ToString(),
-                    Uri: new Uri(competitionCompetitorIdentity.CleanUrl),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionCompetitor,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
-                ));
+                await PublishChildDocumentRequest(
+                    command,
+                    new EspnLinkDto { Ref = new Uri(competitionCompetitorIdentity.CleanUrl) },
+                    competitionIdentity.CanonicalId,
+                    DocumentType.EventCompetitionCompetitor,
+                    CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor);
 
                 await _dataContext.SaveChangesAsync();
 

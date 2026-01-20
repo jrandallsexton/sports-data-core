@@ -280,18 +280,12 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                     "AthletePosition not found. Raising DocumentRequested (override mode). {@Identity}",
                     positionIdentity);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: positionIdentity.CanonicalId.ToString(),
-                    ParentId: null,
-                    Uri: externalProviderDto.Position.Ref.ToCleanUri(),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.AthletePosition,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.AthleteDocumentProcessor
-                ));
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    externalProviderDto.Position,
+                    parentId: null,
+                    DocumentType.AthletePosition,
+                    CausationId.Producer.AthleteDocumentProcessor);
 
                 await _dataContext.SaveChangesAsync();
 

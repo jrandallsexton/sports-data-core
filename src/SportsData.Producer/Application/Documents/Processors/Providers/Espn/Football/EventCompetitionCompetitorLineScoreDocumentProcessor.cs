@@ -127,18 +127,14 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                     competitionCompetitorId,
                     competitionCompetitorRef);
                 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: competitionCompetitorIdentity.UrlHash,
-                    ParentId: competitionIdentity.CanonicalId.ToString(),
-                    Uri: competitionCompetitorRef,
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.EventCompetitionCompetitor,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor
-                ));
+                // Create a simple wrapper since we just have a URI
+                var competitorRefObj = new { Ref = competitionCompetitorRef };
+                await PublishChildDocumentRequest(
+                    command,
+                    new EspnLinkDto { Ref = competitionCompetitorRef },
+                    competitionIdentity.CanonicalId,
+                    DocumentType.EventCompetitionCompetitor,
+                    CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
             }

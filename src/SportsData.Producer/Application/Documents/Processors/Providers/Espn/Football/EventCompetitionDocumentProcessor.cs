@@ -179,18 +179,12 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
             var venueHash = HashProvider.GenerateHashFromUri(venue.Ref);
             _logger.LogWarning("Venue not found, publishing sourcing request. VenueHash={VenueHash}", venueHash);
             
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: venueHash,
-                ParentId: null,
-                Uri: venue.Ref.ToCleanUri(),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.Venue,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventDocumentProcessor
-            ));
+            await PublishChildDocumentRequest<string?>(
+                command,
+                venue,
+                parentId: null,
+                DocumentType.Venue,
+                CausationId.Producer.EventDocumentProcessor);
         }
     }
 
@@ -327,18 +321,12 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 competition.Id,
                 competitorDto.Ref);
 
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: HashProvider.GenerateHashFromUri(competitorDto.Ref),
-                ParentId: competition.Id.ToString(),
-                Uri: competitorDto.Ref.ToCleanUri(),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetitionCompetitor,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                competitorDto,
+                competition.Id.ToString(),
+                DocumentType.EventCompetitionCompetitor,
+                CausationId.Producer.EventCompetitionDocumentProcessor);
         }
     }
 

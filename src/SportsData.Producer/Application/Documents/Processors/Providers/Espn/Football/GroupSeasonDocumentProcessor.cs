@@ -125,18 +125,12 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         "Season not found. Raising DocumentRequested (override mode). SeasonRef={SeasonRef}",
                         dto.Season.Ref);
                     
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: Guid.NewGuid().ToString(),
-                        ParentId: null,
-                        Uri: dto.Season.Ref,
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season!.Value,
-                        DocumentType: DocumentType.Season,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest<string?>(
+                        command,
+                        dto.Season,
+                        parentId: null,
+                        DocumentType.Season,
+                        CausationId.Producer.GroupSeasonDocumentProcessor);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -176,18 +170,12 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         "Parent GroupSeason not found. Raising DocumentRequested (override mode). ParentRef={ParentRef}",
                         dto.Parent.Ref);
                     
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: Guid.NewGuid().ToString(),
-                        ParentId: null,
-                        Uri: dto.Parent.Ref,
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season!.Value,
-                        DocumentType: DocumentType.GroupSeason,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest<string?>(
+                        command,
+                        dto.Parent,
+                        parentId: null,
+                        DocumentType.GroupSeason,
+                        CausationId.Producer.GroupSeasonDocumentProcessor);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -210,18 +198,12 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
     {
         if (dto.Children?.Ref is not null)
         {
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: Guid.NewGuid().ToString(),
-                ParentId: groupSeasonEntity.Id.ToString(),
-                Uri: dto.Children.Ref,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season!.Value,
-                DocumentType: DocumentType.GroupSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                dto.Children,
+                groupSeasonEntity.Id,
+                DocumentType.GroupSeason,
+                CausationId.Producer.GroupSeasonDocumentProcessor);
         }
 
         // TODO: standings?

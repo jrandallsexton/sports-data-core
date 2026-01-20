@@ -201,18 +201,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
                         externalDto.Week.Ref);
 
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: Guid.NewGuid().ToString(),
-                        ParentId: null, // TODO: could be seasonPhaseId? FML.
-                        Uri: externalDto.Week.Ref.ToCleanUri(),
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.Season,
-                        DocumentType: DocumentType.SeasonTypeWeek,
-                        SourceDataProvider: command.SourceDataProvider,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventDocumentProcessor
-                    ));
+                    await PublishChildDocumentRequest<string?>(
+                        command,
+                        externalDto.Week,
+                        parentId: null,
+                        DocumentType.SeasonTypeWeek,
+                        CausationId.Producer.EventDocumentProcessor);
                 }
 
                 throw new ExternalDocumentNotSourcedException(
@@ -256,18 +250,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonType={SeasonType}",
                     externalDto.SeasonType);
 
-                await _publishEndpoint.Publish(new DocumentRequested(
-                    Id: Guid.NewGuid().ToString(),
-                    ParentId: null,
-                    Uri: externalDto.SeasonType.Ref.ToCleanUri(),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.Season,
-                    DocumentType: DocumentType.SeasonType,
-                    SourceDataProvider: command.SourceDataProvider,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventDocumentProcessor
-                ));
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    externalDto.SeasonType,
+                    parentId: null,
+                    DocumentType.SeasonType,
+                    CausationId.Producer.EventDocumentProcessor);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
@@ -291,20 +279,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}", 
                 competition.Ref);
 
-            var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: competitionIdentity.UrlHash,
-                ParentId: contest.Id.ToString(),
-                Uri: new Uri(competitionIdentity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition,
+                CausationId.Producer.EventDocumentProcessor);
         }
     }
 
@@ -453,17 +433,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var franchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(competitor.Team.Ref);
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
 
-        await _publishEndpoint.Publish(new DocumentRequested(
-            Id: competitor.Team.Ref.ToCleanUrl(),
-            ParentId: franchiseIdentity.CanonicalId.ToString(),
-            Uri: competitor.Team.Ref.ToCleanUri(),
-            Ref: null,
-            Sport: command.Sport,
-            SeasonYear: command.Season,
-            DocumentType: DocumentType.TeamSeason,
-            SourceDataProvider: command.SourceDataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: CausationId.Producer.EventDocumentProcessor));
+        await PublishChildDocumentRequest(
+            command,
+            competitor.Team,
+            franchiseIdentity.CanonicalId.ToString(),
+            DocumentType.TeamSeason,
+            CausationId.Producer.EventDocumentProcessor);
 
         await _dataContext.SaveChangesAsync();
 
@@ -520,20 +495,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         foreach (var competition in dto.Competitions)
         {
-            var competitionIdentity = _externalRefIdentityGenerator.Generate(competition.Ref);
-
-            await _publishEndpoint.Publish(new DocumentRequested(
-                Id: competitionIdentity.UrlHash,
-                ParentId: contest.Id.ToString(),
-                Uri: new Uri(competitionIdentity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.Season,
-                DocumentType: DocumentType.EventCompetition,
-                SourceDataProvider: command.SourceDataProvider,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventDocumentProcessor
-            ));
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition,
+                CausationId.Producer.EventDocumentProcessor);
             
             await _dataContext.SaveChangesAsync();
         }

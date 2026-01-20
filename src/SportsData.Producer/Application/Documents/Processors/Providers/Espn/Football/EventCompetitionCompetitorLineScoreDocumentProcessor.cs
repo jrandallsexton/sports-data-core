@@ -126,9 +126,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                 _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorId={CompetitorId}, CompetitorRef={CompetitorRef}", 
                     competitionCompetitorId,
                     competitionCompetitorRef);
-                
-                // Create a simple wrapper since we just have a URI
-                var competitorRefObj = new { Ref = competitionCompetitorRef };
+
                 await PublishChildDocumentRequest(
                     command,
                     new EspnLinkDto { Ref = competitionCompetitorRef },

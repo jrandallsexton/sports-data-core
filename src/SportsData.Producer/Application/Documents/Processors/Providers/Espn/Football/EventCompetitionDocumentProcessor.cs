@@ -184,7 +184,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 venue,
                 parentId: null,
                 DocumentType.Venue,
-                CausationId.Producer.EventDocumentProcessor);
+                CausationId.Producer.EventCompetitionDocumentProcessor);
         }
     }
 

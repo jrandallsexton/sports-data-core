@@ -275,14 +275,24 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         ProcessDocumentCommand command,
         ExternalRefIdentity identity)
     {
-        // Create a temporary EspnLinkDto for the helper method
-        var teamLinkDto = new EspnLinkDto { Ref = new Uri(identity.CleanUrl) };
-        await PublishChildDocumentRequest<string?>(
-            command,
-            teamLinkDto,
-            parentId: null,
-            DocumentType.TeamSeason,
-            CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+        try
+        {
+            // Create a temporary EspnLinkDto for the helper method
+            var teamLinkDto = new EspnLinkDto { Ref = new Uri(identity.CleanUrl) };
+            await PublishChildDocumentRequest<string?>(
+                command,
+                teamLinkDto,
+                parentId: null,
+                DocumentType.TeamSeason,
+                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+        }
+        catch (UriFormatException ex)
+        {
+            _logger.LogError(ex,
+                "❌ INVALID_URI: Failed to parse URI for FranchiseSeason document request. " +
+                "InvalidUrl={InvalidUrl}",
+                identity.CleanUrl);
+        }
     }
 
     private static async Task<(Dictionary<string, Guid> franchiseDictionary, Dictionary<Guid, Uri> missingFranchiseSeasons)>

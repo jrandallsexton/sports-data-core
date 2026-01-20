@@ -501,10 +501,10 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 contest.Id,
                 DocumentType.EventCompetition,
                 CausationId.Producer.EventDocumentProcessor);
-            
-            await _dataContext.SaveChangesAsync();
         }
-        
+
+        await _dataContext.SaveChangesAsync();
+
         _logger.LogInformation("Contest update completed. ContestId={ContestId}", contest.Id);
     }
 }

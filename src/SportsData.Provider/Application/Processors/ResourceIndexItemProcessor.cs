@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Provider.Application.Services;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
@@ -26,6 +27,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly IJsonHashCalculator _jsonHashCalculator;
         private readonly IConfiguration _commonConfig;
         private readonly IGenerateExternalRefIdentities _identityGenerator;
+        private readonly IDocumentInclusionService _documentInclusionService;
 
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
@@ -35,7 +37,8 @@ namespace SportsData.Provider.Application.Processors
             IEventBus publisher,
             IJsonHashCalculator jsonHashCalculator,
             IConfiguration commonConfig,
-            IGenerateExternalRefIdentities identityGenerator)
+            IGenerateExternalRefIdentities identityGenerator,
+            IDocumentInclusionService documentInclusionService)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -45,6 +48,7 @@ namespace SportsData.Provider.Application.Processors
             _jsonHashCalculator = jsonHashCalculator;
             _commonConfig = commonConfig;
             _identityGenerator = identityGenerator;
+            _documentInclusionService = documentInclusionService;
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -208,22 +212,8 @@ namespace SportsData.Provider.Application.Processors
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
             var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
 
-            // Azure Service Bus limits:
-            // - Standard tier: 256 KB max message size
-            // - Premium tier: 1 MB max message size
-            // Using conservative 200 KB limit (204,800 bytes) to allow for overhead
-            const int MAX_INLINE_JSON_BYTES = 204_800; // 200 KB in bytes
-            
-            var jsonSizeInBytes = json.GetSizeInBytes();
-            var jsonDoc = jsonSizeInBytes <= MAX_INLINE_JSON_BYTES ? json : null;
-            
-            if (jsonDoc == null)
-            {
-                _logger.LogInformation(
-                    "Document JSON size ({SizeKB} KB) exceeds {MaxKB} KB limit, sending reference only",
-                    jsonSizeInBytes / 1024.0,
-                    MAX_INLINE_JSON_BYTES / 1024);
-            }
+            // Use the DocumentInclusionService to determine if JSON should be included
+            var jsonDoc = _documentInclusionService.GetIncludableJson(json);
 
             var evt = new DocumentCreated(
                 urlHash,
@@ -274,22 +264,8 @@ namespace SportsData.Provider.Application.Processors
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
             var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
 
-            // Azure Service Bus limits:
-            // - Standard tier: 256 KB max message size
-            // - Premium tier: 1 MB max message size
-            // Using conservative 200 KB limit (204,800 bytes) to allow for overhead
-            const int MAX_INLINE_JSON_BYTES = 204_800; // 200 KB in bytes
-            
-            var jsonSizeInBytes = json.GetSizeInBytes();
-            var jsonDoc = jsonSizeInBytes <= MAX_INLINE_JSON_BYTES ? json : null;
-            
-            if (jsonDoc == null)
-            {
-                _logger.LogInformation(
-                    "Document JSON size ({SizeKB} KB) exceeds {MaxKB} KB limit, sending reference only",
-                    jsonSizeInBytes / 1024.0,
-                    MAX_INLINE_JSON_BYTES / 1024);
-            }
+            // Use the DocumentInclusionService to determine if JSON should be included
+            var jsonDoc = _documentInclusionService.GetIncludableJson(json);
 
             // TODO: Put this back to DocumentUpdated (need the handler in Producer first)
             var evt = new DocumentCreated(

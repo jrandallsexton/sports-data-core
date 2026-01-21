@@ -8,6 +8,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Application.Services;
 using SportsData.Provider.Application.Sourcing.Historical;
 using SportsData.Provider.Infrastructure.Data;
 
@@ -31,6 +32,7 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IProcessResourceIndexItems, ResourceIndexItemProcessor>();
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+            services.AddScoped<IDocumentInclusionService, DocumentInclusionService>();
 
             // Historical sourcing services
             services.Configure<HistoricalSourcingConfig>(

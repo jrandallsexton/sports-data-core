@@ -3,6 +3,7 @@ using SportsData.Core.Common.Routing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
+using SportsData.Provider.Application.Services;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Processors
@@ -19,19 +20,22 @@ namespace SportsData.Provider.Application.Processors
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IEventBus _bus;
         private readonly IGenerateRoutingKeys _routingKeyGenerator;
+        private readonly IDocumentInclusionService _documentInclusionService;
 
         public PublishDocumentEventsProcessor(
             ILogger<PublishDocumentEventsProcessor> logger,
             IDocumentStore documentStore,
             IDecodeDocumentProvidersAndTypes decoder,
             IEventBus bus,
-            IGenerateRoutingKeys routingKeyGenerator)
+            IGenerateRoutingKeys routingKeyGenerator,
+            IDocumentInclusionService documentInclusionService)
         {
             _logger = logger;
             _documentStore = documentStore;
             _decoder = decoder;
             _bus = bus;
             _routingKeyGenerator = routingKeyGenerator;
+            _documentInclusionService = documentInclusionService;
         }
 
         public async Task Process(PublishDocumentEventsCommand command)
@@ -103,7 +107,7 @@ namespace SportsData.Provider.Application.Processors
                                 typeAndName.Type.Name,
                                 doc.Uri,
                                 doc.Uri, //TODO: This should be the source URL, not the URI
-                                null,
+                                _documentInclusionService.GetIncludableJson(doc.Data),
                                 doc.SourceUrlHash,
                                 command.Sport,
                                 command.Season,

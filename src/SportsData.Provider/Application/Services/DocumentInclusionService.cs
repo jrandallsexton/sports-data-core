@@ -1,4 +1,5 @@
 using SportsData.Core.Extensions;
+using System.Net;
 
 namespace SportsData.Provider.Application.Services
 {
@@ -11,10 +12,18 @@ namespace SportsData.Provider.Application.Services
         /// <summary>
         /// Determines if the JSON document should be included in the event payload
         /// or if only a reference should be sent (requiring the consumer to fetch it).
+        /// Automatically decodes HTML-encoded JSON from document stores.
         /// </summary>
-        /// <param name="json">The JSON document to evaluate</param>
-        /// <returns>The JSON if it fits within size limits, null if it exceeds limits</returns>
+        /// <param name="json">The JSON document to evaluate (may be HTML-encoded)</param>
+        /// <returns>The decoded JSON if it fits within size limits, null if it exceeds limits</returns>
         string? GetIncludableJson(string json);
+
+        /// <summary>
+        /// Decodes HTML-encoded JSON from document stores (Cosmos/MongoDB).
+        /// </summary>
+        /// <param name="json">The potentially HTML-encoded JSON</param>
+        /// <returns>Decoded JSON string</returns>
+        string? DecodeJson(string json);
 
         /// <summary>
         /// Checks if the JSON document size exceeds the maximum inline size limit.
@@ -54,6 +63,30 @@ namespace SportsData.Provider.Application.Services
 
         public int MaxInlineJsonBytes => MAX_INLINE_JSON_BYTES;
 
+        public string? DecodeJson(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                // Decode HTML entities that Cosmos/MongoDB may have encoded
+                // Common encodings: &lt; &gt; &quot; &amp; &#39;
+                var decoded = WebUtility.HtmlDecode(json);
+
+                return decoded;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, 
+                    "Failed to decode JSON document. Returning original. Length={Length}",
+                    json.Length);
+                return json;
+            }
+        }
+
         public string? GetIncludableJson(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -61,11 +94,19 @@ namespace SportsData.Provider.Application.Services
                 return null;
             }
 
-            var jsonSizeInBytes = json.GetSizeInBytes();
+            // First, decode the JSON from any HTML encoding
+            var decodedJson = DecodeJson(json);
+            
+            if (string.IsNullOrEmpty(decodedJson))
+            {
+                return null;
+            }
+
+            var jsonSizeInBytes = decodedJson.GetSizeInBytes();
 
             if (jsonSizeInBytes <= MAX_INLINE_JSON_BYTES)
             {
-                return json;
+                return decodedJson;
             }
 
             _logger.LogInformation(

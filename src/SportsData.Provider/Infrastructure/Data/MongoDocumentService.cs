@@ -22,6 +22,15 @@ namespace SportsData.Provider.Infrastructure.Data
         /// </summary>
         IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string collectionName, int batchSize = 500);
 
+        /// <summary>
+        /// Asynchronously yields filtered documents in batches to avoid loading all documents into memory at once.
+        /// Applies the filter predicate to retrieve only matching documents.
+        /// </summary>
+        IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(
+            string collectionName, 
+            Expression<Func<T, bool>> filter, 
+            int batchSize = 500);
+
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
 
         Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl;
@@ -78,6 +87,34 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             var collection = _database.GetCollection<T>(collectionName);
             var filter = Builders<T>.Filter.Empty;
+            
+            var options = new FindOptions<T>
+            {
+                BatchSize = batchSize
+            };
+
+            using var cursor = await collection.FindAsync(filter, options);
+            
+            while (await cursor.MoveNextAsync())
+            {
+                var batch = cursor.Current.ToList();
+                if (batch.Count > 0)
+                {
+                    yield return batch;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously yields filtered documents in batches to avoid loading all documents into memory at once.
+        /// Applies the filter predicate to retrieve only matching documents.
+        /// </summary>
+        public async IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(
+            string collectionName, 
+            Expression<Func<T, bool>> filter, 
+            int batchSize = 500)
+        {
+            var collection = _database.GetCollection<T>(collectionName);
             
             var options = new FindOptions<T>
             {

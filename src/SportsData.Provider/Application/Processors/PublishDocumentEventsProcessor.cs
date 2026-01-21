@@ -89,8 +89,12 @@ namespace SportsData.Provider.Application.Processors
                     batchSize,
                     command.BatchSize.HasValue);
 
+                // Filter documents by Sport, DocumentType, and SourceDataProvider from command
                 await foreach (var batch in _documentStore.GetDocumentsInBatchesAsync<DocumentBase>(
-                    typeAndName.CollectionName, 
+                    typeAndName.CollectionName,
+                    doc => doc.Sport == command.Sport 
+                        && doc.DocumentType == command.DocumentType 
+                        && doc.SourceDataProvider == command.SourceDataProvider,
                     batchSize))
                 {
                     batchNumber++;

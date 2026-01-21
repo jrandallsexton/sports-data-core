@@ -8,7 +8,7 @@ namespace SportsData.Core.Common
 {
     public interface IDecodeDocumentProvidersAndTypes
     {
-        Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType);
+        //Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType);
 
         (Type Type, string CollectionName) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
 
@@ -19,48 +19,51 @@ namespace SportsData.Core.Common
 
     public class DocumentProviderAndTypeDecoder : IDecodeDocumentProvidersAndTypes
     {
-        public Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType)
-        {
-            switch (docType)
-            {
-                case DocumentType.Franchise:
-                    return typeof(EspnFranchiseDto);
-                case DocumentType.TeamSeason:
-                    return typeof(EspnTeamSeasonDto);
-                case DocumentType.Venue:
-                    return typeof(EspnVenueDto);
-                case DocumentType.CoachSeason:
-                    return typeof(EspnCoachSeasonDto);
-                case DocumentType.Athlete:
-                    return typeof(EspnAthleteDto);
-                case DocumentType.GroupSeason:
-                    return typeof(EspnGroupSeasonDto);
-                case DocumentType.Position:
-                    return typeof(EspnAthletePositionDto);
-                case DocumentType.AthleteSeason:
-                    return typeof(EspnAthleteDto);
-                case DocumentType.Award:
-                case DocumentType.Contest:
-                // TODO: Create these => return typeof(EspnContestDto);
-                case DocumentType.GameSummary:
-                case DocumentType.Scoreboard:
-                case DocumentType.Season:
-                case DocumentType.TeamInformation:
-                case DocumentType.Weeks:
-                case DocumentType.GroupLogo:
-                case DocumentType.FranchiseLogo:
-                case DocumentType.GroupSeasonLogo:
-                case DocumentType.TeamBySeasonLogo:
-                case DocumentType.VenueImage:
-                case DocumentType.AthleteImage:
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
-            }
-        }
+        //public Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType)
+        //{
+        //    switch (docType)
+        //    {
+        //        case DocumentType.Franchise:
+        //            return typeof(EspnFranchiseDto);
+        //        case DocumentType.TeamSeason:
+        //            return typeof(EspnTeamSeasonDto);
+        //        case DocumentType.Venue:
+        //            return typeof(EspnVenueDto);
+        //        case DocumentType.CoachSeason:
+        //            return typeof(EspnCoachSeasonDto);
+        //        case DocumentType.Athlete:
+        //            return typeof(EspnAthleteDto);
+        //        case DocumentType.GroupSeason:
+        //            return typeof(EspnGroupSeasonDto);
+        //        case DocumentType.Position:
+        //            return typeof(EspnAthletePositionDto);
+        //        case DocumentType.AthleteSeason:
+        //            return typeof(EspnAthleteDto);
+        //        case DocumentType.Award:
+        //        case DocumentType.Contest:
+        //        // TODO: Create these => return typeof(EspnContestDto);
+        //        case DocumentType.GameSummary:
+        //        case DocumentType.Scoreboard:
+        //        case DocumentType.Season:
+        //        case DocumentType.Weeks:
+        //        case DocumentType.GroupLogo:
+        //        case DocumentType.FranchiseLogo:
+        //        case DocumentType.GroupSeasonLogo:
+        //        case DocumentType.TeamBySeasonLogo:
+        //        case DocumentType.VenueImage:
+        //        case DocumentType.AthleteImage:
+        //        default:
+        //            throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
+        //    }
+        //}
 
-        public (Type, string) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
+        public (Type, string) GetTypeAndCollectionName(
+            SourceDataProvider sourceDataProvider,
+            Sport sport,
+            DocumentType docType,
+            int? seasonYear)
         {
-            var name = GetCollectionName(sourceDataProvider, sport, docType, season);
+            var name = GetCollectionName(sourceDataProvider, sport, docType, seasonYear);
 
             switch (docType)
             {
@@ -89,14 +92,14 @@ namespace SportsData.Core.Common
                     return (typeof(EspnAwardDto), name);
                 case DocumentType.Contest:
                     return (typeof(EspnFootballContestDto), name);
+                case DocumentType.FranchiseSeasonLogo:
+                    return (typeof(EspnImageDto), name);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
-                case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.GroupLogo:
                 case DocumentType.FranchiseLogo:
                 case DocumentType.GroupSeasonLogo:
-                case DocumentType.TeamBySeasonLogo:
                 case DocumentType.VenueImage:
                 case DocumentType.AthleteImage:
                 case DocumentType.GolfCalendar:
@@ -106,13 +109,17 @@ namespace SportsData.Core.Common
             }
         }
 
-        public string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season)
+        public string GetCollectionName(
+            SourceDataProvider sourceDataProvider,
+            Sport sport,
+            DocumentType docType,
+            int? seasonYear)
         {
             // TODO: Use SportMode configuration to determine collection names
             return "FootballNcaa";
             //return docType.ToString();
-            //return season.HasValue ?
-            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{season.Value}" :
+            //return seasonYear.HasValue ?
+            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{seasonYear.Value}" :
             //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
         }
 
@@ -132,8 +139,8 @@ namespace SportsData.Core.Common
                 case DocumentType.GroupSeasonLogo:
                     return DocumentType.GroupSeasonLogo;
                 case DocumentType.TeamSeason:
-                case DocumentType.TeamBySeasonLogo:
-                    return DocumentType.TeamBySeasonLogo;
+                case DocumentType.FranchiseSeasonLogo:
+                    return DocumentType.FranchiseSeasonLogo;
                 case DocumentType.Venue:
                 case DocumentType.VenueImage:
                     return DocumentType.VenueImage;
@@ -143,7 +150,6 @@ namespace SportsData.Core.Common
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
-                case DocumentType.TeamInformation:
                 case DocumentType.Weeks:
                 case DocumentType.Position:
                 default:

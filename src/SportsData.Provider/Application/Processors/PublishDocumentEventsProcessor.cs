@@ -36,42 +36,106 @@ namespace SportsData.Provider.Application.Processors
 
         public async Task Process(PublishDocumentEventsCommand command)
         {
-            _logger.LogInformation("Began with {@Command}", command);
-
-            var typeAndName = _decoder.GetTypeAndCollectionName(
-                command.SourceDataProvider,
-                command.Sport,
-                command.DocumentType,
-                command.Season);
-
-            var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(typeAndName.CollectionName);
-
             var correlationId = Guid.NewGuid();
             var causationId = Guid.NewGuid();
 
-            var events = dbDocuments.Select(doc =>
-                    new DocumentCreated(
-                        doc.Id.ToString(),
-                        null,
-                        typeAndName.Type.Name,
-                        doc.Uri,
-                        doc.Uri, //TODO: This should be the source URL, not the URI
-                        null,
-                        doc.SourceUrlHash,
-                        command.Sport,
-                        command.Season,
-                        command.DocumentType,
-                        command.SourceDataProvider,
-                        correlationId,
-                        causationId))
-                .ToList();
-
-            foreach (var evt in events)
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = correlationId,
+                       ["CausationId"] = causationId,
+                       ["Sport"] = command.Sport,
+                       ["DocumentType"] = command.DocumentType,
+                       ["Season"] = command.Season ?? 0,
+                       ["SourceDataProvider"] = command.SourceDataProvider
+                   }))
             {
-                await _bus.Publish(evt);
-            }
+                _logger.LogInformation(
+                    "PublishDocumentEventsProcessor started. Sport={Sport}, DocumentType={DocumentType}, Season={Season}, Provider={Provider}",
+                    command.Sport,
+                    command.DocumentType,
+                    command.Season,
+                    command.SourceDataProvider);
 
-            _logger.LogInformation($"Published {events.Count} events.");
+                if (command.IncludeLinkedDocumentTypes?.Count > 0)
+                {
+                    _logger.LogInformation(
+                        "Inclusion filter provided: {DocumentTypes}. Child documents will be filtered.",
+                        string.Join(", ", command.IncludeLinkedDocumentTypes));
+                }
+
+                var typeAndName = _decoder.GetTypeAndCollectionName(
+                    command.SourceDataProvider,
+                    command.Sport,
+                    command.DocumentType,
+                    command.Season);
+
+                _logger.LogInformation(
+                    "Resolved collection. CollectionName={CollectionName}, TypeName={TypeName}",
+                    typeAndName.CollectionName,
+                    typeAndName.Type.Name);
+
+                var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(typeAndName.CollectionName);
+
+                _logger.LogInformation(
+                    "Retrieved {DocumentCount} documents from collection {CollectionName}",
+                    dbDocuments.Count,
+                    typeAndName.CollectionName);
+
+                if (dbDocuments.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "No documents found in collection {CollectionName}. No events will be published.",
+                        typeAndName.CollectionName);
+                    return;
+                }
+
+                var events = dbDocuments.Select(doc =>
+                        new DocumentCreated(
+                            doc.Id.ToString(),
+                            null,
+                            typeAndName.Type.Name,
+                            doc.Uri,
+                            doc.Uri, //TODO: This should be the source URL, not the URI
+                            null,
+                            doc.SourceUrlHash,
+                            command.Sport,
+                            command.Season,
+                            command.DocumentType,
+                            command.SourceDataProvider,
+                            correlationId,
+                            causationId,
+                            IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes))
+                    .ToList();
+
+                _logger.LogInformation(
+                    "Created {EventCount} DocumentCreated events. Beginning publication. CorrelationId={CorrelationId}",
+                    events.Count,
+                    correlationId);
+
+                var publishedCount = 0;
+                var batchSize = 50;
+
+                foreach (var evt in events)
+                {
+                    await _bus.Publish(evt);
+                    publishedCount++;
+
+                    // Log progress for large batches
+                    if (publishedCount % batchSize == 0)
+                    {
+                        _logger.LogInformation(
+                            "Publishing progress: {Published}/{Total} events published ({Percentage:F1}%)",
+                            publishedCount,
+                            events.Count,
+                            (publishedCount / (double)events.Count) * 100);
+                    }
+                }
+
+                _logger.LogInformation(
+                    "PublishDocumentEventsProcessor completed successfully. Published {EventCount} DocumentCreated events. CorrelationId={CorrelationId}",
+                    events.Count,
+                    correlationId);
+            }
         }
     }
 }

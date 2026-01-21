@@ -14,8 +14,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         //Task<EspnTeamSeasonDto> EspnTeam(int fourDigitYear, int teamId);
 
-        //Task<TeamInformation> TeamInformation(int teamId);
-
         //Task<EspnResourceIndexDto> Teams(int fourDigitYear);
 
         //Task<byte[]> GetMedia(string uri);

@@ -36,6 +36,7 @@ select * from public."FranchiseSeasonRecord"
 select * from public."Franchise"
 select * from public."FranchiseExternalId"
 
+select count(*) from public."FranchiseSeason"
 select * from public."FranchiseSeason" where "Id" = '68ca12c9-e48c-69a3-f788-6616e643cfb9'
 select * from public."FranchiseSeason" where "Id" = '077e005c-74ff-4de5-e6b7-a1702e5ac0fe'
 
@@ -43,7 +44,17 @@ select * from public."FranchiseSeasonStatisticCategory"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 order by "Name"
 
-select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c'
+--delete from public."FranchiseSeasonLogo"
+select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '1f74a6a4-f12b-4989-3891-9bc72d2faf17'
+
+SELECT 
+    fs."Id" AS "FranchiseSeasonId",
+    COUNT(fsl."Id") AS "LogoCount"
+FROM public."FranchiseSeason" fs
+INNER JOIN public."FranchiseSeasonLogo" fsl ON fsl."FranchiseSeasonId" = fs."Id"
+GROUP BY fs."Id"
+HAVING COUNT(fsl."Id") > 2
+ORDER BY "LogoCount" DESC
 
 select * from public."GroupSeason" where "Id" = '845eb718-b58a-bf9e-fa90-5de861c60325' -- SEC
 select * from public."GroupSeason" where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07' -- FBS (I-A)

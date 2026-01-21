@@ -1,5 +1,7 @@
 ﻿using SportsData.Core.Common;
 
+using System.Collections.Generic;
+
 namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
 {
     public class PublishDocumentEventsCommand
@@ -11,5 +13,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider.Commands
         public DocumentType DocumentType { get; set; }
 
         public int? Season { get; set; }
+
+        public List<DocumentType>? IncludeLinkedDocumentTypes { get; set; } = [];
     }
 }

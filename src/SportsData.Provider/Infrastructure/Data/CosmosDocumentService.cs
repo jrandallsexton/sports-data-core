@@ -46,6 +46,34 @@ namespace SportsData.Provider.Infrastructure.Data
             return results;
         }
 
+        /// <summary>
+        /// Asynchronously yields documents in batches to avoid loading all documents into memory at once.
+        /// This is critical for large collections (1000+ documents) to prevent OutOfMemoryException.
+        /// Cosmos DB's feed iterator naturally provides batching - we just don't accumulate in memory.
+        /// </summary>
+        public async IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string containerName, int batchSize = 500)
+        {
+            var container = _client.GetContainer(_databaseName, containerName);
+
+            var query = container.GetItemLinqQueryable<T>()
+                .ToFeedIterator();
+
+            while (query.HasMoreResults)
+            {
+                var response = await query.ReadNextAsync();
+                
+                // Cosmos returns its own page size, but we can chunk it further if needed
+                var batch = response.ToList();
+                
+                // If Cosmos returned more than our desired batch size, chunk it
+                for (int i = 0; i < batch.Count; i += batchSize)
+                {
+                    var chunk = batch.Skip(i).Take(batchSize).ToList();
+                    yield return chunk;
+                }
+            }
+        }
+
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> predicate)
         {

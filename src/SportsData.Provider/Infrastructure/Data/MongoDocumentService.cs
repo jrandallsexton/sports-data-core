@@ -16,6 +16,12 @@ namespace SportsData.Provider.Infrastructure.Data
     {
         public Task<List<T>> GetAllDocumentsAsync<T>(string collectionName);
 
+        /// <summary>
+        /// Asynchronously yields documents in batches to avoid loading all documents into memory at once.
+        /// This is critical for large collections (1000+ documents) to prevent OutOfMemoryException.
+        /// </summary>
+        IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string collectionName, int batchSize = 500);
+
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
 
         Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl;
@@ -62,6 +68,32 @@ namespace SportsData.Provider.Infrastructure.Data
             var filter = Builders<T>.Filter.Empty;
             var cursor = await collection.FindAsync(filter);
             return await cursor.ToListAsync();
+        }
+
+        /// <summary>
+        /// Asynchronously yields documents in batches to avoid loading all documents into memory at once.
+        /// This is critical for large collections (1000+ documents) to prevent OutOfMemoryException.
+        /// </summary>
+        public async IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string collectionName, int batchSize = 500)
+        {
+            var collection = _database.GetCollection<T>(collectionName);
+            var filter = Builders<T>.Filter.Empty;
+            
+            var options = new FindOptions<T>
+            {
+                BatchSize = batchSize
+            };
+
+            using var cursor = await collection.FindAsync(filter, options);
+            
+            while (await cursor.MoveNextAsync())
+            {
+                var batch = cursor.Current.ToList();
+                if (batch.Count > 0)
+                {
+                    yield return batch;
+                }
+            }
         }
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter)

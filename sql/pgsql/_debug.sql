@@ -45,6 +45,7 @@ where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 order by "Name"
 
 --delete from public."FranchiseSeasonLogo"
+select * from public."FranchiseSeasonLogo" order by "ModifiedUtc" desc
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '1f74a6a4-f12b-4989-3891-9bc72d2faf17'
 
 SELECT 

@@ -74,67 +74,80 @@ namespace SportsData.Provider.Application.Processors
                     typeAndName.CollectionName,
                     typeAndName.Type.Name);
 
-                var dbDocuments = await _documentStore.GetAllDocumentsAsync<DocumentBase>(typeAndName.CollectionName);
+                // Use batched processing to avoid loading all documents into memory
+                // Default to 100, but allow override via command for operational flexibility
+                var batchSize = command.BatchSize ?? 100;
+                var totalPublished = 0;
+                var batchNumber = 0;
 
                 _logger.LogInformation(
-                    "Retrieved {DocumentCount} documents from collection {CollectionName}",
-                    dbDocuments.Count,
-                    typeAndName.CollectionName);
+                    "Beginning batched document retrieval. BatchSize={BatchSize} (CommandOverride={IsOverride})",
+                    batchSize,
+                    command.BatchSize.HasValue);
 
-                if (dbDocuments.Count == 0)
+                await foreach (var batch in _documentStore.GetDocumentsInBatchesAsync<DocumentBase>(
+                    typeAndName.CollectionName, 
+                    batchSize))
+                {
+                    batchNumber++;
+                    
+                    _logger.LogInformation(
+                        "Processing batch {BatchNumber}. Documents in batch: {BatchCount}",
+                        batchNumber,
+                        batch.Count);
+
+                    var events = batch.Select(doc =>
+                            new DocumentCreated(
+                                doc.Id.ToString(),
+                                null,
+                                typeAndName.Type.Name,
+                                doc.Uri,
+                                doc.Uri, //TODO: This should be the source URL, not the URI
+                                null,
+                                doc.SourceUrlHash,
+                                command.Sport,
+                                command.Season,
+                                command.DocumentType,
+                                command.SourceDataProvider,
+                                correlationId,
+                                causationId,
+                                IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes))
+                        .ToList();
+
+                    _logger.LogInformation(
+                        "Publishing {EventCount} events from batch {BatchNumber}",
+                        events.Count,
+                        batchNumber);
+
+                    foreach (var evt in events)
+                    {
+                        await _bus.Publish(evt);
+                        totalPublished++;
+                    }
+
+                    _logger.LogInformation(
+                        "Batch {BatchNumber} published successfully. Total published so far: {TotalPublished}",
+                        batchNumber,
+                        totalPublished);
+
+                    // Allow memory to be reclaimed between batches
+                    // The batch and events list will be GC'd before the next iteration
+                }
+
+                if (totalPublished == 0)
                 {
                     _logger.LogWarning(
-                        "No documents found in collection {CollectionName}. No events will be published.",
+                        "No documents found in collection {CollectionName}. No events were published.",
                         typeAndName.CollectionName);
-                    return;
                 }
-
-                var events = dbDocuments.Select(doc =>
-                        new DocumentCreated(
-                            doc.Id.ToString(),
-                            null,
-                            typeAndName.Type.Name,
-                            doc.Uri,
-                            doc.Uri, //TODO: This should be the source URL, not the URI
-                            null,
-                            doc.SourceUrlHash,
-                            command.Sport,
-                            command.Season,
-                            command.DocumentType,
-                            command.SourceDataProvider,
-                            correlationId,
-                            causationId,
-                            IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes))
-                    .ToList();
-
-                _logger.LogInformation(
-                    "Created {EventCount} DocumentCreated events. Beginning publication. CorrelationId={CorrelationId}",
-                    events.Count,
-                    correlationId);
-
-                var publishedCount = 0;
-                var batchSize = 50;
-
-                foreach (var evt in events)
+                else
                 {
-                    await _bus.Publish(evt);
-                    publishedCount++;
-
-                    // Log progress for large batches
-                    if (publishedCount % batchSize == 0)
-                    {
-                        _logger.LogInformation(
-                            "Publishing progress: {Published}/{Total} events published ({Percentage:F1}%)",
-                            publishedCount,
-                            events.Count,
-                            (publishedCount / (double)events.Count) * 100);
-                    }
+                    _logger.LogInformation(
+                        "PublishDocumentEventsProcessor completed successfully. Published {EventCount} DocumentCreated events across {BatchCount} batches. CorrelationId={CorrelationId}",
+                        totalPublished,
+                        batchNumber,
+                        correlationId);
                 }
-
-                _logger.LogInformation(
-                    "PublishDocumentEventsProcessor completed successfully. Published {EventCount} DocumentCreated events. CorrelationId={CorrelationId}",
-                    events.Count,
-                    correlationId);
             }
         }
     }

@@ -268,19 +268,19 @@ public async Task PublishDocumentEventsProcessor_EncodedDocuments_SuccessfullyDe
 ### Log Patterns to Watch
 
 **Successful decoding** (debug level):
-```
+```text
 [Debug] Decoding JSON document from Cosmos. OriginalSize=1234 bytes
 [Debug] Successfully decoded JSON. DecodedSize=1200 bytes
 ```
 
 **Decoding failure** (warning level):
-```
+```text
 [Warning] Failed to decode JSON document. Returning original. Length=5000
 System.Exception: ...
 ```
 
 **No encoding needed** (most common):
-```
+```text
 // No logs - document was already valid JSON
 ```
 

@@ -102,6 +102,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     private async Task<GameHeaderDto?> GetGameHeaderAsync(Guid contestId, CancellationToken cancellationToken)
     {
         var contest = await _dbContext.Contests
+            .AsNoTracking()
             .Include(c => c.Competitions)
             .Include(c => c.SeasonWeek)
             .Include(c => c.Venue)
@@ -110,18 +111,21 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         if (contest == null) return null;
 
         var homeTeamSeason = await _dbContext.FranchiseSeasons
+            .AsNoTracking()
             .Include(fs => fs.Franchise)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
             .FirstOrDefaultAsync(fs => fs.Id == contest.HomeTeamFranchiseSeasonId, cancellationToken);
 
         var awayTeamSeason = await _dbContext.FranchiseSeasons
+            .AsNoTracking()
             .Include(fs => fs.Franchise)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
             .FirstOrDefaultAsync(fs => fs.Id == contest.AwayTeamFranchiseSeasonId, cancellationToken);
 
         var quarterScores = await _dbContext.CompetitionCompetitorLineScores
+            .AsNoTracking()
             .Include(ls => ls.CompetitionCompetitor)
             .Where(ls => ls.CompetitionCompetitor.CompetitionId == contest.Competitions.First().Id)
             .OrderBy(ls => ls.Period)
@@ -145,9 +149,9 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                 LogoUrl = _logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Logos)?.OriginalString,
                 ColorPrimary = homeTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.HomeScore,
-                Slug = homeTeamSeason!.Franchise!.Slug,
-                Conference = homeTeamSeason.GroupSeason?.ShortName,
-                GroupSeasonMap = homeTeamSeason.GroupSeasonMap
+                Slug = homeTeamSeason?.Franchise?.Slug ?? string.Empty,
+                Conference = homeTeamSeason?.GroupSeason?.ShortName,
+                GroupSeasonMap = homeTeamSeason?.GroupSeasonMap
             },
             AwayTeam = new TeamScoreDto
             {
@@ -156,9 +160,9 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                 LogoUrl = _logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Logos)?.OriginalString,
                 ColorPrimary = awayTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.AwayScore,
-                Slug = awayTeamSeason!.Franchise!.Slug,
-                Conference = awayTeamSeason.GroupSeason?.ShortName,
-                GroupSeasonMap = awayTeamSeason.GroupSeasonMap
+                Slug = awayTeamSeason?.Franchise?.Slug ?? string.Empty,
+                Conference = awayTeamSeason?.GroupSeason?.ShortName,
+                GroupSeasonMap = awayTeamSeason?.GroupSeasonMap
             },
             QuarterScores = quarterScores
                 .GroupBy(ls => ls.Period)
@@ -377,7 +381,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         {
             Ordinal = x,
             Quarter = p.PeriodNumber,
-            FranchiseSeasonId = p.EndFranchiseSeasonId.HasValue ? p.EndFranchiseSeasonId.Value : Guid.Empty,
+            FranchiseSeasonId = p.EndFranchiseSeasonId ?? Guid.Empty,
             Team = p.EndFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
             Description = p.ShortAlternativeText ?? p.Text,
             TimeRemaining = p.ClockDisplayValue,
@@ -395,14 +399,15 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         };
     }
 
-    private async Task<TeamStatsSectionDto> GetTeamStatsAsync(Guid contestId, CancellationToken cancellationToken)
+    private static async Task<TeamStatsSectionDto> GetTeamStatsAsync(Guid contestId, CancellationToken cancellationToken)
     {
-        var stats = await _dbContext.CompetitionCompetitorStatistics
-            .Include(s => s.CompetitionCompetitor)
-            .Where(s => s.CompetitionCompetitor!.Competition.ContestId == contestId)
-            .ToListAsync(cancellationToken);
+        // TODO: Implement team stats retrieval logic
+        //var stats = await _dbContext.CompetitionCompetitorStatistics
+        //    .Include(s => s.CompetitionCompetitor)
+        //    .Where(s => s.CompetitionCompetitor!.Competition.ContestId == contestId)
+        //    .ToListAsync(cancellationToken);
 
-        return new TeamStatsSectionDto();
+        return await Task.FromResult(new TeamStatsSectionDto());
     }
 
     private async Task<GameInfoDto?> GetGameInfoAsync(Guid contestId, CancellationToken cancellationToken)

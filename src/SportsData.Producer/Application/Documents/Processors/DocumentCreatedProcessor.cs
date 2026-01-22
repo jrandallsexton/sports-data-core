@@ -86,10 +86,10 @@ namespace SportsData.Producer.Application.Documents.Processors
         {
             var document = await ObtainDocumentAsync(evt);
             
-            if (string.IsNullOrEmpty(document)) 
+            if (IsInvalidDocument(document)) 
             {
                 _logger.LogError(
-                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY: Document is empty. " +
+                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY: Document is empty, whitespace, or literal 'null'. " +
                     "DocumentId={DocumentId}",
                     evt.Id);
                 return;
@@ -126,7 +126,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.Sport,
                 evt.SeasonYear,
                 evt.DocumentType,
-                document,
+                document!, // Already validated via IsInvalidDocument guard
                 evt.CorrelationId,
                 evt.ParentId,
                 evt.SourceRef,
@@ -150,7 +150,8 @@ namespace SportsData.Producer.Application.Documents.Processors
         private async ValueTask<string?> ObtainDocumentAsync(DocumentCreated evt)
         {
             // Check if document was included inline in the event (within size limits)
-            if (!string.IsNullOrEmpty(evt.DocumentJson))
+            if (!string.IsNullOrWhiteSpace(evt.DocumentJson) && 
+                !evt.DocumentJson.Trim().Equals("null", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
                     "📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload. " +
@@ -170,10 +171,10 @@ namespace SportsData.Producer.Application.Documents.Processors
             // Document exceeded size limit, fetch from Provider
             var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
             
-            if (document is null or "null")
+            if (IsInvalidDocument(document))
             {
                 _logger.LogError(
-                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain document from Provider. " +
+                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain valid document from Provider. " +
                     "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
                     evt.SourceUrlHash,
                     evt.Id);
@@ -187,6 +188,15 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.Id);
 
             return document;
+        }
+
+        /// <summary>
+        /// Validates that a document payload is not null, empty, whitespace, or the literal string "null".
+        /// </summary>
+        private static bool IsInvalidDocument(string? document)
+        {
+            return string.IsNullOrWhiteSpace(document) || 
+                   document.Trim().Equals("null", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

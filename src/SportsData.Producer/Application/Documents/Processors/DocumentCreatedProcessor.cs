@@ -84,42 +84,16 @@ namespace SportsData.Producer.Application.Documents.Processors
 
         private async Task ProcessInternal(DocumentCreated evt)
         {
-            _logger.LogInformation(
-                "📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Fetching document from Provider. " +
-                "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
-                evt.SourceUrlHash,
-                evt.Id);
-
-            // call Provider to obtain the new document
-            var document = evt.DocumentJson ?? await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
-
-            if (document is null or "null")
-            {
-                _logger.LogError(
-                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain document from Provider. " +
-                    "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
-                    evt.SourceUrlHash,
-                    evt.Id);
-                return;
-            }
-
+            var document = await ObtainDocumentAsync(evt);
+            
             if (string.IsNullOrEmpty(document)) 
             {
                 _logger.LogError(
                     "❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY: Document is empty. " +
-                    "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
-                    evt.SourceUrlHash,
+                    "DocumentId={DocumentId}",
                     evt.Id);
                 return;
             }
-
-            var documentLength = document.Length;
-            _logger.LogInformation(
-                "✅ DOC_CREATED_PROCESSOR_DOCUMENT_OBTAINED: Document fetched successfully. " +
-                "DocumentType={DocumentType}, DocumentLength={Length}, DocumentId={DocumentId}",
-                evt.DocumentType,
-                documentLength,
-                evt.Id);
 
             _logger.LogInformation(
                 "🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory. " +
@@ -166,6 +140,53 @@ namespace SportsData.Producer.Application.Documents.Processors
                 "ProcessorType={ProcessorType}, DocumentId={DocumentId}",
                 processor.GetType().Name,
                 evt.Id);
+        }
+
+        /// <summary>
+        /// Obtains the document JSON either from the event payload (if inline) or by fetching from Provider.
+        /// Small documents (<200KB) are included inline to avoid HTTP round-trips.
+        /// Uses ValueTask for efficiency since inline documents complete synchronously.
+        /// </summary>
+        private async ValueTask<string?> ObtainDocumentAsync(DocumentCreated evt)
+        {
+            // Check if document was included inline in the event (within size limits)
+            if (!string.IsNullOrEmpty(evt.DocumentJson))
+            {
+                _logger.LogInformation(
+                    "📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload. " +
+                    "DocumentLength={Length}, DocumentId={DocumentId}",
+                    evt.DocumentJson.Length,
+                    evt.Id);
+                
+                return evt.DocumentJson;
+            }
+
+            _logger.LogInformation(
+                "📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider. " +
+                "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
+                evt.SourceUrlHash,
+                evt.Id);
+
+            // Document exceeded size limit, fetch from Provider
+            var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
+            
+            if (document is null or "null")
+            {
+                _logger.LogError(
+                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain document from Provider. " +
+                    "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
+                    evt.SourceUrlHash,
+                    evt.Id);
+                return null;
+            }
+            
+            _logger.LogInformation(
+                "✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully. " +
+                "DocumentLength={Length}, DocumentId={DocumentId}",
+                document.Length,
+                evt.Id);
+
+            return document;
         }
     }
 }

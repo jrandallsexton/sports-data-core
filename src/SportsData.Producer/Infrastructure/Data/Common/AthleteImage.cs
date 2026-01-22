@@ -22,6 +22,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public List<string>? Rel { get; set; }
 
+        public bool? IsForDarkBg { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<AthleteImage>
         {
             public void Configure(EntityTypeBuilder<AthleteImage> builder)

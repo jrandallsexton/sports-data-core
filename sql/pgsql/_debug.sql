@@ -46,7 +46,9 @@ order by "Name"
 
 --delete from public."FranchiseSeasonLogo"
 select * from public."FranchiseSeasonLogo" order by "ModifiedUtc" desc
-select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '1f74a6a4-f12b-4989-3891-9bc72d2faf17'
+select distinct "Rel" from public."FranchiseSeasonLogo"
+select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '3283a7e2-96bd-94eb-e839-ba835fb22efc' -- cinc {full,primary_logo_on_black_color} NOT work
+select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = 'c4ba3277-0dd3-8fe1-9edf-85fd3b6274b0' -- ind {full,primary_logo_on_black_color} works
 
 SELECT 
     fs."Id" AS "FranchiseSeasonId",

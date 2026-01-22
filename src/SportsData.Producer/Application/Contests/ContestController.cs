@@ -9,8 +9,8 @@ using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
-using SportsData.Producer.Application.Contests.Overview;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
+using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
@@ -21,18 +21,15 @@ namespace SportsData.Producer.Application.Contests
     {
         private readonly ILogger<ContestController> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IContestOverviewService _contestOverviewService;
         private readonly TeamSportDataContext _dataContext;
 
         public ContestController(
             ILogger<ContestController> logger,
             IProvideBackgroundJobs backgroundJobProvider,
-            IContestOverviewService contestOverviewService,
             TeamSportDataContext dataContext)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
-            _contestOverviewService = contestOverviewService;
             _dataContext = dataContext;
         }
 
@@ -134,29 +131,15 @@ namespace SportsData.Producer.Application.Contests
         }
 
         [HttpGet("{id}/overview")]
-        public async Task<ActionResult<ContestOverviewDto>> GetContestById([FromRoute] Guid id)
+        public async Task<ActionResult<ContestOverviewDto>> GetContestOverview(
+            [FromServices] IGetContestOverviewQueryHandler handler,
+            [FromRoute] Guid id,
+            CancellationToken cancellationToken = default)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
-            
-            try
-            {
-                _logger.LogInformation(
-                    "GetContestOverview requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                    id,
-                    correlationId);
-                    
-                var contest = await _contestOverviewService.GetContestOverviewByContestId(id);
-                return Ok(contest);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Contest not found. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                    id,
-                    correlationId);
-                return NotFound();
-            }
+            var query = new GetContestOverviewQuery(id);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+
+            return result.ToActionResult();
         }
 
         [HttpPost("{id}/media/refresh")]

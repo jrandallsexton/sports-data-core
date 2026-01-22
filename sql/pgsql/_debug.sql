@@ -48,6 +48,8 @@ order by "Name"
 select * from public."FranchiseSeasonLogo" order by "ModifiedUtc" desc
 select distinct "Rel" from public."FranchiseSeasonLogo"
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = '3283a7e2-96bd-94eb-e839-ba835fb22efc' -- cinc {full,primary_logo_on_black_color} NOT work
+update public."FranchiseSeasonLogo" set "IsForDarkBg" = false where "FranchiseSeasonId" = '3283a7e2-96bd-94eb-e839-ba835fb22efc'
+--update public."FranchiseSeasonLogo" set "IsForDarkBg" = true where "Id" = '5866026f-f567-4dbc-8997-4482853e4368'
 select * from public."FranchiseSeasonLogo" where "FranchiseSeasonId" = 'c4ba3277-0dd3-8fe1-9edf-85fd3b6274b0' -- ind {full,primary_logo_on_black_color} works
 
 SELECT 

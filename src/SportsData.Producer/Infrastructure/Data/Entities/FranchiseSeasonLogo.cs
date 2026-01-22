@@ -20,6 +20,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public List<string>? Rel { get; set; } = [];
 
+        public bool? IsForDarkBg { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonLogo>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonLogo> builder)

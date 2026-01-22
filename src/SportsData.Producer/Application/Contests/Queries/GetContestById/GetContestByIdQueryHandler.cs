@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Producer.Infrastructure.Data.Football;

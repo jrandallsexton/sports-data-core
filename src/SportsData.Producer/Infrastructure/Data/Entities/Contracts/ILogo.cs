@@ -11,4 +11,6 @@ public interface ILogo
     public long? Width { get; set; }
 
     public List<string>? Rel { get; set; }
+
+    public bool? IsForDarkBg { get; set; }
 }

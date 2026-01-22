@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -16,19 +17,32 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ILogoSelectionService _logoSelectionService;
+    private readonly IValidator<GetContestOverviewQuery> _validator;
 
     public GetContestOverviewQueryHandler(
         TeamSportDataContext dbContext,
-        ILogoSelectionService logoSelectionService)
+        ILogoSelectionService logoSelectionService,
+        IValidator<GetContestOverviewQuery> validator)
     {
         _dbContext = dbContext;
         _logoSelectionService = logoSelectionService;
+        _validator = validator;
     }
 
     public async Task<Result<ContestOverviewDto>> ExecuteAsync(
         GetContestOverviewQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Validate query
+        var validationResult = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.BadRequest,
+                validationResult.Errors);
+        }
+
         // Fetch basic contest info to get team slugs and franchise season IDs
         var contest = await _dbContext.Contests
             .AsNoTracking()

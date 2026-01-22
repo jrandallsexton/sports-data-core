@@ -175,6 +175,9 @@ namespace SportsData.Producer.DependencyInjection
             // Contest Queries
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
             services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
+            
+            // Contest Query Validators
+            services.AddScoped<FluentValidation.IValidator<GetContestOverviewQuery>, GetContestOverviewQueryValidator>();
 
             services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();

@@ -137,7 +137,7 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
             Uri = new Uri("https://cdn.example.com/logos/old-team-99.png"),
             Height = 300,
             Width = 300,
-            OriginalUrlHash = "hash123", // Same hash
+            OriginalUrlHash = "hash123",
             Rel = ["thumbnail"],
             CreatedUtc = DateTime.UtcNow.AddDays(-1),
             CreatedBy = Guid.NewGuid()
@@ -152,8 +152,8 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
         var correlationId = Guid.NewGuid();
         var response = new ProcessImageResponse(
             Uri: new Uri("https://cdn.example.com/logos/new-team-99.png"), // Updated URI
-            ImageId: Guid.NewGuid().ToString(), // Different ImageId (shouldn't be used for update)
-            OriginalUrlHash: "hash123", // Same hash - this identifies the existing logo
+            ImageId: existingLogoId.ToString(), // Use existing logo ID (canonical ID)
+            OriginalUrlHash: "hash123", // Hash stays the same
             ParentEntityId: franchiseSeasonId,
             Name: "new-team-99.png",
             Ref: null,
@@ -193,7 +193,7 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
     }
 
     [Fact]
-    public async Task ProcessResponse_WhenMultipleLogosExist_OnlyUpdatesMatchingHash()
+    public async Task ProcessResponse_WhenMultipleLogosExist_OnlyUpdatesMatchingId()
     {
         // arrange
         var franchiseSeasonId = Guid.NewGuid();
@@ -213,9 +213,10 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
             CreatedBy = Guid.NewGuid()
         };
 
+        var logo1Id = Guid.NewGuid();
         var logo1 = new FranchiseSeasonLogo
         {
-            Id = Guid.NewGuid(),
+            Id = logo1Id,
             FranchiseSeasonId = franchiseSeasonId,
             Uri = new Uri("https://cdn.example.com/logos/logo1.png"),
             Height = 300,
@@ -226,9 +227,10 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
             CreatedBy = Guid.NewGuid()
         };
 
+        var logo2Id = Guid.NewGuid();
         var logo2 = new FranchiseSeasonLogo
         {
-            Id = Guid.NewGuid(),
+            Id = logo2Id,
             FranchiseSeasonId = franchiseSeasonId,
             Uri = new Uri("https://cdn.example.com/logos/logo2.png"),
             Height = 500,
@@ -248,8 +250,8 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
 
         var response = new ProcessImageResponse(
             Uri: new Uri("https://cdn.example.com/logos/updated-logo1.png"),
-            ImageId: Guid.NewGuid().ToString(),
-            OriginalUrlHash: "hash1", // Update logo1
+            ImageId: logo1Id.ToString(), // Update logo1 using its canonical ID
+            OriginalUrlHash: "hash1",
             ParentEntityId: franchiseSeasonId,
             Name: "updated-logo1.png",
             Ref: null,
@@ -272,13 +274,13 @@ public class FranchiseSeasonLogoResponseProcessorTests : ProducerTestBase<Franch
         Assert.Equal(2, logoCount); // Should still be 2 logos
 
         var updatedLogo = await FootballDataContext.FranchiseSeasonLogos
-            .FirstOrDefaultAsync(l => l.OriginalUrlHash == "hash1");
+            .FirstOrDefaultAsync(l => l.Id == logo1Id);
         Assert.NotNull(updatedLogo);
         Assert.Equal("https://cdn.example.com/logos/updated-logo1.png", updatedLogo.Uri.ToString());
         Assert.Equal(400, updatedLogo.Height);
 
         var unchangedLogo = await FootballDataContext.FranchiseSeasonLogos
-            .FirstOrDefaultAsync(l => l.OriginalUrlHash == "hash2");
+            .FirstOrDefaultAsync(l => l.Id == logo2Id);
         Assert.NotNull(unchangedLogo);
         Assert.Equal("https://cdn.example.com/logos/logo2.png", unchangedLogo.Uri.ToString());
         Assert.Equal(500, unchangedLogo.Height);

@@ -97,6 +97,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
 
         // 2. Any images?
         var events = EventFactory.CreateProcessImageRequests(
+            _externalRefIdentityGenerator,
             dto.Images,
             newEntity.Id,
             command.Sport,

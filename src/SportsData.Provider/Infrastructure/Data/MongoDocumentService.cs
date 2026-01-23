@@ -17,6 +17,11 @@ namespace SportsData.Provider.Infrastructure.Data
         public Task<List<T>> GetAllDocumentsAsync<T>(string collectionName);
 
         /// <summary>
+        /// Gets the total count of documents matching the filter.
+        /// </summary>
+        Task<long> CountDocumentsAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
+
+        /// <summary>
         /// Asynchronously yields documents in batches to avoid loading all documents into memory at once.
         /// This is critical for large collections (1000+ documents) to prevent OutOfMemoryException.
         /// </summary>
@@ -77,6 +82,12 @@ namespace SportsData.Provider.Infrastructure.Data
             var filter = Builders<T>.Filter.Empty;
             var cursor = await collection.FindAsync(filter);
             return await cursor.ToListAsync();
+        }
+
+        public async Task<long> CountDocumentsAsync<T>(string collectionName, Expression<Func<T, bool>> filter)
+        {
+            var collection = _database.GetCollection<T>(collectionName);
+            return await collection.CountDocumentsAsync(filter);
         }
 
         /// <summary>

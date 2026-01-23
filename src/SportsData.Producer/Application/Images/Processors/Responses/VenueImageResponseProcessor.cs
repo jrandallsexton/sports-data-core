@@ -3,7 +3,6 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
@@ -50,7 +49,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             await _dataContext.VenueImages.AddAsync(new VenueImage()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse(response.ImageId),
                 VenueId = venue.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,

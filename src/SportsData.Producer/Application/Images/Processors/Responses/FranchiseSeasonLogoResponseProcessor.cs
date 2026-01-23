@@ -43,8 +43,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             // Check if logo with this OriginalUrlHash already exists for this FranchiseSeason
             var existingLogo = await _dataContext.FranchiseSeasonLogos
-                .Where(x => x.FranchiseSeasonId == response.ParentEntityId 
-                         && x.OriginalUrlHash == response.OriginalUrlHash)
+                .Where(x => x.Id.ToString() == response.ImageId)
                 .FirstOrDefaultAsync();
 
             if (existingLogo is not null)

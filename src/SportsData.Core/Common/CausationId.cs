@@ -52,6 +52,7 @@ namespace SportsData.Core.Common
 
         public static class Provider
         {
+            public static Guid ResourceIndexJob = new Guid("20000000-0000-0000-0000-000000000002");
             public static Guid ResourceIndexItemProcessor = new Guid("20000000-0000-0000-0000-000000000001");
         }
     }

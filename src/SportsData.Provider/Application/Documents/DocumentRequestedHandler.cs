@@ -112,6 +112,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         var cmd = new ProcessResourceIndexItemCommand(
             CorrelationId: evt.CorrelationId,
+            CausationId: evt.CausationId,
             ResourceIndexId: Guid.Empty,
             Id: urlHash,
             Uri: uri,
@@ -207,6 +208,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
                 var cmd = new ProcessResourceIndexItemCommand(
                     CorrelationId: evt.CorrelationId,
+                    CausationId: evt.CausationId,
                     ResourceIndexId: Guid.Empty,
                     Id: refHash,
                     Uri: refUri,

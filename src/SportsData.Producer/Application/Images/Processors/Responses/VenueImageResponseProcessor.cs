@@ -47,9 +47,15 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 return;
             }
 
+            if (!Guid.TryParse(response.ImageId, out var imageId))
+            {
+                _logger.LogError("Invalid ImageId format: {ImageId}", response.ImageId);
+                return;
+            }
+
             await _dataContext.VenueImages.AddAsync(new VenueImage()
             {
-                Id = Guid.Parse(response.ImageId),
+                Id = imageId,
                 VenueId = venue.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,

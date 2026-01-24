@@ -191,8 +191,9 @@ public class AthleteSeasonDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
+        var now = DateTime.UtcNow;
         var dateTimeProvider = Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>();
-        dateTimeProvider.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
+        dateTimeProvider.Setup(x => x.UtcNow()).Returns(now);
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
@@ -315,7 +316,7 @@ public class AthleteSeasonDocumentProcessorTests :
         updatedEntity!.DisplayName.Should().Be(dto.DisplayName, "DisplayName should be updated");
         updatedEntity.Jersey.Should().Be(dto.Jersey, "Jersey should be updated");
         updatedEntity.ExperienceYears.Should().Be(dto.Experience.Years, "Experience should be updated");
-        updatedEntity.ModifiedUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        updatedEntity.ModifiedUtc.Should().Be(now);
 
         // Verify image request was published
         // Note: Image request uses Athlete ID as ParentEntityId (career-level images)

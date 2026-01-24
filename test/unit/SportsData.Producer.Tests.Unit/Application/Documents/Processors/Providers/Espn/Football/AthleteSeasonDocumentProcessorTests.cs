@@ -191,6 +191,9 @@ public class AthleteSeasonDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
+        var dateTimeProvider = Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
+
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 

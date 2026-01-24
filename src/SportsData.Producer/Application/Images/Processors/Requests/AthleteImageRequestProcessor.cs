@@ -7,12 +7,9 @@ using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
-    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeason)]
     [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteImage)]
     public class AthleteImageRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
         where TDataContext : BaseDataContext
@@ -136,9 +133,73 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             ProcessImageRequest request,
             DocumentType logoDocType)
         {
-            await Task.CompletedTask;
-            _logger.LogWarning("Update detected; not implemented");
-            return;
+            _logger.LogInformation(
+                "Existing AthleteImage found. ImageId={ImageId}, AthleteId={AthleteId}, OriginalUrlHash={OriginalUrlHash}",
+                img.Id,
+                request.ParentEntityId,
+                urlHash);
+
+            // Always call Provider to check if blob storage URI has changed
+            // (e.g., storage account migration, re-upload, etc.)
+            var imageIdentity = _externalIdentityProvider.Generate(request.Url);
+
+            var query = new GetExternalImageQuery(
+                imageIdentity.CanonicalId.ToString(),
+                request.Url,
+                request.SourceDataProvider,
+                request.Sport,
+                logoDocType,
+                request.SeasonYear
+            );
+
+            _logger.LogInformation("Checking for blob storage URI changes for existing image");
+
+            var response = await _providerClient.GetExternalImage(query);
+
+            if (!response.IsSuccess)
+            {
+                _logger.LogError("Failed to obtain image from Provider during update check");
+                throw new Exception("Failed to obtain image from Provider during update check");
+            }
+
+            // Check if blob storage URI has changed
+            if (img.Uri != response.Uri)
+            {
+                _logger.LogInformation(
+                    "Blob storage URI changed for existing image. ImageId={ImageId}, OldUri={OldUri}, NewUri={NewUri}",
+                    img.Id,
+                    img.Uri,
+                    response.Uri);
+
+                // Publish update event to trigger response processor
+                var outgoingEvt = new ProcessImageResponse(
+                    response.Uri,
+                    response.CanonicalId,
+                    urlHash,
+                    request.ParentEntityId,
+                    request.Name,
+                    null,
+                    request.Sport,
+                    request.SeasonYear,
+                    logoDocType,
+                    request.SourceDataProvider,
+                    request.Height,
+                    request.Width,
+                    request.Rel,
+                    request.CorrelationId,
+                    request.CausationId);
+
+                await _bus.Publish(outgoingEvt);
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation("Published ProcessImageResponse for updated blob storage URI");
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Blob storage URI unchanged for existing image. ImageId={ImageId}, Skipping update.",
+                    img.Id);
+            }
         }
     }
 }

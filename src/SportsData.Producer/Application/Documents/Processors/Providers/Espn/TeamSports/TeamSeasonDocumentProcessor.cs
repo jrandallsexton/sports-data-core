@@ -35,35 +35,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         _config = config;
     }
 
-    /// <summary>
-    /// Determines if a linked document of the specified type should be spawned,
-    /// based on the inclusion filter in the command.
-    /// </summary>
-    /// <param name="documentType">The type of linked document to check</param>
-    /// <param name="command">The processing command containing the optional inclusion filter</param>
-    /// <returns>True if the document should be spawned; false otherwise</returns>
-    private bool ShouldSpawn(DocumentType documentType, ProcessDocumentCommand command)
-    {
-        // If no inclusion filter is specified, spawn all documents (default behavior)
-        if (command.IncludeLinkedDocumentTypes == null || command.IncludeLinkedDocumentTypes.Count == 0)
-        {
-            return true;
-        }
-
-        // If inclusion filter is specified, only spawn if the type is in the list
-        var shouldSpawn = command.IncludeLinkedDocumentTypes.Contains(documentType);
-
-        if (!shouldSpawn)
-        {
-            _logger.LogInformation(
-                "Skipping spawn of {DocumentType} due to inclusion filter. Allowed types: {AllowedTypes}",
-                documentType,
-                string.Join(", ", command.IncludeLinkedDocumentTypes));
-        }
-
-        return shouldSpawn;
-    }
-
     public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>

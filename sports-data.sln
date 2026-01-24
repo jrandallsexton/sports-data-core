@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11408.102 d18.0
+VisualStudioVersion = 18.2.11408.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{16688232-077A-447A-B0FB-CEEC46F1B707}"
 EndProject
@@ -107,6 +107,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SportsData.Core.Tests.Integ
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{67222F6F-E638-4BE6-806B-E56EF108147D}"
 	ProjectSection(SolutionItems) = preProject
+		docs\ATHLETE_IMAGE_SOURCING_ANALYSIS.md = docs\ATHLETE_IMAGE_SOURCING_ANALYSIS.md
 		docs\DOCUMENT_PROCESSOR_BASE_REFACTOR.md = docs\DOCUMENT_PROCESSOR_BASE_REFACTOR.md
 		docs\HistoricalSeasonSourcingAnalysis.md = docs\HistoricalSeasonSourcingAnalysis.md
 		docs\HISTORICAL_SEASON_SOURCING.md = docs\HISTORICAL_SEASON_SOURCING.md

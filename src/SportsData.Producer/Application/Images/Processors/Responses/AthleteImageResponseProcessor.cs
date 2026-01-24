@@ -6,21 +6,22 @@ using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
-    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeason)]
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteImage)]
     public class AthleteImageResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
         where TDataContext : BaseDataContext
     {
         private readonly ILogger<AthleteImageResponseProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public AthleteImageResponseProcessor(
             ILogger<AthleteImageResponseProcessor<TDataContext>> logger,
-            TDataContext dataContext)
+            TDataContext dataContext,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task ProcessResponse(ProcessImageResponse response)
@@ -55,16 +56,33 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             if (img is not null)
             {
-                // TODO: do nothing?
+                _logger.LogInformation(
+                    "Updating existing AthleteImage. ImageId={ImageId}, AthleteId={AthleteId}, OriginalUrlHash={OriginalUrlHash}",
+                    img.Id,
+                    response.ParentEntityId,
+                    response.OriginalUrlHash);
+
+                // Update properties that may have changed
+                img.Uri = response.Uri;
+                img.Height = response.Height;
+                img.Width = response.Width;
+                img.Rel = response.Rel;
+                img.ModifiedBy = response.CorrelationId;
+                img.ModifiedUtc = _dateTimeProvider.UtcNow();
+
+                _dataContext.AthleteImages.Update(img);
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation("AthleteImage updated successfully.");
                 return;
             }
 
             await _dataContext.AthleteImages.AddAsync(new AthleteImage()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse(response.ImageId),
                 AthleteId = parentEntity.Id,
                 CreatedBy = response.CorrelationId,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = _dateTimeProvider.UtcNow(),
                 Uri = response.Uri,
                 Height = response.Height,
                 Width = response.Width,
@@ -74,7 +92,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation("AthleteImage created.");
+            _logger.LogInformation("AthleteImage created successfully.");
         }
     }
 }

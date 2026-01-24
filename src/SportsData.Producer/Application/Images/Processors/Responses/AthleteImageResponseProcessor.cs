@@ -79,7 +79,9 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             await _dataContext.AthleteImages.AddAsync(new AthleteImage()
             {
-                Id = Guid.Parse(response.ImageId),
+                Id = Guid.TryParse(response.ImageId, out var imageId)
+                    ? imageId
+                    : throw new InvalidOperationException($"Invalid ImageId format: {response.ImageId}"),
                 AthleteId = parentEntity.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = _dateTimeProvider.UtcNow(),

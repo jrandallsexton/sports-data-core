@@ -102,9 +102,25 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             _logger.LogInformation("Obtained new image {@DocumentType}", query.DocumentType);
 
             // raise an event for whoever requested this
-            var outgoingEvt2 = new ProcessImageResponse(
-                response.Uri,
-                response.CanonicalId,
+            var outgoingEvt = CreateProcessImageResponse(response, urlHash, request, logoDocType);
+
+            await _bus.Publish(outgoingEvt);
+            
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("Published ProcessImageResponse");
+
+        }
+
+        private ProcessImageResponse CreateProcessImageResponse(
+            SportsData.Core.Infrastructure.Clients.Provider.Commands.GetExternalImageResponse providerResponse,
+            string urlHash,
+            ProcessImageRequest request,
+            DocumentType logoDocType)
+        {
+            return new ProcessImageResponse(
+                providerResponse.Uri,
+                providerResponse.CanonicalId,
                 urlHash,
                 request.ParentEntityId,
                 request.Name,
@@ -118,13 +134,6 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                 request.Rel,
                 request.CorrelationId,
                 request.CausationId);
-
-            await _bus.Publish(outgoingEvt2);
-            
-            await _dataContext.SaveChangesAsync();
-
-            _logger.LogInformation("Published ProcessImageResponse");
-
         }
 
         private async Task HandleExisting(
@@ -172,22 +181,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
                     response.Uri);
 
                 // Publish update event to trigger response processor
-                var outgoingEvt = new ProcessImageResponse(
-                    response.Uri,
-                    response.CanonicalId,
-                    urlHash,
-                    request.ParentEntityId,
-                    request.Name,
-                    null,
-                    request.Sport,
-                    request.SeasonYear,
-                    logoDocType,
-                    request.SourceDataProvider,
-                    request.Height,
-                    request.Width,
-                    request.Rel,
-                    request.CorrelationId,
-                    request.CausationId);
+                var outgoingEvt = CreateProcessImageResponse(response, urlHash, request, logoDocType);
 
                 await _bus.Publish(outgoingEvt);
                 await _dataContext.SaveChangesAsync();

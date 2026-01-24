@@ -216,7 +216,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 CategoryId = l.LeaderCategory.Name,
                 CategoryName = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
-                Abbr = null,
+                Abbr = l.LeaderCategory.Abbreviation,
                 Unit = null,
                 DisplayOrder = 0,
                 FranchiseSeasonId = s.FranchiseSeasonId,
@@ -227,7 +227,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                     ?? "Unknown",
                 PlayerHeadshotUrl = null,
                 StatLine = s.DisplayValue,
-                Numeric = null,
+                Numeric = (decimal?)s.Value,
                 Rank = 1,
                 AthleteSeasonId = s.AthleteSeasonId
             }))
@@ -479,6 +479,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         CancellationToken cancellationToken)
     {
         var competitionMetrics = await _dbContext.CompetitionMetrics
+            .AsNoTracking()
             .Where(x => x.CompetitionId == competitionId)
             .ToListAsync(cancellationToken);
 
@@ -487,8 +488,13 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             return (null, null);
         }
 
-        var awayMetrics = competitionMetrics.First(x => x.FranchiseSeasonId == awayFranchiseSeasonId);
-        var homeMetrics = competitionMetrics.First(x => x.FranchiseSeasonId == homeFranchiseSeasonId);
+        var awayMetrics = competitionMetrics.FirstOrDefault(x => x.FranchiseSeasonId == awayFranchiseSeasonId);
+        var homeMetrics = competitionMetrics.FirstOrDefault(x => x.FranchiseSeasonId == homeFranchiseSeasonId);
+
+        if (awayMetrics == null || homeMetrics == null)
+        {
+            return (null, null);
+        }
 
         return (awayMetrics.ToDto(), homeMetrics.ToDto());
     }

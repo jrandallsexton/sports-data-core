@@ -204,6 +204,7 @@ namespace SportsData.Provider.Application.Jobs
 
                 var cmd = new ProcessResourceIndexItemCommand(
                     correlationId,                            // ✅ CorrelationId FIRST
+                    CausationId.Provider.ResourceIndexJob,
                     id,                                       // ResourceIndexId SECOND
                     hrefHash,                                 // Id (UrlHash) THIRD
                     href!,                                    // Uri
@@ -332,6 +333,7 @@ namespace SportsData.Provider.Application.Jobs
                     {
                         var cmd = new ProcessResourceIndexItemCommand(
                             correlationId,  // ✅ CorrelationId FIRST
+                            CausationId.Provider.ResourceIndexJob,
                             id,             // ResourceIndexId SECOND
                             HashProvider.GenerateHashFromUri(item.Ref.ToCleanUri()), // Id (UrlHash) THIRD
                             item.Ref,

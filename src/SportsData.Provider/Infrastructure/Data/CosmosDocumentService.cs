@@ -46,6 +46,17 @@ namespace SportsData.Provider.Infrastructure.Data
             return results;
         }
 
+        public async Task<long> CountDocumentsAsync<T>(string containerName, Expression<Func<T, bool>> filter)
+        {
+            var container = _client.GetContainer(_databaseName, containerName);
+
+            var query = container.GetItemLinqQueryable<T>()
+                .Where(filter)
+                .CountAsync();
+
+            return await query;
+        }
+
         /// <summary>
         /// Asynchronously yields documents in batches to avoid loading all documents into memory at once.
         /// This is critical for large collections (1000+ documents) to prevent OutOfMemoryException.

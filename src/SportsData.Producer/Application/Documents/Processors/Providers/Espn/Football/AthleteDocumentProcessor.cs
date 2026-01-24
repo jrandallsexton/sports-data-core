@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Athletes;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
@@ -15,8 +16,6 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
-
-using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -113,12 +112,13 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
 
         if (dto.Headshot?.Href is not null)
         {
-            var imgId = Guid.NewGuid();
+            var imageId = _externalRefIdentityGenerator.Generate(dto.Headshot.Href).CanonicalId;
+            
             await _publishEndpoint.Publish(new ProcessImageRequest(
                 dto.Headshot.Href,
-                imgId,
+                imageId,
                 entity.Id,
-                $"{entity.Id}-{imgId}.png",
+                $"{entity.Id}-headshot.png",
                 null,
                 command.Sport,
                 command.Season,
@@ -307,12 +307,13 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
     {
         if (dto.Headshot?.Href is not null)
         {
-            var imgId = Guid.NewGuid();
+            var imageId = _externalRefIdentityGenerator.Generate(dto.Headshot.Href).CanonicalId;
+            
             await _publishEndpoint.Publish(new ProcessImageRequest(
                 dto.Headshot.Href,
-                imgId,
+                imageId,
                 entity.Id,
-                $"{entity.Id}-{imgId}.png",
+                $"{entity.Id}-headshot.png",
                 null,
                 command.Sport,
                 command.Season,

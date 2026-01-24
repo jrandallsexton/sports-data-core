@@ -3,7 +3,6 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
@@ -48,9 +47,15 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 return;
             }
 
+            if (!Guid.TryParse(response.ImageId, out var imageId))
+            {
+                _logger.LogError("Invalid ImageId format: {ImageId}", response.ImageId);
+                return;
+            }
+
             await _dataContext.VenueImages.AddAsync(new VenueImage()
             {
-                Id = Guid.NewGuid(),
+                Id = imageId,
                 VenueId = venue.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = DateTime.UtcNow,

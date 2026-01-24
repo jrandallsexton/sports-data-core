@@ -57,6 +57,7 @@ namespace SportsData.Provider.Application.Processors
             using (_logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = command.CorrelationId,
+                ["CausationId"] = command.CausationId,
                 ["DocumentType"] = command.DocumentType,
                 ["SourceUrlHash"] = command.Id
             }))
@@ -296,6 +297,7 @@ namespace SportsData.Provider.Application.Processors
 
     public record ProcessResourceIndexItemCommand(
         Guid CorrelationId,
+        Guid CausationId,
         Guid ResourceIndexId,
         string Id,
         Uri Uri,

@@ -84,9 +84,20 @@ namespace SportsData.Provider.Application.Processors
                 var totalPublished = 0;
                 var batchNumber = 0;
 
+                // Get total document count to calculate expected batches for progress visibility
+                var totalDocuments = await _documentStore.CountDocumentsAsync<DocumentBase>(
+                    typeAndName.CollectionName,
+                    doc => doc.Sport == command.Sport 
+                        && doc.DocumentType == command.DocumentType 
+                        && doc.SourceDataProvider == command.SourceDataProvider);
+
+                var totalBatches = totalDocuments > 0 ? (int)Math.Ceiling((double)totalDocuments / batchSize) : 0;
+
                 _logger.LogInformation(
-                    "Beginning batched document retrieval. BatchSize={BatchSize} (CommandOverride={IsOverride})",
+                    "Beginning batched document retrieval. TotalDocuments={TotalDocuments}, BatchSize={BatchSize}, ExpectedBatches={ExpectedBatches} (CommandOverride={IsOverride})",
+                    totalDocuments,
                     batchSize,
+                    totalBatches,
                     command.BatchSize.HasValue);
 
                 // Filter documents by Sport, DocumentType, and SourceDataProvider from command
@@ -100,8 +111,9 @@ namespace SportsData.Provider.Application.Processors
                     batchNumber++;
                     
                     _logger.LogInformation(
-                        "Processing batch {BatchNumber}. Documents in batch: {BatchCount}",
+                        "Processing batch {BatchNumber}/{TotalBatches}. Documents in batch: {BatchCount}",
                         batchNumber,
+                        totalBatches,
                         batch.Count);
 
                     var events = batch.Select(doc =>
@@ -123,9 +135,10 @@ namespace SportsData.Provider.Application.Processors
                         .ToList();
 
                     _logger.LogInformation(
-                        "Publishing {EventCount} events from batch {BatchNumber}",
+                        "Publishing {EventCount} events from batch {BatchNumber}/{TotalBatches}",
                         events.Count,
-                        batchNumber);
+                        batchNumber,
+                        totalBatches);
 
                     foreach (var evt in events)
                     {
@@ -134,9 +147,12 @@ namespace SportsData.Provider.Application.Processors
                     }
 
                     _logger.LogInformation(
-                        "Batch {BatchNumber} published successfully. Total published so far: {TotalPublished}",
+                        "Batch {BatchNumber}/{TotalBatches} published successfully. Total published so far: {TotalPublished}/{TotalDocuments} ({PercentComplete:F1}%)",
                         batchNumber,
-                        totalPublished);
+                        totalBatches,
+                        totalPublished,
+                        totalDocuments,
+                        totalDocuments > 0 ? (totalPublished / (double)totalDocuments) * 100 : 0);
 
                     // Allow memory to be reclaimed between batches
                     // The batch and events list will be GC'd before the next iteration

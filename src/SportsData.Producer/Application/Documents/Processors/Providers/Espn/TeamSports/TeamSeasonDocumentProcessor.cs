@@ -374,13 +374,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        if (dto.Logos.Count == 0)
+        if (dto.Logos is null || dto.Logos.Count == 0)
         {
             _logger.LogInformation("No logos found in the DTO for TeamSeason {Season}", command.Season);
             return;
         }
 
         var imageEvents = EventFactory.CreateProcessImageRequests(
+            _externalRefIdentityGenerator,
             dto.Logos,
             franchiseSeasonId,
             command.Sport,

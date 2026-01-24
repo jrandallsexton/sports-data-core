@@ -67,8 +67,8 @@ public class EspnTeamSeasonDto : IHasRef
     [JsonPropertyName("leaders")]
     public EspnLinkDto Leaders { get; set; }
 
-    [JsonPropertyName("logos")]
-    public List<EspnImageDto> Logos { get; set; }
+    [JsonPropertyName("logos")] 
+    public List<EspnImageDto> Logos { get; set; } = [];
 
     [JsonPropertyName("record")]
     public EspnLinkDto Record { get; set; }

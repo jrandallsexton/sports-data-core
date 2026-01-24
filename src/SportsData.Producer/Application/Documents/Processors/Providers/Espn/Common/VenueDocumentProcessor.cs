@@ -97,6 +97,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
 
         // 2. Any images?
         var events = EventFactory.CreateProcessImageRequests(
+            _externalRefIdentityGenerator,
             dto.Images,
             newEntity.Id,
             command.Sport,
@@ -184,29 +185,21 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
         {
             _logger.LogInformation("Found {Count} new images for venue", newImages.Count);
 
-            var imageEvents = new List<ProcessImageRequest>();
+            var imageEvents = EventFactory.CreateProcessImageRequests(
+                _externalRefIdentityGenerator,
+                newImages,
+                venue.Id,
+                command.Sport,
+                command.Season,
+                command.DocumentType,
+                command.SourceDataProvider,
+                command.CorrelationId,
+                CausationId.Producer.VenueDocumentProcessor);
 
-            for (int i = 0; i < newImages.Count; i++)
+            if (imageEvents.Count > 0)
             {
-                var img = newImages[i];
-                imageEvents.Add(new ProcessImageRequest(
-                    img.Href,
-                    Guid.NewGuid(),
-                    venue.Id,
-                    $"{venue.Id}-u{i}.png",
-                    null,
-                    command.Sport,
-                    command.Season,
-                    command.DocumentType,
-                    command.SourceDataProvider,
-                    0,
-                    0,
-                    null,
-                    command.CorrelationId,
-                    CausationId.Producer.VenueDocumentProcessor));
+                await _publishEndpoint.PublishBatch(imageEvents, CancellationToken.None);
             }
-
-            await _publishEndpoint.PublishBatch(imageEvents, CancellationToken.None);
         }
 
         // Save if there were any changes (scalar properties or new images)

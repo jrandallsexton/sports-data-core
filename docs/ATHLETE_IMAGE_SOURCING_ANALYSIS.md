@@ -1,6 +1,6 @@
 # Athlete Image Sourcing - Architecture Reference
 
-**Date**: January 2025  
+**Date**: January 2026  
 **Scope**: Architecture documentation for athlete headshot/image sourcing flow  
 **Status**: Production-Ready
 

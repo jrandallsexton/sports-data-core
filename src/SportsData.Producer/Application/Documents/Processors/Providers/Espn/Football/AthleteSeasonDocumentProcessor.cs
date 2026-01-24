@@ -213,6 +213,8 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         entity.StatusId = newEntity.StatusId;
         entity.WeightDisplay = newEntity.WeightDisplay;
         entity.WeightLb = newEntity.WeightLb;
+        entity.ModifiedBy = command.CorrelationId;
+        entity.ModifiedUtc = DateTime.UtcNow;
 
         // Apply ShouldSpawn filtering for existing entities
         // This allows command-based sourcing to selectively update child data

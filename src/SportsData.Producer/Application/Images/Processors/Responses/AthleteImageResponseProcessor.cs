@@ -26,10 +26,9 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
         public async Task ProcessResponse(ProcessImageResponse response)
         {
-            var correlationId = Guid.NewGuid();
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
-                       ["CorrelationId"] = correlationId
+                       ["CorrelationId"] = response.CorrelationId
                    }))
             {
                 _logger.LogInformation("Started with {@response}", response);
@@ -40,14 +39,12 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
         private async Task ProcessResponseInternal(ProcessImageResponse response)
         {
             var parentEntity = await _dataContext.Athletes
-                .AsNoTracking()
                 .Include(x => x.Images)
                 .Where(x => x.Id == response.ParentEntityId)
                 .FirstOrDefaultAsync();
 
             if (parentEntity == null)
             {
-                // log and return
                 _logger.LogError("Athlete could not be found. Cannot process.");
                 return;
             }
@@ -63,6 +60,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                     response.OriginalUrlHash);
 
                 // Update properties that may have changed
+                // EF Core change tracker will detect only these modifications
                 img.Uri = response.Uri;
                 img.Height = response.Height;
                 img.Width = response.Width;
@@ -70,18 +68,23 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
                 img.ModifiedBy = response.CorrelationId;
                 img.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-                _dataContext.AthleteImages.Update(img);
+                // No need to call Update() - change tracker handles it
                 await _dataContext.SaveChangesAsync();
 
                 _logger.LogInformation("AthleteImage updated successfully.");
                 return;
             }
 
+            // Validate ImageId before creating entity
+            if (!Guid.TryParse(response.ImageId, out var imageId))
+            {
+                _logger.LogError("Invalid ImageId format: {ImageId}", response.ImageId);
+                throw new InvalidOperationException($"Invalid ImageId format: {response.ImageId}");
+            }
+
             await _dataContext.AthleteImages.AddAsync(new AthleteImage()
             {
-                Id = Guid.TryParse(response.ImageId, out var imageId)
-                    ? imageId
-                    : throw new InvalidOperationException($"Invalid ImageId format: {response.ImageId}"),
+                Id = imageId,
                 AthleteId = parentEntity.Id,
                 CreatedBy = response.CorrelationId,
                 CreatedUtc = _dateTimeProvider.UtcNow(),

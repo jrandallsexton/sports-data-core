@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -93,30 +94,28 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         ProcessDocumentCommand command,
         EspnFranchiseDto dto)
     {
-        var events = new List<ProcessImageRequest>();
-        dto.Logos?.ForEach(logo =>
+        if (dto.Logos == null || dto.Logos.Count == 0)
         {
-            var imgId = Guid.NewGuid();
-            events.Add(new ProcessImageRequest(
-                logo.Href,
-                imgId,
-                franchise.Id,
-                $"{franchise.Id}.png",
-                null,
-                command.Sport,
-                command.Season,
-                command.DocumentType,
-                command.SourceDataProvider,
-                0,
-                0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor));
-        });
+            return;
+        }
+
+        var events = EventFactory.CreateProcessImageRequests(
+            _externalRefIdentityGenerator,
+            dto.Logos,
+            franchise.Id,
+            command.Sport,
+            command.Season,
+            command.DocumentType,
+            command.SourceDataProvider,
+            command.CorrelationId,
+            CausationId.Producer.FranchiseDocumentProcessor);
 
         if (events.Count > 0)
         {
-            _logger.LogInformation($"Requesting {events.Count} images for {command.DocumentType} {command.Season}");
+            _logger.LogInformation("Requesting {Count} images for {DocumentType} {Season}", 
+                events.Count, 
+                command.DocumentType, 
+                command.Season);
             await _publishEndpoint.PublishBatch(events);
         }
     }

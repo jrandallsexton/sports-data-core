@@ -216,7 +216,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 CategoryId = l.LeaderCategory.Name,
                 CategoryName = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
-                Abbr = null,
+                Abbr = l.LeaderCategory.Abbreviation,
                 Unit = null,
                 DisplayOrder = 0,
                 FranchiseSeasonId = s.FranchiseSeasonId,
@@ -227,7 +227,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                     ?? "Unknown",
                 PlayerHeadshotUrl = null,
                 StatLine = s.DisplayValue,
-                Numeric = null,
+                Numeric = (decimal?)s.Value,
                 Rank = 1,
                 AthleteSeasonId = s.AthleteSeasonId
             }))

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
@@ -317,7 +316,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 null,
                 command.Sport,
                 command.Season,
-                command.DocumentType,
+                DocumentType.AthleteImage,
                 command.SourceDataProvider,
                 0, 0,
                 null,

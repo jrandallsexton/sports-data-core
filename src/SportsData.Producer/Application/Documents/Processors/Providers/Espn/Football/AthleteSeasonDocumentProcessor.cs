@@ -3,19 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
-
-using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -24,6 +22,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
     where TDataContext : FootballDataContext
 {
     private readonly DocumentProcessingConfig _config;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public AthleteSeasonDocumentProcessor(
         ILogger<AthleteSeasonDocumentProcessor<TDataContext>> logger,
@@ -31,10 +30,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
+        DocumentProcessingConfig config,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public override async Task ProcessAsync(ProcessDocumentCommand command)
@@ -166,9 +167,10 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
         await _dataContext.AthleteSeasons.AddAsync(entity);
 
-        await ProcessEventLog();
+        // For new entities, always spawn all child document requests (no filtering)
+        // This ensures complete data sourcing for newly discovered athletes
 
-        await ProcessHeadshot(command, entity, dto);
+        await ProcessHeadshot(command, entity, dto, athleteId);
 
         await ProcessStatistics(command, dto, entity.Id);
 
@@ -206,30 +208,31 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         entity.IsActive = newEntity.IsActive;
         entity.Jersey = newEntity.Jersey;
         entity.LastName = newEntity.LastName;
-        entity.ModifiedUtc = DateTime.UtcNow;
-        entity.ModifiedBy = command.CorrelationId;
         entity.PositionId = positionId;
         entity.ShortName = newEntity.ShortName;
         entity.Slug = newEntity.Slug;
         entity.StatusId = newEntity.StatusId;
         entity.WeightDisplay = newEntity.WeightDisplay;
         entity.WeightLb = newEntity.WeightLb;
+        entity.ModifiedBy = command.CorrelationId;
+        entity.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-        await ProcessEventLog();
+        // Apply ShouldSpawn filtering for existing entities
+        // This allows command-based sourcing to selectively update child data
 
-        await ProcessHeadshot(command, entity, dto);
+        if (ShouldSpawn(DocumentType.AthleteImage, command))
+        {
+            await ProcessHeadshot(command, entity, dto, athleteId);
+        }
 
-        await ProcessStatistics(command, dto, entity.Id);
+        if (ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+        {
+            await ProcessStatistics(command, dto, entity.Id);
+        }
 
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully processed existing AthleteSeason {Id}", entity.Id);
-    }
-
-    private async Task ProcessEventLog()
-    {
-        // TODO: Implement
-        await Task.CompletedTask;
     }
 
     private async Task ProcessStatistics(
@@ -249,7 +252,8 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
     private async Task ProcessHeadshot(
         ProcessDocumentCommand command,
         AthleteSeason entity,
-        EspnAthleteSeasonDto dto)
+        EspnAthleteSeasonDto dto,
+        Guid athleteId)
     {
         if (dto.Headshot?.Href is null)
             return;
@@ -259,12 +263,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         await _publishEndpoint.Publish(new Core.Eventing.Events.Images.ProcessImageRequest(
             dto.Headshot.Href,
             imgIdentity.CanonicalId,
-            entity.Id,
-            $"{entity.Id}-{imgIdentity.CanonicalId}.png",
+            athleteId,
+            $"{athleteId}-{imgIdentity.CanonicalId}.png",
             null,
             command.Sport,
             command.Season,
-            command.DocumentType,
+            DocumentType.AthleteImage,
             command.SourceDataProvider,
             0, 0,
             null,

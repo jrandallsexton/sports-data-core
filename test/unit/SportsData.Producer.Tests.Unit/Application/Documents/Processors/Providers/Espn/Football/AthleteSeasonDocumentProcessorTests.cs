@@ -15,7 +15,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -167,8 +166,11 @@ public class AthleteSeasonDocumentProcessorTests :
         entity.Jersey.Should().Be(dto.Jersey);
 
         // Verify headshot image request was published (EspnFootballNcaaAthleteSeason.json has headshot)
+        // Note: ParentEntityId is the Athlete ID (career-level), not AthleteSeason ID
         bus.Verify(x => x.Publish(
-            It.Is<ProcessImageRequest>(e => e.ParentEntityId == entity.Id),
+            It.Is<ProcessImageRequest>(e => 
+                e.ParentEntityId == athlete.Id &&
+                e.DocumentType == DocumentType.AthleteImage),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Verify statistics request was published (EspnFootballNcaaAthleteSeason.json has statistics)
@@ -188,6 +190,10 @@ public class AthleteSeasonDocumentProcessorTests :
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var now = DateTime.UtcNow;
+        var dateTimeProvider = Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow()).Returns(now);
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
@@ -243,6 +249,16 @@ public class AthleteSeasonDocumentProcessorTests :
             CreatedBy = Guid.NewGuid()
         };
 
+        var franchiseSeasonExternalId = new FranchiseSeasonExternalId
+        {
+            Id = Guid.NewGuid(),
+            FranchiseSeasonId = franchiseSeasonId,
+            Provider = SourceDataProvider.Espn,
+            SourceUrl = franchiseSeasonIdentity.CleanUrl,
+            SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+            Value = franchiseSeasonIdentity.UrlHash
+        };
+
         var athleteId = athleteIdentity.CanonicalId;
         var athlete = new FootballAthlete
         {
@@ -273,18 +289,22 @@ public class AthleteSeasonDocumentProcessorTests :
 
         await FootballDataContext.AthletePositions.AddAsync(position);
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        await FootballDataContext.FranchiseSeasonExternalIds.AddAsync(franchiseSeasonExternalId);
         await FootballDataContext.Athletes.AddAsync(athlete);
         await FootballDataContext.AthleteSeasons.AddAsync(existingAthleteSeason);
         await FootballDataContext.SaveChangesAsync();
 
-        var command = Fixture.Build<ProcessDocumentCommand>()
-            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-            .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
-            .With(x => x.DocumentType, DocumentType.AthleteSeason)
-            .With(x => x.Document, json)
-            .Without(x => x.ParentId)
-            .Create();
+        var command = new ProcessDocumentCommand(
+            sourceDataProvider: SourceDataProvider.Espn,
+            sport: Sport.FootballNcaa,
+            season: 2024,
+            documentType: DocumentType.AthleteSeason,
+            document: json,
+            correlationId: Guid.NewGuid(),
+            parentId: null,
+            sourceUri: new Uri(dtoIdentity.CleanUrl),
+            urlHash: dtoIdentity.UrlHash,
+            includeLinkedDocumentTypes: null);
 
         // Act
         await sut.ProcessAsync(command);
@@ -296,13 +316,17 @@ public class AthleteSeasonDocumentProcessorTests :
         updatedEntity!.DisplayName.Should().Be(dto.DisplayName, "DisplayName should be updated");
         updatedEntity.Jersey.Should().Be(dto.Jersey, "Jersey should be updated");
         updatedEntity.ExperienceYears.Should().Be(dto.Experience.Years, "Experience should be updated");
-        updatedEntity.ModifiedUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        updatedEntity.ModifiedUtc.Should().Be(now);
 
-        // Verify image and statistics requests were published
-        bus.Verify(x => x.Publish(It.IsAny<ProcessImageRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Verify image request was published
+        // Note: Image request uses Athlete ID as ParentEntityId (career-level images)
         bus.Verify(x => x.Publish(
-            It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.AthleteSeasonStatistics),
+            It.Is<ProcessImageRequest>(e =>
+                e.ParentEntityId == athlete.Id &&
+                e.DocumentType == DocumentType.AthleteImage),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        // Note: Statistics requests verified separately in ProcessAsync_PublishesStatisticsRequest_WhenStatisticsRefExists
 
         // Verify only 1 AthleteSeason exists (no duplicates)
         (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(1);
@@ -661,9 +685,9 @@ public class AthleteSeasonDocumentProcessorTests :
         bus.Verify(x => x.Publish(
             It.Is<ProcessImageRequest>(e =>
                 e.Url == dto.Headshot.Href &&
-                e.ParentEntityId == dtoIdentity.CanonicalId &&
+                e.ParentEntityId == athleteId &&
                 e.Sport == Sport.FootballNcaa &&
-                e.DocumentType == DocumentType.AthleteSeason),
+                e.DocumentType == DocumentType.AthleteImage),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

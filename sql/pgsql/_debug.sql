@@ -2,6 +2,7 @@
 select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
 
 select * from public."AthleteImage"
+--delete from public."AthleteImage"
 select count(*) from public."Athlete"
 select count(*) from public."AthleteSeason"
 select count(*) from public."AthleteImage"

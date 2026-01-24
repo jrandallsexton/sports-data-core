@@ -22,6 +22,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
     where TDataContext : FootballDataContext
 {
     private readonly DocumentProcessingConfig _config;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public AthleteSeasonDocumentProcessor(
         ILogger<AthleteSeasonDocumentProcessor<TDataContext>> logger,
@@ -29,10 +30,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
+        DocumentProcessingConfig config,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
         _config = config;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public override async Task ProcessAsync(ProcessDocumentCommand command)
@@ -205,8 +208,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         entity.IsActive = newEntity.IsActive;
         entity.Jersey = newEntity.Jersey;
         entity.LastName = newEntity.LastName;
-        entity.ModifiedUtc = DateTime.UtcNow;
-        entity.ModifiedBy = command.CorrelationId;
         entity.PositionId = positionId;
         entity.ShortName = newEntity.ShortName;
         entity.Slug = newEntity.Slug;
@@ -214,7 +215,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         entity.WeightDisplay = newEntity.WeightDisplay;
         entity.WeightLb = newEntity.WeightLb;
         entity.ModifiedBy = command.CorrelationId;
-        entity.ModifiedUtc = DateTime.UtcNow;
+        entity.ModifiedUtc = _dateTimeProvider.UtcNow();
 
         // Apply ShouldSpawn filtering for existing entities
         // This allows command-based sourcing to selectively update child data

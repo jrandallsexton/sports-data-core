@@ -78,8 +78,15 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
             // Validate ImageId before creating entity
             if (!Guid.TryParse(response.ImageId, out var imageId))
             {
-                _logger.LogError("Invalid ImageId format: {ImageId}", response.ImageId);
-                throw new InvalidOperationException($"Invalid ImageId format: {response.ImageId}");
+                _logger.LogError(
+                    "Invalid ImageId format detected. This indicates a bug in image request generation or data corruption. " +
+                    "ImageId={ImageId}, ParentEntityId={ParentEntityId}, OriginalUrlHash={OriginalUrlHash}, Uri={Uri}. " +
+                    "Skipping image processing to prevent consumer halt.",
+                    response.ImageId,
+                    response.ParentEntityId,
+                    response.OriginalUrlHash,
+                    response.Uri);
+                return;
             }
 
             await _dataContext.AthleteImages.AddAsync(new AthleteImage()

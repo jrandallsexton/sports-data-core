@@ -72,12 +72,37 @@ namespace SportsData.Core.DependencyInjection
                 
                 if (useRabbitMq)
                 {
+                    var rabbitHost = config[CommonConfigKeys.RabbitMqHost];
+                    var rabbitUsername = config[CommonConfigKeys.RabbitMqUsername];
+                    var rabbitPassword = config[CommonConfigKeys.RabbitMqPassword];
+
+                    if (string.IsNullOrWhiteSpace(rabbitHost))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqHost} is not configured. "
+                            + "Please set the RabbitMQ host in configuration.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(rabbitUsername))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqUsername} is not configured. "
+                            + "Please set the RabbitMQ username in configuration.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(rabbitPassword))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqPassword} is not configured. "
+                            + "Please set the RabbitMQ password in configuration.");
+                    }
+
                     x.UsingRabbitMq((context, cfg) =>
                     {
-                        cfg.Host(config[CommonConfigKeys.RabbitMqHost] ?? "localhost", "/", h =>
+                        cfg.Host(rabbitHost, "/", h =>
                         {
-                            h.Username(config[CommonConfigKeys.RabbitMqUsername] ?? "guest");
-                            h.Password(config[CommonConfigKeys.RabbitMqPassword] ?? "guest");
+                            h.Username(rabbitUsername);
+                            h.Password(rabbitPassword);
                         });
                         cfg.ConfigureJsonSerializerOptions(o =>
                         {
@@ -87,13 +112,20 @@ namespace SportsData.Core.DependencyInjection
                         cfg.ConfigureEndpoints(context);
                     });
 
-                    Console.WriteLine($"Using RabbitMQ: {config[CommonConfigKeys.RabbitMqHost]}");
+                    Console.WriteLine($"Using RabbitMQ: {rabbitHost}");
                 }
                 else
                 {
+                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+                    if (string.IsNullOrWhiteSpace(sbConnString))
+                    {
+                        throw new InvalidOperationException(
+                            $"Azure Service Bus is enabled but {CommonConfigKeys.AzureServiceBus} is not configured. "
+                            + "Please set the Azure Service Bus connection string in configuration.");
+                    }
+
                     x.UsingAzureServiceBus((context, cfg) =>
                     {
-                        var sbConnString = config[CommonConfigKeys.AzureServiceBus];
                         cfg.Host(sbConnString);
                         cfg.ConfigureJsonSerializerOptions(o =>
                         {
@@ -202,12 +234,37 @@ namespace SportsData.Core.DependencyInjection
                 
                 if (useRabbitMq)
                 {
+                    var rabbitHost = config[CommonConfigKeys.RabbitMqHost];
+                    var rabbitUsername = config[CommonConfigKeys.RabbitMqUsername];
+                    var rabbitPassword = config[CommonConfigKeys.RabbitMqPassword];
+
+                    if (string.IsNullOrWhiteSpace(rabbitHost))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqHost} is not configured. "
+                            + "Please set the RabbitMQ host in configuration.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(rabbitUsername))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqUsername} is not configured. "
+                            + "Please set the RabbitMQ username in configuration.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(rabbitPassword))
+                    {
+                        throw new InvalidOperationException(
+                            $"RabbitMQ is enabled but {CommonConfigKeys.RabbitMqPassword} is not configured. "
+                            + "Please set the RabbitMQ password in configuration.");
+                    }
+
                     x.UsingRabbitMq((context, cfg) =>
                     {
-                        cfg.Host(config[CommonConfigKeys.RabbitMqHost] ?? "localhost", "/", h =>
+                        cfg.Host(rabbitHost, "/", h =>
                         {
-                            h.Username(config[CommonConfigKeys.RabbitMqUsername] ?? "guest");
-                            h.Password(config[CommonConfigKeys.RabbitMqPassword] ?? "guest");
+                            h.Username(rabbitUsername);
+                            h.Password(rabbitPassword);
                         });
                         cfg.ConfigureJsonSerializerOptions(o =>
                         {
@@ -217,13 +274,20 @@ namespace SportsData.Core.DependencyInjection
                         cfg.ConfigureEndpoints(context);
                     });
 
-                    Console.WriteLine($"Using RabbitMQ: {config[CommonConfigKeys.RabbitMqHost]}");
+                    Console.WriteLine($"Using RabbitMQ: {rabbitHost}");
                 }
                 else
                 {
+                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+                    if (string.IsNullOrWhiteSpace(sbConnString))
+                    {
+                        throw new InvalidOperationException(
+                            $"Azure Service Bus is enabled but {CommonConfigKeys.AzureServiceBus} is not configured. "
+                            + "Please set the Azure Service Bus connection string in configuration.");
+                    }
+
                     x.UsingAzureServiceBus((context, cfg) =>
                     {
-                        var sbConnString = config[CommonConfigKeys.AzureServiceBus];
                         cfg.Host(sbConnString);
                         cfg.ConfigureJsonSerializerOptions(o =>
                         {

@@ -140,6 +140,7 @@ namespace SportsData.Core.DependencyInjection
         {
             services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
+            services.AddSingleton<IValidateOptions<CommonConfig>, CommonConfigValidator>();
             services.AddScoped<IDateTimeProvider, DateTimeProvider>();
             services.AddSingleton<IAppMode>(new AppMode(mode));
             services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();

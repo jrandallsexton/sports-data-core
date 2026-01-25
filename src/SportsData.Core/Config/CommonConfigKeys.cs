@@ -43,6 +43,19 @@ namespace SportsData.Core.Config
         public static string AzureServiceBus =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.AzureServiceBusConnectionString)}";
 
+        // RabbitMQ configuration keys
+        public static string MessagingUseRabbitMq =>
+            $"{nameof(CommonConfig)}:Messaging:UseRabbitMq";
+
+        public static string RabbitMqHost =>
+            $"{nameof(CommonConfig)}:Messaging:RabbitMq:Host";
+
+        public static string RabbitMqUsername =>
+            $"{nameof(CommonConfig)}:Messaging:RabbitMq:Username";
+
+        public static string RabbitMqPassword =>
+            $"{nameof(CommonConfig)}:Messaging:RabbitMq:Password";
+
         public static string CacheServiceUri =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.RedisUri)}";
 

@@ -67,17 +67,44 @@ namespace SportsData.Core.DependencyInjection
                         });
                 });
 
-                x.UsingAzureServiceBus((context, cfg) =>
+                // Check if RabbitMQ mode is enabled
+                var useRabbitMq = config.GetValue<bool>(CommonConfigKeys.MessagingUseRabbitMq);
+                
+                if (useRabbitMq)
                 {
-                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
-                    cfg.Host(sbConnString);
-                    cfg.ConfigureJsonSerializerOptions(o =>
+                    x.UsingRabbitMq((context, cfg) =>
                     {
-                        o.IncludeFields = true;
-                        return o;
+                        cfg.Host(config[CommonConfigKeys.RabbitMqHost] ?? "localhost", "/", h =>
+                        {
+                            h.Username(config[CommonConfigKeys.RabbitMqUsername] ?? "guest");
+                            h.Password(config[CommonConfigKeys.RabbitMqPassword] ?? "guest");
+                        });
+                        cfg.ConfigureJsonSerializerOptions(o =>
+                        {
+                            o.IncludeFields = true;
+                            return o;
+                        });
+                        cfg.ConfigureEndpoints(context);
                     });
-                    cfg.ConfigureEndpoints(context);
-                });
+
+                    Console.WriteLine($"Using RabbitMQ: {config[CommonConfigKeys.RabbitMqHost]}");
+                }
+                else
+                {
+                    x.UsingAzureServiceBus((context, cfg) =>
+                    {
+                        var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+                        cfg.Host(sbConnString);
+                        cfg.ConfigureJsonSerializerOptions(o =>
+                        {
+                            o.IncludeFields = true;
+                            return o;
+                        });
+                        cfg.ConfigureEndpoints(context);
+                    });
+
+                    Console.WriteLine($"Using Azure Service Bus");
+                }
             });
 
             // Register ambient state for each context
@@ -170,21 +197,44 @@ namespace SportsData.Core.DependencyInjection
                     });
                 }
 
-                x.UsingAzureServiceBus((context, cfg) =>
+                // Check if RabbitMQ mode is enabled
+                var useRabbitMq = config.GetValue<bool>(CommonConfigKeys.MessagingUseRabbitMq);
+                
+                if (useRabbitMq)
                 {
-                    var sbConnString = config[CommonConfigKeys.AzureServiceBus];
-                    cfg.Host(sbConnString);
-                    cfg.ConfigureJsonSerializerOptions(o =>
+                    x.UsingRabbitMq((context, cfg) =>
                     {
-                        o.IncludeFields = true;
-                        return o;
+                        cfg.Host(config[CommonConfigKeys.RabbitMqHost] ?? "localhost", "/", h =>
+                        {
+                            h.Username(config[CommonConfigKeys.RabbitMqUsername] ?? "guest");
+                            h.Password(config[CommonConfigKeys.RabbitMqPassword] ?? "guest");
+                        });
+                        cfg.ConfigureJsonSerializerOptions(o =>
+                        {
+                            o.IncludeFields = true;
+                            return o;
+                        });
+                        cfg.ConfigureEndpoints(context);
                     });
-                    cfg.ConfigureEndpoints(context);
-                });
 
-#if DEBUG
-                Console.WriteLine($"using: {config[CommonConfigKeys.AzureServiceBus]}");
-#endif
+                    Console.WriteLine($"Using RabbitMQ: {config[CommonConfigKeys.RabbitMqHost]}");
+                }
+                else
+                {
+                    x.UsingAzureServiceBus((context, cfg) =>
+                    {
+                        var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+                        cfg.Host(sbConnString);
+                        cfg.ConfigureJsonSerializerOptions(o =>
+                        {
+                            o.IncludeFields = true;
+                            return o;
+                        });
+                        cfg.ConfigureEndpoints(context);
+                    });
+
+                    Console.WriteLine($"Using Azure Service Bus");
+                }
 
             });
 

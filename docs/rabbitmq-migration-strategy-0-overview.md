@@ -11,12 +11,14 @@
 - **[Overview](rabbitmq-migration-strategy-0-overview.md)** ← You are here
 - [Problem Statement](rabbitmq-migration-strategy-1-problem-statement.md)
 - [Phase 1: RabbitMQ Migration](rabbitmq-migration-strategy-2-phase1-rabbitmq.md)
-- [Phase 2: Rate Limiting](rabbitmq-migration-strategy-3-phase2-rate-limiting.md)
+- [~~Phase 2: Rate Limiting~~](rabbitmq-migration-strategy-3-phase2-rate-limiting.md) ⚠️ SKIPPED - See note
 - [Phase 3: KEDA Deployment](rabbitmq-migration-strategy-4-phase3-keda.md)
 - [PostgreSQL Performance Tuning](rabbitmq-migration-strategy-5-postgresql-tuning.md)
 - [Phase 4: Historical Sourcing Execution](rabbitmq-migration-strategy-6-phase4-execution.md)
 - [Rollback Plans & Success Criteria](rabbitmq-migration-strategy-7-rollback-success.md)
 - [Appendix: Questions, Costs, References](rabbitmq-migration-strategy-8-appendix.md)
+
+**Note on Phase 2:** Empirical testing (Jan 25, 2026) determined ESPN API has no meaningful rate limits. Successfully tested 139 req/sec with zero throttling. Redis-based distributed rate limiting is unnecessary. Simple Polly bulkhead policies are sufficient.
 
 ---
 
@@ -30,11 +32,13 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
 3. Auto-scaling Provider pods risks ESPN rate limiting (undocumented limits)
 4. Need to scale Producer aggressively (database work) while Provider stays conservative
 
-**Solution:** 5-week phased approach:
-- Weeks 1-2: RabbitMQ migration and validation
-- Week 3: Rate limiting implementation
-- Week 4: KEDA deployment and testing
-- Week 5+: Historical sourcing execution
+**Solution:** ~~5-week~~ **3-week** phased approach:
+- ~~Weeks 1-2~~ **Days 1-5**: RabbitMQ migration and validation
+- ~~Week 3~~ **SKIPPED**: Rate limiting implementation (empirical testing showed ESPN has no limits)
+- ~~Week 4~~ **Days 6-8**: KEDA deployment and testing
+- ~~Week 5+~~ **Days 9+**: Historical sourcing execution
+
+**Update (Jan 25, 2026):** Timeline compressed from 5 weeks to ~2 weeks after discovering ESPN has no meaningful rate limits.
 
 ---
 
@@ -93,11 +97,13 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
 |------|-------|------------|------------------|
 | 1-2 (Jan 25-26) | RabbitMQ Deploy | Install RMQ cluster, configure MassTransit, enable monitoring | RMQ cluster running, metrics visible |
 | 3-5 (Jan 27-29) | RMQ Validation | Parallel run, weekly sourcing test, cutover | Zero message loss, stable operation |
-| 6-8 (Jan 30-Feb 1) | Rate Limiting | Deploy Redis, implement rate limiter, reduce Provider workers | No ESPN 429s under load |
-| 9-11 (Feb 2-4) | KEDA Deploy | Install KEDA, create ScaledObjects, synthetic load test | Scaling works correctly |
-| 12+ (Feb 5+) | Historical Sourcing | Execute historical sourcing, monitor, tune | All data sourced successfully |
+| ~~6-8 (Jan 30-Feb 1)~~ | ~~Rate Limiting~~ | ~~Deploy Redis, implement rate limiter, reduce Provider workers~~ | ~~No ESPN 429s under load~~ |
+| 6-8 (Jan 30-Feb 1) | KEDA Deploy | Install KEDA, create ScaledObjects, synthetic load test | Scaling works correctly |
+| 9+ (Feb 2+) | Historical Sourcing | Execute historical sourcing, monitor, tune | All data sourced successfully |
 
-**Total time to historical sourcing:** ~12 days (working 7 days/week)  
+**Phase 2 (Rate Limiting) SKIPPED:** Empirical testing (Jan 25) showed ESPN API handled 139 req/sec with zero throttling. Simple Polly bulkhead policies are sufficient.
+
+**Total time to historical sourcing:** ~~12 days~~ **9 days** (working 7 days/week) - 3 days saved by skipping Phase 2  
 **Alternative (pay for ASB Premium):** Immediate, but $677 cost
 
 ---

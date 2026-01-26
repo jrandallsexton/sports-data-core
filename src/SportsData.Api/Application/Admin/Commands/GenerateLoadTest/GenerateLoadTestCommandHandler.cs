@@ -42,11 +42,10 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
 
         var testId = Guid.NewGuid();
         var publishedUtc = DateTime.UtcNow;
-        var normalizedTarget = command.Target.ToLowerInvariant();
 
         _logger.LogInformation(
             "[KEDA-Test] Starting load test. TestId={TestId}, Count={Count}, Target={Target}, BatchSize={BatchSize}",
-            testId, command.Count, normalizedTarget, command.BatchSize);
+            testId, command.Count, command.Target, command.BatchSize);
 
         var totalBatches = (int)Math.Ceiling((double)command.Count / command.BatchSize);
         var publishTasks = new List<Task>();
@@ -61,7 +60,7 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
             {
                 var jobNumber = i + 1;
 
-                if (normalizedTarget == "producer" || normalizedTarget == "both")
+                if (command.Target == LoadTestTarget.Producer || command.Target == LoadTestTarget.Both)
                 {
                     var producerEvent = new LoadTestProducerEvent(
                         TestId: testId,
@@ -72,7 +71,7 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
                     publishTasks.Add(_eventBus.Publish(producerEvent, cancellationToken));
                 }
 
-                if (normalizedTarget == "provider" || normalizedTarget == "both")
+                if (command.Target == LoadTestTarget.Provider || command.Target == LoadTestTarget.Both)
                 {
                     var providerEvent = new LoadTestProviderEvent(
                         TestId: testId,
@@ -87,17 +86,17 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
 
         await Task.WhenAll(publishTasks);
 
-        var actualJobCount = normalizedTarget == "both" ? command.Count * 2 : command.Count;
+        var actualJobCount = command.Target == LoadTestTarget.Both ? command.Count * 2 : command.Count;
 
         _logger.LogInformation(
             "[KEDA-Test] Load test published. TestId={TestId}, EventsPublished={EventsPublished}, Target={Target}",
-            testId, actualJobCount, normalizedTarget);
+            testId, actualJobCount, command.Target);
 
         var result = new GenerateLoadTestResult
         {
             TestId = testId,
             EventsPublished = actualJobCount,
-            Target = normalizedTarget,
+            Target = command.Target.ToString(),
             Batches = totalBatches,
             BatchSize = command.BatchSize,
             PublishedUtc = publishedUtc,
@@ -117,8 +116,8 @@ public class GenerateLoadTestCommandValidator : AbstractValidator<GenerateLoadTe
             .WithMessage("Count must be between 1 and 1000");
 
         RuleFor(x => x.Target)
-            .Must(target => new[] { "producer", "provider", "both" }.Contains(target.ToLowerInvariant()))
-            .WithMessage("Target must be 'producer', 'provider', or 'both'");
+            .IsInEnum()
+            .WithMessage("Target must be Producer, Provider, or Both");
 
         RuleFor(x => x.BatchSize)
             .InclusiveBetween(1, 100)

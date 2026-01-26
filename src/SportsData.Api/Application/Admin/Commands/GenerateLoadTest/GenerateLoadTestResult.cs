@@ -1,3 +1,4 @@
+
 namespace SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 
 /// <summary>

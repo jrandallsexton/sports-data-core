@@ -1,5 +1,3 @@
-using System;
-
 using MassTransit;
 
 using SportsData.Core.Eventing.Events;

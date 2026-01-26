@@ -15,7 +15,6 @@ public interface IProcessLoadTestJob
 public class ProcessLoadTestJob : IProcessLoadTestJob
 {
     private readonly ILogger<ProcessLoadTestJob> _logger;
-    private static readonly Random _random = new();
 
     public ProcessLoadTestJob(ILogger<ProcessLoadTestJob> logger)
     {
@@ -32,7 +31,7 @@ public class ProcessLoadTestJob : IProcessLoadTestJob
             testId, batchNumber, jobNumber, queueLatency);
 
         // Simulate varying workloads: 200-800ms processing time (longer than Producer to test different scaling behaviors)
-        var processingTimeMs = _random.Next(200, 801);
+        var processingTimeMs = Random.Shared.Next(200, 801);
         await Task.Delay(processingTimeMs);
 
         var completedAt = DateTime.UtcNow;

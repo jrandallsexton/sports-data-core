@@ -11,9 +11,9 @@ public class GenerateLoadTestCommand
     public int Count { get; set; } = 50;
 
     /// <summary>
-    /// Target service: 'producer', 'provider', or 'both'.
+    /// Target service: Producer, Provider, or Both.
     /// </summary>
-    public string Target { get; set; } = "both";
+    public LoadTestTarget Target { get; set; } = LoadTestTarget.Both;
 
     /// <summary>
     /// Number of events to publish per batch (1-100).

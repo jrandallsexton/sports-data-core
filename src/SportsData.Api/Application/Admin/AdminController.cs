@@ -246,9 +246,6 @@ namespace SportsData.Api.Application.Admin
         /// <summary>
         /// Generates synthetic load to test KEDA autoscaling.
         /// Publishes events to RabbitMQ which are consumed and enqueued to Hangfire.
-        /// </summary>
-        /// <param name="count">Number of test jobs to create (default: 50)</param>
-        /// <param name="target">Target service: 'producer', 'provider', or 'both' (default: 'both')</param>
         /// KEDA monitors Hangfire queue depth and autoscales pods accordingly.
         /// </summary>
         /// <param name="command">Load test configuration</param>

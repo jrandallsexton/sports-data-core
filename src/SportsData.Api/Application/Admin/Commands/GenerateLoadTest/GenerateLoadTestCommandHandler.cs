@@ -48,13 +48,13 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
             testId, command.Count, command.Target, command.BatchSize);
 
         var totalBatches = (int)Math.Ceiling((double)command.Count / command.BatchSize);
-        var publishTasks = new List<Task>();
 
         for (int batch = 0; batch < totalBatches; batch++)
         {
             var startIdx = batch * command.BatchSize;
             var endIdx = Math.Min(startIdx + command.BatchSize, command.Count);
             var batchNumber = batch + 1;
+            var publishTasks = new List<Task>();
 
             for (int i = startIdx; i < endIdx; i++)
             {
@@ -82,9 +82,10 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
                     publishTasks.Add(_eventBus.Publish(providerEvent, cancellationToken));
                 }
             }
-        }
 
-        await Task.WhenAll(publishTasks);
+            // Await batch completion before moving to next batch to limit concurrency
+            await Task.WhenAll(publishTasks);
+        }
 
         var actualJobCount = command.Target == LoadTestTarget.Both ? command.Count * 2 : command.Count;
 
@@ -96,7 +97,7 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
         {
             TestId = testId,
             EventsPublished = actualJobCount,
-            Target = command.Target.ToString(),
+            Target = command.Target,
             Batches = totalBatches,
             BatchSize = command.BatchSize,
             PublishedUtc = publishedUtc,

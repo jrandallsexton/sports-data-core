@@ -2,6 +2,7 @@
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -238,6 +239,29 @@ namespace SportsData.Api.Application.Admin
             CancellationToken cancellationToken)
         {
             var command = new BackfillLeagueScoresCommand(seasonYear);
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Generates synthetic load to test KEDA autoscaling.
+        /// Publishes events to RabbitMQ which are consumed and enqueued to Hangfire.
+        /// </summary>
+        /// <param name="count">Number of test jobs to create (default: 50)</param>
+        /// <param name="target">Target service: 'producer', 'provider', or 'both' (default: 'both')</param>
+        /// KEDA monitors Hangfire queue depth and autoscales pods accordingly.
+        /// </summary>
+        /// <param name="command">Load test configuration</param>
+        /// <param name="handler">Command handler</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Test execution details</returns>
+        [HttpPost]
+        [Route("keda/load-test")]
+        public async Task<ActionResult<GenerateLoadTestResult>> GenerateLoadTest(
+            [FromBody] GenerateLoadTestCommand command,
+            [FromServices] IGenerateLoadTestCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
             var result = await handler.ExecuteAsync(command, cancellationToken);
             return result.ToActionResult();
         }

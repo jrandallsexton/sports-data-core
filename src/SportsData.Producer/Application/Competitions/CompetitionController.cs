@@ -61,13 +61,12 @@ public class CompetitionController : ControllerBase
         return result.ToActionResult();
     }
 
-    [HttpPost("media/refresh/{seasonYear}")]
+    [HttpPost("media/refresh")]
     public async Task<ActionResult<RefreshAllCompetitionMediaResult>> RefreshAllMedia(
-        [FromRoute] int seasonYear,
+        [FromBody] RefreshAllCompetitionMediaCommand command,
         [FromServices] IRefreshAllCompetitionMediaCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new RefreshAllCompetitionMediaCommand(seasonYear);
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

@@ -151,7 +151,7 @@ left join public."CompetitionPlay" play on play."Id" = prob."PlayId"
 where prob."CompetitionId" = 'e48739ff-6394-193e-acff-46c5c178ae6a' order by prob."SequenceNumber"::int
 
 --delete from public."CompetitionProbability" where "CompetitionId" = '6d6c0ebd-5912-271d-b478-3eb22fcc3a50'
-select * from public."CompetitionMedia"
+select * from public."CompetitionMedia" order by "CreatedUtc" desc
 
 select count(*) from public."CompetitionProbability"
 select count(*) from public."CompetitionSituation"

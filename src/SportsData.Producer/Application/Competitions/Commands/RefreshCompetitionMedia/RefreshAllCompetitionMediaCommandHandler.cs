@@ -42,12 +42,9 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
             var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
 
             competitionIds = await _dataContext.Competitions
-                .Include(c => c.Contest)
-                .ThenInclude(contest => contest.AwayTeamFranchiseSeason)
-                .Include(c => c.Contest)
-                .ThenInclude(contest => contest.HomeTeamFranchiseSeason)
                 .AsNoTracking()
                 .Where(c => c.Contest.SeasonYear == command.SeasonYear &&
+                            c.Contest.Sport == command.Sport &&
                             c.Contest.FinalizedUtc != null &&
                             !c.Media.Any() &&
                             ((c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.HasValue &&
@@ -62,7 +59,6 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
         {
             // All other sports: No FBS filtering, just get competitions without media
             competitionIds = await _dataContext.Competitions
-                .Include(c => c.Contest)
                 .AsNoTracking()
                 .Where(c => c.Contest.SeasonYear == command.SeasonYear &&
                             c.Contest.Sport == command.Sport &&

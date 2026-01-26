@@ -49,42 +49,56 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
 
         var totalBatches = (int)Math.Ceiling((double)command.Count / command.BatchSize);
 
-        for (int batch = 0; batch < totalBatches; batch++)
+        try
         {
-            var startIdx = batch * command.BatchSize;
-            var endIdx = Math.Min(startIdx + command.BatchSize, command.Count);
-            var batchNumber = batch + 1;
-            var publishTasks = new List<Task>();
-
-            for (int i = startIdx; i < endIdx; i++)
+            for (int batch = 0; batch < totalBatches; batch++)
             {
-                var jobNumber = i + 1;
+                var startIdx = batch * command.BatchSize;
+                var endIdx = Math.Min(startIdx + command.BatchSize, command.Count);
+                var batchNumber = batch + 1;
+                var publishTasks = new List<Task>();
 
-                if (command.Target == LoadTestTarget.Producer || command.Target == LoadTestTarget.Both)
+                for (int i = startIdx; i < endIdx; i++)
                 {
-                    var producerEvent = new LoadTestProducerEvent(
-                        TestId: testId,
-                        BatchNumber: batchNumber,
-                        JobNumber: jobNumber,
-                        PublishedUtc: publishedUtc
-                    );
-                    publishTasks.Add(_eventBus.Publish(producerEvent, cancellationToken));
+                    var jobNumber = i + 1;
+
+                    if (command.Target == LoadTestTarget.Producer || command.Target == LoadTestTarget.Both)
+                    {
+                        var producerEvent = new LoadTestProducerEvent(
+                            TestId: testId,
+                            BatchNumber: batchNumber,
+                            JobNumber: jobNumber,
+                            PublishedUtc: publishedUtc
+                        );
+                        publishTasks.Add(_eventBus.Publish(producerEvent, cancellationToken));
+                    }
+
+                    if (command.Target == LoadTestTarget.Provider || command.Target == LoadTestTarget.Both)
+                    {
+                        var providerEvent = new LoadTestProviderEvent(
+                            TestId: testId,
+                            BatchNumber: batchNumber,
+                            JobNumber: jobNumber,
+                            PublishedUtc: publishedUtc
+                        );
+                        publishTasks.Add(_eventBus.Publish(providerEvent, cancellationToken));
+                    }
                 }
 
-                if (command.Target == LoadTestTarget.Provider || command.Target == LoadTestTarget.Both)
-                {
-                    var providerEvent = new LoadTestProviderEvent(
-                        TestId: testId,
-                        BatchNumber: batchNumber,
-                        JobNumber: jobNumber,
-                        PublishedUtc: publishedUtc
-                    );
-                    publishTasks.Add(_eventBus.Publish(providerEvent, cancellationToken));
-                }
+                // Await batch completion before moving to next batch to limit concurrency
+                await Task.WhenAll(publishTasks);
             }
-
-            // Await batch completion before moving to next batch to limit concurrency
-            await Task.WhenAll(publishTasks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[KEDA-Test] Failed to publish load test events. TestId={TestId}", testId);
+            return new Failure<GenerateLoadTestResult>(
+                default!,
+                ResultStatus.Error,
+                new List<FluentValidation.Results.ValidationFailure>
+                {
+                    new("EventBus", $"Failed to publish events to RabbitMQ: {ex.Message}")
+                });
         }
 
         var actualJobCount = command.Target == LoadTestTarget.Both ? command.Count * 2 : command.Count;

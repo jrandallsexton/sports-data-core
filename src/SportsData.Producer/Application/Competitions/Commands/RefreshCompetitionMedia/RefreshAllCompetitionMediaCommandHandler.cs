@@ -34,23 +34,44 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
         RefreshAllCompetitionMediaCommand command,
         CancellationToken cancellationToken = default)
     {
-        var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
+        List<Guid> competitionIds;
 
-        var competitionIds = await _dataContext.Competitions
-            .Include(c => c.Contest)
-            .ThenInclude(contest => contest.AwayTeamFranchiseSeason)
-            .Include(c => c.Contest)
-            .ThenInclude(contest => contest.HomeTeamFranchiseSeason)
-            .AsNoTracking()
-            .Where(c => c.Contest.FinalizedUtc != null &&
-                        !c.Media.Any() &&
-                        ((c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.HasValue &&
-                          fbsGroupIds.Contains(c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.Value)) ||
-                         (c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.HasValue &&
-                          fbsGroupIds.Contains(c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.Value))))
-            .OrderByDescending(x => x.Contest.StartDateUtc)
-            .Select(c => c.Id)
-            .ToListAsync(cancellationToken);
+        if (command.Sport == Sport.FootballNcaa)
+        {
+            // FootballNcaa: Apply FBS filtering
+            var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
+
+            competitionIds = await _dataContext.Competitions
+                .Include(c => c.Contest)
+                .ThenInclude(contest => contest.AwayTeamFranchiseSeason)
+                .Include(c => c.Contest)
+                .ThenInclude(contest => contest.HomeTeamFranchiseSeason)
+                .AsNoTracking()
+                .Where(c => c.Contest.SeasonYear == command.SeasonYear &&
+                            c.Contest.FinalizedUtc != null &&
+                            !c.Media.Any() &&
+                            ((c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.HasValue &&
+                              fbsGroupIds.Contains(c.Contest.AwayTeamFranchiseSeason.GroupSeasonId.Value)) ||
+                             (c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.HasValue &&
+                              fbsGroupIds.Contains(c.Contest.HomeTeamFranchiseSeason.GroupSeasonId.Value))))
+                .OrderByDescending(x => x.Contest.StartDateUtc)
+                .Select(c => c.Id)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            // All other sports: No FBS filtering, just get competitions without media
+            competitionIds = await _dataContext.Competitions
+                .Include(c => c.Contest)
+                .AsNoTracking()
+                .Where(c => c.Contest.SeasonYear == command.SeasonYear &&
+                            c.Contest.Sport == command.Sport &&
+                            c.Contest.FinalizedUtc != null &&
+                            !c.Media.Any())
+                .OrderByDescending(x => x.Contest.StartDateUtc)
+                .Select(c => c.Id)
+                .ToListAsync(cancellationToken);
+        }
 
         var enqueuedCount = 0;
 
@@ -64,6 +85,7 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
         }
 
         var result = new RefreshAllCompetitionMediaResult(
+            command.Sport,
             command.SeasonYear,
             competitionIds.Count,
             enqueuedCount,

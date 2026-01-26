@@ -80,6 +80,8 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         // Create finalized contests
         var contest1 = Fixture.Build<Contest>()
             .With(x => x.Id, contestId1)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
             .With(x => x.HomeTeamFranchiseSeasonId, homeFranchiseSeasonId1)
             .With(x => x.AwayTeamFranchiseSeasonId, awayFranchiseSeasonId1)
@@ -92,6 +94,8 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
 
         var contest2 = Fixture.Build<Contest>()
             .With(x => x.Id, contestId2)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
             .With(x => x.HomeTeamFranchiseSeasonId, homeFranchiseSeasonId2)
             .With(x => x.AwayTeamFranchiseSeasonId, awayFranchiseSeasonId2)
@@ -133,7 +137,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         var backgroundJobProvider = new Mock<IProvideBackgroundJobs>();
         Mocker.Use(backgroundJobProvider.Object);
 
-        var command = new RefreshAllCompetitionMediaCommand(seasonYear);
+        var command = new RefreshAllCompetitionMediaCommand(Sport.FootballNcaa, seasonYear);
         var sut = Mocker.CreateInstance<RefreshAllCompetitionMediaCommandHandler>();
 
         // Act
@@ -186,6 +190,8 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
 
         var contest = Fixture.Build<Contest>()
             .With(x => x.Id, contestId)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
             .With(x => x.HomeTeamFranchiseSeasonId, homeFranchiseSeasonId)
             .With(x => x.AwayTeamFranchiseSeasonId, awayFranchiseSeasonId)
@@ -223,7 +229,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         var backgroundJobProvider = new Mock<IProvideBackgroundJobs>();
         Mocker.Use(backgroundJobProvider.Object);
 
-        var command = new RefreshAllCompetitionMediaCommand(seasonYear);
+        var command = new RefreshAllCompetitionMediaCommand(Sport.FootballNcaa, seasonYear);
         var sut = Mocker.CreateInstance<RefreshAllCompetitionMediaCommandHandler>();
 
         // Act

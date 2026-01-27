@@ -1,5 +1,6 @@
 using FluentValidation;
 
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
@@ -15,13 +16,16 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
 {
     private readonly IEventBus _eventBus;
     private readonly ILogger<GenerateLoadTestCommandHandler> _logger;
+    private readonly AppDataContext _dbContext;
 
     public GenerateLoadTestCommandHandler(
         IEventBus eventBus,
-        ILogger<GenerateLoadTestCommandHandler> logger)
+        ILogger<GenerateLoadTestCommandHandler> logger,
+        AppDataContext dbContext)
     {
         _eventBus = eventBus;
         _logger = logger;
+        _dbContext = dbContext;
     }
 
     public async Task<Result<GenerateLoadTestResult>> ExecuteAsync(
@@ -88,6 +92,9 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
                 // Await batch completion before moving to next batch to limit concurrency
                 await Task.WhenAll(publishTasks);
             }
+
+            // Trigger MassTransit outbox to flush queued messages
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {

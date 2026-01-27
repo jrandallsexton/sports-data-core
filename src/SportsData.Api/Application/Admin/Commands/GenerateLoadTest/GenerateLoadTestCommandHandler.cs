@@ -78,15 +78,15 @@ public class GenerateLoadTestCommandValidator : AbstractValidator<GenerateLoadTe
     public GenerateLoadTestCommandValidator()
     {
         RuleFor(x => x.Count)
-            .InclusiveBetween(1, 1000)
-            .WithMessage("Count must be between 1 and 1000");
+            .InclusiveBetween(1, 100000)
+            .WithMessage("Count must be between 1 and 100,000");
 
         RuleFor(x => x.Target)
             .IsInEnum()
             .WithMessage("Target must be Producer, Provider, or Both");
 
         RuleFor(x => x.BatchSize)
-            .InclusiveBetween(1, 100)
-            .WithMessage("BatchSize must be between 1 and 100");
+            .InclusiveBetween(1, 1000)
+            .WithMessage("BatchSize must be between 1 and 1,000");
     }
 }

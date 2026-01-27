@@ -30,8 +30,8 @@ public class ProcessLoadTestJob : IProcessLoadTestJob
             "[KEDA-Test] Starting load test job. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}, QueueLatency={QueueLatencyMs}ms",
             testId, batchNumber, jobNumber, queueLatency);
 
-        // Simulate varying workloads: 200-800ms processing time (longer than Producer to test different scaling behaviors)
-        var processingTimeMs = Random.Shared.Next(200, 801);
+        // Simulate varying workloads: 8000-15000ms processing time (8-15 seconds, longer than Producer to test different scaling behaviors)
+        var processingTimeMs = Random.Shared.Next(8000, 15001);
         await Task.Delay(processingTimeMs);
 
         var completedAt = DateTime.UtcNow;

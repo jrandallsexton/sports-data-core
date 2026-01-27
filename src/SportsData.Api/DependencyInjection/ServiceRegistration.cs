@@ -112,6 +112,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
 
+            // Admin Jobs
+            services.AddScoped<SportsData.Api.Application.Admin.Jobs.IPublishLoadTestEventsJob, SportsData.Api.Application.Admin.Jobs.PublishLoadTestEventsJob>();
+
             // Admin Queries
             services.AddScoped<IAuditAiQueryHandler, AuditAiQueryHandler>();
             services.AddScoped<IGetAiResponseQueryHandler, GetAiResponseQueryHandler>();

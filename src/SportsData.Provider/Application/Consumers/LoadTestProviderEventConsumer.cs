@@ -40,7 +40,7 @@ public class LoadTestProviderEventConsumer : IConsumer<LoadTestProviderEvent>
                 message.TestId, message.BatchNumber, message.JobNumber);
 
             // Enqueue to Hangfire - this creates backpressure for KEDA to scale against
-            _backgroundJobProvider.Enqueue<IProcessLoadTestJob>(job =>
+            _backgroundJobProvider.Enqueue<ProcessLoadTestJob>(job =>
                 job.ProcessAsync(message.TestId, message.BatchNumber, message.JobNumber, message.PublishedUtc));
 
             _logger.LogInformation(

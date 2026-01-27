@@ -10,9 +10,11 @@ namespace SportsData.Core.Eventing.Events;
 /// <param name="BatchNumber">Batch number within the test run</param>
 /// <param name="JobNumber">Sequential job number within the batch</param>
 /// <param name="PublishedUtc">When the event was published</param>
+/// <param name="CorrelationId">Correlation identifier for tracking (set to TestId)</param>
 public record LoadTestProviderEvent(
     Guid TestId,
     int BatchNumber,
     int JobNumber,
-    DateTime PublishedUtc
+    DateTime PublishedUtc,
+    Guid CorrelationId
 );

@@ -27,17 +27,26 @@ public class LoadTestProviderEventConsumer : IConsumer<LoadTestProviderEvent>
     {
         var message = context.Message;
 
-        _logger.LogDebug(
-            "[KEDA-Test] Received load test event. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
-            message.TestId, message.BatchNumber, message.JobNumber);
+        using (_logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = message.CorrelationId,
+            ["TestId"] = message.TestId,
+            ["BatchNumber"] = message.BatchNumber,
+            ["JobNumber"] = message.JobNumber
+        }))
+        {
+            _logger.LogDebug(
+                "[KEDA-Test] Received load test event. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
+                message.TestId, message.BatchNumber, message.JobNumber);
 
-        // Enqueue to Hangfire - this creates backpressure for KEDA to scale against
-        _backgroundJobProvider.Enqueue<IProcessLoadTestJob>(job =>
-            job.ProcessAsync(message.TestId, message.BatchNumber, message.JobNumber, message.PublishedUtc));
+            // Enqueue to Hangfire - this creates backpressure for KEDA to scale against
+            _backgroundJobProvider.Enqueue<IProcessLoadTestJob>(job =>
+                job.ProcessAsync(message.TestId, message.BatchNumber, message.JobNumber, message.PublishedUtc));
 
-        _logger.LogInformation(
-            "[KEDA-Test] Enqueued load test job to Hangfire. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
-            message.TestId, message.BatchNumber, message.JobNumber);
+            _logger.LogInformation(
+                "[KEDA-Test] Enqueued load test job to Hangfire. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
+                message.TestId, message.BatchNumber, message.JobNumber);
+        }
 
         return Task.CompletedTask;
     }

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Provider.Application.Consumers;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Config;
 using SportsData.Provider.DependencyInjection;
@@ -41,7 +42,10 @@ namespace SportsData.Provider
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-            services.AddMessaging(config, [typeof(DocumentRequestedHandler)]);
+            services.AddMessaging(config, [
+                typeof(DocumentRequestedHandler),
+                typeof(LoadTestProviderEventConsumer)
+            ]);
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

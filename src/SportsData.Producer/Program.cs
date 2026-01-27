@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.DependencyInjection;
@@ -77,6 +78,7 @@ public class Program
             case Sport.FootballNfl:
                 services.AddMessaging<FootballDataContext>(config, [
                     typeof(DocumentCreatedHandler),
+                    typeof(LoadTestProducerEventConsumer),
                     typeof(ProcessImageRequestedHandler),
                     typeof(ProcessImageResponseHandler)
                 ]);
@@ -84,6 +86,7 @@ public class Program
             case Sport.GolfPga:
                 services.AddMessaging<GolfDataContext>(config, [
                     typeof(DocumentCreatedHandler),
+                    typeof(LoadTestProducerEventConsumer),
                     typeof(ProcessImageRequestedHandler),
                     typeof(ProcessImageResponseHandler)
                 ]);

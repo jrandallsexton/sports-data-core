@@ -72,7 +72,8 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
                             TestId: testId,
                             BatchNumber: batchNumber,
                             JobNumber: jobNumber,
-                            PublishedUtc: publishedUtc
+                            PublishedUtc: publishedUtc,
+                            CorrelationId: testId
                         );
                         publishTasks.Add(_eventBus.Publish(producerEvent, cancellationToken));
                     }
@@ -83,7 +84,8 @@ public class GenerateLoadTestCommandHandler : IGenerateLoadTestCommandHandler
                             TestId: testId,
                             BatchNumber: batchNumber,
                             JobNumber: jobNumber,
-                            PublishedUtc: publishedUtc
+                            PublishedUtc: publishedUtc,
+                            CorrelationId: testId
                         );
                         publishTasks.Add(_eventBus.Publish(providerEvent, cancellationToken));
                     }

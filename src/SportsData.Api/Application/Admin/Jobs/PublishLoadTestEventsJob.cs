@@ -87,10 +87,12 @@ public class PublishLoadTestEventsJob : IPublishLoadTestEventsJob
 
                     // Await batch completion before moving to next batch to limit concurrency
                     await Task.WhenAll(publishTasks);
-                }
 
-                // Trigger MassTransit outbox to flush queued messages
-                await _dbContext.SaveChangesAsync(CancellationToken.None);
+                    // Flush outbox after each batch to avoid OutOfMemoryException with large counts
+                    // Trade-off: More DB round-trips vs. not exhausting pod memory
+                    await _dbContext.SaveChangesAsync(CancellationToken.None);
+                    _dbContext.ChangeTracker.Clear();  // Release tracked entities from memory
+                }
 
                 var totalEvents = target == LoadTestTarget.Both ? count * 2 : count;
                 _logger.LogInformation(

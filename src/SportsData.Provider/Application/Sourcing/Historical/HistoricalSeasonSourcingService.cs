@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -10,6 +8,10 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Infrastructure.Data;
+
+using System.Security.Cryptography;
+using System.Text;
+
 using ResourceIndexEntity = SportsData.Provider.Infrastructure.Data.Entities.ResourceIndex;
 
 namespace SportsData.Provider.Application.Sourcing.Historical;

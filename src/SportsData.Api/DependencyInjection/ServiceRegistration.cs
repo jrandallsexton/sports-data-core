@@ -107,6 +107,7 @@ namespace SportsData.Api.DependencyInjection
             // Admin Commands
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
+            services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
             services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
 

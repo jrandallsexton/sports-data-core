@@ -20,6 +20,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<AthleteCompetitionStatistic> builder)
             {
+                builder.ToTable(nameof(AthleteCompetitionStatistic));
                 builder.HasKey(x => x.Id);
 
                 builder.HasIndex(x => new { x.AthleteSeasonId, x.CompetitionId }).IsUnique();

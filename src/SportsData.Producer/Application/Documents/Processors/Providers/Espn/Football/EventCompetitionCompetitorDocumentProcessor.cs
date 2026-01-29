@@ -3,18 +3,16 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-
-using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -216,12 +214,6 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             competitionId);
 
         await ProcessChildDocuments(command, dto, canonicalEntity.Id);
-
-        // TODO: ProcessRoster
-        // TODO: ProcessStatistics
-        // TODO: ProcessLeaders
-        // TODO: ProcessRecord
-        // TODO: ProcessRanks
     }
 
     private async Task ProcessUpdate(
@@ -259,6 +251,18 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
 
         await PublishChildDocumentRequest(command, dto.Linescores, competitorId,
             DocumentType.EventCompetitionCompetitorLineScore,
+            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+
+        await PublishChildDocumentRequest(command, dto.Roster, competitorId,
+            DocumentType.EventCompetitionCompetitorRoster,
+            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+
+        await PublishChildDocumentRequest(command, dto.Statistics, competitorId,
+            DocumentType.EventCompetitionCompetitorStatistics,
+            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+
+        await PublishChildDocumentRequest(command, dto.Record, competitorId,
+            DocumentType.EventCompetitionCompetitorRecord,
             CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
         _logger.LogInformation(

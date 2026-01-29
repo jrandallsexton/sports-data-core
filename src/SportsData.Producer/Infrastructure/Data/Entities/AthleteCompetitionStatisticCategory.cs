@@ -25,6 +25,7 @@ public class AthleteCompetitionStatisticCategory : CanonicalEntityBase<Guid>
     {
         public void Configure(EntityTypeBuilder<AthleteCompetitionStatisticCategory> builder)
         {
+            builder.ToTable(nameof(AthleteCompetitionStatisticCategory));
             builder.HasKey(x => x.Id);
 
             builder.Property(x => x.Name).IsRequired().HasMaxLength(256);

@@ -83,8 +83,16 @@ stages:
           inputs:
             command: 'test'
             projects: '**/SportsData.Provider.Tests.Unit.csproj'
+            arguments: '--collect:"XPlat Code Coverage"'
+            publishTestResults: true
             testRunTitle: 'provider-tests-unit'
           continueOnError: false
+
+        - task: PublishCodeCoverageResults@2
+          displayName: 'Publish Code Coverage'
+          inputs:
+            summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+            failIfCoverageEmpty: false
 
 - stage: BuildImagePushACR
   displayName: Build Image & Push to ACR

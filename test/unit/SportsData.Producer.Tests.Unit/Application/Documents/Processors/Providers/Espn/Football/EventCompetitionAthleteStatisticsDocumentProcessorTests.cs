@@ -66,7 +66,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2023)
+            .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionAthleteStatistics)
             .With(x => x.Document, json)
             .Create();
@@ -181,7 +181,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2023)
+            .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionAthleteStatistics)
             .With(x => x.Document, json)
             .Create();

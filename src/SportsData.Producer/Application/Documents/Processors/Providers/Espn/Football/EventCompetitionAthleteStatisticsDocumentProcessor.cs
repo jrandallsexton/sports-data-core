@@ -134,6 +134,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             .Include(x => x.Categories)
                 .ThenInclude(c => c.Stats)
             .AsSplitQuery()
+            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
 
         if (existing is not null)

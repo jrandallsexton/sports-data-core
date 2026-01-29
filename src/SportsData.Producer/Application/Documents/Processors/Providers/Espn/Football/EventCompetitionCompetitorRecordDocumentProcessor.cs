@@ -123,29 +123,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         };
 
         // Add stats
-        if (dto.Stats != null)
-        {
-            foreach (var statDto in dto.Stats)
-            {
-                var stat = new CompetitionCompetitorRecordStat
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionCompetitorRecordId = record.Id,
-                    Name = statDto.Name,
-                    DisplayName = statDto.DisplayName,
-                    ShortDisplayName = statDto.ShortDisplayName,
-                    Description = statDto.Description,
-                    Abbreviation = statDto.Abbreviation,
-                    Type = statDto.Type,
-                    Value = statDto.Value,
-                    DisplayValue = statDto.DisplayValue,
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = command.CorrelationId
-                };
-
-                record.Stats.Add(stat);
-            }
-        }
+        CreateStatsForRecord(dto.Stats, record, command.CorrelationId);
 
         await _dataContext.CompetitionCompetitorRecords.AddAsync(record);
 
@@ -178,33 +156,41 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         existingRecord.Stats.Clear();
 
         // Add new stats
-        if (dto.Stats != null)
-        {
-            foreach (var statDto in dto.Stats)
-            {
-                var stat = new CompetitionCompetitorRecordStat
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionCompetitorRecordId = existingRecord.Id,
-                    Name = statDto.Name,
-                    DisplayName = statDto.DisplayName,
-                    ShortDisplayName = statDto.ShortDisplayName,
-                    Description = statDto.Description,
-                    Abbreviation = statDto.Abbreviation,
-                    Type = statDto.Type,
-                    Value = statDto.Value,
-                    DisplayValue = statDto.DisplayValue,
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = command.CorrelationId
-                };
-
-                existingRecord.Stats.Add(stat);
-            }
-        }
+        CreateStatsForRecord(dto.Stats, existingRecord, command.CorrelationId);
 
         _logger.LogInformation(
             "✅ RECORD_UPDATED: CompetitionCompetitorRecord updated. RecordId={RecordId}, Stats={StatCount}",
             existingRecord.Id,
             existingRecord.Stats.Count);
+    }
+
+    private static void CreateStatsForRecord(
+        IEnumerable<EspnRecordStatDto>? statDtos,
+        CompetitionCompetitorRecord record,
+        Guid correlationId)
+    {
+        if (statDtos == null)
+            return;
+
+        foreach (var statDto in statDtos)
+        {
+            var stat = new CompetitionCompetitorRecordStat
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorRecordId = record.Id,
+                Name = statDto.Name,
+                DisplayName = statDto.DisplayName,
+                ShortDisplayName = statDto.ShortDisplayName,
+                Description = statDto.Description,
+                Abbreviation = statDto.Abbreviation,
+                Type = statDto.Type,
+                Value = statDto.Value,
+                DisplayValue = statDto.DisplayValue,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = correlationId
+            };
+
+            record.Stats.Add(stat);
+        }
     }
 }

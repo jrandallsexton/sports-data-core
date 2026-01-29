@@ -1,13 +1,15 @@
 # Historical Sourcing Readiness Checklist
 
-**Last Updated:** January 28, 2026  
+**Last Updated:** January 28, 2026
+
 **Status:** ⚠️ NOT READY - 5 processors unimplemented
 
 ## Overview
 
 This document tracks readiness for full historical season sourcing runs. Historical sourcing will cost ~$30-40 per season for Azure message processing (RabbitMQ mitigates this), plus ESPN API call costs. Before investing in backfilling 2020-2024 seasons, we need **complete** ESPN data capture.
 
-**Current State:** 
+**Current State:**
+
 - ✅ 118 document processor tests passing
 - ✅ **EventCompetitionAthleteStatisticsDocumentProcessor** implemented and tested
 - ❌ 5 document processors unimplemented (skeleton only)
@@ -16,15 +18,22 @@ This document tracks readiness for full historical season sourcing runs. Histori
 ## Critical Gaps (BLOCKERS)
 
 ### 1. EventCompetitionAthleteStatisticsDocumentProcessor
-**Status:** ✅ COMPLETE (January 28, 2026)  
-**Impact:** HIGH - Player-level game statistics captured  
-**File:** `EventCompetitionAthleteStatisticsDocumentProcessor.cs`  
-**ESPN URL Pattern:** `/events/{eventId}/competitions/{compId}/competitors/{teamId}/roster/{athleteId}/statistics/0`  
+
+**Status:** ✅ COMPLETE (January 28, 2026)
+
+**Impact:** HIGH - Player-level game statistics captured
+
+**File:** `EventCompetitionAthleteStatisticsDocumentProcessor.cs`
+
+**ESPN URL Pattern:** `/events/{eventId}/competitions/{compId}/competitors/{teamId}/roster/{athleteId}/statistics/0`
+
 **Test File:** `EventCompetitionAthleteStatisticsDocumentProcessorTests.cs`
 
 **Implementation Details:**
+
 - ✅ Deserialize `EspnEventCompetitionAthleteStatisticsDto`
-- ✅ Resolve Athlete → AthleteSeason → Competition (via LINQ join on FranchiseSeason)
+- ✅ Resolve AthleteSeason directly from `dto.Athlete.Ref` using canonical ID lookup
+- ✅ Resolve Competition from `dto.Competition.Ref` using canonical ID lookup
 - ✅ Map ESPN stat categories using `AthleteCompetitionStatisticExtensions.AsEntity()`
 - ✅ Store AthleteCompetitionStatistic entities (with Categories → Stats nested structure)
 - ✅ Handle stat updates using "remove existing + insert new" pattern (ESPN wholesale replacement)
@@ -32,16 +41,18 @@ This document tracks readiness for full historical season sourcing runs. Histori
 - ✅ DbSet properties added to TeamSportDataContext
 - ✅ EntityConfiguration registered
 
-**Key Design Decision:** Uses LINQ join query to resolve AthleteSeason because entity lacks FranchiseSeason navigation property:
+**Key Design Decision:** Uses direct canonical ID lookup for AthleteSeason resolution:
+
 ```csharp
-var athleteSeason = await (from ats in _dataContext.AthleteSeasons
-                           join fs in _dataContext.FranchiseSeasons on ats.FranchiseSeasonId equals fs.Id
-                           where ats.AthleteId == athleteIdentity.CanonicalId 
-                              && fs.SeasonYear == command.Season.Value
-                           select ats)
-    .AsNoTracking()
+// Resolve AthleteSeason directly from dto.Athlete.Ref
+var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Athlete.Ref);
+
+var athleteSeason = await _dataContext.AthleteSeasons
+    .Where(x => x.Id == athleteSeasonIdentity.CanonicalId)
     .FirstOrDefaultAsync();
 ```
+
+This approach leverages ESPN's 1:1 mapping between athlete season refs and canonical IDs, avoiding complex joins.
 
 ---
 
@@ -205,6 +216,7 @@ var athleteSeason = await (from ats in _dataContext.AthleteSeasons
 - ✅ All core processors (Season, Event, Competition, etc.) well-tested
 
 ### Skipped Tests (12 total)
+
 | Test | Reason | Action Required |
 |------|--------|-----------------|
 | `TeamSeasonAwardDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
@@ -246,13 +258,16 @@ var athleteSeason = await (from ats in _dataContext.AthleteSeasons
 ## Decision Points
 
 ### 1. ESPN Data Availability Verification
+
 Before implementing processors, verify ESPN actually provides this data for historical seasons:
+
 - [ ] Check sample 2020-2024 season URLs for athlete statistics
 - [ ] Check for team season leaders data
 - [ ] Check for coach/award data availability
 - [ ] Document any data gaps in ESPN's historical archive
 
 ### 2. Cost-Benefit Analysis
+
 - **EventCompetitionAthleteStatistics**: HIGH value - game stats are critical
 - **TeamSeasonLeaders**: MEDIUM value - enhances season summaries
 - **TeamSeasonCoach**: MEDIUM value - useful context
@@ -265,6 +280,7 @@ Before implementing processors, verify ESPN actually provides this data for hist
 ## Implementation Priority
 
 ### Phase 1: Critical (Required for Historical Sourcing) ✅ COMPLETE
+
 1. **Investigate TeamSeasonDocumentProcessor bug** ✅ (2 hours actual)
    - No bug found - misleading TODO comment removed
 2. **Implement EventCompetitionAthleteStatisticsDocumentProcessor** ✅ (8 hours actual)

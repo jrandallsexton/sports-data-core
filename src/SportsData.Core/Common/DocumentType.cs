@@ -63,7 +63,9 @@
         EventCompetitionAthleteStatistics = 59,
         EventCompetitionCompetitorStatistics = 60,
         EventCompetitionCompetitorRoster = 62,
+        // 63 = Reserved (formerly EventCompetitionCompetitorLeaders - removed as redundant with TeamSeason relationship)
         EventCompetitionCompetitorRecord = 64,
+        // 65 = Reserved (formerly EventCompetitionCompetitorRanks - removed as redundant with SeasonWeek relationship)
         OutboxTest = 99, // Test document type for validating outbox pattern with BaseDataContext
         OutboxTestTeamSport = 98, // Test document type for validating outbox pattern with TeamSportDataContext
         Unknown = 9999

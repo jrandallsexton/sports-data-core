@@ -90,13 +90,52 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         if (existingRecord != null)
         {
             await ProcessUpdate(command, dto, existingRecord);
+            await _dataContext.SaveChangesAsync();
         }
         else
         {
-            await ProcessNewEntity(command, dto, competitorId);
-        }
+            try
+            {
+                await ProcessNewEntity(command, dto, competitorId);
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                // Handle race condition: another thread may have inserted between our query and insert
+                // Check if the inner exception indicates a unique constraint violation
+                if (ex.InnerException?.Message?.Contains("duplicate key") == true ||
+                    ex.InnerException?.Message?.Contains("unique constraint") == true)
+                {
+                    _logger.LogWarning(
+                        "Race condition detected inserting CompetitionCompetitorRecord. Retrying as update. CompetitorId={CompetitorId}, Type={Type}",
+                        competitorId,
+                        dto.Type);
 
-        await _dataContext.SaveChangesAsync();
+                    // Reload the existing record (inserted by another thread)
+                    existingRecord = await _dataContext.CompetitionCompetitorRecords
+                        .Include(r => r.Stats)
+                        .FirstOrDefaultAsync(r =>
+                            r.CompetitionCompetitorId == competitorId &&
+                            r.Type == dto.Type);
+
+                    if (existingRecord != null)
+                    {
+                        await ProcessUpdate(command, dto, existingRecord);
+                        await _dataContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        // Record still doesn't exist - rethrow original exception
+                        throw;
+                    }
+                }
+                else
+                {
+                    // Not a unique constraint violation - rethrow
+                    throw;
+                }
+            }
+        }
     }
 
     private async Task ProcessNewEntity(

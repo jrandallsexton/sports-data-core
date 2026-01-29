@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Producer.Exceptions;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
@@ -41,6 +42,13 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             try
             {
                 await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not yet sourced. Requeueing for retry. {@Command}", command);
+                await _publishEndpoint.Publish(command.ToDocumentCreated(command.AttemptCount + 1));
+                await _dataContext.SaveChangesAsync();
+                return;
             }
             catch (Exception ex)
             {
@@ -87,53 +95,38 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         // --- Resolve Dependencies ---
         
-        // Resolve Athlete (to get AthleteId)
-        var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(dto.Athlete.Ref);
-        var athleteIdentity = _externalRefIdentityGenerator.Generate(athleteRef);
-
-        var athlete = await _dataContext.Athletes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == athleteIdentity.CanonicalId);
-
-        if (athlete is null)
-        {
-            _logger.LogError("Athlete not found: {AthleteId}. Ref={AthleteRef}", 
-                athleteIdentity.CanonicalId, 
-                athleteRef);
-            return;
-        }
-
-        // Resolve AthleteSeason (athlete + season)
-        // Note: AthleteSeason links to FranchiseSeason via FranchiseSeasonId (Guid only, no navigation property)
-        var athleteSeason = await (from ats in _dataContext.AthleteSeasons
-                                   join fs in _dataContext.FranchiseSeasons on ats.FranchiseSeasonId equals fs.Id
-                                   where ats.AthleteId == athleteIdentity.CanonicalId 
-                                      && fs.SeasonYear == command.Season.Value
-                                   select ats)
-            .AsNoTracking()
+        // Resolve AthleteSeason directly from dto.Athlete.Ref
+        var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Athlete.Ref);
+        
+        var athleteSeasonId = await _dataContext.AthleteSeasonExternalIds
+            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == athleteSeasonIdentity.UrlHash)
+            .Select(x => x.AthleteSeasonId)
             .FirstOrDefaultAsync();
 
-        if (athleteSeason is null)
+        if (athleteSeasonId == Guid.Empty)
         {
-            _logger.LogError("AthleteSeason not found for Athlete={AthleteId}, Season={Season}", 
-                athleteIdentity.CanonicalId, 
-                command.Season.Value);
-            return;
+            _logger.LogWarning(
+                "AthleteSeason not found for {AthleteSeasonRef}. Will retry when available.",
+                dto.Athlete.Ref);
+            throw new ExternalDocumentNotSourcedException(
+                $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
         }
 
         // Resolve Competition
         var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competition.Ref);
 
-        var competition = await _dataContext.Competitions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == competitionIdentity.CanonicalId);
+        var competitionId = await _dataContext.CompetitionExternalIds
+            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == competitionIdentity.UrlHash)
+            .Select(x => x.CompetitionId)
+            .FirstOrDefaultAsync();
 
-        if (competition is null)
+        if (competitionId == Guid.Empty)
         {
-            _logger.LogError("Competition not found: {CompetitionId}. Ref={CompetitionRef}", 
-                competitionIdentity.CanonicalId, 
+            _logger.LogWarning(
+                "Competition not found for {CompetitionRef}. Will retry when available.",
                 dto.Competition.Ref);
-            return;
+            throw new ExternalDocumentNotSourcedException(
+                $"Competition {competitionIdentity.CleanUrl} not found. Will retry when available.");
         }
 
         // --- Generate Identity ---
@@ -154,8 +147,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         // --- Create New Entity ---
         var entity = dto.AsEntity(
-            athleteSeason.Id,
-            competition.Id,
+            athleteSeasonId,
+            competitionId,
             _externalRefIdentityGenerator,
             command.CorrelationId);
 
@@ -167,8 +160,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         _logger.LogInformation(
             "Successfully processed AthleteCompetitionStatistic {Id} for AthleteSeason {AthleteSeasonId}, Competition {CompetitionId} with {CategoryCount} categories and {StatCount} total stats",
             entity.Id,
-            athleteSeason.Id,
-            competition.Id,
+            athleteSeasonId,
+            competitionId,
             entity.Categories.Count,
             entity.Categories.Sum(c => c.Stats.Count));
     }

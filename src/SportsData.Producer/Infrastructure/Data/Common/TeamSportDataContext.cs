@@ -56,6 +56,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CompetitionCompetitorStatisticCategory> CompetitionCompetitorStatisticCategories { get; set; }
         public DbSet<CompetitionCompetitorStatisticStat> CompetitionCompetitorStatisticStats { get; set; }
 
+        public DbSet<CompetitionCompetitorRecord> CompetitionCompetitorRecords { get; set; }
+        public DbSet<CompetitionCompetitorRecordStat> CompetitionCompetitorRecordStats { get; set; }
+
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
         public DbSet<CompetitionLeaderCategory> CompetitionLeaderCategories { get; set; }
@@ -171,6 +174,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticStat.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorRecordStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());

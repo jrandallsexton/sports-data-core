@@ -1,0 +1,2015 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster?lang=en&region=us",
+  "entries": [
+    {
+      "playerId": 4429124,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "90",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4429124?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4429124/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Guillory II"
+    },
+    {
+      "playerId": 4431334,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "3",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4431334?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4431334/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Hilton Jr."
+    },
+    {
+      "playerId": 4567747,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "18",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4567747?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4567747/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "G. Nussmeier"
+    },
+    {
+      "playerId": 4587724,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "33",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4587724?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4587724/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "We. Weeks"
+    },
+    {
+      "playerId": 4596679,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "6",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4596679?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4596679/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "P. Payton"
+    },
+    {
+      "playerId": 4599738,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "12",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4599738?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4599738/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Butler"
+    },
+    {
+      "playerId": 4603193,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "2",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4603193?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4603193/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Gilbert"
+    },
+    {
+      "playerId": 4682692,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "56",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4682692?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Thompson"
+    },
+    {
+      "playerId": 4684524,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "88",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4684524?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/37?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4684524/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "B. Gooden"
+    },
+    {
+      "playerId": 4685502,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "7",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685502?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4685502/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "H. Perkins Jr."
+    },
+    {
+      "playerId": 4685568,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "95",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4685568?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "S. Washington"
+    },
+    {
+      "playerId": 4691138,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "1",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4691138?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4691138/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Anderson"
+    },
+    {
+      "playerId": 4698597,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "6",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4698597?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4698597/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Ba. Brown"
+    },
+    {
+      "playerId": 4699866,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "4",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4699866?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4699866/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "N. Anderson"
+    },
+    {
+      "playerId": 4713312,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "52",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4713312?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "P. Malbrue"
+    },
+    {
+      "playerId": 4714298,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "67",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4714298?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Bo Bordelon"
+    },
+    {
+      "playerId": 4735845,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "61",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4735845?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "B. Moore"
+    },
+    {
+      "playerId": 4794108,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "27",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4794108?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Ausberry"
+    },
+    {
+      "playerId": 4837252,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "44",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4837252?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4837252/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Pyburn"
+    },
+    {
+      "playerId": 4869748,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "0",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4869748?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4869748/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Z. Thomas"
+    },
+    {
+      "playerId": 4870586,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "71",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870586?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Adams"
+    },
+    {
+      "playerId": 4870756,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "8",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870756?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Jackson"
+    },
+    {
+      "playerId": 4870839,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "28",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870839?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4870839/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Jackson"
+    },
+    {
+      "playerId": 4870908,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "99",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870908?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "S. Mitchell"
+    },
+    {
+      "playerId": 4871034,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "40",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4871034?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4871034/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Wh. Weeks"
+    },
+    {
+      "playerId": 4871077,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "25",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4871077?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4871077/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Toviano"
+    },
+    {
+      "playerId": 4873173,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "49",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4873173?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/78?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Ferguson"
+    },
+    {
+      "playerId": 4880124,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "4",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4880124?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4880124/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "M. Delane"
+    },
+    {
+      "playerId": 4880502,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "49",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4880502?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "G. Leonards"
+    },
+    {
+      "playerId": 4890373,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "10",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4890373?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4890373/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "B. Sharp"
+    },
+    {
+      "playerId": 4893639,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "34",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4893639?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4893639/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Ramos"
+    },
+    {
+      "playerId": 4900640,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "12",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4900640?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4900640/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Parker"
+    },
+    {
+      "playerId": 4905664,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "13",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4905664?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/4905664/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A.J. Haulcy"
+    },
+    {
+      "playerId": 4923054,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "79",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4923054?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "DJ Chester"
+    },
+    {
+      "playerId": 4941017,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "65",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4941017?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "P. Mubenga"
+    },
+    {
+      "playerId": 5078914,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "0",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078914?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5078914/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Cooley"
+    },
+    {
+      "playerId": 5078918,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "1",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078918?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5078918/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Stamps"
+    },
+    {
+      "playerId": 5079379,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "29",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079379?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5079379/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Durham"
+    },
+    {
+      "playerId": 5079384,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "48",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079384?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Cobbins"
+    },
+    {
+      "playerId": 5079420,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "14",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079420?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5079420/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Green"
+    },
+    {
+      "playerId": 5079431,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "29",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079431?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "W. Foster IV"
+    },
+    {
+      "playerId": 5079537,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "8",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079537?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5079537/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Johnson"
+    },
+    {
+      "playerId": 5079550,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "42",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079550?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5079550/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Keys"
+    },
+    {
+      "playerId": 5079620,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "11",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079620?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "M. Van Buren Jr."
+    },
+    {
+      "playerId": 5079693,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "46",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079693?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Singleton"
+    },
+    {
+      "playerId": 5079747,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "77",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079747?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "O. Williams"
+    },
+    {
+      "playerId": 5079759,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "17",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079759?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Watkins"
+    },
+    {
+      "playerId": 5081134,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "30",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5081134?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "M. Lane"
+    },
+    {
+      "playerId": 5081137,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "45",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5081137?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "G. Peterson"
+    },
+    {
+      "playerId": 5081138,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "87",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5081138?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "N. Nash"
+    },
+    {
+      "playerId": 5086240,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "88",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5086240?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Green"
+    },
+    {
+      "playerId": 5092221,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "46",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5092221?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/23?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "B. Hargett"
+    },
+    {
+      "playerId": 5095991,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "26",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5095991?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Helaire"
+    },
+    {
+      "playerId": 5110446,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "75",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5110446?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "W. Davis"
+    },
+    {
+      "playerId": 5110449,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "73",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5110449?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "E. Calloway"
+    },
+    {
+      "playerId": 5111768,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "16",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5111768?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Hurley"
+    },
+    {
+      "playerId": 5113089,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "55",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5113089?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Lee Jr."
+    },
+    {
+      "playerId": 5113179,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "97",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5113179?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5113179/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Carpenter"
+    },
+    {
+      "playerId": 5122231,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "22",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5122231?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5122231/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "H. Berry"
+    },
+    {
+      "playerId": 5124002,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "22",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5124002?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Rogers"
+    },
+    {
+      "playerId": 5125302,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "93",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5125302?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5125302/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Breaux"
+    },
+    {
+      "playerId": 5127935,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "96",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5127935?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. McKinley"
+    },
+    {
+      "playerId": 5130412,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "14",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5130412?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "CJ Jackson"
+    },
+    {
+      "playerId": 5139524,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "32",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5139524?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5139524/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Burrell"
+    },
+    {
+      "playerId": 5141374,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "68",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141374?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Br. Bordelon"
+    },
+    {
+      "playerId": 5141387,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "92",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141387?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5141387/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Br. Brown"
+    },
+    {
+      "playerId": 5141456,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "83",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141456?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Francis"
+    },
+    {
+      "playerId": 5141532,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "31",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141532?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "CJ Jimcoily"
+    },
+    {
+      "playerId": 5141550,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "47",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141550?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "JD LaFleur"
+    },
+    {
+      "playerId": 5141564,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "32",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141564?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Moses"
+    },
+    {
+      "playerId": 5141606,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "19",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141606?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "E. Picarella III"
+    },
+    {
+      "playerId": 5141632,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "3",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141632?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5141632/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "DJ Pickett"
+    },
+    {
+      "playerId": 5141673,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "17",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141673?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Shanklin"
+    },
+    {
+      "playerId": 5141738,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "66",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141738?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "S. Thomas"
+    },
+    {
+      "playerId": 5141765,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "94",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5141765?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Z. Williams"
+    },
+    {
+      "playerId": 5146166,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "21",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5146166?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5146166/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "M. Turner Jr."
+    },
+    {
+      "playerId": 5146829,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "78",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5146829?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Echols"
+    },
+    {
+      "playerId": 5146862,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "19",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5146862?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/31?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5146862/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "G. Reliford"
+    },
+    {
+      "playerId": 5147354,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "11",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5147354?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5147354/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "PJ Woodland"
+    },
+    {
+      "playerId": 5147373,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "82",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5147373?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Billiot"
+    },
+    {
+      "playerId": 5148599,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "57",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5148599?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Curne"
+    },
+    {
+      "playerId": 5149484,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "15",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5149484?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "P. Wright III"
+    },
+    {
+      "playerId": 5150407,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "39",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5150407?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Short"
+    },
+    {
+      "playerId": 5150412,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "55",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5150412?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Ibieta"
+    },
+    {
+      "playerId": 5150414,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "74",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5150414?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "B. Augustus"
+    },
+    {
+      "playerId": 5150834,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "2",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5150834?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Hill"
+    },
+    {
+      "playerId": 5160219,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "36",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5160219?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Corbello"
+    },
+    {
+      "playerId": 5160221,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "76",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5160221?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Stamps"
+    },
+    {
+      "playerId": 5164655,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "59",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5164655?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/46?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. Miller"
+    },
+    {
+      "playerId": 5167752,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "91",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5167752?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5167752/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "W. Mathis Jr."
+    },
+    {
+      "playerId": 5194616,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "90",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5194616?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/23?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687/competitors/99/roster/5194616/statistics/0?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "G. Chadwick"
+    },
+    {
+      "playerId": 5201881,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "30",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5201881?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Ross II"
+    },
+    {
+      "playerId": 5207618,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "23",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5207618?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "A. Anding"
+    },
+    {
+      "playerId": 5207896,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "24",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5207896?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Bradford"
+    },
+    {
+      "playerId": 5209113,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "28",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5209113?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Thomas"
+    },
+    {
+      "playerId": 5209688,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "23",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5209688?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "JT Lindsey"
+    },
+    {
+      "playerId": 5214492,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "15",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5214492?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Braker"
+    },
+    {
+      "playerId": 5217149,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "35",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5217149?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "Z. Weeks"
+    },
+    {
+      "playerId": 5218718,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "34",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218718?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Ebun"
+    },
+    {
+      "playerId": 5218719,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "37",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218719?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "C. Walton Jr."
+    },
+    {
+      "playerId": 5218720,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "80",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218720?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "I. Stone"
+    },
+    {
+      "playerId": 5218721,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "87",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218721?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/32?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. August"
+    },
+    {
+      "playerId": 5218722,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "50",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218722?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/30?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "K. Kelly"
+    },
+    {
+      "playerId": 5218723,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "10",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5218723?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/36?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "D. Spears"
+    },
+    {
+      "playerId": 5229442,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "41",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5229442?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/29?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "J. Echols"
+    },
+    {
+      "playerId": 5229443,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "81",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5229443?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/7?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "L. Craig"
+    },
+    {
+      "playerId": 5294244,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "39",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5294244?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "R. Chauvin"
+    },
+    {
+      "playerId": 5294245,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "45",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5294245?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "S. Perret"
+    },
+    {
+      "playerId": 5294246,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "51",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5294246?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/78?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "S. Hall"
+    },
+    {
+      "playerId": 5294247,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "53",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5294247?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/45?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "H. Fuqua"
+    },
+    {
+      "playerId": 5306412,
+      "period": 0,
+      "active": false,
+      "starter": false,
+      "forPlayerId": 0,
+      "jersey": "21",
+      "valid": false,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5306412?lang=en&region=us"
+      },
+      "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/8?lang=en&region=us"
+      },
+      "didNotPlay": false,
+      "displayName": "T. People"
+    }
+  ],
+  "competition": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687?lang=en&region=us"
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en&region=us"
+  }
+}

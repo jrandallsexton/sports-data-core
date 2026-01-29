@@ -109,6 +109,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<FranchiseSeasonAwardWinner> FranchiseSeasonAwardWinners { get; set; }
 
+        public DbSet<FranchiseSeasonLeader> FranchiseSeasonLeaders { get; set; }
+
+        public DbSet<FranchiseSeasonLeaderStat> FranchiseSeasonLeaderStats { get; set; }
+
         public DbSet<FranchiseSeasonExternalId> FranchiseSeasonExternalIds { get; set; }
 
         public DbSet<FranchiseSeasonLogo> FranchiseSeasonLogos { get; set; }

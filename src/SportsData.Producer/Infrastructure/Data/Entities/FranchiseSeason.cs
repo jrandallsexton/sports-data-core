@@ -98,6 +98,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<FranchiseSeasonStatisticCategory> Statistics { get; set; } = [];
 
+        public ICollection<FranchiseSeasonLeader> Leaders { get; set; } = [];
+
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeason>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeason> builder)

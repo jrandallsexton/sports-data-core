@@ -31,18 +31,18 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class EventCompetitionLeadersDocumentProcessorTests : 
     ProducerTestBase<EventCompetitionLeadersDocumentProcessor<TeamSportDataContext>>
 {
-    private EspnEventCompetitionLeadersDto _dto;
+    private EspnLeadersDto _dto;
     private readonly ITestOutputHelper _output;
 
     public EventCompetitionLeadersDocumentProcessorTests(ITestOutputHelper output)
     {
         _output = output;
         var documentJson = LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json").Result;
-        _dto = documentJson.FromJson<EspnEventCompetitionLeadersDto>()!;
+        _dto = documentJson.FromJson<EspnLeadersDto>()!;
     }
 
     // OPTIMIZATION: Helper method to seed test data
-    private async Task SeedTestDataAsync(EspnEventCompetitionLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid competitionId)
+    private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid competitionId)
     {
         // Seed competition
         var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto.Ref);
@@ -158,7 +158,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task WhenFoo_DoesBar()
     {
         var json = await base.LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders_LaTechLsu2025.json");
-        var dto = json.FromJson<EspnEventCompetitionLeadersDto>();
+        var dto = json.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
 
@@ -340,7 +340,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     {
         // arrange
         var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
-        var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+        var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
@@ -382,7 +382,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     {
         // Arrange
         var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
-        var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+        var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
@@ -440,7 +440,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     {
         // Arrange
         var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
-        var leadersDto = documentJson.FromJson<EspnEventCompetitionLeadersDto>();
+        var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);

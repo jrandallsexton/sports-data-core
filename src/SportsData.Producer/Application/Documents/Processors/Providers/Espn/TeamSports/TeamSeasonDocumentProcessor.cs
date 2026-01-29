@@ -227,7 +227,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         await ProcessDependencies(franchise, canonicalEntity, dto, command);
 
-        await ProcessDependents(canonicalEntity, dto, command);
+        await ProcessChildren(canonicalEntity, dto, command);
 
         await _dataContext.FranchiseSeasons.AddAsync(canonicalEntity);
 
@@ -240,7 +240,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             CausationId.Producer.TeamSeasonDocumentProcessor));
     }
 
-    private async Task ProcessDependents(
+    private async Task ProcessChildren(
         FranchiseSeason canonicalEntity,
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)

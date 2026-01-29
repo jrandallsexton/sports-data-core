@@ -1,20 +1,20 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-public static class CompetitionLeaderStatExtensions
+public static class FranchiseSeasonLeaderStatExtensions
 {
-    public static CompetitionLeaderStat AsEntity(
+    public static FranchiseSeasonLeaderStat AsEntity(
         this EspnLeadersLeaderDto dto,
         Guid parentLeaderId,
         Guid athleteSeasonId,
         Guid franchiseSeasonId,
         Guid correlationId)
     {
-        return new CompetitionLeaderStat
+        return new FranchiseSeasonLeaderStat
         {
             Id = Guid.NewGuid(),
-            CompetitionLeaderId = parentLeaderId,
+            FranchiseSeasonLeaderId = parentLeaderId,
             AthleteSeasonId = athleteSeasonId,
             FranchiseSeasonId = franchiseSeasonId,
             DisplayValue = dto.DisplayValue,
@@ -23,5 +23,4 @@ public static class CompetitionLeaderStatExtensions
             CreatedBy = correlationId
         };
     }
-
 }

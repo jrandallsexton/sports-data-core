@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Producer.Exceptions;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
@@ -98,12 +97,11 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         // Resolve AthleteSeason directly from dto.Athlete.Ref
         var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Athlete.Ref);
         
-        var athleteSeasonId = await _dataContext.AthleteSeasonExternalIds
-            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == athleteSeasonIdentity.UrlHash)
-            .Select(x => x.AthleteSeasonId)
+        var athleteSeason = await _dataContext.AthleteSeasons
+            .Where(x => x.Id == athleteSeasonIdentity.CanonicalId)
             .FirstOrDefaultAsync();
 
-        if (athleteSeasonId == Guid.Empty)
+        if (athleteSeason is null)
         {
             _logger.LogWarning(
                 "AthleteSeason not found for {AthleteSeasonRef}. Will retry when available.",
@@ -115,12 +113,11 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         // Resolve Competition
         var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competition.Ref);
 
-        var competitionId = await _dataContext.CompetitionExternalIds
-            .Where(x => x.Provider == command.SourceDataProvider && x.SourceUrlHash == competitionIdentity.UrlHash)
-            .Select(x => x.CompetitionId)
+        var competition = await _dataContext.Competitions
+            .Where(x => x.Id == competitionIdentity.CanonicalId)
             .FirstOrDefaultAsync();
 
-        if (competitionId == Guid.Empty)
+        if (competition is null)
         {
             _logger.LogWarning(
                 "Competition not found for {CompetitionRef}. Will retry when available.",
@@ -147,8 +144,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         // --- Create New Entity ---
         var entity = dto.AsEntity(
-            athleteSeasonId,
-            competitionId,
+            athleteSeason.Id,
+            competition.Id,
             _externalRefIdentityGenerator,
             command.CorrelationId);
 
@@ -160,8 +157,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         _logger.LogInformation(
             "Successfully processed AthleteCompetitionStatistic {Id} for AthleteSeason {AthleteSeasonId}, Competition {CompetitionId} with {CategoryCount} categories and {StatCount} total stats",
             entity.Id,
-            athleteSeasonId,
-            competitionId,
+            athleteSeason.Id,
+            competition.Id,
             entity.Categories.Count,
             entity.Categories.Sum(c => c.Stats.Count));
     }

@@ -47,47 +47,20 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var athleteSeasonIdentity = generator.Generate(dto!.Athlete!.Ref!);
         var competitionIdentity = generator.Generate(dto.Competition!.Ref!);
 
-        // Create AthleteSeason with external ID (processor queries AthleteSeasonExternalIds)
+        // For ESPN, canonical IDs are 1:1 with refs - create entities with canonical IDs
         var athleteSeason = Fixture.Build<FootballAthleteSeason>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
             .Create();
 
         await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
 
-        var athleteSeasonExternalId = new AthleteSeasonExternalId
-        {
-            Id = Guid.NewGuid(),
-            AthleteSeasonId = athleteSeason.Id,
-            Provider = SourceDataProvider.Espn,
-            Value = dto.Athlete.Ref.ToString(),
-            SourceUrlHash = athleteSeasonIdentity.UrlHash,
-            SourceUrl = athleteSeasonIdentity.CleanUrl,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        await FootballDataContext.AthleteSeasonExternalIds.AddAsync(athleteSeasonExternalId);
-
-        // Create Competition with external ID (processor queries CompetitionExternalIds)
         var competition = Fixture.Build<Competition>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, competitionIdentity.CanonicalId)
             .Create();
 
         await FootballDataContext.Competitions.AddAsync(competition);
-
-        var competitionExternalId = new CompetitionExternalId
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = competition.Id,
-            Provider = SourceDataProvider.Espn,
-            Value = dto.Competition.Ref.ToString(),
-            SourceUrlHash = competitionIdentity.UrlHash,
-            SourceUrl = competitionIdentity.CleanUrl,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        await FootballDataContext.CompetitionExternalIds.AddAsync(competitionExternalId);
         await FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -152,47 +125,20 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var athleteSeasonIdentity = generator.Generate(dto.Athlete!.Ref!);
         var competitionIdentity = generator.Generate(dto.Competition!.Ref!);
 
-        // Create AthleteSeason with external ID
+        // For ESPN, canonical IDs are 1:1 with refs - create entities with canonical IDs
         var athleteSeason = Fixture.Build<FootballAthleteSeason>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, athleteSeasonIdentity.CanonicalId)
             .Create();
 
         await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
 
-        var athleteSeasonExternalId = new AthleteSeasonExternalId
-        {
-            Id = Guid.NewGuid(),
-            AthleteSeasonId = athleteSeason.Id,
-            Provider = SourceDataProvider.Espn,
-            Value = dto.Athlete.Ref.ToString(),
-            SourceUrlHash = athleteSeasonIdentity.UrlHash,
-            SourceUrl = athleteSeasonIdentity.CleanUrl,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        await FootballDataContext.AthleteSeasonExternalIds.AddAsync(athleteSeasonExternalId);
-
-        // Create Competition with external ID
         var competition = Fixture.Build<Competition>()
             .WithAutoProperties()
-            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.Id, competitionIdentity.CanonicalId)
             .Create();
 
         await FootballDataContext.Competitions.AddAsync(competition);
-
-        var competitionExternalId = new CompetitionExternalId
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = competition.Id,
-            Provider = SourceDataProvider.Espn,
-            Value = dto.Competition.Ref.ToString(),
-            SourceUrlHash = competitionIdentity.UrlHash,
-            SourceUrl = competitionIdentity.CleanUrl,
-            CreatedUtc = DateTime.UtcNow
-        };
-
-        await FootballDataContext.CompetitionExternalIds.AddAsync(competitionExternalId);
 
         // Create existing statistics that should be replaced
         var existingStatistic = new AthleteCompetitionStatistic

@@ -16,6 +16,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<AthleteSeason> AthleteSeasons { get; set; }
         public DbSet<AthleteSeasonExternalId> AthleteSeasonExternalIds { get; set; }
 
+        public DbSet<AthleteCompetitionStatistic> AthleteCompetitionStatistics { get; set; }
+        public DbSet<AthleteCompetitionStatisticCategory> AthleteCompetitionStatisticCategories { get; set; }
+        public DbSet<AthleteCompetitionStatisticStat> AthleteCompetitionStatisticStats { get; set; }
+
         public DbSet<Award> Awards { get; set; }
         public DbSet<AwardExternalId> AwardExternalIds { get; set; }
 
@@ -51,6 +55,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<CompetitionCompetitorStatistic> CompetitionCompetitorStatistics { get; set; }
         public DbSet<CompetitionCompetitorStatisticCategory> CompetitionCompetitorStatisticCategories { get; set; }
         public DbSet<CompetitionCompetitorStatisticStat> CompetitionCompetitorStatisticStats { get; set; }
+
+        public DbSet<CompetitionCompetitorRecord> CompetitionCompetitorRecords { get; set; }
+        public DbSet<CompetitionCompetitorRecordStat> CompetitionCompetitorRecordStats { get; set; }
 
         public DbSet<CompetitionExternalId> CompetitionExternalIds { get; set; }
 
@@ -141,6 +148,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new AthletePosition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthletePositionExternalId.EntityConfiguration());
 
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatistic.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatisticCategory.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCompetitionStatisticStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new Award.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AwardExternalId.EntityConfiguration());
 
@@ -163,6 +174,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticCategory.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorStatisticStat.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorRecordStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionLeader.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionLeaderCategory.EntityConfiguration());

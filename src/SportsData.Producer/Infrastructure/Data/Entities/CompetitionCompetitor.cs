@@ -36,6 +36,8 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public ICollection<CompetitionCompetitorScore> Scores { get; set; } = [];
 
+    public ICollection<CompetitionCompetitorRecord> Records { get; set; } = [];
+
     public ICollection<CompetitionCompetitorExternalId> ExternalIds { get; set; } = [];
 
     public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -88,6 +90,12 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
             // NEW: Children: Statistics
             builder.HasMany(x => x.Statistics)
+                .WithOne(x => x.CompetitionCompetitor)
+                .HasForeignKey(x => x.CompetitionCompetitorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Children: Records
+            builder.HasMany(x => x.Records)
                 .WithOne(x => x.CompetitionCompetitor)
                 .HasForeignKey(x => x.CompetitionCompetitorId)
                 .OnDelete(DeleteBehavior.Cascade);

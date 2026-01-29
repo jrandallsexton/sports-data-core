@@ -225,7 +225,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             seasonYear,
             command.CorrelationId);
 
-        // TODO: This might be a bug b/c it does not check for dependency errors/issues
         await ProcessDependencies(franchise, canonicalEntity, dto, command);
 
         await ProcessDependents(canonicalEntity, dto, command);

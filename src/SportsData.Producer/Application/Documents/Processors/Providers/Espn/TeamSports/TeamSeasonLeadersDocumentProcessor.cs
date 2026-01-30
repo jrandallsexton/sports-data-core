@@ -105,15 +105,43 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         // Preflight dependency resolution - fail fast before deleting existing data
         var athleteSeasonCache = new Dictionary<string, Guid>();
-        foreach (var category in dto.Categories)
+        
+        if (dto.Categories != null)
         {
-            foreach (var leaderDto in category.Leaders)
+            foreach (var category in dto.Categories)
             {
-                if (leaderDto.Statistics?.Ref is null)
+                if (category == null)
+                {
+                    _logger.LogWarning("Encountered null category, skipping.");
                     continue;
+                }
 
-                // This will throw ExternalDocumentNotSourcedException if dependency missing
-                await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+                if (category.Leaders == null)
+                {
+                    _logger.LogDebug("Category has null Leaders collection, skipping. Category={CategoryName}", category.Name);
+                    continue;
+                }
+
+                foreach (var leaderDto in category.Leaders)
+                {
+                    if (leaderDto == null)
+                    {
+                        _logger.LogWarning("Encountered null leader in category, skipping. Category={CategoryName}", category.Name);
+                        continue;
+                    }
+
+                    if (leaderDto.Athlete?.Ref == null)
+                    {
+                        _logger.LogDebug("Leader has null Athlete or Ref, skipping. Category={CategoryName}", category.Name);
+                        continue;
+                    }
+
+                    if (leaderDto.Statistics?.Ref == null)
+                        continue;
+
+                    // This will throw ExternalDocumentNotSourcedException if dependency missing
+                    await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+                }
             }
         }
 
@@ -133,8 +161,21 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         var leaders = new List<FranchiseSeasonLeader>();
 
-        foreach (var category in dto.Categories)
+        if (dto.Categories != null)
         {
+            foreach (var category in dto.Categories)
+            {
+                if (category == null)
+                {
+                    _logger.LogWarning("Encountered null category during processing, skipping.");
+                    continue;
+                }
+
+                if (category.Leaders == null)
+                {
+                    _logger.LogDebug("Category has null Leaders collection during processing, skipping. Category={CategoryName}", category.Name);
+                    continue;
+                }
             var leaderCategory = await _dataContext.LeaderCategories
                 .FirstOrDefaultAsync(x => x.Name == category.Name);
 
@@ -161,7 +202,32 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                 };
 
                 _dataContext.LeaderCategories.Add(leaderCategory);
-                await _dataContext.SaveChangesAsync();
+                
+                try
+                {
+                    await _dataContext.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // Race condition: another processor created this category concurrently
+                    // Discard our failed attempt and retrieve the existing category
+                    _logger.LogDebug("Concurrent category creation detected, retrieving existing category. Category={Category}", category.Name);
+                    
+                    // Remove the failed entity from change tracker
+                    _dataContext.Entry(leaderCategory).State = EntityState.Detached;
+                    
+                    // Reload the existing category
+                    leaderCategory = await _dataContext.LeaderCategories
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Name == category.Name);
+                    
+                    if (leaderCategory == null)
+                    {
+                        // Shouldn't happen, but log and rethrow if it does
+                        _logger.LogError("Failed to retrieve category after concurrent creation. Category={Category}", category.Name);
+                        throw;
+                    }
+                }
             }
 
             var leaderEntity = FranchiseSeasonLeaderExtensions.AsEntity(
@@ -173,9 +239,21 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
             foreach (var leaderDto in category.Leaders)
             {
-                if (leaderDto.Statistics?.Ref is null)
+                if (leaderDto == null)
                 {
-                    _logger.LogDebug("Leader statistics ref is null, skipping.");
+                    _logger.LogWarning("Encountered null leader during processing, skipping. Category={CategoryName}", category.Name);
+                    continue;
+                }
+
+                if (leaderDto.Athlete?.Ref == null)
+                {
+                    _logger.LogDebug("Leader has null Athlete or Ref during processing, skipping. Category={CategoryName}", category.Name);
+                    continue;
+                }
+
+                if (leaderDto.Statistics?.Ref == null)
+                {
+                    _logger.LogDebug("Leader statistics ref is null, skipping. Category={CategoryName}", category.Name);
                     continue;
                 }
 
@@ -201,6 +279,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             }
 
             leaders.Add(leaderEntity);
+            }
         }
 
         await _dataContext.FranchiseSeasonLeaders.AddRangeAsync(leaders);

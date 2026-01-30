@@ -227,6 +227,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAward.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonAwardWinner.EntityConfiguration());
 
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonLeader.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseSeasonLeaderStat.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new FranchiseSeasonLogo.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonMetric.EntityConfiguration());

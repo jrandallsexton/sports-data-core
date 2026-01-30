@@ -53,7 +53,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 evt.SourceDataProvider,
                 newCorrelationId,  // ✅ Use new correlation ID
                 evt.CausationId,
-                evt.PropertyBag);
+                evt.PropertyBag,
+                evt.IncludeLinkedDocumentTypes);
         }
 
         using (_logger.BeginScope(new Dictionary<string, object>
@@ -121,7 +122,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             DocumentType: evt.DocumentType,
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
-            BypassCache: true); // TODO: I cannot think of a reason where would ever want a cached document here.
+            BypassCache: true, // TODO: I cannot think of a reason where would ever want a cached document here.
+            IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
         _logger.LogInformation(
             "Enqueuing ProcessResourceIndexItem. UrlHash={UrlHash}, DocumentType={DocumentType}, CorrelationId={CorrelationId}",
@@ -217,7 +219,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     DocumentType: evt.DocumentType,
                     ParentId: evt.ParentId,
                     SeasonYear: evt.SeasonYear,
-                    BypassCache: true);
+                    BypassCache: true,
+                    IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;

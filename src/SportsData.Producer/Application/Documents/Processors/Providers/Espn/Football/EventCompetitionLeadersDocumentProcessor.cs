@@ -78,10 +78,10 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnEventCompetitionLeadersDto>();
+        var dto = command.Document.FromJson<EspnLeadersDto>();
         if (dto is null || string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("Invalid or null EspnEventCompetitionLeadersDto.");
+            _logger.LogError("Invalid or null EspnLeadersDto.");
             return;
         }
 
@@ -126,16 +126,36 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
         foreach (var category in dto.Categories)
         {
             var leaderCategory = await _dataContext.LeaderCategories
-                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Name == category.Name);
 
             if (leaderCategory == null)
             {
-                _logger.LogWarning("Leader category not found, skipping. Category={Category}", category.Name);
-                continue;
+                _logger.LogInformation("Leader category not found, creating new category. Category={Category}, DisplayName={DisplayName}",
+                    category.Name,
+                    category.DisplayName);
+
+                // Get next available Id (ValueGeneratedNever requires explicit Id)
+                var maxId = await _dataContext.LeaderCategories
+                    .AsNoTracking()
+                    .MaxAsync(x => (int?)x.Id) ?? 0;
+
+                leaderCategory = new CompetitionLeaderCategory
+                {
+                    Id = maxId + 1,
+                    Name = category.Name,
+                    DisplayName = category.DisplayName,
+                    ShortDisplayName = category.ShortDisplayName ?? category.DisplayName,
+                    Abbreviation = category.Abbreviation ?? category.DisplayName,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = command.CorrelationId
+                };
+
+                _dataContext.LeaderCategories.Add(leaderCategory);
+                await _dataContext.SaveChangesAsync();
             }
 
-            var leaderEntity = category.AsEntity(
+            var leaderEntity = CompetitionLeaderExtensions.AsEntity(
+                category,
                 competitionId,
                 leaderCategory.Id,
                 command.CorrelationId
@@ -162,7 +182,8 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                     DocumentType.EventCompetitionAthleteStatistics,
                     CausationId.Producer.EventCompetitionLeadersDocumentProcessor);
 
-                var stat = leaderDto.AsEntity(
+                var stat = CompetitionLeaderStatExtensions.AsEntity(
+                    leaderDto,
                     parentLeaderId: leaderEntity.Id,
                     athleteSeasonId: athleteSeasonId,
                     franchiseSeasonId: franchiseSeasonId,

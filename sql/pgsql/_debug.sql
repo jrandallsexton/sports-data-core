@@ -81,7 +81,8 @@ select * from public."FranchiseSeasonRanking" order by "Date", "Name"
 select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
 select * from public."FranchiseSeasonRanking" where "ShortHeadline" = '2025 CFP Seedings: Week 16' order by "Date"
-
+select * from public."FranchiseSeasonLeader" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
+select * from public."FranchiseSeasonLeaderStat"
 --update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c' where "ShortHeadline" = '2025 CFP Rankings: Week 16'
@@ -89,6 +90,7 @@ select * from public."FranchiseSeasonRanking" where "ShortHeadline" = '2025 CFP 
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c' where "ShortHeadline" = '2025 AFCA Coaches Poll: Week 16'
 select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankingId" = 'dbb70f8d-41ff-ab2b-3eac-a70fa97f9cbb'
 
+select * from public."AthleteSeason" where "Id" = 'e6fcd345-7aa6-bc54-4cfd-db0d66935e24'
 
 
 select * from public."Season"

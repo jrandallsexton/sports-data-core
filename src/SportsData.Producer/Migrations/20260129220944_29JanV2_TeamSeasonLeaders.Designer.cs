@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260129220944_29JanV2_TeamSeasonLeaders")]
+    partial class _29JanV2_TeamSeasonLeaders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4899,6 +4902,9 @@ namespace SportsData.Producer.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("FranchiseSeasonLeaderId")
                         .HasColumnType("uuid");
 
@@ -4915,6 +4921,8 @@ namespace SportsData.Producer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteSeasonId");
+
+                    b.HasIndex("FranchiseSeasonId");
 
                     b.HasIndex("FranchiseSeasonLeaderId");
 
@@ -8248,6 +8256,12 @@ namespace SportsData.Producer.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
+                        .WithMany()
+                        .HasForeignKey("FranchiseSeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeasonLeader", "FranchiseSeasonLeader")
                         .WithMany("Stats")
                         .HasForeignKey("FranchiseSeasonLeaderId")
@@ -8255,6 +8269,8 @@ namespace SportsData.Producer.Migrations
                         .IsRequired();
 
                     b.Navigation("AthleteSeason");
+
+                    b.Navigation("FranchiseSeason");
 
                     b.Navigation("FranchiseSeasonLeader");
                 });

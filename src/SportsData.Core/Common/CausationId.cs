@@ -44,6 +44,7 @@ namespace SportsData.Core.Common
             public static Guid SeasonTypeWeekRankingsDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001A");
             public static Guid TeamSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001B");
             public static Guid TeamSeasonRecordDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001C");
+            public static Guid TeamSeasonLeadersDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000050");
             public static Guid VenueCreatedDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001D");
             public static Guid VenueDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000001E");
             public static Guid EventCompetitionPlayDocumentProcessor = new Guid("10000200-0000-0000-0000-00000000001E");

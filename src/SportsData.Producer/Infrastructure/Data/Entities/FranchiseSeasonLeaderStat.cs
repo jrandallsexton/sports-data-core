@@ -17,8 +17,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public Guid AthleteSeasonId { get; set; }
         public AthleteSeason AthleteSeason { get; set; } = null!;
 
-        public string DisplayValue { get; set; } = null!;
-        public double Value { get; set; }
+        public required string DisplayValue { get; set; }
+        public decimal Value { get; set; }
 
         public Guid FranchiseSeasonId { get; set; }
         public FranchiseSeason FranchiseSeason { get; set; } = null!;

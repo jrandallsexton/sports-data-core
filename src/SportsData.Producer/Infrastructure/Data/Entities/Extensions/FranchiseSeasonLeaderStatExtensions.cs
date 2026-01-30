@@ -18,7 +18,7 @@ public static class FranchiseSeasonLeaderStatExtensions
             AthleteSeasonId = athleteSeasonId,
             FranchiseSeasonId = franchiseSeasonId,
             DisplayValue = dto.DisplayValue,
-            Value = dto.Value,
+            Value = (decimal)dto.Value,
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId
         };

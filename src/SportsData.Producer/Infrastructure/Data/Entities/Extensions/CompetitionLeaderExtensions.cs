@@ -5,7 +5,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 public static class CompetitionLeaderExtensions
 {
     public static CompetitionLeader AsEntity(
-        this EspnEventCompetitionLeadersCategoryDto dto,
+        this EspnLeadersCategoryDto dto,
         Guid competitionId,
         int leaderCategoryId,
         Guid correlationId)

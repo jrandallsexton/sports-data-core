@@ -8,7 +8,11 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 {
-    public class EspnEventCompetitionLeadersDto : IHasRef
+    /// <summary>
+    /// ESPN Leaders DTO - used for both EventCompetitionLeaders and TeamSeasonLeaders.
+    /// ESPN uses identical structure for competition-level (game) and season-level (team) leader statistics.
+    /// </summary>
+    public class EspnLeadersDto : IHasRef
     {
         [JsonPropertyName("$ref")]
         public Uri Ref { get; set; }
@@ -26,10 +30,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string Type { get; set; }
 
         [JsonPropertyName("categories")]
-        public List<EspnEventCompetitionLeadersCategoryDto> Categories { get; set; }
+        public List<EspnLeadersCategoryDto> Categories { get; set; }
     }
 
-    public class EspnEventCompetitionLeadersCategoryDto
+    public class EspnLeadersCategoryDto
     {
         [JsonPropertyName("name")]
         public string Name { get; set; }
@@ -44,10 +48,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string Abbreviation { get; set; }
 
         [JsonPropertyName("leaders")]
-        public List<EspnEventCompetitionLeadersLeaderDto> Leaders { get; set; }
+        public List<EspnLeadersLeaderDto> Leaders { get; set; }
     }
 
-    public class EspnEventCompetitionLeadersLeaderDto
+    public class EspnLeadersLeaderDto
     {
         [JsonPropertyName("displayValue")]
         public string DisplayValue { get; set; }

@@ -15,5 +15,6 @@ public record DocumentRequested(
     SourceDataProvider SourceDataProvider,
     Guid CorrelationId,
     Guid CausationId,
-    Dictionary<string, string>? PropertyBag = null
+    Dictionary<string, string>? PropertyBag = null,
+    List<DocumentType>? IncludeLinkedDocumentTypes = null
 ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);

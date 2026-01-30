@@ -134,13 +134,13 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             .Include(x => x.Categories)
                 .ThenInclude(c => c.Stats)
             .AsSplitQuery()
-            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
 
         if (existing is not null)
         {
             _logger.LogInformation("Removing existing AthleteCompetitionStatistic {Id} for replacement", existing.Id);
             _dataContext.AthleteCompetitionStatistics.Remove(existing);
+            await _dataContext.SaveChangesAsync();
         }
 
         // --- Create New Entity ---

@@ -134,8 +134,14 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                     category.Name,
                     category.DisplayName);
 
+                // Get next available Id (ValueGeneratedNever requires explicit Id)
+                var maxId = await _dataContext.LeaderCategories
+                    .AsNoTracking()
+                    .MaxAsync(x => (int?)x.Id) ?? 0;
+
                 leaderCategory = new CompetitionLeaderCategory
                 {
+                    Id = maxId + 1,
                     Name = category.Name,
                     DisplayName = category.DisplayName,
                     ShortDisplayName = category.ShortDisplayName ?? category.DisplayName,
@@ -145,7 +151,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 };
 
                 _dataContext.LeaderCategories.Add(leaderCategory);
-                await _dataContext.SaveChangesAsync(); // Save to get the generated Id
+                await _dataContext.SaveChangesAsync();
             }
 
             var leaderEntity = CompetitionLeaderExtensions.AsEntity(

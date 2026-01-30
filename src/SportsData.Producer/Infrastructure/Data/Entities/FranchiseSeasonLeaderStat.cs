@@ -20,9 +20,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public required string DisplayValue { get; set; }
         public decimal Value { get; set; }
 
-        public Guid FranchiseSeasonId { get; set; }
-        public FranchiseSeason FranchiseSeason { get; set; } = null!;
-
         public class EntityConfiguration : IEntityTypeConfiguration<FranchiseSeasonLeaderStat>
         {
             public void Configure(EntityTypeBuilder<FranchiseSeasonLeaderStat> builder)
@@ -45,11 +42,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasOne(x => x.AthleteSeason)
                     .WithMany()
                     .HasForeignKey(x => x.AthleteSeasonId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                builder.HasOne(x => x.FranchiseSeason)
-                    .WithMany()
-                    .HasForeignKey(x => x.FranchiseSeasonId)
                     .OnDelete(DeleteBehavior.Restrict);
             }
         }

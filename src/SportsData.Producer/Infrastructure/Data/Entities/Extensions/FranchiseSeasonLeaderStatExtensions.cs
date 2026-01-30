@@ -8,7 +8,6 @@ public static class FranchiseSeasonLeaderStatExtensions
         this EspnLeadersLeaderDto dto,
         Guid parentLeaderId,
         Guid athleteSeasonId,
-        Guid franchiseSeasonId,
         Guid correlationId)
     {
         return new FranchiseSeasonLeaderStat
@@ -16,8 +15,7 @@ public static class FranchiseSeasonLeaderStatExtensions
             Id = Guid.NewGuid(),
             FranchiseSeasonLeaderId = parentLeaderId,
             AthleteSeasonId = athleteSeasonId,
-            FranchiseSeasonId = franchiseSeasonId,
-            DisplayValue = dto.DisplayValue,
+            DisplayValue = dto.DisplayValue ?? "N/A",
             Value = (decimal)dto.Value,
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId

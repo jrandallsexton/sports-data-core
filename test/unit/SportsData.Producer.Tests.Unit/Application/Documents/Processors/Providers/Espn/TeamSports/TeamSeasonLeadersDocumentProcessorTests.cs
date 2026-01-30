@@ -36,7 +36,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         _dto = documentJson.FromJson<EspnLeadersDto>()!;
     }
 
-    private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid franchiseSeasonId)
+    private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid franchiseSeasonId, bool seedCategories = true)
     {
         // Seed franchise season
         var teamSeasonRef = new Uri("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99");
@@ -71,19 +71,22 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
 
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
 
-        // Seed LeaderCategories
-        var nextCategoryId = 1;
-        foreach (var category in leadersDto.Categories)
+        // Seed LeaderCategories (optional)
+        if (seedCategories)
         {
-            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+            var nextCategoryId = 1;
+            foreach (var category in leadersDto.Categories)
             {
-                Id = nextCategoryId++,
-                Name = category.Name,
-                DisplayName = category.DisplayName,
-                ShortDisplayName = category.ShortDisplayName,
-                Abbreviation = category.Abbreviation,
-                CreatedUtc = DateTime.UtcNow
-            });
+                FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+                {
+                    Id = nextCategoryId++,
+                    Name = category.Name,
+                    DisplayName = category.DisplayName,
+                    ShortDisplayName = category.ShortDisplayName,
+                    Abbreviation = category.Abbreviation,
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
         }
 
         // Seed athlete seasons for all leaders in the DTO
@@ -244,7 +247,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         var franchiseSeasonId = Guid.NewGuid();
 
         // Don't seed categories - let the processor create them
-        await SeedTestDataAsync(dto, identityGenerator, franchiseSeasonId);
+        await SeedTestDataAsync(dto, identityGenerator, franchiseSeasonId, seedCategories: false);
 
         var leadersIdentity = identityGenerator.Generate(dto.Ref);
 

@@ -131,8 +131,14 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     category.Name,
                     category.DisplayName);
 
+                // Get next available Id (ValueGeneratedNever requires explicit Id)
+                var maxId = await _dataContext.LeaderCategories
+                    .AsNoTracking()
+                    .MaxAsync(x => (int?)x.Id) ?? 0;
+
                 leaderCategory = new CompetitionLeaderCategory
                 {
+                    Id = maxId + 1,
                     Name = category.Name,
                     DisplayName = category.DisplayName,
                     ShortDisplayName = category.ShortDisplayName ?? category.DisplayName,
@@ -142,7 +148,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                 };
 
                 _dataContext.LeaderCategories.Add(leaderCategory);
-                await _dataContext.SaveChangesAsync(); // Save to get the generated Id
+                await _dataContext.SaveChangesAsync();
             }
 
             var leaderEntity = FranchiseSeasonLeaderExtensions.AsEntity(
@@ -164,19 +170,18 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                 var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                // Spawn athlete statistics document request
+                // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
                 await PublishChildDocumentRequest(
                     command,
                     leaderDto.Statistics,
                     athleteSeasonIdentity.CanonicalId,
-                    DocumentType.EventCompetitionAthleteStatistics,
+                    DocumentType.AthleteSeasonStatistics,
                     CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
 
                 var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
                     leaderDto,
                     parentLeaderId: leaderEntity.Id,
                     athleteSeasonId: athleteSeasonId,
-                    franchiseSeasonId: franchiseSeasonId,
                     correlationId: command.CorrelationId);
 
                 leaderEntity.Stats.Add(stat);

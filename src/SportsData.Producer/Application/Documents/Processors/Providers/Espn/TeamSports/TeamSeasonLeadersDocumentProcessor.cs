@@ -105,7 +105,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         // Preflight dependency resolution - fail fast before deleting existing data
         var athleteSeasonCache = new Dictionary<string, Guid>();
-        
+
         if (dto.Categories != null)
         {
             foreach (var category in dto.Categories)
@@ -176,109 +176,109 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     _logger.LogDebug("Category has null Leaders collection during processing, skipping. Category={CategoryName}", category.Name);
                     continue;
                 }
-            var leaderCategory = await _dataContext.LeaderCategories
-                .FirstOrDefaultAsync(x => x.Name == category.Name);
+                var leaderCategory = await _dataContext.LeaderCategories
+                    .FirstOrDefaultAsync(x => x.Name == category.Name);
 
-            if (leaderCategory == null)
-            {
-                _logger.LogInformation("Leader category not found, creating new category. Category={Category}, DisplayName={DisplayName}",
-                    category.Name,
-                    category.DisplayName);
-
-                // Get next available Id (ValueGeneratedNever requires explicit Id)
-                var maxId = await _dataContext.LeaderCategories
-                    .AsNoTracking()
-                    .MaxAsync(x => (int?)x.Id) ?? 0;
-
-                leaderCategory = new CompetitionLeaderCategory
+                if (leaderCategory == null)
                 {
-                    Id = maxId + 1,
-                    Name = category.Name,
-                    DisplayName = category.DisplayName,
-                    ShortDisplayName = category.ShortDisplayName ?? category.DisplayName,
-                    Abbreviation = category.Abbreviation ?? category.DisplayName,
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = command.CorrelationId
-                };
+                    _logger.LogInformation("Leader category not found, creating new category. Category={Category}, DisplayName={DisplayName}",
+                        category.Name,
+                        category.DisplayName);
 
-                _dataContext.LeaderCategories.Add(leaderCategory);
-                
-                try
-                {
-                    await _dataContext.SaveChangesAsync();
-                }
-                catch (DbUpdateException)
-                {
-                    // Race condition: another processor created this category concurrently
-                    // Discard our failed attempt and retrieve the existing category
-                    _logger.LogDebug("Concurrent category creation detected, retrieving existing category. Category={Category}", category.Name);
-                    
-                    // Remove the failed entity from change tracker
-                    _dataContext.Entry(leaderCategory).State = EntityState.Detached;
-                    
-                    // Reload the existing category
-                    leaderCategory = await _dataContext.LeaderCategories
+                    // Get next available Id (ValueGeneratedNever requires explicit Id)
+                    var maxId = await _dataContext.LeaderCategories
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(x => x.Name == category.Name);
-                    
-                    if (leaderCategory == null)
+                        .MaxAsync(x => (int?)x.Id) ?? 0;
+
+                    leaderCategory = new CompetitionLeaderCategory
                     {
-                        // Shouldn't happen, but log and rethrow if it does
-                        _logger.LogError("Failed to retrieve category after concurrent creation. Category={Category}", category.Name);
-                        throw;
+                        Id = maxId + 1,
+                        Name = category.Name,
+                        DisplayName = category.DisplayName,
+                        ShortDisplayName = category.ShortDisplayName ?? category.DisplayName,
+                        Abbreviation = category.Abbreviation ?? category.DisplayName,
+                        CreatedUtc = DateTime.UtcNow,
+                        CreatedBy = command.CorrelationId
+                    };
+
+                    _dataContext.LeaderCategories.Add(leaderCategory);
+
+                    try
+                    {
+                        await _dataContext.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException)
+                    {
+                        // Race condition: another processor created this category concurrently
+                        // Discard our failed attempt and retrieve the existing category
+                        _logger.LogDebug("Concurrent category creation detected, retrieving existing category. Category={Category}", category.Name);
+
+                        // Remove the failed entity from change tracker
+                        _dataContext.Entry(leaderCategory).State = EntityState.Detached;
+
+                        // Reload the existing category
+                        leaderCategory = await _dataContext.LeaderCategories
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(x => x.Name == category.Name);
+
+                        if (leaderCategory == null)
+                        {
+                            // Shouldn't happen, but log and rethrow if it does
+                            _logger.LogError("Failed to retrieve category after concurrent creation. Category={Category}", category.Name);
+                            throw;
+                        }
                     }
                 }
-            }
 
-            var leaderEntity = FranchiseSeasonLeaderExtensions.AsEntity(
-                category,
-                franchiseSeasonId,
-                leaderCategory.Id,
-                command.CorrelationId
-            );
+                var leaderEntity = FranchiseSeasonLeaderExtensions.AsEntity(
+                    category,
+                    franchiseSeasonId,
+                    leaderCategory.Id,
+                    command.CorrelationId
+                );
 
-            foreach (var leaderDto in category.Leaders)
-            {
-                if (leaderDto == null)
+                foreach (var leaderDto in category.Leaders)
                 {
-                    _logger.LogWarning("Encountered null leader during processing, skipping. Category={CategoryName}", category.Name);
-                    continue;
+                    if (leaderDto == null)
+                    {
+                        _logger.LogWarning("Encountered null leader during processing, skipping. Category={CategoryName}", category.Name);
+                        continue;
+                    }
+
+                    if (leaderDto.Athlete?.Ref == null)
+                    {
+                        _logger.LogDebug("Leader has null Athlete or Ref during processing, skipping. Category={CategoryName}", category.Name);
+                        continue;
+                    }
+
+                    if (leaderDto.Statistics?.Ref == null)
+                    {
+                        _logger.LogDebug("Leader statistics ref is null, skipping. Category={CategoryName}", category.Name);
+                        continue;
+                    }
+
+                    var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+
+                    var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
+
+                    // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
+                    await PublishChildDocumentRequest(
+                        command,
+                        leaderDto.Statistics,
+                        athleteSeasonIdentity.CanonicalId,
+                        DocumentType.AthleteSeasonStatistics,
+                        CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+
+                    var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
+                        leaderDto,
+                        parentLeaderId: leaderEntity.Id,
+                        athleteSeasonId: athleteSeasonId,
+                        correlationId: command.CorrelationId);
+
+                    leaderEntity.Stats.Add(stat);
                 }
 
-                if (leaderDto.Athlete?.Ref == null)
-                {
-                    _logger.LogDebug("Leader has null Athlete or Ref during processing, skipping. Category={CategoryName}", category.Name);
-                    continue;
-                }
-
-                if (leaderDto.Statistics?.Ref == null)
-                {
-                    _logger.LogDebug("Leader statistics ref is null, skipping. Category={CategoryName}", category.Name);
-                    continue;
-                }
-
-                var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
-
-                var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
-
-                // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
-                await PublishChildDocumentRequest(
-                    command,
-                    leaderDto.Statistics,
-                    athleteSeasonIdentity.CanonicalId,
-                    DocumentType.AthleteSeasonStatistics,
-                    CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
-
-                var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
-                    leaderDto,
-                    parentLeaderId: leaderEntity.Id,
-                    athleteSeasonId: athleteSeasonId,
-                    correlationId: command.CorrelationId);
-
-                leaderEntity.Stats.Add(stat);
-            }
-
-            leaders.Add(leaderEntity);
+                leaders.Add(leaderEntity);
             }
         }
 

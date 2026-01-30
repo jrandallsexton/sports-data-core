@@ -103,7 +103,21 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             return;
         }
 
-        // Delete existing leaders & stats (wholesale replacement pattern)
+        // Preflight dependency resolution - fail fast before deleting existing data
+        var athleteSeasonCache = new Dictionary<string, Guid>();
+        foreach (var category in dto.Categories)
+        {
+            foreach (var leaderDto in category.Leaders)
+            {
+                if (leaderDto.Statistics?.Ref is null)
+                    continue;
+
+                // This will throw ExternalDocumentNotSourcedException if dependency missing
+                await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+            }
+        }
+
+        // All dependencies resolved - safe to proceed with wholesale replacement
         var existingStatsCount = franchiseSeason.Leaders.Sum(l => l.Stats.Count);
         var existingLeadersCount = franchiseSeason.Leaders.Count;
 
@@ -117,7 +131,6 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             existingLeadersCount,
             existingStatsCount);
 
-        var athleteSeasonCache = new Dictionary<string, Guid>();
         var leaders = new List<FranchiseSeasonLeader>();
 
         foreach (var category in dto.Categories)

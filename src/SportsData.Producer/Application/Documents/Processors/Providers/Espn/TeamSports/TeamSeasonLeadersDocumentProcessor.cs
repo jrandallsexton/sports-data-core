@@ -288,7 +288,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         var totalStats = leaders.Sum(l => l.Stats.Count);
         _logger.LogInformation("Persisted FranchiseSeasonLeaders. FranchiseSeasonId={FranchiseSeasonId}, Categories={CategoryCount}, Leaders={LeaderCount}, Stats={StatCount}",
             franchiseSeasonId,
-            dto.Categories.Count,
+            dto.Categories?.Count ?? 0,
             leaders.Count,
             totalStats);
     }

@@ -99,4 +99,35 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
         updated.Should().NotBeNull();
         updated!.Experience.Should().Be(25);
     }
+
+    [Fact]
+    public async Task WhenCoachDoesNotExist_ShouldCreateWithDateOfBirth()
+    {
+        // Arrange
+        var bus = Mocker.GetMock<IEventBus>();
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaaCoach.json");
+        var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";
+        var urlHash = HashProvider.UrlHash(url);
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Coach)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, urlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        var created = await TeamSportDataContext.Coaches
+            .FirstOrDefaultAsync(x => x.FirstName == "Brian" && x.LastName == "Kelly");
+        created.Should().NotBeNull();
+        created!.DateOfBirth.Should().NotBeNull();
+        created.DateOfBirth!.Value.Year.Should().Be(1961);
+    }
 }

@@ -109,13 +109,35 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     private async Task ProcessUpdate(ProcessDocumentCommand command, EspnCoachDto dto, Coach coach)
     {
         var updated = false;
+        
+        if (coach.FirstName != dto.FirstName)
+        {
+            coach.FirstName = dto.FirstName;
+            updated = true;
+        }
+        
+        if (coach.LastName != dto.LastName)
+        {
+            coach.LastName = dto.LastName;
+            updated = true;
+        }
+        
+        if (coach.DateOfBirth != dto.DateOfBirth)
+        {
+            coach.DateOfBirth = dto.DateOfBirth;
+            updated = true;
+        }
+        
         if (coach.Experience != dto.Experience)
         {
             coach.Experience = dto.Experience;
             updated = true;
         }
+        
         if (updated)
         {
+            coach.ModifiedUtc = DateTime.UtcNow;
+            coach.ModifiedBy = command.CorrelationId;
             await _dataContext.SaveChangesAsync();
             _logger.LogInformation("Updated Coach entity: {CoachId}", coach.Id);
         }

@@ -83,6 +83,10 @@ select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Dat
 select * from public."FranchiseSeasonRanking" where "ShortHeadline" = '2025 CFP Seedings: Week 16' order by "Date"
 select * from public."FranchiseSeasonLeader" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 select * from public."FranchiseSeasonLeaderStat"
+select * from public."Coach"
+select * from public."CoachRecord"
+select * from public."CoachRecordStat" order by "Name"
+select * from public."CoachSeason"
 --update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c' where "ShortHeadline" = '2025 CFP Rankings: Week 16'

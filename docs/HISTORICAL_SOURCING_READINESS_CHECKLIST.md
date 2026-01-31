@@ -87,17 +87,31 @@ This approach leverages ESPN's 1:1 mapping between athlete season refs and canon
 ---
 
 ### 4. TeamSeasonCoachDocumentProcessor
-**Status:** ❌ Unimplemented (skeleton only)  
-**Impact:** MEDIUM - Coaching staff data not captured  
+**Status:** ✅ Complete  
+**Impact:** MEDIUM - Coaching staff data captured via wholesale replacement  
 **File:** `TeamSeasonCoachDocumentProcessor.cs`  
-**Test File:** `TeamSeasonCoachDocumentProcessorTests.cs` (exists, skipped with "TBD")
+**Test File:** `TeamSeasonCoachDocumentProcessorTests.cs`  
+**Estimated Effort:** 4-6 hours  
+**Actual Effort:** ~3 hours
 
-**Requirements:**
-- [ ] Deserialize DTO
-- [ ] Create/link Coach entity
-- [ ] Link to FranchiseSeason
-- [ ] Store position/role data
-- [ ] Unit tests
+**Implementation Details:**
+- Processes ESPN resource index of coaches for a team season
+- Wholesale replacement pattern: deletes existing CoachSeason entries, spawns child documents
+- No inline processing - spawns DocumentType.CoachSeason for each coach ref
+- CoachBySeasonDocumentProcessor handles individual coach season data
+- Uses `CausationId.Producer.TeamSeasonCoachDocumentProcessor`
+
+**Files Modified:**
+- ✅ `TeamSeasonCoachDocumentProcessor.cs` - wholesale replacement implementation
+- ✅ `TeamSeasonCoachDocumentProcessorTests.cs` - 3 passing tests
+- ✅ `CausationId.cs` - added TeamSeasonCoachDocumentProcessor GUID
+
+**Unit Tests:**
+- ✅ `ProcessAsync_DeletesExistingCoachSeasons_WhenProcessingResourceIndex` - validates wholesale replacement
+- ✅ `ProcessAsync_SpawnsChildDocuments_WhenResourceIndexContainsCoaches` - validates child document spawning
+- ✅ `ProcessAsync_ReplacesExistingCoachSeasons_WhenProcessedTwice` - validates idempotency
+
+**Key Pattern:** Simple resource index processor - deserializes `EspnResourceIndexDto`, deletes existing `CoachSeason` entries for FranchiseSeason, spawns child `DocumentType.CoachSeason` documents. No inline data processing.
 
 ---
 
@@ -292,9 +306,20 @@ Before implementing processors, verify ESPN actually provides this data for hist
    - Build succeeds, all 118 document processor tests pass
 
 ### Phase 2: High Value (Before First Historical Run)
-3. **Implement TeamSeasonLeadersDocumentProcessor** (4-6 hours)
+3. **Implement TeamSeasonLeadersDocumentProcessor** ✅ COMPLETE (actual: ~6 hours)
+   - Implemented with wholesale replacement pattern
+   - Preflight dependency resolution to prevent data loss
+   - Category auto-creation with race condition handling
+   - Comprehensive null guards for malformed ESPN data
+   - All 3 unit tests passing
 4. **Implement TeamSeasonCoachDocumentProcessor** (4-6 hours)
 5. **Implement TeamSeasonAwardDocumentProcessor** (4-6 hours)
+6. **Refactor child document spawning pattern across all processors** (8-12 hours)
+   - Apply conditional spawn pattern using `ShouldSpawn(DocumentType, command)` 
+   - Prevents duplicate child document requests when processor re-runs
+   - Reference: AthleteSeasonDocumentProcessor for correct pattern
+   - Affects: TeamSeasonLeadersDocumentProcessor, EventCompetitionLeadersDocumentProcessor, and others
+   - Critical for historical sourcing to avoid exponential duplicate spawns
 
 ### Phase 3: Optional (Can Run Historical Sourcing Without)
 6. TeamSeasonInjuriesDocumentProcessor

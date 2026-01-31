@@ -15,6 +15,8 @@ public class CoachSeason : CanonicalEntityBase<Guid>
 
     public string? Title { get; set; }
 
+    public bool IsActive { get; set; }
+
     public FranchiseSeason? FranchiseSeason { get; set; }
 
     public class EntityConfiguration : IEntityTypeConfiguration<CoachSeason>

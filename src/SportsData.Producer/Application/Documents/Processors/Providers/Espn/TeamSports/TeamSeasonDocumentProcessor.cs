@@ -246,97 +246,136 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         ProcessDocumentCommand command)
     {
         // logos
-        await ProcessLogos(canonicalEntity.Id, dto, command);
+        if (ShouldSpawn(DocumentType.FranchiseSeasonLogo, command))
+        {
+            await ProcessLogos(canonicalEntity.Id, dto, command);
+        }
 
         // Wins/Losses/PtsFor/PtsAgainst
-        await PublishChildDocumentRequest(
-            command,
-            dto.Record,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonRecord,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonRecord, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Record,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonRecord,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // rankings
-        await PublishChildDocumentRequest(
-            command,
-            dto.Ranks,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonRank,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Ranks,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonRank,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // stats
-        await PublishChildDocumentRequest(
-            command,
-            dto.Statistics,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonStatistics,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Statistics,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonStatistics,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // athletes
-        await PublishChildDocumentRequest(
-            command,
-            dto.Athletes,
-            canonicalEntity.Id,
-            DocumentType.AthleteSeason,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.AthleteSeason, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Athletes,
+                canonicalEntity.Id,
+                DocumentType.AthleteSeason,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // leaders
-        await PublishChildDocumentRequest(
-            command,
-            dto.Leaders,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonLeaders,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Leaders,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonLeaders,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // injuries
-        await PublishChildDocumentRequest(
-            command,
-            dto.Injuries,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonInjuries,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonInjuries, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Injuries,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonInjuries,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // TODO: MED: Request sourcing of team season notes (data not available when following link)
 
         // Process record ATS (Against The Spread)
-        await PublishChildDocumentRequest(
-            command,
-            dto.AgainstTheSpreadRecords,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonRecordAts,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonRecordAts, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.AgainstTheSpreadRecords,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonRecordAts,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // Process awards
-        await PublishChildDocumentRequest(
-            command,
-            dto.Awards,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonAward,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonAward, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Awards,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonAward,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // Process projection
-        await PublishChildDocumentRequest(
-            command,
-            dto.Projection,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonProjection,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonProjection, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Projection,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonProjection,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // Process events (schedule)
-        await PublishChildDocumentRequest(
-            command,
-            dto.Events,
-            canonicalEntity.Id,
-            DocumentType.Event,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.Event, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Events,
+                canonicalEntity.Id,
+                DocumentType.Event,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
 
         // Process coaches
-        await PublishChildDocumentRequest(
-            command,
-            dto.Coaches,
-            canonicalEntity.Id,
-            DocumentType.TeamSeasonCoach,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+        if (ShouldSpawn(DocumentType.TeamSeasonCoach, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Coaches,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonCoach,
+                CausationId.Producer.TeamSeasonDocumentProcessor);
+        }
+
+        // TODO: LOW: Add recruiting class sourcing - /v2/sports/football/leagues/college-football/recruiting/{year}/classes/{teamId}
+        // TODO: LOW: Add college entity sourcing - /v2/colleges/{collegeId} (separate from franchise, may contain additional university metadata)
     }
 
     private async Task ProcessLogos(
@@ -373,61 +412,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        // logos
-        if (ShouldSpawn(DocumentType.FranchiseSeasonLogo, command))
-        {
-            await ProcessLogos(existing.Id, dto, command);
-        }
-
-        // request updated statistics
-        if (ShouldSpawn(DocumentType.AthleteSeason, command))
-        {
-            await PublishChildDocumentRequest(
-                command,
-                dto.Athletes,
-                existing.Id,
-                DocumentType.AthleteSeason,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
-        }
-
-        if (ShouldSpawn(DocumentType.Event, command))
-        {
-            await PublishChildDocumentRequest(
-                command,
-                dto.Events,
-                existing.Id,
-                DocumentType.Event,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
-        }
-
-        if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
-        {
-            await PublishChildDocumentRequest(
-                command,
-                dto.Leaders,
-                existing.Id,
-                DocumentType.TeamSeasonLeaders,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
-        }
-
-        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
-        {
-            await PublishChildDocumentRequest(
-                command,
-                dto.Ranks,
-                existing.Id,
-                DocumentType.TeamSeasonRank,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
-        }
-
-        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
-        {
-            await PublishChildDocumentRequest(
-                command,
-                dto.Statistics,
-                existing.Id,
-                DocumentType.TeamSeasonStatistics,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
-        }
+        await ProcessChildren(existing, dto, command);
     }
 }

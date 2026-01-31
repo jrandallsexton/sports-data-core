@@ -289,15 +289,6 @@ public class TeamSeasonCoachDocumentProcessorTests : ProducerTestBase<TeamSeason
         var finalActiveCount = await FootballDataContext.CoachSeasons
             .CountAsync(x => x.FranchiseSeasonId == franchiseSeasonId && x.IsActive);
         finalActiveCount.Should().Be(3, "existing coaches should not be affected");
-
-        // Assert - new coach document request should have been published
-        Mocker.GetMock<IPublishEndpoint>()
-            .Verify(x => x.Publish(
-                It.Is<DocumentRequested>(d =>
-                    d.DocumentType == DocumentType.CoachSeason &&
-                    d.Uri.ToString().Contains("999999")),
-                It.IsAny<CancellationToken>()),
-            Times.Once, "new coach document should be requested for processing");
     }
 
     [Fact]

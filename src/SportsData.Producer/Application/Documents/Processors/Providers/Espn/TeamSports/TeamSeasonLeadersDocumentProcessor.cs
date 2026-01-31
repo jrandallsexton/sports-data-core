@@ -262,13 +262,17 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                     var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                    // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
-                    await PublishChildDocumentRequest(
-                        command,
-                        leaderDto.Statistics,
-                        athleteSeasonIdentity.CanonicalId,
-                        DocumentType.AthleteSeasonStatistics,
-                        CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                    // Apply ShouldSpawn filtering - respects command's DocumentTypeFilters
+                    if (ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+                    {
+                        // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
+                        await PublishChildDocumentRequest(
+                            command,
+                            leaderDto.Statistics,
+                            athleteSeasonIdentity.CanonicalId,
+                            DocumentType.AthleteSeasonStatistics,
+                            CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                    }
 
                     var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
                         leaderDto,

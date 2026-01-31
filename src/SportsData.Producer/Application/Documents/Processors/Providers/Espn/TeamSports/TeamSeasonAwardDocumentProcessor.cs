@@ -11,6 +11,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -185,36 +186,11 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
         }
         else
         {
-            // Create new award
+            // Create new award using extension method
             _logger.LogInformation("Creating new Award. Id={AwardId}, Name={Name}",
                 awardIdentity.CanonicalId, dto.Name);
 
-            var newAward = new Award
-            {
-                Id = awardIdentity.CanonicalId,
-                Name = dto.Name,
-                Description = dto.Description,
-                History = dto.History,
-                CreatedUtc = DateTime.UtcNow,
-                CreatedBy = command.CorrelationId,
-                ModifiedUtc = DateTime.UtcNow,
-                ModifiedBy = command.CorrelationId
-            };
-
-            // Add external ID
-            newAward.ExternalIds.Add(new AwardExternalId
-            {
-                Id = Guid.NewGuid(),
-                AwardId = newAward.Id,
-                Value = awardIdentity.UrlHash,
-                Provider = SourceDataProvider.Espn,
-                SourceUrl = awardIdentity.CleanUrl,
-                SourceUrlHash = awardIdentity.UrlHash,
-                CreatedUtc = DateTime.UtcNow,
-                CreatedBy = command.CorrelationId,
-                ModifiedUtc = DateTime.UtcNow,
-                ModifiedBy = command.CorrelationId
-            });
+            var newAward = dto.AsEntity(awardIdentity, command.CorrelationId);
 
             await _dataContext.Awards.AddAsync(newAward);
         }

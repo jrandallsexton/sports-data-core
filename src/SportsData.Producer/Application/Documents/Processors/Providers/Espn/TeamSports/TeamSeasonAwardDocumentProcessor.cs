@@ -153,6 +153,30 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
                 hasChanges = true;
             }
 
+            // Ensure ESPN external ID exists
+            var espnExternalId = existingAward.ExternalIds.FirstOrDefault(x =>
+                x.Provider == SourceDataProvider.Espn &&
+                (x.Value == awardIdentity.UrlHash || x.SourceUrlHash == awardIdentity.UrlHash || x.SourceUrl == awardIdentity.CleanUrl));
+
+            if (espnExternalId == null)
+            {
+                _logger.LogInformation("Adding ESPN external ID to existing Award. AwardId={AwardId}", existingAward.Id);
+                existingAward.ExternalIds.Add(new AwardExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    AwardId = existingAward.Id,
+                    Value = awardIdentity.UrlHash,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = awardIdentity.CleanUrl,
+                    SourceUrlHash = awardIdentity.UrlHash,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = command.CorrelationId,
+                    ModifiedUtc = DateTime.UtcNow,
+                    ModifiedBy = command.CorrelationId
+                });
+                hasChanges = true;
+            }
+
             if (hasChanges)
             {
                 existingAward.ModifiedUtc = DateTime.UtcNow;

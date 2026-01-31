@@ -84,6 +84,7 @@ select * from public."FranchiseSeasonRanking" where "ShortHeadline" = '2025 CFP 
 select * from public."FranchiseSeasonLeader" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 select * from public."FranchiseSeasonLeaderStat"
 select * from public."Coach"
+select * from public."CoachExternalId"
 select * from public."CoachRecord"
 select * from public."CoachRecordStat" order by "Name"
 select * from public."CoachSeason"

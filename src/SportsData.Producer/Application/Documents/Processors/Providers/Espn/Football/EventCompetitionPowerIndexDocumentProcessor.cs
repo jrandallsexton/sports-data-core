@@ -101,6 +101,12 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
 
         if (franchiseSeasonId is null)
         {
+            if (dto.Team?.Ref is null)
+            {
+                _logger.LogWarning("Team reference is null for power index. Skipping.");
+                return;
+            }
+
             var teamHash = HashProvider.GenerateHashFromUri(dto.Team.Ref);
 
             _logger.LogWarning("FranchiseSeason not found, publishing sourcing request. Hash={Hash}", teamHash);

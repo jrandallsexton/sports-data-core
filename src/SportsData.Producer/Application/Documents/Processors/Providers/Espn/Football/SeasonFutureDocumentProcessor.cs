@@ -135,7 +135,7 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
 
                 if (!franchiseSeasonId.HasValue)
                 {
-                    _logger.LogWarning("No FranchiseSeason mapping found for Team Ref {TeamRef}", bookDto.Team.Ref);
+                    _logger.LogWarning("No FranchiseSeason mapping found for Team Ref {TeamRef}", bookDto.Team?.Ref);
                     continue;
                 }
 

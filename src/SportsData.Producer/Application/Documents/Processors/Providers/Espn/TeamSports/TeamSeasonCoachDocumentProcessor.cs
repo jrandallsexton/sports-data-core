@@ -136,6 +136,18 @@ public class TeamSeasonCoachDocumentProcessor<TDataContext> : DocumentProcessorB
             existingCoachSeason.IsActive = true;
             existingCoachSeason.ModifiedUtc = DateTime.UtcNow;
             existingCoachSeason.ModifiedBy = command.CorrelationId;
+
+            // Apply ShouldSpawn filtering for existing entities
+            // This allows command-based sourcing to selectively update child data
+            if (ShouldSpawn(DocumentType.CoachSeason, command))
+            {
+                await PublishChildDocumentRequest<Guid?>(
+                    command,
+                    dto,
+                    franchiseSeasonId,
+                    DocumentType.CoachSeason,
+                    CausationId.Producer.TeamSeasonCoachDocumentProcessor);
+            }
         }
         else
         {
@@ -143,16 +155,14 @@ public class TeamSeasonCoachDocumentProcessor<TDataContext> : DocumentProcessorB
                 coachSeasonIdentity.CanonicalId);
 
             // CoachSeason will be created by the child CoachSeason processor
-            // We just spawn the child document here
+            // Always spawn child document for new entities
+            await PublishChildDocumentRequest<Guid?>(
+                command,
+                dto,
+                franchiseSeasonId,
+                DocumentType.CoachSeason,
+                CausationId.Producer.TeamSeasonCoachDocumentProcessor);
         }
-
-        // Spawn child document for full coach season processing
-        await PublishChildDocumentRequest<Guid?>(
-            command,
-            dto,
-            franchiseSeasonId,
-            DocumentType.CoachSeason,
-            CausationId.Producer.TeamSeasonCoachDocumentProcessor);
 
         await _dataContext.SaveChangesAsync();
     }

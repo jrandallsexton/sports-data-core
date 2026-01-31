@@ -39,10 +39,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public int Experience { get; set; }
 
         [JsonPropertyName("college")]
-        public EspnLinkDto College { get; set; }
+        public EspnLinkDto? College { get; set; }
 
         [JsonPropertyName("team")]
-        public EspnLinkDto Team { get; set; }
+        public EspnLinkDto? Team { get; set; }
 
         [JsonPropertyName("careerRecords")]
         public List<EspnLinkDto> CareerRecords { get; set; }

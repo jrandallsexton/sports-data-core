@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using SportsData.Core.Infrastructure.DataSources.Espn.Converters;
 
 namespace SportsData.Core.Extensions;
 
@@ -10,7 +11,8 @@ public static class JsonExtensions
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+        Converters = { new DateOnlyConverter() }
     };
 
     public static T? FromJson<T>(this string json, JsonSerializerOptions? options = null)

@@ -2,21 +2,20 @@ using AutoFixture;
 
 using FluentAssertions;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
-using Moq.AutoMock;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
-using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -290,6 +289,15 @@ public class TeamSeasonCoachDocumentProcessorTests : ProducerTestBase<TeamSeason
         var finalActiveCount = await FootballDataContext.CoachSeasons
             .CountAsync(x => x.FranchiseSeasonId == franchiseSeasonId && x.IsActive);
         finalActiveCount.Should().Be(3, "existing coaches should not be affected");
+
+        // Assert - new coach document request should have been published
+        Mocker.GetMock<IPublishEndpoint>()
+            .Verify(x => x.Publish(
+                It.Is<DocumentRequested>(d =>
+                    d.DocumentType == DocumentType.CoachSeason &&
+                    d.Uri.ToString().Contains("999999")),
+                It.IsAny<CancellationToken>()),
+            Times.Once, "new coach document should be requested for processing");
     }
 
     [Fact]

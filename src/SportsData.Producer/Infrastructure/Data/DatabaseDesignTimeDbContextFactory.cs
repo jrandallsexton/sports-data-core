@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
+using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 
@@ -47,6 +48,17 @@ namespace SportsData.Producer.Infrastructure.Data
             //    ConnectionString = "Server=192.168.0.3;Initial Catalog=sdProducer.Development.Football;User=sa;Password=sesame1?;TrustServerCertificate=True;Encrypt=False"
             //});
             return new FootballDataContext(builder.Options);
+        }
+    }
+
+    public class BaseballDatabaseDesignTimeDbContextFactory
+        : IDesignTimeDbContextFactory<BaseballDataContext>
+    {
+        public BaseballDataContext CreateDbContext(string[] args)
+        {
+            var builder = new DbContextOptionsBuilder<BaseballDataContext>();
+            builder.UseNpgsql();
+            return new BaseballDataContext(builder.Options);
         }
     }
 }

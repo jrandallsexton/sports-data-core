@@ -413,6 +413,40 @@ public static class EspnUriMapper
         return new Uri(path + query, UriKind.Absolute);
     }
 
+    public static Uri SeasonAwardToAwardRef(Uri seasonAwardRef)
+    {
+        if (seasonAwardRef == null)
+            throw new ArgumentNullException(nameof(seasonAwardRef));
+
+        var s = seasonAwardRef.ToString();
+        var parts = s.Split('/');
+
+        // Expect: ... / seasons / {year} / awards / {awardId}[?qs]
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var awardsIndex = Array.IndexOf(parts, "awards");
+
+        if (seasonsIndex < 0 || awardsIndex < 0 || awardsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN SeasonAward ref format: {seasonAwardRef}");
+
+        // Extract awardId (strip query if present)
+        var awardIdPart = parts[awardsIndex + 1];
+        var q = awardIdPart.IndexOf('?');
+        var awardId = q >= 0 ? awardIdPart[..q] : awardIdPart;
+
+        if (string.IsNullOrWhiteSpace(awardId) || !awardId.All(char.IsDigit))
+            throw new InvalidOperationException($"Missing or invalid award id in ref: {seasonAwardRef}");
+
+        // Build base path to award root (skip seasons/{year} segment)
+        var baseParts = parts.Take(seasonsIndex)
+            .Append("awards")
+            .Append(awardId);
+
+        var path = string.Join('/', baseParts);
+        var query = seasonAwardRef.Query;
+
+        return new Uri(path + query, UriKind.Absolute);
+    }
+
     public static Uri TeamSeasonToFranchiseRef(Uri teamSeasonRef)
     {
         if (teamSeasonRef == null) throw new ArgumentNullException(nameof(teamSeasonRef));

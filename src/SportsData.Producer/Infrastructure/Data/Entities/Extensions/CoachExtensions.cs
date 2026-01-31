@@ -21,6 +21,7 @@ public static class CoachExtensions
             Id = identity.CanonicalId,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
+            DateOfBirth = dto.DateOfBirth,
             Experience = dto.Experience,
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId,

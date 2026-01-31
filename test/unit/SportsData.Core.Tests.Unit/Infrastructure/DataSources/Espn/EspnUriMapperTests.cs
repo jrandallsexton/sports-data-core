@@ -101,6 +101,43 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
         [Theory]
         [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2009/awards/3",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/awards/3?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3?lang=en&region=us")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/awards/1?lang=en&region=us",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/1?lang=en&region=us")]
+        public void SeasonAwardToAwardRef_Should_Map_To_Award_And_Preserve_Query(
+            string seasonAwardRef,
+            string expectedAwardRef)
+        {
+            var input = new Uri(seasonAwardRef);
+            var result = EspnUriMapper.SeasonAwardToAwardRef(input);
+            result.Should().Be(new Uri(expectedAwardRef));
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3")] // missing seasons segment
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/awards/")] // missing award ID
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/123")] // wrong resource type
+        public void SeasonAwardToAwardRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.SeasonAwardToAwardRef(input);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void SeasonAwardToAwardRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.SeasonAwardToAwardRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671",
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/status")]
         public void CompetitionRefToCompetitionStatusRef_Should_Append_Status_Correctly(

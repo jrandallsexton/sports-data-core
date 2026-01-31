@@ -99,6 +99,8 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
         {
             await ProcessNew(command, dto);
         }
+
+        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessNew(ProcessDocumentCommand command, EspnFootballAthleteDto dto)
@@ -138,7 +140,6 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
             CausationId.Producer.AthleteDocumentProcessor));
 
         await _dataContext.Athletes.AddAsync(entity);
-        await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created new athlete entity: {AthleteId}", entity.Id);
     }
@@ -304,24 +305,27 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
         Athlete entity,
         EspnFootballAthleteDto dto)
     {
-        if (dto.Headshot?.Href is not null)
+        if (ShouldSpawn(DocumentType.AthleteImage, command))
         {
-            var imageId = _externalRefIdentityGenerator.Generate(dto.Headshot.Href).CanonicalId;
-            
-            await _publishEndpoint.Publish(new ProcessImageRequest(
-                dto.Headshot.Href,
-                imageId,
-                entity.Id,
-                $"{entity.Id}-headshot.png",
-                null,
-                command.Sport,
-                command.Season,
-                DocumentType.AthleteImage,
-                command.SourceDataProvider,
-                0, 0,
-                null,
-                command.CorrelationId,
-                CausationId.Producer.AthleteDocumentProcessor));
+            if (dto.Headshot?.Href is not null)
+            {
+                var imageId = _externalRefIdentityGenerator.Generate(dto.Headshot.Href).CanonicalId;
+
+                await _publishEndpoint.Publish(new ProcessImageRequest(
+                    dto.Headshot.Href,
+                    imageId,
+                    entity.Id,
+                    $"{entity.Id}-headshot.png",
+                    null,
+                    command.Sport,
+                    command.Season,
+                    DocumentType.AthleteImage,
+                    command.SourceDataProvider,
+                    0, 0,
+                    null,
+                    command.CorrelationId,
+                    CausationId.Producer.AthleteDocumentProcessor));
+            }
         }
     }
 }

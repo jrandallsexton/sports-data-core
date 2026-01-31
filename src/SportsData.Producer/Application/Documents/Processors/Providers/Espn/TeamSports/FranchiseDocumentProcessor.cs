@@ -299,7 +299,6 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (updated)
         {
-            await _dataContext.SaveChangesAsync();
 
             var evt = new FranchiseUpdated(
                 franchise.ToCanonicalModel(),
@@ -310,6 +309,8 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 CausationId.Producer.FranchiseDocumentProcessor);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
+
+            await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Published update for Franchise {Id}", franchise.Id);
         }

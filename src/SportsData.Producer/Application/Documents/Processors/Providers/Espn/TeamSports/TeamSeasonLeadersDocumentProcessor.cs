@@ -100,7 +100,8 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         if (franchiseSeason is null)
         {
             _logger.LogError("FranchiseSeason not found. FranchiseSeasonId={FranchiseSeasonId}", franchiseSeasonId);
-            return;
+            throw new ExternalDocumentNotSourcedException(
+                $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
         }
 
         // Preflight dependency resolution - fail fast before deleting existing data

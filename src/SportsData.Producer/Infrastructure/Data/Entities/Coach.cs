@@ -17,7 +17,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? Nickname { get; set; }
 
-        public DateTime? DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         public int Experience { get; set; }
 

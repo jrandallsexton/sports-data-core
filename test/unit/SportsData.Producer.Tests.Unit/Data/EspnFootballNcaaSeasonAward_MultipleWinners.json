@@ -1,9 +1,9 @@
 {
-  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/awards/5?lang=en&region=us",
-  "id": "5",
-  "name": "Maxwell Award",
-  "description": "College Player of the Year",
-  "history": "Presented annually to the college football player judged by a panel of sportscasters, sportswriters, and National Collegiate Athletic Association head coaches and the membership of the Maxwell Football Club to be the best all-around in the United States.",
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/awards/99?lang=en&region=us",
+  "id": "99",
+  "name": "Test Award - Multiple Winners",
+  "description": "Test fixture for validating multiple award winners",
+  "history": "This is a test fixture designed to validate the multiple winners scenario in award processing.",
   "season": {
     "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023?lang=en&region=us"
   },

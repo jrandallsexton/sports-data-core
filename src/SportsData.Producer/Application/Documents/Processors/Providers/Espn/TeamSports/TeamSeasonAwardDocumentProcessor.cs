@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -49,7 +50,16 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
             try
             {
                 await ProcessInternal(command);
+
                 _logger.LogInformation("TeamSeasonAwardDocumentProcessor completed.");
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -81,7 +91,8 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
         if (franchiseSeason is null)
         {
             _logger.LogError("FranchiseSeason not found. FranchiseSeasonId={FranchiseSeasonId}", franchiseSeasonId);
-            return;
+            throw new ExternalDocumentNotSourcedException(
+                $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
         }
 
         // Convert season-specific award URL to canonical award URL

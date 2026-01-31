@@ -293,7 +293,7 @@ public class TeamSeasonCoachDocumentProcessorTests : ProducerTestBase<TeamSeason
     }
 
     [Fact]
-    public async Task ProcessAsync_ThrowsExternalDocumentNotSourcedException_WhenPersonDocumentMissing()
+    public async Task ProcessAsync_PublishesDocumentRequestedAndEmitsRetryDocumentCreated_WhenPersonDocumentMissing()
     {
         // Arrange
         var identityGenerator = new ExternalRefIdentityGenerator();

@@ -33,7 +33,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public string LastName { get; set; }
 
         [JsonPropertyName("dateOfBirth")]
-        public DateTime? DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         [JsonPropertyName("experience")]
         public int Experience { get; set; }

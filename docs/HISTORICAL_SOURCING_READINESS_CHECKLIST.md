@@ -306,16 +306,16 @@ Before implementing processors, verify ESPN actually provides this data for hist
    - Build succeeds, all 118 document processor tests pass
 
 ### Phase 2: High Value (Before First Historical Run)
-3. **Implement TeamSeasonLeadersDocumentProcessor** ✅ COMPLETE (actual: ~6 hours)
+1. **Implement TeamSeasonLeadersDocumentProcessor** ✅ COMPLETE (actual: ~6 hours)
    - Implemented with wholesale replacement pattern
    - Preflight dependency resolution to prevent data loss
    - Category auto-creation with race condition handling
    - Comprehensive null guards for malformed ESPN data
    - All 3 unit tests passing
-4. **Implement TeamSeasonCoachDocumentProcessor** (4-6 hours)
-5. **Implement TeamSeasonAwardDocumentProcessor** (4-6 hours)
-6. **Refactor child document spawning pattern across all processors** (8-12 hours)
-   - Apply conditional spawn pattern using `ShouldSpawn(DocumentType, command)` 
+2. **Implement TeamSeasonCoachDocumentProcessor** (4-6 hours)
+3. **Implement TeamSeasonAwardDocumentProcessor** (4-6 hours)
+4. **Refactor child document spawning pattern across all processors** (8-12 hours)
+   - Apply conditional spawn pattern using `ShouldSpawn(DocumentType, command)`
    - Prevents duplicate child document requests when processor re-runs
    - Reference: AthleteSeasonDocumentProcessor for correct pattern
    - Affects: TeamSeasonLeadersDocumentProcessor, EventCompetitionLeadersDocumentProcessor, and others

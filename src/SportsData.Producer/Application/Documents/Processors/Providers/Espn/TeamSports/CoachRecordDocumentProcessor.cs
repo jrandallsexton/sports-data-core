@@ -81,6 +81,7 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
             .Include(x => x.Records)
                 .ThenInclude(r => r.ExternalIds)
             .Include(x => x.ExternalIds)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == coachId);
 
         if (coach is null)

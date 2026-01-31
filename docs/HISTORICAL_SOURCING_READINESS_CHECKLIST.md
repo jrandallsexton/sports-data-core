@@ -87,17 +87,31 @@ This approach leverages ESPN's 1:1 mapping between athlete season refs and canon
 ---
 
 ### 4. TeamSeasonCoachDocumentProcessor
-**Status:** ❌ Unimplemented (skeleton only)  
-**Impact:** MEDIUM - Coaching staff data not captured  
+**Status:** ✅ Complete  
+**Impact:** MEDIUM - Coaching staff data captured via wholesale replacement  
 **File:** `TeamSeasonCoachDocumentProcessor.cs`  
-**Test File:** `TeamSeasonCoachDocumentProcessorTests.cs` (exists, skipped with "TBD")
+**Test File:** `TeamSeasonCoachDocumentProcessorTests.cs`  
+**Estimated Effort:** 4-6 hours  
+**Actual Effort:** ~3 hours
 
-**Requirements:**
-- [ ] Deserialize DTO
-- [ ] Create/link Coach entity
-- [ ] Link to FranchiseSeason
-- [ ] Store position/role data
-- [ ] Unit tests
+**Implementation Details:**
+- Processes ESPN resource index of coaches for a team season
+- Wholesale replacement pattern: deletes existing CoachSeason entries, spawns child documents
+- No inline processing - spawns DocumentType.CoachSeason for each coach ref
+- CoachBySeasonDocumentProcessor handles individual coach season data
+- Uses `CausationId.Producer.TeamSeasonCoachDocumentProcessor`
+
+**Files Modified:**
+- ✅ `TeamSeasonCoachDocumentProcessor.cs` - wholesale replacement implementation
+- ✅ `TeamSeasonCoachDocumentProcessorTests.cs` - 3 passing tests
+- ✅ `CausationId.cs` - added TeamSeasonCoachDocumentProcessor GUID
+
+**Unit Tests:**
+- ✅ `ProcessAsync_DeletesExistingCoachSeasons_WhenProcessingResourceIndex` - validates wholesale replacement
+- ✅ `ProcessAsync_SpawnsChildDocuments_WhenResourceIndexContainsCoaches` - validates child document spawning
+- ✅ `ProcessAsync_ReplacesExistingCoachSeasons_WhenProcessedTwice` - validates idempotency
+
+**Key Pattern:** Simple resource index processor - deserializes `EspnResourceIndexDto`, deletes existing `CoachSeason` entries for FranchiseSeason, spawns child `DocumentType.CoachSeason` documents. No inline data processing.
 
 ---
 
@@ -292,9 +306,20 @@ Before implementing processors, verify ESPN actually provides this data for hist
    - Build succeeds, all 118 document processor tests pass
 
 ### Phase 2: High Value (Before First Historical Run)
-3. **Implement TeamSeasonLeadersDocumentProcessor** (4-6 hours)
-4. **Implement TeamSeasonCoachDocumentProcessor** (4-6 hours)
-5. **Implement TeamSeasonAwardDocumentProcessor** (4-6 hours)
+1. **Implement TeamSeasonLeadersDocumentProcessor** ✅ COMPLETE (actual: ~6 hours)
+   - Implemented with wholesale replacement pattern
+   - Preflight dependency resolution to prevent data loss
+   - Category auto-creation with race condition handling
+   - Comprehensive null guards for malformed ESPN data
+   - All 3 unit tests passing
+2. ✅ **Complete: TeamSeasonCoachDocumentProcessor** (~3 hours, 3 passing tests)
+3. **Implement TeamSeasonAwardDocumentProcessor** (4-6 hours)
+4. **Refactor child document spawning pattern across all processors** (8-12 hours)
+   - Apply conditional spawn pattern using `ShouldSpawn(DocumentType, command)`
+   - Prevents duplicate child document requests when processor re-runs
+   - Reference: AthleteSeasonDocumentProcessor for correct pattern
+   - Affects: TeamSeasonLeadersDocumentProcessor, EventCompetitionLeadersDocumentProcessor, and others
+   - Critical for historical sourcing to avoid exponential duplicate spawns
 
 ### Phase 3: Optional (Can Run Historical Sourcing Without)
 6. TeamSeasonInjuriesDocumentProcessor
@@ -353,6 +378,113 @@ Before authorizing first historical sourcing run:
 - [ ] All Phase 2 (High Value) items completed or explicitly deferred
 - [ ] Integration test of 2024 season week successful
 - [ ] Manual data spot-check passed
+- [ ] **Migration squash completed to establish baseline**
+
+---
+
+## Pre-Historical Sourcing: Migration Baseline Reset
+
+**Status:** ⚠️ PENDING - Execute after current PR merges and deploys
+
+**Impact:** HIGH - Improves pod startup performance for KEDA autoscaling during historical runs
+
+**Current State:**
+- 52 migrations spanning August 2025 - January 2026
+- EF Core processes all migrations on every pod startup
+- Startup overhead: ~100-500ms per pod
+- **With KEDA scaling to 20-50 pods, this compounds significantly**
+
+**Procedure:**
+
+### 1. Verify All Migrations Deployed
+```sql
+-- Connect to production database
+SELECT COUNT(*) FROM "__EFMigrationsHistory";
+-- Should return 52 (or current count)
+
+-- Verify last migration
+SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;
+-- Should show 31JanV2_CoachDateOnly or latest
+```
+
+### 2. Delete Existing Migration Files
+```powershell
+# Navigate to Producer project
+cd c:\Projects\sports-data\src\SportsData.Producer
+
+# Delete all migration files (NOT the DbContext files)
+Remove-Item Migrations\20*.cs
+Remove-Item Migrations\20*.Designer.cs
+
+# Delete the model snapshot
+Remove-Item Migrations\FootballDataContextModelSnapshot.cs
+```
+
+### 3. Create New Baseline Migration
+```powershell
+# Still in Producer directory
+dotnet ef migrations add 01FebV1_Baseline --context FootballDataContext
+```
+
+This generates:
+- `20260201XXXXXX_01FebV1_Baseline.cs` (migration file)
+- `20260201XXXXXX_01FebV1_Baseline.Designer.cs` (designer file)
+- `FootballDataContextModelSnapshot.cs` (new snapshot)
+
+### 4. Update Production Migration History
+```sql
+-- Connect to production database
+-- Clear old migration history
+DELETE FROM "__EFMigrationsHistory";
+
+-- Add the new baseline (replace XXXXXX with actual timestamp from generated file)
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
+VALUES ('20260201XXXXXX_01FebV1_Baseline', '10.0.2');
+```
+
+### 5. Update Local Development Database
+```powershell
+# Option A: Update history (same SQL as production)
+# Run the DELETE/INSERT SQL against local database
+
+# Option B: Drop and recreate (cleaner for dev)
+cd c:\Projects\sports-data\src\SportsData.Producer
+dotnet ef database drop --context FootballDataContext --force
+dotnet ef database update --context FootballDataContext
+```
+
+### 6. Verify Baseline Works
+```powershell
+# Build solution
+dotnet build c:\Projects\sports-data\sports-data.sln
+
+# Run tests to ensure nothing broke
+dotnet test c:\Projects\sports-data\test\unit\SportsData.Producer.Tests.Unit\SportsData.Producer.Tests.Unit.csproj
+```
+
+### 7. Commit and Deploy
+```powershell
+git add .
+git commit -m "chore: squash 52 migrations to baseline for historical sourcing performance"
+git push
+
+# Deploy to production via normal pipeline
+```
+
+**Benefits:**
+- ✅ **Faster pod startup**: 100-500ms saved per pod
+- ✅ **Reduced memory**: Single baseline vs 52 migrations
+- ✅ **Cleaner logs**: Less EF Core migration scanning
+- ✅ **Better KEDA scaling**: Critical for 20-50 concurrent pods during historical runs
+- ✅ **Easier debugging**: Simpler to reason about schema state
+
+**Rollback Plan:**
+If issues arise, the old migrations are in git history and can be restored:
+```powershell
+git revert <commit-hash>
+```
+
+---
 - [ ] RabbitMQ cluster stable and scaled appropriately
 - [ ] Monitoring/alerting in place (Seq, Grafana)
 - [ ] Budget approved for full backfill

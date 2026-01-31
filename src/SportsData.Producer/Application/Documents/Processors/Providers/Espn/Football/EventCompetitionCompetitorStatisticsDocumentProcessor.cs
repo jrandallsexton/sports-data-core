@@ -73,6 +73,12 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
             return;
         }
 
+        if (dto.Team?.Ref is null)
+        {
+            _logger.LogWarning("Team reference is null for competitor statistics. Skipping.");
+            return;
+        }
+
         // Resolve FranchiseSeason
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
         var franchiseSeason = await _dataContext.FranchiseSeasons

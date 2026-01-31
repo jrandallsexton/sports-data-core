@@ -1,0 +1,29 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/awards/99?lang=en&region=us",
+  "id": "99",
+  "name": "Test Award - Multiple Winners",
+  "description": "Test fixture for validating multiple award winners",
+  "history": "This is a test fixture designed to validate the multiple winners scenario in award processing.",
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023?lang=en&region=us"
+  },
+  "winners": [
+    {
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/athletes/4567890?lang=en&region=us"
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/teams/130?lang=en&region=us"
+      }
+    },
+    {
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/athletes/4567891?lang=en&region=us"
+      },
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/teams/131?lang=en&region=us"
+      }
+    }
+  ],
+  "links": []
+}

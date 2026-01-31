@@ -136,6 +136,12 @@ public class CoachBySeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             }
         }
 
+        if (dto.Team?.Ref is null)
+        {
+            _logger.LogWarning("Team reference is null for coach {CoachId}. Skipping.", dto.Id);
+            return;
+        }
+
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
 
         var franchiseSeason = await _dataContext.FranchiseSeasons

@@ -107,8 +107,10 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
             _dataContext.AthleteCompetitions.RemoveRange(existingRosterEntries);
         }
 
-        // Process each roster entry
-        var newRosterEntries = new List<AthleteCompetition>();
+        // Pre-compute all IDs and query existence once to avoid N+1 queries
+        var athleteSeasonIds = new List<Guid>();
+        var positionIds = new List<Guid>();
+        var entryLookup = new Dictionary<Guid, (EspnRosterEntryDto Entry, Guid? PositionId)>();
 
         foreach (var entry in dto.Entries)
         {
@@ -120,15 +122,41 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                 continue;
             }
 
-            // Resolve AthleteSeason from athlete ref (using canonical ID lookup)
             var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(entry.Athlete.Ref);
             var athleteSeasonId = athleteSeasonIdentity.CanonicalId;
+            athleteSeasonIds.Add(athleteSeasonId);
 
+            Guid? positionId = null;
+            if (entry.Position?.Ref is not null)
+            {
+                var positionIdentity = _externalRefIdentityGenerator.Generate(entry.Position.Ref);
+                positionId = positionIdentity.CanonicalId;
+                positionIds.Add(positionId.Value);
+            }
+
+            entryLookup[athleteSeasonId] = (entry, positionId);
+        }
+
+        // Query existing IDs once
+        var existingAthleteSeasonIds = await _dataContext.AthleteSeasons
+            .Where(x => athleteSeasonIds.Contains(x.Id))
+            .Select(x => x.Id)
+            .ToHashSetAsync();
+
+        var existingPositionIds = positionIds.Any()
+            ? await _dataContext.AthletePositions
+                .Where(x => positionIds.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToHashSetAsync()
+            : new HashSet<Guid>();
+
+        // Process each roster entry
+        var newRosterEntries = new List<AthleteCompetition>();
+
+        foreach (var (athleteSeasonId, (entry, positionId)) in entryLookup)
+        {
             // Check if AthleteSeason exists
-            var athleteSeasonExists = await _dataContext.AthleteSeasons
-                .AnyAsync(x => x.Id == athleteSeasonId);
-
-            if (!athleteSeasonExists)
+            if (!existingAthleteSeasonIds.Contains(athleteSeasonId))
             {
                 _logger.LogDebug("AthleteSeason not found for athlete {DisplayName} (Id: {AthleteSeasonId}). This athlete may not yet be sourced.",
                     entry.DisplayName,
@@ -137,23 +165,15 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                 continue;
             }
 
-            // Resolve Position (nullable - may not always be present)
-            Guid? positionId = null;
-            if (entry.Position?.Ref is not null)
+            // Verify position exists (optional - won't fail if missing)
+            var finalPositionId = positionId.HasValue && existingPositionIds.Contains(positionId.Value)
+                ? positionId
+                : null;
+
+            if (positionId.HasValue && !finalPositionId.HasValue)
             {
-                var positionIdentity = _externalRefIdentityGenerator.Generate(entry.Position.Ref);
-                positionId = positionIdentity.CanonicalId;
-
-                // Verify position exists (optional - won't fail if missing)
-                var positionExists = await _dataContext.AthletePositions
-                    .AnyAsync(x => x.Id == positionId);
-
-                if (!positionExists)
-                {
-                    _logger.LogDebug("Position not found for athlete {DisplayName}, position will be null.",
-                        entry.DisplayName);
-                    positionId = null;
-                }
+                _logger.LogDebug("Position not found for athlete {DisplayName}, position will be null.",
+                    entry.DisplayName);
             }
 
             // Create AthleteCompetition entity
@@ -163,7 +183,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                 CompetitionId = competitionId,
                 CompetitionCompetitorId = competitorId,
                 AthleteSeasonId = athleteSeasonId,
-                PositionId = positionId,
+                PositionId = finalPositionId,
                 JerseyNumber = entry.Jersey,
                 DidNotPlay = entry.DidNotPlay,
                 CreatedUtc = DateTime.UtcNow,

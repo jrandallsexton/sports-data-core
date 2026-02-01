@@ -453,8 +453,19 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         rosterEntries.Should().NotBeEmpty();
         
-        // All entries should have DidNotPlay set to either true or false (not nullable)
-        rosterEntries.All(e => e.DidNotPlay == false || e.DidNotPlay == true).Should().BeTrue();
+        // Verify DidNotPlay values match the DTO entries for the first 5 athletes we created
+        var expectedDidNotPlayValues = dto.Entries.Take(5)
+            .Where(e => e.Athlete?.Ref != null)
+            .Select(e => e.DidNotPlay)
+            .ToList();
+
+        var actualDidNotPlayValues = rosterEntries
+            .OrderBy(e => e.CreatedUtc)
+            .Select(e => e.DidNotPlay)
+            .ToList();
+
+        actualDidNotPlayValues.Should().BeEquivalentTo(expectedDidNotPlayValues, 
+            "the DidNotPlay flags should match the source DTO entries");
     }
 }
 

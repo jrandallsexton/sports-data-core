@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260201100623_01FebV2_AthleteCompetition")]
+    partial class _01FebV2_AthleteCompetition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -910,9 +913,6 @@ namespace SportsData.Producer.Migrations
                     b.Property<Guid>("AthleteSeasonId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CompetitionCompetitorId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("CompetitionId")
                         .HasColumnType("uuid");
 
@@ -942,11 +942,9 @@ namespace SportsData.Producer.Migrations
 
                     b.HasIndex("AthleteSeasonId");
 
-                    b.HasIndex("CompetitionCompetitorId");
-
                     b.HasIndex("PositionId");
 
-                    b.HasIndex("CompetitionId", "CompetitionCompetitorId", "AthleteSeasonId")
+                    b.HasIndex("CompetitionId", "AthleteSeasonId")
                         .IsUnique();
 
                     b.ToTable("AthleteCompetition", (string)null);
@@ -7438,12 +7436,6 @@ namespace SportsData.Producer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
-                        .WithMany()
-                        .HasForeignKey("CompetitionCompetitorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
                         .WithMany()
                         .HasForeignKey("CompetitionId")
@@ -7458,8 +7450,6 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("AthleteSeason");
 
                     b.Navigation("Competition");
-
-                    b.Navigation("CompetitionCompetitor");
 
                     b.Navigation("Position");
                 });

@@ -213,7 +213,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             canonicalEntity.Id,
             competitionId);
 
-        await ProcessChildDocuments(command, dto, canonicalEntity.Id);
+        await ProcessChildDocuments(command, dto, canonicalEntity.Id, isNew: true);
     }
 
     private async Task ProcessUpdate(
@@ -227,43 +227,50 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             entity.Id,
             dto.HomeAway);
 
-        await ProcessChildDocuments(command, dto, entity.Id);
+        await ProcessChildDocuments(command, dto, entity.Id, isNew: false);
     }
 
     /// <summary>
     /// Processes all child documents for a competitor.
-    /// This method is called for both new entities and updates to ensure
-    /// child documents are always spawned if their $ref exists in the DTO.
+    /// For new entities (isNew=true), always spawns all child documents.
+    /// For updates (isNew=false), respects ShouldSpawn filtering to prevent duplicate spawns.
     /// </summary>
     private async Task ProcessChildDocuments(
         ProcessDocumentCommand command,
         EspnEventCompetitionCompetitorDto dto,
-        Guid competitorId)
+        Guid competitorId,
+        bool isNew)
     {
         _logger.LogInformation(
-            "🔗 PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor. CompetitorId={CompetitorId}",
-            competitorId);
+            "🔗 PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor. CompetitorId={CompetitorId}, IsNew={IsNew}",
+            competitorId,
+            isNew);
 
-        // Use the base class helper for all child document requests
-        await PublishChildDocumentRequest(command, dto.Score, competitorId,
-            DocumentType.EventCompetitionCompetitorScore,
-            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        // All child documents - bypass ShouldSpawn for new entities, apply filtering for updates
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorScore, command))
+            await PublishChildDocumentRequest(command, dto.Score, competitorId,
+                DocumentType.EventCompetitionCompetitorScore,
+                CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
-        await PublishChildDocumentRequest(command, dto.Linescores, competitorId,
-            DocumentType.EventCompetitionCompetitorLineScore,
-            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorLineScore, command))
+            await PublishChildDocumentRequest(command, dto.Linescores, competitorId,
+                DocumentType.EventCompetitionCompetitorLineScore,
+                CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
-        await PublishChildDocumentRequest(command, dto.Roster, competitorId,
-            DocumentType.EventCompetitionCompetitorRoster,
-            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorRoster, command))
+            await PublishChildDocumentRequest(command, dto.Roster, competitorId,
+                DocumentType.EventCompetitionCompetitorRoster,
+                CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
-        await PublishChildDocumentRequest(command, dto.Statistics, competitorId,
-            DocumentType.EventCompetitionCompetitorStatistics,
-            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorStatistics, command))
+            await PublishChildDocumentRequest(command, dto.Statistics, competitorId,
+                DocumentType.EventCompetitionCompetitorStatistics,
+                CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
-        await PublishChildDocumentRequest(command, dto.Record, competitorId,
-            DocumentType.EventCompetitionCompetitorRecord,
-            CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorRecord, command))
+            await PublishChildDocumentRequest(command, dto.Record, competitorId,
+                DocumentType.EventCompetitionCompetitorRecord,
+                CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
         _logger.LogInformation(
             "✅ CHILD_DOCUMENTS_COMPLETED: Child document processing completed. CompetitorId={CompetitorId}",

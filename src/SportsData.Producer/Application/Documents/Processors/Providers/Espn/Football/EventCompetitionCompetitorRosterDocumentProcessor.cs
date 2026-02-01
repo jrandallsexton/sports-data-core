@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -74,37 +75,161 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
             return;
         }
 
-        _logger.LogInformation("Processing roster with {EntryCount} entries. CompetitorId={CompetitorId}",
-            dto.Entries.Count,
-            command.ParentId);
+        if (dto.Competition?.Ref is null)
+        {
+            _logger.LogError("Competition ref is missing from roster DTO.");
+            return;
+        }
 
-        // Publish child document requests for each athlete's statistics
+        // Resolve CompetitionId from the Competition ref
+        var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competition.Ref);
+        var competitionId = competitionIdentity.CanonicalId;
+        
+        if (!Guid.TryParse(command.ParentId, out var competitorId))
+        {
+            _logger.LogError("Invalid CompetitionCompetitorId in ParentId: {ParentId}. Skipping roster processing.", command.ParentId);
+            return;
+        }
+
+        _logger.LogInformation("Processing roster with {EntryCount} entries. CompetitorId={CompetitorId}, CompetitionId={CompetitionId}",
+            dto.Entries.Count,
+            competitorId,
+            competitionId);
+
+        // Wholesale replacement: Delete existing roster entries for this competition competitor (team)
+        var existingRosterEntries = await _dataContext.AthleteCompetitions
+            .Where(x => x.CompetitionId == competitionId && x.CompetitionCompetitorId == competitorId)
+            .ToListAsync();
+
+        if (existingRosterEntries.Any())
+        {
+            _logger.LogDebug("Removing {Count} existing roster entries for wholesale replacement.", existingRosterEntries.Count);
+            _dataContext.AthleteCompetitions.RemoveRange(existingRosterEntries);
+        }
+
+        // Pre-compute all IDs and query existence once to avoid N+1 queries
+        var athleteSeasonIds = new List<Guid>();
+        var positionIds = new List<Guid>();
+        var entryLookup = new Dictionary<Guid, (EspnRosterEntryDto Entry, Guid? PositionId)>();
+
         foreach (var entry in dto.Entries)
         {
-            if (entry.Statistics?.Ref is null)
+            if (entry.Athlete?.Ref is null)
             {
-                _logger.LogDebug("Athlete {AthleteId} ({DisplayName}) has no statistics ref, skipping.",
+                _logger.LogWarning("Roster entry for PlayerId={PlayerId} ({DisplayName}) has no athlete ref, skipping.",
                     entry.PlayerId,
                     entry.DisplayName);
                 continue;
             }
 
-            _logger.LogDebug("Publishing child request for athlete statistics. Athlete={DisplayName}, StatRef={StatRef}",
-                entry.DisplayName,
-                entry.Statistics.Ref);
+            var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(entry.Athlete.Ref);
+            var athleteSeasonId = athleteSeasonIdentity.CanonicalId;
+            athleteSeasonIds.Add(athleteSeasonId);
 
-            await PublishChildDocumentRequest<string?>(
-                command,
-                entry.Statistics,
-                null, // Stats document is self-contained with athlete and competition refs
-                DocumentType.EventCompetitionAthleteStatistics,
-                CausationId.Producer.EventCompetitionCompetitorRosterDocumentProcessor);
+            Guid? positionId = null;
+            if (entry.Position?.Ref is not null)
+            {
+                var positionIdentity = _externalRefIdentityGenerator.Generate(entry.Position.Ref);
+                positionId = positionIdentity.CanonicalId;
+                positionIds.Add(positionId.Value);
+            }
+
+            entryLookup[athleteSeasonId] = (entry, positionId);
+        }
+
+        // Query existing IDs once
+        var existingAthleteSeasonIds = await _dataContext.AthleteSeasons
+            .Where(x => athleteSeasonIds.Contains(x.Id))
+            .Select(x => x.Id)
+            .ToHashSetAsync();
+
+        var existingPositionIds = positionIds.Any()
+            ? await _dataContext.AthletePositions
+                .Where(x => positionIds.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToHashSetAsync()
+            : new HashSet<Guid>();
+
+        // Process each roster entry
+        var newRosterEntries = new List<AthleteCompetition>();
+        var publishedStatsCount = 0;
+
+        foreach (var (athleteSeasonId, (entry, positionId)) in entryLookup)
+        {
+            // Check if AthleteSeason exists
+            if (!existingAthleteSeasonIds.Contains(athleteSeasonId))
+            {
+                _logger.LogDebug("AthleteSeason not found for athlete {DisplayName} (Id: {AthleteSeasonId}). This athlete may not yet be sourced.",
+                    entry.DisplayName,
+                    athleteSeasonId);
+                // Don't fail - just skip this athlete (they may be sourced later)
+                continue;
+            }
+
+            // Verify position exists (optional - won't fail if missing)
+            var finalPositionId = positionId.HasValue && existingPositionIds.Contains(positionId.Value)
+                ? positionId
+                : null;
+
+            if (positionId.HasValue && !finalPositionId.HasValue)
+            {
+                _logger.LogDebug("Position not found for athlete {DisplayName}, position will be null.",
+                    entry.DisplayName);
+            }
+
+            // Create AthleteCompetition entity
+            var athleteCompetition = new AthleteCompetition
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                CompetitionCompetitorId = competitorId,
+                AthleteSeasonId = athleteSeasonId,
+                PositionId = finalPositionId,
+                JerseyNumber = entry.Jersey,
+                DidNotPlay = entry.DidNotPlay,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = command.CorrelationId
+            };
+
+            newRosterEntries.Add(athleteCompetition);
+
+            _logger.LogDebug("Created roster entry for {DisplayName} (Jersey: {Jersey}, DidNotPlay: {DidNotPlay})",
+                entry.DisplayName,
+                entry.Jersey,
+                entry.DidNotPlay);
+
+            // Publish child document requests for athlete statistics (if available)
+            if (entry.Statistics?.Ref is not null)
+            {
+                _logger.LogDebug("Publishing child request for athlete statistics. Athlete={DisplayName}, StatRef={StatRef}",
+                    entry.DisplayName,
+                    entry.Statistics.Ref);
+
+                await PublishChildDocumentRequest<string?>(
+                    command,
+                    entry.Statistics,
+                    null, // Stats document is self-contained with athlete and competition refs
+                    DocumentType.EventCompetitionAthleteStatistics,
+                    CausationId.Producer.EventCompetitionCompetitorRosterDocumentProcessor);
+                
+                publishedStatsCount++;
+            }
+        }
+
+        // Add all new roster entries
+        if (newRosterEntries.Any())
+        {
+            await _dataContext.AthleteCompetitions.AddRangeAsync(newRosterEntries);
+            _logger.LogInformation("Added {Count} new roster entries for competition {CompetitionId}.",
+                newRosterEntries.Count,
+                competitionId);
         }
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Completed processing roster. PublishedStatisticsRequests={Count}, CompetitorId={CompetitorId}",
-            dto.Entries.Count(e => e.Statistics?.Ref != null),
-            command.ParentId);
+        _logger.LogInformation("Completed processing roster. RosterEntries={RosterCount}, PublishedStatisticsRequests={StatsCount}, CompetitorId={CompetitorId}",
+            newRosterEntries.Count,
+            publishedStatsCount,
+            competitorId);
     }
 }

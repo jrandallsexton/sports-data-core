@@ -140,7 +140,53 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         {
             _logger.LogInformation("Removing existing AthleteCompetitionStatistic {Id} for replacement", existing.Id);
             _dataContext.AthleteCompetitionStatistics.Remove(existing);
-            await _dataContext.SaveChangesAsync();
+            
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                _logger.LogWarning(
+                    "Concurrency conflict removing AthleteCompetitionStatistic. Reloading and retrying. Id={Id}, CorrelationId={CorrelationId}",
+                    existing.Id,
+                    command.CorrelationId);
+
+                // Detach all tracked Categories and their Stats (cascade deletes from parent removal)
+                var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
+                    .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
+                    .ToList();
+
+                foreach (var category in trackedCategories)
+                {
+                    category.State = EntityState.Detached;
+                }
+
+                // Detach the parent entity
+                _dataContext.Entry(existing).State = EntityState.Detached;
+
+                // Reload fresh data
+                existing = await _dataContext.AthleteCompetitionStatistics
+                    .Include(x => x.Categories)
+                        .ThenInclude(c => c.Stats)
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+
+                if (existing != null)
+                {
+                    // Retry the remove operation
+                    _dataContext.AthleteCompetitionStatistics.Remove(existing);
+                    await _dataContext.SaveChangesAsync();
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "AthleteCompetitionStatistic was deleted between concurrency exception and reload. Id={Id}, CorrelationId={CorrelationId}",
+                        identity.CanonicalId,
+                        command.CorrelationId);
+                    return;
+                }
+            }
         }
 
         // --- Create New Entity ---

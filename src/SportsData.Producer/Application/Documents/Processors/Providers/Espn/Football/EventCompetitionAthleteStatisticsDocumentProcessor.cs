@@ -160,6 +160,17 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
                 foreach (var category in trackedCategories)
                 {
+                    // Detach child Stats first
+                    foreach (var stat in category.Entity.Stats)
+                    {
+                        var statEntry = _dataContext.Entry(stat);
+                        if (statEntry.State != EntityState.Detached)
+                        {
+                            statEntry.State = EntityState.Detached;
+                        }
+                    }
+                    
+                    // Then detach the category
                     category.State = EntityState.Detached;
                 }
 

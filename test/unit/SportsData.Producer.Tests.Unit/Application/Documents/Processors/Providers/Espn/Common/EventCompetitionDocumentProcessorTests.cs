@@ -280,6 +280,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
+                .With(x => x.IncludeLinkedDocumentTypes, new List<DocumentType>())
                 .Create();
 
             // act
@@ -648,6 +649,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
+                .With(x => x.IncludeLinkedDocumentTypes, new List<DocumentType>())
                 .Create();
 
             // act

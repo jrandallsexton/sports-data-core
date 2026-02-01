@@ -227,7 +227,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         await ProcessDependencies(franchise, canonicalEntity, dto, command);
 
-        await ProcessChildren(canonicalEntity, dto, command);
+        await ProcessChildren(canonicalEntity, dto, command, isNew: true);
 
         await _dataContext.FranchiseSeasons.AddAsync(canonicalEntity);
 
@@ -243,16 +243,17 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     private async Task ProcessChildren(
         FranchiseSeason canonicalEntity,
         EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
+        ProcessDocumentCommand command,
+        bool isNew)
     {
-        // logos
-        if (ShouldSpawn(DocumentType.FranchiseSeasonLogo, command))
+        // logos - always spawn for new entities, respect ShouldSpawn for updates
+        if (isNew || ShouldSpawn(DocumentType.FranchiseSeasonLogo, command))
         {
             await ProcessLogos(canonicalEntity.Id, dto, command);
         }
 
         // Wins/Losses/PtsFor/PtsAgainst
-        if (ShouldSpawn(DocumentType.TeamSeasonRecord, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonRecord, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -263,7 +264,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // rankings
-        if (ShouldSpawn(DocumentType.TeamSeasonRank, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonRank, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -274,7 +275,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // stats
-        if (ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonStatistics, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -285,7 +286,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // athletes
-        if (ShouldSpawn(DocumentType.AthleteSeason, command))
+        if (isNew || ShouldSpawn(DocumentType.AthleteSeason, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -296,7 +297,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // leaders
-        if (ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonLeaders, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -307,7 +308,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // injuries
-        if (ShouldSpawn(DocumentType.TeamSeasonInjuries, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonInjuries, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -320,7 +321,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         // TODO: MED: Request sourcing of team season notes (data not available when following link)
 
         // Process record ATS (Against The Spread)
-        if (ShouldSpawn(DocumentType.TeamSeasonRecordAts, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonRecordAts, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -331,7 +332,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // Process awards
-        if (ShouldSpawn(DocumentType.TeamSeasonAward, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonAward, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -342,7 +343,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // Process projection
-        if (ShouldSpawn(DocumentType.TeamSeasonProjection, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonProjection, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -353,7 +354,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // Process events (schedule)
-        if (ShouldSpawn(DocumentType.Event, command))
+        if (isNew || ShouldSpawn(DocumentType.Event, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -364,7 +365,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // Process coaches
-        if (ShouldSpawn(DocumentType.TeamSeasonCoach, command))
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonCoach, command))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -412,6 +413,6 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         EspnTeamSeasonDto dto,
         ProcessDocumentCommand command)
     {
-        await ProcessChildren(existing, dto, command);
+        await ProcessChildren(existing, dto, command, isNew: false);
     }
 }

@@ -1,4 +1,5 @@
 using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
@@ -6,56 +7,43 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class FranchiseSeasonAwardExtensions
     {
-        public static (Award, AwardExternalId, FranchiseSeasonAward) AsEntity(
+        /// <summary>
+        /// Converts an ESPN Award DTO to an Award entity using pre-computed canonical identity.
+        /// Awards require special URL canonicalization (removing /seasons/YYYY segment) before
+        /// identity generation, so the identity is passed in rather than computed here.
+        /// </summary>
+        public static Award AsEntity(
             this EspnAwardDto dto,
-            Guid franchiseSeasonId,
-            Guid correlationId,
-            string espnAwardId,
-            string espnAwardSourceUrlHash)
+            ExternalRefIdentity identity,
+            Guid correlationId)
         {
-            // TODO: Use Identity
-            var award = new Award
+            return new Award
             {
-                Id = Guid.NewGuid(),
+                Id = identity.CanonicalId,
                 Name = dto.Name,
                 Description = dto.Description,
                 History = dto.History,
-                CreatedBy = correlationId,
-                CreatedUtc = DateTime.UtcNow
-            };
-
-            var awardExternalId = new AwardExternalId
-            {
-                Id = Guid.NewGuid(),
-                Award = award,
-                Provider = SourceDataProvider.Espn,
-                Value = espnAwardId,
-                SourceUrlHash = espnAwardSourceUrlHash,
-                CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,
-                SourceUrl = dto.Ref.ToCleanUrl()
-            };
-            award.ExternalIds.Add(awardExternalId);
-
-            var seasonAward = new FranchiseSeasonAward
-            {
-                Id = Guid.NewGuid(),
-                FranchiseSeasonId = franchiseSeasonId,
-                Award = award,
-                AwardId = award.Id,
                 CreatedBy = correlationId,
-                CreatedUtc = DateTime.UtcNow,
-                Winners = dto.Winners?.Select(w => new FranchiseSeasonAwardWinner
+                ModifiedUtc = DateTime.UtcNow,
+                ModifiedBy = correlationId,
+                ExternalIds = new List<AwardExternalId>
                 {
-                    Id = Guid.NewGuid(),
-                    AthleteRef = w.Athlete?.Ref?.ToString(),
-                    TeamRef = w.Team?.Ref?.ToString(),
-                    CreatedBy = correlationId,
-                    CreatedUtc = DateTime.UtcNow
-                }).ToList() ?? new()
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        AwardId = identity.CanonicalId,
+                        Provider = SourceDataProvider.Espn,
+                        Value = identity.UrlHash,
+                        SourceUrlHash = identity.UrlHash,
+                        SourceUrl = identity.CleanUrl,
+                        CreatedUtc = DateTime.UtcNow,
+                        CreatedBy = correlationId,
+                        ModifiedUtc = DateTime.UtcNow,
+                        ModifiedBy = correlationId
+                    }
+                }
             };
-
-            return (award, awardExternalId, seasonAward);
         }
     }
 }

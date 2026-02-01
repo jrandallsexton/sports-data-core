@@ -103,7 +103,17 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
                     competitorId,
                     dto.Type);
                 
-                // Detach the stale entity
+                // Detach all tracked stat entities that were marked as Deleted by RemoveRange
+                var trackedStats = _dataContext.ChangeTracker.Entries<CompetitionCompetitorRecordStat>()
+                    .Where(e => e.Entity.CompetitionCompetitorRecordId == existingRecord.Id)
+                    .ToList();
+                
+                foreach (var stat in trackedStats)
+                {
+                    stat.State = EntityState.Detached;
+                }
+                
+                // Detach the stale parent entity
                 _dataContext.Entry(existingRecord).State = EntityState.Detached;
                 
                 // Reload the fresh record
@@ -117,6 +127,17 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
                 {
                     await ProcessUpdate(command, dto, existingRecord);
                     await _dataContext.SaveChangesAsync();
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "CompetitionCompetitorRecord was deleted between concurrency exception and reload. " +
+                        "CompetitorId={CompetitorId}, Type={Type}, RecordId={RecordId}, CorrelationId={CorrelationId}",
+                        competitorId,
+                        dto.Type,
+                        dto.Id,
+                        command.CorrelationId);
+                    return;
                 }
             }
         }

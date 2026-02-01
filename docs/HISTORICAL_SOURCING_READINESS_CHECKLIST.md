@@ -155,6 +155,7 @@ This standalone processor would be redundant. The skeleton can remain for potent
 ## High Priority Issues
 
 ### 7. TeamSeasonDocumentProcessor Potential Bug
+
 **Status:** ✅ RESOLVED  
 **Impact:** N/A - Misleading TODO comment removed  
 **File:** `TeamSeasonDocumentProcessor.cs`
@@ -172,6 +173,7 @@ No action required - processor is working as designed.
 ## Medium Priority Gaps
 
 ### 8. EventCompetitionCompetitorRosterDocumentProcessor - Roster Data NOT Persisted
+
 **Status:** ✅ **COMPLETE (February 1, 2026)**  
 **Impact:** HIGH - Game roster data captured, enables Games Played calculation  
 **File:** `EventCompetitionCompetitorRosterDocumentProcessor.cs`
@@ -198,6 +200,7 @@ No action required - processor is working as designed.
 - ✅ `WhenAthleteDidNotPlay_PersistsDidNotPlayFlag` - validates DidNotPlay flag handling
 
 **AthleteCompetition Entity:**
+
 ```csharp
 public class AthleteCompetition : CanonicalEntityBase<Guid>
 {
@@ -215,6 +218,7 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
 ```
 
 **Key Pattern:** Processor now persists roster entries BEFORE spawning child documents, enabling Games Played calculation via:
+
 ```sql
 SELECT COUNT(DISTINCT CompetitionId) 
 FROM AthleteCompetition 
@@ -301,12 +305,14 @@ WHERE AthleteSeasonId = @athleteSeasonId AND DidNotPlay = false
 - [x] **EventCompetitionCompetitorRosterDocumentProcessor** - roster data persistence complete ✅ (February 1, 2026)
 
 ### Should Have (Before Production Historical Run)
+
 - [x] **TeamSeasonLeadersDocumentProcessor** implemented ✅ (February 1, 2026)
 - [x] **TeamSeasonCoachDocumentProcessor** implemented ✅ (January 2026)
 - [x] **TeamSeasonAwardDocumentProcessor** implemented ✅ (February 1, 2026)
 - [ ] **EventCompetitionCompetitor child documents** design reviewed (DEFERRED - can implement post-historical run if needed)
 
 ### Nice to Have (Can Defer)
+
 - [ ] TeamSeasonInjuriesDocumentProcessor implemented
 - [ ] ~~AwardDocumentProcessor~~ (NOT NEEDED - redundant with TeamSeasonAwardDocumentProcessor)
 - [ ] StandingsDocumentProcessor implemented
@@ -351,6 +357,7 @@ Before implementing processors, verify ESPN actually provides this data for hist
    - Build succeeds, all 118 document processor tests pass
 
 ### Phase 2: High Value (Before First Historical Run) ✅ COMPLETE
+
 1. **Implement TeamSeasonLeadersDocumentProcessor** ✅ COMPLETE (actual: ~6 hours)
    - Implemented with wholesale replacement pattern
    - Preflight dependency resolution to prevent data loss

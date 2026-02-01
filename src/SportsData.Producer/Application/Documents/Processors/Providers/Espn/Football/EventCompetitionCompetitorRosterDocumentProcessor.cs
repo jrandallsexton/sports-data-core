@@ -84,15 +84,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
         // Resolve CompetitionId from the Competition ref
         var competitionIdentity = _externalRefIdentityGenerator.Generate(dto.Competition.Ref);
         var competitionId = competitionIdentity.CanonicalId;
+        
+        if (!Guid.TryParse(command.ParentId, out var competitorId))
+        {
+            _logger.LogError("Invalid CompetitionCompetitorId in ParentId: {ParentId}. Skipping roster processing.", command.ParentId);
+            return;
+        }
 
         _logger.LogInformation("Processing roster with {EntryCount} entries. CompetitorId={CompetitorId}, CompetitionId={CompetitionId}",
             dto.Entries.Count,
-            command.ParentId,
+            competitorId,
             competitionId);
 
-        // Wholesale replacement: Delete existing roster entries for this competition
+        // Wholesale replacement: Delete existing roster entries for this competition competitor (team)
         var existingRosterEntries = await _dataContext.AthleteCompetitions
-            .Where(x => x.CompetitionId == competitionId)
+            .Where(x => x.CompetitionId == competitionId && x.CompetitionCompetitorId == competitorId)
             .ToListAsync();
 
         if (existingRosterEntries.Any())
@@ -155,6 +161,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
             {
                 Id = Guid.NewGuid(),
                 CompetitionId = competitionId,
+                CompetitionCompetitorId = competitorId,
                 AthleteSeasonId = athleteSeasonId,
                 PositionId = positionId,
                 JerseyNumber = entry.Jersey,

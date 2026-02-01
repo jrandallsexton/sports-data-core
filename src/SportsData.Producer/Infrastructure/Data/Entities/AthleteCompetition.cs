@@ -15,6 +15,10 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
 
     public Competition Competition { get; set; } = null!;
 
+    public Guid CompetitionCompetitorId { get; set; }
+
+    public CompetitionCompetitor CompetitionCompetitor { get; set; } = null!;
+
     public Guid AthleteSeasonId { get; set; }
 
     public AthleteSeason AthleteSeason { get; set; } = null!;
@@ -47,8 +51,8 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
             builder.ToTable(nameof(AthleteCompetition));
             builder.HasKey(x => x.Id);
 
-            // Composite unique index: one roster entry per athlete per competition
-            builder.HasIndex(x => new { x.CompetitionId, x.AthleteSeasonId })
+            // Composite unique index: one roster entry per athlete per competition per competitor
+            builder.HasIndex(x => new { x.CompetitionId, x.CompetitionCompetitorId, x.AthleteSeasonId })
                 .IsUnique();
 
             builder.Property(x => x.JerseyNumber)
@@ -57,6 +61,11 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
             builder.HasOne(x => x.Competition)
                 .WithMany()
                 .HasForeignKey(x => x.CompetitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(x => x.CompetitionCompetitor)
+                .WithMany()
+                .HasForeignKey(x => x.CompetitionCompetitorId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(x => x.AthleteSeason)

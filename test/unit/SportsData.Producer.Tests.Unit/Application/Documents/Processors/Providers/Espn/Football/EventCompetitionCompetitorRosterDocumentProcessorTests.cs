@@ -68,6 +68,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+
         // Create AthleteSeason entries for all athletes with statistics (39)
         var entriesWithStats = dto.Entries.Where(e => e.Statistics?.Ref != null).ToList();
         foreach (var entry in entriesWithStats)
@@ -87,8 +102,6 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
         }
         await FootballDataContext.SaveChangesAsync();
-
-        var competitorId = Guid.NewGuid();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -134,6 +147,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+
         // Create AthleteSeason entries for the first 5 roster entries
         var athleteSeasons = new List<FootballAthleteSeason>();
         foreach (var entry in dto.Entries.Take(5))
@@ -161,7 +189,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .With(x => x.ParentId, competitorId.ToString())
             .Create();
 
         // act
@@ -169,7 +197,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // assert - roster entries should be persisted (at least 5, since we created 5 AthleteSeason entries)
         var rosterEntries = await FootballDataContext.AthleteCompetitions
-            .Where(x => x.CompetitionId == competition.Id)
+            .Where(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId)
             .ToListAsync();
 
         rosterEntries.Should().NotBeEmpty();
@@ -178,6 +206,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         // Verify properties are mapped correctly
         var firstEntry = rosterEntries.First();
         firstEntry.CompetitionId.Should().Be(competition.Id);
+        firstEntry.CompetitionCompetitorId.Should().Be(competitorId);
         athleteSeasons.Select(a => a.Id).Should().Contain(firstEntry.AthleteSeasonId);
     }
 
@@ -204,6 +233,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
 
         // Create AthleteSeason entries
         var athleteSeasons = new List<FootballAthleteSeason>();
@@ -232,14 +276,14 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .With(x => x.ParentId, competitorId.ToString())
             .Create();
 
         // act - process first time
         await sut.ProcessAsync(command);
 
         var firstPassCount = await FootballDataContext.AthleteCompetitions
-            .CountAsync(x => x.CompetitionId == competition.Id);
+            .CountAsync(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId);
 
         firstPassCount.Should().BeGreaterThan(0);
 
@@ -248,7 +292,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // assert - count should be the same (old entries deleted, new entries inserted)
         var secondPassCount = await FootballDataContext.AthleteCompetitions
-            .CountAsync(x => x.CompetitionId == competition.Id);
+            .CountAsync(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId);
 
         secondPassCount.Should().Be(firstPassCount, "wholesale replacement should result in same count");
     }
@@ -277,6 +321,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+
         // Find a roster entry with jersey number
         var entryWithJersey = dto.Entries.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Jersey) && e.Athlete?.Ref != null);
         entryWithJersey.Should().NotBeNull("test data should contain entries with jersey numbers");
@@ -301,7 +360,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .With(x => x.ParentId, competitorId.ToString())
             .Create();
 
         // act
@@ -309,7 +368,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // assert - jersey number should be persisted
         var rosterEntry = await FootballDataContext.AthleteCompetitions
-            .FirstOrDefaultAsync(x => x.CompetitionId == competition.Id && x.AthleteSeasonId == athleteSeason.Id);
+            .FirstOrDefaultAsync(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId && x.AthleteSeasonId == athleteSeason.Id);
 
         rosterEntry.Should().NotBeNull();
         rosterEntry!.JerseyNumber.Should().Be(entryWithJersey.Jersey);
@@ -339,6 +398,21 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new CompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+
         // Create AthleteSeason entries for the first 5
         var athleteSeasons = new List<FootballAthleteSeason>();
         foreach (var entry in dto.Entries.Take(5))
@@ -366,7 +440,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .With(x => x.Season, 2025)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
             .With(x => x.Document, json)
-            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .With(x => x.ParentId, competitorId.ToString())
             .Create();
 
         // act
@@ -374,7 +448,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // assert - DidNotPlay flag should be persisted correctly
         var rosterEntries = await FootballDataContext.AthleteCompetitions
-            .Where(x => x.CompetitionId == competition.Id)
+            .Where(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId)
             .ToListAsync();
 
         rosterEntries.Should().NotBeEmpty();

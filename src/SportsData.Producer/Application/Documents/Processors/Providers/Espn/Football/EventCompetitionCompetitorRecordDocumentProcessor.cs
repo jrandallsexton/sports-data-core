@@ -89,53 +89,67 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
 
         if (existingRecord != null)
         {
-            await ProcessUpdate(command, dto, existingRecord);
-            
-            try
+            const int maxRetries = 3;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Another process updated the record - reload and retry
-                _logger.LogWarning(
-                    "Concurrency conflict updating CompetitionCompetitorRecord. Reloading and retrying. CompetitorId={CompetitorId}, Type={Type}",
-                    competitorId,
-                    dto.Type);
+                await ProcessUpdate(command, dto, existingRecord);
                 
-                // Detach all tracked stat entities that were marked as Deleted by RemoveRange
-                var trackedStats = _dataContext.ChangeTracker.Entries<CompetitionCompetitorRecordStat>()
-                    .Where(e => e.Entity.CompetitionCompetitorRecordId == existingRecord.Id)
-                    .ToList();
-                
-                foreach (var stat in trackedStats)
+                try
                 {
-                    stat.State = EntityState.Detached;
-                }
-                
-                // Detach the stale parent entity
-                _dataContext.Entry(existingRecord).State = EntityState.Detached;
-                
-                // Reload the fresh record
-                existingRecord = await _dataContext.CompetitionCompetitorRecords
-                    .Include(r => r.Stats)
-                    .FirstOrDefaultAsync(r =>
-                        r.CompetitionCompetitorId == competitorId &&
-                        r.Type == dto.Type);
-                
-                if (existingRecord != null)
-                {
-                    await ProcessUpdate(command, dto, existingRecord);
                     await _dataContext.SaveChangesAsync();
+                    break; // Success - exit retry loop
                 }
-                else
+                catch (DbUpdateConcurrencyException) when (attempt < maxRetries - 1)
                 {
+                    // Another process updated - reload and retry
                     _logger.LogWarning(
-                        "CompetitionCompetitorRecord was deleted between concurrency exception and reload. " +
-                        "CompetitorId={CompetitorId}, Type={Type}, RecordId={RecordId}, CorrelationId={CorrelationId}",
+                        "Concurrency conflict updating CompetitionCompetitorRecord (attempt {Attempt}/{MaxRetries}). " +
+                        "CompetitorId={CompetitorId}, Type={Type}",
+                        attempt + 1,
+                        maxRetries,
+                        competitorId,
+                        dto.Type);
+                    
+                    // Detach tracked stats marked as Deleted
+                    var trackedStats = _dataContext.ChangeTracker.Entries<CompetitionCompetitorRecordStat>()
+                        .Where(e => e.Entity.CompetitionCompetitorRecordId == existingRecord.Id)
+                        .ToList();
+                    
+                    foreach (var stat in trackedStats)
+                    {
+                        stat.State = EntityState.Detached;
+                    }
+                    
+                    // Detach stale parent entity
+                    _dataContext.Entry(existingRecord).State = EntityState.Detached;
+                    
+                    // Reload fresh record
+                    existingRecord = await _dataContext.CompetitionCompetitorRecords
+                        .Include(r => r.Stats)
+                        .FirstOrDefaultAsync(r =>
+                            r.CompetitionCompetitorId == competitorId &&
+                            r.Type == dto.Type);
+                    
+                    if (existingRecord == null)
+                    {
+                        _logger.LogWarning(
+                            "CompetitionCompetitorRecord deleted during retry. " +
+                            "CompetitorId={CompetitorId}, Type={Type}, CorrelationId={CorrelationId}",
+                            competitorId,
+                            dto.Type,
+                            command.CorrelationId);
+                        return;
+                    }
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    // Final retry failed - another pod won
+                    _logger.LogWarning(
+                        "Concurrency conflict after {MaxRetries} retries. Another process owns this update. " +
+                        "CompetitorId={CompetitorId}, Type={Type}, CorrelationId={CorrelationId}",
+                        maxRetries,
                         competitorId,
                         dto.Type,
-                        dto.Id,
                         command.CorrelationId);
                     return;
                 }

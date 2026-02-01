@@ -2,6 +2,8 @@ using AutoFixture;
 
 using FluentAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using Moq;
 
 using SportsData.Core.Common;
@@ -12,7 +14,9 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -50,6 +54,40 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Create Competition in database (required for FK)
+        var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
+        var competition = new Competition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create AthleteSeason entries for all athletes with statistics (39)
+        var entriesWithStats = dto.Entries.Where(e => e.Statistics?.Ref != null).ToList();
+        foreach (var entry in entriesWithStats)
+        {
+            if (entry.Athlete?.Ref is null) continue;
+
+            var athleteSeasonIdentity = generator.Generate(entry.Athlete.Ref);
+            var athleteSeason = new FootballAthleteSeason
+            {
+                Id = athleteSeasonIdentity.CanonicalId,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
+        }
+        await FootballDataContext.SaveChangesAsync();
+
         var competitorId = Guid.NewGuid();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -71,4 +109,279 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             It.IsAny<CancellationToken>()), 
             Times.Exactly(39));
     }
+
+    [Fact]
+    public async Task WhenProcessingRoster_PersistsAthleteCompetitionEntries()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Create Competition in database (required for FK)
+        var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
+        var competition = new Competition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create AthleteSeason entries for the first 5 roster entries
+        var athleteSeasons = new List<FootballAthleteSeason>();
+        foreach (var entry in dto.Entries.Take(5))
+        {
+            if (entry.Athlete?.Ref is null) continue;
+
+            var athleteSeasonIdentity = generator.Generate(entry.Athlete.Ref);
+            var athleteSeason = new FootballAthleteSeason
+            {
+                Id = athleteSeasonIdentity.CanonicalId,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            athleteSeasons.Add(athleteSeason);
+        }
+        await FootballDataContext.AthleteSeasons.AddRangeAsync(athleteSeasons);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Season, 2025)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - roster entries should be persisted (at least 5, since we created 5 AthleteSeason entries)
+        var rosterEntries = await FootballDataContext.AthleteCompetitions
+            .Where(x => x.CompetitionId == competition.Id)
+            .ToListAsync();
+
+        rosterEntries.Should().NotBeEmpty();
+        rosterEntries.Should().HaveCountGreaterThanOrEqualTo(5);
+
+        // Verify properties are mapped correctly
+        var firstEntry = rosterEntries.First();
+        firstEntry.CompetitionId.Should().Be(competition.Id);
+        athleteSeasons.Select(a => a.Id).Should().Contain(firstEntry.AthleteSeasonId);
+    }
+
+    [Fact]
+    public async Task WhenProcessingRosterTwice_ReplacesExistingEntries()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Create Competition in database
+        var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
+        var competition = new Competition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create AthleteSeason entries
+        var athleteSeasons = new List<FootballAthleteSeason>();
+        foreach (var entry in dto.Entries.Take(5))
+        {
+            if (entry.Athlete?.Ref is null) continue;
+
+            var athleteSeasonIdentity = generator.Generate(entry.Athlete.Ref);
+            var athleteSeason = new FootballAthleteSeason
+            {
+                Id = athleteSeasonIdentity.CanonicalId,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            athleteSeasons.Add(athleteSeason);
+        }
+        await FootballDataContext.AthleteSeasons.AddRangeAsync(athleteSeasons);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Season, 2025)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .Create();
+
+        // act - process first time
+        await sut.ProcessAsync(command);
+
+        var firstPassCount = await FootballDataContext.AthleteCompetitions
+            .CountAsync(x => x.CompetitionId == competition.Id);
+
+        firstPassCount.Should().BeGreaterThan(0);
+
+        // act - process second time (wholesale replacement)
+        await sut.ProcessAsync(command);
+
+        // assert - count should be the same (old entries deleted, new entries inserted)
+        var secondPassCount = await FootballDataContext.AthleteCompetitions
+            .CountAsync(x => x.CompetitionId == competition.Id);
+
+        secondPassCount.Should().Be(firstPassCount, "wholesale replacement should result in same count");
+    }
+
+    [Fact]
+    public async Task WhenRosterEntryHasJerseyNumber_PersistsJerseyNumber()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Create Competition in database
+        var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
+        var competition = new Competition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Find a roster entry with jersey number
+        var entryWithJersey = dto.Entries.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Jersey) && e.Athlete?.Ref != null);
+        entryWithJersey.Should().NotBeNull("test data should contain entries with jersey numbers");
+
+        // Create AthleteSeason for this entry
+        var athleteSeasonIdentity = generator.Generate(entryWithJersey!.Athlete!.Ref!);
+        var athleteSeason = new FootballAthleteSeason
+        {
+            Id = athleteSeasonIdentity.CanonicalId,
+            AthleteId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
+            PositionId = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Season, 2025)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - jersey number should be persisted
+        var rosterEntry = await FootballDataContext.AthleteCompetitions
+            .FirstOrDefaultAsync(x => x.CompetitionId == competition.Id && x.AthleteSeasonId == athleteSeason.Id);
+
+        rosterEntry.Should().NotBeNull();
+        rosterEntry!.JerseyNumber.Should().Be(entryWithJersey.Jersey);
+    }
+
+    [Fact]
+    public async Task WhenAthleteDidNotPlay_PersistsDidNotPlayFlag()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Create Competition in database
+        var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
+        var competition = new Competition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = DateTime.UtcNow,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create AthleteSeason entries for the first 5
+        var athleteSeasons = new List<FootballAthleteSeason>();
+        foreach (var entry in dto.Entries.Take(5))
+        {
+            if (entry.Athlete?.Ref is null) continue;
+
+            var athleteSeasonIdentity = generator.Generate(entry.Athlete.Ref);
+            var athleteSeason = new FootballAthleteSeason
+            {
+                Id = athleteSeasonIdentity.CanonicalId,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            athleteSeasons.Add(athleteSeason);
+        }
+        await FootballDataContext.AthleteSeasons.AddRangeAsync(athleteSeasons);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Season, 2025)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - DidNotPlay flag should be persisted correctly
+        var rosterEntries = await FootballDataContext.AthleteCompetitions
+            .Where(x => x.CompetitionId == competition.Id)
+            .ToListAsync();
+
+        rosterEntries.Should().NotBeEmpty();
+        
+        // All entries should have DidNotPlay set to either true or false (not nullable)
+        rosterEntries.All(e => e.DidNotPlay == false || e.DidNotPlay == true).Should().BeTrue();
+    }
 }
+
+

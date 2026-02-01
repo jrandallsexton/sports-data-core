@@ -195,13 +195,13 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         // act
         await sut.ProcessAsync(command);
 
-        // assert - roster entries should be persisted (at least 5, since we created 5 AthleteSeason entries)
+        // assert - roster entries should be persisted (at least as many as AthleteSeason entries we created)
         var rosterEntries = await FootballDataContext.AthleteCompetitions
             .Where(x => x.CompetitionId == competition.Id && x.CompetitionCompetitorId == competitorId)
             .ToListAsync();
 
         rosterEntries.Should().NotBeEmpty();
-        rosterEntries.Should().HaveCountGreaterThanOrEqualTo(5);
+        rosterEntries.Should().HaveCountGreaterThanOrEqualTo(athleteSeasons.Count);
 
         // Verify properties are mapped correctly
         var firstEntry = rosterEntries.First();

@@ -152,6 +152,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
 
         // Process each roster entry
         var newRosterEntries = new List<AthleteCompetition>();
+        var publishedStatsCount = 0;
 
         foreach (var (athleteSeasonId, (entry, positionId)) in entryLookup)
         {
@@ -210,6 +211,8 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                     null, // Stats document is self-contained with athlete and competition refs
                     DocumentType.EventCompetitionAthleteStatistics,
                     CausationId.Producer.EventCompetitionCompetitorRosterDocumentProcessor);
+                
+                publishedStatsCount++;
             }
         }
 
@@ -226,7 +229,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
 
         _logger.LogInformation("Completed processing roster. RosterEntries={RosterCount}, PublishedStatisticsRequests={StatsCount}, CompetitorId={CompetitorId}",
             newRosterEntries.Count,
-            dto.Entries.Count(e => e.Statistics?.Ref != null),
-            command.ParentId);
+            publishedStatsCount,
+            competitorId);
     }
 }

@@ -142,8 +142,8 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
 
         _logger.LogInformation("Competition created. CompetitionId={CompetitionId}", competition.Id);
         
-        // Process all child documents - same logic whether new or update
-        await ProcessChildDocuments(command, externalDto, competition);
+        // Process all child documents - always spawn all children for new entities
+        await ProcessChildDocuments(command, externalDto, competition, isNew: true);
     }
 
     private async Task AddVenue(
@@ -261,46 +261,47 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
             _logger.LogInformation("No property changes detected. CompetitionId={CompetitionId}", competition.Id);
         }
 
-        // Process all child documents - same logic whether new or update
-        await ProcessChildDocuments(command, dto, competition);
+        // Process child documents - respect ShouldSpawn filtering for updates
+        await ProcessChildDocuments(command, dto, competition, isNew: false);
     }
 
     /// <summary>
     /// Processes all child documents and relationships for a competition.
-    /// This method is called for both new entities and updates to ensure
-    /// child documents are always spawned if their $ref exists in the DTO.
+    /// For new entities (isNew=true), always spawns all child documents.
+    /// For updates (isNew=false), respects ShouldSpawn filtering.
     /// </summary>
     private async Task ProcessChildDocuments(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto dto,
-        Competition competition)
+        Competition competition,
+        bool isNew)
     {
-        _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}", competition.Id);
+        _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}, IsNew={IsNew}", competition.Id, isNew);
 
-        // All child documents wrapped with ShouldSpawn filtering
-        if (ShouldSpawn(DocumentType.EventCompetitionOdds, command))
+        // All child documents - bypass ShouldSpawn for new entities, apply filtering for updates
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionOdds, command))
             await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionStatus, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionStatus, command))
             await PublishChildDocumentRequest(command, dto.Status, competition.Id, DocumentType.EventCompetitionStatus, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionSituation, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionSituation, command))
             await PublishChildDocumentRequest(command, dto.Situation, competition.Id, DocumentType.EventCompetitionSituation, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionBroadcast, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionBroadcast, command))
             await PublishChildDocumentRequest(command, dto.Broadcasts, competition.Id, DocumentType.EventCompetitionBroadcast, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionPlay, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPlay, command))
             await PublishChildDocumentRequest(command, dto.Details, competition.Id, DocumentType.EventCompetitionPlay, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionLeaders, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionLeaders, command))
             await PublishChildDocumentRequest(command, dto.Leaders, competition.Id, DocumentType.EventCompetitionLeaders, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionPrediction, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPrediction, command))
             await PublishChildDocumentRequest(command, dto.Predictor, competition.Id, DocumentType.EventCompetitionPrediction, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionProbability, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionProbability, command))
             await PublishChildDocumentRequest(command, dto.Probabilities, competition.Id, DocumentType.EventCompetitionProbability, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionPowerIndex, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPowerIndex, command))
             await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex, CausationId.Producer.EventCompetitionDocumentProcessor);
-        if (ShouldSpawn(DocumentType.EventCompetitionDrive, command))
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionDrive, command))
             await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive, CausationId.Producer.EventCompetitionDocumentProcessor);
-        
-        // Competitors (special handling for collections)
-        await ProcessCompetitors(command, dto, competition);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitor, command))
+            await ProcessCompetitors(command, dto, competition);
 
         await _dataContext.SaveChangesAsync();
 
@@ -312,9 +313,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
         EspnEventCompetitionDto externalDto,
         Competition competition)
     {
-        if (!ShouldSpawn(DocumentType.EventCompetitionCompetitor, command))
-            return;
-
         _logger.LogInformation("Requesting {Count} competitors. CompetitionId={CompId}", 
             externalDto.Competitors.Count, 
             competition.Id);

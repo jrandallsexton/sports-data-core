@@ -149,16 +149,18 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         // All dependencies resolved - safe to proceed with wholesale replacement
         var existingStatsCount = franchiseSeason.Leaders.Sum(l => l.Stats.Count);
         var existingLeadersCount = franchiseSeason.Leaders.Count;
+        var isNew = existingLeadersCount == 0;
 
         _dataContext.FranchiseSeasonLeaderStats.RemoveRange(
             franchiseSeason.Leaders.SelectMany(l => l.Stats));
         _dataContext.FranchiseSeasonLeaders.RemoveRange(franchiseSeason.Leaders);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Removed existing leaders. FranchiseSeasonId={FranchiseSeasonId}, Leaders={LeaderCount}, Stats={StatCount}",
+        _logger.LogInformation("Removed existing leaders. FranchiseSeasonId={FranchiseSeasonId}, Leaders={LeaderCount}, Stats={StatCount}, IsNew={IsNew}",
             franchiseSeasonId,
             existingLeadersCount,
-            existingStatsCount);
+            existingStatsCount,
+            isNew);
 
         var leaders = new List<FranchiseSeasonLeader>();
 
@@ -262,8 +264,8 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                     var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                    // Apply ShouldSpawn filtering - respects command's DocumentTypeFilters
-                    if (ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+                    // For new leaders, always spawn child documents; for updates, respect ShouldSpawn filtering
+                    if (isNew || ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
                     {
                         // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
                         await PublishChildDocumentRequest(

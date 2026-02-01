@@ -90,7 +90,35 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         if (existingRecord != null)
         {
             await ProcessUpdate(command, dto, existingRecord);
-            await _dataContext.SaveChangesAsync();
+            
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Another process updated the record - reload and retry
+                _logger.LogWarning(
+                    "Concurrency conflict updating CompetitionCompetitorRecord. Reloading and retrying. CompetitorId={CompetitorId}, Type={Type}",
+                    competitorId,
+                    dto.Type);
+                
+                // Detach the stale entity
+                _dataContext.Entry(existingRecord).State = EntityState.Detached;
+                
+                // Reload the fresh record
+                existingRecord = await _dataContext.CompetitionCompetitorRecords
+                    .Include(r => r.Stats)
+                    .FirstOrDefaultAsync(r =>
+                        r.CompetitionCompetitorId == competitorId &&
+                        r.Type == dto.Type);
+                
+                if (existingRecord != null)
+                {
+                    await ProcessUpdate(command, dto, existingRecord);
+                    await _dataContext.SaveChangesAsync();
+                }
+            }
         }
         else
         {

@@ -146,13 +146,10 @@ select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e
 select * from public."Competition" where "ContestId" = '51cc46b6-04ee-a1f6-86ef-fc4f194a856a'
 select * from public."CompetitionCompetitor" where "CompetitionId" = 'b2ca319f-e677-657b-d5c4-2b9eadbe2643'
 
-SELECT COUNT(*) FROM "__EFMigrationsHistory";
-DELETE FROM "__EFMigrationsHistory";
-
-INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
-VALUES ('20260202101027_02FebV1_Baseline', '10.0.2');
-
-SELECT "MigrationId", "ProductVersion" FROM "__EFMigrationsHistory";
+-- SELECT COUNT(*) FROM "__EFMigrationsHistory";
+-- DELETE FROM "__EFMigrationsHistory";
+-- INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") VALUES ('20260202101027_02FebV1_Baseline', '10.0.2');
+-- SELECT "MigrationId", "ProductVersion" FROM "__EFMigrationsHistory";
 
 select * from public."CompetitionCompetitorRecord" where "CompetitionCompetitorId" = 'd7bd2d0c-5a60-ddb6-0756-566e060ffc88'
 select * from public."CompetitionCompetitorRecordStat" where "CompetitionCompetitorRecordId" = '949e8d7d-66a7-45e9-998f-3e46229ff24f'

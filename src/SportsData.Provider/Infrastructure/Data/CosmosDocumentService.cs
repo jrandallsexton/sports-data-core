@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
 
 using System.Linq.Expressions;
@@ -18,14 +19,18 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public CosmosDocumentService(
             ILogger<CosmosDocumentService> logger,
-            IOptions<ProviderDocDatabaseConfig> options)
+            IOptions<ProviderDocDatabaseConfig> options,
+            IAppMode appMode)
         {
             _logger = logger;
             _logger.LogInformation($"Cosmos began with databaseName: {options.Value.DatabaseName}");
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
-            _defaultContainer = _client.GetContainer(_databaseName, "FootballNcaa"); // TODO: Get from AzAppConfig
+            // Use current sport mode for container selection
+            var containerName = appMode.CurrentSport.ToString();
+            _defaultContainer = _client.GetContainer(_databaseName, containerName);
+            _logger.LogInformation("Using Cosmos container: {ContainerName}", containerName);
         }
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string containerName)

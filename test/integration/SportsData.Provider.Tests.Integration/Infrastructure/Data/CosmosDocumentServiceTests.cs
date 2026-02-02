@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
 using SportsData.Provider.Infrastructure.Data;
 
@@ -27,8 +28,22 @@ namespace SportsData.Provider.Tests.Integration.Infrastructure.Data
 
             var options = Options.Create(config);
             var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<CosmosDocumentService>();
+            
+            // Use stub IAppMode implementation for testing
+            var appMode = new TestAppMode(Sport.FootballNcaa);
 
-            _sut = new CosmosDocumentService(logger, options);
+            _sut = new CosmosDocumentService(logger, options, appMode);
+        }
+        
+        // Stub implementation of IAppMode for testing
+        private class TestAppMode : IAppMode
+        {
+            public TestAppMode(Sport sport)
+            {
+                CurrentSport = sport;
+            }
+            
+            public Sport CurrentSport { get; }
         }
 
         [Fact(Skip = "cosmos troubleshooting locally only")]

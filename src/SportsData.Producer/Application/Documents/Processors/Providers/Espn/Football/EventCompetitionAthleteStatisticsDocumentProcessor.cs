@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
@@ -129,7 +130,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         // --- Generate Identity ---
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-        // --- Remove Existing Statistics (ESPN replaces wholesale) ---
+        // --- Wholesale Replacement (Remove + Create in single transaction) ---
         var existing = await _dataContext.AthleteCompetitionStatistics
             .Include(x => x.Categories)
                 .ThenInclude(c => c.Stats)
@@ -140,7 +141,6 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         {
             _logger.LogInformation("Removing existing AthleteCompetitionStatistic {Id} for replacement", existing.Id);
             _dataContext.AthleteCompetitionStatistics.Remove(existing);
-            await _dataContext.SaveChangesAsync();
         }
 
         // --- Create New Entity ---
@@ -152,8 +152,74 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
 
-        // Save both remove and add in a single transaction
-        await _dataContext.SaveChangesAsync();
+        // Save BOTH remove and add in a SINGLE transaction
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException) when (existing != null)
+        {
+            // Concurrency conflict on the delete - another pod updated/deleted between our load and save
+            _logger.LogWarning(
+                "Concurrency conflict on wholesale replacement. Reloading and retrying. Id={Id}, CorrelationId={CorrelationId}",
+                existing.Id,
+                command.CorrelationId);
+
+            // Detach all tracked entities
+            var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
+                .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
+                .ToList();
+
+            foreach (var category in trackedCategories)
+            {
+                foreach (var stat in category.Entity.Stats)
+                {
+                    var statEntry = _dataContext.Entry(stat);
+                    if (statEntry.State != EntityState.Detached)
+                    {
+                        statEntry.State = EntityState.Detached;
+                    }
+                }
+                category.State = EntityState.Detached;
+            }
+
+            _dataContext.Entry(existing).State = EntityState.Detached;
+            _dataContext.Entry(entity).State = EntityState.Detached;
+
+            // Reload and retry
+            existing = await _dataContext.AthleteCompetitionStatistics
+                .Include(x => x.Categories)
+                    .ThenInclude(c => c.Stats)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+
+            if (existing != null)
+            {
+                _dataContext.AthleteCompetitionStatistics.Remove(existing);
+            }
+
+            // Recreate entity (entity object was detached)
+            entity = dto.AsEntity(
+                athleteSeason.Id,
+                competition.Id,
+                _externalRefIdentityGenerator,
+                command.CorrelationId);
+
+            await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException?.Message?.Contains("duplicate key") == true ||
+            ex.InnerException?.Message?.Contains("PK_AthleteCompetitionStatistic") == true)
+        {
+            // Another pod already created this entity - they won the race
+            _logger.LogWarning(
+                "Duplicate key on wholesale replacement. Another process already created it. " +
+                "Id={Id}, CorrelationId={CorrelationId}",
+                entity.Id,
+                command.CorrelationId);
+            return;
+        }
 
         _logger.LogInformation(
             "Successfully processed AthleteCompetitionStatistic {Id} for AthleteSeason {AthleteSeasonId}, Competition {CompetitionId} with {CategoryCount} categories and {StatCount} total stats",

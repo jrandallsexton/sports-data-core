@@ -143,14 +143,19 @@ update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
-select * from public."Competition" where "ContestId" = '7f39067b-40bb-aa0b-225d-7670409d1003'
-select * from public."CompetitionCompetitor" where "CompetitionId" = 'eda0c287-0d48-4715-4405-51414c3a416b'
+select * from public."Competition" where "ContestId" = '51cc46b6-04ee-a1f6-86ef-fc4f194a856a'
+select * from public."CompetitionCompetitor" where "CompetitionId" = 'b2ca319f-e677-657b-d5c4-2b9eadbe2643'
 
-select * from public."CompetitionCompetitorRecord" where "CompetitionCompetitorId" = '3d4dd05a-600f-5529-52e4-d3b001835976'
+-- SELECT COUNT(*) FROM "__EFMigrationsHistory";
+-- DELETE FROM "__EFMigrationsHistory";
+-- INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") VALUES ('20260202101027_02FebV1_Baseline', '10.0.2');
+-- SELECT "MigrationId", "ProductVersion" FROM "__EFMigrationsHistory";
+
+select * from public."CompetitionCompetitorRecord" where "CompetitionCompetitorId" = 'd7bd2d0c-5a60-ddb6-0756-566e060ffc88'
 select * from public."CompetitionCompetitorRecordStat" where "CompetitionCompetitorRecordId" = '949e8d7d-66a7-45e9-998f-3e46229ff24f'
-select * from public."AthleteCompetitionStatistic" where "CompetitionId" = 'eda0c287-0d48-4715-4405-51414c3a416b'
-select * from public."AthleteCompetitionStatisticCategory" where "AthleteCompetitionStatisticId" = '4fff5336-2c25-3090-a573-d8cbaa961e56'
-select * from public."AthleteCompetitionStatisticStat" where "AthleteCompetitionStatisticCategoryId" = '073816a4-63e7-4863-9daa-cfdee6328f80'
+select * from public."AthleteCompetitionStatistic" where "CompetitionId" = 'b2ca319f-e677-657b-d5c4-2b9eadbe2643'
+select * from public."AthleteCompetitionStatisticCategory" where "AthleteCompetitionStatisticId" = '1821d195-a119-2fec-df30-f0e101488fd5'
+select * from public."AthleteCompetitionStatisticStat" where "AthleteCompetitionStatisticCategoryId" = 'ab3b874a-b491-4103-b871-25dca002afca'
  
 
 select * from public."CompetitionExternalId" where "CompetitionId" = '5e83718e-e1e4-2c73-804f-0c4a1f19f850'

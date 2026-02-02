@@ -172,7 +172,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
             foreach (var category in trackedCategories)
             {
-                foreach (var stat in category.Entity.Stats)
+                // Materialize collection before iteration to prevent "Collection was modified" exception
+                foreach (var stat in category.Entity.Stats.ToList())
                 {
                     var statEntry = _dataContext.Entry(stat);
                     if (statEntry.State != EntityState.Detached)

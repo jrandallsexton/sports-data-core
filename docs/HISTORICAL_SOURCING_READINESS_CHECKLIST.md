@@ -438,105 +438,260 @@ Before authorizing first historical sourcing run:
 
 ## Pre-Historical Sourcing: Migration Baseline Reset
 
-**Status:** ⚠️ PENDING - Execute after current PR merges and deploys
+**Status:** ✅ **READY TO EXECUTE** (February 2, 2026)
 
 **Impact:** HIGH - Improves pod startup performance for KEDA autoscaling during historical runs
 
 **Current State:**
-- 106 migrations spanning August 2025 - January 2026
+- **54 migrations** spanning August 2025 - February 2026 (Initial → 01FebV3)
 - EF Core processes all migrations on every pod startup
 - Startup overhead: ~100-500ms per pod
 - **With KEDA scaling to 20-50 pods, this compounds significantly**
 
-**Procedure:**
+**⚠️ CRITICAL SAFETY RULES:**
+1. **NEVER delete migrations before creating baseline** - EF needs them to generate proper baseline
+2. **Test on local database FIRST** - Verify baseline works before touching production
+3. **Backup production database** - Safety net for rollback
+4. **Verify schema match** - Local and production must be identical before squash
 
-### 1. Verify All Migrations Deployed
+---
+
+### CORRECTED PROCEDURE (Safe Order)
+
+### Step 1: Backup Production Database
+```powershell
+# On Bender or local machine with kubectl access
+cd C:\Projects\sports-data-provision\util
+
+# Create timestamped backup
+.\21_CopyProdToLocal.ps1 -Force
+# Backup saved to d:\sdprod-backups\
+```
+
+### Step 2: Verify Production Migration State
 ```sql
--- Connect to production database
+-- Connect to PRODUCTION database
 SELECT COUNT(*) FROM "__EFMigrationsHistory";
--- Should return 104 (or current count)
+-- Expected: 54 migrations
 
 -- Verify last migration
-SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;
--- Should show 31JanV2_CoachDateOnly or latest
+SELECT "MigrationId" FROM "__EFMigrationsHistory" 
+ORDER BY "MigrationId" DESC LIMIT 1;
+-- Expected: 20260201105014_01FebV3_AthleteCompetitionCompetitorFK
 ```
 
-### 2. Delete Existing Migration Files
+### Step 3: Verify Local Database Matches Production
 ```powershell
-# Navigate to Producer project
-cd c:\Projects\sports-data\src\SportsData.Producer
+# Check local database has same migrations
+cd C:\Projects\sports-data\src\SportsData.Producer
 
-# Delete all migration files (NOT the DbContext files)
-Remove-Item Migrations\20*.cs
-Remove-Item Migrations\20*.Designer.cs
-
-# Delete the model snapshot
-Remove-Item Migrations\FootballDataContextModelSnapshot.cs
+# This should show 54 migrations applied
+dotnet ef migrations list --context FootballDataContext
 ```
 
-### 3. Create New Baseline Migration
+### Step 4: Create Baseline Migration (WHILE old migrations still exist)
 ```powershell
 # Still in Producer directory
-dotnet ef migrations add 01FebV1_Baseline --context FootballDataContext
+# DO NOT delete migrations yet - EF needs them to create baseline!
+
+dotnet ef migrations add 02FebV1_Baseline --context FootballDataContext
+
+# This generates:
+# - Migrations\20260202XXXXXX_02FebV1_Baseline.cs
+# - Migrations\20260202XXXXXX_02FebV1_Baseline.Designer.cs
+# - Updates TeamSportDataContextModelSnapshot.cs
 ```
 
-This generates:
-- `20260201XXXXXX_01FebV1_Baseline.cs` (migration file)
-- `20260201XXXXXX_01FebV1_Baseline.Designer.cs` (designer file)
-- `FootballDataContextModelSnapshot.cs` (new snapshot)
+**IMPORTANT**: Note the exact timestamp in the generated filename (e.g., `20260202103045`)
 
-### 4. Update Production Migration History
+### Step 5: Test Baseline on LOCAL Database First
+```powershell
+# Option A: Test with fresh local database
+cd C:\Projects\sports-data\src\SportsData.Producer
+
+# Drop local database
+dotnet ef database drop --context FootballDataContext --force
+
+# Apply ONLY the new baseline
+dotnet ef database update --context FootballDataContext
+
+# Verify schema looks correct (check a few key tables exist)
+```
+
 ```sql
--- Connect to production database
+-- Connect to LOCAL database
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' 
+ORDER BY table_name;
+
+-- Should see: AthleteSeason, Competition, Franchise, etc.
+-- Verify AthleteCompetition exists (from latest migration)
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'AthleteCompetition';
+```
+
+### Step 6: Run Tests Against Local Baseline
+```powershell
+# Build solution
+dotnet build C:\Projects\sports-data\sports-data.sln
+
+# Run unit tests (should all pass with baseline)
+dotnet test C:\Projects\sports-data\test\unit\SportsData.Producer.Tests.Unit\SportsData.Producer.Tests.Unit.csproj
+
+# Expected: 240+ tests passing
+```
+
+### Step 7: Delete Old Migration Files (AFTER baseline tested)
+```powershell
+# Navigate to Producer project
+cd C:\Projects\sports-data\src\SportsData.Producer\Migrations
+
+# BACKUP: Copy old migrations to archive folder first
+New-Item -Path ".\archive_pre_squash" -ItemType Directory -Force
+Copy-Item "20*.cs" ".\archive_pre_squash\" -Exclude "20260202*"
+Copy-Item "20*.Designer.cs" ".\archive_pre_squash\" -Exclude "20260202*"
+
+# Delete old migration files (NOT the new baseline!)
+Remove-Item "2025*.cs"
+Remove-Item "2025*.Designer.cs"
+Remove-Item "202601*.cs" -Exclude "20260202*"
+Remove-Item "202601*.Designer.cs" -Exclude "20260202*"
+Remove-Item "20260201*.cs"
+Remove-Item "20260201*.Designer.cs"
+
+# Verify only baseline remains
+Get-ChildItem "20*.cs"
+# Should show ONLY: 20260202XXXXXX_02FebV1_Baseline.cs and .Designer.cs
+```
+
+### Step 8: Update Production Migration History
+```sql
+-- Connect to PRODUCTION database
+-- ⚠️ POINT OF NO RETURN - Make sure backup exists!
+
+BEGIN;
+
 -- Clear old migration history
 DELETE FROM "__EFMigrationsHistory";
 
--- Add the new baseline (replace XXXXXX with actual timestamp from generated file)
+-- Add the new baseline (replace XXXXXX with actual timestamp from Step 4)
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
-VALUES ('20260201XXXXXX_01FebV1_Baseline', '10.0.2');
+VALUES ('20260202XXXXXX_02FebV1_Baseline', '10.0.2');
+
+-- Verify
+SELECT * FROM "__EFMigrationsHistory";
+-- Should show ONLY the baseline migration
+
+COMMIT;
 ```
 
-### 5. Update Local Development Database
-```powershell
-# Option A: Update history (same SQL as production)
-# Run the DELETE/INSERT SQL against local database
+### Step 9: Update Local Development Database
+```sql
+-- Connect to LOCAL database
+-- Apply same migration history update
 
-# Option B: Drop and recreate (cleaner for dev)
-cd c:\Projects\sports-data\src\SportsData.Producer
-dotnet ef database drop --context FootballDataContext --force
-dotnet ef database update --context FootballDataContext
+BEGIN;
+
+DELETE FROM "__EFMigrationsHistory";
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
+VALUES ('20260202XXXXXX_02FebV1_Baseline', '10.0.2');
+
+COMMIT;
 ```
 
-### 6. Verify Baseline Works
+### Step 10: Verify Baseline Works in Both Environments
 ```powershell
-# Build solution
-dotnet build c:\Projects\sports-data\sports-data.sln
+# Test local
+cd C:\Projects\sports-data\src\SportsData.Producer
+dotnet ef migrations list --context FootballDataContext
+# Should show: 20260202XXXXXX_02FebV1_Baseline (Applied)
 
-# Run tests to ensure nothing broke
-dotnet test c:\Projects\sports-data\test\unit\SportsData.Producer.Tests.Unit\SportsData.Producer.Tests.Unit.csproj
+# Run tests again
+dotnet test C:\Projects\sports-data\test\unit\SportsData.Producer.Tests.Unit\SportsData.Producer.Tests.Unit.csproj
+# Expected: 240+ tests passing
 ```
 
-### 7. Commit and Deploy
+### Step 11: Commit and Deploy to Production
 ```powershell
+cd C:\Projects\sports-data
+
+git status
+# Should show:
+# - Deleted: 53 old migration files (2025*, 202601*, 20260201*)
+# - Added: 1 new baseline migration (20260202*)
+# - Modified: TeamSportDataContextModelSnapshot.cs
+
 git add .
-git commit -m "chore: squash 106 migrations to baseline for historical sourcing performance"
+git commit -m "chore: squash 54 migrations to baseline for historical sourcing performance
+
+- Reduces pod startup time by ~100-500ms per pod
+- Critical for KEDA autoscaling (20-50 concurrent pods)
+- Production migration history manually updated
+- Baseline tested on local database before deployment"
+
 git push
 
-# Deploy to production via normal pipeline
+# Deploy via Azure DevOps pipeline
+# Pods will restart with new baseline, no schema changes
 ```
 
-**Benefits:**
-- ✅ **Faster pod startup**: 100-500ms saved per pod
-- ✅ **Reduced memory**: Single baseline vs 52 migrations
+### Step 12: Monitor Production Deployment
+```powershell
+# Watch pods restart
+kubectl get pods -n default -l app=producer-football-ncaa -w
+
+# Check pod logs for migration application
+kubectl logs -n default -l app=producer-football-ncaa --tail=50 | grep -i migration
+
+# Should see: "Applying migration '20260202XXXXXX_02FebV1_Baseline'"
+# Should NOT see errors
+```
+
+---
+
+### Rollback Plan
+
+**If baseline migration fails in production:**
+
+```powershell
+# 1. Restore old migrations from git
+git revert <commit-hash>
+git push
+
+# 2. Restore production migration history from backup
+# (Backup taken in Step 1 contains __EFMigrationsHistory data)
+```
+
+**If you need to restore production database entirely:**
+```sql
+-- Use backup from Step 1 (d:\sdprod-backups\)
+-- Standard PostgreSQL restore process
+```
+
+---
+
+### Benefits of Squash
+
+- ✅ **Faster pod startup**: 100-500ms saved per pod (54 migrations → 1)
+- ✅ **Reduced memory**: Single baseline vs 54 migrations
 - ✅ **Cleaner logs**: Less EF Core migration scanning
 - ✅ **Better KEDA scaling**: Critical for 20-50 concurrent pods during historical runs
 - ✅ **Easier debugging**: Simpler to reason about schema state
+- ✅ **Smaller Docker images**: Fewer migration files in container
 
-**Rollback Plan:**
-If issues arise, the old migrations are in git history and can be restored:
-```powershell
-git revert <commit-hash>
-```
+---
+
+### Post-Squash Verification Checklist
+
+- [ ] Production migration history shows only baseline
+- [ ] Local migration history shows only baseline  
+- [ ] All 240+ unit tests passing
+- [ ] Pods restart successfully in production
+- [ ] No migration errors in pod logs
+- [ ] Sample document processing works (smoke test)
+- [ ] Old migrations archived in `Migrations/archive_pre_squash/`
+- [ ] Git history contains squash commit
 
 ---
 - [ ] RabbitMQ cluster stable and scaled appropriately

@@ -66,9 +66,8 @@ namespace SportsData.Core.DependencyInjection
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode};Include Error Detail=true;";
 
-#if DEBUG
+
             Console.WriteLine($"using: {connString}");
-#endif
 
             services.AddDbContext<T>(options =>
             {

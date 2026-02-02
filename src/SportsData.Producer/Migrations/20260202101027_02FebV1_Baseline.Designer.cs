@@ -13,8 +13,8 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20260131115743_31JanV1_CoachesAndAwards")]
-    partial class _31JanV1_CoachesAndAwards
+    [Migration("20260202101027_02FebV1_Baseline")]
+    partial class _02FebV1_Baseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -904,6 +904,57 @@ namespace SportsData.Producer.Migrations
                     b.ToTable("CompetitionStream", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionCompetitorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DidNotPlay")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("JerseyNumber")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PositionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonId");
+
+                    b.HasIndex("CompetitionCompetitorId");
+
+                    b.HasIndex("PositionId");
+
+                    b.HasIndex("CompetitionId", "CompetitionCompetitorId", "AthleteSeasonId")
+                        .IsUnique();
+
+                    b.ToTable("AthleteCompetition", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatistic", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1547,8 +1598,8 @@ namespace SportsData.Producer.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
 
                     b.Property<int>("Experience")
                         .HasColumnType("integer");
@@ -7380,6 +7431,40 @@ namespace SportsData.Producer.Migrations
                     b.Navigation("Competition");
 
                     b.Navigation("SeasonWeek");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetition", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                        .WithMany()
+                        .HasForeignKey("AthleteSeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                        .WithMany()
+                        .HasForeignKey("CompetitionCompetitorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", "Competition")
+                        .WithMany()
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthletePosition", "Position")
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AthleteSeason");
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("CompetitionCompetitor");
+
+                    b.Navigation("Position");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteCompetitionStatistic", b =>

@@ -10,7 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 #nullable disable
 
-namespace SportsData.Producer.Migrations
+namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
     [Migration("20260202101027_02FebV1_Baseline")]

@@ -1,7 +1,3 @@
-using SportsData.Core.Dtos.Canonical;
-using System;
-using System.Collections.Generic;
-
 namespace SportsData.Api.Application.Franchises;
 
 /// <summary>

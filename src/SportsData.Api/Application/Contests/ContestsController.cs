@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 using SportsData.Api.Application.Contests.Queries.GetContestById;
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
 using SportsData.Core.Extensions;

@@ -1,10 +1,10 @@
+using FluentValidation.Results;
+
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Contest;
-using Microsoft.Extensions.Logging;
-using FluentValidation.Results;
 
 namespace SportsData.Api.Application.Contests.Queries.GetContestById;
 

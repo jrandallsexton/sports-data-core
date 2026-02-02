@@ -9,7 +9,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 #nullable disable
 
-namespace SportsData.Producer.Migrations
+namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
     partial class FootballDataContextModelSnapshot : ModelSnapshot

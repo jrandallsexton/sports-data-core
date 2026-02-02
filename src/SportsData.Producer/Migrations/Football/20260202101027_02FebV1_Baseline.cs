@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace SportsData.Producer.Migrations
+namespace SportsData.Producer.Migrations.Football
 {
     /// <inheritdoc />
     public partial class _02FebV1_Baseline : Migration

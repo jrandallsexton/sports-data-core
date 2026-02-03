@@ -299,7 +299,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
                     .Callback<ProcessResourceIndexItemCommand>(cmd => capturedCommand = cmd)
                     .Returns(Task.CompletedTask);
                 
-                func(mockProcessor.Object);
+                // Await the task returned by the compiled expression
+                func(mockProcessor.Object).GetAwaiter().GetResult();
             });
 
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();

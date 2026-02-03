@@ -27,6 +27,12 @@ public class AthleteSeasonInjury : CanonicalEntityBase<Guid>
 
     public string? Status { get; set; }
 
+    /// <summary>
+    /// Concurrency token using PostgreSQL's xmin system column.
+    /// EF Core automatically updates this on every SaveChanges and checks it for conflicts.
+    /// </summary>
+    public uint RowVersion { get; set; }
+
     public class EntityConfiguration : IEntityTypeConfiguration<AthleteSeasonInjury>
     {
         public void Configure(EntityTypeBuilder<AthleteSeasonInjury> builder)
@@ -44,6 +50,9 @@ public class AthleteSeasonInjury : CanonicalEntityBase<Guid>
             builder.Property(x => x.Text).IsRequired().HasMaxLength(2000);
             builder.Property(x => x.Source).HasMaxLength(100);
             builder.Property(x => x.Status).HasMaxLength(50);
+
+            builder.Property(t => t.RowVersion)
+                .IsRowVersion();
 
             builder.HasOne(x => x.AthleteSeason)
                 .WithMany()

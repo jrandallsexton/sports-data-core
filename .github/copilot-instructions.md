@@ -150,6 +150,11 @@
 - Use TestContainers for database-dependent tests
 - Mock external HTTP calls, not internal dependencies
 
+## Code Quality & Workflow
+- **Always Build Before Completion**: After making code changes, always run a build to verify compilation before reporting task completion
+- **Verify No Errors**: Use `get_errors` tool to check for compilation errors after edits
+- **Fix Issues Immediately**: If build errors occur, fix them before proceeding to the next task
+
 ## Performance Guidelines
 - **Slug Resolution**: Resolve slug → GUID once at API layer, use GUID for all downstream calls
 - **Client Caching**: Factory pattern caches clients per mode (Sport enum)

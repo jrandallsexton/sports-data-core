@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Blobs;
@@ -31,6 +32,7 @@ namespace SportsData.Provider.Application.Documents
         private readonly IHttpClientFactory _clientFactory;
         private readonly EspnHttpClient _espnHttpClient;
         private readonly IHostEnvironment _environment;
+        private readonly IAppMode _appMode;
 
         public DocumentController(
             IDocumentStore documentStore,
@@ -42,7 +44,8 @@ namespace SportsData.Provider.Application.Documents
             IBus bus,
             IHttpClientFactory clientFactory,
             EspnHttpClient espnHttpClient,
-            IHostEnvironment environment)
+            IHostEnvironment environment,
+            IAppMode appMode)
         {
             _documentStore = documentStore;
             _decoder = decoder;
@@ -54,6 +57,7 @@ namespace SportsData.Provider.Application.Documents
             _clientFactory = clientFactory;
             _espnHttpClient = espnHttpClient;
             _environment = environment;
+            _appMode = appMode;
         }
 
         [HttpGet("urlHash/{hash}")]
@@ -61,7 +65,7 @@ namespace SportsData.Provider.Application.Documents
         {
             using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash }))
             {
-                var collectionName = "FootballNcaa";
+                var collectionName = _appMode.CurrentSport.ToString();
 
                 _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 

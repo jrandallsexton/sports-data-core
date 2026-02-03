@@ -1,4 +1,5 @@
 # TODO Audit - February 2, 2026
+*Status as of PR merge: AthleteSeasonNote feature + Container isolation enforcement*
 
 ## Overview
 Comprehensive audit of all TODO/FIXME/HACK comments before historical sourcing run.
@@ -285,8 +286,8 @@ Comprehensive audit of all TODO/FIXME/HACK comments before historical sourcing r
 
 ### HIGH Priority (Blocks Multi-Sport)
 1. ✅ **Multi-sport migrations** - DONE (per-sport folders)
-2. ❌ **Cosmos container selection** - Provider.CosmosDocumentService.cs:28
-3. ❌ **Sport.FootballNcaa hard-coding** - Multiple files in Producer
+2. ✅ **Cosmos container selection** - Resolved via IAppMode dynamic selection in this PR (Provider.CosmosDocumentService.cs uses appMode.CurrentSport)
+3. ✅ **Sport.FootballNcaa hard-coding** - Resolved via IAppMode dynamic selection in this PR (Provider.DocumentController.cs and Core.DocumentProviderAndTypeDecoder.cs use appMode.CurrentSport)
 
 ### MEDIUM Priority (Quality/Features)
 1. Season year dynamic/configurable

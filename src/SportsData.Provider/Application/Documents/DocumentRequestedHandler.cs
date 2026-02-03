@@ -201,7 +201,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 if (item.Ref is null)
                 {
                     // Handle items without $ref by checking for Id and constructing filtered URI
-                    if (string.IsNullOrEmpty(item.Id))
+                    if (string.IsNullOrWhiteSpace(item.Id))
                     {
                         _logger.LogDebug(
                             "Skipping item with null ref and no id. PageIndex={PageIndex}, CorrelationId={CorrelationId}",
@@ -210,9 +210,13 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                         continue;
                     }
                     
-                    // Construct filtered URI: {baseUri}?id={itemId}
+                    // Construct filtered URI preserving existing query params: {baseUri}?id={itemId}&...
+                    var itemQuery = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                    itemQuery["id"] = System.Web.HttpUtility.UrlEncode(item.Id);
+                    
                     var itemBaseUri = uri.GetLeftPart(UriPartial.Path);
-                    refUri = new Uri($"{itemBaseUri}?id={item.Id}");
+                    var itemQueryString = itemQuery.ToString(); // re-encoded querystring
+                    refUri = new Uri($"{itemBaseUri}?{itemQueryString}");
                     
                     _logger.LogDebug(
                         "Item has no ref but has id. Constructed filtered URI. Id={ItemId}, Uri={Uri}, CorrelationId={CorrelationId}",

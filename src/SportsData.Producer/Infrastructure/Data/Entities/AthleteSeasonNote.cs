@@ -22,6 +22,12 @@ public class AthleteSeasonNote : CanonicalEntityBase<Guid>
 
     public string? Source { get; set; }
 
+    /// <summary>
+    /// Concurrency token using PostgreSQL's xmin system column.
+    /// EF Core automatically updates this on every SaveChanges and checks it for conflicts.
+    /// </summary>
+    public uint RowVersion { get; set; }
+
     public class EntityConfiguration : IEntityTypeConfiguration<AthleteSeasonNote>
     {
         public void Configure(EntityTypeBuilder<AthleteSeasonNote> builder)
@@ -35,6 +41,9 @@ public class AthleteSeasonNote : CanonicalEntityBase<Guid>
             builder.Property(x => x.Headline).IsRequired().HasMaxLength(500);
             builder.Property(x => x.Text).IsRequired().HasMaxLength(2000);
             builder.Property(x => x.Source).HasMaxLength(100);
+
+            builder.Property(t => t.RowVersion)
+                .IsRowVersion();
 
             builder.HasOne(x => x.AthleteSeason)
                 .WithMany()

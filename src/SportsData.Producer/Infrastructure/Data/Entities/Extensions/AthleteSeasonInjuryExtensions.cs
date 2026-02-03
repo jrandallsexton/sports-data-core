@@ -15,6 +15,12 @@ public static class AthleteSeasonInjuryExtensions
         Guid athleteSeasonId,
         Guid correlationId)
     {
+        if (dto.Type is null || string.IsNullOrEmpty(dto.Type.Id))
+        {
+            throw new InvalidOperationException(
+                $"Cannot create AthleteSeasonInjury: dto.Type or dto.Type.Id is null/empty. InjuryId={identity.CanonicalId}, AthleteSeasonId={athleteSeasonId}");
+        }
+
         var headline = dto.GetHeadlineText();
         var text = dto.GetBodyText();
 
@@ -22,10 +28,10 @@ public static class AthleteSeasonInjuryExtensions
         {
             Id = identity.CanonicalId,
             AthleteSeasonId = athleteSeasonId,
-            TypeId = dto.Type?.Id ?? string.Empty,
+            TypeId = dto.Type.Id,
             Type = dto.GetTypeName(),
-            TypeDescription = dto.Type?.Description,
-            TypeAbbreviation = dto.Type?.Abbreviation,
+            TypeDescription = dto.Type.Description,
+            TypeAbbreviation = dto.Type.Abbreviation,
             Date = dto.Date,
             Headline = headline,
             Text = text,

@@ -287,13 +287,19 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var espnApi = Mocker.GetMock<IProvideEspnApiData>();
         espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), true, false)).ReturnsAsync(json);
 
+        ProcessResourceIndexItemCommand? capturedCommand = null;
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
-        Uri? capturedUri = null;
         background.Setup(x => x.Enqueue<IProcessResourceIndexItems>(It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
-            .Callback(() => 
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
             {
-                // Capture is difficult with Hangfire expressions, so we'll verify the enqueue happened
-                // The actual URI construction is tested by the integration of the logic
+                // Compile and invoke the expression to extract the command
+                var func = expr.Compile();
+                var mockProcessor = new Mock<IProcessResourceIndexItems>();
+                mockProcessor.Setup(p => p.Process(It.IsAny<ProcessResourceIndexItemCommand>()))
+                    .Callback<ProcessResourceIndexItemCommand>(cmd => capturedCommand = cmd)
+                    .Returns(Task.CompletedTask);
+                
+                func(mockProcessor.Object);
             });
 
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
@@ -314,5 +320,10 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // assert - verify that an item was enqueued even though the JSON items have no $ref
         background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Once);
+        
+        // assert - verify the constructed URI includes the filtered id parameter
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.Uri.ToString().Should().Contain("?id=171189");
+        capturedCommand.Uri.ToString().Should().StartWith(baseUri);
     }
 }

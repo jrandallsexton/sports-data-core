@@ -315,8 +315,8 @@ Comprehensive audit of all TODO/FIXME/HACK comments before historical sourcing r
 ## Proposed Work Order
 
 ### Session 1: Multi-Sport Blockers
-- [ ] Cosmos container mode-based selection
-- [ ] Remove Sport.FootballNcaa hard-coding
+- [x] Cosmos container mode-based selection ✅ Completed in this PR
+- [x] Remove Sport.FootballNcaa hard-coding ✅ Completed in this PR
 - [ ] Test multi-sport configuration
 
 ### Session 2: Cleanup/Deletions

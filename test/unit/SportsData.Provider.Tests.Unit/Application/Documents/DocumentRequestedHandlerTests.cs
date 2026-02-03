@@ -29,7 +29,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     [InlineData("EspnAwardsIndex.json", "https://sports.core.api.espn.com/v2/awards/index", DocumentType.Award)]
     [InlineData("EspnSeasonTypeWeeks.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks?lang=en&region=us", DocumentType.SeasonTypeWeek)]
     [InlineData("EspnTeamSeasonRecords.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/99/record?lang=en", DocumentType.TeamSeasonRecord)]
-    [InlineData("AthleteSeasonNotes.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4686093/notes", DocumentType.TeamSeasonInjuries)]
+    [InlineData("AthleteSeasonNotes.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4686093/notes", DocumentType.AthleteSeasonNote)]
     public async Task WhenResourceIndexHasItems_EnqueuesEachItem(
         string fileName,
         string srcUrl,
@@ -307,7 +307,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var baseUri = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4686093/notes";
         var msg = Fixture.Build<DocumentRequested>()
             .With(x => x.Uri, new Uri(baseUri))
-            .With(x => x.DocumentType, DocumentType.TeamSeasonInjuries)
+            .With(x => x.DocumentType, DocumentType.AthleteSeasonNote)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .OmitAutoProperties()
             .Create();

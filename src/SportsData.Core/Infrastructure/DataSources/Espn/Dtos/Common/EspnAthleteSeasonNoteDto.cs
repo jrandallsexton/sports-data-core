@@ -1,32 +1,53 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Text.Json.Serialization;
+
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 #pragma warning disable CS8618
 
 /// <summary>
-/// Represents a note or update related to an athlete's season, as provided by ESPN.
+/// Represents an ESPN athlete season note accessed via AthleteSeason.Notes link.
 /// </summary>
-/// <remarks>This data transfer object (DTO) is used to encapsulate information about a specific note or update,
-/// including its identifier, type, date, headline, content, and source. It is typically used to convey athlete-related
-/// updates in a structured format.</remarks>
-public class EspnAthleteSeasonNoteDto
+public class EspnAthleteSeasonNoteDto : IHasRef
 {
+    [JsonPropertyName("$ref")]
+    public Uri Ref { get; set; } = default!;
+
     [JsonPropertyName("id")]
     public string Id { get; set; }
 
     [JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     [JsonPropertyName("date")]
-    public string Date { get; set; }
+    public DateTime Date { get; set; }
 
     [JsonPropertyName("headline")]
-    public string Headline { get; set; }
+    public string? Headline { get; set; }
 
     [JsonPropertyName("text")]
-    public string Text { get; set; }
+    public string? Text { get; set; }
 
     [JsonPropertyName("source")]
-    public string Source { get; set; }
+    public string? Source { get; set; }
+
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+
+    [JsonPropertyName("athlete")]
+    public EspnLinkDto? Athlete { get; set; }
+
+    [JsonPropertyName("team")]
+    public EspnLinkDto? Team { get; set; }
+
+    public string GetTypeName()
+    {
+        return Type ?? "unknown";
+    }
+
+    public string GetHeadlineText() => Headline ?? string.Empty;
+    
+    public string GetBodyText() => Text ?? string.Empty;
 }

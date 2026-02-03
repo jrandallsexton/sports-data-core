@@ -18,15 +18,14 @@ using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
-// TODO: Rename to FootballAthleteDocumentProcessor
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
-public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
     private readonly DocumentProcessingConfig _config;
 
-    public AthleteDocumentProcessor(
-        ILogger<AthleteDocumentProcessor<TDataContext>> logger,
+    public FootballAthleteDocumentProcessor(
+        ILogger<FootballAthleteDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -269,7 +268,7 @@ public class AthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDat
                 _logger.LogWarning(
                     "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
                     DocumentType.AthletePosition,
-                    nameof(AthleteDocumentProcessor<TDataContext>),
+                    nameof(FootballAthleteDocumentProcessor<TDataContext>),
                     positionIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"AthletePosition {positionIdentity.CleanUrl} not found. Will retry when available.");

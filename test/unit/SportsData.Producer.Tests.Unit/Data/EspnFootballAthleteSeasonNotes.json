@@ -1,0 +1,16 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/notes/13062586?lang=en&region=us",
+  "id": "13062586",
+  "type": "news",
+  "date": "2024-12-13T02:40:06Z",
+  "headline": "Koi Perich receives 2024 Big Ten Freshman of the Year honor",
+  "text": "Perich recorded a team-high five interceptions in his debut season for the Golden Gophers, becoming the first freshman to earn this honor since 2016. The 6-0, 185-pound defensive back also tallied 52 tackles, three pass deflections and one defensive touchdown en route to being named first-team All-Big Ten by the conference's coaches. Perich is a legitimate candidate to crack the first round of the 2027 NFL Draft.",
+  "source": "RotoWire",
+  "status": "active",
+  "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/5156369?lang=en&region=us"
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/135?lang=en&region=us"
+  }
+}

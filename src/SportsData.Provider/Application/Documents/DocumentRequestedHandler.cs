@@ -196,16 +196,35 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             foreach (var item in dto.Items)
             {
+                Uri refUri;
+                
                 if (item.Ref is null)
                 {
+                    // Handle items without $ref by checking for Id and constructing filtered URI
+                    if (string.IsNullOrEmpty(item.Id))
+                    {
+                        _logger.LogDebug(
+                            "Skipping item with null ref and no id. PageIndex={PageIndex}, CorrelationId={CorrelationId}",
+                            dto.PageIndex,
+                            evt.CorrelationId);
+                        continue;
+                    }
+                    
+                    // Construct filtered URI: {baseUri}?id={itemId}
+                    var itemBaseUri = uri.GetLeftPart(UriPartial.Path);
+                    refUri = new Uri($"{itemBaseUri}?id={item.Id}");
+                    
                     _logger.LogDebug(
-                        "Skipping item with null ref. PageIndex={PageIndex}, CorrelationId={CorrelationId}",
-                        dto.PageIndex,
+                        "Item has no ref but has id. Constructed filtered URI. Id={ItemId}, Uri={Uri}, CorrelationId={CorrelationId}",
+                        item.Id,
+                        refUri,
                         evt.CorrelationId);
-                    continue;
+                }
+                else
+                {
+                    refUri = item.Ref.ToCleanUri();
                 }
 
-                var refUri = item.Ref.ToCleanUri();
                 var refHash = HashProvider.GenerateHashFromUri(refUri);
 
                 var cmd = new ProcessResourceIndexItemCommand(

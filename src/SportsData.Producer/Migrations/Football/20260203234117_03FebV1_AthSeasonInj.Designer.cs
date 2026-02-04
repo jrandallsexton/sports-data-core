@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260203234117_03FebV1_AthSeasonInj")]
+    partial class _03FebV1_AthSeasonInj
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -115,12 +115,8 @@ namespace SportsData.Core.Common
             DocumentType docType,
             int? seasonYear)
         {
-            // TODO: Use SportMode configuration to determine collection names
-            return "FootballNcaa";
-            //return docType.ToString();
-            //return seasonYear.HasValue ?
-            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}{seasonYear.Value}" :
-            //    $"{sourceDataProvider.ToString()}{sport.ToString()}{docType.ToString()}";
+            // Use sport parameter for container name to support multi-sport isolation
+            return sport.ToString();
         }
 
         public DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)

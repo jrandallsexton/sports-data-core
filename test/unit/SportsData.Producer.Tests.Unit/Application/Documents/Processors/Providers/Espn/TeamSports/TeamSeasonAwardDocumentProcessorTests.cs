@@ -1,6 +1,9 @@
 using AutoFixture;
+
 using FluentAssertions;
+
 using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
@@ -10,6 +13,7 @@ using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSp
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+
 using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.TeamSports;

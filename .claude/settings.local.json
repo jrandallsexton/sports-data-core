@@ -5,7 +5,14 @@
       "Bash(dotnet test:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(dotnet format:*)"
+      "Bash(dotnet format:*)",
+      "WebFetch(domain:stats.ncaa.org)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

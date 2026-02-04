@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Config;
 
 using System.Linq.Expressions;
@@ -15,21 +16,28 @@ namespace SportsData.Provider.Infrastructure.Data
         private readonly CosmosClient _client;
         private readonly string _databaseName;
         private readonly Container _defaultContainer;
+        private readonly IAppMode _appMode;
 
         public CosmosDocumentService(
             ILogger<CosmosDocumentService> logger,
-            IOptions<ProviderDocDatabaseConfig> options)
+            IOptions<ProviderDocDatabaseConfig> options,
+            IAppMode appMode)
         {
             _logger = logger;
+            _appMode = appMode;
             _logger.LogInformation($"Cosmos began with databaseName: {options.Value.DatabaseName}");
             _databaseName = options.Value.DatabaseName;
 
             _client = new CosmosClient(options.Value.ConnectionString);
-            _defaultContainer = _client.GetContainer(_databaseName, "FootballNcaa"); // TODO: Get from AzAppConfig
+            // Use current sport mode for container selection
+            var containerName = appMode.CurrentSport.ToString();
+            _defaultContainer = _client.GetContainer(_databaseName, containerName);
+            _logger.LogInformation("Using Cosmos container: {ContainerName}", containerName);
         }
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string containerName)
         {
+            ValidateContainer(containerName);
             var container = _client.GetContainer(_databaseName, containerName);
 
             var query = container.GetItemLinqQueryable<T>()
@@ -48,6 +56,7 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task<long> CountDocumentsAsync<T>(string containerName, Expression<Func<T, bool>> filter)
         {
+            ValidateContainer(containerName);
             var container = _client.GetContainer(_databaseName, containerName);
 
             var query = container.GetItemLinqQueryable<T>()
@@ -64,6 +73,7 @@ namespace SportsData.Provider.Infrastructure.Data
         /// </summary>
         public async IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string containerName, int batchSize = 500)
         {
+            ValidateContainer(containerName);
             var container = _client.GetContainer(_databaseName, containerName);
 
             var query = container.GetItemLinqQueryable<T>()
@@ -95,6 +105,7 @@ namespace SportsData.Provider.Infrastructure.Data
             Expression<Func<T, bool>> filter, 
             int batchSize = 500)
         {
+            ValidateContainer(containerName);
             var container = _client.GetContainer(_databaseName, containerName);
 
             var query = container.GetItemLinqQueryable<T>()
@@ -120,6 +131,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> predicate)
         {
+            ValidateContainer(collectionName);
+            
             _logger.LogDebug("Cosmos querying {@Predicate}", predicate);
             _logger.LogDebug("Cosmos querying {@CollectionName}", collectionName);
             _logger.LogDebug("Cosmos querying {@DatabaseName}", _databaseName);
@@ -143,6 +156,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
+            ValidateContainer(collectionName);
+            
             if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
@@ -170,6 +185,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public async Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
         {
+            ValidateContainer(collectionName);
+            
             if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))
@@ -209,6 +226,26 @@ namespace SportsData.Provider.Infrastructure.Data
         {
             // Optionally do a test container ping here
             return _client != null;
+        }
+
+        /// <summary>
+        /// Validates that the requested container matches the current sport mode to enforce isolation.
+        /// </summary>
+        /// <param name="containerName">The container name to validate</param>
+        /// <exception cref="ArgumentException">Thrown when containerName doesn't match the current sport's container</exception>
+        private void ValidateContainer(string containerName)
+        {
+            if (string.IsNullOrWhiteSpace(containerName))
+                throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
+
+            var expectedContainer = _defaultContainer.Id;
+            if (!containerName.Equals(expectedContainer, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    $"Container mismatch: requested '{containerName}' but current sport mode requires '{expectedContainer}'. " +
+                    $"Cannot operate on containers outside the current sport mode ({_appMode.CurrentSport}).",
+                    nameof(containerName));
+            }
         }
     }
 }

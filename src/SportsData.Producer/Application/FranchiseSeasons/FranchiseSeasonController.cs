@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
@@ -40,11 +41,12 @@ public class FranchiseSeasonController : ControllerBase
     public async Task<ActionResult<Guid>> GenerateFranchiseSeasonMetrics(
         [FromRoute] int seasonYear,
         [FromServices] IEnqueueFranchiseSeasonMetricsGenerationCommandHandler handler,
+        [FromServices] IAppMode appMode,
         CancellationToken cancellationToken)
     {
         var command = new EnqueueFranchiseSeasonMetricsGenerationCommand(
             seasonYear,
-            Core.Common.Sport.FootballNcaa); // TODO: remove hard-coding
+            appMode.CurrentSport);
 
         var result = await handler.ExecuteAsync(command, cancellationToken);
 

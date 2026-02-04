@@ -2,16 +2,15 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
-using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Collections.Concurrent;
 using System.Text.Json;
-using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Provider.Application.Jobs
 {

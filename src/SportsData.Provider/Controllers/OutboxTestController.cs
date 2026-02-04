@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Core.Extensions;
 
 namespace SportsData.Provider.Controllers;
 

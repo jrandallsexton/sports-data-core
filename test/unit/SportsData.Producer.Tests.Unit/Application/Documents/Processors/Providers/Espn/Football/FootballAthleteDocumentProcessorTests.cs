@@ -18,8 +18,8 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
-public class AthleteDocumentProcessorTests :
-    ProducerTestBase<AthleteDocumentProcessor<FootballDataContext>>
+public class FootballAthleteDocumentProcessorTests :
+    ProducerTestBase<FootballAthleteDocumentProcessor<FootballDataContext>>
 {
 
     [Fact]
@@ -30,7 +30,7 @@ public class AthleteDocumentProcessorTests :
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var publishEndpoint = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<AthleteDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballAthleteDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Debug.json");
         var dto = json.FromJson<EspnFootballAthleteDto>();

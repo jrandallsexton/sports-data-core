@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Previews.Commands;
 using SportsData.Api.Infrastructure.Data;
 

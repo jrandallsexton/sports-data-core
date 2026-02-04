@@ -174,6 +174,8 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
         await ProcessStatistics(command, dto, entity.Id);
 
+        await ProcessNotes(command, dto, entity.Id);
+
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully created AthleteSeason {Id} for Athlete {AthleteId}", entity.Id, athleteId);
@@ -230,6 +232,11 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             await ProcessStatistics(command, dto, entity.Id);
         }
 
+        if (ShouldSpawn(DocumentType.AthleteSeasonNote, command))
+        {
+            await ProcessNotes(command, dto, entity.Id);
+        }
+
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Successfully processed existing AthleteSeason {Id}", entity.Id);
@@ -246,6 +253,20 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             dto.Statistics,
             athleteSeasonId,
             DocumentType.AthleteSeasonStatistics,
+            CausationId.Producer.AthleteSeasonDocumentProcessor);
+    }
+
+    private async Task ProcessNotes(
+        ProcessDocumentCommand command,
+        EspnAthleteSeasonDto dto,
+        Guid athleteSeasonId)
+    {
+        // Use base class helper for child document request
+        await PublishChildDocumentRequest(
+            command,
+            dto.Notes,
+            athleteSeasonId,
+            DocumentType.AthleteSeasonNote,
             CausationId.Producer.AthleteSeasonDocumentProcessor);
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+
 using System.Security.Claims;
 
 namespace SportsData.Api.Application.Admin;

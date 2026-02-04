@@ -13,12 +13,12 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonInjuries)]
-public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeasonNote)]
+public class AthleteSeasonNoteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    public TeamSeasonInjuriesDocumentProcessor(
-        ILogger<TeamSeasonInjuriesDocumentProcessor<TDataContext>> logger,
+    public AthleteSeasonNoteDocumentProcessor(
+        ILogger<AthleteSeasonNoteDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -37,19 +37,18 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
                    ["ParentId"] = command.ParentId ?? "Unknown"
                }))
         {
-            _logger.LogInformation("TeamSeasonInjuriesDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
+            _logger.LogInformation("AthleteSeasonNoteDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
                 command.GetDocumentRef(),
                 command.UrlHash);
             
             try
             {
                 await ProcessInternal(command);
-                
-                _logger.LogInformation("TeamSeasonInjuriesDocumentProcessor completed.");
+                _logger.LogInformation("AthleteSeasonNoteDocumentProcessor completed");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "TeamSeasonInjuriesDocumentProcessor failed.");
+                _logger.LogError(ex, "AthleteSeasonNoteDocumentProcessor failed.");
                 throw;
             }
         }
@@ -57,16 +56,16 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnTeamSeasonInjuryDto>();
+        var dto = command.Document.FromJson<EspnAthleteSeasonNoteDto>();
         if (dto?.Id == null || dto.Ref == null)
         {
-            _logger.LogWarning("Unable to deserialize document as EspnTeamSeasonInjuryDto");
+            _logger.LogWarning("Unable to deserialize document as EspnAthleteSeasonNoteDto");
             return;
         }
 
         if (dto.Athlete?.Ref is null)
         {
-            _logger.LogWarning("Injury {InjuryId} has no athlete reference", dto.Id);
+            _logger.LogWarning("Note {NoteId} has no athlete reference", dto.Id);
             return;
         }
 
@@ -75,91 +74,70 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
 
         if (string.IsNullOrEmpty(headline) || string.IsNullOrEmpty(text))
         {
-            _logger.LogWarning("Injury {InjuryId} missing headline or text", dto.Id);
+            _logger.LogWarning("Note {NoteId} missing headline or text", dto.Id);
             return;
         }
 
-        // Generate canonical ID from ESPN ref
-        var injuryIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
-        
-        // Find AthleteSeason by the athlete ref in the DTO
+        // Resolve AthleteSeason from athlete reference
         var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Athlete.Ref);
-        
         var athleteSeason = await _dataContext.AthleteSeasons
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == athleteSeasonIdentity.CanonicalId);
+            .Where(x => x.Id == athleteSeasonIdentity.CanonicalId)
+            .FirstOrDefaultAsync();
 
         if (athleteSeason is null)
         {
-            _logger.LogWarning("AthleteSeason not found for athlete ref {AthleteRef}", dto.Athlete.Ref);
+            _logger.LogWarning(
+                "AthleteSeason not found for note. AthleteSeasonId={AthleteSeasonId}, NoteId={NoteId}",
+                athleteSeasonIdentity.CanonicalId,
+                dto.Id);
             return;
         }
 
-        // Check if injury already exists
-        var existing = await _dataContext.AthleteSeasonInjuries
-            .FirstOrDefaultAsync(x => x.Id == injuryIdentity.CanonicalId);
+        var noteIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
+
+        var existing = await _dataContext.AthleteSeasonNotes
+            .Where(x => x.Id == noteIdentity.CanonicalId)
+            .FirstOrDefaultAsync();
 
         if (existing is null)
         {
-            _logger.LogInformation("Processing new AthleteSeasonInjury entity. Ref={Ref}", dto.Ref);
-            await ProcessNewEntity(command, dto, injuryIdentity, athleteSeason.Id);
+            await ProcessNewEntity(command, dto, noteIdentity, athleteSeason.Id);
         }
         else
         {
-            _logger.LogInformation("Processing AthleteSeasonInjury update. InjuryId={InjuryId}, Ref={Ref}", existing.Id, dto.Ref);
             await ProcessUpdate(command, dto, existing);
         }
     }
 
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
-        EspnTeamSeasonInjuryDto dto,
-        ExternalRefIdentity injuryIdentity,
+        EspnAthleteSeasonNoteDto dto,
+        ExternalRefIdentity noteIdentity,
         Guid athleteSeasonId)
     {
-        _logger.LogInformation("Creating new AthleteSeasonInjury. Id={InjuryId}", injuryIdentity.CanonicalId);
+        _logger.LogInformation("Creating new AthleteSeasonNote. Id={NoteId}", noteIdentity.CanonicalId);
 
-        var injury = dto.AsEntity(injuryIdentity, athleteSeasonId, command.CorrelationId);
+        var note = dto.AsEntity(noteIdentity, athleteSeasonId, command.CorrelationId);
         
-        await _dataContext.AthleteSeasonInjuries.AddAsync(injury);
+        await _dataContext.AthleteSeasonNotes.AddAsync(note);
         await _dataContext.SaveChangesAsync();
         
-        _logger.LogInformation("AthleteSeasonInjury created. InjuryId={InjuryId}, AthleteSeasonId={AthleteSeasonId}", 
-            injury.Id, athleteSeasonId);
+        _logger.LogInformation("AthleteSeasonNote created. NoteId={NoteId}, AthleteSeasonId={AthleteSeasonId}", 
+            note.Id, athleteSeasonId);
     }
 
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
-        EspnTeamSeasonInjuryDto dto,
-        AthleteSeasonInjury existing)
+        EspnAthleteSeasonNoteDto dto,
+        AthleteSeasonNote existing)
     {
         var hasChanges = false;
-
-        var typeId = dto.Type?.Id ?? string.Empty;
-        if (existing.TypeId != typeId)
-        {
-            existing.TypeId = typeId;
-            hasChanges = true;
-        }
 
         var typeName = dto.GetTypeName();
         if (existing.Type != typeName)
         {
             existing.Type = typeName;
-            hasChanges = true;
-        }
-
-        var typeDescription = dto.Type?.Description;
-        if (existing.TypeDescription != typeDescription)
-        {
-            existing.TypeDescription = typeDescription;
-            hasChanges = true;
-        }
-
-        var typeAbbreviation = dto.Type?.Abbreviation;
-        if (existing.TypeAbbreviation != typeAbbreviation)
-        {
-            existing.TypeAbbreviation = typeAbbreviation;
             hasChanges = true;
         }
 
@@ -183,16 +161,9 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
             hasChanges = true;
         }
 
-        var sourceName = dto.GetSourceName();
-        if (existing.Source != sourceName)
+        if (existing.Source != dto.Source)
         {
-            existing.Source = sourceName;
-            hasChanges = true;
-        }
-
-        if (existing.Status != dto.Status)
-        {
-            existing.Status = dto.Status;
+            existing.Source = dto.Source;
             hasChanges = true;
         }
 
@@ -203,11 +174,11 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
             
             await _dataContext.SaveChangesAsync();
             
-            _logger.LogInformation("AthleteSeasonInjury updated. InjuryId={InjuryId}", existing.Id);
+            _logger.LogInformation("AthleteSeasonNote updated. NoteId={NoteId}", existing.Id);
         }
         else
         {
-            _logger.LogInformation("No property changes detected. InjuryId={InjuryId}", existing.Id);
+            _logger.LogInformation("No property changes detected. NoteId={NoteId}", existing.Id);
         }
     }
 }

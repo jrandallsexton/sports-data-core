@@ -16,6 +16,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<AthleteSeason> AthleteSeasons { get; set; }
         public DbSet<AthleteSeasonExternalId> AthleteSeasonExternalIds { get; set; }
 
+        public DbSet<AthleteSeasonInjury> AthleteSeasonInjuries { get; set; }
+
+        public DbSet<AthleteSeasonNote> AthleteSeasonNotes { get; set; }
+
         public DbSet<AthleteCompetition> AthleteCompetitions { get; set; }
 
         public DbSet<AthleteCompetitionStatistic> AthleteCompetitionStatistics { get; set; }
@@ -153,6 +157,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new AthletePosition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthletePositionExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new AthleteSeasonInjury.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new AthleteCompetition.EntityConfiguration());
 

@@ -1,0 +1,25 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4686093/injuries/171189?lang=en&region=us",
+  "id": "171189",
+  "longComment": "Williams is now set to join the Hoosiers next fall following a three-year stint at Clemson. The 6-foot-3 wide receiver has failed to surpass 10 receptions in both of the previous two campaigns, so he'll look to compete for a prominent role at his new university.",
+  "shortComment": "Williams announced Friday via his personal Twitter account that he's committed to transfer to Indiana.",
+  "status": "Active",
+  "date": "2023-01-06T18:08Z",
+  "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/athletes/4686093?lang=en&region=us"
+  },
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2022/teams/84?lang=en&region=us"
+  },
+  "source": {
+    "id": "1",
+    "description": "basic/manual",
+    "state": "basic"
+  },
+  "type": {
+    "id": "0",
+    "name": "INJURY_STATUS_ACTIVE",
+    "description": "active",
+    "abbreviation": "A"
+  }
+}

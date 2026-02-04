@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -19,15 +20,18 @@ public class EnqueueSeasonWeekContestsUpdateCommandHandler : IEnqueueSeasonWeekC
     private readonly ILogger<EnqueueSeasonWeekContestsUpdateCommandHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
+    private readonly IAppMode _appMode;
 
     public EnqueueSeasonWeekContestsUpdateCommandHandler(
         ILogger<EnqueueSeasonWeekContestsUpdateCommandHandler> logger,
         TeamSportDataContext dataContext,
-        IProvideBackgroundJobs backgroundJobProvider)
+        IProvideBackgroundJobs backgroundJobProvider,
+        IAppMode appMode)
     {
         _logger = logger;
         _dataContext = dataContext;
         _backgroundJobProvider = backgroundJobProvider;
+        _appMode = appMode;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -53,7 +57,7 @@ public class EnqueueSeasonWeekContestsUpdateCommandHandler : IEnqueueSeasonWeekC
             var cmd = new UpdateContestCommand(
                 contestId,
                 SourceDataProvider.Espn,
-                Sport.FootballNcaa, // TODO: remove hard-coding
+                _appMode.CurrentSport,
                 Guid.NewGuid());
             _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));
         }

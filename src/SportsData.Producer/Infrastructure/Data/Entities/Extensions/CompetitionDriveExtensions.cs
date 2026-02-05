@@ -25,7 +25,7 @@ public static class CompetitionDriveExtensions
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = correlationId,
             CompetitionId = competitionId,
-            Description = string.IsNullOrEmpty(dto.Description) ? "UNKNOWN" : dto.Description, // TODO: Determine why this is empty sometimes
+            Description = string.IsNullOrEmpty(dto.Description) ? "UNKNOWN" : dto.Description,
             DisplayResult = dto.DisplayResult,
             EndClockDisplayValue = dto.End?.Clock?.DisplayValue,
             EndClockValue = dto.End?.Clock?.Value,
@@ -43,7 +43,7 @@ public static class CompetitionDriveExtensions
             OffensivePlays = dto.OffensivePlays,
             Ordinal = int.TryParse(dto.SequenceNumber, out var ordinal) ? ordinal : 0,
             Result = dto.Result,
-            SequenceNumber = dto.SequenceNumber ?? "-1", // TODO: Determine why this is null sometimes
+            SequenceNumber = dto.SequenceNumber ?? "-1",
             ShortDisplayResult = dto.ShortDisplayResult,
             SourceDescription = dto.Source?.Description,
             SourceId = dto.Source?.Id,

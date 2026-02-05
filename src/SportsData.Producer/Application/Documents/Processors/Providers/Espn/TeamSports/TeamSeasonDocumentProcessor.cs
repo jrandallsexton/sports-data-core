@@ -365,13 +365,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         // Process coaches
-        if (isNew || ShouldSpawn(DocumentType.TeamSeasonCoach, command))
+        if (isNew || ShouldSpawn(DocumentType.CoachSeason, command))
         {
             await PublishChildDocumentRequest(
                 command,
                 dto.Coaches,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonCoach,
+                DocumentType.CoachSeason,
                 CausationId.Producer.TeamSeasonDocumentProcessor);
         }
 

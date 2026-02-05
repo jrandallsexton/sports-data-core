@@ -165,7 +165,14 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
             startFranchiseSeasonId,
             endFranchiseSeasonId);
 
-        // TODO: If sequence is "-1", log a warning with the URL
+        if (entity.SequenceNumber == "-1")
+        {
+            _logger.LogWarning(
+                "Drive has null/missing sequence number. DriveId={DriveId}, CompetitionId={CompetitionId}, Ref={Ref}",
+                entity.Id,
+                competitionId,
+                externalDto.Ref);
+        }
 
         await _dataContext.Drives.AddAsync(entity);
         await _dataContext.SaveChangesAsync();

@@ -11,8 +11,6 @@ namespace SportsData.Producer.Application.Franchises
         private readonly TeamSportDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        const int SEASON_YEAR = 2025; // TODO: My configurable or dynamic
-
         public FranchiseSeasonEnrichmentJob(
             ILogger<FranchiseSeasonEnrichmentJob> logger,
             TeamSportDataContext dataContext,
@@ -23,20 +21,22 @@ namespace SportsData.Producer.Application.Franchises
             _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task ExecuteAsync()
+        public async Task ExecuteAsync(int? seasonYear = null)
         {
+            var effectiveSeasonYear = seasonYear ?? DateTime.UtcNow.Year;
+            
             var franchiseSeasons = await _dataContext.FranchiseSeasons
                 .AsNoTracking()
-                .Where(x => x.SeasonYear == SEASON_YEAR) // TOD: Make this configurable
+                .Where(x => x.SeasonYear == effectiveSeasonYear)
                 .ToListAsync();
 
-            _logger.LogInformation("Requesting enrichment for {count} franchise seasons.", franchiseSeasons.Count);
+            _logger.LogInformation("Requesting enrichment for {count} franchise seasons for year {seasonYear}.", franchiseSeasons.Count, effectiveSeasonYear);
 
             foreach (var franchiseSeason in franchiseSeasons)
             {
                 var cmd = new EnrichFranchiseSeasonCommand(
                     franchiseSeason.Id,
-                    SEASON_YEAR,
+                    effectiveSeasonYear,
                     Guid.NewGuid());
 
                 _backgroundJobProvider

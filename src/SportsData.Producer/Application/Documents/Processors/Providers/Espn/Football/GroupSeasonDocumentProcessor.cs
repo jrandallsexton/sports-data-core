@@ -204,25 +204,10 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 CausationId.Producer.GroupSeasonDocumentProcessor);
         }
 
-        // TODO: standings?
-
-        // teams?
-        //if (dto.Teams?.Ref is not null)
-        //{
-        //    await _publishEndpoint.Publish(new DocumentRequested(
-        //        Id: Guid.NewGuid().ToString(),
-        //        ParentId: null,
-        //        Uri: dto.Teams.Ref,
-        //        Sport: command.Sport,
-        //        SeasonYear: command.Season!.Value,
-        //        DocumentType: DocumentType.TeamSeason,
-        //        SourceDataProvider: SourceDataProvider.Espn,
-        //        CorrelationId: command.CorrelationId,
-        //        CausationId: CausationId.Producer.GroupSeasonDocumentProcessor
-        //    ));
-        //}
-
-        // TODO: links?
+        // NOTE: Future enhancements:
+        // - Standings: Can be derived from game results or sourced from ESPN standings endpoint
+        // - Links: Additional related resources (if ESPN provides conference-level links)
+        // - Teams: Team roster by conference/division (commented code above shows structure)
     }
 
     private async Task HandleExisting()

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using OpenTelemetry.Logs;
@@ -70,9 +71,16 @@ namespace SportsData.Core.DependencyInjection
             Console.WriteLine($"using: {connString}");
 #endif
 
-            services.AddDbContext<T>(options =>
+            services.AddDbContext<T>((serviceProvider, options) =>
             {
-                options.EnableSensitiveDataLogging();
+                // Only enable sensitive data logging in Development environment
+                var env = serviceProvider.GetRequiredService<IHostEnvironment>();
+                if (env.IsDevelopment())
+                {
+                    options.EnableSensitiveDataLogging();
+                    options.EnableDetailedErrors();
+                }
+                
                 options.UseNpgsql(connString, builder =>
                 {
                     builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), ["40001"]);

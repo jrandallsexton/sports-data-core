@@ -9,6 +9,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
@@ -99,21 +100,28 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.Franchise)
                 .With(x => x.Document, documentJson)
+                .With(x => x.AttemptCount, 1)
                 .OmitAutoProperties()
                 .Create();
 
             // act
             await sut.ProcessAsync(command);
 
-            // assert
+            // assert - franchise should NOT be created yet (retry due to missing venue)
             var newEntity = await base.TeamSportDataContext.Franchises
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
-            newEntity.Should().NotBeNull();
-            newEntity.VenueId.Should().Be(Guid.Empty);
+            newEntity.Should().BeNull("franchise should not be created until venue exists");
 
-            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+            // Should publish retry event, not FranchiseCreated
+            bus.Verify(x => x.Publish(It.IsAny<FranchiseCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+            bus.Verify(
+                x => x.Publish(
+                    It.Is<DocumentCreated>(e => e.AttemptCount == 2),
+                    It.IsAny<CancellationToken>()),
+                Times.Once,
+                "should publish retry event when venue is missing");
         }
 
         [Fact]

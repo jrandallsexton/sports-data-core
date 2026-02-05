@@ -38,6 +38,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CoachSeason> CoachSeasons { get; set; }
 
+        public DbSet<CoachSeasonRecord> CoachSeasonRecords { get; set; }
+
+        public DbSet<CoachSeasonRecordStat> CoachSeasonRecordStats { get; set; }
+
         public DbSet<CompetitionMetric> CompetitionMetrics { get; set; }
 
         public DbSet<CompetitionMedia> CompetitionMedia { get; set; }

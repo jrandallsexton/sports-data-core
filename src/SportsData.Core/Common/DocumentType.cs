@@ -44,7 +44,7 @@
         FranchiseSeasonLogo = 39,
         TeamSeason = 42,
         TeamSeasonAward = 43,
-        TeamSeasonCoach = 44,
+        // 44 = Reserved (formerly TeamSeasonCoach - removed as redundant with CoachSeason)
         TeamSeasonInjuries = 45,
         TeamSeasonLeaders = 46,
         TeamSeasonProjection = 47,
@@ -66,6 +66,7 @@
         // 63 = Reserved (formerly EventCompetitionCompetitorLeaders - removed as redundant with TeamSeason relationship)
         EventCompetitionCompetitorRecord = 64,
         AthleteSeasonNote = 65,
+        CoachSeasonRecord = 66,
         OutboxTest = 99, // Test document type for validating outbox pattern with BaseDataContext
         OutboxTestTeamSport = 98, // Test document type for validating outbox pattern with TeamSportDataContext
         Unknown = 9999

@@ -125,7 +125,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         {
             CompetitionId = competitionId,
             FranchiseSeasonId = homeFranchiseSeasonId,
-            Season = DateTime.UtcNow.Year, // TODO: Get from competition/contest
+            Season = seasonYear,
             Ypp = CalculateYpp(homeFranchiseSeasonId, plays),
             SuccessRate = CalculateSuccessRate(homeFranchiseSeasonId, plays),
             ExplosiveRate = CalculateExplosiveRate(homeFranchiseSeasonId, plays),

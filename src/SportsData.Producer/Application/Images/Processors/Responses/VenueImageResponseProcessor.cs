@@ -43,7 +43,8 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             if (venueImage is not null)
             {
-                // TODO: do nothing?
+                // Image already exists - idempotency check passed, nothing to do
+                _logger.LogInformation("Venue image already exists for hash {UrlHash}", response.OriginalUrlHash);
                 return;
             }
 

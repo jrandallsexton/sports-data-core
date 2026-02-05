@@ -102,7 +102,8 @@ public class TeamSeasonRankDocumentProcessor<TDataContext> : DocumentProcessorBa
 
         await _dataContext.FranchiseSeasonRankings.AddAsync(entity);
 
-        // TODO: CompetitionBroadcast domain event
+        // Note: CompetitionBroadcast domain event is a placeholder for future real-time updates.
+        // Currently polls are batch-processed weekly. See CompetitionBroadcastProcessor for planned implementation.
 
         await _dataContext.SaveChangesAsync();
 

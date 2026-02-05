@@ -148,7 +148,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var header = new GameHeaderDto
         {
             ContestId = contest.Id,
-            Status = ContestStatus.Completed, // TODO: Map from actual status
+            Status = contest.IsFinal ? ContestStatus.Completed : ContestStatus.InProgress,
             WeekLabel = contest.SeasonWeek.Number.ToString(),
             SeasonWeekId = contest.SeasonWeek.Id,
             SeasonYear = contest.SeasonYear,

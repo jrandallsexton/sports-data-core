@@ -51,7 +51,6 @@ public static class DocumentTypeExtensions
             DocumentType.FranchiseSeasonLogo => "franchise-season-logo",
             DocumentType.TeamSeason => "team-season",
             DocumentType.TeamSeasonAward => "team-season-award",
-            DocumentType.TeamSeasonCoach => "team-season-coach",
             DocumentType.TeamSeasonInjuries => "team-season-injuries",
             DocumentType.TeamSeasonLeaders => "team-season-leaders",
             DocumentType.TeamSeasonProjection => "team-season-projection",

@@ -9,6 +9,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -43,6 +44,14 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             try
             {
                 await ProcessInternal(command);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
+                    
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                await _publishEndpoint.Publish(docCreated);
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -122,14 +131,13 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         ProcessDocumentCommand command,
         EspnFranchiseDto dto)
     {
-        // 1. map to the entity add it
+        // 1. map to the entity
         var newEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
             command.Sport,
             command.CorrelationId);
 
-        await _dataContext.AddAsync(newEntity);
-
+        // Check venue dependency BEFORE adding entity
         if (dto.Venue?.Ref is not null)
         {
             var venueId = await _dataContext.ResolveIdAsync<
@@ -146,27 +154,20 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             }
             else
             {
-                // TODO: What to do if the venue does not exist?
-                // We have it on the Espn dto, but not in our db.
+                // Venue should already exist from Tier 1 sourcing
+                throw new ExternalDocumentNotSourcedException(
+                    $"Venue not found in database. VenueRef={dto.Venue.Ref}, FranchiseId={newEntity.Id}. " +
+                    "Ensure Venue tier is sourced before Franchise tier.");
             }
         }
+
+        await _dataContext.AddAsync(newEntity);
 
         // 2. any logos on the dto?
         await ProcessLogos(newEntity, command, dto);
 
-        // TODO: Figure out what to do with these
-        // 3. Child entities to be sourced
-        //if (dto.Team?.Ref is not null)
-        //{
-        //    _logger.LogInformation("Requesting Team document: {Ref}", dto.Team.Ref);
-
-        //    await _publishEndpoint.Publish(new DocumentRequested(
-        //        dto.Team.Ref.Segments.Last().TrimEnd('/'),
-        //        newEntity.Id.ToString(),
-        //        dto.Team.Ref,
-        //        command.Sport,
-        //        command.Season,
-        //        DocumentType.TeamSeason,
+        // Note: dto.Team ref was removed - FranchiseSeason is the correct entity.
+        // Team seasons are sourced separately via SeasonDocumentProcessor.
         //        command.SourceDataProvider,
         //        command.CorrelationId,
         //        CausationId.Producer.FranchiseDocumentProcessor));

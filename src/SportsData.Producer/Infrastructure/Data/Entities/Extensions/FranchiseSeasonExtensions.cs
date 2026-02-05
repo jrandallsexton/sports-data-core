@@ -62,7 +62,25 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         {
             return new FranchiseSeasonDto
             {
-                // TODO: Implement
+                Id = entity.Id,
+                CreatedUtc = entity.CreatedUtc,
+                FranchiseId = entity.FranchiseId,
+                SeasonYear = entity.SeasonYear,
+                Slug = entity.Slug,
+                Location = entity.Location,
+                Name = entity.Name,
+                Abbreviation = entity.Abbreviation,
+                DisplayName = entity.DisplayName,
+                DisplayNameShort = entity.DisplayNameShort,
+                ColorCodeHex = entity.ColorCodeHex,
+                ColorCodeAltHex = entity.ColorCodeAltHex,
+                IsActive = entity.IsActive,
+                Wins = entity.Wins,
+                Losses = entity.Losses,
+                Ties = entity.Ties,
+                ConferenceWins = entity.ConferenceWins,
+                ConferenceLosses = entity.ConferenceLosses,
+                ConferenceTies = entity.ConferenceTies
             };
         }
     }

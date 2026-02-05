@@ -180,7 +180,7 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
     }
 
     [Fact]
-    public async Task ProcessAsync_ThrowsExternalDocumentNotSourcedException_WhenCoachMissing()
+    public async Task ProcessAsync_PublishesRetryEvent_WhenCoachMissing()
     {
         // Arrange
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -228,7 +228,7 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
     }
 
     [Fact]
-    public async Task ProcessAsync_ThrowsExternalDocumentNotSourcedException_WhenFranchiseSeasonMissing()
+    public async Task ProcessAsync_PublishesRetryEvent_WhenFranchiseSeasonMissing()
     {
         // Arrange
         var identityGenerator = new ExternalRefIdentityGenerator();

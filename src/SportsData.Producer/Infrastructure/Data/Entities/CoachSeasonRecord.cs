@@ -52,7 +52,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasMaxLength(256);
 
                 builder.HasOne(x => x.CoachSeason)
-                    .WithMany()
+                    .WithMany(cs => cs.Records)
                     .HasForeignKey(x => x.CoachSeasonId)
                     .OnDelete(DeleteBehavior.Cascade);
 

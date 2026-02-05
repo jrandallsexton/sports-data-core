@@ -171,19 +171,21 @@ Comprehensive audit of all TODO/FIXME/HACK comments before historical sourcing r
    - Reason: Team ref was removed from ESPN API; FranchiseSeason sourced separately
    - Date: 2026-02-04
 
-3. ⚠️ **CoachSeason records sourcing**
-   - File: `CoachBySeasonDocumentProcessor.cs:188`
-   - Note: Need to source CoachSeasonRecord documents from dto.Records collection
+3. ✅ **CoachSeason records sourcing**
+   - File: `CoachSeasonDocumentProcessor.cs` (was CoachBySeasonDocumentProcessor.cs)
+   - Note: Source CoachSeasonRecord documents from dto.Records collection
    - Priority: MEDIUM
-   - Status: TODO UPDATED - Corrected incorrect assumption about records availability
-   - Details: ESPN provides Records refs pointing to per-season coach records
+   - Status: COMPLETED - Full implementation deployed
+   - Implementation completed:
+     - ✅ Added `DocumentType.CoachSeasonRecord` enum value (69)
+     - ✅ Created `EspnCoachSeasonRecordDto` for the record endpoint response
+     - ✅ Created `CoachSeasonRecordDocumentProcessor` with full preflight checks
+     - ✅ Created `CoachSeasonRecord` entity with Wins/Losses/Ties/WinPercentage properties
+     - ✅ Created `CoachSeasonRecordStat` for detailed stat breakdowns
+     - ✅ `CoachSeasonDocumentProcessor.ProcessChildDocuments` spawns CoachSeasonRecord requests
+     - ✅ Unit tests implemented and passing (CoachSeasonDocumentProcessorTests)
    - Example URL: `http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/coaches/4079704/record`
-   - Implementation needed:
-     - Add `DocumentType.CoachSeasonRecord` enum value
-     - Create `EspnCoachSeasonRecordResponseDto` for the record endpoint response
-     - Create `CoachSeasonRecordDocumentProcessor`
-     - Add Wins/Losses/Ties properties to CoachSeason entity or create CoachSeasonRecord child entity
-   - Date: 2026-02-04
+   - Date Completed: 2026-02-05
 
 4. ✅ **SeasonFuture update logic**
    - File: `SeasonFutureDocumentProcessor.cs:89`

@@ -21,6 +21,8 @@ public class DisplayNameGeneratorTests
     {
         var names = new HashSet<string>();
 
+        // With 50 adjectives × 100 animals = 5,000 combinations,
+        // probability of collision in 25 samples is ~0.06% (effectively impossible)
         for (int i = 0; i < 25; i++)
         {
             var name = DisplayNameGenerator.Generate();
@@ -28,6 +30,6 @@ public class DisplayNameGeneratorTests
             names.Add(name);
         }
 
-        names.Should().HaveCount(25); // ensure no duplicates in this small sample
+        names.Should().HaveCount(25, "all generated names should be unique");
     }
 }

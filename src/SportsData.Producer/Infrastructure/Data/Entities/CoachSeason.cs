@@ -19,6 +19,8 @@ public class CoachSeason : CanonicalEntityBase<Guid>
 
     public FranchiseSeason? FranchiseSeason { get; set; }
 
+    public ICollection<CoachSeasonRecord> Records { get; set; } = [];
+
     public class EntityConfiguration : IEntityTypeConfiguration<CoachSeason>
     {
         public void Configure(EntityTypeBuilder<CoachSeason> builder)

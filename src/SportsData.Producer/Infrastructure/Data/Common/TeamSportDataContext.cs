@@ -38,6 +38,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CoachSeason> CoachSeasons { get; set; }
 
+        public DbSet<CoachSeasonRecord> CoachSeasonRecords { get; set; }
+
+        public DbSet<CoachSeasonRecordStat> CoachSeasonRecordStats { get; set; }
+
         public DbSet<CompetitionMetric> CompetitionMetrics { get; set; }
 
         public DbSet<CompetitionMedia> CompetitionMedia { get; set; }
@@ -176,6 +180,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CoachRecordStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CoachSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CoachSeasonRecord.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CoachSeasonRecordStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());

@@ -1,11 +1,23 @@
 {
-  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/559872?lang=en&region=us",
-  "id": "559872",
-  "uid": "s:20~l:23~co:559872",
-  "firstName": "Brian",
-  "lastName": "Kelly",
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/4079704?lang=en&region=us",
+  "id": "4079704",
+  "uid": "s:20~l:23~co:4079704",
+  "firstName": "Curt",
+  "lastName": "Cignetti",
   "person": {
-    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us"
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/4079704?lang=en&region=us"
   },
-  "experience": 25
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/84?lang=en&region=us"
+  },
+  "records": [
+    {
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/84?lang=en&region=us"
+      },
+      "record": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/coaches/4079704/record?lang=en&region=us"
+      }
+    }
+  ]
 }

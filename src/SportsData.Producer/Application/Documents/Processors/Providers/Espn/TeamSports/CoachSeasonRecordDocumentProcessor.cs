@@ -13,12 +13,12 @@ using SportsData.Core.Infrastructure.Refs;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachRecord)]
-public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachSeasonRecord)]
+public class CoachSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    public CoachRecordDocumentProcessor(
-        ILogger<CoachRecordDocumentProcessor<TDataContext>> logger,
+    public CoachSeasonRecordDocumentProcessor(
+        ILogger<CoachSeasonRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -34,7 +34,7 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
             ["CorrelationId"] = command.CorrelationId
         }))
         {
-            _logger.LogInformation("Began processing CoachRecord with {@Command}", command);
+            _logger.LogInformation("Began processing CoachSeasonRecord with {@Command}", command);
             try
             {
                 await ProcessInternal(command);
@@ -49,62 +49,61 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
     private async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnCoachRecordDto>();
+        var dto = command.Document.FromJson<EspnCoachSeasonRecordDto>();
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnCoachRecordDto. {@Command}", command);
+            _logger.LogError("Failed to deserialize document to EspnCoachSeasonRecordDto. {@Command}", command);
             return;
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnCoachRecordDto Ref is null or empty. {@Command}", command);
+            _logger.LogError("EspnCoachSeasonRecordDto Ref is null or empty. {@Command}", command);
             return;
         }
 
         if (command.ParentId is null)
         {
-            _logger.LogError("CoachRecord requires a valid ParentId for Coach. {@Command}", command);
+            _logger.LogError("CoachSeasonRecord requires a valid ParentId for CoachSeason. {@Command}", command);
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId.ToString(), out var coachId))
+        if (!Guid.TryParse(command.ParentId.ToString(), out var coachSeasonId))
         {
-            _logger.LogError("CoachRecord ParentId is not a valid GUID. {@Command}", command);
+            _logger.LogError("CoachSeasonRecord ParentId is not a valid GUID. {@Command}", command);
             return;
         }
 
-        var coach = await _dataContext.Coaches
+        var coachSeason = await _dataContext.CoachSeasons
             .Include(x => x.Records)
                 .ThenInclude(r => r.Stats)
             .Include(x => x.Records)
                 .ThenInclude(r => r.ExternalIds)
-            .Include(x => x.ExternalIds)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == coachId);
+            .FirstOrDefaultAsync(x => x.Id == coachSeasonId);
 
-        if (coach is null)
+        if (coachSeason is null)
         {
-            _logger.LogError("Parent Coach not found with ID {CoachId}. {@Command}", command.ParentId, command);
+            _logger.LogError("Parent CoachSeason not found with ID {CoachSeasonId}. {@Command}", command.ParentId, command);
             return;
         }
 
-        var newRecord = CoachRecordExtensions.AsEntity(dto, coach.Id, _externalRefIdentityGenerator, command.CorrelationId);
+        var newRecord = CoachSeasonRecordExtensions.AsEntity(dto, coachSeason.Id, _externalRefIdentityGenerator, command.CorrelationId);
 
-        // Replace any existing CoachRecord with same identity (same SourceUrlHash)
-        var existing = coach.Records.FirstOrDefault(r =>
+        // Replace any existing CoachSeasonRecord with same identity (same SourceUrlHash)
+        var existing = coachSeason.Records.FirstOrDefault(r =>
             r.ExternalIds.Any(e => e.SourceUrlHash == newRecord.ExternalIds.First().SourceUrlHash));
 
         if (existing is not null)
         {
-            _dataContext.CoachRecordStats.RemoveRange(existing.Stats);
-            _dataContext.CoachRecords.Remove(existing);
+            _dataContext.CoachSeasonRecordStats.RemoveRange(existing.Stats);
+            _dataContext.CoachSeasonRecords.Remove(existing);
         }
 
-        await _dataContext.CoachRecords.AddAsync(newRecord);
+        await _dataContext.CoachSeasonRecords.AddAsync(newRecord);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CoachRecord for Coach {CoachId}", coach.Id);
+        _logger.LogInformation("Persisted CoachSeasonRecord for CoachSeason {CoachSeasonId}", coachSeason.Id);
     }
 }

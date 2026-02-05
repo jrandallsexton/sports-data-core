@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260205112221_05FebV1_CoachSeasonRec")]
+    partial class _05FebV1_CoachSeasonRec
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1994,6 +1997,9 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<Guid>("CoachSeasonId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CoachSeasonId1")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -2030,6 +2036,8 @@ namespace SportsData.Producer.Migrations.Football
                     b.HasKey("Id");
 
                     b.HasIndex("CoachSeasonId");
+
+                    b.HasIndex("CoachSeasonId1");
 
                     b.ToTable("CoachSeasonRecord", (string)null);
                 });
@@ -7964,10 +7972,14 @@ namespace SportsData.Producer.Migrations.Football
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CoachSeasonRecord", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CoachSeason", "CoachSeason")
-                        .WithMany("Records")
+                        .WithMany()
                         .HasForeignKey("CoachSeasonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CoachSeason", null)
+                        .WithMany("Records")
+                        .HasForeignKey("CoachSeasonId1");
 
                     b.Navigation("CoachSeason");
                 });

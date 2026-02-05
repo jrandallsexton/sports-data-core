@@ -86,7 +86,8 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
 
         if (exists)
         {
-            // TODO: Potentially update existing record if needed
+            // SeasonFuture records are immutable once created (odds are snapshots at creation time).
+            // For updated odds, a new SeasonFuture record would be created with a new timestamp.
             _logger.LogInformation("SeasonFuture already exists for UrlHash {UrlHash}", command.UrlHash);
             return;
         }

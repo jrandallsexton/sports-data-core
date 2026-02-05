@@ -76,32 +76,20 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         {
             await ProcessUpdate(command, dto, coach);
         }
+
+        await _dataContext.SaveChangesAsync();
     }
 
     private async Task ProcessNewEntity(ProcessDocumentCommand command, EspnCoachDto dto)
     {
         var newEntity = dto.AsEntity(_externalRefIdentityGenerator, command.CorrelationId);
 
-        // CareerRecords - use base class helper
-        if (dto.CareerRecords?.Count > 0)
-        {
-            foreach (var recordDto in dto.CareerRecords)
-            {
-                await PublishChildDocumentRequest(
-                    command,
-                    recordDto,
-                    newEntity.Id,
-                    DocumentType.CoachRecord,
-                    CausationId.Producer.CoachDocumentProcessor);
-            }
-        }
-
-        // CoachSeasons
-
         await _dataContext.Coaches.AddAsync(newEntity);
-        await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created new Coach entity: {CoachId}", newEntity.Id);
+
+        // Process child documents for new entity (will save changes at the end)
+        await ProcessChildDocuments(command, dto, newEntity, isNew: true);
     }
 
     private async Task ProcessUpdate(ProcessDocumentCommand command, EspnCoachDto dto, Coach coach)
@@ -136,12 +124,78 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         {
             coach.ModifiedUtc = DateTime.UtcNow;
             coach.ModifiedBy = command.CorrelationId;
-            await _dataContext.SaveChangesAsync();
             _logger.LogInformation("Updated Coach entity: {CoachId}", coach.Id);
         }
         else
         {
             _logger.LogInformation("No changes detected for Coach {CoachId}", coach.Id);
         }
+
+        // Process child documents for update (will save changes at the end, respects ShouldSpawn)
+        await ProcessChildDocuments(command, dto, coach, isNew: false);
+    }
+
+    /// <summary>
+    /// Processes child documents (CoachRecord, CoachSeason) for a Coach entity.
+    /// For new entities (isNew=true), always spawns all child documents.
+    /// For updates (isNew=false), respects ShouldSpawn filtering.
+    /// </summary>
+    private async Task ProcessChildDocuments(
+        ProcessDocumentCommand command,
+        EspnCoachDto dto,
+        Coach coach,
+        bool isNew)
+    {
+        _logger.LogInformation("Processing child documents for Coach. CoachId={CoachId}, IsNew={IsNew}",
+            coach.Id, isNew);
+
+        // CoachRecord documents - bypass ShouldSpawn for new entities, apply filtering for updates
+        if (isNew || ShouldSpawn(DocumentType.CoachRecord, command))
+        {
+            if (dto.CareerRecords is { Count: > 0 })
+            {
+                _logger.LogInformation("Requesting {Count} CoachRecord documents. CoachId={CoachId}",
+                    dto.CareerRecords.Count, coach.Id);
+
+                foreach (var recordDto in dto.CareerRecords)
+                {
+                    await PublishChildDocumentRequest(
+                        command,
+                        recordDto,
+                        coach.Id,
+                        DocumentType.CoachRecord,
+                        CausationId.Producer.CoachDocumentProcessor);
+
+                    _logger.LogDebug("Published DocumentRequested for CoachRecord: {RecordRef}",
+                        recordDto.Ref);
+                }
+            }
+        }
+
+        // CoachSeason documents - bypass ShouldSpawn for new entities, apply filtering for updates
+        if (isNew || ShouldSpawn(DocumentType.CoachSeason, command))
+        {
+            if (dto.CoachSeasons is { Count: > 0 })
+            {
+                _logger.LogInformation("Requesting {Count} CoachSeason documents. CoachId={CoachId}",
+                    dto.CoachSeasons.Count, coach.Id);
+
+                foreach (var seasonDto in dto.CoachSeasons)
+                {
+                    await PublishChildDocumentRequest(
+                        command,
+                        seasonDto,
+                        coach.Id,
+                        DocumentType.CoachSeason,
+                        CausationId.Producer.CoachDocumentProcessor);
+
+                    _logger.LogDebug("Published DocumentRequested for CoachSeason: {SeasonRef}",
+                        seasonDto.Ref);
+                }
+            }
+        }
+
+        _logger.LogInformation("Completed processing child documents for Coach. CoachId={CoachId}",
+            coach.Id);
     }
 }

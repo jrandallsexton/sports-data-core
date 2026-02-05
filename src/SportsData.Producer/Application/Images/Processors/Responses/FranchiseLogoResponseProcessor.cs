@@ -42,7 +42,8 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 
             if (franchiseLogo is not null)
             {
-                // TODO: do nothing?
+                // Logo already exists - idempotency check passed, nothing to do
+                _logger.LogInformation("Franchise logo already exists for hash {UrlHash}", response.OriginalUrlHash);
                 return;
             }
 

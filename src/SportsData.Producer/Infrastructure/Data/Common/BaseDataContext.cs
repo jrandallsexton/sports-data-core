@@ -113,13 +113,5 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                 cfg.ToTable(nameof(OutboxMessage));
             });
         }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            // TODO: Disable in higher environs
-            // Additional info:  https://www.danielmallott.com/posts/entity-framework-core-configuration-options
-            optionsBuilder.EnableSensitiveDataLogging();
-            optionsBuilder.EnableDetailedErrors();
-        }
     }
 }

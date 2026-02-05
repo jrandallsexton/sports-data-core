@@ -59,7 +59,7 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
             return new Failure<Guid>(
                 command.CompetitionId,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(command.CompetitionId), "Competition ESPN ExternalId Not Found")]
+                [new ValidationFailure(nameof(command.CompetitionId), "Competition ExternalId Not Found")]
             );
         }
 
@@ -105,7 +105,7 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
 
         var drivesIdentity = _externalRefIdentityGenerator.Generate(drivesRef);
 
-        // request sourcing?
+        // request sourcing
         await _eventBus.Publish(new DocumentRequested(
             Id: drivesIdentity.UrlHash,
             ParentId: command.CompetitionId.ToString(),
@@ -114,7 +114,7 @@ public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesC
             Sport: competition.Contest.Sport,
             SeasonYear: competition.Contest.SeasonYear,
             DocumentType: DocumentType.EventCompetitionDrive,
-            SourceDataProvider: SourceDataProvider.Espn, // TODO: remove hard-coding
+            SourceDataProvider: competitionExternalId.Provider,
             CorrelationId: Guid.NewGuid(),
             CausationId: CausationId.Producer.CompetitionService
         ), cancellationToken);

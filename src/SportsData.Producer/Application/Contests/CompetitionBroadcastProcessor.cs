@@ -42,18 +42,16 @@ namespace SportsData.Producer.Application.Contests
 
         private async Task ProcessInternal(CompetitionBroadcastCommand command)
         {
-            // update status
-
-            // update situation
-
-            // update plays
-
-            // update line score
-
-            // update probabilities
-
-            //TODO: implement the above
-
+            // NOTE: This is a placeholder for future real-time competition streaming.
+            // Will be implemented when live game updates are needed.
+            // Planned features:
+            //   - update status (game clock, period, status)
+            //   - update situation (down, distance, possession)
+            //   - update plays (new plays as they happen)
+            //   - update line score (quarter/period scores)
+            //   - update probabilities (win probability)
+            
+            _logger.LogWarning("CompetitionBroadcastProcessor called but not yet implemented. CompetitionId={CompetitionId}", command.CompetitionId);
             await Task.CompletedTask;
         }
     }

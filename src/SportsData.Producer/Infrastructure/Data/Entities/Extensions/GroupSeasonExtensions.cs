@@ -46,9 +46,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
         public static ConferenceSeasonDto ToCanonicalModel(this GroupSeason entity)
         {
-            return new ConferenceSeasonDto()
+            // Note: ConferenceSeasonDto is currently an empty record in Core.
+            // When properties are added to the DTO, map from entity here.
+            return new ConferenceSeasonDto
             {
-                // TODO: Implement
+                Id = entity.Id,
+                CreatedUtc = entity.CreatedUtc
             };
         }
     }

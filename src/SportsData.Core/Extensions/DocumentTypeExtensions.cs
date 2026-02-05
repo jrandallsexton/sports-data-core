@@ -17,6 +17,7 @@ public static class DocumentTypeExtensions
             DocumentType.Award => "award",
             DocumentType.Coach => "coach",
             DocumentType.CoachSeason => "coach-season",
+            DocumentType.CoachSeasonRecord => "coach-season-record",
             DocumentType.Contest => "contest",
             DocumentType.Event => "event",
             DocumentType.EventCompetition => "event-competition",

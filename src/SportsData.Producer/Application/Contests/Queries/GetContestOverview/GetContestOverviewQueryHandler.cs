@@ -5,6 +5,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 
@@ -118,6 +119,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var contest = await _dbContext.Contests
             .AsNoTracking()
             .Include(c => c.Competitions)
+                .ThenInclude(comp => comp.Status)
             .Include(c => c.SeasonWeek)
             .Include(c => c.Venue)
             .FirstOrDefaultAsync(c => c.Id == contestId, cancellationToken);
@@ -148,7 +150,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var header = new GameHeaderDto
         {
             ContestId = contest.Id,
-            Status = contest.IsFinal ? ContestStatus.Completed : ContestStatus.InProgress,
+            Status = DetermineContestStatus(contest),
             WeekLabel = contest.SeasonWeek.Number.ToString(),
             SeasonWeekId = contest.SeasonWeek.Id,
             SeasonYear = contest.SeasonYear,
@@ -190,6 +192,68 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         };
 
         return header;
+    }
+
+    /// <summary>
+    /// Determines the contest status based on Competition.Status fields and Contest properties.
+    /// Uses CompetitionStatus.StatusState and StatusTypeName as primary indicators,
+    /// with fallback to Contest timestamps and current time.
+    /// </summary>
+    private static ContestStatus DetermineContestStatus(Contest contest)
+    {
+        var now = DateTime.UtcNow;
+        var competitionStatus = contest.Competitions?.FirstOrDefault()?.Status;
+
+        // If we have CompetitionStatus data, use it as the primary source
+        if (competitionStatus != null)
+        {
+            // Check for specific status type names first (more specific)
+            if (competitionStatus.StatusTypeName != null)
+            {
+                var statusName = competitionStatus.StatusTypeName.ToLowerInvariant();
+                
+                if (statusName.Contains("canceled"))
+                    return ContestStatus.Canceled;
+                if (statusName.Contains("postponed"))
+                    return ContestStatus.Postponed;
+                if (statusName.Contains("delayed"))
+                    return ContestStatus.Delayed;
+                if (statusName.Contains("suspended"))
+                    return ContestStatus.Suspended;
+                if (statusName.Contains("halftime") || statusName.Contains("half"))
+                    return ContestStatus.Halftime;
+            }
+
+            // Use StatusState for general status determination
+            if (competitionStatus.StatusState != null)
+            {
+                var state = competitionStatus.StatusState.ToLowerInvariant();
+                
+                if (state == "post" || competitionStatus.IsCompleted == true)
+                    return contest.IsFinal ? ContestStatus.Final : ContestStatus.Completed;
+                
+                if (state == "in")
+                    return ContestStatus.InProgress;
+                
+                if (state == "pre")
+                    return contest.StartDateUtc > now ? ContestStatus.Scheduled : ContestStatus.Ongoing;
+            }
+        }
+
+        // Fallback to Contest properties if CompetitionStatus is unavailable
+        if (contest.IsFinal)
+            return ContestStatus.Final;
+
+        if (contest.StartDateUtc > now)
+            return ContestStatus.Scheduled;
+
+        if (contest.EndDateUtc.HasValue && contest.EndDateUtc.Value < now)
+            return ContestStatus.Completed;
+
+        if (contest.StartDateUtc <= now)
+            return ContestStatus.InProgress;
+
+        return ContestStatus.Undefined;
     }
 
     private async Task<GameLeadersDto> GetGameLeadersAsync(Guid contestId, CancellationToken cancellationToken)

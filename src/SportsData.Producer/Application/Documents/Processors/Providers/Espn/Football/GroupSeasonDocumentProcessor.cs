@@ -207,7 +207,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         // NOTE: Future enhancements:
         // - Standings: Can be derived from game results or sourced from ESPN standings endpoint
         // - Links: Additional related resources (if ESPN provides conference-level links)
-        // - Teams: Team roster by conference/division (commented code above shows structure)
+        // - Teams: Team roster by conference/division
     }
 
     private async Task HandleExisting()

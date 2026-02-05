@@ -75,6 +75,8 @@ namespace SportsData.Core.Common
                     return (typeof(EspnVenueDto), name);
                 case DocumentType.CoachSeason:
                     return (typeof(EspnCoachSeasonDto), name);
+                case DocumentType.CoachSeasonRecord:
+                    return (typeof(EspnCoachSeasonRecordDto), name);
                 case DocumentType.Athlete:
                     return (typeof(EspnAthleteDto), name);
                 case DocumentType.GroupSeason:
@@ -142,6 +144,7 @@ namespace SportsData.Core.Common
                     return DocumentType.VenueImage;
                 case DocumentType.Award:
                 case DocumentType.CoachSeason:
+                case DocumentType.CoachSeasonRecord:
                 case DocumentType.Contest:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:

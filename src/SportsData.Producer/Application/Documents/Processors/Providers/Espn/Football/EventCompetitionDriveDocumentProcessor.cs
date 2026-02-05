@@ -165,7 +165,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
             startFranchiseSeasonId,
             endFranchiseSeasonId);
 
-        if (entity.SequenceNumber == "-1")
+        if (entity.SequenceNumber == CompetitionDriveConstants.UnknownSequence)
         {
             _logger.LogWarning(
                 "Drive has null/missing sequence number. DriveId={DriveId}, CompetitionId={CompetitionId}, Ref={Ref}",

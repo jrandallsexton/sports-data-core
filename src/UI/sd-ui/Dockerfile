@@ -1,22 +1,34 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20.18-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies needed for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the app (uses .env.prod by default via package.json)
+# Accept build arguments for React environment variables
+ARG REACT_APP_API_BASE_URL
+ARG REACT_APP_ENVIRONMENT
+ARG REACT_APP_PROD_URL
+ARG REACT_APP_GOOGLE_MAPS_API_KEY
+
+# Set as environment variables for the build
+ENV REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+ENV REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
+ENV REACT_APP_PROD_URL=${REACT_APP_PROD_URL}
+ENV REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
+
+# Build the app
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \
@@ -29,6 +41,7 @@ RUN addgroup -g 1001 -S appgroup && \
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY security-headers.conf /etc/nginx/conf.d/security-headers.conf
 
 # Copy built app from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html

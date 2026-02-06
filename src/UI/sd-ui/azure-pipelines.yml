@@ -32,8 +32,40 @@ variables:
   tag: '$(Build.BuildId)'
 
 stages:
+  - stage: BuildAndTest
+    displayName: 'Build & Test: UI'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build & Test: UI'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Use Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm ci
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm run lint
+            displayName: 'Run ESLint'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm run build
+            displayName: 'Build React app'
+            env:
+              REACT_APP_API_BASE_URL: https://api.sportdeets.com
+              REACT_APP_ENVIRONMENT: production
+              REACT_APP_PROD_URL: https://sportdeets.com
+
   - stage: BuildImagePushACR
     displayName: 'Build UI Image & Push to ACR'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: BuildImage
         displayName: 'Build and Push UI Image'

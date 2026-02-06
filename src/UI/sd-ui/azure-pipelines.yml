@@ -1,0 +1,51 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-ui/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-ui/**'
+
+# Centralized agent and demand config for all stages/jobs
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  - repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+  imageRepository: 'sportsdataui'
+  containerRegistry: 'sportdeets.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/UI/sd-ui/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+stages:
+  - stage: BuildImagePushACR
+    displayName: 'Build UI Image & Push to ACR'
+    jobs:
+      - job: BuildImage
+        displayName: 'Build and Push UI Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build & Push'
+            inputs:
+              command: buildAndPush
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              buildContext: '$(Build.SourcesDirectory)/src/UI/sd-ui'
+              tags: |
+                $(tag)
+                latest

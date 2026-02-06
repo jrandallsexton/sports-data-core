@@ -111,19 +111,4 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
-
-  - stage: DeployToAppService
-    displayName: 'Deploy: API to Azure App Service'
-    dependsOn: BuildImagePushACR
-    condition: succeeded()
-    jobs:
-      - job: Deploy
-        displayName: 'Deploy container to Azure Web App'
-        steps:
-          - task: AzureWebAppContainer@1
-            displayName: 'Deploy to Azure Web App (Container)'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appName: $(appName)
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
+              latest

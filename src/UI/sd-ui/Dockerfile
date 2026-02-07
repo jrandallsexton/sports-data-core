@@ -35,13 +35,12 @@ RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup && \
     chown -R appuser:appgroup /var/cache/nginx && \
     chown -R appuser:appgroup /var/log/nginx && \
-    chown -R appuser:appgroup /etc/nginx/conf.d && \
     touch /var/run/nginx.pid && \
     chown -R appuser:appgroup /var/run/nginx.pid
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY security-headers.conf /etc/nginx/security-headers.conf
+# Copy custom nginx config with proper ownership
+COPY --chown=appuser:appgroup nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chown=appuser:appgroup security-headers.conf /etc/nginx/security-headers.conf
 
 # Copy built app from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html

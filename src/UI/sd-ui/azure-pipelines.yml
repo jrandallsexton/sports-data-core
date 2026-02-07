@@ -5,6 +5,8 @@ trigger:
   paths:
     include:
       - 'src/UI/sd-ui/**'
+    exclude:
+      - 'src/SportsData.Core/**'
 
 pr:
   branches:
@@ -13,6 +15,8 @@ pr:
   paths:
     include:
       - 'src/UI/sd-ui/**'
+    exclude:
+      - 'src/SportsData.Core/**'
 
 # Centralized agent and demand config for all stages/jobs
 pool:

@@ -24,8 +24,8 @@ ENV REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
 ENV REACT_APP_PROD_URL=${REACT_APP_PROD_URL}
 ENV REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
 
-# Build the app
-RUN npm run build
+# Build the app directly with react-scripts (env vars already set above)
+RUN npx react-scripts build
 
 # Production stage
 FROM nginx:1.28-alpine

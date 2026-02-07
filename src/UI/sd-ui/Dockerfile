@@ -28,7 +28,7 @@ ENV REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
 RUN npm run build
 
 # Production stage
-FROM nginx:1.27-alpine
+FROM nginx:1.28-alpine
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \

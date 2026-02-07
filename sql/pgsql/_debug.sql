@@ -64,6 +64,7 @@ GROUP BY fs."Id"
 HAVING COUNT(fsl."Id") > 2
 ORDER BY "LogoCount" DESC
 
+select * from public."GroupSeason" order by "Name"
 select * from public."GroupSeason" where "Id" = '845eb718-b58a-bf9e-fa90-5de861c60325' -- SEC
 select * from public."GroupSeason" where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07' -- FBS (I-A)
 select * from public."GroupSeason" where "Id" = '3437b85c-ba19-181e-af1e-c8b30a28dff6' -- NCAA Division I

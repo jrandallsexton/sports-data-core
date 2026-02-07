@@ -78,14 +78,24 @@ stages:
         displayName: 'Build and Push UI Image'
         steps:
           - task: Docker@2
-            displayName: 'Build & Push'
+            displayName: 'Build Image'
             inputs:
-              command: buildAndPush
+              command: build
               repository: $(imageRepository)
               dockerfile: $(dockerfilePath)
               containerRegistry: $(dockerRegistryServiceConnection)
               buildContext: '$(Build.SourcesDirectory)/src/UI/sd-ui'
               arguments: '--build-arg REACT_APP_API_BASE_URL=https://api.sportdeets.com --build-arg REACT_APP_ENVIRONMENT=production --build-arg REACT_APP_PROD_URL=https://sportdeets.com --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=$(REACT_APP_GOOGLE_MAPS_API_KEY)'
+              tags: |
+                $(tag)
+                latest
+          
+          - task: Docker@2
+            displayName: 'Push Image'
+            inputs:
+              command: push
+              repository: $(imageRepository)
+              containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
                 latest

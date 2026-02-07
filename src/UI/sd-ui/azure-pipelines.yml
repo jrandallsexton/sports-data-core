@@ -26,12 +26,17 @@ resources:
     type: git
 
 variables:
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
-  imageRepository: 'sportsdataui'
-  containerRegistry: 'sportdeets.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/src/UI/sd-ui/Dockerfile'
-  tag: '$(Build.BuildId)'
+- group: UI-Secrets
+- name: dockerRegistryServiceConnection
+  value: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+- name: imageRepository
+  value: 'sportsdataui'
+- name: containerRegistry
+  value: 'sportdeets.azurecr.io'
+- name: dockerfilePath
+  value: '$(Build.SourcesDirectory)/src/UI/sd-ui/Dockerfile'
+- name: tag
+  value: '$(Build.BuildId)'
 
 stages:
   - stage: BuildAndTest

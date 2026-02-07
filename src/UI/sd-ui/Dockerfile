@@ -41,7 +41,7 @@ RUN addgroup -g 1001 -S appgroup && \
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY security-headers.conf /etc/nginx/conf.d/security-headers.conf
+COPY security-headers.conf /etc/nginx/security-headers.conf
 
 # Copy built app from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html

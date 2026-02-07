@@ -18,6 +18,7 @@ trigger:
       - 'SportsData.Provider/*'
       - 'SportsData.Season/*'
       - 'SportsData.Venue/*'
+      - 'src/UI/**'
 
 pool:
   vmImage: 'ubuntu-latest'

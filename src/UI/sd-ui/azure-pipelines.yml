@@ -1,0 +1,86 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-ui/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-ui/**'
+
+# Centralized agent and demand config for all stages/jobs
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  repositories:
+  - repository: self
+    type: git
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+  imageRepository: 'sportsdataui'
+  containerRegistry: 'sportdeets.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/UI/sd-ui/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+stages:
+  - stage: BuildAndTest
+    displayName: 'Build & Test: UI'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build & Test: UI'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Use Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm ci
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm run lint
+            displayName: 'Run ESLint'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm run build
+            displayName: 'Build React app'
+            env:
+              REACT_APP_API_BASE_URL: https://api.sportdeets.com
+              REACT_APP_ENVIRONMENT: production
+              REACT_APP_PROD_URL: https://sportdeets.com
+
+  - stage: BuildImagePushACR
+    displayName: 'Build UI Image & Push to ACR'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildImage
+        displayName: 'Build and Push UI Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build & Push'
+            inputs:
+              command: buildAndPush
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              buildContext: '$(Build.SourcesDirectory)/src/UI/sd-ui'
+              arguments: '--build-arg REACT_APP_API_BASE_URL=https://api.sportdeets.com --build-arg REACT_APP_ENVIRONMENT=production --build-arg REACT_APP_PROD_URL=https://sportdeets.com --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=$(REACT_APP_GOOGLE_MAPS_API_KEY)'
+              tags: |
+                $(tag)
+                latest

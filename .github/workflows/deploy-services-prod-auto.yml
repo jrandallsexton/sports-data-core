@@ -18,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      deploy_ui:
+        description: 'Deploy UI (React app) with latest tag'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -70,6 +75,20 @@ jobs:
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest Provider tag: $LATEST_TAG"
 
+      - name: Get latest UI tag from ACR
+        if: ${{ inputs.deploy_ui }}
+        id: ui_tag
+        run: |
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdataui \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1)
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest UI tag: $LATEST_TAG"
+
       - name: Checkout sports-data-config repo
         uses: actions/checkout@v4
         with:
@@ -113,6 +132,18 @@ jobs:
           fi
           echo "Updated Provider to tag: ${{ steps.provider_tag.outputs.tag }}"
 
+      - name: Update UI image tag
+        if: ${{ inputs.deploy_ui && steps.ui_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          # Update or add image to web-ui-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/web-ui-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataui:${{ steps.ui_tag.outputs.tag }}|g" app/overlays/04_prod/web-ui-patch.yaml
+          else
+            sed -i '/- name: web-ui/a\        image: sportdeets.azurecr.io/sportsdataui:${{ steps.ui_tag.outputs.tag }}' app/overlays/04_prod/web-ui-patch.yaml
+          fi
+          echo "Updated UI to tag: ${{ steps.ui_tag.outputs.tag }}"
+
       - name: Commit and push changes
         working-directory: sports-data-config
         run: |
@@ -128,6 +159,7 @@ jobs:
             [ "${{ inputs.deploy_api }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG API=${{ steps.api_tag.outputs.tag }}"
             [ "${{ inputs.deploy_producer }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Producer=${{ steps.producer_tag.outputs.tag }}"
             [ "${{ inputs.deploy_provider }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ steps.provider_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_ui }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG UI=${{ steps.ui_tag.outputs.tag }}"
             
             git commit -m "$COMMIT_MSG"
             git push

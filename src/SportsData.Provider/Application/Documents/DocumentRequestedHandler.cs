@@ -122,7 +122,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             DocumentType: evt.DocumentType,
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
-            BypassCache: true, // TODO: I cannot think of a reason where would ever want a cached document here.
+            BypassCache: false, // Check MongoDB first before calling ESPN (critical for historical sourcing)
             IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
         _logger.LogInformation(

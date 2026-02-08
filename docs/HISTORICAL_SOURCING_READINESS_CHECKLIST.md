@@ -1,22 +1,33 @@
 # Historical Sourcing Readiness Checklist
 
-**Last Updated:** February 1, 2026
+**Last Updated:** February 8, 2026
 
-**Status:** ✅ READY FOR MIGRATION SQUASH - AthleteCompetition implemented
+**Status:** ✅ **READY FOR EXECUTION** - MongoDB migration complete, all blockers resolved
 
 ## Overview
 
-This document tracks readiness for full historical season sourcing runs. Historical sourcing will cost ~$30-40 per season for Azure message processing (RabbitMQ mitigates this), plus ESPN API call costs. Before investing in backfilling 2020-2024 seasons, we need **complete** ESPN data capture.
+This document tracks readiness for full historical season sourcing runs. Before investing in backfilling 2020-2024 seasons, we need **complete** ESPN data capture and infrastructure ready for bulk ingestion.
 
-**Current State:**
+**Current State (February 8, 2026):**
 
+- ✅ **MongoDB Migration COMPLETE** - Bare metal deployment on 192.168.0.250
+- ✅ **Collection Structure Fixed** - DocumentType collections in sport-specific databases
+- ✅ **Read/Write Path Bug Fixed** - Documents correctly written and retrieved
+- ✅ **Production Validated** - Smoke tests passed, Compass verification complete
 - ✅ 240+ document processor tests passing
 - ✅ **EventCompetitionAthleteStatisticsDocumentProcessor** implemented and tested
 - ✅ **TeamSeasonLeadersDocumentProcessor** implemented and tested (3 tests passing)
 - ✅ **TeamSeasonAwardDocumentProcessor** implemented and tested (3 tests passing)
 - ✅ **TeamSeasonCoachDocumentProcessor** implemented and tested (3 tests passing)
-- ✅ **EventCompetitionCompetitorRosterDocumentProcessor** - now persists roster data (6 tests passing)
+- ✅ **EventCompetitionCompetitorRosterDocumentProcessor** - persists roster data (6 tests passing)
 - ❌ 2 document processors unimplemented (TeamSeasonInjuries, TeamSeasonProjection - LOW priority)
+
+**Infrastructure Status:**
+- ✅ **MongoDB**: 900 GB storage (809 GB free), SCRAM-SHA-256 auth, production-ready
+- ✅ **Database Pattern**: Sport-specific databases (FootballNcaa) with DocumentType collections
+- ✅ **Cost Savings**: ~$600-2,400/year (Cosmos DB eliminated)
+- ✅ **No Throttling**: Unlimited throughput for bulk historical import
+- ✅ **Cosmos DB Deletion**: Completed (Feb 8, 2026) - $600-2,400/year savings realized
 
 ## Critical Gaps (BLOCKERS)
 
@@ -430,9 +441,71 @@ Before authorizing first historical sourcing run:
 
 - [x] All Phase 1 (Critical) items completed
 - [x] All Phase 2 (High Value) items completed
-- [ ] Integration test of 2024 season week successful (READY TO EXECUTE)
-- [ ] Manual data spot-check passed (PENDING integration test)
-- [x] **Migration squash completed to establish baseline** (READY TO EXECUTE)
+- [x] **MongoDB migration completed** - Bare metal on 192.168.0.250
+- [x] **900 GB storage available** - Ready for massive data import
+- [x] **Production validation passed** - Smoke tests and Compass verification
+- [x] **Read/write path bug fixed** - Collection naming aligned
+- [x] **Migration baseline squash completed** - Single baseline migration
+- [x] **Cosmos DB deleted** - $600-2,400/year savings realized
+- [ ] Integration test of 2024 season week successful (NEXT STEP)
+- [ ] Manual data spot-check passed (AFTER integration test)
+
+---
+
+## Next Steps to Execute
+
+### 1. Integration Test (2024 Season Week) ⏭️ NEXT
+
+**Purpose**: Validate all processors work correctly before full backfill
+
+**Scope**: Single week of 2024 season (10-20 games)
+
+**Cost**: Minimal (test run)
+
+**Timeline**: 30-60 minutes
+
+**Validation**: Check for EventCompetitionAthleteStatistics, TeamSeasonLeaders, etc. in database
+
+### 2. First Full Season Run (2024)
+
+**Purpose**: Complete validation before investing in multi-season backfill
+
+**Cost**: ~$30-40 for message processing (RabbitMQ mitigates)
+
+**ESPN API calls**: ~13,260 total
+
+**Timeline**: 4-6 hours with tier delays (0/30/60/240 minutes)
+
+**MongoDB Impact**: ~10-50 GB data growth (depends on ESPN response sizes)
+
+### 3. Full Backfill (2020-2024)
+
+**Purpose**: Complete historical data capture
+
+**Seasons**: 5 seasons total
+
+**Cost**: ~$150-200 for message processing
+
+**ESPN API calls**: ~66,300 total
+
+**Timeline**: 20-30 hours (can parallelize seasons)
+
+**MongoDB Impact**: 50-250 GB data growth
+
+**Storage Headroom**: 809 GB free → 559-759 GB after backfill (plenty of room)
+
+---
+
+## Completed Infrastructure Milestones ✅
+
+- ✅ **MongoDB Migration** (Feb 7-8, 2026) - Bare metal on 192.168.0.250
+- ✅ **Storage Expansion** - 900 GB across all NUCs
+- ✅ **Collection Structure Fix** - DocumentType pattern implemented
+- ✅ **Read/Write Path Bug Fix** - Collection naming aligned
+- ✅ **Production Validation** - Smoke tests passed
+- ✅ **Migration Baseline Squash** - 54 migrations → 1 baseline
+- ✅ **Cosmos DB Deletion** - $600-2,400/year savings realized
+- ✅ **All Critical Processors** - 240+ tests passing
 
 ---
 

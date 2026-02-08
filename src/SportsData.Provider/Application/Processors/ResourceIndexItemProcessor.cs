@@ -165,10 +165,52 @@ namespace SportsData.Provider.Application.Processors
         {
             var collectionName = command.DocumentType.ToString();
 
-            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
-
+            // Check MongoDB FIRST to avoid unnecessary ESPN API calls
             var dbItem = await _documentStore
                 .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.Id == urlHash);
+
+            // If document exists in MongoDB and we're not bypassing cache, use cached version
+            if (dbItem is not null && !command.BypassCache)
+            {
+                // Validate cached data before trusting it
+                if (string.IsNullOrWhiteSpace(dbItem.Data))
+                {
+                    _logger.LogWarning(
+                        "Cached document has null/empty data, falling back to ESPN fetch. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                        urlHash,
+                        command.DocumentType);
+                }
+                else
+                {
+                    try
+                    {
+                        // Verify it's parseable JSON
+                        System.Text.Json.JsonDocument.Parse(dbItem.Data).Dispose();
+                        
+                        _logger.LogInformation(
+                            "Document found in MongoDB cache, using cached version. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                            urlHash,
+                            command.DocumentType);
+                        
+                        // Publish DocumentCreated with cached data (NO ESPN call!)
+                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data);
+                        return;
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "Cached document has invalid JSON, falling back to ESPN fetch. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                            urlHash,
+                            command.DocumentType);
+                    }
+                }
+                
+                // Fall through to ESPN fetch if validation failed
+            }
+
+            // Either document doesn't exist OR we're bypassing cache - fetch from ESPN
+            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 
             if (dbItem is null)
             {
@@ -289,6 +331,43 @@ namespace SportsData.Provider.Application.Processors
             await _publisher.Publish(evt);
 
             _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}", 
+                urlHash, 
+                command.DocumentType);
+        }
+
+        private async Task PublishDocumentCreatedAsync(
+            ProcessResourceIndexItemCommand command,
+            string urlHash,
+            Guid correlationId,
+            string jsonFromCache)
+        {
+            // TODO: pull this from CommonConfig and make it available within the class root
+            var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
+            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+
+            // Use the DocumentInclusionService to determine if JSON should be included
+            var jsonDoc = _documentInclusionService.GetIncludableJson(jsonFromCache);
+
+            var evt = new DocumentCreated(
+                urlHash,
+                command.ParentId,
+                command.DocumentType.ToString(),
+                providerRef,
+                command.Uri,
+                jsonDoc,
+                urlHash,
+                command.Sport,
+                command.SeasonYear,
+                command.DocumentType,
+                command.SourceDataProvider,
+                correlationId,
+                CausationId.Provider.ResourceIndexItemProcessor,
+                0,
+                command.IncludeLinkedDocumentTypes);
+
+            await _publisher.Publish(evt);
+
+            _logger.LogInformation("DocumentCreated event published (from cache). UrlHash={UrlHash}, DocumentType={DocumentType}", 
                 urlHash, 
                 command.DocumentType);
         }

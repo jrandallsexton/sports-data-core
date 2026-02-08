@@ -15,7 +15,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 {
     public interface IProvideProviders : IProvideHealthChecks
     {
-        Task<string> GetDocumentByUrlHash(string urlHash, CancellationToken cancellationToken = default);
+        Task<string> GetDocumentByUrlHash(string urlHash, DocumentType documentType, CancellationToken cancellationToken = default);
 
         Task<string> GetDocumentByIdAsync(SourceDataProvider providerId, Sport sportId, DocumentType typeId, long documentId, int? seasonId, CancellationToken cancellationToken = default);
 
@@ -37,9 +37,9 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             _logger = logger;
         }
 
-        public async Task<string> GetDocumentByUrlHash(string urlHash, CancellationToken cancellationToken = default)
+        public async Task<string> GetDocumentByUrlHash(string urlHash, DocumentType documentType, CancellationToken cancellationToken = default)
         {
-            var url = $"document/urlHash/{urlHash}";
+            var url = $"document/urlHash/{documentType}/{urlHash}";
 
             using var response = await HttpClient.GetAsync(url, cancellationToken);
 

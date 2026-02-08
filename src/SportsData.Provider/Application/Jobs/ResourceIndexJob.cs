@@ -223,11 +223,11 @@ namespace SportsData.Provider.Application.Jobs
                 await _dataContext.ResourceIndexJobs
                     .Where(x => x.Id == id && x.ProcessingInstanceId == me)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.IsQueued, _ => false)
-                        .SetProperty(x => x.LastAccessedUtc, _ => DateTime.UtcNow)
-                        .SetProperty(x => x.TotalPageCount, _ => 1)   // single "page"
-                        .SetProperty(x => x.LastPageIndex, _ => 1)
-                        .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
+                        .SetProperty(x => x.IsQueued, false)
+                        .SetProperty(x => x.LastAccessedUtc, DateTime.UtcNow)
+                        .SetProperty(x => x.TotalPageCount, 1)   // single "page"
+                        .SetProperty(x => x.LastPageIndex, 1)
+                        .SetProperty(x => x.LastCompletedUtc, DateTime.UtcNow));
 
                 _logger.LogInformation("Leaf RI enqueued as item: {Endpoint} ({DocumentType})",
                     href, jobDefinition.DocumentType);

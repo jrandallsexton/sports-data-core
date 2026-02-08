@@ -60,7 +60,7 @@ namespace SportsData.Provider.Infrastructure.Data
             _logger = logger;
             _mode = mode;
 
-            var internalIdentity = new MongoInternalIdentity("admin", options.Value.Username);
+            var internalIdentity = new MongoInternalIdentity(options.Value.DatabaseName, options.Value.Username);
             var passwordEvidence = new PasswordEvidence(options.Value.Password);
             var mongoCredential = new MongoCredential("SCRAM-SHA-256", internalIdentity, passwordEvidence);
             var serverAddress = new MongoServerAddress(options.Value.ConnectionString);

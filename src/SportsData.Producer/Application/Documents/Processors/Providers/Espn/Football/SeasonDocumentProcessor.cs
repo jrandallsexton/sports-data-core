@@ -182,7 +182,7 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
 
     private async Task ProcessUpdateAsync(Season existingSeason, Season mappedSeason)
     {
-        _logger.LogError("Season update detected. Not implemented");
+        _logger.LogWarning("Season update detected. Not implemented");
         await Task.CompletedTask;
     }
 }

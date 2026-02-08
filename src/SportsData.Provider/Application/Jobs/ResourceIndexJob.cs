@@ -225,8 +225,8 @@ namespace SportsData.Provider.Application.Jobs
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.IsQueued, _ => false)
                         .SetProperty(x => x.LastAccessedUtc, _ => DateTime.UtcNow)
-                        .SetProperty(x => x.TotalPageCount, _ => 1)   // single "page"
-                        .SetProperty(x => x.LastPageIndex, _ => 1)
+                        .SetProperty(x => x.TotalPageCount, _ => (int?)1)   // single "page"
+                        .SetProperty(x => x.LastPageIndex, _ => (int?)1)
                         .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
 
                 _logger.LogInformation("Leaf RI enqueued as item: {Endpoint} ({DocumentType})",

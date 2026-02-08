@@ -172,14 +172,41 @@ namespace SportsData.Provider.Application.Processors
             // If document exists in MongoDB and we're not bypassing cache, use cached version
             if (dbItem is not null && !command.BypassCache)
             {
-                _logger.LogInformation(
-                    "Document found in MongoDB cache, using cached version. UrlHash={UrlHash}, DocumentType={DocumentType}",
-                    urlHash,
-                    command.DocumentType);
+                // Validate cached data before trusting it
+                if (string.IsNullOrWhiteSpace(dbItem.Data))
+                {
+                    _logger.LogWarning(
+                        "Cached document has null/empty data, falling back to ESPN fetch. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                        urlHash,
+                        command.DocumentType);
+                }
+                else
+                {
+                    try
+                    {
+                        // Verify it's parseable JSON
+                        System.Text.Json.JsonDocument.Parse(dbItem.Data).Dispose();
+                        
+                        _logger.LogInformation(
+                            "Document found in MongoDB cache, using cached version. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                            urlHash,
+                            command.DocumentType);
+                        
+                        // Publish DocumentCreated with cached data (NO ESPN call!)
+                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data);
+                        return;
+                    }
+                    catch (System.Text.Json.JsonException ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "Cached document has invalid JSON, falling back to ESPN fetch. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                            urlHash,
+                            command.DocumentType);
+                    }
+                }
                 
-                // Publish DocumentCreated with cached data (NO ESPN call!)
-                await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data);
-                return;
+                // Fall through to ESPN fetch if validation failed
             }
 
             // Either document doesn't exist OR we're bypassing cache - fetch from ESPN

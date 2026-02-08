@@ -163,7 +163,7 @@ namespace SportsData.Provider.Application.Processors
             string urlHash,
             Guid correlationId)
         {
-            var collectionName = command.Sport.ToString();
+            var collectionName = command.DocumentType.ToString();
 
             var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 

@@ -117,8 +117,9 @@ namespace SportsData.Core.Common
             DocumentType docType,
             int? seasonYear)
         {
-            // Use sport parameter for container name to support multi-sport isolation
-            return sport.ToString();
+            // Collections are named by DocumentType (e.g., Coach, TeamSeason)
+            // Database is sport-specific (e.g., FootballNcaa) providing isolation
+            return docType.ToString();
         }
 
         public DocumentType GetLogoDocumentTypeFromDocumentType(DocumentType documentType)

@@ -48,7 +48,6 @@ namespace SportsData.Provider.Infrastructure.Data
     public class MongoDocumentService : IDocumentStore
     {
         private readonly ILogger<MongoDocumentService> _logger;
-        private readonly IMongoCollection<BsonDocument> _rawCollection;
         private readonly IMongoDatabase _database;
         private readonly IAppMode _mode;
 
@@ -57,6 +56,7 @@ namespace SportsData.Provider.Infrastructure.Data
             IOptions<ProviderDocDatabaseConfig> options,
             IAppMode mode)
         {
+
             _logger = logger;
             _mode = mode;
 
@@ -73,7 +73,6 @@ namespace SportsData.Provider.Infrastructure.Data
 
             var client = new MongoClient(settings);
             _database = client.GetDatabase(options.Value.DatabaseName);
-            _rawCollection = _database.GetCollection<BsonDocument>(_mode.CurrentSport.ToString());
         }
 
         public async Task<List<T>> GetAllDocumentsAsync<T>(string collectionName)
@@ -165,7 +164,6 @@ namespace SportsData.Provider.Infrastructure.Data
             if (document is DocumentBase baseDoc)
             {
                 baseDoc.Id = document.SourceUrlHash;
-                baseDoc.RoutingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
             }
 
             var collection = _database.GetCollection<T>(collectionName);
@@ -185,7 +183,6 @@ namespace SportsData.Provider.Infrastructure.Data
             if (document is DocumentBase baseDoc)
             {
                 baseDoc.Id = document.SourceUrlHash;
-                baseDoc.RoutingKey = document.SourceUrlHash.Substring(0, 3).ToUpperInvariant();
             }
 
             var collection = _database.GetCollection<T>(collectionName);

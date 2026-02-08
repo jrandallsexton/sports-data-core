@@ -60,12 +60,12 @@ namespace SportsData.Provider.Application.Documents
             _appMode = appMode;
         }
 
-        [HttpGet("urlHash/{hash}")]
-        public async Task<IActionResult> GetDocumentByUrlHash(string hash)
+        [HttpGet("urlHash/{documentType}/{hash}")]
+        public async Task<IActionResult> GetDocumentByUrlHash(DocumentType documentType, string hash)
         {
             using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash }))
             {
-                var collectionName = _appMode.CurrentSport.ToString();
+                var collectionName = documentType.ToString();
 
                 _logger.LogDebug("Collection name decoded {@CollectionName}", collectionName);
 

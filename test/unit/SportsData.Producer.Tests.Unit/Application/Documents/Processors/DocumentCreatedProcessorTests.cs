@@ -58,7 +58,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
                    cmd.OriginalUri == evt.Ref)), Times.Once);
 
         // Verify Provider was NOT called (document was inline)
-        _providerMock.Verify(p => p.GetDocumentByUrlHash(It.IsAny<string>()), Times.Never);
+        _providerMock.Verify(p => p.GetDocumentByUrlHash(It.IsAny<string>(), It.IsAny<DocumentType>()), Times.Never);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         var evt = CreateDocumentCreatedEvent(documentJson: null); // No inline document
         var providerDocument = "{\"id\":\"456\",\"name\":\"From Provider\"}";
 
-        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash))
+        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
             .ReturnsAsync(providerDocument);
 
         _factoryMock.Setup(f => f.GetProcessor(
@@ -87,7 +87,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         await sut.Process(evt);
 
         // Assert
-        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash), Times.Once);
+        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType), Times.Once);
         
         _documentProcessorMock.Verify(p => p.ProcessAsync(It.Is<ProcessDocumentCommand>(
             cmd => cmd.Document == providerDocument)), Times.Once);
@@ -103,7 +103,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         // Arrange
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         
-        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash))
+        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
             .ReturnsAsync((string?)null);
 
         var sut = Mocker.CreateInstance<DocumentCreatedProcessor>();
@@ -202,7 +202,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         // Arrange
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         
-        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash))
+        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
             .ReturnsAsync((string?)null);
 
         var sut = Mocker.CreateInstance<DocumentCreatedProcessor>();
@@ -211,7 +211,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         await sut.Process(evt);
 
         // Assert
-        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash), Times.Once);
+        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType), Times.Once);
         _documentProcessorMock.Verify(p => p.ProcessAsync(It.IsAny<ProcessDocumentCommand>()), Times.Never);
     }
 
@@ -221,7 +221,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         // Arrange
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         
-        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash))
+        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
             .ReturnsAsync("null");
 
         var sut = Mocker.CreateInstance<DocumentCreatedProcessor>();
@@ -230,7 +230,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         await sut.Process(evt);
 
         // Assert
-        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash), Times.Once);
+        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType), Times.Once);
         _documentProcessorMock.Verify(p => p.ProcessAsync(It.IsAny<ProcessDocumentCommand>()), Times.Never);
     }
 
@@ -384,7 +384,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         var largeDocument = new string('x', 300_000); // 300KB
 
-        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash))
+        _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
             .ReturnsAsync(largeDocument);
 
         _factoryMock.Setup(f => f.GetProcessor(
@@ -403,7 +403,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         await sut.Process(evt);
 
         // Assert
-        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash), Times.Once);
+        _providerMock.Verify(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType), Times.Once);
         _documentProcessorMock.Verify(p => p.ProcessAsync(It.Is<ProcessDocumentCommand>(
             cmd => cmd.Document == largeDocument)), Times.Once);
     }

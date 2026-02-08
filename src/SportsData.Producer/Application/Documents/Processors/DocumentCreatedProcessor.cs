@@ -169,7 +169,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.Id);
 
             // Document exceeded size limit, fetch from Provider
-            var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash);
+            var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType);
             
             if (IsInvalidDocument(document))
             {

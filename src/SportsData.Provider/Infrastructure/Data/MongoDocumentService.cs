@@ -56,7 +56,7 @@ namespace SportsData.Provider.Infrastructure.Data
             IOptions<ProviderDocDatabaseConfig> options,
             IAppMode mode)
         {
-            Console.WriteLine(options.Value.ToJson());
+
             _logger = logger;
             _mode = mode;
 

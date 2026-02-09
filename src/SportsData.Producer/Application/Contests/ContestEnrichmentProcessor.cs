@@ -132,11 +132,17 @@ namespace SportsData.Producer.Application.Contests
                         .First(cmp => cmp.HomeAway == "home").ExternalIds.First().SourceUrl;
 
                     // source both
-                    var awayComp = await _espnProvider.GetResource(new Uri(awayRef), true, true);
-                    var homeComp = await _espnProvider.GetResource(new Uri(homeRef), true, true);
+                    var awayCompResult = await _espnProvider.GetResource(new Uri(awayRef), true, true);
+                    var homeCompResult = await _espnProvider.GetResource(new Uri(homeRef), true, true);
+                    
+                    if (!awayCompResult.IsSuccess || !homeCompResult.IsSuccess)
+                    {
+                        _logger.LogError("Failed to fetch competitor data from ESPN");
+                        return;
+                    }
 
-                    var awayCompDto = awayComp.FromJson<EspnEventCompetitionCompetitorDto>();
-                    var homeCompDto = homeComp.FromJson<EspnEventCompetitionCompetitorDto>();
+                    var awayCompDto = awayCompResult.Value.FromJson<EspnEventCompetitionCompetitorDto>();
+                    var homeCompDto = homeCompResult.Value.FromJson<EspnEventCompetitionCompetitorDto>();
 
                     if (awayCompDto is null)
                     {
@@ -151,11 +157,17 @@ namespace SportsData.Producer.Application.Contests
                     }
 
                     // get the score for both
-                    var awayScoreJson = await _espnProvider.GetResource(awayCompDto.Score.Ref);
-                    var homeScoreJson = await _espnProvider.GetResource(homeCompDto.Score.Ref);
+                    var awayScoreResult = await _espnProvider.GetResource(awayCompDto.Score.Ref);
+                    var homeScoreResult = await _espnProvider.GetResource(homeCompDto.Score.Ref);
+                    
+                    if (!awayScoreResult.IsSuccess || !homeScoreResult.IsSuccess)
+                    {
+                        _logger.LogError("Failed to fetch score data from ESPN");
+                        return;
+                    }
 
-                    var awayScoreDto = awayScoreJson.FromJson<EspnEventCompetitionCompetitorScoreDto>();
-                    var homeScoreDto = homeScoreJson.FromJson<EspnEventCompetitionCompetitorScoreDto>();
+                    var awayScoreDto = awayScoreResult.Value.FromJson<EspnEventCompetitionCompetitorScoreDto>();
+                    var homeScoreDto = homeScoreResult.Value.FromJson<EspnEventCompetitionCompetitorScoreDto>();
 
                     // update, persist, and exit
                     contest.AwayScore = (int)awayScoreDto!.Value;

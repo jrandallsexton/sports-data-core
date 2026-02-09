@@ -19,7 +19,7 @@ namespace SportsData.Provider.Application.Documents
 {
     // TODO: Move everything here into cqrs. this should be clean.
 
-    [Route("api/document")]
+    [Route("api/documents")]
     public class DocumentController : ApiControllerBase
     {
         private readonly ILogger<DocumentController> _logger;
@@ -72,7 +72,7 @@ namespace SportsData.Provider.Application.Documents
                 var dbItem = await _documentStore
                     .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.SourceUrlHash == hash);
 
-                _logger.LogDebug(dbItem == null ? "No document found" : "Document found");
+                _logger.LogError(dbItem == null ? "No document found" : "Document found");
 
                 return dbItem != null ? Ok(dbItem.Data) : NotFound("Document not found");
             }

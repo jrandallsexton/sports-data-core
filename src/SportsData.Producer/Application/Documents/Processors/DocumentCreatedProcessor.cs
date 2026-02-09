@@ -153,7 +153,7 @@ namespace SportsData.Producer.Application.Documents.Processors
             if (!string.IsNullOrWhiteSpace(evt.DocumentJson) && 
                 !evt.DocumentJson.Trim().Equals("null", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation(
+                _logger.LogDebug(
                     "📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload. " +
                     "DocumentLength={Length}, DocumentId={DocumentId}",
                     evt.DocumentJson.Length,

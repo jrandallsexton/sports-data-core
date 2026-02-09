@@ -170,8 +170,11 @@ namespace SportsData.Producer.Application.Contests
                     var homeScoreDto = homeScoreResult.Value.FromJson<EspnEventCompetitionCompetitorScoreDto>();
 
                     // update, persist, and exit
-                    contest.AwayScore = (int)awayScoreDto!.Value;
-                    contest.HomeScore = (int)homeScoreDto!.Value;
+                    if (awayScoreDto is not null)
+                        contest.AwayScore = (int)awayScoreDto!.Value;
+
+                    if (homeScoreDto is not null)
+                        contest.HomeScore = (int)homeScoreDto!.Value;
 
                     contest.FinalizedUtc = _dateTimeProvider.UtcNow();
 

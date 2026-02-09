@@ -39,7 +39,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
 
         public async Task<string> GetDocumentByUrlHash(string urlHash, DocumentType documentType, CancellationToken cancellationToken = default)
         {
-            var url = $"document/urlHash/{documentType}/{urlHash}";
+            var url = $"documents/urlHash/{documentType}/{urlHash}";
 
             using var response = await HttpClient.GetAsync(url, cancellationToken);
 
@@ -61,21 +61,21 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
             CancellationToken cancellationToken = default)
         {
             var url = seasonId.HasValue
-                ? $"document/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}"
-                : $"document/{providerId}/{sportId}/{typeId}/{documentId}";
+                ? $"documents/{providerId}/{sportId}/{typeId}/{documentId}/{seasonId}"
+                : $"documents/{providerId}/{sportId}/{typeId}/{documentId}";
 
             return await GetStringAsync(url, cancellationToken);
         }
 
         public async Task PublishDocumentEvents(PublishDocumentEventsCommand command, CancellationToken cancellationToken = default)
         {
-            await PostAsync("document/publish/", command, cancellationToken);
+            await PostAsync("documents/publish/", command, cancellationToken);
         }
 
         public async Task<GetExternalDocumentResponse> GetExternalDocument(GetExternalDocumentQuery query, CancellationToken cancellationToken = default)
         {
             return await PostOrDefaultAsync(
-                "document/external/document/",
+                "documents/external/document/",
                 query,
                 new GetExternalDocumentResponse
                 {
@@ -91,7 +91,7 @@ namespace SportsData.Core.Infrastructure.Clients.Provider
         public async Task<GetExternalImageResponse> GetExternalImage(GetExternalImageQuery query, CancellationToken cancellationToken = default)
         {
             return await PostOrDefaultAsync(
-                "document/external/image/",
+                "documents/external/image/",
                 query,
                 new GetExternalImageResponse
                 {

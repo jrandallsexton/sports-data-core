@@ -72,9 +72,14 @@ namespace SportsData.Provider.Application.Documents
                 var dbItem = await _documentStore
                     .GetFirstOrDefaultAsync<DocumentBase>(collectionName, x => x.SourceUrlHash == hash);
 
-                _logger.LogError(dbItem == null ? "No document found" : "Document found");
+                if (dbItem == null)
+                {
+                    _logger.LogError("No document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash);
+                    return NotFound("Document not found");
+                }
 
-                return dbItem != null ? Ok(dbItem.Data) : NotFound("Document not found");
+                _logger.LogDebug("Document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash);
+                return Ok(dbItem.Data);
             }
         }
 

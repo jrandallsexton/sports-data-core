@@ -115,7 +115,7 @@ namespace SportsData.Provider.Application.Jobs
                 return;
             }
             
-            var listDoc = JsonDocument.Parse(listResult.Value);
+            using var listDoc = JsonDocument.Parse(listResult.Value);
 
             var firstInstanceRef = ExtractRefs(listDoc).FirstOrDefault();
             if (firstInstanceRef == null)
@@ -137,7 +137,7 @@ namespace SportsData.Provider.Application.Jobs
                 return;
             }
             
-            var doc = JsonDocument.Parse(result.Value);
+            using var doc = JsonDocument.Parse(result.Value);
             var refs = ExtractRefs(doc);
 
             foreach (var href in refs)
@@ -209,7 +209,7 @@ namespace SportsData.Provider.Application.Jobs
                     Depth = depth
                 });
 
-                var doc = JsonDocument.Parse(result.Value);
+                using var doc = JsonDocument.Parse(result.Value);
                 var refs = ExtractRefs(doc);
 
                 foreach (var href in refs)

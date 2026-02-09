@@ -45,34 +45,33 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 {
                     _logger.LogDebug("Cache HIT for {Uri}", uri);
                     
-                    // Validate cached JSON
-                    if (string.IsNullOrWhiteSpace(cached) || cached.Trim() == "null")
+                    // Treat literal "null" string as invalid cache
+                    if (cached.Trim() == "null")
                     {
-                        return new Failure<string>(
-                            default!,
-                            ResultStatus.BadRequest,
-                            [new ValidationFailure(nameof(uri), $"Cached data is empty/null for {uri}")]);
+                        _logger.LogWarning("Cached data is literal 'null' for {Uri}, will fetch live", uri);
+                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
                     }
                     
                     try
                     {
                         JsonDocument.Parse(cached).Dispose();
+                        return new Success<string>(cached);
                     }
                     catch (JsonException ex)
                     {
                         _logger.LogWarning(ex, "Cached JSON is invalid for {Uri}, will fetch live", uri);
-                        // Fall through to live fetch
-                        goto FetchLive;
+                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
                     }
-                    
-                    return new Success<string>(cached);
                 }
 
                 _logger.LogDebug("Cache MISS for {Uri}", uri);
             }
 
-            FetchLive:
-            // Make HTTP call
+            return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+        }
+
+        private async Task<Result<string>> FetchLiveAsync(Uri uri, bool bypassCache, bool stripQuerystring)
+        {
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
@@ -89,10 +88,12 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 {
                     var status = response.StatusCode switch
                     {
-                        HttpStatusCode.NotFound => ResultStatus.NotFound,
-                        HttpStatusCode.Forbidden => ResultStatus.Forbid,
-                        HttpStatusCode.ServiceUnavailable => ResultStatus.Error,
                         HttpStatusCode.BadRequest => ResultStatus.BadRequest,
+                        HttpStatusCode.Unauthorized => ResultStatus.Unauthorized,
+                        HttpStatusCode.Forbidden => ResultStatus.Forbid,
+                        HttpStatusCode.NotFound => ResultStatus.NotFound,
+                        (HttpStatusCode)429 => ResultStatus.RateLimited, // TooManyRequests
+                        HttpStatusCode.ServiceUnavailable => ResultStatus.Error,
                         _ => ResultStatus.Error
                     };
                     

@@ -24,7 +24,7 @@ public static class AthleteSeasonStatisticsExtensions
             SplitId = dto.Splits.Id,
             SplitName = dto.Splits.Name,
             SplitAbbreviation = dto.Splits.Abbreviation,
-            SplitType = dto.Splits.Type,
+            SplitType = dto.Splits.Type ?? string.Empty, // ESPN can return null, default to empty string
             CreatedBy = correlationId,
             CreatedUtc = DateTime.UtcNow,
             Categories = dto.Splits.Categories?.Select(c => c.AsEntity()).ToList() ?? []

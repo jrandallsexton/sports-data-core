@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -21,7 +22,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
         /// <summary>
         /// Generic raw JSON fetch for any ESPN resource URI.
         /// </summary>
-        public async Task<string> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true)
+        public async Task<Result<string>> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true)
         {
             _logger.LogDebug("GetResource called for URI: {Uri}", uri);
 

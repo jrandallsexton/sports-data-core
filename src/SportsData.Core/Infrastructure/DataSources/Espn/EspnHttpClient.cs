@@ -1,12 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentValidation.Results;
+
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +32,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             _logger = logger;
         }
 
-        public async Task<string> GetRawJsonAsync(
+        public async Task<Result<string>> GetRawJsonAsync(
             Uri uri,
             bool bypassCache,
             bool stripQuerystring = true)
@@ -39,13 +44,34 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 if (!string.IsNullOrEmpty(cached))
                 {
                     _logger.LogDebug("Cache HIT for {Uri}", uri);
-                    return cached;
+                    
+                    // Treat literal "null" string as invalid cache
+                    if (cached.Trim() == "null")
+                    {
+                        _logger.LogWarning("Cached data is literal 'null' for {Uri}, will fetch live", uri);
+                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+                    }
+                    
+                    try
+                    {
+                        JsonDocument.Parse(cached).Dispose();
+                        return new Success<string>(cached);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Cached JSON is invalid for {Uri}, will fetch live", uri);
+                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+                    }
                 }
 
                 _logger.LogDebug("Cache MISS for {Uri}", uri);
             }
 
-            // Make HTTP call
+            return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+        }
+
+        private async Task<Result<string>> FetchLiveAsync(Uri uri, bool bypassCache, bool stripQuerystring)
+        {
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
@@ -54,40 +80,109 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             // prevent banging on ESPN API too fast
             await Task.Delay(_config.RequestDelayMs);
 
-            using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                _logger.LogError("Non-success status from ESPN: {StatusCode} for {Uri}", response.StatusCode, uri);
-                return string.Empty;
+                using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var status = response.StatusCode switch
+                    {
+                        HttpStatusCode.BadRequest => ResultStatus.BadRequest,
+                        HttpStatusCode.Unauthorized => ResultStatus.Unauthorized,
+                        HttpStatusCode.Forbidden => ResultStatus.Forbid,
+                        HttpStatusCode.NotFound => ResultStatus.NotFound,
+                        (HttpStatusCode)429 => ResultStatus.RateLimited, // TooManyRequests
+                        HttpStatusCode.ServiceUnavailable => ResultStatus.Error,
+                        _ => ResultStatus.Error
+                    };
+                    
+                    _logger.LogError(
+                        "ESPN API returned {StatusCode} for {Uri}",
+                        response.StatusCode,
+                        uri);
+                    
+                    return new Failure<string>(
+                        default!,
+                        status,
+                        [new ValidationFailure(nameof(uri), $"ESPN API returned {response.StatusCode} for {uri}")]);
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                // Validate response
+                if (string.IsNullOrWhiteSpace(json) || json.Trim() == "null")
+                {
+                    _logger.LogError(
+                        "ESPN returned empty/null response for {Uri}",
+                        uri);
+                    
+                    return new Failure<string>(
+                        default!,
+                        ResultStatus.BadRequest,
+                        [new ValidationFailure(nameof(uri), $"ESPN returned empty/null response for {uri}")]);
+                }
+                
+                // Validate JSON
+                try
+                {
+                    JsonDocument.Parse(json).Dispose();
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "ESPN returned invalid JSON for {Uri}. Response: {Response}",
+                        uri,
+                        json.Length > 200 ? json.Substring(0, 200) + "..." : json);
+                    
+                    return new Failure<string>(
+                        default!,
+                        ResultStatus.BadRequest,
+                        [new ValidationFailure(nameof(uri), $"ESPN returned invalid JSON for {uri}")]);
+                }
+
+                // Optionally persist
+                if (_config.PersistLocally && !bypassCache)
+                {
+                    // Persist under the ORIGINAL identity URI key
+                    await SaveToDiskAsync(uri, json, stripQuerystring);
+                }
+
+                return new Success<string>(json);
             }
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            // Optionally persist
-            if (_config.PersistLocally && !bypassCache)
+            catch (HttpRequestException ex)
             {
-                // Persist under the ORIGINAL identity URI key
-                await SaveToDiskAsync(uri, json, stripQuerystring);
+                _logger.LogError(ex, "HTTP request failed for {Uri}", uri);
+                return new Failure<string>(
+                    default!,
+                    ResultStatus.Error,
+                    [new ValidationFailure(nameof(uri), $"HTTP request failed: {ex.Message}")]);
             }
-
-            return json;
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "HTTP request timed out for {Uri}", uri);
+                return new Failure<string>(
+                    default!,
+                    ResultStatus.Error,
+                    [new ValidationFailure(nameof(uri), $"HTTP request timed out: {ex.Message}")]);
+            }
         }
 
 
         public async Task<T?> GetDeserializedAsync<T>(Uri uri, bool bypassCache, bool stripQuerystring = true) where T : class
         {
-            var json = await GetRawJsonAsync(uri, bypassCache, stripQuerystring);
+            var result = await GetRawJsonAsync(uri, bypassCache, stripQuerystring);
 
-            if (string.IsNullOrWhiteSpace(json))
+            if (!result.IsSuccess)
             {
-                _logger.LogWarning("Empty JSON returned for {Uri}", uri);
+                _logger.LogWarning("Failed to get JSON for {Uri}: {Status}", uri, result.Status);
                 return null;
             }
 
             try
             {
-                return json.FromJson<T>();
+                return result.Value.FromJson<T>();
             }
             catch (Exception ex)
             {

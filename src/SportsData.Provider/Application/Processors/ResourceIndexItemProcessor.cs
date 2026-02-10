@@ -210,7 +210,19 @@ namespace SportsData.Provider.Application.Processors
             }
 
             // Either document doesn't exist OR we're bypassing cache - fetch from ESPN
-            var itemJson = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
+            var result = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
+
+            if (!result.IsSuccess)
+            {
+                _logger.LogError(
+                    "ESPN request failed: Status={Status}, Uri={Uri}, DocumentType={DocumentType}",
+                    result.Status,
+                    command.Uri,
+                    command.DocumentType);
+                return; // Clean exit - ESPN client already logged details
+            }
+
+            var itemJson = result.Value; // Guaranteed non-empty and valid JSON
 
             if (dbItem is null)
             {
@@ -253,7 +265,7 @@ namespace SportsData.Provider.Application.Processors
 
             // TODO: pull this from CommonConfig and make it available within the class root
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
-            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+            var providerRef = new Uri($"{baseUrl}documents/urlHash/{command.DocumentType}/{urlHash}");
 
             // Use the DocumentInclusionService to determine if JSON should be included
             var jsonDoc = _documentInclusionService.GetIncludableJson(json);
@@ -305,7 +317,7 @@ namespace SportsData.Provider.Application.Processors
 
             // TODO: pull this from CommonConfig and make it available within the class root
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
-            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+            var providerRef = new Uri($"{baseUrl}documents/urlHash/{command.DocumentType}/{urlHash}");
 
             // Use the DocumentInclusionService to determine if JSON should be included
             var jsonDoc = _documentInclusionService.GetIncludableJson(json);
@@ -343,7 +355,7 @@ namespace SportsData.Provider.Application.Processors
         {
             // TODO: pull this from CommonConfig and make it available within the class root
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
-            var providerRef = new Uri($"{baseUrl}documents/{urlHash}");
+            var providerRef = new Uri($"{baseUrl}documents/urlHash/{command.DocumentType}/{urlHash}");
 
             // Use the DocumentInclusionService to determine if JSON should be included
             var jsonDoc = _documentInclusionService.GetIncludableJson(jsonFromCache);

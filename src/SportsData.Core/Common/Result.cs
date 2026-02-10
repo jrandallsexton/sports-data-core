@@ -29,6 +29,7 @@ namespace SportsData.Core.Common
         Error,
         Forbid,
         NotFound,
+        RateLimited,
         Success,
         Unauthorized,
         Validation

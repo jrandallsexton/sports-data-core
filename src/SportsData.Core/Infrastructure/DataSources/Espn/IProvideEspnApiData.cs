@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using System;
@@ -20,7 +21,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         Task<EspnResourceIndexDto> GetResourceIndex(Uri uri, string? uriMask);
 
-        Task<string> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true);
+        Task<Result<string>> GetResource(Uri uri, bool bypassCache = false, bool stripQuerystring = true);
 
         Task<EspnEventCompetitionPlaysDto?> GetCompetitionPlaysAsync(Uri uri);
 

@@ -142,26 +142,25 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         while (uri is not null && seenPages.Add(uri.ToString()))
         {
-            string json;
+            _logger.LogInformation(
+                "Fetching resource index page. Uri={Uri}, CorrelationId={CorrelationId}",
+                uri,
+                evt.CorrelationId);
 
-            try
+            var result = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
+            
+            if (!result.IsSuccess)
             {
-                _logger.LogInformation(
-                    "Fetching resource index page. Uri={Uri}, CorrelationId={CorrelationId}",
+                _logger.LogError(
+                    "Failed to fetch resource index: Status={Status}, Uri={Uri}, CorrelationId={CorrelationId}",
+                    result.Status,
                     uri,
                     evt.CorrelationId);
+                
+                return; // Early exit on failure
+            }
 
-                json = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Failed to fetch resource index. Uri={Uri}, CorrelationId={CorrelationId}",
-                    uri,
-                    evt.CorrelationId);
-                break;
-            }
+            var json = result.Value;
 
             EspnResourceIndexDto? dto;
             try

@@ -131,9 +131,9 @@ if (r.StatusCode == HttpStatusCode.Forbidden)
 ### Exponential Backoff
 
 ```text
-Attempt 1: 200ms � 2^0 + jitter(25-125ms) = ~200-325ms
-Attempt 2: 200ms � 2^1 + jitter(25-125ms) = ~400-525ms
-Attempt 3: 200ms � 2^2 + jitter(25-125ms) = ~800-925ms
+Attempt 1: 200ms � 2^0 + jitter(25-125ms) = ~200-325ms
+Attempt 2: 200ms � 2^1 + jitter(25-125ms) = ~400-525ms
+Attempt 3: 200ms � 2^2 + jitter(25-125ms) = ~800-925ms
 ```
 
 **Total retry time:** ~1.4-1.8 seconds across 4 attempts (including initial request)
@@ -363,9 +363,83 @@ private async Task EnforceRateLimit()
 
 ---
 
-**Status:** ? **DEPLOYED & VALIDATED**
+## Concurrency Constraints (February 2026 Update)
 
-**Build:** ? Successful  
-**Code Review:** ? Approved (CodeRabbit feedback addressed)  
-**Real-World Validation:** ? ESPN 503 (Dec 24) and 403 (Dec 25) incidents documented  
+### The Discovery
+
+**Incident:** February 8, 2026 - 2023 historical season sourcing  
+**Symptom:** Instant ESPN IP ban (403 Forbidden)  
+**Root Cause:** 12 concurrent pods (6 Producer + 6 Provider) × 60 req/min = 720 req/min  
+**ESPN Threshold:** ~100-200 req/min per IP  
+**Result:** Exceeded rate limit by 4-7x
+
+### Producer vs Provider Scaling
+
+**Critical Distinction:**
+
+| Service | ESPN Calls? | KEDA Strategy | Reasoning |
+|---------|-------------|---------------|----------|
+| **Producer** | ❌ No | ✅ Full scaling (2-6 replicas) | Internal operations only (GUID lookups, EF queries, event publishing) - no external rate limits |
+| **Provider** | ✅ Yes | ⚠️ Limited scaling (0-1 replica) | Calls ESPN API - external rate limiting is the bottleneck |
+
+**Configuration:**
+
+```yaml
+# Producer ScaledObject (sports-data-config/app/base/apps/producer/scaledobject.yaml)
+spec:
+  minReplicaCount: 2
+  maxReplicaCount: 6  # Full KEDA scaling - no ESPN constraint
+
+# Provider ScaledObject (sports-data-config/app/base/apps/provider/scaledobject.yaml)
+spec:
+  minReplicaCount: 0  # Auto-start when work arrives
+  maxReplicaCount: 1  # Single pod for historical sourcing
+```
+
+### Rate Limiting Math
+
+**Historical Sourcing (Current Configuration):**
+- Provider: 1 pod × (60,000ms / 1000ms delay) = **60 req/min**
+- Producer: 2-6 pods (no ESPN calls, unlimited)
+- Total ESPN load: **60 req/min** (well under ~100-200 limit)
+
+**Previous Configuration (Caused Ban):**
+- Provider: 6 pods × 60 req/min = **360 req/min** from Provider alone
+- Producer: 6 pods (no ESPN impact)
+- Total ESPN load: **360 req/min** → Instant IP ban
+
+**Formula for Safe Operation:**
+```
+Provider Pods × (60,000 / RequestDelayMs) < ESPN Threshold (~100 req/min)
+
+Examples:
+✅ 1 pod × 60 = 60 req/min (safe)
+✅ 2 pods × 30 (2000ms delay) = 60 req/min (safe)
+⚠️ 2 pods × 60 (1000ms delay) = 120 req/min (risky)
+❌ 6 pods × 60 = 360 req/min (instant ban)
+```
+
+### Live Season vs Historical Sourcing
+
+**Live Season Tracking (Future):**
+- Fresh data needed for current games
+- Moderate queue depth (hundreds, not thousands)
+- Provider can scale to 4-6 pods (intermittent bursts acceptable)
+- Producer 2-6 pods (full KEDA benefits)
+
+**Historical Sourcing (Current):**
+- Massive queue depth (13,260 jobs per season)
+- Provider limited to 1 pod (sustained load triggers bans)
+- Producer 2-6 pods (processes work quickly, publishes events)
+
+**Recommendation:** Use separate Provider ScaledObject overlays for live vs historical modes, or manually adjust maxReplicaCount when switching contexts.
+
+---
+
+**Status:** ✅ **DEPLOYED & VALIDATED**
+
+**Build:** ✅ Successful  
+**Code Review:** ✅ Approved (CodeRabbit feedback addressed)  
+**Real-World Validation:** ✅ ESPN 503 (Dec 24) and 403 (Dec 25) incidents documented  
+**Concurrency Strategy:** ✅ Producer unlimited, Provider limited (Feb 8, 2026)
 

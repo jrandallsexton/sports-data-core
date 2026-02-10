@@ -108,8 +108,14 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task TraverseFromFirstInstance(Uri listUrl, int maxDepth)
         {
-            var listJson = await _espnApi.GetResource(listUrl);
-            var listDoc = JsonDocument.Parse(listJson);
+            var listResult = await _espnApi.GetResource(listUrl);
+            if (!listResult.IsSuccess)
+            {
+                _logger.LogError("Failed to fetch list: Status={Status}, Url={Url}", listResult.Status, listUrl);
+                return;
+            }
+            
+            using var listDoc = JsonDocument.Parse(listResult.Value);
 
             var firstInstanceRef = ExtractRefs(listDoc).FirstOrDefault();
             if (firstInstanceRef == null)
@@ -124,8 +130,14 @@ namespace SportsData.Provider.Application.Jobs
 
         private async Task TraverseOnlyResourceIndexes(Uri instanceUrl, int depth, int maxDepth)
         {
-            var rawJson = await _espnApi.GetResource(instanceUrl);
-            var doc = JsonDocument.Parse(rawJson);
+            var result = await _espnApi.GetResource(instanceUrl);
+            if (!result.IsSuccess)
+            {
+                _logger.LogError("Failed to fetch instance: Status={Status}, Url={Url}", result.Status, instanceUrl);
+                return;
+            }
+            
+            using var doc = JsonDocument.Parse(result.Value);
             var refs = ExtractRefs(doc);
 
             foreach (var href in refs)
@@ -179,7 +191,12 @@ namespace SportsData.Provider.Application.Jobs
 
             try
             {
-                var rawJson = await _espnApi.GetResource(url);
+                var result = await _espnApi.GetResource(url);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to fetch instance tree: Status={Status}, Url={Url}", result.Status, url);
+                    return;
+                }
 
                 _items.Add(new ResourceIndexItem
                 {
@@ -192,7 +209,7 @@ namespace SportsData.Provider.Application.Jobs
                     Depth = depth
                 });
 
-                var doc = JsonDocument.Parse(rawJson);
+                using var doc = JsonDocument.Parse(result.Value);
                 var refs = ExtractRefs(doc);
 
                 foreach (var href in refs)
@@ -219,8 +236,13 @@ namespace SportsData.Provider.Application.Jobs
         {
             try
             {
-                var json = await _espnApi.GetResource(uri);
-                var parsed = JsonSerializer.Deserialize<EspnResourceIndexDto>(json, new JsonSerializerOptions
+                var result = await _espnApi.GetResource(uri);
+                if (!result.IsSuccess)
+                {
+                    return false;
+                }
+                
+                var parsed = JsonSerializer.Deserialize<EspnResourceIndexDto>(result.Value, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });

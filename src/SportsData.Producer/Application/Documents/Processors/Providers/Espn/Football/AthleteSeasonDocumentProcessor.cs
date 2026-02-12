@@ -53,8 +53,15 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later. {@evt}", docCreated);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -93,11 +100,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.Athlete,
-                    nameof(AthleteSeasonDocumentProcessor<TDataContext>),
-                    athleteIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"Athlete not found for {athleteIdentity.CleanUrl}. Will retry when available.");
             }
@@ -316,11 +318,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
         if (!_config.EnableDependencyRequests)
         {
-            _logger.LogWarning(
-                "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                DocumentType.TeamSeason,
-                nameof(AthleteSeasonDocumentProcessor<TDataContext>),
-                dto.Team.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"Franchise season not found for {dto.Team.Ref}. Will retry when available.");
         }
@@ -363,11 +360,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
         if (!_config.EnableDependencyRequests)
         {
-            _logger.LogWarning(
-                "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                DocumentType.AthletePosition,
-                nameof(AthleteSeasonDocumentProcessor<TDataContext>),
-                dto.Position.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"Position not found for {dto.Position.Ref}. Will retry when available.");
         }

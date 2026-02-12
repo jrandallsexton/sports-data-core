@@ -46,7 +46,15 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not yet sourced. Requeueing for retry. {@Command}", command);
-                await _publishEndpoint.Publish(command.ToDocumentCreated(command.AttemptCount + 1));
+                
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
                 return;
             }
@@ -104,9 +112,6 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         if (athleteSeason is null)
         {
-            _logger.LogWarning(
-                "AthleteSeason not found for {AthleteSeasonRef}. Will retry when available.",
-                dto.Athlete.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
         }
@@ -120,9 +125,6 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         if (competition is null)
         {
-            _logger.LogWarning(
-                "Competition not found for {CompetitionRef}. Will retry when available.",
-                dto.Competition.Ref);
             throw new ExternalDocumentNotSourcedException(
                 $"Competition {competitionIdentity.CleanUrl} not found. Will retry when available.");
         }

@@ -52,8 +52,15 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 
                 await _dataContext.SaveChangesAsync();
             }
@@ -97,20 +104,11 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.Franchise,
-                    nameof(TeamSeasonDocumentProcessor<TDataContext>),
-                    franchiseIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"Franchise {franchiseIdentity.CleanUrl} not found. Will retry when available.");
             }
             else
             {
-                _logger.LogWarning(
-                    "Franchise not found. Raising DocumentRequested (override mode). {@Identity}",
-                    franchiseIdentity);
-
                 await PublishChildDocumentRequest<string?>(
                     command,
                     externalProviderDto.Franchise,
@@ -184,20 +182,11 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.GroupSeason,
-                    nameof(TeamSeasonDocumentProcessor<TDataContext>),
-                    dto.Groups.Ref);
                 throw new ExternalDocumentNotSourcedException(
                     $"GroupSeason {dto.Groups.Ref} not found. Will retry when available.");
             }
             else
             {
-                _logger.LogWarning(
-                    "GroupSeason not found. Raising DocumentRequested (override mode). {Ref}",
-                    dto.Groups.Ref);
-
                 await PublishChildDocumentRequest<string?>(
                     command,
                     dto.Groups,

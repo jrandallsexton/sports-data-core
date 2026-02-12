@@ -50,14 +50,19 @@ namespace SportsData.Producer.Application.Documents
 
                 if (message.AttemptCount >= maxAttempts)
                 {
+                    // Extract retry context from headers
+                    var retryReason = context.Headers.Get<string>("RetryReason", "Unknown");
+                    
                     _logger.LogError(
                         "HANDLER_MAX_RETRIES: Maximum retry attempts ({Max}) reached for document. Dropping message. " +
-                        "DocumentId={DocumentId}, DocumentType={DocumentType}, Ref={Ref}, Hash={Hash}",
+                        "DocumentId={DocumentId}, DocumentType={DocumentType}, Ref={Ref}, Hash={Hash}, " +
+                        "RetryReason={RetryReason}",
                         maxAttempts, 
                         message.Id,
                         message.DocumentType,
                         message.Ref,
-                        message.SourceUrlHash);
+                        message.SourceUrlHash,
+                        retryReason);
                     return;
                 }
 
@@ -86,6 +91,9 @@ namespace SportsData.Producer.Application.Documents
                         return;
                     }
 
+                    // Extract retry context from headers for all retries
+                    var retryReason = context.Headers.Get<string>("RetryReason", "Unknown");
+
                     var backoffSeconds = message.AttemptCount switch
                     {
                         1 => 0,
@@ -100,18 +108,21 @@ namespace SportsData.Producer.Application.Documents
                     {
                         _logger.LogWarning(
                             "HANDLER_SCHEDULE_DELAYED: Scheduling retry with backoff. " +
-                            "DocumentId={DocumentId}, BackoffSeconds={Delay}, AttemptCount={Attempt}",
+                            "DocumentId={DocumentId}, BackoffSeconds={Delay}, AttemptCount={Attempt}, " +
+                            "RetryReason={RetryReason}",
                             message.Id, 
                             backoffSeconds, 
-                            message.AttemptCount);
+                            message.AttemptCount,
+                            retryReason);
                     }
                     else
                     {
                         _logger.LogInformation(
                             "HANDLER_SCHEDULE_IMMEDIATE: Scheduling retry immediately (no backoff). " +
-                            "DocumentId={DocumentId}, AttemptCount={Attempt}",
+                            "DocumentId={DocumentId}, AttemptCount={Attempt}, RetryReason={RetryReason}",
                             message.Id,
-                            message.AttemptCount);
+                            message.AttemptCount,
+                            retryReason);
                     }
 
                     var scheduledJobId = _backgroundJobProvider.Schedule<DocumentCreatedProcessor>(

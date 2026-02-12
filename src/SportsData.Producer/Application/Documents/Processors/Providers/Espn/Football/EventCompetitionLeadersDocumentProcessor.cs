@@ -63,7 +63,13 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
                 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -227,11 +233,6 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.AthleteSeason,
-                    nameof(EventCompetitionLeadersDocumentProcessor<TDataContext>),
-                    athleteSeasonIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
             }

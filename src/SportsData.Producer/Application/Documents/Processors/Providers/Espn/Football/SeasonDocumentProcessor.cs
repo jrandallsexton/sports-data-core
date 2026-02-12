@@ -53,6 +53,7 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
                 };
                 
                 await _publishEndpoint.Publish(docCreated, headers);
+                await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {

@@ -36,6 +36,9 @@ namespace SportsData.Producer.Application.Documents
                        ["AttemptCount"] = message.AttemptCount
                    }))
             {
+                // Extract retry context from headers once for use throughout the method
+                var retryReason = context.Headers.Get<string>("RetryReason", "Unknown");
+                
                 _logger.LogInformation(
                     "HANDLER_ENTRY: DocumentCreated event received. " +
                     "DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, " +
@@ -50,9 +53,6 @@ namespace SportsData.Producer.Application.Documents
 
                 if (message.AttemptCount >= maxAttempts)
                 {
-                    // Extract retry context from headers
-                    var retryReason = context.Headers.Get<string>("RetryReason", "Unknown");
-                    
                     _logger.LogError(
                         "HANDLER_MAX_RETRIES: Maximum retry attempts ({Max}) reached for document. Dropping message. " +
                         "DocumentId={DocumentId}, DocumentType={DocumentType}, Ref={Ref}, Hash={Hash}, " +
@@ -90,9 +90,6 @@ namespace SportsData.Producer.Application.Documents
                         
                         return;
                     }
-
-                    // Extract retry context from headers for all retries
-                    var retryReason = context.Headers.Get<string>("RetryReason", "Unknown");
 
                     var backoffSeconds = message.AttemptCount switch
                     {

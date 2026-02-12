@@ -222,7 +222,7 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
         bus.Verify(
             x => x.Publish(
                 It.Is<DocumentCreated>(e => e.AttemptCount == 2),
-                It.IsAny<IDictionary<string, object>>(),
+                It.Is<IDictionary<string, object>>(h => h != null && h.ContainsKey("RetryReason")),
                 It.IsAny<CancellationToken>()),
             Times.Once,
             "should publish retry event");
@@ -270,7 +270,7 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
         bus.Verify(
             x => x.Publish(
                 It.Is<DocumentCreated>(e => e.AttemptCount == 2),
-                It.IsAny<IDictionary<string, object>>(),
+                It.Is<IDictionary<string, object>>(h => h != null && h.ContainsKey("RetryReason")),
                 It.IsAny<CancellationToken>()),
             Times.Once,
             "should publish retry event");

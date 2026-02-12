@@ -50,8 +50,15 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -138,9 +145,6 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
         if (!franchiseSeasonExists)
         {
-            _logger.LogWarning("FranchiseSeason not found. Requesting TeamSeason document sourcing. TeamRef={TeamRef}",
-                dto.Team.Ref);
-
             await PublishChildDocumentRequest<string?>(
                 command,
                 dto.Team,

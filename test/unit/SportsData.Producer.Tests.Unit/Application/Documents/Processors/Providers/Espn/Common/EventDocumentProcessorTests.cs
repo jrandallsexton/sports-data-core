@@ -271,7 +271,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 
         // Verify retry scheduled via DocumentCreated with incremented AttemptCount
         bus.Verify(x => x.Publish(It.Is<DocumentCreated>(d =>
-            d.AttemptCount == command.AttemptCount + 1), It.IsAny<CancellationToken>()), Times.Once);
+            d.AttemptCount == command.AttemptCount + 1), It.IsAny<IDictionary<string, object>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

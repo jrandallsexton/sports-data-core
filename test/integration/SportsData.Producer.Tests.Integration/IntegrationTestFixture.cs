@@ -71,6 +71,9 @@ namespace SportsData.Producer.Tests.Integration
         public Task Publish<T>(T message, CancellationToken cancellationToken = default) where T : class =>
             Task.CompletedTask;
 
+        public Task Publish<T>(T message, IDictionary<string, object> headers, CancellationToken cancellationToken = default) where T : class =>
+            Task.CompletedTask;
+
         public Task PublishBatch<T>(IEnumerable<T> messages, CancellationToken ct = default) where T : class =>
             Task.CompletedTask;
 

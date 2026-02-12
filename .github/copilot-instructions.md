@@ -75,7 +75,7 @@
 
 ### Data Persistence
 - **Relational**: PostgreSQL (canonical data in Producer)
-- **Document**: MongoDB/CosmosDB (Provider raw JSON documents)
+- **Document**: MongoDB (Provider raw JSON documents)
 - **Caching**: Redis (distributed cache)
 - **Polyglot Persistence**: Choose storage based on access pattern
 
@@ -177,7 +177,8 @@
 8. **Season ends Jan 19, 2026**: This PR must merge after NCAA football season completes
 
 ## Multi-Sport Scaling
-- Current sports: FootballNcaa, FootballNfl, BasketballNba, BasketballNcaa, GolfPga, GolfLiv, BaseballMlb, BaseballNcaa
+- Current sports: FootballNcaa
+- Future sports: FootballNfl, BasketballNba, BasketballNcaa, GolfPga, GolfLiv, BaseballMlb, BaseballNcaa
 - Factory pattern + Azure AppConfig labels enable seamless sport addition
 - No code changes needed for new sports - just add Mode enum, config label, and ModeMapper entry
 - Document processors scale multiplicatively: 10 sports × 20 document types = 200+ processors

@@ -59,9 +59,16 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
-                    
+
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+
+                await _publishEndpoint.Publish(docCreated, headers);
+
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -184,21 +191,8 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
             if (seasonWeek is null)
             {
-                if (!_config.EnableDependencyRequests)
+                if (_config.EnableDependencyRequests)
                 {
-                    _logger.LogWarning(
-                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                        DocumentType.SeasonTypeWeek,
-                        nameof(EventDocumentProcessor<TDataContext>),
-                        externalDto.Week.Ref);
-                }
-                else
-                {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
-                        externalDto.Week.Ref);
-
                     await PublishChildDocumentRequest<string?>(
                         command,
                         externalDto.Week,
@@ -231,33 +225,18 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         if (seasonPhaseId is null)
         {
-            if (!_config.EnableDependencyRequests)
+            if (_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.SeasonType,
-                    nameof(EventDocumentProcessor<TDataContext>),
-                    externalDto.SeasonType.Ref);
-                throw new ExternalDocumentNotSourcedException(
-                    $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
-            }
-            else
-            {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonType={SeasonType}",
-                    externalDto.SeasonType);
-
                 await PublishChildDocumentRequest<string?>(
                     command,
                     externalDto.SeasonType,
                     parentId: null,
                     DocumentType.SeasonType,
                     CausationId.Producer.EventDocumentProcessor);
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
             }
+
+            throw new ExternalDocumentNotSourcedException(
+                $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
         }
 
         return seasonPhaseId.Value;
@@ -333,12 +312,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             }
             else
             {
-                _logger.LogError(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Publishing DocumentRequested. Ref={Ref}",
-                    DocumentType.Venue,
-                    nameof(EventDocumentProcessor<TDataContext>),
-                    venue.Ref);
-
                 // Use base class helper for Venue request
                 await PublishChildDocumentRequest(
                     command,
@@ -411,15 +384,8 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         if (!_config.EnableDependencyRequests)
         {
-            _logger.LogWarning(
-                "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref} Team={Team}",
-                DocumentType.TeamSeason,
-                nameof(EventDocumentProcessor<TDataContext>),
-                competitor.Team.Ref,
-                teamLabel);
-
             throw new ExternalDocumentNotSourcedException(
-                $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}");
+                $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}. Not requesting.");
         }
 
         // Legacy mode: publish DocumentRequested
@@ -441,7 +407,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         await _dataContext.SaveChangesAsync();
 
         throw new ExternalDocumentNotSourcedException(
-            $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}");
+            $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}. Requesting.");
     }
 
     private async Task SetContestShortName(

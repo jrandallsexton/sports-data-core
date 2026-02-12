@@ -51,8 +51,15 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 
                 await _dataContext.SaveChangesAsync();
             }
@@ -123,11 +130,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
                 if (!_config.EnableDependencyRequests)
                 {
-                    _logger.LogWarning(
-                        "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                        DocumentType.SeasonTypeWeek,
-                        nameof(SeasonTypeWeekRankingsDocumentProcessor<TDataContext>),
-                        dto.Season.Type.Week.Ref);
                     throw new ExternalDocumentNotSourcedException(
                         "SeasonWeek not found. Sourcing requested. Will retry.");
                 }
@@ -147,7 +149,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                     
                     await _dataContext.SaveChangesAsync();
 
-                    _logger.LogError("SeasonWeek not found. Sourcing requested. Will retry.");
                     throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
                 }
             }
@@ -190,11 +191,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Count={Count}",
-                    DocumentType.TeamSeason,
-                    nameof(SeasonTypeWeekRankingsDocumentProcessor<TDataContext>),
-                    missingFranchiseSeasons.Count);
                 throw new ExternalDocumentNotSourcedException(
                     $"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
             }

@@ -371,6 +371,7 @@ public class AthleteSeasonDocumentProcessorTests :
 
         bus.Verify(x => x.Publish(
             It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(0);
@@ -435,6 +436,7 @@ public class AthleteSeasonDocumentProcessorTests :
 
         bus.Verify(x => x.Publish(
             It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(0);
@@ -518,6 +520,7 @@ public class AthleteSeasonDocumentProcessorTests :
 
         bus.Verify(x => x.Publish(
             It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(0);

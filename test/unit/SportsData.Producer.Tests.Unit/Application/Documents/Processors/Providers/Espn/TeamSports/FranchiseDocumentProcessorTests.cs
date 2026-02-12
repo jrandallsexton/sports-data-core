@@ -119,6 +119,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             bus.Verify(
                 x => x.Publish(
                     It.Is<DocumentCreated>(e => e.AttemptCount == 2),
+                    It.IsAny<IDictionary<string, object>>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once,
                 "should publish retry event when venue is missing");

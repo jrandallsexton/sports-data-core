@@ -59,7 +59,13 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -91,7 +97,6 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
 
         if (franchiseSeason is null)
         {
-            _logger.LogError("FranchiseSeason not found. FranchiseSeasonId={FranchiseSeasonId}", franchiseSeasonId);
             throw new ExternalDocumentNotSourcedException(
                 $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
         }

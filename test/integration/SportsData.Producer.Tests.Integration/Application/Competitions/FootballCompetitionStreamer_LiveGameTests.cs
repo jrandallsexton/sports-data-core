@@ -412,6 +412,15 @@ public class TestEventBus : IEventBus
         return Task.CompletedTask;
     }
     
+    public Task Publish<T>(T message, IDictionary<string, object> headers, CancellationToken cancellationToken = default) where T : class
+    {
+        if (message is DocumentRequested docReq)
+        {
+            PublishedEvents.Add(docReq);
+        }
+        return Task.CompletedTask;
+    }
+    
     public Task PublishBatch<T>(IEnumerable<T> messages, CancellationToken ct = default) where T : class
     {
         foreach (var message in messages)

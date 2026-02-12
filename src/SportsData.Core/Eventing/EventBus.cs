@@ -14,6 +14,9 @@ namespace SportsData.Core.Eventing
     {
         Task Publish<T>(T message, CancellationToken ct = default) where T : class;
 
+        // Publish with custom headers (transport-agnostic)
+        Task Publish<T>(T message, IDictionary<string, object> headers, CancellationToken ct = default) where T : class;
+
         // Batch publish (fire-and-forget semantics like MT PublishBatch)
         Task PublishBatch<T>(IEnumerable<T> messages, CancellationToken ct = default) where T : class;
     }
@@ -89,6 +92,33 @@ namespace SportsData.Core.Eventing
             else
             {
                 await _publish.Publish(message, ct);
+            }
+        }
+
+        public async Task Publish<T>(T message, IDictionary<string, object> headers, CancellationToken ct = default) where T : class
+        {
+            var direct = _policy.Mode == DeliveryMode.Direct || !_outbox.IsActive;
+
+            if (direct)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), ct); // 🚨 Dirty Hack: Give consumers time to commit
+                await _bus.Publish(message, ctx =>
+                {
+                    foreach (var kvp in headers)
+                    {
+                        ctx.Headers.Set(kvp.Key, kvp.Value);
+                    }
+                }, ct);
+            }
+            else
+            {
+                await _publish.Publish(message, ctx =>
+                {
+                    foreach (var kvp in headers)
+                    {
+                        ctx.Headers.Set(kvp.Key, kvp.Value);
+                    }
+                }, ct);
             }
         }
 

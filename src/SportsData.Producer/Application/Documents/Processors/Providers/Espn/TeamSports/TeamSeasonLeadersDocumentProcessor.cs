@@ -64,7 +64,13 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -99,7 +105,6 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         if (franchiseSeason is null)
         {
-            _logger.LogError("FranchiseSeason not found. FranchiseSeasonId={FranchiseSeasonId}", franchiseSeasonId);
             throw new ExternalDocumentNotSourcedException(
                 $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
         }
@@ -323,11 +328,6 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         {
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.AthleteSeason,
-                    nameof(TeamSeasonLeadersDocumentProcessor<TDataContext>),
-                    athleteSeasonIdentity.CleanUrl);
                 throw new ExternalDocumentNotSourcedException(
                     $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
             }

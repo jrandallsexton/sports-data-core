@@ -218,10 +218,11 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
             Times.Once,
             "should request Coach document sourcing");
 
-        // Should also publish retry event
+        // Should also publish retry event with headers
         bus.Verify(
             x => x.Publish(
                 It.Is<DocumentCreated>(e => e.AttemptCount == 2),
+                It.Is<IDictionary<string, object>>(h => h != null && h.ContainsKey("RetryReason")),
                 It.IsAny<CancellationToken>()),
             Times.Once,
             "should publish retry event");
@@ -265,10 +266,11 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
             Times.Once,
             "should request TeamSeason document sourcing");
 
-        // Should also publish retry event
+        // Should also publish retry event with headers
         bus.Verify(
             x => x.Publish(
                 It.Is<DocumentCreated>(e => e.AttemptCount == 2),
+                It.Is<IDictionary<string, object>>(h => h != null && h.ContainsKey("RetryReason")),
                 It.IsAny<CancellationToken>()),
             Times.Once,
             "should publish retry event");

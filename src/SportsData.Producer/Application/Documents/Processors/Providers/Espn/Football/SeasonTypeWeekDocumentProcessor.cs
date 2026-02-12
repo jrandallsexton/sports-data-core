@@ -51,8 +51,15 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
+                
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
 
                 await _dataContext.SaveChangesAsync();
             }
@@ -106,11 +113,6 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
 
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.SeasonType,
-                    nameof(SeasonTypeWeekDocumentProcessor<TDataContext>),
-                    seasonPhaseRef);
                 throw new ExternalDocumentNotSourcedException(
                     $"SeasonPhase {seasonPhaseRef} not found. Will retry.");
             }

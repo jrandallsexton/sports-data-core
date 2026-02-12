@@ -59,7 +59,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
                 _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
                 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                await _publishEndpoint.Publish(docCreated);
+                
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+                
+                await _publishEndpoint.Publish(docCreated, headers);
                 await _dataContext.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -118,18 +124,11 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
 
             if (!_config.EnableDependencyRequests)
             {
-                _logger.LogWarning(
-                    "Missing dependency: {MissingDependencyType}. Processor: {ProcessorName}. Will retry. EnableDependencyRequests=false. Ref={Ref}",
-                    DocumentType.EventCompetition,
-                    nameof(EventCompetitionCompetitorDocumentProcessor<TDataContext>),
-                    competitionRef);
                 throw new ExternalDocumentNotSourcedException(
-                    $"Competition with ID {competitionId} does not exist.");
+                    $"Competition with ID {competitionId} does not exist. Sourcing not requested.");
             }
             else
             {
-                _logger.LogWarning("Competition not found, raising DocumentRequested. CompetitionId={CompetitionId}", competitionId);
-
                 await PublishChildDocumentRequest(
                     command,
                     new EspnLinkDto { Ref = competitionRef },
@@ -137,7 +136,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
                     DocumentType.EventCompetition,
                     CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
 
-                throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist.");
+                throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist. Sourcing requested.");
             }
         }
 

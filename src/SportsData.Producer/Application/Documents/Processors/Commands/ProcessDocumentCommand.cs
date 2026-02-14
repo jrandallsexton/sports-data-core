@@ -9,6 +9,7 @@ public class ProcessDocumentCommand(
     int? season,
     DocumentType documentType,
     string document,
+    Guid messageId,
     Guid correlationId,
     string? parentId,
     Uri sourceUri,
@@ -24,6 +25,8 @@ public class ProcessDocumentCommand(
     public DocumentType DocumentType { get; init; } = documentType;
 
     public string Document { get; init; } = document;
+
+    public Guid MessageId { get; init; } = messageId;
 
     public Guid CorrelationId { get; init; } = correlationId;
 

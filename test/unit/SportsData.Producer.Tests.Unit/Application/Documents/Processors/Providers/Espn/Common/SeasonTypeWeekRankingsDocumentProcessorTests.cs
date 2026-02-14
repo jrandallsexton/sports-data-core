@@ -257,7 +257,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 2025,
                 DocumentType.SeasonTypeWeekRankings,
                 json,
-                correlationId,
+                messageId: Guid.NewGuid(),
+                correlationId: correlationId,
                 parentId: seasonWeekIdentity.CanonicalId.ToString(),
                 sourceUri: new Uri(weekRefUrl),
                 urlHash: weekHash

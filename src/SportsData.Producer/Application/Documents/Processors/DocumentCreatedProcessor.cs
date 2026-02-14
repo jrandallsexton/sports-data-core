@@ -127,6 +127,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.SeasonYear,
                 evt.DocumentType,
                 document!, // Already validated via IsInvalidDocument guard
+                evt.MessageId,
                 evt.CorrelationId,
                 evt.ParentId,
                 evt.SourceRef,

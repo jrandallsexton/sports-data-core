@@ -121,8 +121,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                     command,
                     new EspnLinkDto { Ref = new Uri(competitionCompetitorIdentity.CleanUrl) },
                     competitionIdentity.CanonicalId,
-                    DocumentType.EventCompetitionCompetitor,
-                    CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor);
+                    DocumentType.EventCompetitionCompetitor);
 
                 await _dataContext.SaveChangesAsync();
 

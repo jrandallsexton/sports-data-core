@@ -106,8 +106,7 @@ public class SeasonPollDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 rank,
                 dtoIdentity.CanonicalId,
-                DocumentType.SeasonTypeWeekRankings,
-                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                DocumentType.SeasonTypeWeekRankings);
         }
 
         await _dataContext.SaveChangesAsync();

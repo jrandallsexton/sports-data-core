@@ -163,8 +163,7 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         command,
                         recordDto,
                         coach.Id,
-                        DocumentType.CoachRecord,
-                        CausationId.Producer.CoachDocumentProcessor);
+                        DocumentType.CoachRecord);
 
                     _logger.LogDebug("Published DocumentRequested for CoachRecord: {RecordRef}",
                         recordDto.Ref);
@@ -186,8 +185,7 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         command,
                         seasonDto,
                         coach.Id,
-                        DocumentType.CoachSeason,
-                        CausationId.Producer.CoachDocumentProcessor);
+                        DocumentType.CoachSeason);
 
                     _logger.LogDebug("Published DocumentRequested for CoachSeason: {SeasonRef}",
                         seasonDto.Ref);

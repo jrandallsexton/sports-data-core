@@ -285,8 +285,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                     command,
                     externalProviderDto.Position,
                     parentId: null,
-                    DocumentType.AthletePosition,
-                    CausationId.Producer.AthleteDocumentProcessor);
+                    DocumentType.AthletePosition);
 
                 await _dataContext.SaveChangesAsync();
 

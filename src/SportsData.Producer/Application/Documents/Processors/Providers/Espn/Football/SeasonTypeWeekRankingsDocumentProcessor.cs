@@ -144,8 +144,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         command,
                         dto.Season.Type.Week,
                         seasonPhaseIdentity.CanonicalId,
-                        DocumentType.SeasonTypeWeek,
-                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                        DocumentType.SeasonTypeWeek);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -215,8 +214,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         command,
                         teamLinkDto,
                         franchiseId,
-                        DocumentType.TeamSeason,
-                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                        DocumentType.TeamSeason);
                 }
 
                 await _dataContext.SaveChangesAsync();
@@ -277,8 +275,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                 command,
                 teamLinkDto,
                 parentId: null,
-                DocumentType.TeamSeason,
-                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                DocumentType.TeamSeason);
         }
         catch (UriFormatException ex)
         {

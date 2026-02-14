@@ -129,8 +129,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         command,
                         dto.Season,
                         parentId: null,
-                        DocumentType.Season,
-                        CausationId.Producer.GroupSeasonDocumentProcessor);
+                        DocumentType.Season);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -169,8 +168,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         command,
                         dto.Parent,
                         parentId: null,
-                        DocumentType.GroupSeason,
-                        CausationId.Producer.GroupSeasonDocumentProcessor);
+                        DocumentType.GroupSeason);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -197,8 +195,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 command,
                 dto.Children,
                 groupSeasonEntity.Id,
-                DocumentType.GroupSeason,
-                CausationId.Producer.GroupSeasonDocumentProcessor);
+                DocumentType.GroupSeason);
         }
 
         // NOTE: Future enhancements:

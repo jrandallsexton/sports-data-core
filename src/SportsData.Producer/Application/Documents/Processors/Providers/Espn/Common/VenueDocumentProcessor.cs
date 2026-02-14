@@ -105,7 +105,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
             command.DocumentType,
             command.SourceDataProvider,
             command.CorrelationId,
-            CausationId.Producer.VenueDocumentProcessor);
+            command.MessageId);
 
         if (events.Count > 0)
         {
@@ -120,7 +120,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.VenueCreatedDocumentProcessor);
+            command.MessageId);
 
         await _publishEndpoint.Publish(evt, CancellationToken.None);
 
@@ -194,7 +194,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                 command.DocumentType,
                 command.SourceDataProvider,
                 command.CorrelationId,
-                CausationId.Producer.VenueDocumentProcessor);
+                command.MessageId);
 
             if (imageEvents.Count > 0)
             {
@@ -217,7 +217,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.VenueDocumentProcessor);
+                command.MessageId);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
 

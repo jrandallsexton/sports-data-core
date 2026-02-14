@@ -81,14 +81,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <param name="linkDto">The ESPN link DTO containing the $ref to the child document</param>
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
-    /// <param name="causationId">The causation ID identifying which processor is requesting the document</param>
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
-        DocumentType documentType,
-        Guid causationId)
+        DocumentType documentType)
     {
         if (hasRef?.Ref is null)
         {
@@ -147,7 +145,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             DocumentType: documentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
-            CausationId: causationId
+            CausationId: command.MessageId
         ));
 
         _logger.LogDebug(

@@ -123,16 +123,14 @@ public class SeasonTypeDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             command,
             dto.Groups,
             seasonPhase.Id,
-            DocumentType.GroupSeason,
-            CausationId.Producer.SeasonTypeDocumentProcessor);
+            DocumentType.GroupSeason);
 
         // Source Weeks using base class helper
         await PublishChildDocumentRequest(
             command,
             dto.Weeks,
             seasonPhase.Id,
-            DocumentType.SeasonTypeWeek,
-            CausationId.Producer.SeasonTypeDocumentProcessor);
+            DocumentType.SeasonTypeWeek);
 
         await _dataContext.SaveChangesAsync();
     }

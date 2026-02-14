@@ -115,8 +115,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                     command,
                     athleteLinkDto,
                     parentId: null,
-                    DocumentType.Athlete,
-                    CausationId.Producer.AthleteSeasonDocumentProcessor);
+                    DocumentType.Athlete);
                 await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
@@ -254,8 +253,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             command,
             dto.Statistics,
             athleteSeasonId,
-            DocumentType.AthleteSeasonStatistics,
-            CausationId.Producer.AthleteSeasonDocumentProcessor);
+            DocumentType.AthleteSeasonStatistics);
     }
 
     private async Task ProcessNotes(
@@ -268,8 +266,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             command,
             dto.Notes,
             athleteSeasonId,
-            DocumentType.AthleteSeasonNote,
-            CausationId.Producer.AthleteSeasonDocumentProcessor);
+            DocumentType.AthleteSeasonNote);
     }
 
     private async Task ProcessHeadshot(
@@ -327,8 +324,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                 command,
                 dto.Team,
                 parentId: null,
-                DocumentType.TeamSeason,
-                CausationId.Producer.AthleteSeasonDocumentProcessor);
+                DocumentType.TeamSeason);
             await _dataContext.SaveChangesAsync();
 
             _logger.LogWarning(
@@ -369,8 +365,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                 command,
                 dto.Position,
                 parentId: null,
-                DocumentType.AthletePosition,
-                CausationId.Producer.AthleteSeasonDocumentProcessor);
+                DocumentType.AthletePosition);
             await _dataContext.SaveChangesAsync();
 
             throw new ExternalDocumentNotSourcedException(

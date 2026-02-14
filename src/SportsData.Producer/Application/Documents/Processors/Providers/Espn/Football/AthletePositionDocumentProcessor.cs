@@ -147,7 +147,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
             null,
             command.Sport,
             command.CorrelationId,
-            CausationId.Producer.AthletePositionDocumentProcessor);
+            command.MessageId);
 
         await _publishEndpoint.Publish(evt);
 
@@ -219,7 +219,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
                 null,
                 command.Sport,
                 command.CorrelationId,
-                CausationId.Producer.AthletePositionDocumentProcessor);
+                command.MessageId);
 
             await _publishEndpoint.Publish(evt);
             _logger.LogInformation("Updated AthletePosition {@evt}", evt);

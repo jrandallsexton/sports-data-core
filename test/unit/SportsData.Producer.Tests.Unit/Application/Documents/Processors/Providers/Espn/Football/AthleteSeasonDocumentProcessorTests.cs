@@ -300,6 +300,7 @@ public class AthleteSeasonDocumentProcessorTests :
             season: 2024,
             documentType: DocumentType.AthleteSeason,
             document: json,
+            messageId: Guid.NewGuid(),
             correlationId: Guid.NewGuid(),
             parentId: null,
             sourceUri: new Uri(dtoIdentity.CleanUrl),

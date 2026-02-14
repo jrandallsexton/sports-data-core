@@ -113,8 +113,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
                 command,
                 dto.Team,
                 parentId: string.Empty,
-                DocumentType.TeamSeason,
-                CausationId.Producer.EventCompetitionPowerIndexDocumentProcessor);
+                DocumentType.TeamSeason);
 
             await _dataContext.SaveChangesAsync();
 

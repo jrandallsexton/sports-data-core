@@ -130,8 +130,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
                     command,
                     rankingRef,
                     poll.Id,
-                    DocumentType.SeasonTypeWeekRankings,
-                    CausationId.Producer.FootballSeasonRankingDocumentProcessor);
+                    DocumentType.SeasonTypeWeekRankings);
             }
         }
 

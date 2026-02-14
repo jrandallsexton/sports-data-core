@@ -208,8 +208,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                     command,
                     entry.Statistics,
                     null, // Stats document is self-contained with athlete and competition refs
-                    DocumentType.EventCompetitionAthleteStatistics,
-                    CausationId.Producer.EventCompetitionCompetitorRosterDocumentProcessor);
+                    DocumentType.EventCompetitionAthleteStatistics);
                 
                 publishedStatsCount++;
             }

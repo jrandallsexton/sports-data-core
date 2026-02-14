@@ -121,7 +121,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             command.DocumentType,
             command.SourceDataProvider,
             command.CorrelationId,
-            CausationId.Producer.FranchiseDocumentProcessor);
+            command.MessageId);
 
         if (events.Count > 0)
         {
@@ -311,7 +311,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor);
+                command.MessageId);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
 

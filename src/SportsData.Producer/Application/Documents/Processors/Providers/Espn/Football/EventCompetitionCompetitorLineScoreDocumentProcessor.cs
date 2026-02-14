@@ -130,8 +130,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                     command,
                     new EspnLinkDto { Ref = competitionCompetitorRef },
                     competitionIdentity.CanonicalId,
-                    DocumentType.EventCompetitionCompetitor,
-                    CausationId.Producer.EventCompetitionCompetitorLineScoreDocumentProcessor);
+                    DocumentType.EventCompetitionCompetitor);
 
                 throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
             }

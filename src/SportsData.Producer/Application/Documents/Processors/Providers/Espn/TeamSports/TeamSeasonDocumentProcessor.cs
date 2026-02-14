@@ -113,8 +113,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                     command,
                     externalProviderDto.Franchise,
                     parentId: null,
-                    DocumentType.Franchise,
-                    CausationId.Producer.TeamSeasonDocumentProcessor);
+                    DocumentType.Franchise);
                 
                 await _dataContext.SaveChangesAsync();
 
@@ -191,8 +190,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                     command,
                     dto.Groups,
                     parentId: null,
-                    DocumentType.GroupSeason,
-                    CausationId.Producer.TeamSeasonDocumentProcessor);
+                    DocumentType.GroupSeason);
                 
                 await _dataContext.SaveChangesAsync();
 
@@ -248,8 +246,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Record,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonRecord,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonRecord);
         }
 
         // rankings
@@ -259,8 +256,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Ranks,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonRank,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonRank);
         }
 
         // stats
@@ -270,8 +266,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Statistics,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonStatistics,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonStatistics);
         }
 
         // athletes
@@ -281,8 +276,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Athletes,
                 canonicalEntity.Id,
-                DocumentType.AthleteSeason,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.AthleteSeason);
         }
 
         // leaders
@@ -292,8 +286,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Leaders,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonLeaders,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonLeaders);
         }
 
         // injuries
@@ -303,8 +296,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Injuries,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonInjuries,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonInjuries);
         }
 
         // TODO: MED: Request sourcing of team season notes (data not available when following link)
@@ -316,8 +308,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.AgainstTheSpreadRecords,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonRecordAts,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonRecordAts);
         }
 
         // Process awards
@@ -327,8 +318,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Awards,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonAward,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonAward);
         }
 
         // Process projection
@@ -338,8 +328,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Projection,
                 canonicalEntity.Id,
-                DocumentType.TeamSeasonProjection,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.TeamSeasonProjection);
         }
 
         // Process events (schedule)
@@ -349,8 +338,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Events,
                 canonicalEntity.Id,
-                DocumentType.Event,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.Event);
         }
 
         // Process coaches
@@ -360,8 +348,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 command,
                 dto.Coaches,
                 canonicalEntity.Id,
-                DocumentType.CoachSeason,
-                CausationId.Producer.TeamSeasonDocumentProcessor);
+                DocumentType.CoachSeason);
         }
 
         // TODO: LOW: Add recruiting class sourcing - /v2/sports/football/leagues/college-football/recruiting/{year}/classes/{teamId}
@@ -388,7 +375,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             DocumentType.FranchiseSeasonLogo,
             command.SourceDataProvider,
             command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor);
+            command.MessageId);
 
         if (imageEvents.Count > 0)
         {

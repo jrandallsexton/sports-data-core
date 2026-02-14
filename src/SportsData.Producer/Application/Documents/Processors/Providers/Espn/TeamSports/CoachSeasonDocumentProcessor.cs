@@ -125,8 +125,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 command,
                 dto.Person,
                 parentId: null,
-                DocumentType.Coach,
-                CausationId.Producer.CoachSeasonDocumentProcessor);
+                DocumentType.Coach);
 
             throw new ExternalDocumentNotSourcedException(
                 $"Coach not sourced yet for ref: {dto.Person.Ref}");
@@ -149,8 +148,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 command,
                 dto.Team,
                 parentId: null,
-                DocumentType.TeamSeason,
-                CausationId.Producer.CoachSeasonDocumentProcessor);
+                DocumentType.TeamSeason);
 
             throw new ExternalDocumentNotSourcedException(
                 $"FranchiseSeason not sourced yet for ref: {dto.Team.Ref}");
@@ -224,8 +222,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                             command,
                             recordRef.Record,
                             parentId: coachSeason.Id,
-                            DocumentType.CoachSeasonRecord,
-                            CausationId.Producer.CoachSeasonDocumentProcessor);
+                            DocumentType.CoachSeasonRecord);
 
                         _logger.LogDebug("Published DocumentRequested for CoachSeasonRecord: {RecordRef}",
                             recordRef.Record.Ref);

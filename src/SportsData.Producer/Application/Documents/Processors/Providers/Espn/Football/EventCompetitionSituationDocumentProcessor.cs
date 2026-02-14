@@ -121,8 +121,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                         command,
                         dto.LastPlay,
                         competitionId,
-                        DocumentType.EventCompetitionPlay,
-                        CausationId.Producer.EventCompetitionSituationDocumentProcessor);
+                        DocumentType.EventCompetitionPlay);
                     
                     await _dataContext.SaveChangesAsync();
 

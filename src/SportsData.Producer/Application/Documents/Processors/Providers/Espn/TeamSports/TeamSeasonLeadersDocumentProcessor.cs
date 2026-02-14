@@ -277,8 +277,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                             command,
                             leaderDto.Statistics,
                             athleteSeasonIdentity.CanonicalId,
-                            DocumentType.AthleteSeasonStatistics,
-                            CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                            DocumentType.AthleteSeasonStatistics);
                     }
 
                     var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
@@ -342,8 +341,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     command,
                     athleteDto,
                     athleteIdentity.CanonicalId.ToString(),
-                    DocumentType.AthleteSeason,
-                    CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                    DocumentType.AthleteSeason);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Missing AthleteSeason for ref {athleteDto.Ref}");

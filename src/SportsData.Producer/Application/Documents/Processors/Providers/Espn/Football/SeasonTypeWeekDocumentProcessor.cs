@@ -127,8 +127,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
                     command,
                     new EspnLinkDto { Ref = seasonPhaseRef },
                     parentId: null,
-                    DocumentType.SeasonType,
-                    CausationId.Producer.SeasonTypeWeekDocumentProcessor);
+                    DocumentType.SeasonType);
                 
                 await _dataContext.SaveChangesAsync();
 

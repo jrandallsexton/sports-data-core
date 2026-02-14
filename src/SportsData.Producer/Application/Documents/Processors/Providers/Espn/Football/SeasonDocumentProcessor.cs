@@ -142,8 +142,7 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
                 command,
                 dto.Types,
                 season.Id,
-                DocumentType.SeasonType,
-                CausationId.Producer.SeasonDocumentProcessor);
+                DocumentType.SeasonType);
             _logger.LogInformation("Found {Count} season phases", dto.Types.Count);
             publishEvents = true;
         }
@@ -172,8 +171,7 @@ public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TData
                 command,
                 dto.Futures,
                 season.Id,
-                DocumentType.SeasonFuture,
-                CausationId.Producer.SeasonDocumentProcessor);
+                DocumentType.SeasonFuture);
             publishEvents = true;
         }
 

@@ -40,7 +40,8 @@ public class FootballSeasonRankingDocumentProcessorTests : ProducerTestBase<Foot
             2025,
             DocumentType.SeasonTypeWeekRankings,
             json,
-            Guid.NewGuid(),
+            Guid.NewGuid(), // messageId
+            Guid.NewGuid(), // correlationId
             parentId: null,
             sourceUri: dto.Ref,
             urlHash: dtoIdentity.UrlHash

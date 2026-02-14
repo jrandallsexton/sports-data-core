@@ -18,6 +18,8 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     where TDataContext : BaseDataContext
 {
+    private const int MaxRetryAttempts = 5;
+
     protected readonly ILogger _logger;
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
@@ -57,7 +59,18 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                _logger.LogWarning(retryEx, "{ProcessorName} dependency not ready. Will retry later.", GetType().Name);
+                if (command.AttemptCount >= MaxRetryAttempts)
+                {
+                    _logger.LogError(retryEx,
+                        "{ProcessorName} exceeded max retry attempts ({MaxRetries}). Giving up. {@SafeCommand}",
+                        GetType().Name, MaxRetryAttempts, command.ToSafeLogObject());
+                    await _dataContext.SaveChangesAsync();
+                    return;
+                }
+
+                _logger.LogWarning(retryEx,
+                    "{ProcessorName} dependency not ready (attempt {Attempt}/{MaxRetries}). Will retry later.",
+                    GetType().Name, command.AttemptCount + 1, MaxRetryAttempts);
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
 

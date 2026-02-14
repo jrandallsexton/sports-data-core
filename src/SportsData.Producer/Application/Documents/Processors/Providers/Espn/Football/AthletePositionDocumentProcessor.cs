@@ -30,20 +30,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Began with {@command}", command);
-
-            await ProcessInternal(command);
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var externalProviderDto = command.Document.FromJson<EspnAthletePositionDto>();
 

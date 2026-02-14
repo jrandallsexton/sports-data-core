@@ -24,35 +24,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["CompetitorId"] = command.ParentId ?? "Unknown"
-               }))
-        {
-            _logger.LogInformation("EventCompetitionCompetitorRosterDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}",
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-
-                _logger.LogInformation("EventCompetitionCompetitorRosterDocumentProcessor completed.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EventCompetitionCompetitorRosterDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 

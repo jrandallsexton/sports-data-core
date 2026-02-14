@@ -27,35 +27,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["CompetitionId"] = command.ParentId ?? "Unknown"
-               }))
-        {
-            _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-                
-                _logger.LogInformation("EventCompetitionPowerIndexDocumentProcessor completed.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EventCompetitionPowerIndexDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnEventCompetitionPowerIndexDto>();
 

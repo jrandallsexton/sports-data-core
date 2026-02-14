@@ -28,28 +28,7 @@ public class SeasonTypeDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Began with {@command}", command);
-
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         // deserialize the DTO
         var dto = command.Document.FromJson<EspnFootballSeasonTypeDto>();

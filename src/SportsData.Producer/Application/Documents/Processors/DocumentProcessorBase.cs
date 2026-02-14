@@ -2,10 +2,10 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors;
@@ -40,9 +40,48 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     }
 
     /// <summary>
-    /// Each processor implements its own document processing logic.
+    /// Template method that handles logging scope, entry/completion/error logging.
+    /// Concrete processors implement ProcessInternal() for their specific logic.
+    /// Can be overridden for special cases (e.g., retry handling), but most processors won't need to.
     /// </summary>
-    public abstract Task ProcessAsync(ProcessDocumentCommand command);
+    public virtual async Task ProcessAsync(ProcessDocumentCommand command)
+    {
+        using (_logger.BeginScope(command.ToLogScope()))
+        {
+            _logger.LogInformation("{ProcessorName} started.", GetType().Name);
+
+            try
+            {
+                await ProcessInternal(command);
+                _logger.LogInformation("{ProcessorName} completed.", GetType().Name);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                _logger.LogWarning(retryEx, "{ProcessorName} dependency not ready. Will retry later.", GetType().Name);
+
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+
+                await _publishEndpoint.Publish(docCreated, headers);
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "{ProcessorName} failed. {@SafeCommand}", GetType().Name, command.ToSafeLogObject());
+                throw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Each processor implements its own document processing logic.
+    /// This is where the actual work happens - deserialization, entity creation/update, child spawning, etc.
+    /// </summary>
+    protected abstract Task ProcessInternal(ProcessDocumentCommand command);
 
     /// <summary>
     /// Determines if a linked document of the specified type should be spawned,

@@ -92,4 +92,28 @@ public class ProcessDocumentCommand(
             SourceUri = SourceUri.ToString()
         };
     }
+
+    /// <summary>
+    /// Gets a dictionary of command properties for use in logging scopes.
+    /// Provides standardized contextual logging across all document processors.
+    /// </summary>
+    /// <returns>Dictionary with alphabetically sorted scope properties</returns>
+    public Dictionary<string, object> ToLogScope()
+    {
+        return new Dictionary<string, object>
+        {
+            ["AttemptCount"] = AttemptCount,
+            // TODO: ["CausationId"] = CausationId, 
+            ["CorrelationId"] = CorrelationId,
+            ["DocumentType"] = DocumentType,
+            ["MessageId"] = MessageId,
+            ["ParentId"] = ParentId ?? string.Empty,
+            ["Ref"] = GetDocumentRef() ?? string.Empty,
+            ["Season"] = Season ?? 0,
+            ["SourceDataProvider"] = SourceDataProvider,
+            ["SourceUri"] = SourceUri.ToString(),
+            ["Sport"] = Sport,
+            ["UrlHash"] = UrlHash
+        };
+    }
 }

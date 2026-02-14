@@ -27,28 +27,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Processing EventCompetitionCompetitorRecord for {@Command}", command);
-
-            try
-            {
-                await ProcessInternalAsync(command);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing EventCompetitionCompetitorRecord. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternalAsync(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnEventCompetitionCompetitorRecordDto>();
 

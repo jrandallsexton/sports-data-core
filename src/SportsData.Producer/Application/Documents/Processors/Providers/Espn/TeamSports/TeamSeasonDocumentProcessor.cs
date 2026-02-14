@@ -35,44 +35,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Processing TeamSeasonDocument. DocumentType={DocumentType}, UrlHash={UrlHash}",
-                command.DocumentType,
-                command.UrlHash);
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
-                
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@SafeCommand}", command.ToSafeLogObject());
-                throw;
-            }
-        }
-    }
-
-    public async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var externalProviderDto = command.Document.FromJson<EspnTeamSeasonDto>();
 
@@ -191,11 +154,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                     dto.Groups,
                     parentId: null,
                     DocumentType.GroupSeason);
-                
-                await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
-                    $"GroupSeason {dto.Groups.Ref} not found. Will retry.");
+                    $"GroupSeason {dto.Groups.Ref} not found. Sourcing requested. Will retry.");
             }
         }
     }

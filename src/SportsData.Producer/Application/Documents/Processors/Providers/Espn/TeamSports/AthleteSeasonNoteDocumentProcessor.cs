@@ -27,34 +27,7 @@ public class AthleteSeasonNoteDocumentProcessor<TDataContext> : DocumentProcesso
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["ParentId"] = command.ParentId ?? "Unknown"
-               }))
-        {
-            _logger.LogInformation("AthleteSeasonNoteDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
-                command.GetDocumentRef(),
-                command.UrlHash);
-            
-            try
-            {
-                await ProcessInternal(command);
-                _logger.LogInformation("AthleteSeasonNoteDocumentProcessor completed");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "AthleteSeasonNoteDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnAthleteSeasonNoteDto>();
         if (dto?.Id == null || dto.Ref == null)

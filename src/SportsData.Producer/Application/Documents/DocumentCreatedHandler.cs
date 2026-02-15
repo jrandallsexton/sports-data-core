@@ -25,17 +25,6 @@ namespace SportsData.Producer.Application.Documents
         {
             var message = context.Message;
             
-            // Check for dead-letter header and skip processing to prevent infinite loops
-            var isDeadLetter = context.Headers.Get<bool>("DeadLetter", false) ?? false;
-            if (isDeadLetter)
-            {
-                var deadLetterReason = context.Headers.Get<string>("DeadLetterReason", "Unknown") ?? "Unknown";
-                _logger.LogWarning(
-                    "HANDLER_DEADLETTER_SKIP: Skipping dead-letter event. Reason={DeadLetterReason}, DocumentId={DocumentId}, DocumentType={DocumentType}",
-                    deadLetterReason, message.Id, message.DocumentType);
-                return;
-            }
-            
             // Extract retry context from headers once for use throughout the method
             var retryReason = context.Headers.Get<string>("RetryReason", "Unknown") ?? "Unknown";
             
@@ -54,13 +43,25 @@ namespace SportsData.Producer.Application.Documents
                         ["Sport"] = message.Sport
                    }))
             {
+                // Check for dead-letter header and skip processing to prevent infinite loops
+                // Check for dead-letter header and skip processing to prevent infinite loops
+                var isDeadLetter = context.Headers.Get<bool>("DeadLetter", false) ?? false;
+                if (isDeadLetter)
+                {
+                    var deadLetterReason = context.Headers.Get<string>("DeadLetterReason", "Unknown") ?? "Unknown";
+                    _logger.LogWarning(
+                        "HANDLER_DEADLETTER_SKIP: Skipping dead-letter event. Reason={DeadLetterReason}",
+                        deadLetterReason);
+                    return;
+                }
+
                 _logger.LogInformation("HANDLER_ENTRY: DocumentCreated event received.");
 
                 const int maxAttempts = 10;
 
                 if (message.AttemptCount >= maxAttempts)
                 {
-                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts (10) reached for document. Dropping message.");
+                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Dropping message.", maxAttempts);
                     return;
                 }
 
@@ -109,10 +110,7 @@ namespace SportsData.Producer.Application.Documents
                             delay: TimeSpan.FromSeconds(backoffSeconds)
                         );
 
-                        using (_logger.BeginScope(new Dictionary<string, object> { ["HangfireJobId"] = scheduledJobId }))
-                        {
-                            _logger.LogInformation("HANDLER_SCHEDULED: Background job scheduled successfully.");
-                        }
+                        _logger.LogInformation("HANDLER_SCHEDULED: Background job scheduled successfully. HangfireJobId={HangfireJobId}", scheduledJobId);
                     }
                     
                     _logger.LogInformation("HANDLER_EXIT: Handler completed successfully (scheduled retry).");

@@ -18,9 +18,6 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     where TDataContext : BaseDataContext
 {
-    // Maximum number of retries allowed after the initial attempt (total attempts = 1 + MaxRetryCount)
-    private const int MaxRetryCount = 5;
-
     protected readonly ILogger _logger;
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
@@ -60,30 +57,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                if (command.AttemptCount >= MaxRetryCount)
-                {
-                    _logger.LogError(retryEx,
-                        "{ProcessorName} exceeded max retry count ({MaxRetries}). Dependency never became available. Publishing dead-letter event. {@SafeCommand}",
-                        GetType().Name, MaxRetryCount, command.ToSafeLogObject());
-                    
-                    // Emit observable signal: publish dead-letter event for monitoring/alerting
-                    var deadLetterEvent = command.ToDocumentCreated(command.AttemptCount);
-                    var deadLetterHeaders = new Dictionary<string, object>
-                    {
-                        ["DeadLetter"] = true,
-                        ["DeadLetterReason"] = "MaxRetriesExceeded",
-                        ["FailureReason"] = retryEx.Message,
-                        ["ProcessorName"] = GetType().Name
-                    };
-                    
-                    await _publishEndpoint.Publish(deadLetterEvent, deadLetterHeaders);
-                    await _dataContext.SaveChangesAsync();
-                    return;
-                }
-
                 _logger.LogWarning(retryEx,
-                    "{ProcessorName} dependency not ready (attempt {Attempt}/{MaxRetries}). Will retry later.",
-                    GetType().Name, command.AttemptCount + 1, MaxRetryCount);
+                    "{ProcessorName} dependency not ready (attempt {Attempt}). Will retry later.",
+                    GetType().Name, command.AttemptCount + 1);
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
 

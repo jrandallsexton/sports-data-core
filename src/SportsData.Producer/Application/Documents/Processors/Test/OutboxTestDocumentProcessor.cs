@@ -29,6 +29,8 @@ public class OutboxTestDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     {
     }
 
+    protected override Task ProcessInternal(ProcessDocumentCommand command) => Task.CompletedTask;
+
     public override async Task ProcessAsync(ProcessDocumentCommand command)
     {
         using (_logger.BeginScope(new Dictionary<string, object>

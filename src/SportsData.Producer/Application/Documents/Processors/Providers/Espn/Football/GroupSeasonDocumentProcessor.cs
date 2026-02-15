@@ -33,40 +33,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
-                
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnGroupSeasonDto>();
         if (dto is null)
@@ -129,8 +96,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         command,
                         dto.Season,
                         parentId: null,
-                        DocumentType.Season,
-                        CausationId.Producer.GroupSeasonDocumentProcessor);
+                        DocumentType.Season);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -169,8 +135,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         command,
                         dto.Parent,
                         parentId: null,
-                        DocumentType.GroupSeason,
-                        CausationId.Producer.GroupSeasonDocumentProcessor);
+                        DocumentType.GroupSeason);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -197,8 +162,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 command,
                 dto.Children,
                 groupSeasonEntity.Id,
-                DocumentType.GroupSeason,
-                CausationId.Producer.GroupSeasonDocumentProcessor);
+                DocumentType.GroupSeason);
         }
 
         // NOTE: Future enhancements:

@@ -9,6 +9,7 @@ public class ProcessDocumentCommand(
     int? season,
     DocumentType documentType,
     string document,
+    Guid messageId,
     Guid correlationId,
     string? parentId,
     Uri sourceUri,
@@ -24,6 +25,8 @@ public class ProcessDocumentCommand(
     public DocumentType DocumentType { get; init; } = documentType;
 
     public string Document { get; init; } = document;
+
+    public Guid MessageId { get; init; } = messageId;
 
     public Guid CorrelationId { get; init; } = correlationId;
 
@@ -87,6 +90,30 @@ public class ProcessDocumentCommand(
             AttemptCount,
             Ref = GetDocumentRef(), // ✅ ESPN $ref URI for Postman debugging
             SourceUri = SourceUri.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Gets a dictionary of command properties for use in logging scopes.
+    /// Provides standardized contextual logging across all document processors.
+    /// </summary>
+    /// <returns>Dictionary with alphabetically sorted scope properties</returns>
+    public Dictionary<string, object> ToLogScope()
+    {
+        return new Dictionary<string, object>
+        {
+            ["AttemptCount"] = AttemptCount,
+            // TODO: ["CausationId"] = CausationId, 
+            ["CorrelationId"] = CorrelationId,
+            ["DocumentType"] = DocumentType,
+            ["MessageId"] = MessageId,
+            ["ParentId"] = ParentId ?? string.Empty,
+            ["Ref"] = GetDocumentRef() ?? string.Empty,
+            ["Season"] = Season ?? 0,
+            ["SourceDataProvider"] = SourceDataProvider,
+            ["SourceUri"] = SourceUri.ToString(),
+            ["Sport"] = Sport,
+            ["UrlHash"] = UrlHash
         };
     }
 }

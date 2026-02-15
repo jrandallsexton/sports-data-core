@@ -16,44 +16,20 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Venue)]
-public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
+public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly ILogger<VenueDocumentProcessor<TDataContext>> _logger;
-    private readonly TDataContext _dataContext;
-    private readonly IEventBus _publishEndpoint;
-    private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
-    private readonly IGenerateResourceRefs _resourceRefGenerator;
-
     public VenueDocumentProcessor(
         ILogger<VenueDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs resourceRefGenerator
-        )
+        IGenerateResourceRefs resourceRefGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, resourceRefGenerator)
     {
-        _logger = logger;
-        _dataContext = dataContext;
-        _publishEndpoint = publishEndpoint;
-        _externalRefIdentityGenerator = externalRefIdentityGenerator;
-        _resourceRefGenerator = resourceRefGenerator;
     }
 
-    public async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Began with {@command}", command);
-
-            await ProcessInternal(command);
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var espnDto = command.Document.FromJson<EspnVenueDto>();
 
@@ -105,7 +81,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
             command.DocumentType,
             command.SourceDataProvider,
             command.CorrelationId,
-            CausationId.Producer.VenueDocumentProcessor);
+            command.MessageId);
 
         if (events.Count > 0)
         {
@@ -116,11 +92,11 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
         // 2. raise an integration event with the canonical model
         var evt = new VenueCreated(
             newEntity.AsCanonical(),
-            _resourceRefGenerator.ForVenue(newEntity.Id),
+            _refGenerator.ForVenue(newEntity.Id),
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.VenueCreatedDocumentProcessor);
+            command.MessageId);
 
         await _publishEndpoint.Publish(evt, CancellationToken.None);
 
@@ -194,7 +170,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                 command.DocumentType,
                 command.SourceDataProvider,
                 command.CorrelationId,
-                CausationId.Producer.VenueDocumentProcessor);
+                command.MessageId);
 
             if (imageEvents.Count > 0)
             {
@@ -217,7 +193,7 @@ public class VenueDocumentProcessor<TDataContext> : IProcessDocuments
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.VenueDocumentProcessor);
+                command.MessageId);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
 

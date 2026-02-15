@@ -6,7 +6,6 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -28,41 +27,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         if (command.Season is null)
         {
@@ -130,8 +95,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
                     command,
                     rankingRef,
                     poll.Id,
-                    DocumentType.SeasonTypeWeekRankings,
-                    CausationId.Producer.FootballSeasonRankingDocumentProcessor);
+                    DocumentType.SeasonTypeWeekRankings);
             }
         }
 

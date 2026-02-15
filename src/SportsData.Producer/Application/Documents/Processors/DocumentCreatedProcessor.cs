@@ -31,25 +31,22 @@ namespace SportsData.Producer.Application.Documents.Processors
             
             using (_logger.BeginScope(new Dictionary<string, object>
             {
-                ["CorrelationId"] = evt.CorrelationId,
+                ["AttemptCount"] = evt.AttemptCount,
                 ["CausationId"] = evt.CausationId,
-                ["DocumentType"] = evt.DocumentType,
+                ["CorrelationId"] = evt.CorrelationId,
                 ["DocumentId"] = evt.Id,
+                ["DocumentType"] = evt.DocumentType,
+                ["MessageId"] = evt.MessageId,
+                ["ParentId"] = evt.ParentId ?? string.Empty,
+                ["Ref"] = evt.Ref?.ToString() ?? string.Empty,
                 ["SeasonYear"] = evt.SeasonYear ?? 0,
-                ["Sport"] = evt.Sport,
-                ["SourceDataProvider"] = evt.SourceDataProvider
+                ["SourceDataProvider"] = evt.SourceDataProvider,
+                ["SourceRef"] = evt.SourceRef?.ToString() ?? string.Empty,
+                ["SourceUrlHash"] = evt.SourceUrlHash,
+                ["Sport"] = evt.Sport
             }))
             {
-                _logger.LogInformation(
-                    "🚀 DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started. " +
-                    "DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, " +
-                    "SourceUrlHash={SourceUrlHash}, AttemptCount={AttemptCount}, DocumentId={DocumentId}",
-                    evt.DocumentType, 
-                    evt.Sport,
-                    evt.SourceDataProvider,
-                    evt.SourceUrlHash, 
-                    evt.AttemptCount,
-                    evt.Id);
+                _logger.LogInformation("🚀 DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.");
 
                 try
                 {
@@ -57,25 +54,23 @@ namespace SportsData.Producer.Application.Documents.Processors
                     
                     sw.Stop();
                     
-                    _logger.LogInformation(
-                        "✅ DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully. " +
-                        "DocumentType={DocumentType}, DurationMs={DurationMs}, DocumentId={DocumentId}",
-                        evt.DocumentType, 
-                        sw.ElapsedMilliseconds,
-                        evt.Id);
+                    using (_logger.BeginScope(new Dictionary<string, object> { ["DurationMs"] = sw.ElapsedMilliseconds }))
+                    {
+                        _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully.");
+                    }
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
                     
-                    _logger.LogError(ex,
-                        "💥 DOC_CREATED_PROCESSOR_FAILED: Document processing failed. " +
-                        "DocumentType={DocumentType}, DurationMs={DurationMs}, DocumentId={DocumentId}, " +
-                        "ErrorMessage={ErrorMessage}",
-                        evt.DocumentType,
-                        sw.ElapsedMilliseconds,
-                        evt.Id,
-                        ex.Message);
+                    using (_logger.BeginScope(new Dictionary<string, object>
+                    {
+                        ["DurationMs"] = sw.ElapsedMilliseconds,
+                        ["ErrorMessage"] = ex.Message
+                    }))
+                    {
+                        _logger.LogError(ex, "💥 DOC_CREATED_PROCESSOR_FAILED: Document processing failed.");
+                    }
                     
                     throw;
                 }
@@ -88,20 +83,11 @@ namespace SportsData.Producer.Application.Documents.Processors
             
             if (IsInvalidDocument(document)) 
             {
-                _logger.LogError(
-                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY: Document is empty, whitespace, or literal 'null'. " +
-                    "DocumentId={DocumentId}",
-                    evt.Id);
+                _logger.LogError("❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY: Document is empty, whitespace, or literal 'null'.");
                 return;
             }
 
-            _logger.LogInformation(
-                "🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory. " +
-                "Provider={Provider}, Sport={Sport}, DocumentType={DocumentType}, DocumentId={DocumentId}",
-                evt.SourceDataProvider,
-                evt.Sport,
-                evt.DocumentType,
-                evt.Id);
+            _logger.LogInformation("🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.");
 
             var processor = _documentProcessorFactory.GetProcessor(
                 evt.SourceDataProvider,
@@ -109,17 +95,11 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.DocumentType,
                 DocumentAction.Created);
 
-            _logger.LogInformation(
-                "✅ DOC_CREATED_PROCESSOR_FOUND: Document processor found. " +
-                "ProcessorType={ProcessorType}, DocumentId={DocumentId}",
-                processor.GetType().Name,
-                evt.Id);
+            using (_logger.BeginScope(new Dictionary<string, object> { ["ProcessorType"] = processor.GetType().Name }))
+            {
+                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_FOUND: Document processor found.");
 
-            _logger.LogInformation(
-                "⚙️ DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor. " +
-                "ProcessorType={ProcessorType}, DocumentId={DocumentId}",
-                processor.GetType().Name,
-                evt.Id);
+                _logger.LogInformation("⚙️ DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.");
 
             await processor.ProcessAsync(new ProcessDocumentCommand(
                 evt.SourceDataProvider,
@@ -127,6 +107,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.SeasonYear,
                 evt.DocumentType,
                 document!, // Already validated via IsInvalidDocument guard
+                evt.MessageId,
                 evt.CorrelationId,
                 evt.ParentId,
                 evt.SourceRef,
@@ -135,11 +116,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.AttemptCount,
                 evt.IncludeLinkedDocumentTypes));
 
-            _logger.LogInformation(
-                "✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed. " +
-                "ProcessorType={ProcessorType}, DocumentId={DocumentId}",
-                processor.GetType().Name,
-                evt.Id);
+                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");
+            }
         }
 
         /// <summary>
@@ -153,39 +131,29 @@ namespace SportsData.Producer.Application.Documents.Processors
             if (!string.IsNullOrWhiteSpace(evt.DocumentJson) && 
                 !evt.DocumentJson.Trim().Equals("null", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogDebug(
-                    "📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload. " +
-                    "DocumentLength={Length}, DocumentId={DocumentId}",
-                    evt.DocumentJson.Length,
-                    evt.Id);
+                using (_logger.BeginScope(new Dictionary<string, object> { ["DocumentLength"] = evt.DocumentJson.Length }))
+                {
+                    _logger.LogDebug("📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload.");
+                }
                 
                 return evt.DocumentJson;
             }
 
-            _logger.LogInformation(
-                "📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider. " +
-                "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
-                evt.SourceUrlHash,
-                evt.Id);
+            _logger.LogInformation("📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider.");
 
             // Document exceeded size limit, fetch from Provider
             var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType);
             
             if (IsInvalidDocument(document))
             {
-                _logger.LogError(
-                    "❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain valid document from Provider. " +
-                    "SourceUrlHash={SourceUrlHash}, DocumentId={DocumentId}",
-                    evt.SourceUrlHash,
-                    evt.Id);
+                _logger.LogError("❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL: Failed to obtain valid document from Provider.");
                 return null;
             }
             
-            _logger.LogInformation(
-                "✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully. " +
-                "DocumentLength={Length}, DocumentId={DocumentId}",
-                document.Length,
-                evt.Id);
+            using (_logger.BeginScope(new Dictionary<string, object> { ["DocumentLength"] = document.Length }))
+            {
+                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully.");
+            }
 
             return document;
         }

@@ -36,43 +36,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-
-            _logger.LogInformation("Processing EventDocument with {@Command}", command);
-
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
-                
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnFootballAthleteDto>();
 
@@ -143,7 +107,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.AthleteDocumentProcessor));
+            command.MessageId));
 
         await _dataContext.Athletes.AddAsync(entity);
 
@@ -285,8 +249,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                     command,
                     externalProviderDto.Position,
                     parentId: null,
-                    DocumentType.AthletePosition,
-                    CausationId.Producer.AthleteDocumentProcessor);
+                    DocumentType.AthletePosition);
 
                 await _dataContext.SaveChangesAsync();
 

@@ -2,10 +2,10 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors;
@@ -18,6 +18,9 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     where TDataContext : BaseDataContext
 {
+    // Maximum number of retries allowed after the initial attempt (total attempts = 1 + MaxRetryCount)
+    private const int MaxRetryCount = 5;
+
     protected readonly ILogger _logger;
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
@@ -40,9 +43,82 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     }
 
     /// <summary>
-    /// Each processor implements its own document processing logic.
+    /// Template method that handles logging scope, entry/completion/error logging.
+    /// Concrete processors implement ProcessInternal() for their specific logic.
+    /// Can be overridden for special cases (e.g., retry handling), but most processors won't need to.
     /// </summary>
-    public abstract Task ProcessAsync(ProcessDocumentCommand command);
+    public virtual async Task ProcessAsync(ProcessDocumentCommand command)
+    {
+        using (_logger.BeginScope(command.ToLogScope()))
+        {
+            _logger.LogInformation("{ProcessorName} started.", GetType().Name);
+
+            try
+            {
+                await ProcessInternal(command);
+                _logger.LogInformation("{ProcessorName} completed.", GetType().Name);
+            }
+            catch (ExternalDocumentNotSourcedException retryEx)
+            {
+                if (command.AttemptCount >= MaxRetryCount)
+                {
+                    _logger.LogError(retryEx,
+                        "{ProcessorName} exceeded max retry count ({MaxRetries}). Dependency never became available. Publishing dead-letter event. {@SafeCommand}",
+                        GetType().Name, MaxRetryCount, command.ToSafeLogObject());
+                    
+                    // Emit observable signal: publish dead-letter event for monitoring/alerting
+                    var deadLetterEvent = command.ToDocumentCreated(command.AttemptCount);
+                    var deadLetterHeaders = new Dictionary<string, object>
+                    {
+                        ["DeadLetter"] = true,
+                        ["DeadLetterReason"] = "MaxRetriesExceeded",
+                        ["FailureReason"] = retryEx.Message,
+                        ["ProcessorName"] = GetType().Name
+                    };
+                    
+                    await _publishEndpoint.Publish(deadLetterEvent, deadLetterHeaders);
+                    await _dataContext.SaveChangesAsync();
+                    return;
+                }
+
+                _logger.LogWarning(retryEx,
+                    "{ProcessorName} dependency not ready (attempt {Attempt}/{MaxRetries}). Will retry later.",
+                    GetType().Name, command.AttemptCount + 1, MaxRetryCount);
+
+                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
+
+                var headers = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = retryEx.Message
+                };
+
+                await _publishEndpoint.Publish(docCreated, headers);
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "{ProcessorName} failed. {@SafeCommand}", GetType().Name, command.ToSafeLogObject());
+                throw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Each processor implements its own document processing logic.
+    /// This is where the actual work happens - deserialization, entity creation/update, child spawning, etc.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>IMPORTANT:</strong> Implementations must NOT catch or swallow <see cref="ExternalDocumentNotSourcedException"/>.
+    /// This exception must be allowed to escape to the base <see cref="ProcessAsync"/> method so that the retry logic can
+    /// properly handle missing dependencies. When a dependency is not ready, throw <see cref="ExternalDocumentNotSourcedException"/>
+    /// and the base class will automatically schedule a retry (up to <c>MaxRetryCount</c> retries after the initial attempt).
+    /// </para>
+    /// <para>
+    /// Other exceptions should be thrown normally and will be logged and propagated by the base class.
+    /// </para>
+    /// </remarks>
+    protected abstract Task ProcessInternal(ProcessDocumentCommand command);
 
     /// <summary>
     /// Determines if a linked document of the specified type should be spawned,
@@ -81,14 +157,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <param name="linkDto">The ESPN link DTO containing the $ref to the child document</param>
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
-    /// <param name="causationId">The causation ID identifying which processor is requesting the document</param>
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
-        DocumentType documentType,
-        Guid causationId)
+        DocumentType documentType)
     {
         if (hasRef?.Ref is null)
         {
@@ -147,7 +221,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             DocumentType: documentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
-            CausationId: causationId
+            CausationId: command.MessageId
         ));
 
         _logger.LogDebug(

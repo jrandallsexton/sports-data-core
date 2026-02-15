@@ -17,7 +17,7 @@ namespace SportsData.Producer.Application.Documents
             _logger = logger;
         }
 
-        public async Task Consume(ConsumeContext<DocumentDeadLetter> context)
+        public Task Consume(ConsumeContext<DocumentDeadLetter> context)
         {
             var message = context.Message;
 
@@ -27,8 +27,6 @@ namespace SportsData.Producer.Application.Documents
                 ["DocumentType"] = message.DocumentType,
                 ["Sport"] = message.Sport,
                 ["SourceUrlHash"] = message.SourceUrlHash,
-                ["AttemptCount"] = message.AttemptCount,
-                ["Reason"] = message.Reason,
                 ["CorrelationId"] = message.CorrelationId,
                 ["CausationId"] = message.CausationId,
                 ["Ref"] = message.Ref?.ToString() ?? string.Empty,
@@ -41,7 +39,7 @@ namespace SportsData.Producer.Application.Documents
                     message.Reason);
             }
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
     }
 }

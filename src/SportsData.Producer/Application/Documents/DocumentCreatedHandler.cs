@@ -25,6 +25,17 @@ namespace SportsData.Producer.Application.Documents
         {
             var message = context.Message;
             
+            // Check for dead-letter header and skip processing to prevent infinite loops
+            var isDeadLetter = context.Headers.Get<bool>("DeadLetter", false) ?? false;
+            if (isDeadLetter)
+            {
+                var deadLetterReason = context.Headers.Get<string>("DeadLetterReason", "Unknown") ?? "Unknown";
+                _logger.LogWarning(
+                    "HANDLER_DEADLETTER_SKIP: Skipping dead-letter event. Reason={DeadLetterReason}, DocumentId={DocumentId}, DocumentType={DocumentType}",
+                    deadLetterReason, message.Id, message.DocumentType);
+                return;
+            }
+            
             // Extract retry context from headers once for use throughout the method
             var retryReason = context.Headers.Get<string>("RetryReason", "Unknown") ?? "Unknown";
             
@@ -35,7 +46,7 @@ namespace SportsData.Producer.Application.Documents
                         ["CorrelationId"] = message.CorrelationId,
                         ["DocumentId"] = message.Id,
                         ["DocumentType"] = message.DocumentType,
-                        ["MessageIdId"] = message.MessageId,
+                        ["MessageId"] = message.MessageId,
                         ["Ref"] = message.Ref?.ToString() ?? string.Empty,
                         ["RetryReason"] = retryReason,
                         ["SourceDataProvider"] = message.SourceDataProvider,

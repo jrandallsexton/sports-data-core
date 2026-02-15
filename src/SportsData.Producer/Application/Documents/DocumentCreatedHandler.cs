@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
@@ -11,14 +12,21 @@ namespace SportsData.Producer.Application.Documents
     {
         private readonly ILogger<DocumentCreatedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
 
         // TODO: Look into middleware for filtering these based on Sport (mode) for the producer instance
 
         public DocumentCreatedHandler(
-            ILogger<DocumentCreatedHandler> logger, IProvideBackgroundJobs backgroundJobProvider)
+            ILogger<DocumentCreatedHandler> logger,
+            IProvideBackgroundJobs backgroundJobProvider,
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
+            _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
         }
 
         public async Task Consume(ConsumeContext<DocumentCreated> context)
@@ -61,7 +69,20 @@ namespace SportsData.Producer.Application.Documents
 
                 if (message.AttemptCount >= maxAttempts)
                 {
-                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Dropping message.", maxAttempts);
+                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Publishing dead-letter event.", maxAttempts);
+                    
+                    // Publish dead-letter event using Direct mode (bypasses outbox, no DbContext needed)
+                    var deadLetterHeaders = new Dictionary<string, object>
+                    {
+                        ["DeadLetter"] = true,
+                        ["DeadLetterReason"] = "MaxRetriesExceeded",
+                        ["FailureReason"] = retryReason
+                    };
+                    
+                    using (_deliveryScope.Use(DeliveryMode.Direct))
+                    {
+                        await _eventBus.Publish(message, deadLetterHeaders);
+                    }
                     return;
                 }
 

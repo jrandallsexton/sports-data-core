@@ -97,8 +97,6 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         dto.Season,
                         parentId: null,
                         DocumentType.Season);
-                    
-                    await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Will retry.");
                 }
@@ -136,10 +134,8 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                         dto.Parent,
                         parentId: null,
                         DocumentType.GroupSeason);
-                    
-                    await _dataContext.SaveChangesAsync();
 
-                    throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Will retry.");
+                    throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Requested. Will retry.");
                 }
             }
             groupSeasonEntity.ParentId = parentId;

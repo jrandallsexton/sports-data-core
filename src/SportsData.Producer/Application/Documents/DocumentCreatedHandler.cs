@@ -51,18 +51,6 @@ namespace SportsData.Producer.Application.Documents
                         ["Sport"] = message.Sport
                    }))
             {
-                // Check for dead-letter header and skip processing to prevent infinite loops
-                // Check for dead-letter header and skip processing to prevent infinite loops
-                var isDeadLetter = context.Headers.Get<bool>("DeadLetter", false) ?? false;
-                if (isDeadLetter)
-                {
-                    var deadLetterReason = context.Headers.Get<string>("DeadLetterReason", "Unknown") ?? "Unknown";
-                    _logger.LogWarning(
-                        "HANDLER_DEADLETTER_SKIP: Skipping dead-letter event. Reason={DeadLetterReason}",
-                        deadLetterReason);
-                    return;
-                }
-
                 _logger.LogInformation("HANDLER_ENTRY: DocumentCreated event received.");
 
                 const int maxAttempts = 10;
@@ -71,17 +59,26 @@ namespace SportsData.Producer.Application.Documents
                 {
                     _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Publishing dead-letter event.", maxAttempts);
                     
-                    // Publish dead-letter event using Direct mode (bypasses outbox, no DbContext needed)
-                    var deadLetterHeaders = new Dictionary<string, object>
-                    {
-                        ["DeadLetter"] = true,
-                        ["DeadLetterReason"] = "MaxRetriesExceeded",
-                        ["FailureReason"] = retryReason
-                    };
+                    // Publish dedicated dead-letter event for observability/monitoring
+                    var deadLetterEvent = new DocumentDeadLetter(
+                        Id: message.Id,
+                        ParentId: message.ParentId,
+                        Ref: message.Ref,
+                        SourceRef: message.SourceRef,
+                        SourceUrlHash: message.SourceUrlHash,
+                        Sport: message.Sport,
+                        SeasonYear: message.SeasonYear,
+                        DocumentType: message.DocumentType,
+                        SourceDataProvider: message.SourceDataProvider,
+                        AttemptCount: message.AttemptCount,
+                        Reason: retryReason,
+                        CorrelationId: message.CorrelationId,
+                        CausationId: message.CausationId
+                    );
                     
                     using (_deliveryScope.Use(DeliveryMode.Direct))
                     {
-                        await _eventBus.Publish(message, deadLetterHeaders);
+                        await _eventBus.Publish(deadLetterEvent);
                     }
                     return;
                 }

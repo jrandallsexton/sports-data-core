@@ -39,49 +39,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["CorrelationId"] = command.CorrelationId,
-            ["DocumentType"] = command.DocumentType,
-            ["Season"] = command.Season ?? 0,
-            ["FranchiseSeasonId"] = command.ParentId ?? "Unknown"
-        }))
-        {
-            _logger.LogInformation("TeamSeasonLeadersDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}",
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-
-                _logger.LogInformation("TeamSeasonLeadersDocumentProcessor completed.");
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
-
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "TeamSeasonLeadersDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnLeadersDto>();
         if (dto is null || string.IsNullOrEmpty(dto.Ref?.ToString()))
@@ -277,8 +235,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                             command,
                             leaderDto.Statistics,
                             athleteSeasonIdentity.CanonicalId,
-                            DocumentType.AthleteSeasonStatistics,
-                            CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                            DocumentType.AthleteSeasonStatistics);
                     }
 
                     var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
@@ -342,8 +299,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     command,
                     athleteDto,
                     athleteIdentity.CanonicalId.ToString(),
-                    DocumentType.AthleteSeason,
-                    CausationId.Producer.TeamSeasonLeadersDocumentProcessor);
+                    DocumentType.AthleteSeason);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Missing AthleteSeason for ref {athleteDto.Ref}");

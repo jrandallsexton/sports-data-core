@@ -40,7 +40,8 @@ public class SeasonDocumentProcessorTests
             2025,
             DocumentType.Season,
             json,
-            Guid.NewGuid(),
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
             parentId: null,
             new Uri(srcUrl),
             srcUrl.UrlHash()
@@ -75,7 +76,8 @@ public class SeasonDocumentProcessorTests
             2024,
             DocumentType.Season,
             json,
-            Guid.NewGuid(),
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
             parentId: null,
             new Uri(srcUrl),
             srcUrl.UrlHash()
@@ -110,7 +112,8 @@ public class SeasonDocumentProcessorTests
             2025,
             DocumentType.Season,
             json2025,
-            Guid.NewGuid(),
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
             parentId: null,
             new Uri(srcUrl),
             srcUrl.UrlHash()

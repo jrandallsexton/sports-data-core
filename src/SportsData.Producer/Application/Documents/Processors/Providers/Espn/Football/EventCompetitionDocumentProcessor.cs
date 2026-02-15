@@ -28,35 +28,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["CompetitionId"] = command.ParentId ?? "Unknown"
-               }))
-        {
-            _logger.LogInformation("EventCompetitionDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-                
-                _logger.LogInformation("EventCompetitionDocumentProcessor completed.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EventCompetitionDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var externalDto = command.Document.FromJson<EspnEventCompetitionDto>();
 
@@ -180,8 +152,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 command,
                 venue,
                 parentId: null,
-                DocumentType.Venue,
-                CausationId.Producer.EventCompetitionDocumentProcessor);
+                DocumentType.Venue);
         }
     }
 
@@ -280,25 +251,34 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
 
         // All child documents - bypass ShouldSpawn for new entities, apply filtering for updates
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionOdds, command))
-            await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionStatus, command))
-            await PublishChildDocumentRequest(command, dto.Status, competition.Id, DocumentType.EventCompetitionStatus, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Status, competition.Id, DocumentType.EventCompetitionStatus);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionSituation, command))
-            await PublishChildDocumentRequest(command, dto.Situation, competition.Id, DocumentType.EventCompetitionSituation, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Situation, competition.Id, DocumentType.EventCompetitionSituation);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionBroadcast, command))
-            await PublishChildDocumentRequest(command, dto.Broadcasts, competition.Id, DocumentType.EventCompetitionBroadcast, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Broadcasts, competition.Id, DocumentType.EventCompetitionBroadcast);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionPlay, command))
-            await PublishChildDocumentRequest(command, dto.Details, competition.Id, DocumentType.EventCompetitionPlay, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Details, competition.Id, DocumentType.EventCompetitionPlay);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionLeaders, command))
-            await PublishChildDocumentRequest(command, dto.Leaders, competition.Id, DocumentType.EventCompetitionLeaders, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Leaders, competition.Id, DocumentType.EventCompetitionLeaders);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionPrediction, command))
-            await PublishChildDocumentRequest(command, dto.Predictor, competition.Id, DocumentType.EventCompetitionPrediction, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Predictor, competition.Id, DocumentType.EventCompetitionPrediction);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionProbability, command))
-            await PublishChildDocumentRequest(command, dto.Probabilities, competition.Id, DocumentType.EventCompetitionProbability, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Probabilities, competition.Id, DocumentType.EventCompetitionProbability);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionPowerIndex, command))
-            await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionDrive, command))
-            await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive, CausationId.Producer.EventCompetitionDocumentProcessor);
+            await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive);
 
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitor, command))
             await ProcessCompetitors(command, dto, competition);
@@ -333,8 +313,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                 command,
                 competitorDto,
                 competition.Id.ToString(),
-                DocumentType.EventCompetitionCompetitor,
-                CausationId.Producer.EventCompetitionDocumentProcessor);
+                DocumentType.EventCompetitionCompetitor);
         }
     }
 

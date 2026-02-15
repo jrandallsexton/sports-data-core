@@ -31,42 +31,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Processing EventCompetitionAthleteStatistics with {@Command}", command);
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not yet sourced. Requeueing for retry. {@Command}", command);
-                
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                await _dataContext.SaveChangesAsync();
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         // --- Deserialize DTO ---
         var dto = command.Document.FromJson<EspnEventCompetitionAthleteStatisticsDto>();

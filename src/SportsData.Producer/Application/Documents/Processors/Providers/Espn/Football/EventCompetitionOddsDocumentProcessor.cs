@@ -32,35 +32,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         _jsonHash = jsonHash;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["CompetitionId"] = command.ParentId ?? "Unknown"
-               }))
-        {
-            _logger.LogInformation("EventCompetitionOddsDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-                
-                _logger.LogInformation("EventCompetitionOddsDocumentProcessor completed.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EventCompetitionOddsDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         // --- Validate inputs ---
         var dto = command.Document.FromJson<EspnEventCompetitionOddsDto>();
@@ -161,7 +133,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
+                command.MessageId));
         }
         else
         {

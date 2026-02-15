@@ -283,7 +283,7 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
-                CausationId.Provider.ResourceIndexItemProcessor,
+                command.MessageId,  // Use parent MessageId as CausationId
                 0,
                 command.IncludeLinkedDocumentTypes);
 
@@ -336,7 +336,7 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
-                CausationId.Provider.ResourceIndexItemProcessor,
+                command.MessageId,  // Use parent MessageId as CausationId
                 0,
                 command.IncludeLinkedDocumentTypes);
 
@@ -373,7 +373,7 @@ namespace SportsData.Provider.Application.Processors
                 command.DocumentType,
                 command.SourceDataProvider,
                 correlationId,
-                CausationId.Provider.ResourceIndexItemProcessor,
+                command.MessageId,  // Use parent MessageId as CausationId
                 0,
                 command.IncludeLinkedDocumentTypes);
 
@@ -389,6 +389,7 @@ namespace SportsData.Provider.Application.Processors
     public record ProcessResourceIndexItemCommand(
         Guid CorrelationId,
         Guid CausationId,
+        Guid MessageId,
         Guid ResourceIndexId,
         string Id,
         Uri Uri,

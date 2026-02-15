@@ -27,27 +27,7 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     {
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["CorrelationId"] = command.CorrelationId
-        }))
-        {
-            _logger.LogInformation("Began processing Coach with {@Command}", command);
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnCoachDto>();
 
@@ -163,8 +143,7 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         command,
                         recordDto,
                         coach.Id,
-                        DocumentType.CoachRecord,
-                        CausationId.Producer.CoachDocumentProcessor);
+                        DocumentType.CoachRecord);
 
                     _logger.LogDebug("Published DocumentRequested for CoachRecord: {RecordRef}",
                         recordDto.Ref);
@@ -186,8 +165,7 @@ public class CoachDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         command,
                         seasonDto,
                         coach.Id,
-                        DocumentType.CoachSeason,
-                        CausationId.Producer.CoachDocumentProcessor);
+                        DocumentType.CoachSeason);
 
                     _logger.LogDebug("Published DocumentRequested for CoachSeason: {SeasonRef}",
                         seasonDto.Ref);

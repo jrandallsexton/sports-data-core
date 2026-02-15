@@ -53,6 +53,7 @@ public class SeasonTypeDocumentProcessorTests
             2025,
             DocumentType.SeasonType,
             json,
+            messageId: Guid.NewGuid(),
             correlationId: Guid.NewGuid(),
             parentId: seasonId.ToString(),
             new Uri(srcUrl),

@@ -36,50 +36,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId,
-                   ["DocumentType"] = command.DocumentType,
-                   ["Season"] = command.Season ?? 0,
-                   ["ContestId"] = command.ParentId ?? Guid.Empty.ToString()
-               }))
-        {
-            _logger.LogInformation("EventDocumentProcessor started. Ref={Ref}, UrlHash={UrlHash}", 
-                command.GetDocumentRef(),
-                command.UrlHash);
-
-            try
-            {
-                await ProcessInternal(command);
-                
-                _logger.LogInformation("EventDocumentProcessor completed.");
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
-
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-
-                await _publishEndpoint.Publish(docCreated, headers);
-
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EventDocumentProcessor failed.");
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var externalDto = command.Document.FromJson<EspnEventDto>();
 
@@ -167,7 +124,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.EventDocumentProcessor));
+            command.MessageId));
 
         await _dataContext.SaveChangesAsync();
         
@@ -197,8 +154,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                         command,
                         externalDto.Week,
                         parentId: null,
-                        DocumentType.SeasonTypeWeek,
-                        CausationId.Producer.EventDocumentProcessor);
+                        DocumentType.SeasonTypeWeek);
                 }
 
                 throw new ExternalDocumentNotSourcedException(
@@ -231,8 +187,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     command,
                     externalDto.SeasonType,
                     parentId: null,
-                    DocumentType.SeasonType,
-                    CausationId.Producer.EventDocumentProcessor);
+                    DocumentType.SeasonType);
             }
 
             throw new ExternalDocumentNotSourcedException(
@@ -260,8 +215,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 command,
                 competition,
                 contest.Id,
-                DocumentType.EventCompetition,
-                CausationId.Producer.EventDocumentProcessor);
+                DocumentType.EventCompetition);
         }
     }
 
@@ -317,8 +271,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     command,
                     venue,
                     string.Empty,
-                    DocumentType.Venue,
-                    CausationId.Producer.EventDocumentProcessor);
+                    DocumentType.Venue);
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Venue not found for {venue.Ref} in command {command.CorrelationId}");
@@ -401,8 +354,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             command,
             competitor.Team,
             franchiseIdentity.CanonicalId.ToString(),
-            DocumentType.TeamSeason,
-            CausationId.Producer.EventDocumentProcessor);
+            DocumentType.TeamSeason);
 
         await _dataContext.SaveChangesAsync();
 
@@ -463,8 +415,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 command,
                 competition,
                 contest.Id,
-                DocumentType.EventCompetition,
-                CausationId.Producer.EventDocumentProcessor);
+                DocumentType.EventCompetition);
         }
 
         await _dataContext.SaveChangesAsync();

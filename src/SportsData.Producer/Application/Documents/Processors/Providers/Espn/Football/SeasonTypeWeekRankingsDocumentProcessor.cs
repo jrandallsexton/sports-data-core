@@ -35,43 +35,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         _config = config;
     }
 
-    public override async Task ProcessAsync(ProcessDocumentCommand command)
-    {
-        using (_logger.BeginScope(new Dictionary<string, object>
-               {
-                   ["CorrelationId"] = command.CorrelationId
-               }))
-        {
-            _logger.LogInformation("Began with {@command}", command);
-
-            try
-            {
-                await ProcessInternal(command);
-            }
-            catch (ExternalDocumentNotSourcedException retryEx)
-            {
-                _logger.LogWarning(retryEx, "Dependency not ready. Will retry later.");
-                
-                var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
-                
-                var headers = new Dictionary<string, object>
-                {
-                    ["RetryReason"] = retryEx.Message
-                };
-                
-                await _publishEndpoint.Publish(docCreated, headers);
-                
-                await _dataContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while processing. {@Command}", command);
-                throw;
-            }
-        }
-    }
-
-    private async Task ProcessInternal(ProcessDocumentCommand command)
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
         var dto = command.Document.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
@@ -144,8 +108,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         command,
                         dto.Season.Type.Week,
                         seasonPhaseIdentity.CanonicalId,
-                        DocumentType.SeasonTypeWeek,
-                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                        DocumentType.SeasonTypeWeek);
                     
                     await _dataContext.SaveChangesAsync();
 
@@ -215,8 +178,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         command,
                         teamLinkDto,
                         franchiseId,
-                        DocumentType.TeamSeason,
-                        CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                        DocumentType.TeamSeason);
                 }
 
                 await _dataContext.SaveChangesAsync();
@@ -277,8 +239,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                 command,
                 teamLinkDto,
                 parentId: null,
-                DocumentType.TeamSeason,
-                CausationId.Producer.SeasonTypeWeekRankingsDocumentProcessor);
+                DocumentType.TeamSeason);
         }
         catch (UriFormatException ex)
         {

@@ -57,6 +57,7 @@ public class SeasonTypeWeekDocumentProcessorTests
             season: 2025,
             documentType: DocumentType.SeasonTypeWeek,
             document: json,
+            messageId: Guid.NewGuid(),
             correlationId: correlationId,
             parentId: seasonPhaseId.ToString(),
             sourceUri: new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1?lang=en&region=us"),

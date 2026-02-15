@@ -353,6 +353,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             null, // Set Season to null
             command.DocumentType,
             command.Document,
+            command.MessageId,
             command.CorrelationId,
             command.ParentId,
             command.SourceUri,
@@ -376,6 +377,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             command.Season,
             command.DocumentType,
             command.Document,
+            command.MessageId,
             command.CorrelationId,
             "invalid-guid",
             command.SourceUri,
@@ -399,6 +401,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             command.Season,
             command.DocumentType,
             command.Document,
+            command.MessageId,
             command.CorrelationId,
             null,
             command.SourceUri,

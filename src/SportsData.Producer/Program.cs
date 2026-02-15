@@ -78,6 +78,7 @@ public class Program
             case Sport.FootballNfl:
                 services.AddMessaging<FootballDataContext>(config, [
                     typeof(DocumentCreatedHandler),
+                    typeof(DocumentDeadLetterConsumer),
                     typeof(LoadTestProducerEventConsumer),
                     typeof(ProcessImageRequestedHandler),
                     typeof(ProcessImageResponseHandler)
@@ -86,6 +87,7 @@ public class Program
             case Sport.GolfPga:
                 services.AddMessaging<GolfDataContext>(config, [
                     typeof(DocumentCreatedHandler),
+                    typeof(DocumentDeadLetterConsumer),
                     typeof(LoadTestProducerEventConsumer),
                     typeof(ProcessImageRequestedHandler),
                     typeof(ProcessImageResponseHandler)

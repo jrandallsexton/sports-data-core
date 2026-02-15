@@ -87,20 +87,13 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 }
                 else
                 {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "Season not found. Raising DocumentRequested (override mode). SeasonRef={SeasonRef}",
-                        dto.Season.Ref);
-                    
                     await PublishChildDocumentRequest<string?>(
                         command,
                         dto.Season,
                         parentId: null,
                         DocumentType.Season);
-                    
-                    await _dataContext.SaveChangesAsync();
 
-                    throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Will retry.");
+                    throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Requested. Will retry.");
                 }
             }
             groupSeasonEntity.SeasonId = seasonId;
@@ -126,20 +119,13 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 }
                 else
                 {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "Parent GroupSeason not found. Raising DocumentRequested (override mode). ParentRef={ParentRef}",
-                        dto.Parent.Ref);
-                    
                     await PublishChildDocumentRequest<string?>(
                         command,
                         dto.Parent,
                         parentId: null,
                         DocumentType.GroupSeason);
-                    
-                    await _dataContext.SaveChangesAsync();
 
-                    throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Will retry.");
+                    throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Requested. Will retry.");
                 }
             }
             groupSeasonEntity.ParentId = parentId;

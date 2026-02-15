@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 
+using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
@@ -11,14 +12,21 @@ namespace SportsData.Producer.Application.Documents
     {
         private readonly ILogger<DocumentCreatedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
 
         // TODO: Look into middleware for filtering these based on Sport (mode) for the producer instance
 
         public DocumentCreatedHandler(
-            ILogger<DocumentCreatedHandler> logger, IProvideBackgroundJobs backgroundJobProvider)
+            ILogger<DocumentCreatedHandler> logger,
+            IProvideBackgroundJobs backgroundJobProvider,
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
+            _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
         }
 
         public async Task Consume(ConsumeContext<DocumentCreated> context)
@@ -43,25 +51,35 @@ namespace SportsData.Producer.Application.Documents
                         ["Sport"] = message.Sport
                    }))
             {
-                // Check for dead-letter header and skip processing to prevent infinite loops
-                // Check for dead-letter header and skip processing to prevent infinite loops
-                var isDeadLetter = context.Headers.Get<bool>("DeadLetter", false) ?? false;
-                if (isDeadLetter)
-                {
-                    var deadLetterReason = context.Headers.Get<string>("DeadLetterReason", "Unknown") ?? "Unknown";
-                    _logger.LogWarning(
-                        "HANDLER_DEADLETTER_SKIP: Skipping dead-letter event. Reason={DeadLetterReason}",
-                        deadLetterReason);
-                    return;
-                }
-
                 _logger.LogInformation("HANDLER_ENTRY: DocumentCreated event received.");
 
                 const int maxAttempts = 10;
 
                 if (message.AttemptCount >= maxAttempts)
                 {
-                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Dropping message.", maxAttempts);
+                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Publishing dead-letter event.", maxAttempts);
+                    
+                    // Publish dedicated dead-letter event for observability/monitoring
+                    var deadLetterEvent = new DocumentDeadLetter(
+                        Id: message.Id,
+                        ParentId: message.ParentId,
+                        Ref: message.Ref,
+                        SourceRef: message.SourceRef,
+                        SourceUrlHash: message.SourceUrlHash,
+                        Sport: message.Sport,
+                        SeasonYear: message.SeasonYear,
+                        DocumentType: message.DocumentType,
+                        SourceDataProvider: message.SourceDataProvider,
+                        AttemptCount: message.AttemptCount,
+                        Reason: retryReason,
+                        CorrelationId: message.CorrelationId,
+                        CausationId: message.CausationId
+                    );
+                    
+                    using (_deliveryScope.Use(DeliveryMode.Direct))
+                    {
+                        await _eventBus.Publish(deadLetterEvent);
+                    }
                     return;
                 }
 

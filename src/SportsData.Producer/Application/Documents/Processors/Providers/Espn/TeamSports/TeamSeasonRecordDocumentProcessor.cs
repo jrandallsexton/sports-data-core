@@ -82,7 +82,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.TeamSeasonRecordDocumentProcessor));
+            command.MessageId));
 
         await _dataContext.SaveChangesAsync();
 

@@ -36,6 +36,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 ["CorrelationId"] = evt.CorrelationId,
                 ["DocumentId"] = evt.Id,
                 ["DocumentType"] = evt.DocumentType,
+                ["MessageId"] = evt.MessageId,
                 ["ParentId"] = evt.ParentId ?? string.Empty,
                 ["Ref"] = evt.Ref?.ToString() ?? string.Empty,
                 ["SeasonYear"] = evt.SeasonYear ?? 0,

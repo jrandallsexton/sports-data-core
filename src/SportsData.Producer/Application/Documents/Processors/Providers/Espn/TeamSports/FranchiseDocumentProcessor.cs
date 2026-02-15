@@ -165,7 +165,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.FranchiseDocumentProcessor));
+                command.MessageId));
 
         await _dataContext.SaveChangesAsync();
     }

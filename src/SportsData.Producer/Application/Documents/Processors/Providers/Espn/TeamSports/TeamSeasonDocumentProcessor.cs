@@ -185,7 +185,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.TeamSeasonDocumentProcessor));
+            command.MessageId));
     }
 
     private async Task ProcessChildren(

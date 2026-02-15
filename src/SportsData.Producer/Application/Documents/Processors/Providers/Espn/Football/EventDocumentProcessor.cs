@@ -124,7 +124,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.EventDocumentProcessor));
+            command.MessageId));
 
         await _dataContext.SaveChangesAsync();
         

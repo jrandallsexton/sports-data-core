@@ -107,7 +107,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             command.Sport,
             command.Season,
             command.CorrelationId,
-            CausationId.Producer.AthleteDocumentProcessor));
+            command.MessageId));
 
         await _dataContext.Athletes.AddAsync(entity);
 

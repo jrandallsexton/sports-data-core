@@ -359,6 +359,7 @@ public class AthleteSeasonDocumentProcessorTests :
             .With(x => x.Season, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
+            .With(x => x.AttemptCount, 0)
             .Without(x => x.ParentId)
             .Create();
 
@@ -371,7 +372,7 @@ public class AthleteSeasonDocumentProcessorTests :
             It.IsAny<CancellationToken>()), Times.Once);
 
         bus.Verify(x => x.Publish(
-            It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.Is<DocumentCreated>(e => e.AttemptCount == 1),
             It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
@@ -424,6 +425,7 @@ public class AthleteSeasonDocumentProcessorTests :
             .With(x => x.Season, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
+            .With(x => x.AttemptCount, 0)
             .Without(x => x.ParentId)
             .Create();
 
@@ -436,7 +438,7 @@ public class AthleteSeasonDocumentProcessorTests :
             It.IsAny<CancellationToken>()), Times.Once);
 
         bus.Verify(x => x.Publish(
-            It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.Is<DocumentCreated>(e => e.AttemptCount == 1),
             It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
@@ -508,6 +510,7 @@ public class AthleteSeasonDocumentProcessorTests :
             .With(x => x.Season, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
+            .With(x => x.AttemptCount, 0)
             .Without(x => x.ParentId)
             .Create();
 
@@ -520,7 +523,7 @@ public class AthleteSeasonDocumentProcessorTests :
             It.IsAny<CancellationToken>()), Times.Once);
 
         bus.Verify(x => x.Publish(
-            It.Is<DocumentCreated>(e => e.AttemptCount == command.AttemptCount + 1),
+            It.Is<DocumentCreated>(e => e.AttemptCount == 1),
             It.IsAny<IDictionary<string, object>>(),
             It.IsAny<CancellationToken>()), Times.Once);
 

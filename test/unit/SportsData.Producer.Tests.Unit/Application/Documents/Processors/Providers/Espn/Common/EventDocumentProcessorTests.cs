@@ -253,6 +253,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
             .With(x => x.Season, 2024)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.AttemptCount, 0)
             .OmitAutoProperties()
             .Create();
 
@@ -271,7 +272,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 
         // Verify retry scheduled via DocumentCreated with incremented AttemptCount
         bus.Verify(x => x.Publish(It.Is<DocumentCreated>(d =>
-            d.AttemptCount == command.AttemptCount + 1), It.IsAny<IDictionary<string, object>>(), It.IsAny<CancellationToken>()), Times.Once);
+            d.AttemptCount == 1), It.IsAny<IDictionary<string, object>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

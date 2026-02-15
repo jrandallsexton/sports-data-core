@@ -133,7 +133,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.Season,
                 command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
+                command.MessageId));
         }
         else
         {

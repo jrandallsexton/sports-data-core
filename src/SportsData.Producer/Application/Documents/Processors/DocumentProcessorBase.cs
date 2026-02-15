@@ -18,7 +18,8 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     where TDataContext : BaseDataContext
 {
-    private const int MaxRetryAttempts = 5;
+    // Maximum number of retries allowed after the initial attempt (total attempts = 1 + MaxRetryCount)
+    private const int MaxRetryCount = 5;
 
     protected readonly ILogger _logger;
     protected readonly TDataContext _dataContext;
@@ -59,18 +60,30 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
-                if (command.AttemptCount >= MaxRetryAttempts)
+                if (command.AttemptCount >= MaxRetryCount)
                 {
                     _logger.LogError(retryEx,
-                        "{ProcessorName} exceeded max retry attempts ({MaxRetries}). Giving up. {@SafeCommand}",
-                        GetType().Name, MaxRetryAttempts, command.ToSafeLogObject());
+                        "{ProcessorName} exceeded max retry count ({MaxRetries}). Dependency never became available. Publishing dead-letter event. {@SafeCommand}",
+                        GetType().Name, MaxRetryCount, command.ToSafeLogObject());
+                    
+                    // Emit observable signal: publish dead-letter event for monitoring/alerting
+                    var deadLetterEvent = command.ToDocumentCreated(command.AttemptCount);
+                    var deadLetterHeaders = new Dictionary<string, object>
+                    {
+                        ["DeadLetter"] = true,
+                        ["DeadLetterReason"] = "MaxRetriesExceeded",
+                        ["FailureReason"] = retryEx.Message,
+                        ["ProcessorName"] = GetType().Name
+                    };
+                    
+                    await _publishEndpoint.Publish(deadLetterEvent, deadLetterHeaders);
                     await _dataContext.SaveChangesAsync();
                     return;
                 }
 
                 _logger.LogWarning(retryEx,
                     "{ProcessorName} dependency not ready (attempt {Attempt}/{MaxRetries}). Will retry later.",
-                    GetType().Name, command.AttemptCount + 1, MaxRetryAttempts);
+                    GetType().Name, command.AttemptCount + 1, MaxRetryCount);
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
 
@@ -94,6 +107,17 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// Each processor implements its own document processing logic.
     /// This is where the actual work happens - deserialization, entity creation/update, child spawning, etc.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>IMPORTANT:</strong> Implementations must NOT catch or swallow <see cref="ExternalDocumentNotSourcedException"/>.
+    /// This exception must be allowed to escape to the base <see cref="ProcessAsync"/> method so that the retry logic can
+    /// properly handle missing dependencies. When a dependency is not ready, throw <see cref="ExternalDocumentNotSourcedException"/>
+    /// and the base class will automatically schedule a retry (up to <c>MaxRetryCount</c> retries after the initial attempt).
+    /// </para>
+    /// <para>
+    /// Other exceptions should be thrown normally and will be logged and propagated by the base class.
+    /// </para>
+    /// </remarks>
     protected abstract Task ProcessInternal(ProcessDocumentCommand command);
 
     /// <summary>

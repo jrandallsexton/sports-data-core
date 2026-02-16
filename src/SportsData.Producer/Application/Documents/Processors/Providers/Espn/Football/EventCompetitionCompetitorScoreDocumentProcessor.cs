@@ -81,8 +81,6 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                     parentId: competitionIdentity.CanonicalId,
                     DocumentType.EventCompetitionCompetitor);
 
-                await _dataContext.SaveChangesAsync();
-
                 throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Requested. Will retry.");
             }
         }

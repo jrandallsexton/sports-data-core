@@ -72,8 +72,8 @@ namespace SportsData.Provider.Application.Jobs
                         await _dataContext.ResourceIndexJobs
                             .Where(x => x.Id == jobDefinition.ResourceIndexId)
                             .ExecuteUpdateAsync(s => s
-                                .SetProperty(x => x.IsQueued, _ => false)
-                                .SetProperty(x => x.IsEnabled, _ => false));
+                                .SetProperty(x => x.IsQueued, false)
+                                .SetProperty(x => x.IsEnabled, false));
                         
                         return;
                     }
@@ -263,9 +263,9 @@ namespace SportsData.Provider.Application.Jobs
             var claimed = await _dataContext.ResourceIndexJobs
                 .Where(x => x.Id == id && x.ProcessingInstanceId == null)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.ProcessingInstanceId, _ => me)
-                    .SetProperty(x => x.ProcessingStartedUtc, _ => now)
-                    .SetProperty(x => x.IsQueued, _ => true)) == 1;
+                    .SetProperty(x => x.ProcessingInstanceId, me)
+                    .SetProperty(x => x.ProcessingStartedUtc, now)
+                    .SetProperty(x => x.IsQueued, true)) == 1;
 
             if (!claimed)
             {
@@ -298,8 +298,8 @@ namespace SportsData.Provider.Application.Jobs
                 await _dataContext.ResourceIndexJobs
                     .Where(x => x.Id == id && x.ProcessingInstanceId == me)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.LastAccessedUtc, _ => DateTime.UtcNow)
-                        .SetProperty(x => x.TotalPageCount, _ => resourceIndexDto.PageCount));
+                        .SetProperty(x => x.LastAccessedUtc, DateTime.UtcNow)
+                        .SetProperty(x => x.TotalPageCount, resourceIndexDto.PageCount));
 
                 _logger.LogInformation("Index has {Count} items across {Pages} pages starting at {Page}",
                     resourceIndexDto.Count, resourceIndexDto.PageCount, resourceIndexDto.PageIndex);
@@ -357,7 +357,7 @@ namespace SportsData.Provider.Application.Jobs
                         .Where(x => x.Id == id
                                     && x.ProcessingInstanceId == me
                                     && (x.LastPageIndex == null || x.LastPageIndex < currentPage))
-                        .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastPageIndex, _ => currentPage));
+                        .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastPageIndex, currentPage));
 
                     // Stop criteria 2: last page reached
                     if (resourceIndexDto.PageIndex >= resourceIndexDto.PageCount)
@@ -377,8 +377,8 @@ namespace SportsData.Provider.Application.Jobs
                 await _dataContext.ResourceIndexJobs
                     .Where(x => x.Id == id && x.ProcessingInstanceId == me)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.IsQueued, _ => false)
-                        .SetProperty(x => x.LastCompletedUtc, _ => DateTime.UtcNow));
+                        .SetProperty(x => x.IsQueued, false)
+                        .SetProperty(x => x.LastCompletedUtc, DateTime.UtcNow));
 
                 _logger.LogInformation(
                     "TIER_SOURCING_COMPLETED: Tier={Tier}, TotalDocumentsEnqueued={Count}, ResourceIndexId={ResourceIndexId}",
@@ -395,8 +395,8 @@ namespace SportsData.Provider.Application.Jobs
                 await _dataContext.ResourceIndexJobs
                     .Where(x => x.Id == id && x.ProcessingInstanceId == me)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.ProcessingInstanceId, _ => (Guid?)null)
-                        .SetProperty(x => x.ProcessingStartedUtc, _ => (DateTime?)null));
+                        .SetProperty(x => x.ProcessingInstanceId, (Guid?)null)
+                        .SetProperty(x => x.ProcessingStartedUtc, (DateTime?)null));
             }
         }
     }

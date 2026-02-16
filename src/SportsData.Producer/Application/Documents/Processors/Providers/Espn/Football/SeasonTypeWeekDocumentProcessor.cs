@@ -87,13 +87,11 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
                     "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonPhaseId={SeasonPhaseId}",
                     seasonPhaseId);
                 
-                await PublishChildDocumentRequest<string?>(
+                await PublishDependencyRequest<string?>(
                     command,
                     new EspnLinkDto { Ref = seasonPhaseRef },
                     parentId: null,
                     DocumentType.SeasonType);
-                
-                await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
             }

@@ -87,13 +87,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             }
             else
             {
-                await PublishChildDocumentRequest(
+                await PublishDependencyRequest<Guid>(
                     command,
                     new EspnLinkDto { Ref = competitionRef },
-                    contestIdentity.CanonicalId.ToString(),
+                    parentId: contestIdentity.CanonicalId,
                     DocumentType.EventCompetition);
 
-                throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist. Sourcing requested.");
+                throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist. Requested. Will retry.");
             }
         }
 

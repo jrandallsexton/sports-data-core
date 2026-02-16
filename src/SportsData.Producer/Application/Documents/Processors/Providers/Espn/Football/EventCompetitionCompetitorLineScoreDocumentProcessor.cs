@@ -84,13 +84,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                     competitionCompetitorId,
                     competitionCompetitorRef);
 
-                await PublishChildDocumentRequest(
+                await PublishDependencyRequest<Guid>(
                     command,
                     new EspnLinkDto { Ref = competitionCompetitorRef },
-                    competitionIdentity.CanonicalId,
+                    parentId: competitionIdentity.CanonicalId,
                     DocumentType.EventCompetitionCompetitor);
 
-                throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
+                throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}. Requested. Will retry.");
             }
         }
 

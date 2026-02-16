@@ -126,11 +126,54 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     }
 
     /// <summary>
-    /// Helper method to publish a DocumentRequested event for a child document.
-    /// Eliminates 10+ lines of boilerplate per child document request.
+    /// Helper method to publish a DocumentRequested event for a dependency document.
+    /// Dependency documents are required BEFORE processing can complete (e.g., Franchise before TeamSeason).
+    /// Only publishes on the first attempt to prevent duplicate event explosion during retries.
     /// </summary>
     /// <param name="command">The parent document processing command (provides correlation context)</param>
-    /// <param name="linkDto">The ESPN link DTO containing the $ref to the child document</param>
+    /// <param name="hasRef">The ESPN link DTO containing the $ref to the dependency document</param>
+    /// <param name="parentId">The parent entity ID (will be converted to string)</param>
+    /// <param name="documentType">The type of dependency document being requested</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    protected async Task PublishDependencyRequest<TParentId>(
+        ProcessDocumentCommand command,
+        IHasRef? hasRef,
+        TParentId parentId,
+        DocumentType documentType)
+    {
+        if (hasRef?.Ref is null)
+        {
+            _logger.LogDebug(
+                "⏭️ SKIP_DEPENDENCY: No reference found for dependency document. " +
+                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}",
+                parentId,
+                documentType);
+            return;
+        }
+
+        // Skip publishing dependency requests on retries to prevent duplicate event explosion
+        if (command.AttemptCount > 0)
+        {
+            _logger.LogDebug(
+                "⏭️ SKIP_DEPENDENCY: Skipping dependency request on retry attempt {AttemptCount}. " +
+                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}, Ref={Ref}",
+                command.AttemptCount,
+                parentId,
+                documentType,
+                hasRef.Ref?.ToString() ?? "null");
+            return;
+        }
+
+        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY");
+    }
+
+    /// <summary>
+    /// Helper method to publish a DocumentRequested event for a child document.
+    /// Child documents are spawned AFTER successful processing (e.g., TeamSeason spawning Venue, Statistics).
+    /// Publishes on every attempt since child spawning only happens when processing succeeds past dependencies.
+    /// </summary>
+    /// <param name="command">The parent document processing command (provides correlation context)</param>
+    /// <param name="hasRef">The ESPN link DTO containing the $ref to the child document</param>
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
     /// <returns>A task representing the asynchronous operation</returns>
@@ -150,6 +193,19 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
+        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD");
+    }
+
+    /// <summary>
+    /// Internal helper to publish DocumentRequested events. Shared by both dependency and child request methods.
+    /// </summary>
+    private async Task PublishDocumentRequestInternal<TParentId>(
+        ProcessDocumentCommand command,
+        IHasRef hasRef,
+        TParentId parentId,
+        DocumentType documentType,
+        string requestType)
+    {
         ExternalRefIdentity identity;
         Uri uri;
 
@@ -161,8 +217,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         catch (UriFormatException ex)
         {
             _logger.LogError(ex,
-                "❌ INVALID_CHILD_URI: Failed to parse URI for child document. " +
-                "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, InvalidUrl={InvalidUrl}",
+                "❌ INVALID_URI: Failed to parse URI for {RequestType} document. " +
+                "ParentId={ParentId}, DocumentType={DocumentType}, InvalidUrl={InvalidUrl}",
+                requestType,
                 parentId,
                 documentType,
                 hasRef.Ref?.ToString() ?? "null");
@@ -171,8 +228,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity for child document. " +
-                "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, Ref={Ref}",
+                "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity for {RequestType} document. " +
+                "ParentId={ParentId}, DocumentType={DocumentType}, Ref={Ref}",
+                requestType,
                 parentId,
                 documentType,
                 hasRef.Ref?.ToString() ?? "null");
@@ -180,8 +238,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         }
 
         _logger.LogInformation(
-            "📤 PUBLISH_CHILD_REQUEST: Publishing DocumentRequested for child document. " +
-            "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}, ChildUrl={ChildUrl}, UrlHash={UrlHash}",
+            "📤 PUBLISH_{RequestType}_REQUEST: Publishing DocumentRequested. " +
+            "ParentId={ParentId}, DocumentType={DocumentType}, Url={Url}, UrlHash={UrlHash}",
+            requestType,
             parentId,
             documentType,
             identity.CleanUrl,
@@ -201,8 +260,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         ));
 
         _logger.LogDebug(
-            "✅ CHILD_REQUEST_PUBLISHED: DocumentRequested published successfully. " +
-            "ChildDocumentType={ChildDocumentType}, UrlHash={UrlHash}",
+            "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published successfully. " +
+            "DocumentType={DocumentType}, UrlHash={UrlHash}",
+            requestType,
             documentType,
             identity.UrlHash);
     }

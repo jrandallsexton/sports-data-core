@@ -72,13 +72,11 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             }
             else
             {
-                await PublishChildDocumentRequest<string?>(
+                await PublishDependencyRequest<string?>(
                     command,
                     externalProviderDto.Franchise,
                     parentId: null,
                     DocumentType.Franchise);
-                
-                await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException(
                     $"Franchise {externalProviderDto.Franchise.Ref} not found. Will retry.");
@@ -149,7 +147,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             }
             else
             {
-                await PublishChildDocumentRequest<string?>(
+                await PublishDependencyRequest<string?>(
                     command,
                     dto.Groups,
                     parentId: null,

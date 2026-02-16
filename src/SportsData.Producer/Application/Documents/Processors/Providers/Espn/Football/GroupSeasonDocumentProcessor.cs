@@ -87,7 +87,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 }
                 else
                 {
-                    await PublishChildDocumentRequest<string?>(
+                    await PublishDependencyRequest<string?>(
                         command,
                         dto.Season,
                         parentId: null,
@@ -119,7 +119,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 }
                 else
                 {
-                    await PublishChildDocumentRequest<string?>(
+                    await PublishDependencyRequest<string?>(
                         command,
                         dto.Parent,
                         parentId: null,

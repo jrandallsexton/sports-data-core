@@ -75,15 +75,15 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorUrl={CompetitorUrl}", 
                     competitionCompetitorIdentity.CleanUrl);
 
-                await PublishChildDocumentRequest(
+                await PublishDependencyRequest<Guid>(
                     command,
                     new EspnLinkDto { Ref = new Uri(competitionCompetitorIdentity.CleanUrl) },
-                    competitionIdentity.CanonicalId,
+                    parentId: competitionIdentity.CanonicalId,
                     DocumentType.EventCompetitionCompetitor);
 
                 await _dataContext.SaveChangesAsync();
 
-                throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");
+                throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Requested. Will retry.");
             }
         }
 

@@ -104,13 +104,11 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                         "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
                         dto.Season.Type.Week.Ref);
                     
-                    await PublishChildDocumentRequest(
+                    await PublishDependencyRequest(
                         command,
                         dto.Season.Type.Week,
                         seasonPhaseIdentity.CanonicalId,
                         DocumentType.SeasonTypeWeek);
-                    
-                    await _dataContext.SaveChangesAsync();
 
                     throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
                 }
@@ -174,7 +172,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
                     // Create a temporary EspnLinkDto for the helper method
                     var teamLinkDto = new EspnLinkDto { Ref = missing.Value };
-                    await PublishChildDocumentRequest(
+                    await PublishDependencyRequest(
                         command,
                         teamLinkDto,
                         franchiseId,

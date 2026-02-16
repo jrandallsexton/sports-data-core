@@ -328,5 +328,34 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
             result.Should().Be(expected);
         }
+
+        [Theory]
+        [InlineData(
+            // with query string
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // without query string
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // mixed casing on segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401540172/Competitions/401540172/Competitors/2640/Statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // trailing slash + extra segments (ignored)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0/details/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        public void CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef_Should_Trim_To_CompetitionCompetitorUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(input);
+
+            result.Should().Be(expected);
+        }
     }
 }

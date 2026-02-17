@@ -40,11 +40,12 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
 
         if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
         {
-            _logger.LogError("Invalid or missing Competition ID in ParentId.");
+            _logger.LogError("Invalid or missing CompetitionCompetitorId in ParentId.");
             return;
         }
 
         var competitionCompetitor = await _dataContext.CompetitionCompetitors
+            .AsNoTracking()
             .Include(x => x.Competition)
             .FirstOrDefaultAsync(x => x.Id == competitionCompetitorId);
 
@@ -58,7 +59,7 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
                 command,
                 new EspnLinkDto { Ref = competitionCompetitorRef },
                 parentId: competitionIdentity.CanonicalId,
-                DocumentType.EventCompetition);
+                DocumentType.EventCompetitionCompetitor);
 
             throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor with Id {competitionCompetitorId} does not exist. Requested. Will retry.");
         }

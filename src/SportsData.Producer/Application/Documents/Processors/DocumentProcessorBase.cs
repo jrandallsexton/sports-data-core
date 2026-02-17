@@ -143,7 +143,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     {
         if (hasRef?.Ref is null)
         {
-            _logger.LogDebug(
+            _logger.LogInformation(
                 "⏭️ SKIP_DEPENDENCY: No reference found for dependency document. " +
                 "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}",
                 parentId,
@@ -154,7 +154,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         // Skip publishing dependency requests on retries to prevent duplicate event explosion
         if (command.AttemptCount > 0)
         {
-            _logger.LogDebug(
+            _logger.LogInformation(
                 "⏭️ SKIP_DEPENDENCY: Skipping dependency request on retry attempt {AttemptCount}. " +
                 "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}, Ref={Ref}",
                 command.AttemptCount,
@@ -259,7 +259,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             CausationId: command.MessageId
         ));
 
-        _logger.LogDebug(
+        _logger.LogInformation(
             "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published successfully. " +
             "DocumentType={DocumentType}, UrlHash={UrlHash}",
             requestType,

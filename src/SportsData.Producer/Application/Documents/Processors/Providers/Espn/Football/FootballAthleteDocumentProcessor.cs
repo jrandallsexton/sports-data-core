@@ -9,7 +9,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -22,19 +21,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public FootballAthleteDocumentProcessor(
         ILogger<FootballAthleteDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refGenerator,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -234,29 +228,15 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
         if (positionId == Guid.Empty)
         {
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"AthletePosition {positionIdentity.CleanUrl} not found. Will retry when available.");
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "AthletePosition not found. Raising DocumentRequested (override mode). {@Identity}",
-                    positionIdentity);
+            await PublishChildDocumentRequest<string?>(
+                command,
+                externalProviderDto.Position,
+                parentId: null,
+                DocumentType.AthletePosition);
 
-                await PublishChildDocumentRequest<string?>(
-                    command,
-                    externalProviderDto.Position,
-                    parentId: null,
-                    DocumentType.AthletePosition);
-
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
-                    $"Please ensure the position document is processed before this athlete.");
-            }
+            throw new ExternalDocumentNotSourcedException(
+                $"No AthletePosition found for {externalProviderDto.Position.Ref}. " +
+                $"Please ensure the position document is processed before this athlete.");
         }
 
         newEntity.PositionId = positionId;

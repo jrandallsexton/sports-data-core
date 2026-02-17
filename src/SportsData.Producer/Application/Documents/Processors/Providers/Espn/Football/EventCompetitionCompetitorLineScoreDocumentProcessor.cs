@@ -8,7 +8,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -19,19 +18,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public EventCompetitionCompetitorLineScoreDocumentProcessor(
         ILogger<EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -73,25 +66,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             var competitionRef = EspnUriMapper.CompetitionLineScoreRefToCompetitionRef(dto.Ref);
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
 
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"No CompetitionCompetitor exists with ID: {competitionCompetitorId}");
-            }
-            else
-            {
-                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorId={CompetitorId}, CompetitorRef={CompetitorRef}", 
-                    competitionCompetitorId,
-                    competitionCompetitorRef);
+            await PublishDependencyRequest<Guid>(
+                command,
+                new EspnLinkDto { Ref = competitionCompetitorRef },
+                parentId: competitionIdentity.CanonicalId,
+                DocumentType.EventCompetitionCompetitor);
 
-                await PublishDependencyRequest<Guid>(
-                    command,
-                    new EspnLinkDto { Ref = competitionCompetitorRef },
-                    parentId: competitionIdentity.CanonicalId,
-                    DocumentType.EventCompetitionCompetitor);
-
-                throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}. Requested. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}. Requested. Will retry.");
         }
 
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);

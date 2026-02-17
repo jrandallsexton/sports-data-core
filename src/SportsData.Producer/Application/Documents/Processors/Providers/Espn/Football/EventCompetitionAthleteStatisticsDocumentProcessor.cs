@@ -4,11 +4,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -23,19 +22,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public EventCompetitionAthleteStatisticsDocumentProcessor(
         ILogger<EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refGenerator,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -83,22 +76,14 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         if (athleteSeason is null)
         {
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
-            }
-            else
-            {
-                await PublishDependencyRequest<string?>(
-                    command,
-                    new EspnLinkDto { Ref = new Uri(athleteSeasonIdentity.CleanUrl) },
-                    parentId: null,
-                    DocumentType.AthleteSeason);
+            await PublishDependencyRequest<string?>(
+                command,
+                new EspnLinkDto { Ref = new Uri(athleteSeasonIdentity.CleanUrl) },
+                parentId: null,
+                DocumentType.AthleteSeason);
 
-                throw new ExternalDocumentNotSourcedException(
-                    $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Requested. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException(
+                $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Requested. Will retry.");
         }
 
         // Resolve Competition
@@ -110,25 +95,17 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
 
         if (competition is null)
         {
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"Competition {competitionIdentity.CleanUrl} not found. Will retry when available.");
-            }
-            else
-            {
-                var contestRef = EspnUriMapper.CompetitionRefToContestRef(dto.Competition.Ref);
-                var contestIdentity = _externalRefIdentityGenerator.Generate(contestRef);
+            var contestRef = EspnUriMapper.CompetitionRefToContestRef(dto.Competition.Ref);
+            var contestIdentity = _externalRefIdentityGenerator.Generate(contestRef);
 
-                await PublishDependencyRequest<Guid>(
-                    command,
-                    new EspnLinkDto { Ref = dto.Competition.Ref },
-                    parentId: contestIdentity.CanonicalId,
-                    DocumentType.EventCompetition);
+            await PublishDependencyRequest<Guid>(
+                command,
+                new EspnLinkDto { Ref = dto.Competition.Ref },
+                parentId: contestIdentity.CanonicalId,
+                DocumentType.EventCompetition);
 
-                throw new ExternalDocumentNotSourcedException(
-                    $"Competition {competitionIdentity.CleanUrl} not found. Requested. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException(
+                $"Competition {competitionIdentity.CleanUrl} not found. Requested. Will retry.");
         }
 
         // --- Generate Identity ---

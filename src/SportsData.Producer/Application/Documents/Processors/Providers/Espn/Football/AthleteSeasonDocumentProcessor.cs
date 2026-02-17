@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -21,7 +20,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly DocumentProcessingConfig _config;
+
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public AthleteSeasonDocumentProcessor(
@@ -30,11 +29,9 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs,
-        DocumentProcessingConfig config,
         IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
-        _config = config;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -64,29 +61,17 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
         if (athlete is null)
         {
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"Athlete not found for {athleteIdentity.CleanUrl}. Will retry when available.");
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Athlete not found. Raising DocumentRequested (override mode). {@Identity} {cmdRef}",
-                    athleteIdentity, dto.Ref);
+            // Create a temp wrapper with the athlete ref (not the athlete season ref)
+            var athleteLinkDto = new EspnLinkDto { Ref = athleteRef };
+            await PublishDependencyRequest<string?>(
+                command,
+                athleteLinkDto,
+                parentId: null,
+                DocumentType.Athlete);
+            await _dataContext.SaveChangesAsync();
 
-                // Create a temp wrapper with the athlete ref (not the athlete season ref)
-                var athleteLinkDto = new EspnLinkDto { Ref = athleteRef };
-                await PublishChildDocumentRequest<string?>(
-                    command,
-                    athleteLinkDto,
-                    parentId: null,
-                    DocumentType.Athlete);
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"Athlete not found for {dto.Ref} in command {command.CorrelationId}");
-            }
+            throw new ExternalDocumentNotSourcedException(
+                $"Athlete not found for {dto.Ref} in command {command.CorrelationId}");
         }
 
         var franchiseSeasonId = await TryResolveFranchiseSeasonIdAsync(dto, command);
@@ -279,27 +264,14 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         if (franchiseSeason is not null) 
             return franchiseSeason.Id;
 
-        if (!_config.EnableDependencyRequests)
-        {
-            throw new ExternalDocumentNotSourcedException(
-                $"Franchise season not found for {dto.Team.Ref}. Will retry when available.");
-        }
-        else
-        {
-            await PublishChildDocumentRequest<string?>(
-                command,
-                dto.Team,
-                parentId: null,
-                DocumentType.TeamSeason);
-            await _dataContext.SaveChangesAsync();
+        await PublishDependencyRequest<string?>(
+            command,
+            dto.Team,
+            parentId: null,
+            DocumentType.TeamSeason);
 
-            _logger.LogWarning(
-                "FranchiseSeason not found. Requesting (override mode). {Ref} {@Identity}",
-                dto.Team.Ref, franchiseSeasonIdentity);
-
-            throw new ExternalDocumentNotSourcedException(
-                $"Franchise season not found for {dto.Team.Ref} in command {command.CorrelationId}");
-        }
+        throw new ExternalDocumentNotSourcedException(
+            $"Franchise season not found for {dto.Team.Ref} in command {command.CorrelationId}");
     }
 
     private async Task<Guid> TryResolvePositionIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
@@ -320,22 +292,14 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         if (positionId.HasValue)
             return positionId.Value;
 
-        if (!_config.EnableDependencyRequests)
-        {
-            throw new ExternalDocumentNotSourcedException(
-                $"Position not found for {dto.Position.Ref}. Will retry when available.");
-        }
-        else
-        {
-            await PublishChildDocumentRequest<string?>(
-                command,
-                dto.Position,
-                parentId: null,
-                DocumentType.AthletePosition);
-            await _dataContext.SaveChangesAsync();
+        await PublishDependencyRequest<string?>(
+            command,
+            dto.Position,
+            parentId: null,
+            DocumentType.AthletePosition);
+        await _dataContext.SaveChangesAsync();
 
-            throw new ExternalDocumentNotSourcedException(
-                $"Position not found for {dto.Position.Ref} in command {command.CorrelationId}");
-        }
+        throw new ExternalDocumentNotSourcedException(
+            $"Position not found for {dto.Position.Ref} in command {command.CorrelationId}");
     }
 }

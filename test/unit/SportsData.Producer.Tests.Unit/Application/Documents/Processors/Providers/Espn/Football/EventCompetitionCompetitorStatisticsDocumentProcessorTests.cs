@@ -14,7 +14,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -282,7 +281,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
 
         [Fact]
-        public async Task ProcessAsync_RequestsCompetition_WhenCompetitionCompetitorNotFound()
+        public async Task ProcessAsync_RequestsCompetitionCompetitor_WhenCompetitionCompetitorNotFound()
         {
             // Arrange
             var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
@@ -316,7 +315,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // Assert - Processor catches ExternalDocumentNotSourcedException and publishes DocumentRequested + retry DocumentCreated
             bus.Verify(x => x.Publish(
-                It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.EventCompetition),
+                It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.EventCompetitionCompetitor),
                 It.IsAny<CancellationToken>()), Times.Once);
 
             bus.Verify(x => x.Publish(

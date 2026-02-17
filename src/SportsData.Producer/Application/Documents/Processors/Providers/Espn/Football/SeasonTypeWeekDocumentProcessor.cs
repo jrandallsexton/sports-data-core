@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -21,19 +20,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekDocumentProcessor(
         ILogger<SeasonTypeWeekDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs,
-        IEventBus publishEndpoint,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -75,26 +69,13 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
             var seasonPhaseRef = EspnUriMapper.SeasonTypeWeekToSeasonType(externalProviderDto.Ref);
             var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(seasonPhaseRef);
 
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"SeasonPhase {seasonPhaseRef} not found. Will retry.");
-            }
-            else
-            {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "SeasonPhase not found. Raising DocumentRequested (override mode). SeasonPhaseId={SeasonPhaseId}",
-                    seasonPhaseId);
-                
-                await PublishDependencyRequest<string?>(
-                    command,
-                    new EspnLinkDto { Ref = seasonPhaseRef },
-                    parentId: null,
-                    DocumentType.SeasonType);
+            await PublishDependencyRequest<string?>(
+                command,
+                new EspnLinkDto { Ref = seasonPhaseRef },
+                parentId: null,
+                DocumentType.SeasonType);
 
-                throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException($"SeasonPhase {seasonPhaseRef} not found. Will retry.");
         }
 
         var dtoIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);

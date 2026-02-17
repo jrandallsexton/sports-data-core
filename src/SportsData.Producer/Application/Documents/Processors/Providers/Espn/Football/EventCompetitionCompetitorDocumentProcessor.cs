@@ -8,7 +8,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -20,19 +19,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public EventCompetitionCompetitorDocumentProcessor(
         ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -80,21 +73,13 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             var contestRef = EspnUriMapper.CompetitionRefToContestRef(competitionRef);
             var contestIdentity = _externalRefIdentityGenerator.Generate(contestRef);
 
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"Competition with ID {competitionId} does not exist. Sourcing not requested.");
-            }
-            else
-            {
-                await PublishDependencyRequest<Guid>(
-                    command,
-                    new EspnLinkDto { Ref = competitionRef },
-                    parentId: contestIdentity.CanonicalId,
-                    DocumentType.EventCompetition);
+            await PublishDependencyRequest<Guid>(
+                command,
+                new EspnLinkDto { Ref = competitionRef },
+                parentId: contestIdentity.CanonicalId,
+                DocumentType.EventCompetition);
 
-                throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist. Requested. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionId} does not exist. Requested. Will retry.");
         }
 
         var franchiseSeasonId = await _dataContext.ResolveIdAsync<

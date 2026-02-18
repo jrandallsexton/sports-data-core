@@ -1,4 +1,5 @@
-﻿using SportsData.Core.Eventing.Events.Documents;
+﻿using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 
@@ -114,7 +115,13 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.SourceUrlHash,
                 evt.Ref,
                 evt.AttemptCount,
-                evt.IncludeLinkedDocumentTypes));
+                evt.IncludeLinkedDocumentTypes)
+            {
+                // Propagate RequestedDependencies from previous attempt to preserve dependency tracking across retries
+                RequestedDependencies = evt.RequestedDependencies != null 
+                    ? new HashSet<(DocumentType Type, string UrlHash)>(evt.RequestedDependencies) 
+                    : new HashSet<(DocumentType Type, string UrlHash)>()
+            });
 
                 _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");
             }

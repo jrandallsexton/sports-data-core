@@ -63,12 +63,12 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         {
             // Create a temp wrapper with the athlete ref (not the athlete season ref)
             var athleteLinkDto = new EspnLinkDto { Ref = athleteRef };
+
             await PublishDependencyRequest<string?>(
                 command,
                 athleteLinkDto,
                 parentId: null,
                 DocumentType.Athlete);
-            await _dataContext.SaveChangesAsync();
 
             throw new ExternalDocumentNotSourcedException(
                 $"Athlete not found for {dto.Ref} in command {command.CorrelationId}");

@@ -184,10 +184,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
-        // Track this dependency before publishing
-        command.RequestedDependencies.Add(dependencyKey);
+        // Publish dependency request - track only after successful publish to allow retries if publish fails
+        // Pass precomputed identity to avoid redundant Generate call
+        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
 
-        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY");
+        // Track this dependency AFTER successful publish (exceptions in PublishDocumentRequestInternal return early)
+        command.RequestedDependencies.Add(dependencyKey);
     }
 
     /// <summary>
@@ -216,25 +218,28 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
-        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD");
+        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null);
     }
 
     /// <summary>
     /// Internal helper to publish DocumentRequested events. Shared by both dependency and child request methods.
     /// </summary>
+    /// <param name="precomputedIdentity">Optional precomputed identity to avoid redundant Generate call (used by PublishDependencyRequest)</param>
     private async Task PublishDocumentRequestInternal<TParentId>(
         ProcessDocumentCommand command,
         IHasRef hasRef,
         TParentId parentId,
         DocumentType documentType,
-        string requestType)
+        string requestType,
+        ExternalRefIdentity? precomputedIdentity = null)
     {
         ExternalRefIdentity identity;
         Uri uri;
 
         try
         {
-            identity = _externalRefIdentityGenerator.Generate(hasRef.Ref);
+            // Use precomputed identity if provided, otherwise generate it
+            identity = precomputedIdentity ?? _externalRefIdentityGenerator.Generate(hasRef.Ref);
             uri = new Uri(identity.CleanUrl);
         }
         catch (UriFormatException ex)

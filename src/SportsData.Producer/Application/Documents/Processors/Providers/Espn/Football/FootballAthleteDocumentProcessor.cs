@@ -228,7 +228,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
         if (positionId == Guid.Empty)
         {
-            await PublishChildDocumentRequest<string?>(
+            await PublishDependencyRequest<string?>(
                 command,
                 externalProviderDto.Position,
                 parentId: null,

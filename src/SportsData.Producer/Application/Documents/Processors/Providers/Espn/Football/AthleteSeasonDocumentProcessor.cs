@@ -297,7 +297,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             dto.Position,
             parentId: null,
             DocumentType.AthletePosition);
-        await _dataContext.SaveChangesAsync();
 
         throw new ExternalDocumentNotSourcedException(
             $"Position not found for {dto.Position.Ref} in command {command.CorrelationId}");

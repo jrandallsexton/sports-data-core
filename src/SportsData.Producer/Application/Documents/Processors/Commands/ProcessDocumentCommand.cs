@@ -52,6 +52,13 @@ public class ProcessDocumentCommand(
     public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
 
     /// <summary>
+    /// Tracks which dependency documents have already been requested to prevent duplicate requests on retries.
+    /// Key is (DocumentType, UrlHash) to uniquely identify each dependency.
+    /// Example: A competition may depend on two different Franchises - tracking by DocumentType alone would skip the second.
+    /// </summary>
+    public HashSet<(DocumentType Type, string UrlHash)> RequestedDependencies { get; set; } = new();
+
+    /// <summary>
     /// Extracts the ESPN $ref URI from the JSON document for logging purposes.
     /// Returns null if $ref cannot be found or parsed.
     /// </summary>

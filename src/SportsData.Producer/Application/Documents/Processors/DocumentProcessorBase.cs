@@ -128,7 +128,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <summary>
     /// Helper method to publish a DocumentRequested event for a dependency document.
     /// Dependency documents are required BEFORE processing can complete (e.g., Franchise before TeamSeason).
-    /// Only publishes on the first attempt to prevent duplicate event explosion during retries.
+    /// Tracks specific dependencies (by DocumentType + UrlHash) to prevent duplicate requests on retries
+    /// while still allowing new dependencies discovered on retry attempts to be requested.
     /// </summary>
     /// <param name="command">The parent document processing command (provides correlation context)</param>
     /// <param name="hasRef">The ESPN link DTO containing the $ref to the dependency document</param>
@@ -151,18 +152,40 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
-        // Skip publishing dependency requests on retries to prevent duplicate event explosion
-        if (command.AttemptCount > 0)
+        // Generate identity to get the UrlHash for tracking
+        ExternalRefIdentity identity;
+        try
         {
-            _logger.LogInformation(
-                "⏭️ SKIP_DEPENDENCY: Skipping dependency request on retry attempt {AttemptCount}. " +
-                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}, Ref={Ref}",
-                command.AttemptCount,
+            identity = _externalRefIdentityGenerator.Generate(hasRef.Ref);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "❌ IDENTITY_GENERATION_FAILED: Cannot track dependency without UrlHash. " +
+                "ParentId={ParentId}, DocumentType={DocumentType}, Ref={Ref}",
                 parentId,
                 documentType,
                 hasRef.Ref?.ToString() ?? "null");
             return;
         }
+
+        var dependencyKey = (documentType, identity.UrlHash);
+
+        // Check if we've already requested this specific dependency
+        if (command.RequestedDependencies.Contains(dependencyKey))
+        {
+            _logger.LogInformation(
+                "⏭️ SKIP_DEPENDENCY: Dependency already requested on previous attempt. " +
+                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}, UrlHash={UrlHash}, AttemptCount={AttemptCount}",
+                parentId,
+                documentType,
+                identity.UrlHash,
+                command.AttemptCount);
+            return;
+        }
+
+        // Track this dependency before publishing
+        command.RequestedDependencies.Add(dependencyKey);
 
         await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY");
     }

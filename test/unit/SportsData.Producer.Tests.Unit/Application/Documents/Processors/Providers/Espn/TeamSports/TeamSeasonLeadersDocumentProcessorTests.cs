@@ -2,6 +2,8 @@ using AutoFixture;
 
 using FluentAssertions;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
@@ -403,13 +405,10 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         // We have exactly 2 unique athletes in our test data
         var uniqueAthleteSeasons = 2;
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<ExternalDocumentNotSourcedException>(
-            () => sut.ProcessAsync(command));
+        // Act
+        await sut.ProcessAsync(command);
 
-        exception.Message.Should().Contain($"Missing {uniqueAthleteSeasons} AthleteSeason document(s)");
-
-        // Verify batch publishing - should publish once per unique athlete season
+        // Assert - should batch-publish dependency requests
         busMock.Verify(x => x.Publish(
             It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.AthleteSeason),
             It.IsAny<CancellationToken>()), Times.Exactly(uniqueAthleteSeasons));
@@ -535,11 +534,8 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         // Despite 2 leaders, we have only 1 unique athlete (deduplication test)
         var uniqueAthleteSeasons = 1;
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<ExternalDocumentNotSourcedException>(
-            () => sut.ProcessAsync(command));
-
-        exception.Message.Should().Contain($"Missing {uniqueAthleteSeasons} AthleteSeason document(s)");
+        // Act
+        await sut.ProcessAsync(command);
 
         // Assert - should only publish once for the unique athlete (deduplication via HashSet)
         busMock.Verify(x => x.Publish(

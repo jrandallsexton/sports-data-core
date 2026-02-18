@@ -73,6 +73,7 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
         // Resolve FranchiseSeason
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
         var franchiseSeason = await _dataContext.FranchiseSeasons
+            .AsNoTracking()
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == franchiseSeasonIdentity.UrlHash));
 

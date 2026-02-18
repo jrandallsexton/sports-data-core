@@ -75,38 +75,7 @@ public static class EspnUriMapper
         if (competitionCompetitorScoreRef is null)
             throw new ArgumentNullException(nameof(competitionCompetitorScoreRef));
 
-        var segments = competitionCompetitorScoreRef.Segments;
-
-        // locate /events/{eventId}
-        var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
-        if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionCompetitorScoreRef));
-
-        // locate /competitions/{competitionId} AFTER events/{id}
-        var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
-        if (compIdx < 0 || compIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionCompetitorScoreRef));
-
-        // locate /competitors/{competitorId} AFTER competitions/{id}
-        var competitorIdx = Array.FindIndex(segments, compIdx + 2, s => s.Equals("competitors/", StringComparison.OrdinalIgnoreCase));
-        if (competitorIdx < 0 || competitorIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", nameof(competitionCompetitorScoreRef));
-
-        // normalize segment names; keep IDs as-is
-        var prefix = string.Concat(segments.Take(evtIdx));           // everything before "events/"
-        var eventsSeg = "events/";
-        var eventIdSeg = segments[evtIdx + 1].TrimEnd('/');
-
-        var competitions = "competitions/";
-        var competitionId = segments[compIdx + 1].TrimEnd('/');
-
-        var competitors = "competitors/";
-        var competitorId = segments[competitorIdx + 1].TrimEnd('/');
-
-        var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionId}/{competitors}{competitorId}";
-        var uriString = $"{competitionCompetitorScoreRef.Scheme}://{competitionCompetitorScoreRef.Authority}{path}".TrimEnd('/');
-
-        return new Uri(uriString);
+        return BuildCompetitionCompetitorRefFrom(competitionCompetitorScoreRef, nameof(competitionCompetitorScoreRef));
     }
 
     public static Uri CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(Uri competitionCompetitorStatisticsRef)
@@ -114,38 +83,7 @@ public static class EspnUriMapper
         if (competitionCompetitorStatisticsRef is null)
             throw new ArgumentNullException(nameof(competitionCompetitorStatisticsRef));
 
-        var segments = competitionCompetitorStatisticsRef.Segments;
-
-        // locate /events/{eventId}
-        var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
-        if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionCompetitorStatisticsRef));
-
-        // locate /competitions/{competitionId} AFTER events/{id}
-        var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
-        if (compIdx < 0 || compIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionCompetitorStatisticsRef));
-
-        // locate /competitors/{competitorId} AFTER competitions/{id}
-        var competitorIdx = Array.FindIndex(segments, compIdx + 2, s => s.Equals("competitors/", StringComparison.OrdinalIgnoreCase));
-        if (competitorIdx < 0 || competitorIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", nameof(competitionCompetitorStatisticsRef));
-
-        // normalize segment names; keep IDs as-is
-        var prefix = string.Concat(segments.Take(evtIdx));           // everything before "events/"
-        var eventsSeg = "events/";
-        var eventIdSeg = segments[evtIdx + 1].TrimEnd('/');
-
-        var competitions = "competitions/";
-        var competitionId = segments[compIdx + 1].TrimEnd('/');
-
-        var competitors = "competitors/";
-        var competitorId = segments[competitorIdx + 1].TrimEnd('/');
-
-        var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionId}/{competitors}{competitorId}";
-        var uriString = $"{competitionCompetitorStatisticsRef.Scheme}://{competitionCompetitorStatisticsRef.Authority}{path}".TrimEnd('/');
-
-        return new Uri(uriString);
+        return BuildCompetitionCompetitorRefFrom(competitionCompetitorStatisticsRef, nameof(competitionCompetitorStatisticsRef));
     }
 
     public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)
@@ -169,22 +107,33 @@ public static class EspnUriMapper
         if (competitionLineScoreRef is null)
             throw new ArgumentNullException(nameof(competitionLineScoreRef));
 
-        var segments = competitionLineScoreRef.Segments;
+        return BuildCompetitionCompetitorRefFrom(competitionLineScoreRef, nameof(competitionLineScoreRef));
+    }
+
+    /// <summary>
+    /// Extracts and normalizes URIs containing events/{id}/competitions/{id}/competitors/{id} pattern.
+    /// </summary>
+    /// <param name="sourceUri">The source URI to normalize.</param>
+    /// <param name="parameterName">The parameter name for exception messages.</param>
+    /// <returns>A normalized URI with canonical segment names.</returns>
+    private static Uri BuildCompetitionCompetitorRefFrom(Uri sourceUri, string parameterName)
+    {
+        var segments = sourceUri.Segments;
 
         // locate /events/{eventId}
         var evtIdx = Array.FindIndex(segments, s => s.Equals("events/", StringComparison.OrdinalIgnoreCase));
         if (evtIdx < 0 || evtIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", nameof(competitionLineScoreRef));
+            throw new ArgumentException("URI does not contain an '/events/{id}' segment.", parameterName);
 
         // locate /competitions/{competitionId} AFTER events/{id}
         var compIdx = Array.FindIndex(segments, evtIdx + 2, s => s.Equals("competitions/", StringComparison.OrdinalIgnoreCase));
         if (compIdx < 0 || compIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", nameof(competitionLineScoreRef));
+            throw new ArgumentException("URI does not contain a '/competitions/{id}' segment.", parameterName);
 
         // locate /competitors/{competitorId} AFTER competitions/{id}
         var competitorIdx = Array.FindIndex(segments, compIdx + 2, s => s.Equals("competitors/", StringComparison.OrdinalIgnoreCase));
         if (competitorIdx < 0 || competitorIdx + 1 >= segments.Length)
-            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", nameof(competitionLineScoreRef));
+            throw new ArgumentException("URI does not contain a '/competitors/{id}' segment.", parameterName);
 
         // normalize segment names; keep IDs as-is
         var prefix = string.Concat(segments.Take(evtIdx));           // everything before "events/"
@@ -198,7 +147,7 @@ public static class EspnUriMapper
         var competitorId = segments[competitorIdx + 1].TrimEnd('/');
 
         var path = $"{prefix}{eventsSeg}{eventIdSeg}/{competitions}{competitionId}/{competitors}{competitorId}";
-        var uriString = $"{competitionLineScoreRef.Scheme}://{competitionLineScoreRef.Authority}{path}".TrimEnd('/');
+        var uriString = $"{sourceUri.Scheme}://{sourceUri.Authority}{path}".TrimEnd('/');
 
         return new Uri(uriString);
     }

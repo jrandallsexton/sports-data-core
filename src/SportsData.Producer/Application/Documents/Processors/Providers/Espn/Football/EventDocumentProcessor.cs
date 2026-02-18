@@ -138,11 +138,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
 
             var seasonWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
                 .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
 
             if (seasonWeek is null)
             {
-                await PublishChildDocumentRequest<string?>(
+                await PublishDependencyRequest<string?>(
                     command,
                     externalDto.Week,
                     parentId: null,

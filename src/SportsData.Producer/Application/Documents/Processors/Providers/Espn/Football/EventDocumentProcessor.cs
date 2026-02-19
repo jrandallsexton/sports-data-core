@@ -150,7 +150,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     DocumentType.SeasonTypeWeek);
 
                 throw new ExternalDocumentNotSourcedException(
-                    $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+                    $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
             }
             else
             {
@@ -180,7 +180,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 DocumentType.SeasonType);
 
             throw new ExternalDocumentNotSourcedException(
-                $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+                $"SeasonPhase not found for {externalDto.SeasonType.Ref}");
         }
 
         return seasonPhaseId.Value;
@@ -263,7 +263,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     DocumentType.Venue);
 
                 throw new ExternalDocumentNotSourcedException(
-                    $"Venue not found for {venue.Ref} in command {command.CorrelationId}");
+                    $"Venue not found for {venue.Ref}");
             }
         }
     }
@@ -336,7 +336,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         await _dataContext.SaveChangesAsync();
 
         throw new ExternalDocumentNotSourcedException(
-            $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}. Requesting.");
+            $"{teamLabel} team franchise season not found for {competitor.Ref}. Requesting.");
     }
 
     private async Task SetContestShortName(

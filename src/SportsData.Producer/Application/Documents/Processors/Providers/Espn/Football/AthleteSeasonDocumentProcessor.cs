@@ -71,7 +71,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
                 DocumentType.Athlete);
 
             throw new ExternalDocumentNotSourcedException(
-                $"Athlete not found for {dto.Ref} in command {command.CorrelationId}");
+                $"Athlete not found for {dto.Ref}");
         }
 
         var franchiseSeasonId = await TryResolveFranchiseSeasonIdAsync(dto, command);
@@ -271,7 +271,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             DocumentType.TeamSeason);
 
         throw new ExternalDocumentNotSourcedException(
-            $"Franchise season not found for {dto.Team.Ref} in command {command.CorrelationId}");
+            $"Franchise season not found for {dto.Team.Ref}");
     }
 
     private async Task<Guid> TryResolvePositionIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
@@ -299,6 +299,6 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             DocumentType.AthletePosition);
 
         throw new ExternalDocumentNotSourcedException(
-            $"Position not found for {dto.Position.Ref} in command {command.CorrelationId}");
+            $"Position not found for {dto.Position.Ref}");
     }
 }

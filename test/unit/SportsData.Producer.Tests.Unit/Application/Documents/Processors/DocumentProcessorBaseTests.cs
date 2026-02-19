@@ -13,6 +13,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
@@ -71,7 +72,42 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.Franchise),
             It.IsAny<CancellationToken>()), Times.Once);
 
-        command.RequestedDependencies.Should().ContainSingle(d => d.Type == DocumentType.Franchise);
+        // Compute expected hash and verify deduplication tracking
+        var expectedIdentity = generator.Generate(hasRef.Ref);
+        command.RequestedDependencies.Should().ContainSingle(d => 
+            d.Type == DocumentType.Franchise && 
+            d.UrlHash == expectedIdentity.UrlHash);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_Should_Copy_RequestedDependencies_To_Retry_Event()
+    {
+        // Arrange
+        var busMock = Mocker.GetMock<IEventBus>();
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        // Create a processor that throws ExternalDocumentNotSourcedException
+        var processor = Mocker.CreateInstance<ThrowingTestDocumentProcessor<FootballDataContext>>();
+
+        // Create command with seeded RequestedDependencies
+        var command = CreateTestCommand(attemptCount: 0, documentType: DocumentType.EventCompetition);
+        command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Franchise, "hash1"));
+        command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Venue, "hash2"));
+
+        // Act - ProcessAsync should catch the exception and publish DocumentCreated with RequestedDependencies
+        await processor.ProcessAsync(command);
+
+        // Assert - Verify DocumentCreated was published with the seeded RequestedDependencies
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentCreated>(e =>
+                e.DocumentType == DocumentType.EventCompetition &&
+                e.AttemptCount == 1 &&
+                e.RequestedDependencies.Count == 2 &&
+                e.RequestedDependencies.Any(d => d.Type == DocumentType.Franchise && d.UrlHash == "hash1") &&
+                e.RequestedDependencies.Any(d => d.Type == DocumentType.Venue && d.UrlHash == "hash2")),
+            It.IsAny<Dictionary<string, object>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -270,3 +306,24 @@ public class TestDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataCo
     }
 }
 
+/// <summary>
+/// Test processor that throws ExternalDocumentNotSourcedException to test retry logic.
+/// </summary>
+public class ThrowingTestDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : FootballDataContext
+{
+    public ThrowingTestDocumentProcessor(
+        ILogger<ThrowingTestDocumentProcessor<TDataContext>> logger,
+        TDataContext dataContext,
+        IEventBus eventBus,
+        IGenerateExternalRefIdentities identityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, eventBus, identityGenerator, refs)
+    {
+    }
+
+    protected override Task ProcessInternal(ProcessDocumentCommand command)
+    {
+        throw new ExternalDocumentNotSourcedException("Test exception for retry");
+    }
+}

@@ -169,7 +169,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return;
         }
 
-        var dependencyKey = (documentType, identity.UrlHash);
+        var dependencyKey = new RequestedDependency(documentType, identity.UrlHash);
 
         // Check if we've already requested this specific dependency
         if (command.RequestedDependencies.Contains(dependencyKey))

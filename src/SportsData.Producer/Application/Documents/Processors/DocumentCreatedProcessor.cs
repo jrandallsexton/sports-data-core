@@ -119,8 +119,8 @@ namespace SportsData.Producer.Application.Documents.Processors
             {
                 // Propagate RequestedDependencies from previous attempt to preserve dependency tracking across retries
                 RequestedDependencies = evt.RequestedDependencies != null 
-                    ? new HashSet<(DocumentType Type, string UrlHash)>(evt.RequestedDependencies) 
-                    : new HashSet<(DocumentType Type, string UrlHash)>()
+                    ? new HashSet<RequestedDependency>(evt.RequestedDependencies) 
+                    : new HashSet<RequestedDependency>()
             });
 
                 _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");

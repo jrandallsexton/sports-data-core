@@ -89,7 +89,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             attemptCount: 1);
 
         // Simulate that this dependency was already requested
-        command.RequestedDependencies.Add((DocumentType.Franchise, identity.UrlHash));
+        command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Franchise, identity.UrlHash));
 
         var hasRef = new EspnLinkDto { Ref = franchiseRef };
 
@@ -130,7 +130,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             attemptCount: 1);
 
         // Simulate that Franchise A was already requested
-        command.RequestedDependencies.Add((DocumentType.Franchise, identityA.UrlHash));
+        command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Franchise, identityA.UrlHash));
 
         var hasRefB = new EspnLinkDto { Ref = franchiseBRef };
 

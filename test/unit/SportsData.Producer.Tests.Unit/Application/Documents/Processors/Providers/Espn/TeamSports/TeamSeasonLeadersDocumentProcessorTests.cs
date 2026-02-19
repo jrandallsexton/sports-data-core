@@ -103,55 +103,46 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
 
     private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid franchiseSeasonId, bool seedCategories = true)
     {
-        // Seed franchise season
-        var teamSeasonRef = new Uri("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99");
-        var teamSeasonIdentity = identityGenerator.Generate(teamSeasonRef);
-
-        var franchiseSeason = new FranchiseSeason
-        {
-            Id = franchiseSeasonId,
-            FranchiseId = Guid.NewGuid(),
-            Slug = "lsu-tigers-2025",
-            Location = "LSU",
-            Name = "Tigers",
-            Abbreviation = "LSU",
-            DisplayName = "LSU Tigers",
-            DisplayNameShort = "LSU",
-            ColorCodeHex = "#461D7C",
-            CreatedUtc = DateTime.UtcNow,
-            CreatedBy = Guid.NewGuid(),
-            ExternalIds =
-            [
-                new FranchiseSeasonExternalId
-                {
-                    Id = Guid.NewGuid(),
-                    FranchiseSeasonId = franchiseSeasonId,
-                    Provider = SourceDataProvider.Espn,
-                    SourceUrl = teamSeasonIdentity.CleanUrl,
-                    SourceUrlHash = teamSeasonIdentity.UrlHash,
-                    Value = teamSeasonIdentity.UrlHash
-                }
-            ]
-        };
-
-        await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-
-        // Seed LeaderCategories (optional)
+        // Seed franchise season and categories using the shared helper
         if (seedCategories)
         {
-            var nextCategoryId = 1;
-            foreach (var category in leadersDto.Categories)
+            await SeedFranchiseSeasonAndCategoriesAsync(leadersDto, identityGenerator, franchiseSeasonId);
+        }
+        else
+        {
+            // Seed only franchise season without categories
+            var teamSeasonRef = new Uri("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99");
+            var teamSeasonIdentity = identityGenerator.Generate(teamSeasonRef);
+
+            var franchiseSeason = new FranchiseSeason
             {
-                FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
-                {
-                    Id = nextCategoryId++,
-                    Name = category.Name,
-                    DisplayName = category.DisplayName,
-                    ShortDisplayName = category.ShortDisplayName,
-                    Abbreviation = category.Abbreviation,
-                    CreatedUtc = DateTime.UtcNow
-                });
-            }
+                Id = franchiseSeasonId,
+                FranchiseId = Guid.NewGuid(),
+                Slug = "lsu-tigers-2025",
+                Location = "LSU",
+                Name = "Tigers",
+                Abbreviation = "LSU",
+                DisplayName = "LSU Tigers",
+                DisplayNameShort = "LSU",
+                ColorCodeHex = "#461D7C",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        FranchiseSeasonId = franchiseSeasonId,
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamSeasonIdentity.CleanUrl,
+                        SourceUrlHash = teamSeasonIdentity.UrlHash,
+                        Value = teamSeasonIdentity.UrlHash
+                    }
+                ]
+            };
+
+            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await FootballDataContext.SaveChangesAsync();
         }
 
         // Seed athlete seasons for all leaders in the DTO

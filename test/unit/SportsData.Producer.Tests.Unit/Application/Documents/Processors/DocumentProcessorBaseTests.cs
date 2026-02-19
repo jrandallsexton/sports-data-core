@@ -186,6 +186,26 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
     }
 
     [Fact]
+    public async Task PublishDependencyRequest_Should_Skip_When_HasRef_Is_Null()
+    {
+        // Arrange
+        var busMock = Mocker.GetMock<IEventBus>();
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand();
+
+        // Act - Pass null for the hasRef parameter itself
+        await processor.PublishDependencyRequestPublic(command, null, Guid.NewGuid(), DocumentType.Franchise);
+
+        // Assert
+        busMock.Verify(x => x.Publish(
+            It.IsAny<DocumentRequested>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        command.RequestedDependencies.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task PublishDependencyRequest_Should_Not_Publish_When_Identity_Generation_Throws()
     {
         // Arrange

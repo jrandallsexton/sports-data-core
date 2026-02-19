@@ -173,7 +173,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         if (seasonPhaseId is null)
         {
-            await PublishChildDocumentRequest<string?>(
+            await PublishDependencyRequest<string?>(
                 command,
                 externalDto.SeasonType,
                 parentId: null,

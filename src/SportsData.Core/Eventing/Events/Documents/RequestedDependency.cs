@@ -1,6 +1,6 @@
-namespace SportsData.Core.Eventing.Events.Documents;
-
 using SportsData.Core.Common;
+
+namespace SportsData.Core.Eventing.Events.Documents;
 
 /// <summary>
 /// Represents a dependency that has been requested during document processing.

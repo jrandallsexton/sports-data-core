@@ -27,6 +27,28 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors;
 /// </summary>
 public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
 {
+    /// <summary>
+    /// Creates a test ProcessDocumentCommand with common default values.
+    /// Generates new GUIDs for messageId and correlationId on each call.
+    /// </summary>
+    private static ProcessDocumentCommand CreateTestCommand(
+        int attemptCount = 0,
+        DocumentType documentType = DocumentType.TeamSeason)
+    {
+        return new ProcessDocumentCommand(
+            sourceDataProvider: SourceDataProvider.Espn,
+            sport: Sport.FootballNcaa,
+            season: 2024,
+            documentType: documentType,
+            document: "{}",
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
+            parentId: null,
+            sourceUri: new Uri("http://test.com"),
+            urlHash: "test123",
+            attemptCount: attemptCount);
+    }
+
     [Fact]
     public async Task PublishDependencyRequest_Should_Publish_On_First_Request()
     {
@@ -37,18 +59,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
 
         var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
 
-        var command = new ProcessDocumentCommand(
-            sourceDataProvider: SourceDataProvider.Espn,
-            sport: Sport.FootballNcaa,
-            season: 2024,
-            documentType: DocumentType.TeamSeason,
-            document: "{}",
-            messageId: Guid.NewGuid(),
-            correlationId: Guid.NewGuid(),
-            parentId: null,
-            sourceUri: new Uri("http://test.com"),
-            urlHash: "test123",
-            attemptCount: 0);
+        var command = CreateTestCommand();
 
         var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2640") };
 
@@ -60,8 +71,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.Franchise),
             It.IsAny<CancellationToken>()), Times.Once);
 
-        command.RequestedDependencies.Should().ContainSingle();
-        command.RequestedDependencies.Should().Contain(d => d.Type == DocumentType.Franchise);
+        command.RequestedDependencies.Should().ContainSingle(d => d.Type == DocumentType.Franchise);
     }
 
     [Fact]
@@ -77,18 +87,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
         var franchiseRef = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2640");
         var identity = generator.Generate(franchiseRef);
 
-        var command = new ProcessDocumentCommand(
-            sourceDataProvider: SourceDataProvider.Espn,
-            sport: Sport.FootballNcaa,
-            season: 2024,
-            documentType: DocumentType.TeamSeason,
-            document: "{}",
-            messageId: Guid.NewGuid(),
-            correlationId: Guid.NewGuid(),
-            parentId: null,
-            sourceUri: new Uri("http://test.com"),
-            urlHash: "test123",
-            attemptCount: 1);
+        var command = CreateTestCommand(attemptCount: 1);
 
         // Simulate that this dependency was already requested
         command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Franchise, identity.UrlHash));
@@ -118,18 +117,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
         var franchiseBRef = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/333");
         var identityA = generator.Generate(franchiseARef);
 
-        var command = new ProcessDocumentCommand(
-            sourceDataProvider: SourceDataProvider.Espn,
-            sport: Sport.FootballNcaa,
-            season: 2024,
-            documentType: DocumentType.EventCompetition,
-            document: "{}",
-            messageId: Guid.NewGuid(),
-            correlationId: Guid.NewGuid(),
-            parentId: null,
-            sourceUri: new Uri("http://test.com"),
-            urlHash: "test123",
-            attemptCount: 1);
+        var command = CreateTestCommand(attemptCount: 1, documentType: DocumentType.EventCompetition);
 
         // Simulate that Franchise A was already requested
         command.RequestedDependencies.Add(new RequestedDependency(DocumentType.Franchise, identityA.UrlHash));
@@ -157,18 +145,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
 
         var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
 
-        var command = new ProcessDocumentCommand(
-            sourceDataProvider: SourceDataProvider.Espn,
-            sport: Sport.FootballNcaa,
-            season: 2024,
-            documentType: DocumentType.EventCompetition,
-            document: "{}",
-            messageId: Guid.NewGuid(),
-            correlationId: Guid.NewGuid(),
-            parentId: null,
-            sourceUri: new Uri("http://test.com"),
-            urlHash: "test123",
-            attemptCount: 0);
+        var command = CreateTestCommand(documentType: DocumentType.EventCompetition);
 
         var franchiseARef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2640") };
         var franchiseBRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/333") };
@@ -193,18 +170,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
         var busMock = Mocker.GetMock<IEventBus>();
         var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
 
-        var command = new ProcessDocumentCommand(
-            sourceDataProvider: SourceDataProvider.Espn,
-            sport: Sport.FootballNcaa,
-            season: 2024,
-            documentType: DocumentType.TeamSeason,
-            document: "{}",
-            messageId: Guid.NewGuid(),
-            correlationId: Guid.NewGuid(),
-            parentId: null,
-            sourceUri: new Uri("http://test.com"),
-            urlHash: "test123",
-            attemptCount: 0);
+        var command = CreateTestCommand();
 
         var hasRef = new EspnLinkDto { Ref = null! };
 
@@ -216,6 +182,36 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.IsAny<DocumentRequested>(),
             It.IsAny<CancellationToken>()), Times.Never);
 
+        command.RequestedDependencies.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Not_Publish_When_Identity_Generation_Throws()
+    {
+        // Arrange
+        var busMock = Mocker.GetMock<IEventBus>();
+        var generatorMock = Mocker.GetMock<IGenerateExternalRefIdentities>();
+
+        // Setup the mock to throw when Generate is called
+        generatorMock
+            .Setup(x => x.Generate(It.IsAny<Uri>()))
+            .Throws(new InvalidOperationException("Identity generation failed"));
+
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand();
+
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2640") };
+
+        // Act
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.Franchise);
+
+        // Assert - Should not publish DocumentRequested when identity generation fails
+        busMock.Verify(x => x.Publish(
+            It.IsAny<DocumentRequested>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        // Assert - Should not add to RequestedDependencies when identity generation fails
         command.RequestedDependencies.Should().BeEmpty();
     }
 }

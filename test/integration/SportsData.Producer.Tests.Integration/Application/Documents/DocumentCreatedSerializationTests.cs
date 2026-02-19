@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Producer.Application.Documents;
 
 using Xunit;
 
@@ -19,14 +18,27 @@ namespace SportsData.Producer.Tests.Integration.Application.Documents;
 /// </summary>
 public class DocumentCreatedSerializationTests
 {
+    /// <summary>
+    /// No-op consumer for serialization testing - simply consumes messages without processing.
+    /// Used to verify message serialization/deserialization without requiring handler dependencies.
+    /// </summary>
+    private class DocumentCreatedNoOpConsumer : IConsumer<DocumentCreated>
+    {
+        public Task Consume(ConsumeContext<DocumentCreated> context)
+        {
+            // No-op: Only needed for test harness to consume the message and validate serialization
+            return Task.CompletedTask;
+        }
+    }
+
     [Fact]
     public async Task DocumentCreated_SerializesAndDeserializes_WithRequestedDependenciesIntact()
     {
-        // Arrange - Create test harness with DocumentCreatedHandler consumer
+        // Arrange - Create test harness with no-op consumer for serialization testing
         await using var provider = new ServiceCollection()
             .AddMassTransitTestHarness(cfg =>
             {
-                cfg.AddConsumer<DocumentCreatedHandler>();
+                cfg.AddConsumer<DocumentCreatedNoOpConsumer>();
             })
             .BuildServiceProvider(true);
 
@@ -114,7 +126,7 @@ public class DocumentCreatedSerializationTests
         await using var provider = new ServiceCollection()
             .AddMassTransitTestHarness(cfg =>
             {
-                cfg.AddConsumer<DocumentCreatedHandler>();
+                cfg.AddConsumer<DocumentCreatedNoOpConsumer>();
             })
             .BuildServiceProvider(true);
 
@@ -167,7 +179,7 @@ public class DocumentCreatedSerializationTests
         await using var provider = new ServiceCollection()
             .AddMassTransitTestHarness(cfg =>
             {
-                cfg.AddConsumer<DocumentCreatedHandler>();
+                cfg.AddConsumer<DocumentCreatedNoOpConsumer>();
             })
             .BuildServiceProvider(true);
 

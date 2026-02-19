@@ -44,21 +44,6 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
             return;
         }
 
-        if (dto.Ref is null)
-        {
-            _logger.LogError("dto.Ref is null. Cannot map to CompetitionCompetitor. Requesting dependency.");
-
-            // Request the CompetitionCompetitor document using the ParentId (competitionCompetitorId)
-            // Note: PublishDependencyRequest will skip publishing when Ref is null, but we still call it for logging
-            await PublishDependencyRequest<Guid>(
-                command,
-                new EspnLinkDto { Ref = null! },
-                parentId: competitionCompetitorId,
-                DocumentType.EventCompetitionCompetitor);
-
-            throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor with Id {competitionCompetitorId} does not exist. Requested. Will retry.");
-        }
-
         var competitionCompetitor = await _dataContext.CompetitionCompetitors
             .AsNoTracking()
             .Include(x => x.Competition)
@@ -66,6 +51,13 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
 
         if (competitionCompetitor is null)
         {
+            // Check if dto.Ref is null before attempting to map
+            if (dto.Ref is null)
+            {
+                _logger.LogWarning("CompetitionCompetitor not found and dto.Ref is null. Cannot resolve dependency. Skipping.");
+                return;
+            }
+
             var competitionCompetitorRef = EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(dto.Ref);
             var competitionRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(competitionCompetitorRef);
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);

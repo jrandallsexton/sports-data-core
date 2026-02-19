@@ -17,6 +17,8 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
 
+#nullable enable
+
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors;
 
 /// <summary>
@@ -204,7 +206,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             urlHash: "test123",
             attemptCount: 0);
 
-        var hasRef = new EspnLinkDto { Ref = null };
+        var hasRef = new EspnLinkDto { Ref = null! };
 
         // Act
         await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.Franchise);

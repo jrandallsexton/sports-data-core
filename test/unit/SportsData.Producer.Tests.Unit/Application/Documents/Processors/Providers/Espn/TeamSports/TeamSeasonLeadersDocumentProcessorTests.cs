@@ -2,18 +2,24 @@ using AutoFixture;
 
 using FluentAssertions;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
 using Moq.AutoMock;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 using SportsData.Producer.Config;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -36,9 +42,15 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         _dto = documentJson.FromJson<EspnLeadersDto>()!;
     }
 
-    private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid franchiseSeasonId, bool seedCategories = true)
+    /// <summary>
+    /// Seeds only franchise season and categories (no athlete seasons).
+    /// Used by tests that need to test dependency request behavior.
+    /// </summary>
+    private async Task SeedFranchiseSeasonAndCategoriesAsync(
+        EspnLeadersDto leadersDto,
+        ExternalRefIdentityGenerator identityGenerator,
+        Guid franchiseSeasonId)
     {
-        // Seed franchise season
         var teamSeasonRef = new Uri("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99");
         var teamSeasonIdentity = identityGenerator.Generate(teamSeasonRef);
 
@@ -71,22 +83,66 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
 
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
 
-        // Seed LeaderCategories (optional)
+        // Seed LeaderCategories to avoid concurrent creation issues
+        var nextCategoryId = 1;
+        foreach (var category in leadersDto.Categories.Where(c => c != null))
+        {
+            FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
+            {
+                Id = nextCategoryId++,
+                Name = category.Name,
+                DisplayName = category.DisplayName,
+                ShortDisplayName = category.ShortDisplayName,
+                Abbreviation = category.Abbreviation,
+                CreatedUtc = DateTime.UtcNow
+            });
+        }
+
+        await FootballDataContext.SaveChangesAsync();
+    }
+
+    private async Task SeedTestDataAsync(EspnLeadersDto leadersDto, ExternalRefIdentityGenerator identityGenerator, Guid franchiseSeasonId, bool seedCategories = true)
+    {
+        // Seed franchise season and categories using the shared helper
         if (seedCategories)
         {
-            var nextCategoryId = 1;
-            foreach (var category in leadersDto.Categories)
+            await SeedFranchiseSeasonAndCategoriesAsync(leadersDto, identityGenerator, franchiseSeasonId);
+        }
+        else
+        {
+            // Seed only franchise season without categories
+            var teamSeasonRef = new Uri("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99");
+            var teamSeasonIdentity = identityGenerator.Generate(teamSeasonRef);
+
+            var franchiseSeason = new FranchiseSeason
             {
-                FootballDataContext.LeaderCategories.Add(new CompetitionLeaderCategory
-                {
-                    Id = nextCategoryId++,
-                    Name = category.Name,
-                    DisplayName = category.DisplayName,
-                    ShortDisplayName = category.ShortDisplayName,
-                    Abbreviation = category.Abbreviation,
-                    CreatedUtc = DateTime.UtcNow
-                });
-            }
+                Id = franchiseSeasonId,
+                FranchiseId = Guid.NewGuid(),
+                Slug = "lsu-tigers-2025",
+                Location = "LSU",
+                Name = "Tigers",
+                Abbreviation = "LSU",
+                DisplayName = "LSU Tigers",
+                DisplayNameShort = "LSU",
+                ColorCodeHex = "#461D7C",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        FranchiseSeasonId = franchiseSeasonId,
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamSeasonIdentity.CleanUrl,
+                        SourceUrlHash = teamSeasonIdentity.UrlHash,
+                        Value = teamSeasonIdentity.UrlHash
+                    }
+                ]
+            };
+
+            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await FootballDataContext.SaveChangesAsync();
         }
 
         // Seed athlete seasons for all leaders in the DTO
@@ -282,5 +338,168 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
         var leaderCount = await FootballDataContext.FranchiseSeasonLeaders.CountAsync();
         leaderCount.Should().Be(dto.Categories.Count); // All categories should have leaders created
     }
+
+    [Fact]
+    public async Task ProcessAsync_BatchPublishesMissingDependencies_WhenAthleteSeasonsMissing()
+    {
+        // Arrange - Create minimal inline test data with exactly 2 unique athletes
+        var dto = new EspnLeadersDto
+        {
+            Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/leaders"),
+            Categories = new List<EspnLeadersCategoryDto>
+            {
+                new()
+                {
+                    Name = "passingLeader",
+                    DisplayName = "Passing Leader",
+                    ShortDisplayName = "PASS",
+                    Abbreviation = "PYDS",
+                    Leaders = new List<EspnLeadersLeaderDto>
+                    {
+                        new()
+                        {
+                            DisplayValue = "100 YDS",
+                            Value = 100,
+                            Athlete = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1001") },
+                            Statistics = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/athletes/1001/statistics/0") }
+                        },
+                        new()
+                        {
+                            DisplayValue = "200 YDS",
+                            Value = 200,
+                            Athlete = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1002") },
+                            Statistics = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/athletes/1002/statistics/0") }
+                        }
+                    }
+                }
+            }
+        };
+
+        var documentJson = dto.ToJson();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var franchiseSeasonId = Guid.NewGuid();
+
+        // Seed only franchise season and categories, NOT athlete seasons - this will trigger dependency requests
+        await SeedFranchiseSeasonAndCategoriesAsync(dto, identityGenerator, franchiseSeasonId);
+
+        var leadersIdentity = identityGenerator.Generate(dto.Ref);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
+            .With(x => x.DocumentType, DocumentType.TeamSeasonLeaders)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.ParentId, franchiseSeasonId.ToString())
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.AttemptCount, 0)
+            .Create();
+
+        var busMock = Mocker.GetMock<IEventBus>();
+        var config = new DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
+
+        var sut = Mocker.CreateInstance<TeamSeasonLeadersDocumentProcessor<FootballDataContext>>();
+
+        // We have exactly 2 unique athletes in our test data
+        var uniqueAthleteSeasons = 2;
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert - should batch-publish dependency requests
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.AthleteSeason),
+            It.IsAny<CancellationToken>()), Times.Exactly(uniqueAthleteSeasons));
+
+        // Verify no leaders were created (preflight failed)
+        var leaderCount = await FootballDataContext.FranchiseSeasonLeaders.CountAsync();
+        leaderCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DeduplicatesDependencies_WhenSameAthleteAppearsMultipleTimes()
+    {
+        // Arrange - Create test data where same athlete appears twice (should only publish once)
+        var dto = new EspnLeadersDto
+        {
+            Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/leaders"),
+            Categories = new List<EspnLeadersCategoryDto>
+            {
+                new()
+                {
+                    Name = "passingLeader",
+                    DisplayName = "Passing Leader",
+                    ShortDisplayName = "PASS",
+                    Abbreviation = "PYDS",
+                    Leaders = new List<EspnLeadersLeaderDto>
+                    {
+                        new()
+                        {
+                            DisplayValue = "100 YDS",
+                            Value = 100,
+                            Athlete = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1001") },
+                            Statistics = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/athletes/1001/statistics/0") }
+                        },
+                        new()
+                        {
+                            DisplayValue = "200 YDS",
+                            Value = 200,
+                            Athlete = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1001") }, // SAME athlete
+                            Statistics = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/teams/99/athletes/1001/statistics/0") }
+                        }
+                    }
+                }
+            }
+        };
+
+        var documentJson = dto.ToJson();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var franchiseSeasonId = Guid.NewGuid();
+
+        // Seed only franchise season and categories, NOT athlete seasons
+        await SeedFranchiseSeasonAndCategoriesAsync(dto, identityGenerator, franchiseSeasonId);
+
+        var leadersIdentity = identityGenerator.Generate(dto.Ref);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
+            .With(x => x.DocumentType, DocumentType.TeamSeasonLeaders)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.ParentId, franchiseSeasonId.ToString())
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.AttemptCount, 0)
+            .Create();
+
+        var busMock = Mocker.GetMock<IEventBus>();
+        var config = new DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
+
+        var sut = Mocker.CreateInstance<TeamSeasonLeadersDocumentProcessor<FootballDataContext>>();
+
+        // Despite 2 leaders, we have only 1 unique athlete (deduplication test)
+        var athlete1001Uri = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1001");
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert - should only publish once for the unique athlete with the correct Uri (deduplication via HashSet)
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => 
+                e.DocumentType == DocumentType.AthleteSeason && 
+                e.Uri == athlete1001Uri),
+            It.IsAny<CancellationToken>()), Times.Once());
+    }
 }
+
 

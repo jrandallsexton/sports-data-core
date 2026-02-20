@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -22,19 +21,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public EventDocumentProcessor(
         ILogger<EventDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -144,21 +138,19 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
 
             var seasonWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
                 .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
 
             if (seasonWeek is null)
             {
-                if (_config.EnableDependencyRequests)
-                {
-                    await PublishChildDocumentRequest<string?>(
-                        command,
-                        externalDto.Week,
-                        parentId: null,
-                        DocumentType.SeasonTypeWeek);
-                }
+                await PublishDependencyRequest<string?>(
+                    command,
+                    externalDto.Week,
+                    parentId: null,
+                    DocumentType.SeasonTypeWeek);
 
                 throw new ExternalDocumentNotSourcedException(
-                    $"SeasonWeek not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+                    $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
             }
             else
             {
@@ -181,17 +173,14 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         if (seasonPhaseId is null)
         {
-            if (_config.EnableDependencyRequests)
-            {
-                await PublishChildDocumentRequest<string?>(
-                    command,
-                    externalDto.SeasonType,
-                    parentId: null,
-                    DocumentType.SeasonType);
-            }
+            await PublishDependencyRequest<string?>(
+                command,
+                externalDto.SeasonType,
+                parentId: null,
+                DocumentType.SeasonType);
 
             throw new ExternalDocumentNotSourcedException(
-                $"SeasonPhase not found for {externalDto.SeasonType.Ref} in command {command.CorrelationId}");
+                $"SeasonPhase not found for {externalDto.SeasonType.Ref}");
         }
 
         return seasonPhaseId.Value;
@@ -274,7 +263,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                     DocumentType.Venue);
 
                 throw new ExternalDocumentNotSourcedException(
-                    $"Venue not found for {venue.Ref} in command {command.CorrelationId}");
+                    $"Venue not found for {venue.Ref}");
             }
         }
     }
@@ -335,18 +324,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         var teamLabel = char.ToUpper(homeAway[0]) + homeAway[1..].ToLower();
 
-        if (!_config.EnableDependencyRequests)
-        {
-            throw new ExternalDocumentNotSourcedException(
-                $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}. Not requesting.");
-        }
-
-        // Legacy mode: publish DocumentRequested
-        _logger.LogWarning(
-            "{Team} FranchiseSeason not found. Raising DocumentRequested (override mode). TeamRef={TeamRef}",
-            teamLabel,
-            competitor.Team.Ref);
-
         var franchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(competitor.Team.Ref);
         var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
 
@@ -359,7 +336,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         await _dataContext.SaveChangesAsync();
 
         throw new ExternalDocumentNotSourcedException(
-            $"{teamLabel} team franchise season not found for {competitor.Ref} in command {command.CorrelationId}. Requesting.");
+            $"{teamLabel} team franchise season not found for {competitor.Ref}. Requesting.");
     }
 
     private async Task SetContestShortName(

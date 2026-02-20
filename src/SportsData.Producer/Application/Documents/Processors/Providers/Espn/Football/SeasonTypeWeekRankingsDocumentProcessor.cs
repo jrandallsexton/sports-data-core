@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -21,19 +20,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public SeasonTypeWeekRankingsDocumentProcessor(
         ILogger<SeasonTypeWeekRankingsDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs,
-        IEventBus publishEndpoint,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IEventBus publishEndpoint)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -92,28 +86,13 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
             {
                 var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
 
-                if (!_config.EnableDependencyRequests)
-                {
-                    throw new ExternalDocumentNotSourcedException(
-                        "SeasonWeek not found. Sourcing requested. Will retry.");
-                }
-                else
-                {
-                    // Legacy mode: keep existing DocumentRequested logic
-                    _logger.LogWarning(
-                        "SeasonWeek not found. Raising DocumentRequested (override mode). WeekRef={WeekRef}",
-                        dto.Season.Type.Week.Ref);
-                    
-                    await PublishChildDocumentRequest(
-                        command,
-                        dto.Season.Type.Week,
-                        seasonPhaseIdentity.CanonicalId,
-                        DocumentType.SeasonTypeWeek);
-                    
-                    await _dataContext.SaveChangesAsync();
+                await PublishDependencyRequest(
+                    command,
+                    dto.Season.Type.Week,
+                    seasonPhaseIdentity.CanonicalId,
+                    DocumentType.SeasonTypeWeek);
 
-                    throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
-                }
+                throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
             }
 
             seasonWeekId = seasonWeek.Id;
@@ -152,39 +131,26 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
         if (missingFranchiseSeasons.Any())
         {
-            if (!_config.EnableDependencyRequests)
+            foreach (var missing in missingFranchiseSeasons)
             {
-                throw new ExternalDocumentNotSourcedException(
-                    $"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
+                _logger.LogError("Missing FranchiseSeason for Team Ref {TeamRef} with expected URI {Uri}",
+                    missing.Key, missing.Value);
+
+                var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
+                var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
+
+                // Create a temporary EspnLinkDto for the helper method
+                var teamLinkDto = new EspnLinkDto { Ref = missing.Value };
+                await PublishDependencyRequest(
+                    command,
+                    teamLinkDto,
+                    franchiseId,
+                    DocumentType.TeamSeason);
             }
-            else
-            {
-                // Legacy mode: keep existing DocumentRequested logic
-                _logger.LogWarning(
-                    "FranchiseSeasons not found. Raising DocumentRequested (override mode). Count={Count}",
-                    missingFranchiseSeasons.Count);
-                
-                foreach (var missing in missingFranchiseSeasons)
-                {
-                    _logger.LogError("Missing FranchiseSeason for Team Ref {TeamRef} with expected URI {Uri}",
-                        missing.Key, missing.Value);
 
-                    var franchiseRef = EspnUriMapper.TeamSeasonToFranchiseRef(missing.Value);
-                    var franchiseId = _externalRefIdentityGenerator.Generate(franchiseRef).CanonicalId;
+            await _dataContext.SaveChangesAsync();
 
-                    // Create a temporary EspnLinkDto for the helper method
-                    var teamLinkDto = new EspnLinkDto { Ref = missing.Value };
-                    await PublishChildDocumentRequest(
-                        command,
-                        teamLinkDto,
-                        franchiseId,
-                        DocumentType.TeamSeason);
-                }
-
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
-            }
+            throw new ExternalDocumentNotSourcedException($"{missingFranchiseSeasons.Count} FranchiseSeasons could not be resolved. Sourcing requested. Will retry this job.");
         }
 
         // Create the entity from the DTO

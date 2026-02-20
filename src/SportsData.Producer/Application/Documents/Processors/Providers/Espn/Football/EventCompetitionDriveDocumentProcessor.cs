@@ -171,6 +171,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
             var linkedCount = 0;
             var requestedCount = 0;
 
+            // TODO: we could optimize this by doing a batch query for all play identities instead of one at a time
             foreach (var play in externalDto.Plays.Items)
             {
                 var playIdentity = _externalRefIdentityGenerator.Generate(play.Ref);

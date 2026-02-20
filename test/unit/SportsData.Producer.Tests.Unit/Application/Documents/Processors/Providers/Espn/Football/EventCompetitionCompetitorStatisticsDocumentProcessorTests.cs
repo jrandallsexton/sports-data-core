@@ -4,8 +4,12 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -39,13 +43,27 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
+            var competitionCompetitor = new CompetitionCompetitor
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Competition = competition,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = "home",
+                Winner = false,
+                Order = 1,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
             await TeamSportDataContext.Competitions.AddAsync(competition);
+            await TeamSportDataContext.CompetitionCompetitors.AddAsync(competitionCompetitor);
             await TeamSportDataContext.SaveChangesAsync();
 
             var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.ParentId, competition.Id.ToString())
+                .With(x => x.ParentId, competitionCompetitor.Id.ToString())
                 .With(x => x.Document, json)
                 .OmitAutoProperties()
                 .Create();
@@ -107,12 +125,26 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
+            var competitionCompetitor = new CompetitionCompetitor
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Competition = competition,
+                FranchiseSeasonId = franchiseSeason.Id,
+                HomeAway = "home",
+                Winner = false,
+                Order = 1,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.Competitions.AddAsync(competition);
+            await TeamSportDataContext.CompetitionCompetitors.AddAsync(competitionCompetitor);
             await TeamSportDataContext.SaveChangesAsync();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.ParentId, competition.Id.ToString())
+                .With(x => x.ParentId, competitionCompetitor.Id.ToString())
                 .With(x => x.Document, json)
                 .OmitAutoProperties()
                 .Create();
@@ -185,6 +217,19 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
+            var competitionCompetitor = new CompetitionCompetitor
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Competition = competition,
+                FranchiseSeasonId = franchiseSeason.Id,
+                HomeAway = "home",
+                Winner = false,
+                Order = 1,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
             // OPTIMIZATION: Direct instantiation
             var existing = new CompetitionCompetitorStatistic
             {
@@ -206,11 +251,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.Competitions.AddAsync(competition);
+            await TeamSportDataContext.CompetitionCompetitors.AddAsync(competitionCompetitor);
             await TeamSportDataContext.CompetitionCompetitorStatistics.AddAsync(existing);
             await TeamSportDataContext.SaveChangesAsync();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.ParentId, competition.Id.ToString())
+                .With(x => x.ParentId, competitionCompetitor.Id.ToString())
                 .With(x => x.Document, json)
                 .OmitAutoProperties()
                 .Create();
@@ -232,6 +278,52 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             updated!.Categories.Should().NotContain(c => c.Name == "OLD");
             updated.Categories.Should().NotBeEmpty();
             updated.Categories.SelectMany(x => x.Stats).Should().NotBeEmpty();
+        }
+
+        [Fact]
+        public async Task ProcessAsync_RequestsCompetitionCompetitor_WhenCompetitionCompetitorNotFound()
+        {
+            // Arrange
+            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            // Enable dependency requests for this test
+            var config = new SportsData.Producer.Config.DocumentProcessingConfig { EnableDependencyRequests = true };
+            Mocker.Use(config);
+
+            var bus = Mocker.GetMock<IEventBus>();
+
+            var nonExistentCompetitionCompetitorId = Guid.NewGuid();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, nonExistentCompetitionCompetitorId.ToString())
+                .With(x => x.Document, json)
+                .With(x => x.AttemptCount, 0)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.Season, 2024)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorStatistics)
+                .OmitAutoProperties()
+                .Create();
+
+            var sut = Mocker.CreateInstance<EventCompetitionCompetitorStatisticsDocumentProcessor<TeamSportDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert - Processor catches ExternalDocumentNotSourcedException and publishes DocumentRequested + retry DocumentCreated
+            bus.Verify(x => x.Publish(
+                It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.EventCompetitionCompetitor),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            bus.Verify(x => x.Publish(
+                It.Is<DocumentCreated>(e => e.AttemptCount == 1),
+                It.IsAny<IDictionary<string, object>>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            (await TeamSportDataContext.CompetitionCompetitorStatistics.CountAsync()).Should().Be(0);
         }
     }
 }

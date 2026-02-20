@@ -1,4 +1,5 @@
 ﻿using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Documents;
 using System.Text.Json;
 
 namespace SportsData.Producer.Application.Documents.Processors.Commands;
@@ -50,6 +51,13 @@ public class ProcessDocumentCommand(
     public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; } = includeLinkedDocumentTypes;
 
     public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Tracks which dependency documents have already been requested to prevent duplicate requests on retries.
+    /// Key is (DocumentType, UrlHash) to uniquely identify each dependency.
+    /// Example: A competition may depend on two different Franchises - tracking by DocumentType alone would skip the second.
+    /// </summary>
+    public HashSet<RequestedDependency> RequestedDependencies { get; set; } = new();
 
     /// <summary>
     /// Extracts the ESPN $ref URI from the JSON document for logging purposes.

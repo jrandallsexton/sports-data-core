@@ -7,7 +7,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -18,19 +17,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public EventCompetitionSituationDocumentProcessor(
         ILogger<EventCompetitionSituationDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -66,25 +59,16 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
 
             if (lastPlay == null)
             {
-                if (!_config.EnableDependencyRequests)
-                {
-                    throw new ExternalDocumentNotSourcedException(
-                        $"Play {dto.LastPlay.Ref} not found. Will retry when available.");
-                }
-                else
-                {
-                    _logger.LogWarning("LastPlay not found, raising DocumentRequested. PlayRef={PlayRef}", dto.LastPlay.Ref);
-                    
-                    await PublishChildDocumentRequest(
-                        command,
-                        dto.LastPlay,
-                        competitionId,
-                        DocumentType.EventCompetitionPlay);
-                    
-                    await _dataContext.SaveChangesAsync();
 
-                    throw new ExternalDocumentNotSourcedException($"Play {dto.LastPlay.Ref} not found. Will retry.");
-                }
+                await PublishChildDocumentRequest(
+                    command,
+                    dto.LastPlay,
+                    competitionId,
+                    DocumentType.EventCompetitionPlay);
+
+                await _dataContext.SaveChangesAsync();
+
+                throw new ExternalDocumentNotSourcedException($"Last Play {dto.LastPlay.Ref} not found. Requesting. Will retry.");
             }
 
             lastPlayId = lastPlay.Id;

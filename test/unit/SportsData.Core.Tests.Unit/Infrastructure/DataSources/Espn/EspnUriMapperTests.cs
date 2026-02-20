@@ -328,5 +328,53 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
             result.Should().Be(expected);
         }
+
+        [Theory]
+        [InlineData(
+            // with query string
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // without query string
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // mixed casing on segments
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/Events/401540172/Competitions/401540172/Competitors/2640/Statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        [InlineData(
+            // trailing slash + extra segments (ignored)
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640/statistics/0/details/",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/2640")]
+        public void CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef_Should_Trim_To_CompetitionCompetitorUri(
+            string inputRef,
+            string expectedRef)
+        {
+            var input = new Uri(inputRef);
+            var expected = new Uri(expectedRef);
+
+            var result = EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(input);
+
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/statistics/0")] // missing competitors segment
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/competitors/")] // missing competitor ID
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/teams/2640/statistics/0")] // wrong segment (teams instead of competitors)
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673")] // completely wrong shape
+        public void CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(input);
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
     }
 }

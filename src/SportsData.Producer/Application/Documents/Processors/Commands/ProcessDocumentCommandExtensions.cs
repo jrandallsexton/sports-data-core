@@ -20,7 +20,9 @@ public static class ProcessDocumentCommandExtensions
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
             CausationId: command.CorrelationId, // or use a new Guid if you want to track re-publishes distinctly
-            AttemptCount: attemptCount
+            AttemptCount: attemptCount,
+            IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes,
+            RequestedDependencies: command.RequestedDependencies
         );
     }
 }

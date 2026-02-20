@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -25,19 +24,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public TeamSeasonLeadersDocumentProcessor(
         ILogger<TeamSeasonLeadersDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -69,6 +63,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         // Preflight dependency resolution - fail fast before deleting existing data
         var athleteSeasonCache = new Dictionary<string, Guid>();
+        var missingAthleteSeasonRefs = new HashSet<Uri>();
 
         if (dto.Categories != null)
         {
@@ -103,10 +98,33 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     if (leaderDto.Statistics?.Ref == null)
                         continue;
 
-                    // This will throw ExternalDocumentNotSourcedException if dependency missing
-                    await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+                    // Collect missing athlete seasons instead of throwing immediately
+                    var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
+                    if (athleteSeasonId == null)
+                    {
+                        missingAthleteSeasonRefs.Add(leaderDto.Athlete.Ref);
+                    }
                 }
             }
+        }
+
+        // Batch-publish all missing athlete-season dependencies
+        if (missingAthleteSeasonRefs.Count > 0)
+        {
+            foreach (var athleteSeasonRef in missingAthleteSeasonRefs)
+            {
+                var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteSeasonRef);
+                var athleteIdentity = _externalRefIdentityGenerator.Generate(athleteRef);
+
+                await PublishChildDocumentRequest(
+                    command,
+                    new EspnLinkDto { Ref = athleteSeasonRef },
+                    athleteIdentity.CanonicalId.ToString(),
+                    DocumentType.AthleteSeason);
+            }
+
+            throw new ExternalDocumentNotSourcedException(
+                $"Missing {missingAthleteSeasonRefs.Count} AthleteSeason document(s). Requested dependencies will be processed and retried.");
         }
 
         // All dependencies resolved - safe to proceed with wholesale replacement
@@ -225,6 +243,13 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                     var athleteSeasonId = await ResolveAthleteSeasonIdAsync(leaderDto.Athlete, command, athleteSeasonCache);
 
+                    // athleteSeasonId should never be null here since preflight already validated all dependencies
+                    if (athleteSeasonId == null)
+                    {
+                        _logger.LogError("AthleteSeasonId is null after preflight validation. This should not happen. Ref={Ref}", leaderDto.Athlete.Ref);
+                        continue;
+                    }
+
                     var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
                     // For new leaders, always spawn child documents; for updates, respect ShouldSpawn filtering
@@ -241,7 +266,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
                     var stat = FranchiseSeasonLeaderStatExtensions.AsEntity(
                         leaderDto,
                         parentLeaderId: leaderEntity.Id,
-                        athleteSeasonId: athleteSeasonId,
+                        athleteSeasonId: athleteSeasonId.Value,
                         correlationId: command.CorrelationId);
 
                     leaderEntity.Stats.Add(stat);
@@ -262,7 +287,11 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             totalStats);
     }
 
-    private async Task<Guid> ResolveAthleteSeasonIdAsync(
+    /// <summary>
+    /// Resolves an athlete season ID from an athlete season ref.
+    /// Returns null if the athlete season is not found (allowing caller to batch missing dependencies).
+    /// </summary>
+    private async Task<Guid?> ResolveAthleteSeasonIdAsync(
         IHasRef athleteDto,
         ProcessDocumentCommand command,
         Dictionary<string, Guid> cache)
@@ -283,27 +312,8 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         if (athleteSeason is null)
         {
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"AthleteSeason {athleteSeasonIdentity.CleanUrl} not found. Will retry when available.");
-            }
-            else
-            {
-                var athleteRef = EspnUriMapper.AthleteSeasonToAthleteRef(athleteDto.Ref);
-                var athleteIdentity = _externalRefIdentityGenerator.Generate(athleteRef);
-
-                _logger.LogWarning("AthleteSeason not found, raising DocumentRequested. Url={Url}", athleteSeasonIdentity.CleanUrl);
-
-                await PublishChildDocumentRequest(
-                    command,
-                    athleteDto,
-                    athleteIdentity.CanonicalId.ToString(),
-                    DocumentType.AthleteSeason);
-
-                throw new ExternalDocumentNotSourcedException(
-                    $"Missing AthleteSeason for ref {athleteDto.Ref}");
-            }
+            // Return null to allow caller to collect all missing dependencies
+            return null;
         }
 
         cache[key] = athleteSeason.Id;

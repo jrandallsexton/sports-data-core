@@ -9,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -20,19 +19,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
 
     public EventCompetitionCompetitorScoreDocumentProcessor(
         ILogger<EventCompetitionCompetitorScoreDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus bus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, bus, externalRefIdentityGenerator, refs) { }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -65,26 +59,13 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             var competitionRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionRef(new Uri(competitionCompetitorIdentity.CleanUrl));
             var competitionIdentity = _externalRefIdentityGenerator.Generate(competitionRef);
 
-            if (!_config.EnableDependencyRequests)
-            {
-                throw new ExternalDocumentNotSourcedException(
-                    $"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry when available.");
-            }
-            else
-            {
-                _logger.LogWarning("CompetitionCompetitor not found, raising DocumentRequested. CompetitorUrl={CompetitorUrl}", 
-                    competitionCompetitorIdentity.CleanUrl);
+            await PublishDependencyRequest<Guid>(
+                command,
+                new EspnLinkDto { Ref = new Uri(competitionCompetitorIdentity.CleanUrl) },
+                parentId: competitionIdentity.CanonicalId,
+                DocumentType.EventCompetitionCompetitor);
 
-                await PublishChildDocumentRequest(
-                    command,
-                    new EspnLinkDto { Ref = new Uri(competitionCompetitorIdentity.CleanUrl) },
-                    competitionIdentity.CanonicalId,
-                    DocumentType.EventCompetitionCompetitor);
-
-                await _dataContext.SaveChangesAsync();
-
-                throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Will retry.");
-            }
+            throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor {competitionCompetitorIdentity.CleanUrl} not found. Requested. Will retry.");
         }
 
         // Validate navigation properties are loaded

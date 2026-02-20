@@ -12,6 +12,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             "futures",
             "leaders",
             "predictor",
+            "roster",
             "score",
             "situation",
             "statistics",

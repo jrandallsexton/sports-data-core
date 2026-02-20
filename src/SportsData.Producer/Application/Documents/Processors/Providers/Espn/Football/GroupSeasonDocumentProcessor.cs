@@ -7,7 +7,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Config;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -19,18 +18,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public GroupSeasonDocumentProcessor(
         ILogger<GroupSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        DocumentProcessingConfig config)
+        IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
-        _config = config;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -80,21 +75,13 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
             if (seasonId is null)
             {
-                if (!_config.EnableDependencyRequests)
-                {
-                    throw new ExternalDocumentNotSourcedException(
-                        $"Season {dto.Season.Ref} not found. Will retry when available.");
-                }
-                else
-                {
-                    await PublishChildDocumentRequest<string?>(
-                        command,
-                        dto.Season,
-                        parentId: null,
-                        DocumentType.Season);
+                await PublishDependencyRequest<string?>(
+                    command,
+                    dto.Season,
+                    parentId: null,
+                    DocumentType.Season);
 
-                    throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Requested. Will retry.");
-                }
+                throw new ExternalDocumentNotSourcedException($"Season {dto.Season.Ref} not found. Requested. Will retry.");
             }
             groupSeasonEntity.SeasonId = seasonId;
         }
@@ -112,21 +99,13 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
             if (parentId is null)
             {
-                if (!_config.EnableDependencyRequests)
-                {
-                    throw new ExternalDocumentNotSourcedException(
-                        $"GroupSeason {dto.Parent.Ref} not found. Will retry.");
-                }
-                else
-                {
-                    await PublishChildDocumentRequest<string?>(
-                        command,
-                        dto.Parent,
-                        parentId: null,
-                        DocumentType.GroupSeason);
+                await PublishDependencyRequest<string?>(
+                    command,
+                    dto.Parent,
+                    parentId: null,
+                    DocumentType.GroupSeason);
 
-                    throw new ExternalDocumentNotSourcedException($"GroupSeason {dto.Parent.Ref} not found. Requested. Will retry.");
-                }
+                throw new ExternalDocumentNotSourcedException($"GroupSeason parent {dto.Parent.Ref} not found. Requested. Will retry.");
             }
             groupSeasonEntity.ParentId = parentId;
         }

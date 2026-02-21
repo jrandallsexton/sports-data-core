@@ -587,6 +587,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                         && x.IsSeasonSpecific
                         && !x.IsRecurring
                         && x.DocumentType == DocumentType.Season) // Check the first tier as indicator
+            .AsNoTracking()
             .OrderByDescending(x => x.CreatedUtc)
             .FirstOrDefaultAsync(cancellationToken);
 

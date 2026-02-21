@@ -104,7 +104,9 @@ public record DocumentProcessingCompleted(
     Guid CorrelationId,
     DocumentType DocumentType,
     string SourceUrlHash,
-    DateTimeOffset CompletedUtc
+    DateTimeOffset CompletedUtc,
+    Sport Sport,
+    int? SeasonYear
 );
 ```
 

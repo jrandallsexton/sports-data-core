@@ -14,5 +14,6 @@ public record DocumentProcessingCompleted(
     string SourceUrlHash,
     DateTimeOffset CompletedUtc,
     Sport Sport,
-    int? SeasonYear
+    int? SeasonYear,
+    SourceDataProvider Provider
 );

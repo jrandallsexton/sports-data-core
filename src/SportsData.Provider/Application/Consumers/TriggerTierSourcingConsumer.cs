@@ -39,22 +39,35 @@ public class TriggerTierSourcingConsumer : IConsumer<TriggerTierSourcing>
             message.Sport,
             message.SeasonYear);
 
+        // Parse TierName to DocumentType enum before querying
+        if (!Enum.TryParse<Core.Common.DocumentType>(message.TierName, out var parsedDocumentType))
+        {
+            _logger.LogError(
+                "❌ INVALID_TIER_NAME: Could not parse TierName to DocumentType. " +
+                "CorrelationId={CorrelationId}, TierName={TierName}",
+                message.CorrelationId,
+                message.TierName);
+            return;
+        }
+
         // Find the ResourceIndex job for this tier using CorrelationId as CreatedBy
         var resourceIndex = await _dataContext.ResourceIndexJobs
             .Where(x => x.CreatedBy == message.CorrelationId && 
-                       x.DocumentType.ToString() == message.TierName &&
+                       x.DocumentType == parsedDocumentType &&
                        x.SeasonYear == message.SeasonYear)
-            .FirstOrDefaultAsync();
+            .AsNoTracking()
+            .FirstOrDefaultAsync(context.CancellationToken);
 
         if (resourceIndex == null)
         {
-            _logger.LogError(
-                "❌ TIER_NOT_FOUND: ResourceIndex job not found for tier. " +
-                "CorrelationId={CorrelationId}, TierName={TierName}, Season={Season}",
-                message.CorrelationId,
-                message.TierName,
-                message.SeasonYear);
-            return;
+            var errorMessage = 
+                $"TIER_NOT_FOUND: ResourceIndex job not found for tier. " +
+                $"CorrelationId={message.CorrelationId}, TierName={message.TierName}, Season={message.SeasonYear}";
+            
+            _logger.LogError("❌ {ErrorMessage}", errorMessage);
+            
+            // Throw to trigger MassTransit retry - ResourceIndex may not be created yet
+            throw new InvalidOperationException(errorMessage);
         }
 
         var jobDefinition = new DocumentJobDefinition
@@ -77,6 +90,11 @@ public class TriggerTierSourcingConsumer : IConsumer<TriggerTierSourcing>
             resourceIndex.Id,
             resourceIndex.DocumentType);
 
+        // Note: Executing inline (not offloaded to Hangfire) is intentional for saga pattern.
+        // ResourceIndexJob has [DisableConcurrentExecution(300)] timeout protection.
+        // This ensures saga waits for tier completion before progressing to next tier.
+        // Alternative would be to enqueue Hangfire job and poll for completion, but that
+        // adds complexity without clear benefit given saga orchestration requirements.
         await _resourceIndexJob.ExecuteAsync(jobDefinition);
 
         _logger.LogInformation(

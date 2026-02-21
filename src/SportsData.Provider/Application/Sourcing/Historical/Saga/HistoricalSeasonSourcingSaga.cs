@@ -37,7 +37,8 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
         {
             x.CorrelateBy((state, context) =>
                 state.Sport == context.Message.Sport &&
-                state.SeasonYear == context.Message.SeasonYear);
+                state.SeasonYear == context.Message.SeasonYear &&
+                state.Provider == context.Message.Provider);
             x.OnMissingInstance(m => m.Discard());
         });
 
@@ -58,8 +59,24 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         context.Saga.SeasonYear,
                         context.Saga.Provider);
                 })
+                .PublishAsync(context => context.Init<TriggerTierSourcing>(new
+                {
+                    context.Saga.CorrelationId,
+                    context.Saga.Sport,
+                    context.Saga.SeasonYear,
+                    context.Saga.Provider,
+                    Tier = 1,
+                    TierName = "Season"
+                }))
                 .TransitionTo(WaitingForSeasonCompletion)
         );
+
+        // NOTE: The four During() blocks below follow an identical pattern but cannot be easily extracted
+        // due to MassTransit's strongly-typed lambda requirements. Each tier accesses different saga properties
+        // (e.g., SeasonCompletionEventsReceived vs VenueCompletionEventsReceived) and different DocumentType filters.
+        // Extracting this would require complex Action<>/Func<> delegates or expression trees that would be
+        // harder to read/maintain than the current explicit duplication. This is a case where duplication
+        // is preferable to the wrong abstraction.
 
         // Tier 1: Season → Venue
         During(WaitingForSeasonCompletion,

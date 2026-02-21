@@ -314,7 +314,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             command.UrlHash,
             DateTimeOffset.UtcNow,
             command.Sport,
-            command.Season));
+            command.Season,
+            command.SourceDataProvider));
         
         _logger.LogInformation(
             "📢 COMPLETION_NOTIFICATION: Enqueued DocumentProcessingCompleted event to outbox. " +

@@ -38,8 +38,26 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IDocumentInclusionService, DocumentInclusionService>();
 
             // Historical sourcing services
-            services.Configure<HistoricalSourcingConfig>(
-                configuration.GetSection(HistoricalSourcingConfig.SectionName));
+            services.AddOptions<HistoricalSourcingConfig>()
+                .Bind(configuration.GetSection(HistoricalSourcingConfig.SectionName))
+                .Validate(config =>
+                {
+                    // Validate SagaConfig properties
+                    if (config.SagaConfig.CompletionThreshold <= 0)
+                        return false;
+                    if (config.SagaConfig.FlagPercentage < 0 || config.SagaConfig.FlagPercentage > 1)
+                        return false;
+                    if (config.SagaConfig.MinimumFlaggedDocuments < 0)
+                        return false;
+                    if (config.SagaConfig.AlertAfterMinutes <= 0)
+                        return false;
+                    return true;
+                },
+                "HistoricalSourcingConfig validation failed: " +
+                "CompletionThreshold must be > 0, " +
+                "FlagPercentage must be between 0 and 1 (inclusive), " +
+                "MinimumFlaggedDocuments must be >= 0, " +
+                "AlertAfterMinutes must be > 0.");
             services.AddScoped<IHistoricalSourcingUriBuilder, HistoricalSourcingUriBuilder>();
             services.AddScoped<IHistoricalSeasonSourcingService, HistoricalSeasonSourcingService>();
 

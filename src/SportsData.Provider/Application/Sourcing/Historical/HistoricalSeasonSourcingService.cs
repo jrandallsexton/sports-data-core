@@ -394,6 +394,44 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     }
 
     /// <summary>
+    /// Builds a ResourceIndexEntity with all required properties populated.
+    /// Centralizes entity creation logic to avoid duplication.
+    /// </summary>
+    private ResourceIndexEntity BuildResourceIndexEntity(
+        DocumentType documentType,
+        ResourceShape shape,
+        Uri uri,
+        HistoricalSeasonSourcingRequest request,
+        long ordinal,
+        Guid correlationId)
+    {
+        return new ResourceIndexEntity
+        {
+            Id = Guid.NewGuid(),
+            Ordinal = ordinal,
+            Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
+            IsRecurring = false,
+            IsQueued = false,
+            CronExpression = null,
+            IsEnabled = true,
+            Provider = request.SourceDataProvider,
+            DocumentType = documentType,
+            Shape = shape,
+            SportId = request.Sport,
+            Uri = uri,
+            SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
+            SeasonYear = request.SeasonYear,
+            IsSeasonSpecific = true,
+            LastAccessedUtc = null,
+            LastCompletedUtc = null,
+            LastPageIndex = null,
+            TotalPageCount = null,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = correlationId
+        };
+    }
+
+    /// <summary>
     /// Creates ResourceIndex records for all tiers and returns them with their delays for scheduling.
     /// </summary>
     private async Task<List<(ResourceIndexEntity Entity, TimeSpan Delay)>> CreateResourceIndexRecordsAsync(
@@ -409,31 +447,15 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         {
             var tier = tiers[i];
             var uri = _uriBuilder.BuildUri(tier.DocumentType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+            var ordinal = baseOrdinal * 100L + i;
 
-            var resourceIndex = new ResourceIndexEntity
-            {
-                Id = Guid.NewGuid(),
-                Ordinal = baseOrdinal * 100L + i,
-                Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
-                IsRecurring = false,
-                IsQueued = false,
-                CronExpression = null,
-                IsEnabled = true,
-                Provider = request.SourceDataProvider,
-                DocumentType = tier.DocumentType,
-                Shape = tier.Shape,
-                SportId = request.Sport,
-                Uri = uri,
-                SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
-                SeasonYear = request.SeasonYear,
-                IsSeasonSpecific = true,
-                LastAccessedUtc = null,
-                LastCompletedUtc = null,
-                LastPageIndex = null,
-                TotalPageCount = null,
-                CreatedUtc = DateTime.UtcNow,
-                CreatedBy = correlationId
-            };
+            var resourceIndex = BuildResourceIndexEntity(
+                tier.DocumentType,
+                tier.Shape,
+                uri,
+                request,
+                ordinal,
+                correlationId);
 
             await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
 
@@ -618,9 +640,10 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 request.Sport, request.SourceDataProvider, request.SeasonYear);
 
             // Define all 4 tiers (delays don't matter for saga - saga controls timing)
+            // ResourceShape must match DefineTiers to ensure consistent execution paths
             var tiers = new[]
             {
-                (DocumentType.Season, ResourceShape.Auto),
+                (DocumentType.Season, ResourceShape.Leaf),  // Single document, no pagination
                 (DocumentType.Venue, ResourceShape.Index),
                 (DocumentType.TeamSeason, ResourceShape.Index),
                 (DocumentType.AthleteSeason, ResourceShape.Index)
@@ -632,31 +655,15 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             {
                 var (docType, shape) = tiers[i];
                 var uri = _uriBuilder.BuildUri(docType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+                var ordinal = baseOrdinal * 100L + i;
 
-                var resourceIndex = new ResourceIndexEntity
-                {
-                    Id = Guid.NewGuid(),
-                    Ordinal = baseOrdinal * 100L + i,
-                    Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
-                    IsRecurring = false,
-                    IsQueued = false,
-                    CronExpression = null,
-                    IsEnabled = true,
-                    Provider = request.SourceDataProvider,
-                    DocumentType = docType,
-                    Shape = shape,
-                    SportId = request.Sport,
-                    Uri = uri,
-                    SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
-                    SeasonYear = request.SeasonYear,
-                    IsSeasonSpecific = true,
-                    LastAccessedUtc = null,
-                    LastCompletedUtc = null,
-                    LastPageIndex = null,
-                    TotalPageCount = null,
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = correlationId  // Saga will use this to find its jobs
-                };
+                var resourceIndex = BuildResourceIndexEntity(
+                    docType,
+                    shape,
+                    uri,
+                    request,
+                    ordinal,
+                    correlationId);
 
                 await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
 

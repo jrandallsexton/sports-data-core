@@ -17,7 +17,8 @@ public class ProcessDocumentCommand(
     string urlHash,
     Uri? originalUri = null,
     int attemptCount = 0,
-    IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
+    IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null,
+    bool notifyOnCompletion = false)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -49,6 +50,12 @@ public class ProcessDocumentCommand(
     /// of types in this collection. If null or empty, all linked documents are processed.
     /// </summary>
     public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; } = includeLinkedDocumentTypes;
+
+    /// <summary>
+    /// When true, Producer will publish DocumentProcessingCompleted event after successfully processing this document.
+    /// Used by Provider saga to orchestrate tier progression in historical sourcing.
+    /// </summary>
+    public bool NotifyOnCompletion { get; init; } = notifyOnCompletion;
 
     public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
 
@@ -115,6 +122,7 @@ public class ProcessDocumentCommand(
             ["CorrelationId"] = CorrelationId,
             ["DocumentType"] = DocumentType,
             ["MessageId"] = MessageId,
+            ["NotifyOnCompletion"] = NotifyOnCompletion,
             ["ParentId"] = ParentId ?? string.Empty,
             ["Ref"] = GetDocumentRef() ?? string.Empty,
             ["Season"] = Season ?? 0,

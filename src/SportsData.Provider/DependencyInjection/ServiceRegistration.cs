@@ -1,5 +1,7 @@
 ﻿using Hangfire;
 
+using MassTransit;
+
 using Polly;
 
 using SportsData.Core.Common;
@@ -10,6 +12,7 @@ using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Application.Services;
 using SportsData.Provider.Application.Sourcing.Historical;
+using SportsData.Provider.Application.Sourcing.Historical.Saga;
 using SportsData.Provider.Infrastructure.Data;
 
 using System.Net;
@@ -35,8 +38,26 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IDocumentInclusionService, DocumentInclusionService>();
 
             // Historical sourcing services
-            services.Configure<HistoricalSourcingConfig>(
-                configuration.GetSection(HistoricalSourcingConfig.SectionName));
+            services.AddOptions<HistoricalSourcingConfig>()
+                .Bind(configuration.GetSection(HistoricalSourcingConfig.SectionName))
+                .Validate(config =>
+                {
+                    // Validate SagaConfig properties
+                    if (config.SagaConfig.CompletionThreshold <= 0)
+                        return false;
+                    if (config.SagaConfig.FlagPercentage < 0 || config.SagaConfig.FlagPercentage > 1)
+                        return false;
+                    if (config.SagaConfig.MinimumFlaggedDocuments < 0)
+                        return false;
+                    if (config.SagaConfig.AlertAfterMinutes <= 0)
+                        return false;
+                    return true;
+                },
+                "HistoricalSourcingConfig validation failed: " +
+                "CompletionThreshold must be > 0, " +
+                "FlagPercentage must be between 0 and 1 (inclusive), " +
+                "MinimumFlaggedDocuments must be >= 0, " +
+                "AlertAfterMinutes must be > 0.");
             services.AddScoped<IHistoricalSourcingUriBuilder, HistoricalSourcingUriBuilder>();
             services.AddScoped<IHistoricalSeasonSourcingService, HistoricalSeasonSourcingService>();
 
@@ -75,6 +96,21 @@ namespace SportsData.Provider.DependencyInjection
             }
 
             return services;
+        }
+
+        public static IBusRegistrationConfigurator AddSagaSupport(
+            this IBusRegistrationConfigurator busConfigurator)
+        {
+            // Register the saga state machine
+            // Optimistic concurrency is handled via RowVersion property configured in HistoricalSeasonSourcingStateConfiguration
+            busConfigurator.AddSagaStateMachine<HistoricalSeasonSourcingSaga, HistoricalSeasonSourcingState>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ExistingDbContext<AppDataContext>();
+                    r.UsePostgres();
+                });
+
+            return busConfigurator;
         }
 
         public static IServiceProvider ConfigureHangfireJobs(

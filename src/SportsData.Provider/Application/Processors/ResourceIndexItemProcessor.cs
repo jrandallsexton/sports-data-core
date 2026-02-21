@@ -193,7 +193,7 @@ namespace SportsData.Provider.Application.Processors
                             command.DocumentType);
                         
                         // Publish DocumentCreated with cached data (NO ESPN call!)
-                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data);
+                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion);
                         return;
                     }
                     catch (System.Text.Json.JsonException ex)
@@ -285,7 +285,9 @@ namespace SportsData.Provider.Application.Processors
                 correlationId,
                 command.MessageId,  // Use parent MessageId as CausationId
                 0,
-                command.IncludeLinkedDocumentTypes);
+                command.IncludeLinkedDocumentTypes,
+                null,  // RequestedDependencies
+                command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
 
@@ -338,7 +340,9 @@ namespace SportsData.Provider.Application.Processors
                 correlationId,
                 command.MessageId,  // Use parent MessageId as CausationId
                 0,
-                command.IncludeLinkedDocumentTypes);
+                command.IncludeLinkedDocumentTypes,
+                null,  // RequestedDependencies
+                command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
 
@@ -351,7 +355,8 @@ namespace SportsData.Provider.Application.Processors
             ProcessResourceIndexItemCommand command,
             string urlHash,
             Guid correlationId,
-            string jsonFromCache)
+            string jsonFromCache,
+            bool notifyOnCompletion)
         {
             // TODO: pull this from CommonConfig and make it available within the class root
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
@@ -375,7 +380,9 @@ namespace SportsData.Provider.Application.Processors
                 correlationId,
                 command.MessageId,  // Use parent MessageId as CausationId
                 0,
-                command.IncludeLinkedDocumentTypes);
+                command.IncludeLinkedDocumentTypes,
+                null,  // RequestedDependencies
+                notifyOnCompletion);
 
             await _publisher.Publish(evt);
 
@@ -399,5 +406,6 @@ namespace SportsData.Provider.Application.Processors
         string? ParentId,
         int? SeasonYear = null,
         bool BypassCache = false,
-        IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null);
+        IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null,
+        bool NotifyOnCompletion = false);
 }

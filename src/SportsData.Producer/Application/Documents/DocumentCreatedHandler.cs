@@ -44,6 +44,7 @@ namespace SportsData.Producer.Application.Documents
                         ["DocumentId"] = message.Id,
                         ["DocumentType"] = message.DocumentType,
                         ["MessageId"] = message.MessageId,
+                        ["NotifyOnCompletion"] = message.NotifyOnCompletion,
                         ["Ref"] = message.Ref?.ToString() ?? string.Empty,
                         ["RetryReason"] = retryReason,
                         ["SourceDataProvider"] = message.SourceDataProvider,
@@ -73,7 +74,8 @@ namespace SportsData.Producer.Application.Documents
                         AttemptCount: message.AttemptCount,
                         Reason: retryReason,
                         CorrelationId: message.CorrelationId,
-                        CausationId: message.CausationId
+                        CausationId: message.CausationId,
+                        NotifyOnCompletion: message.NotifyOnCompletion
                     );
                     
                     using (_deliveryScope.Use(DeliveryMode.Direct))

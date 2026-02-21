@@ -17,6 +17,9 @@ public class HistoricalSeasonSourcingState : SagaStateMachineInstance
     public int SeasonYear { get; set; }
     public SourceDataProvider Provider { get; set; }
     
+    // Optimistic concurrency token (PostgreSQL xmin system column)
+    public uint RowVersion { get; set; }
+    
     // Tier completion tracking - counts completion events received from Producer
     public int SeasonCompletionEventsReceived { get; set; }
     public int VenueCompletionEventsReceived { get; set; }

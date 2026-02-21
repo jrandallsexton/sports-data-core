@@ -573,11 +573,35 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     /// <summary>
     /// Creates ResourceIndex entities for all 4 tiers WITHOUT scheduling them in Hangfire.
     /// Used by saga-based orchestration where the saga triggers each tier via events.
+    /// Idempotent: Returns existing correlationId if ResourceIndex entities already exist for this Sport/Season/Provider.
     /// </summary>
     public async Task<Guid> CreateSagaResourceIndexesAsync(
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Check for existing saga ResourceIndex entities (idempotency check)
+        var existingResourceIndex = await _dataContext.ResourceIndexJobs
+            .Where(x => x.Provider == request.SourceDataProvider
+                        && x.SportId == request.Sport
+                        && x.SeasonYear == request.SeasonYear
+                        && x.IsSeasonSpecific
+                        && !x.IsRecurring
+                        && x.DocumentType == DocumentType.Season) // Check the first tier as indicator
+            .OrderByDescending(x => x.CreatedUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existingResourceIndex != null)
+        {
+            var existingCorrelationId = existingResourceIndex.CreatedBy;
+            
+            _logger.LogInformation(
+                "ResourceIndex entities already exist for saga orchestration (idempotent operation). " +
+                "Returning existing CorrelationId={CorrelationId}, Sport={Sport}, Provider={Provider}, Year={Year}",
+                existingCorrelationId, request.Sport, request.SourceDataProvider, request.SeasonYear);
+            
+            return existingCorrelationId;
+        }
+
         var correlationId = Guid.NewGuid();
 
         using (_logger.BeginScope(new Dictionary<string, object>
@@ -589,7 +613,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         }))
         {
             _logger.LogInformation(
-                "Creating ResourceIndex entities for saga orchestration. Sport={Sport}, Provider={Provider}, Year={Year}",
+                "Creating NEW ResourceIndex entities for saga orchestration. Sport={Sport}, Provider={Provider}, Year={Year}",
                 request.Sport, request.SourceDataProvider, request.SeasonYear);
 
             // Define all 4 tiers (delays don't matter for saga - saga controls timing)

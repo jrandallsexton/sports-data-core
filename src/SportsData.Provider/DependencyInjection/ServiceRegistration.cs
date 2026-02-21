@@ -80,11 +80,11 @@ namespace SportsData.Provider.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddSagaSupport(
-            this IServiceCollection services,
-            IBusRegistrationConfigurator busConfigurator)
+        public static IBusRegistrationConfigurator AddSagaSupport(
+            this IBusRegistrationConfigurator busConfigurator)
         {
             // Register the saga state machine
+            // Optimistic concurrency is handled via RowVersion property configured in HistoricalSeasonSourcingStateConfiguration
             busConfigurator.AddSagaStateMachine<HistoricalSeasonSourcingSaga, HistoricalSeasonSourcingState>()
                 .EntityFrameworkRepository(r =>
                 {
@@ -92,7 +92,7 @@ namespace SportsData.Provider.DependencyInjection
                     r.UsePostgres();
                 });
 
-            return services;
+            return busConfigurator;
         }
 
         public static IServiceProvider ConfigureHangfireJobs(

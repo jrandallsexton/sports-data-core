@@ -48,7 +48,7 @@ namespace SportsData.Provider
                 typeof(TriggerTierSourcingConsumer)
             ], busConfig =>
             {
-                services.AddSagaSupport(busConfig);
+                busConfig.AddSagaSupport();
             });
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);

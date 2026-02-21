@@ -316,10 +316,16 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             command.Sport,
             command.Season));
         
+        _logger.LogInformation(
+            "📢 COMPLETION_NOTIFICATION: Enqueued DocumentProcessingCompleted event to outbox. " +
+            "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+            command.DocumentType,
+            command.CorrelationId);
+        
         await _dataContext.SaveChangesAsync(); // Flush outbox to send completion event
 
         _logger.LogInformation(
-            "📢 COMPLETION_NOTIFICATION: Published DocumentProcessingCompleted event. " +
+            "📢 COMPLETION_NOTIFICATION: Flushed outbox - DocumentProcessingCompleted event sent. " +
             "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
             command.DocumentType,
             command.CorrelationId);

@@ -86,9 +86,11 @@ public class HistoricalSourcingController : ApiControllerBase
         try
         {
             // Create ResourceIndex entities for all 4 tiers (NO Hangfire scheduling)
+            // This operation is idempotent - returns existing correlationId if entities already exist
             var correlationId = await _sourcingService.CreateSagaResourceIndexesAsync(request, cancellationToken);
 
             // Publish SeasonSourcingStarted event to kick off the saga
+            // If this fails, retrying the endpoint will return the same correlationId and re-publish
             var sagaEvent = new SeasonSourcingStarted(
                 correlationId,
                 request.Sport,

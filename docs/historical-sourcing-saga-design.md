@@ -41,9 +41,11 @@ bool NotifyOnCompletion { get; init; }
 ```
 
 **When Provider sets to true:**
-- Last 5% of documents OR minimum 5 documents (whichever is MORE)
+- Last 5% of documents OR minimum 1 document (whichever is MORE)
+- Formula: `Math.Max(1, ceiling(totalDocs * 0.05))`
 - Example: 130 venues → flag last 7 documents (5%)
-- Example: 2 seasons → flag last 5 documents (minimum threshold)
+- Example: 2 seasons → flag last 1 document (minimum threshold)
+- Example: 1 season → flag last 1 document (edge case)
 
 ### 2. ProcessDocumentCommand Enhancement
 
@@ -401,20 +403,30 @@ public class HistoricalSeasonSourcingState : SagaStateMachineInstance
 
 | Risk | Mitigation |
 |------|-----------|
-| Flagged documents fail | Timeout fallback after 15 min |
-| Saga state corruption | MassTransit handles persistence/recovery |
-| Too early progression | Wait for multiple events (threshold=3) |
-| Too late progression | Timeout ensures forward progress |
+| Flagged documents fail | **Decision D**: Only successful processing sends completion events; architecture guarantees no false positives |
+| Saga state corruption | MassTransit handles persistence/recovery via PostgreSQL |
+| Too early progression | **Decision A**: ANY completion event triggers (threshold=1) with 5% flag density provides sufficient signal |
+| Too late progression | **Decision B**: No timeout - failures require explicit fixes; observability alerts if saga stalled >30 min |
 | Event ordering issues | MassTransit correlation handles this |
-| Learning curve | Start simple, iterate |
+| Learning curve | Start simple, iterate; comprehensive design doc and logging |
 
 ## Next Steps
 
-1. **Resolve open questions A-E** (get alignment on thresholds, timeouts, etc.)
-2. **Review architecture with team** (if applicable)
-3. **Create feature branch** for saga implementation
-4. **Start with Phase 1** (infrastructure changes)
-5. **Iterate with testing** after each phase
+**Phases 1-3 Complete:** Core infrastructure, saga implementation, and ResourceIndexJob integration are finished, tested locally, and in PR review.
+
+**Current Phase 4 Status:**
+- ✅ Saga configuration implemented
+- ✅ API endpoint created (`POST /api/sourcing/historical/seasons/saga`)
+- ✅ Local smoke testing successful
+- ✅ PR created and under review
+
+**Remaining Work:**
+
+1. **Complete PR review and merge** - Address any final feedback, merge to main
+2. **Production deployment** - Apply migration, verify AppConfig, monitor first saga execution
+3. **Phase 5: Observability** - Add Grafana dashboard, metrics, alerts for saga monitoring
+4. **Documentation** - Update team docs with saga usage patterns and troubleshooting guide
+5. **Performance validation** - Compare saga timing vs previous Hangfire approach
 
 ## References
 

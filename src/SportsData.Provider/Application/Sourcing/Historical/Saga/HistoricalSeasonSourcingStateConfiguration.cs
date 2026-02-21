@@ -21,6 +21,13 @@ public class HistoricalSeasonSourcingStateConfiguration : IEntityTypeConfigurati
             .HasMaxLength(64)
             .IsRequired();
         
+        // Optimistic concurrency using PostgreSQL xmin system column
+        builder.Property(x => x.RowVersion)
+            .IsRowVersion()
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate();
+        
         // Composite index for correlation by Sport + SeasonYear
         builder.HasIndex(x => new { x.Sport, x.SeasonYear })
             .HasDatabaseName("IX_HistoricalSourcingSagas_Sport_Season");

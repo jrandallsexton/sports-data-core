@@ -53,6 +53,13 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             try
             {
                 await ProcessInternal(command);
+                
+                // Publish completion notification if Provider requested it (for saga orchestration)
+                if (command.NotifyOnCompletion)
+                {
+                    await PublishCompletionNotification(command);
+                }
+                
                 _logger.LogInformation("{ProcessorName} completed.", GetType().Name);
             }
             catch (ExternalDocumentNotSourcedException retryEx)
@@ -293,5 +300,35 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             requestType,
             documentType,
             identity.UrlHash);
+    }
+
+    /// <summary>
+    /// Publishes DocumentProcessingCompleted event to notify Provider saga of successful document processing.
+    /// This is a simple messenger - no logic, just publish if flag is set.
+    /// </summary>
+    private async Task PublishCompletionNotification(ProcessDocumentCommand command)
+    {
+        await _publishEndpoint.Publish(new DocumentProcessingCompleted(
+            command.CorrelationId,
+            command.DocumentType,
+            command.UrlHash,
+            DateTimeOffset.UtcNow,
+            command.Sport,
+            command.Season,
+            command.SourceDataProvider));
+        
+        _logger.LogInformation(
+            "📢 COMPLETION_NOTIFICATION: Enqueued DocumentProcessingCompleted event to outbox. " +
+            "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+            command.DocumentType,
+            command.CorrelationId);
+        
+        await _dataContext.SaveChangesAsync(); // Flush outbox to send completion event
+
+        _logger.LogInformation(
+            "📢 COMPLETION_NOTIFICATION: Flushed outbox - DocumentProcessingCompleted event sent. " +
+            "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
+            command.DocumentType,
+            command.CorrelationId);
     }
 }

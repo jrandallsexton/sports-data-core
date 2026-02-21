@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -9,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Application.Sourcing.Historical;
 using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Jobs
@@ -21,6 +23,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IProvideEspnApiData _espnApi;
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly HistoricalSourcingConfig _config;
 
         private const int PageSize = 250;
 
@@ -29,13 +32,15 @@ namespace SportsData.Provider.Application.Jobs
             AppDataContext dataContext,
             IProvideEspnApiData espnApi,
             IDecodeDocumentProvidersAndTypes decoder,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IOptions<HistoricalSourcingConfig> config)
         {
             _logger = logger;
             _dataContext = dataContext;
             _espnApi = espnApi;
             _decoder = decoder;
             _backgroundJobProvider = backgroundJobProvider;
+            _config = config.Value;
         }
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
@@ -314,6 +319,23 @@ namespace SportsData.Provider.Application.Jobs
                 _logger.LogInformation("Target collection {Collection}", collectionName);
                 // NOTE: left in place in case you want to observe coverage; no short-circuiting
 
+                var totalItemsExpected = resourceIndexDto.Count;
+                
+                // Calculate flag threshold: Math.Max(1, ceiling(5%))
+                var flagThreshold = Math.Max(
+                    _config.SagaConfig.MinimumFlaggedDocuments,
+                    (int)Math.Ceiling(totalItemsExpected * _config.SagaConfig.FlagPercentage));
+                
+                var flagStartPosition = totalItemsExpected - flagThreshold;
+                
+                _logger.LogInformation(
+                    "📊 FLAG_CALCULATION: TotalDocuments={Total}, FlagThreshold={Threshold}, " +
+                    "FlagStartPosition={StartPos}, FlagPercentage={Percentage}",
+                    totalItemsExpected,
+                    flagThreshold,
+                    flagStartPosition,
+                    _config.SagaConfig.FlagPercentage);
+
                 var totalItemsEnqueued = 0;
 
                 // ---- Page loop -------------------------------------------------
@@ -332,6 +354,8 @@ namespace SportsData.Provider.Application.Jobs
                     // Enqueue items for processing
                     foreach (var item in resourceIndexDto.Items)
                     {
+                        var shouldNotify = totalItemsEnqueued >= flagStartPosition;
+                        
                         var cmd = new ProcessResourceIndexItemCommand(
                             correlationId,  // ✅ CorrelationId FIRST
                             CausationId.Provider.ResourceIndexJob,
@@ -345,7 +369,18 @@ namespace SportsData.Provider.Application.Jobs
                             null,
                             jobDefinition.SeasonYear,
                             true,
-                            jobDefinition.IncludeLinkedDocumentTypes);
+                            jobDefinition.IncludeLinkedDocumentTypes,
+                            shouldNotify);  // NotifyOnCompletion flag
+
+                        if (shouldNotify)
+                        {
+                            _logger.LogDebug(
+                                "🚩 COMPLETION_FLAG_SET: Document #{Position} will notify on completion. " +
+                                "UrlHash={UrlHash}, DocumentType={DocumentType}",
+                                totalItemsEnqueued + 1,
+                                cmd.Id,
+                                jobDefinition.DocumentType);
+                        }
 
                         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                         totalItemsEnqueued++;

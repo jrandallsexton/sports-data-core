@@ -192,7 +192,17 @@ namespace SportsData.Core.DependencyInjection
             IConfiguration config,
             List<Type>? consumers)
         {
-            return services.AddMessaging<DbContext>(config, consumers, useOutbox: false);
+            return services.AddMessaging<DbContext>(config, consumers, configureBus: null, useOutbox: false);
+        }
+
+        // Non-generic overload with bus configuration: direct publish with saga support (Provider with sagas)
+        public static IServiceCollection AddMessaging(
+            this IServiceCollection services,
+            IConfiguration config,
+            List<Type>? consumers,
+            Action<IBusRegistrationConfigurator>? configureBus)
+        {
+            return services.AddMessaging<DbContext>(config, consumers, configureBus, useOutbox: false);
         }
 
         // Generic overload: with EF outbox (Producer, etc.)
@@ -202,7 +212,17 @@ namespace SportsData.Core.DependencyInjection
             List<Type>? consumers)
             where TDbContext : DbContext
         {
-            return services.AddMessaging<TDbContext>(config, consumers, useOutbox: true);
+            return services.AddMessaging<TDbContext>(config, consumers, configureBus: null, useOutbox: true);
+        }
+
+        public static IServiceCollection AddMessaging<TDbContext>(
+            this IServiceCollection services,
+            IConfiguration config,
+            List<Type>? consumers,
+            Action<IBusRegistrationConfigurator>? configureBus)
+            where TDbContext : DbContext
+        {
+            return services.AddMessaging<TDbContext>(config, consumers, configureBus, useOutbox: true);
         }
 
         // Internal method implementing both
@@ -210,6 +230,7 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration config,
             List<Type>? consumers,
+            Action<IBusRegistrationConfigurator>? configureBus,
             bool useOutbox)
             where TDbContext : DbContext
         {
@@ -219,6 +240,9 @@ namespace SportsData.Core.DependencyInjection
 
                 // register any consumers provided
                 consumers?.ForEach(z => x.AddConsumer(z));
+
+                // Allow additional bus configuration (e.g., sagas)
+                configureBus?.Invoke(x);
 
                 if (useOutbox)
                 {

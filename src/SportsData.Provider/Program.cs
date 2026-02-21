@@ -44,8 +44,12 @@ namespace SportsData.Provider
 
             services.AddMessaging(config, [
                 typeof(DocumentRequestedHandler),
-                typeof(LoadTestProviderEventConsumer)
-            ]);
+                typeof(LoadTestProviderEventConsumer),
+                typeof(TriggerTierSourcingConsumer)
+            ], busConfig =>
+            {
+                busConfig.AddSagaSupport();
+            });
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

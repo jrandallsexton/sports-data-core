@@ -259,7 +259,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved[0].OverPriceCurrent.Should().NotBeNull();
             saved[0].UnderPriceCurrent.Should().NotBeNull();
 
-            bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
+            // Expects 2 events: ContestOddsCreated + DocumentProcessingCompleted
+            bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [Fact]
@@ -306,7 +307,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
                 .With(x => x.Document, json)
                 .With(x => x.UrlHash, "url-hash")
-                .OmitAutoProperties()
+                .With(x => x.NotifyOnCompletion, false)
+                .Without(x => x.IncludeLinkedDocumentTypes)
+                .Without(x => x.PropertyBag)
                 .Create();
 
             var sut = Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>();
@@ -317,6 +320,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // Assert
             var count = await FootballDataContext.CompetitionOdds.CountAsync();
             count.Should().Be(1);
+            // No events expected: NotifyOnCompletion=false and no domain changes
             bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -358,6 +362,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
                 .With(x => x.Document, jsonOriginal)
                 .With(x => x.UrlHash, "url-hash")
+                .With(x => x.NotifyOnCompletion, false)
                 .OmitAutoProperties()
                 .Create();
 
@@ -389,6 +394,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
                 .With(x => x.Document, jsonUpdated)
                 .With(x => x.UrlHash, "url-hash")
+                .With(x => x.NotifyOnCompletion, false)
                 .OmitAutoProperties()
                 .Create();
 
@@ -535,7 +541,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
                 .With(x => x.Document, json)
                 .With(x => x.UrlHash, "url-hash")
-                .OmitAutoProperties()
+                .With(x => x.NotifyOnCompletion, false)
+                .Without(x => x.IncludeLinkedDocumentTypes)
+                .Without(x => x.PropertyBag)
                 .Create();
 
             var sut = Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>();

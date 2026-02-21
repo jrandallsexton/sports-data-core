@@ -22,6 +22,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         int AttemptCount,
         string Reason,
         Guid CorrelationId,
-        Guid CausationId
+        Guid CausationId,
+        bool NotifyOnCompletion
     ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
 }

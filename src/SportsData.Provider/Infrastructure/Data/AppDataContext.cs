@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using SportsData.Core.Infrastructure.Data.Extensions;
+using SportsData.Provider.Application.Sourcing.Historical.Saga;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Infrastructure.Data
@@ -15,6 +16,8 @@ namespace SportsData.Provider.Infrastructure.Data
         public DbSet<ResourceIndexItem> ResourceIndexItems { get; set; }
 
         public DbSet<ScheduledJob> ScheduledJobs { get; set; }
+
+        public DbSet<HistoricalSeasonSourcingState> HistoricalSourcingSagas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

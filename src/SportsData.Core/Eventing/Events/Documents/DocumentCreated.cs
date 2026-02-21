@@ -22,6 +22,7 @@ namespace SportsData.Core.Eventing.Events.Documents
         Guid CausationId,
         int AttemptCount = 0,
         IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null,
-        HashSet<RequestedDependency>? RequestedDependencies = null
+        HashSet<RequestedDependency>? RequestedDependencies = null,
+        bool NotifyOnCompletion = false
     ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId), IHasSourceUrlHashInitOnly;
 }

@@ -1,5 +1,7 @@
 ﻿using Hangfire;
 
+using MassTransit;
+
 using Polly;
 
 using SportsData.Core.Common;
@@ -10,6 +12,7 @@ using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Application.Services;
 using SportsData.Provider.Application.Sourcing.Historical;
+using SportsData.Provider.Application.Sourcing.Historical.Saga;
 using SportsData.Provider.Infrastructure.Data;
 
 using System.Net;
@@ -73,6 +76,21 @@ namespace SportsData.Provider.DependencyInjection
             {
                 services.AddSingleton<IDocumentStore, CosmosDocumentService>();
             }
+
+            return services;
+        }
+
+        public static IServiceCollection AddSagaSupport(
+            this IServiceCollection services,
+            IBusRegistrationConfigurator busConfigurator)
+        {
+            // Register the saga state machine
+            busConfigurator.AddSagaStateMachine<HistoricalSeasonSourcingSaga, HistoricalSeasonSourcingState>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ExistingDbContext<AppDataContext>();
+                    r.UsePostgres();
+                });
 
             return services;
         }

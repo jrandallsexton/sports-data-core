@@ -21,6 +21,10 @@ public interface IHistoricalSeasonSourcingService
     Task<HistoricalSeasonSourcingResponse> SourceSeasonAsync(
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default);
+    
+    Task<Guid> CreateSagaResourceIndexesAsync(
+        HistoricalSeasonSourcingRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
@@ -564,6 +568,87 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         // Normalize to positive value (PostgreSQL advisory locks support negative, but positive is clearer)
         // Handle Int64.MinValue edge case: use & with long.MaxValue to avoid overflow
         return lockId == long.MinValue ? long.MaxValue : Math.Abs(lockId);
+    }
+
+    /// <summary>
+    /// Creates ResourceIndex entities for all 4 tiers WITHOUT scheduling them in Hangfire.
+    /// Used by saga-based orchestration where the saga triggers each tier via events.
+    /// </summary>
+    public async Task<Guid> CreateSagaResourceIndexesAsync(
+        HistoricalSeasonSourcingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var correlationId = Guid.NewGuid();
+
+        using (_logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = correlationId,
+            ["Sport"] = request.Sport,
+            ["Provider"] = request.SourceDataProvider,
+            ["SeasonYear"] = request.SeasonYear
+        }))
+        {
+            _logger.LogInformation(
+                "Creating ResourceIndex entities for saga orchestration. Sport={Sport}, Provider={Provider}, Year={Year}",
+                request.Sport, request.SourceDataProvider, request.SeasonYear);
+
+            // Define all 4 tiers (delays don't matter for saga - saga controls timing)
+            var tiers = new[]
+            {
+                (DocumentType.Season, ResourceShape.Auto),
+                (DocumentType.Venue, ResourceShape.Index),
+                (DocumentType.TeamSeason, ResourceShape.Index),
+                (DocumentType.AthleteSeason, ResourceShape.Index)
+            };
+
+            var baseOrdinal = GenerateBaseOrdinal();
+
+            for (var i = 0; i < tiers.Length; i++)
+            {
+                var (docType, shape) = tiers[i];
+                var uri = _uriBuilder.BuildUri(docType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+
+                var resourceIndex = new ResourceIndexEntity
+                {
+                    Id = Guid.NewGuid(),
+                    Ordinal = baseOrdinal * 100L + i,
+                    Name = _routingKeyGenerator.Generate(request.SourceDataProvider, uri),
+                    IsRecurring = false,
+                    IsQueued = false,
+                    CronExpression = null,
+                    IsEnabled = true,
+                    Provider = request.SourceDataProvider,
+                    DocumentType = docType,
+                    Shape = shape,
+                    SportId = request.Sport,
+                    Uri = uri,
+                    SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
+                    SeasonYear = request.SeasonYear,
+                    IsSeasonSpecific = true,
+                    LastAccessedUtc = null,
+                    LastCompletedUtc = null,
+                    LastPageIndex = null,
+                    TotalPageCount = null,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = correlationId  // Saga will use this to find its jobs
+                };
+
+                await _dataContext.ResourceIndexJobs.AddAsync(resourceIndex, cancellationToken);
+
+                _logger.LogInformation(
+                    "Created ResourceIndex for saga tier. Tier={TierName}, DocumentType={DocumentType}, " +
+                    "Ordinal={Ordinal}, ResourceIndexId={ResourceIndexId}, Uri={Uri}",
+                    docType, docType, resourceIndex.Ordinal, resourceIndex.Id, uri);
+            }
+
+            await _dataContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "✅ All 4 ResourceIndex entities created for saga. CorrelationId={CorrelationId}",
+                correlationId);
+
+            return correlationId;
+        }
     }
 
     private record TierDefinition(DocumentType DocumentType, ResourceShape Shape, int DelayMinutes);

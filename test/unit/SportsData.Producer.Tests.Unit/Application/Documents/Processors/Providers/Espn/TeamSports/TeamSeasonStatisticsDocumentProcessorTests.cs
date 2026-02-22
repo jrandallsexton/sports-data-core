@@ -539,5 +539,74 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             updatedFranchiseSeason.Should().NotBeNull();
             // Note: In real PostgreSQL, xmin would change. In EF InMemory, RowVersion behavior is simulated.
         }
+
+        [Fact]
+        public async Task ProcessAsync_DoesNotThrowCollectionModifiedError_WhenRemovingExistingStatistics()
+        {
+            // Arrange - This test specifically validates the fix for:
+            // "Collection was modified; enumeration operation may not execute"
+            // which occurred when RemoveRange was called on a tracked navigation property
+            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .WithAutoProperties()
+                .With(x => x.Statistics, new List<FranchiseSeasonStatisticCategory>())
+                .Create();
+
+            await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await TeamSportDataContext.SaveChangesAsync();
+
+            // Seed with multiple existing categories and stats to increase likelihood of enumeration issues
+            var categories = new List<FranchiseSeasonStatisticCategory>();
+            
+            for (int i = 0; i < 3; i++)
+            {
+                var stats = Fixture.Build<FranchiseSeasonStatistic>()
+                    .Without(s => s.FranchiseSeasonStatisticCategoryId)
+                    .Without(s => s.Category)
+                    .CreateMany(5)
+                    .ToList();
+                
+                var category = Fixture.Build<FranchiseSeasonStatisticCategory>()
+                    .With(x => x.FranchiseSeasonId, franchiseSeason.Id)
+                    .With(x => x.Stats, stats)
+                    .Create();
+                
+                categories.Add(category);
+            }
+
+            await TeamSportDataContext.FranchiseSeasonStatistics.AddRangeAsync(categories);
+            await TeamSportDataContext.SaveChangesAsync();
+
+            // Detach and re-query with includes to simulate real scenario
+            TeamSportDataContext.ChangeTracker.Clear();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, franchiseSeason.Id.ToString())
+                .With(x => x.Document, json)
+                .OmitAutoProperties()
+                .Create();
+
+            var sut = Mocker.CreateInstance<TeamSeasonStatisticsDocumentProcessor<TeamSportDataContext>>();
+
+            // Act & Assert - Should not throw InvalidOperationException
+            var act = async () => await sut.ProcessAsync(command);
+            await act.Should().NotThrowAsync<InvalidOperationException>(
+                "RemoveRange should use ToList() to materialize collection before enumeration");
+
+            // Verify old statistics were removed and new ones added
+            var remainingCategories = await TeamSportDataContext.FranchiseSeasonStatistics
+                .Where(c => c.FranchiseSeasonId == franchiseSeason.Id)
+                .ToListAsync();
+
+            remainingCategories.Should().NotBeEmpty("new statistics should be inserted");
+            
+            var oldCategoryNames = categories.Select(c => c.Name).ToList();
+            foreach (var oldName in oldCategoryNames)
+            {
+                remainingCategories.Should().NotContain(c => c.Name == oldName,
+                    "all old categories should be removed");
+            }
+        }
     }
 }

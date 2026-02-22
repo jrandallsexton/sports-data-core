@@ -36,30 +36,29 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@SafeCommand}", 
-                command.ToSafeLogObject());
+            _logger.LogError("Failed to deserialize document to EspnFranchiseDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@SafeCommand}", 
-                command.ToSafeLogObject());
+            _logger.LogError("EspnFranchiseDto Ref is null or empty.");
             return;
         }
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        var entity = await _dataContext.Franchises
-            .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
-                                                             z.Provider == command.SourceDataProvider));
+        var exists = await _dataContext.Franchises
+            .AsNoTracking()
+            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                  z.Provider == command.SourceDataProvider));
 
-        if (entity is null)
+        if (!exists)
         {
             await ProcessNewEntity(command, externalDto);
         }
         else
         {
-            await ProcessUpdate(command, externalDto, entity);
+            await ProcessUpdate(command, externalDto);
         }
 
     }
@@ -172,8 +171,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
-        EspnFranchiseDto dto,
-        Franchise entity)
+        EspnFranchiseDto dto)
     {
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)

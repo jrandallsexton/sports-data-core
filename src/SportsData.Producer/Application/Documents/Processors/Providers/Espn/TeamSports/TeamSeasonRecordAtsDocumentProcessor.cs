@@ -34,8 +34,7 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnTeamSeasonRecordAtsDto. {@SafeCommand}", 
-                command.ToSafeLogObject());
+            _logger.LogError("Failed to deserialize document to EspnTeamSeasonRecordAtsDto.");
             return;
         }
 

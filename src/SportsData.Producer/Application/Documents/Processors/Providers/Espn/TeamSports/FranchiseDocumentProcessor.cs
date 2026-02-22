@@ -48,6 +48,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var entity = await _dataContext.Franchises
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
                                                              z.Provider == command.SourceDataProvider));
 

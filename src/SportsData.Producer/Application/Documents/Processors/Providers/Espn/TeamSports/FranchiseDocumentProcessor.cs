@@ -47,18 +47,18 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
         }
 
         // Determine if this entity exists. Do NOT trust that it says it is a new document!
-        var entity = await _dataContext.Franchises
+        var exists = await _dataContext.Franchises
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
-                                                             z.Provider == command.SourceDataProvider));
+            .AnyAsync(x => x.ExternalIds.Any(z => z.Value == command.UrlHash &&
+                                                  z.Provider == command.SourceDataProvider));
 
-        if (entity is null)
+        if (!exists)
         {
             await ProcessNewEntity(command, externalDto);
         }
         else
         {
-            await ProcessUpdate(command, externalDto, entity);
+            await ProcessUpdate(command, externalDto);
         }
 
     }
@@ -171,8 +171,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
-        EspnFranchiseDto dto,
-        Franchise entity)
+        EspnFranchiseDto dto)
     {
         var franchise = await _dataContext.Franchises
             .Include(x => x.ExternalIds)

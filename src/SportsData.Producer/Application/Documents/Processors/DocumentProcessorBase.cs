@@ -80,7 +80,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ProcessorName} failed. {@SafeCommand}", GetType().Name, command.ToSafeLogObject());
+                _logger.LogError(ex, "{ProcessorName} failed.", GetType().Name);
                 throw;
             }
         }

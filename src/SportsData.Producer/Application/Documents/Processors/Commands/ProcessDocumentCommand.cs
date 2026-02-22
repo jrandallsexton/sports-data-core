@@ -93,21 +93,6 @@ public class ProcessDocumentCommand(
     /// Gets a safe subset of command properties for logging (excludes large Document JSON).
     /// </summary>
     /// <returns>Anonymous object with safe logging properties</returns>
-    public object ToSafeLogObject()
-    {
-        return new
-        {
-            DocumentType,
-            Sport,
-            Season,
-            ParentId,
-            UrlHash,
-            AttemptCount,
-            Ref = GetDocumentRef(), // ✅ ESPN $ref URI for Postman debugging
-            SourceUri = SourceUri.ToString()
-        };
-    }
-
     /// <summary>
     /// Gets a dictionary of command properties for use in logging scopes.
     /// Provides standardized contextual logging across all document processors.

@@ -36,15 +36,13 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize document to EspnFranchiseDto. {@SafeCommand}", 
-                command.ToSafeLogObject());
+            _logger.LogError("Failed to deserialize document to EspnFranchiseDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnFranchiseDto Ref is null or empty. {@SafeCommand}", 
-                command.ToSafeLogObject());
+            _logger.LogError("EspnFranchiseDto Ref is null or empty.");
             return;
         }
 

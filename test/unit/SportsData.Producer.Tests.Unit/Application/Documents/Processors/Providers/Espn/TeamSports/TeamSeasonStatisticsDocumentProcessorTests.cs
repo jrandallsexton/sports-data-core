@@ -600,8 +600,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .ToListAsync();
 
             remainingCategories.Should().NotBeEmpty("new statistics should be inserted");
-            remainingCategories.Should().NotContain(c => c.Name == categories[0].Name, 
-                "old categories should be removed");
+            
+            var oldCategoryNames = categories.Select(c => c.Name).ToList();
+            foreach (var oldName in oldCategoryNames)
+            {
+                remainingCategories.Should().NotContain(c => c.Name == oldName,
+                    "all old categories should be removed");
+            }
         }
     }
 }

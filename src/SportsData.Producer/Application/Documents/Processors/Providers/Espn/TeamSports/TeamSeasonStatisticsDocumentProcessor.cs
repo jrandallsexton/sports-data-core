@@ -133,12 +133,13 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
         // Remove existing statistics (cascade delete configured in entity)
         if (franchiseSeason.Statistics?.Any() == true)
         {
+            var existingGamesPlayed = ExtractGamesPlayedFromExisting(franchiseSeason.Statistics) ?? 0;
             _dataContext.FranchiseSeasonStatistics.RemoveRange(franchiseSeason.Statistics.ToList());
             _logger.LogInformation(
                 "Removed existing TeamSeasonStatistics for FranchiseSeason {Id} (attempt {Attempt}). " +
                 "GamesPlayed: {ExistingGames} → {IncomingGames}, CorrelationId={CorrelationId}",
                 franchiseSeasonId, attempt,
-                ExtractGamesPlayedFromExisting(franchiseSeason.Statistics) ?? 0,
+                existingGamesPlayed,
                 incomingGamesPlayed ?? 0,
                 command.CorrelationId);
         }

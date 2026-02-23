@@ -52,7 +52,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
         if (competitionId == null)
         {
             _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
-            throw new InvalidOperationException("Missing or invalid parent ID");
+            return;
         }
 
         var competitionIdValue = competitionId.Value;

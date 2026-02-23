@@ -678,6 +678,11 @@ public static class EspnUriMapper
         if (recordRef == null) throw new ArgumentNullException(parameterName);
 
         var path = recordRef.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        var coachesIndex = Array.FindIndex(parts, p => p.Equals("coaches", StringComparison.OrdinalIgnoreCase));
+        if (coachesIndex < 0 || coachesIndex + 1 >= parts.Length || string.IsNullOrWhiteSpace(parts[coachesIndex + 1]))
+            throw new InvalidOperationException($"Unexpected ESPN coach record ref format: {recordRef}");
 
         var recordIndex = path.LastIndexOf("/record", StringComparison.OrdinalIgnoreCase);
         var trimmed = recordIndex > 0 ? path[..recordIndex] : path;

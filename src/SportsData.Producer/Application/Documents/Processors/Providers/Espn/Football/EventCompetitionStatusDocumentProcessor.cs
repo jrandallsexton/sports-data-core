@@ -54,7 +54,7 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
         if (competitionId == null)
         {
             _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
-            throw new InvalidOperationException("CompetitionId (ParentId) is required to process CompetitionStatus");
+            return;
         }
 
         var competitionIdValue = competitionId.Value;

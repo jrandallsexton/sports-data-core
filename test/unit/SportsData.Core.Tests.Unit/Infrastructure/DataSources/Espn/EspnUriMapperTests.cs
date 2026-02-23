@@ -878,11 +878,31 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             act.Should().Throw<ArgumentNullException>();
         }
 
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/players/123/record")] // wrong resource (players instead of coaches)
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/record")] // missing coaches segment entirely
+        public void CoachSeasonRecordRefToCoachSeasonRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.CoachSeasonRecordRefToCoachSeasonRef(input);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
         [Fact]
         public void CoachRecordRefToCoachRef_Should_Throw_On_Null()
         {
             Action act = () => EspnUriMapper.CoachRecordRefToCoachRef(null!);
             act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/players/123/record")] // wrong resource (players instead of coaches)
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/record")] // missing coaches segment entirely
+        public void CoachRecordRefToCoachRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.CoachRecordRefToCoachRef(input);
+            act.Should().Throw<InvalidOperationException>();
         }
 
         #endregion

@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -30,19 +31,25 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonRecordRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid ParentId: {ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
 
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
+
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonId);
+            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonIdValue);
 
         if (franchiseSeason is null)
         {
-            _logger.LogError("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogError("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonIdValue);
             return;
         }
 
@@ -56,7 +63,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
 
         // Find existing record by FranchiseSeasonId, Name, and Type (natural key)
         var existing = await _dataContext.FranchiseSeasonRecords
-            .FirstOrDefaultAsync(r => r.FranchiseSeasonId == franchiseSeasonId 
+            .FirstOrDefaultAsync(r => r.FranchiseSeasonId == franchiseSeasonIdValue 
                                    && r.Name == dto.Name 
                                    && r.Type == dto.Type);
 
@@ -68,7 +75,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
         }
 
         var entity = dto.AsEntity(
-            franchiseSeasonId,
+            franchiseSeasonIdValue,
             franchiseSeason.FranchiseId,
             franchiseSeason.SeasonYear,
             Guid.Empty);

@@ -43,20 +43,26 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonAwardRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid or missing ParentId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
 
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
+
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonId);
+            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonIdValue);
 
         if (franchiseSeason is null)
         {
             throw new ExternalDocumentNotSourcedException(
-                $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
+                $"FranchiseSeason {franchiseSeasonIdValue} not found. Will retry when available.");
         }
 
         // Convert season-specific award URL to canonical award URL
@@ -74,7 +80,7 @@ public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorB
         // 2. Create or update FranchiseSeasonAward entity (season instance)
         var franchiseSeasonAward = await ProcessFranchiseSeasonAward(
             dto, 
-            franchiseSeasonId, 
+            franchiseSeasonIdValue, 
             awardIdentity.CanonicalId, 
             command);
 

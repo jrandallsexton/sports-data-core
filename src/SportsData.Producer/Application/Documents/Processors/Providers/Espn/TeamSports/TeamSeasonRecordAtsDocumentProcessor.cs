@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -38,19 +39,25 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonRecordAtsRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid ParentId: {ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
 
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
+
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .Include(fs => fs.RecordsAts)
-            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonId);
+            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonIdValue);
 
         if (franchiseSeason is null)
         {
-            _logger.LogWarning("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogWarning("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonIdValue);
             return;
         }
 
@@ -85,7 +92,7 @@ public class TeamSeasonRecordAtsDocumentProcessor<TDataContext> : DocumentProces
                 continue;
             }
 
-            var entity = item.AsEntity(franchiseSeasonId, category.Id, command.CorrelationId);
+            var entity = item.AsEntity(franchiseSeasonIdValue, category.Id, command.CorrelationId);
 
             await _dataContext.FranchiseSeasonRecordsAts.AddAsync(entity);
         }

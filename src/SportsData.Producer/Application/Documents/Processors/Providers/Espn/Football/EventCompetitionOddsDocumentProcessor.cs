@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -42,11 +43,17 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionOddsRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("Invalid ParentId format for CompetitionId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
+
+        var competitionIdValue = competitionId.Value;
 
         if (!command.Season.HasValue)
         {
@@ -57,11 +64,11 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         var competition = await _dataContext.Competitions
             .AsNoTracking()
             .Include(x => x.Contest)
-            .FirstOrDefaultAsync(x => x.Id == competitionId);
+            .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
             throw new ArgumentException("competition not found");
         }
 

@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -30,11 +31,17 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonStatisticsRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid ParentId: {ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
+
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
 
         const int maxRetries = 3;
         var attempt = 0;
@@ -45,7 +52,7 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
 
             try
             {
-                await TryProcessStatistics(franchiseSeasonId, command, attempt);
+                await TryProcessStatistics(franchiseSeasonIdValue, command, attempt);
                 return; // Success - exit retry loop
             }
             catch (DbUpdateConcurrencyException ex)
@@ -55,7 +62,7 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
                     _logger.LogError(ex,
                         "Concurrency conflict persisted after {MaxRetries} attempts. " +
                         "FranchiseSeasonId={FranchiseSeasonId}, CorrelationId={CorrelationId}",
-                        maxRetries, franchiseSeasonId, command.CorrelationId);
+                        maxRetries, franchiseSeasonIdValue, command.CorrelationId);
                     throw;
                 }
 
@@ -66,7 +73,7 @@ public class TeamSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProce
                     "Concurrency conflict detected (attempt {Attempt}/{MaxRetries}). " +
                     "Another process updated FranchiseSeason concurrently. " +
                     "Retrying after {DelayMs}ms. FranchiseSeasonId={FranchiseSeasonId}, CorrelationId={CorrelationId}",
-                    attempt, maxRetries, delayMs, franchiseSeasonId, command.CorrelationId);
+                    attempt, maxRetries, delayMs, franchiseSeasonIdValue, command.CorrelationId);
 
                 await Task.Delay(delayMs);
                 // Loop will retry with fresh data

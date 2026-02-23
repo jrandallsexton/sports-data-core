@@ -42,23 +42,29 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonLeadersRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid or missing ParentId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
+
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
 
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .Include(x => x.ExternalIds)
             .Include(x => x.Leaders)
             .ThenInclude(x => x.Stats)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonId);
+            .FirstOrDefaultAsync(x => x.Id == franchiseSeasonIdValue);
 
         if (franchiseSeason is null)
         {
             throw new ExternalDocumentNotSourcedException(
-                $"FranchiseSeason {franchiseSeasonId} not found. Will retry when available.");
+                $"FranchiseSeason {franchiseSeasonIdValue} not found. Will retry when available.");
         }
 
         // Preflight dependency resolution - fail fast before deleting existing data
@@ -138,7 +144,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Removed existing leaders. FranchiseSeasonId={FranchiseSeasonId}, Leaders={LeaderCount}, Stats={StatCount}, IsNew={IsNew}",
-            franchiseSeasonId,
+            franchiseSeasonIdValue,
             existingLeadersCount,
             existingStatsCount,
             isNew);
@@ -216,7 +222,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                 var leaderEntity = FranchiseSeasonLeaderExtensions.AsEntity(
                     category,
-                    franchiseSeasonId,
+                    franchiseSeasonIdValue,
                     leaderCategory.Id,
                     command.CorrelationId
                 );
@@ -281,7 +287,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
         var totalStats = leaders.Sum(l => l.Stats.Count);
         _logger.LogInformation("Persisted FranchiseSeasonLeaders. FranchiseSeasonId={FranchiseSeasonId}, Categories={CategoryCount}, Leaders={LeaderCount}, Stats={StatCount}",
-            franchiseSeasonId,
+            franchiseSeasonIdValue,
             dto.Categories?.Count ?? 0,
             leaders.Count,
             totalStats);

@@ -48,6 +48,7 @@ namespace SportsData.Producer.Application.Documents
                         ["Ref"] = message.Ref?.ToString() ?? string.Empty,
                         ["RetryReason"] = retryReason,
                         ["SourceDataProvider"] = message.SourceDataProvider,
+                        ["SourceRef"] = message.SourceRef,
                         ["SourceUrlHash"] = message.SourceUrlHash,
                         ["Sport"] = message.Sport
                    }))

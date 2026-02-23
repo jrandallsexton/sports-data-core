@@ -12,6 +12,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -99,23 +100,29 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
 
     private async Task<Guid?> GetCompetitionId(ProcessDocumentCommand command)
     {
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionDriveRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("CompetitionId could not be parsed. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return null;
         }
+
+        var competitionIdValue = competitionId.Value;
 
         var competitionExists = await _dataContext.Competitions
             .AsNoTracking()
-            .AnyAsync(x => x.Id == competitionId);
+            .AnyAsync(x => x.Id == competitionIdValue);
 
         if (!competitionExists)
         {
-            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
             return null;
         }
 
-        return competitionId;
+        return competitionIdValue;
     }
         
     private async Task ProcessNewEntity(

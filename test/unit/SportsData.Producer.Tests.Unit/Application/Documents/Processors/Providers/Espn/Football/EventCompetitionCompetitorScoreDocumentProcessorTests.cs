@@ -116,7 +116,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
     }
 
     [Fact]
-    public async Task WhenParentIdIsInvalid_ShouldThrow()
+    public async Task WhenParentIdIsInvalid_ShouldLogErrorAndReturn()
     {
         // Arrange
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
@@ -124,12 +124,17 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
 
         var command = CreateCommand(json, "not-a-guid");
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
+        // Act
+        Func<Task> act = () => sut.ProcessAsync(command);
+
+        // Assert - processor logs error and returns gracefully; nothing persisted
+        await act.Should().NotThrowAsync();
+        var scores = FootballDataContext.CompetitionCompetitorScores.ToList();
+        scores.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task WhenParentIdIsMissing_ShouldThrow()
+    public async Task WhenParentIdIsMissing_ShouldLogErrorAndReturn()
     {
         // Arrange
         var generator = new ExternalRefIdentityGenerator();
@@ -141,7 +146,12 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         var command = CreateCommand(json, null);
         command.ParentId = null;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
+        // Act
+        Func<Task> act = () => sut.ProcessAsync(command);
+
+        // Assert - processor logs error and returns gracefully; nothing persisted
+        await act.Should().NotThrowAsync();
+        var scores = FootballDataContext.CompetitionCompetitorScores.ToList();
+        scores.Should().BeEmpty();
     }
 }

@@ -34,9 +34,8 @@ public static class EspnUriMapper
             .Append(athleteId);
 
         var path = string.Join('/', baseParts);
-        var query = athleteSeasonRef.Query;
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
     }
 
     public static Uri CompetitionCompetitorRefToCompetitionRef(Uri competitionCompetitorRef)
@@ -278,9 +277,8 @@ public static class EspnUriMapper
             .Append("status");
 
         var path = string.Join('/', baseParts);
-        var query = competitionRef.Query;
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
     }
 
     public static Uri CompetitionRefToContestRef(Uri competitionRef)
@@ -364,9 +362,8 @@ public static class EspnUriMapper
         // Build base path to season root
         var baseParts = parts.Take(seasonsIndex + 2); // includes "seasons/{year}"
         var path = string.Join('/', baseParts);
-        var query = seasonTypeRef.Query;
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
     }
 
     public static Uri SeasonTypeWeekToSeasonType(Uri weekRef)
@@ -396,9 +393,8 @@ public static class EspnUriMapper
         // FIXED: include the {typeId} segment
         var baseParts = parts.Take(weeksIndex); // stop before "weeks"
         var path = string.Join('/', baseParts);
-        var query = weekRef.Query;
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
     }
 
     public static Uri SeasonAwardToAwardRef(Uri seasonAwardRef)
@@ -430,9 +426,8 @@ public static class EspnUriMapper
             .Append(awardId);
 
         var path = string.Join('/', baseParts);
-        var query = seasonAwardRef.Query;
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
     }
 
     public static Uri TeamSeasonToFranchiseRef(Uri teamSeasonRef)
@@ -464,8 +459,234 @@ public static class EspnUriMapper
             .Append(teamId);
 
         var path = string.Join('/', baseParts);
-        var query = teamSeasonRef.Query; // preserves ?lang=en&region=us, etc.
 
-        return new Uri(path + query, UriKind.Absolute);
+        return new Uri(path, UriKind.Absolute);
+    }
+
+    /// <summary>
+    /// Maps a TeamSeason child URI (e.g., statistics, leaders, record) back to the TeamSeason URI.
+    /// Common helper for all TeamSeason child resources.
+    /// </summary>
+    private static Uri TeamSeasonChildToTeamSeasonRef(Uri childUri, string parameterName)
+    {
+        if (childUri == null) throw new ArgumentNullException(parameterName);
+
+        var path = childUri.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        // Expect: ... / seasons / {year} / teams / {teamId} / {childResource} / {id?}
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var teamsIndex = Array.IndexOf(parts, "teams");
+
+        if (seasonsIndex < 0 || teamsIndex < 0 || teamsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN TeamSeason child ref format: {childUri}");
+
+        var teamIdPart = parts[teamsIndex + 1];
+
+        if (string.IsNullOrWhiteSpace(teamIdPart) || !teamIdPart.All(char.IsDigit))
+            throw new InvalidOperationException($"Missing or invalid team id in ref: {childUri}");
+
+        // Build path up to teams/{teamId}
+        var baseParts = parts.Take(teamsIndex + 2); // includes .../teams/{teamId}
+        var result = string.Join('/', baseParts);
+
+        return new Uri(result, UriKind.Absolute);
+    }
+
+    public static Uri TeamSeasonStatisticsRefToTeamSeasonRef(Uri statisticsRef)
+        => TeamSeasonChildToTeamSeasonRef(statisticsRef, nameof(statisticsRef));
+
+    public static Uri TeamSeasonLeadersRefToTeamSeasonRef(Uri leadersRef)
+        => TeamSeasonChildToTeamSeasonRef(leadersRef, nameof(leadersRef));
+
+    public static Uri TeamSeasonRankRefToTeamSeasonRef(Uri rankRef)
+        => TeamSeasonChildToTeamSeasonRef(rankRef, nameof(rankRef));
+
+    public static Uri TeamSeasonRecordRefToTeamSeasonRef(Uri recordRef)
+        => TeamSeasonChildToTeamSeasonRef(recordRef, nameof(recordRef));
+
+    public static Uri TeamSeasonRecordAtsRefToTeamSeasonRef(Uri recordAtsRef)
+        => TeamSeasonChildToTeamSeasonRef(recordAtsRef, nameof(recordAtsRef));
+
+    public static Uri TeamSeasonProjectionRefToTeamSeasonRef(Uri projectionRef)
+        => TeamSeasonChildToTeamSeasonRef(projectionRef, nameof(projectionRef));
+
+    public static Uri TeamSeasonAwardRefToTeamSeasonRef(Uri awardRef)
+        => TeamSeasonChildToTeamSeasonRef(awardRef, nameof(awardRef));
+
+    public static Uri CompetitionBroadcastRefToCompetitionRef(Uri broadcastRef)
+    {
+        if (broadcastRef == null) throw new ArgumentNullException(nameof(broadcastRef));
+
+        var path = broadcastRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/broadcasts" or "/broadcasts/{id}"
+        var trimmed = path;
+        var broadcastsIndex = trimmed.LastIndexOf("/broadcasts", StringComparison.OrdinalIgnoreCase);
+        if (broadcastsIndex > 0)
+            trimmed = trimmed[..broadcastsIndex];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionPlayRefToCompetitionRef(Uri playRef)
+    {
+        if (playRef == null) throw new ArgumentNullException(nameof(playRef));
+
+        var path = playRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/plays" or "/plays/{id}"
+        var trimmed = path;
+        var playsIndex = trimmed.LastIndexOf("/plays", StringComparison.OrdinalIgnoreCase);
+        if (playsIndex > 0)
+            trimmed = trimmed[..playsIndex];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionPredictionRefToCompetitionRef(Uri predictionRef)
+    {
+        if (predictionRef == null) throw new ArgumentNullException(nameof(predictionRef));
+
+        var path = predictionRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/prediction" or "/predictions"
+        var trimmed = path;
+        if (trimmed.EndsWith("/prediction", StringComparison.OrdinalIgnoreCase))
+            trimmed = trimmed[..^"/prediction".Length];
+        else if (trimmed.EndsWith("/predictions", StringComparison.OrdinalIgnoreCase))
+            trimmed = trimmed[..^"/predictions".Length];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionStatusRefToCompetitionRef(Uri statusRef)
+    {
+        if (statusRef == null) throw new ArgumentNullException(nameof(statusRef));
+
+        var path = statusRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/status" or "/status/{id}"
+        var trimmed = path;
+        var statusIndex = trimmed.LastIndexOf("/status", StringComparison.OrdinalIgnoreCase);
+        if (statusIndex > 0)
+            trimmed = trimmed[..statusIndex];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionSituationRefToCompetitionRef(Uri situationRef)
+    {
+        if (situationRef == null) throw new ArgumentNullException(nameof(situationRef));
+
+        var path = situationRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/situation" or "/situation/{id}"
+        var trimmed = path;
+        var situationIndex = trimmed.LastIndexOf("/situation", StringComparison.OrdinalIgnoreCase);
+        if (situationIndex > 0)
+            trimmed = trimmed[..situationIndex];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionDriveRefToCompetitionRef(Uri driveRef)
+    {
+        if (driveRef == null) throw new ArgumentNullException(nameof(driveRef));
+
+        var path = driveRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/drives/{id}" or "/drives"
+        var trimmed = path;
+        if (trimmed.Contains("/drives", StringComparison.OrdinalIgnoreCase))
+        {
+            var drivesIndex = trimmed.LastIndexOf("/drives", StringComparison.OrdinalIgnoreCase);
+            trimmed = trimmed[..drivesIndex];
+        }
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionOddsRefToCompetitionRef(Uri oddsRef)
+    {
+        if (oddsRef == null) throw new ArgumentNullException(nameof(oddsRef));
+
+        var path = oddsRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/odds" or "/odds/{id}"
+        var trimmed = path;
+        if (trimmed.Contains("/odds", StringComparison.OrdinalIgnoreCase))
+        {
+            var oddsIndex = trimmed.LastIndexOf("/odds", StringComparison.OrdinalIgnoreCase);
+            trimmed = trimmed[..oddsIndex];
+        }
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri CompetitionPowerIndexRefToCompetitionRef(Uri powerIndexRef)
+    {
+        if (powerIndexRef == null) throw new ArgumentNullException(nameof(powerIndexRef));
+
+        var path = powerIndexRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/powerindex" or "/power-index" (and any trailing "/{id}")
+        var trimmed = path;
+        var powerIndexIndex = trimmed.LastIndexOf("/powerindex", StringComparison.OrdinalIgnoreCase);
+        var powerDashIndexIndex = trimmed.LastIndexOf("/power-index", StringComparison.OrdinalIgnoreCase);
+        var segmentIndex = Math.Max(powerIndexIndex, powerDashIndexIndex);
+        if (segmentIndex > 0)
+            trimmed = trimmed[..segmentIndex];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
+    public static Uri AthleteSeasonStatisticsRefToAthleteSeasonRef(Uri statisticsRef)
+    {
+        if (statisticsRef == null) throw new ArgumentNullException(nameof(statisticsRef));
+
+        var path = statisticsRef.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        // Expect: ... / seasons / {year} / athletes / {athleteId} / statistics / {id}
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var athletesIndex = Array.IndexOf(parts, "athletes");
+
+        if (seasonsIndex < 0 || athletesIndex < 0 || athletesIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN AthleteSeason statistics ref format: {statisticsRef}");
+
+        var athleteId = parts[athletesIndex + 1];
+
+        if (!int.TryParse(athleteId, out _))
+            throw new InvalidOperationException($"Missing or invalid athlete id in ref: {statisticsRef}");
+
+        // Build path up to athletes/{athleteId}
+        var baseParts = parts.Take(athletesIndex + 2); // includes .../athletes/{athleteId}
+        var result = string.Join('/', baseParts);
+
+        return new Uri(result, UriKind.Absolute);
+    }
+
+    public static Uri CoachSeasonRecordRefToCoachSeasonRef(Uri recordRef)
+        => TrimRecordSegment(recordRef, nameof(recordRef));
+
+    public static Uri CoachRecordRefToCoachRef(Uri recordRef)
+        => TrimRecordSegment(recordRef, nameof(recordRef));
+
+    private static Uri TrimRecordSegment(Uri recordRef, string parameterName)
+    {
+        if (recordRef == null) throw new ArgumentNullException(parameterName);
+
+        var path = recordRef.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        var coachesIndex = Array.FindIndex(parts, p => p.Equals("coaches", StringComparison.OrdinalIgnoreCase));
+        if (coachesIndex < 0 || coachesIndex + 1 >= parts.Length || string.IsNullOrWhiteSpace(parts[coachesIndex + 1]))
+            throw new InvalidOperationException($"Unexpected ESPN coach record ref format: {recordRef}");
+
+        var recordIndex = path.LastIndexOf("/record", StringComparison.OrdinalIgnoreCase);
+        var trimmed = recordIndex > 0 ? path[..recordIndex] : path;
+
+        return new Uri(trimmed, UriKind.Absolute);
     }
 }

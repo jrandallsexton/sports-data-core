@@ -38,16 +38,22 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
+        var competitionCompetitorId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef);
+
+        if (competitionCompetitorId == null)
         {
-            _logger.LogError("Invalid or missing CompetitionCompetitorId in ParentId.");
+            _logger.LogError("Unable to determine CompetitionCompetitorId from ParentId or URI");
             return;
         }
+
+        var competitionCompetitorIdValue = competitionCompetitorId.Value;
 
         var competitionCompetitor = await _dataContext.CompetitionCompetitors
             .AsNoTracking()
             .Include(x => x.Competition)
-            .FirstOrDefaultAsync(x => x.Id == competitionCompetitorId);
+            .FirstOrDefaultAsync(x => x.Id == competitionCompetitorIdValue);
 
         if (competitionCompetitor is null)
         {
@@ -68,7 +74,7 @@ public class EventCompetitionCompetitorStatisticsDocumentProcessor<TDataContext>
                 parentId: competitionIdentity.CanonicalId,
                 DocumentType.EventCompetitionCompetitor);
 
-            throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor with Id {competitionCompetitorId} does not exist. Requested. Will retry.");
+            throw new ExternalDocumentNotSourcedException($"CompetitionCompetitor with Id {competitionCompetitorIdValue} does not exist. Requested. Will retry.");
         }
 
         if (dto.Team?.Ref is null)

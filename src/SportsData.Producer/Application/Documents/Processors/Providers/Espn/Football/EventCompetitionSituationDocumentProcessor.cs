@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -41,11 +42,17 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionSituationRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
+
+        var competitionIdValue = competitionId.Value;
 
         Guid? lastPlayId = null;
 
@@ -63,7 +70,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                 await PublishChildDocumentRequest(
                     command,
                     dto.LastPlay,
-                    competitionId,
+                    competitionIdValue,
                     DocumentType.EventCompetitionPlay);
 
                 await _dataContext.SaveChangesAsync();
@@ -76,7 +83,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
 
         var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
-            competitionId,
+            competitionIdValue,
             lastPlayId,
             command.CorrelationId);
 
@@ -91,7 +98,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
         }
 
         _logger.LogInformation("Creating new CompetitionSituation. CompetitionId={CompId}, Down={Down}, Distance={Distance}, YardLine={YardLine}", 
-            competitionId,
+            competitionIdValue,
             dto.Down,
             dto.Distance,
             dto.YardLine);

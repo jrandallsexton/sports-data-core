@@ -10,6 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -43,17 +44,17 @@ public class CoachSeasonRecordDocumentProcessor<TDataContext> : DocumentProcesso
             return;
         }
 
-        if (command.ParentId is null)
+        var coachSeasonId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CoachSeasonRecordRefToCoachSeasonRef);
+
+        if (coachSeasonId == null)
         {
-            _logger.LogError("CoachSeasonRecord requires a valid ParentId for CoachSeason. {@Command}", command);
+            _logger.LogError("Unable to determine CoachSeasonId from ParentId or URI. {@Command}", command);
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId.ToString(), out var coachSeasonId))
-        {
-            _logger.LogError("CoachSeasonRecord ParentId is not a valid GUID. {@Command}", command);
-            return;
-        }
+        var coachSeasonIdValue = coachSeasonId.Value;
 
         var coachSeason = await _dataContext.CoachSeasons
             .Include(x => x.Records)
@@ -61,7 +62,7 @@ public class CoachSeasonRecordDocumentProcessor<TDataContext> : DocumentProcesso
             .Include(x => x.Records)
                 .ThenInclude(r => r.ExternalIds)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == coachSeasonId);
+            .FirstOrDefaultAsync(x => x.Id == coachSeasonIdValue);
 
         if (coachSeason is null)
         {

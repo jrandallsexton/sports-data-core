@@ -37,12 +37,6 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var seasonPhaseId))
-        {
-            _logger.LogError("SeasonPhaseId could not be parsed");
-            return;
-        }
-
         var externalProviderDto = command.Document.FromJson<EspnFootballSeasonTypeWeekDto>();
 
         if (externalProviderDto is null)
@@ -57,6 +51,18 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
             return;
         }
 
+        var seasonPhaseIdNullable = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.SeasonTypeWeekToSeasonType);
+
+        if (seasonPhaseIdNullable == null)
+        {
+            _logger.LogError("Unable to determine SeasonPhaseId from ParentId or URI");
+            return;
+        }
+
+        var seasonPhaseId = seasonPhaseIdNullable.Value;
+
         var seasonPhase = await _dataContext.SeasonPhases
             .Include(x => x.Weeks)
             .ThenInclude(w => w.ExternalIds)
@@ -67,7 +73,6 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
         if (seasonPhase == null)
         {
             var seasonPhaseRef = EspnUriMapper.SeasonTypeWeekToSeasonType(externalProviderDto.Ref);
-            var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(seasonPhaseRef);
 
             await PublishDependencyRequest<string?>(
                 command,

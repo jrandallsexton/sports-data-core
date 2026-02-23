@@ -10,6 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -43,17 +44,17 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
             return;
         }
 
-        if (command.ParentId is null)
+        var coachId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CoachRecordRefToCoachRef);
+
+        if (coachId == null)
         {
-            _logger.LogError("CoachRecord requires a valid ParentId for Coach. {@Command}", command);
+            _logger.LogError("Unable to determine CoachId from ParentId or URI. {@Command}", command);
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId.ToString(), out var coachId))
-        {
-            _logger.LogError("CoachRecord ParentId is not a valid GUID. {@Command}", command);
-            return;
-        }
+        var coachIdValue = coachId.Value;
 
         var coach = await _dataContext.Coaches
             .Include(x => x.Records)
@@ -62,11 +63,11 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 .ThenInclude(r => r.ExternalIds)
             .Include(x => x.ExternalIds)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == coachId);
+            .FirstOrDefaultAsync(x => x.Id == coachIdValue);
 
         if (coach is null)
         {
-            _logger.LogError("Parent Coach not found with ID {CoachId}. {@Command}", command.ParentId, command);
+            _logger.LogError("Parent Coach not found with ID {CoachId}. {@Command}", coachIdValue, command);
             return;
         }
 

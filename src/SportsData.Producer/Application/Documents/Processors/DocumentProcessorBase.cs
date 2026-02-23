@@ -133,6 +133,62 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     }
 
     /// <summary>
+    /// Attempts to get the ParentId from the command, or derives it from the source URI using the provided mapper function.
+    /// This enables processors to handle both explicit ParentId (direct invocation) and missing ParentId (dependency sourcing).
+    /// </summary>
+    /// <param name="command">The document processing command containing ParentId and SourceUri</param>
+    /// <param name="uriMapper">Function to map the child resource URI to its parent resource URI</param>
+    /// <returns>The ParentId as a Guid, or null if ParentId cannot be parsed and uriMapper is null</returns>
+    /// <remarks>
+    /// Use this when your processor requires a parent entity ID but the ParentId may not always be provided.
+    /// Pass the appropriate EspnUriMapper function (e.g., TeamSeasonStatisticsRefToTeamSeasonRef) as the uriMapper parameter.
+    /// </remarks>
+    protected Guid? TryGetOrDeriveParentId(
+        ProcessDocumentCommand command,
+        Func<Uri, Uri>? uriMapper = null)
+    {
+        // First try to parse the provided ParentId
+        if (Guid.TryParse(command.ParentId, out var parentId))
+        {
+            return parentId;
+        }
+
+        // If no mapper provided, can't derive - return null
+        if (uriMapper == null)
+        {
+            return null;
+        }
+
+        // If SourceUri is null, can't derive - return null
+        if (command.SourceUri == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Derive parent URI and generate canonical ID
+            var parentUri = uriMapper(command.SourceUri);
+            var derivedId = _externalRefIdentityGenerator.Generate(parentUri).CanonicalId;
+
+            _logger.LogDebug(
+                "ParentId not provided, derived from URI. " +
+                "SourceUri={SourceUri}, ParentUri={ParentUri}, DerivedId={DerivedId}",
+                command.SourceUri, parentUri, derivedId);
+
+            return derivedId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex,
+                "Failed to derive ParentId from URI. " +
+                "SourceUri={SourceUri}",
+                command.SourceUri);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Helper method to publish a DocumentRequested event for a dependency document.
     /// Dependency documents are required BEFORE processing can complete (e.g., Franchise before TeamSeason).
     /// Tracks specific dependencies (by DocumentType + UrlHash) to prevent duplicate requests on retries

@@ -54,7 +54,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
 
         var competitionCompetitorIdValue = competitionCompetitorId.Value;
 
-        _logger.LogDebug("Parsed CompetitionCompetitorId from ParentId. CompetitorId={CompetitorId}", competitionCompetitorIdValue);
+        _logger.LogDebug("CompetitionCompetitorId resolved (from ParentId or derived from source URI). CompetitorId={CompetitorId}", competitionCompetitorIdValue);
 
         var exists = await _dataContext.CompetitionCompetitors
             .AsNoTracking()

@@ -566,10 +566,11 @@ public static class EspnUriMapper
 
         var path = statusRef.GetLeftPart(UriPartial.Path);
 
-        // Trim "/status"
+        // Trim "/status" or "/status/{id}"
         var trimmed = path;
-        if (trimmed.EndsWith("/status", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/status".Length];
+        var statusIndex = trimmed.LastIndexOf("/status", StringComparison.OrdinalIgnoreCase);
+        if (statusIndex > 0)
+            trimmed = trimmed[..statusIndex];
 
         return new Uri(trimmed, UriKind.Absolute);
     }
@@ -580,10 +581,11 @@ public static class EspnUriMapper
 
         var path = situationRef.GetLeftPart(UriPartial.Path);
 
-        // Trim "/situation"
+        // Trim "/situation" or "/situation/{id}"
         var trimmed = path;
-        if (trimmed.EndsWith("/situation", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/situation".Length];
+        var situationIndex = trimmed.LastIndexOf("/situation", StringComparison.OrdinalIgnoreCase);
+        if (situationIndex > 0)
+            trimmed = trimmed[..situationIndex];
 
         return new Uri(trimmed, UriKind.Absolute);
     }
@@ -628,12 +630,13 @@ public static class EspnUriMapper
 
         var path = powerIndexRef.GetLeftPart(UriPartial.Path);
 
-        // Trim "/powerindex" or "/power-index"
+        // Trim "/powerindex" or "/power-index" (and any trailing "/{id}")
         var trimmed = path;
-        if (trimmed.EndsWith("/powerindex", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/powerindex".Length];
-        else if (trimmed.EndsWith("/power-index", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/power-index".Length];
+        var powerIndexIndex = trimmed.LastIndexOf("/powerindex", StringComparison.OrdinalIgnoreCase);
+        var powerDashIndexIndex = trimmed.LastIndexOf("/power-index", StringComparison.OrdinalIgnoreCase);
+        var segmentIndex = Math.Max(powerIndexIndex, powerDashIndexIndex);
+        if (segmentIndex > 0)
+            trimmed = trimmed[..segmentIndex];
 
         return new Uri(trimmed, UriKind.Absolute);
     }
@@ -654,8 +657,8 @@ public static class EspnUriMapper
 
         var athleteId = parts[athletesIndex + 1];
 
-        if (string.IsNullOrWhiteSpace(athleteId))
-            throw new InvalidOperationException($"Missing athlete id in ref: {statisticsRef}");
+        if (!int.TryParse(athleteId, out _))
+            throw new InvalidOperationException($"Missing or invalid athlete id in ref: {statisticsRef}");
 
         // Build path up to athletes/{athleteId}
         var baseParts = parts.Take(athletesIndex + 2); // includes .../athletes/{athleteId}
@@ -665,29 +668,19 @@ public static class EspnUriMapper
     }
 
     public static Uri CoachSeasonRecordRefToCoachSeasonRef(Uri recordRef)
-    {
-        if (recordRef == null) throw new ArgumentNullException(nameof(recordRef));
-
-        var path = recordRef.GetLeftPart(UriPartial.Path);
-
-        // Trim "/record"
-        var trimmed = path;
-        if (trimmed.EndsWith("/record", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/record".Length];
-
-        return new Uri(trimmed, UriKind.Absolute);
-    }
+        => TrimRecordSegment(recordRef, nameof(recordRef));
 
     public static Uri CoachRecordRefToCoachRef(Uri recordRef)
+        => TrimRecordSegment(recordRef, nameof(recordRef));
+
+    private static Uri TrimRecordSegment(Uri recordRef, string parameterName)
     {
-        if (recordRef == null) throw new ArgumentNullException(nameof(recordRef));
+        if (recordRef == null) throw new ArgumentNullException(parameterName);
 
         var path = recordRef.GetLeftPart(UriPartial.Path);
 
-        // Trim "/record"
-        var trimmed = path;
-        if (trimmed.EndsWith("/record", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^"/record".Length];
+        var recordIndex = path.LastIndexOf("/record", StringComparison.OrdinalIgnoreCase);
+        var trimmed = recordIndex > 0 ? path[..recordIndex] : path;
 
         return new Uri(trimmed, UriKind.Absolute);
     }

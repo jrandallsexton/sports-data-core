@@ -45,7 +45,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
         if (competitionCompetitorId == null)
         {
             _logger.LogError("Unable to determine CompetitionCompetitorId from ParentId or URI");
-            throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
+            return;
         }
 
         var competitionCompetitorIdValue = competitionCompetitorId.Value;

@@ -41,22 +41,28 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionLeadersRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("Invalid or missing ParentId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
+
+        var competitionIdValue = competitionId.Value;
 
         var competition = await _dataContext.Competitions
             .Include(x => x.ExternalIds)
             .Include(x => x.Leaders)
             .ThenInclude(x => x.Stats)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == competitionId);
+            .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
             return;
         }
 
@@ -112,7 +118,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
 
             var leaderEntity = CompetitionLeaderExtensions.AsEntity(
                 category,
-                competitionId,
+                competitionIdValue,
                 leaderCategory.Id,
                 command.CorrelationId
             );

@@ -12,6 +12,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -51,17 +52,17 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             return;
         }
 
-        if (string.IsNullOrEmpty(command.ParentId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionPlayRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("Command missing ParentId for CompetitionId.");
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
-        {
-            _logger.LogError("CompetitionId could not be parsed. ParentId={ParentId}", command.ParentId);
-            return;
-        }
+        var competitionIdValue = competitionId.Value;
 
         Guid? competitionDriveId = null;
             
@@ -76,12 +77,12 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         var competition = await _dataContext.Competitions
             .Include(c => c.Status)
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == competitionId);
+            .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
-            throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
+            throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
         }
 
         var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<

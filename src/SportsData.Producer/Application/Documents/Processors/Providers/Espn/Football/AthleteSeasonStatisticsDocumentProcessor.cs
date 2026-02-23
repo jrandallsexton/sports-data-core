@@ -10,6 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
 {
@@ -29,19 +30,25 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
         protected override async Task ProcessInternal(ProcessDocumentCommand command)
         {
-            if (!Guid.TryParse(command.ParentId, out var athleteSeasonId))
+            var athleteSeasonId = TryGetOrDeriveParentId(
+                command,
+                EspnUriMapper.AthleteSeasonStatisticsRefToAthleteSeasonRef);
+
+            if (athleteSeasonId == null)
             {
-                _logger.LogError("Invalid ParentId: {ParentId}", command.ParentId);
+                _logger.LogError("Unable to determine AthleteSeasonId from ParentId or URI");
                 return;
             }
 
+            var athleteSeasonIdValue = athleteSeasonId.Value;
+
             var athleteSeason = await _dataContext.AthleteSeasons
                 .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == athleteSeasonId);
+                .FirstOrDefaultAsync(s => s.Id == athleteSeasonIdValue);
 
             if (athleteSeason is null)
             {
-                _logger.LogError("AthleteSeason not found: {AthleteSeasonId}", athleteSeasonId);
+                _logger.LogError("AthleteSeason not found: {AthleteSeasonId}", athleteSeasonIdValue);
                 return;
             }
 
@@ -76,7 +83,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var entity = dto.AsEntity(
                 _externalRefIdentityGenerator,
-                athleteSeasonId,
+                athleteSeasonIdValue,
                 command.CorrelationId);
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
@@ -87,7 +94,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             _logger.LogInformation(
                 "Successfully processed AthleteSeasonStatistics {Id} for AthleteSeason {AthleteSeasonId} with {CategoryCount} categories and {StatCount} total stats",
                 entity.Id,
-                athleteSeasonId,
+                athleteSeasonIdValue,
                 entity.Categories.Count,
                 entity.Categories.Sum(c => c.Stats.Count));
         }

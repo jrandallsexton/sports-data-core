@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -46,28 +47,34 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
             return; // terminal failure — don't retry
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionStatusRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("ParentId is missing or invalid for CompetitionStatus. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             throw new InvalidOperationException("CompetitionId (ParentId) is required to process CompetitionStatus");
         }
 
+        var competitionIdValue = competitionId.Value;
+
         var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
-            competitionId,
+            competitionIdValue,
             command.CorrelationId);
 
         var existing = await _dataContext.CompetitionStatuses
             .Include(x => x.ExternalIds)
             .Include(x => x.Competition)
-            .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
+            .FirstOrDefaultAsync(x => x.CompetitionId == competitionIdValue);
 
         if (existing is not null)
         {
             publishEvent = existing.StatusTypeName != dto.Type.Name;
 
             _logger.LogInformation("Updating CompetitionStatus (hard replace). CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
-                competitionId,
+                competitionIdValue,
                 existing.StatusTypeName,
                 dto.Type.Name);
 
@@ -94,9 +101,9 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 entity.StatusTypeName);
 
             await _publishEndpoint.Publish(new CompetitionStatusChanged(
-                competitionId,
+                competitionIdValue,
                 entity.StatusTypeName,
-                _refGenerator.ForCompetition(competitionId),
+                _refGenerator.ForCompetition(competitionIdValue),
                 command.Sport,
                 command.Season,
                 command.CorrelationId,

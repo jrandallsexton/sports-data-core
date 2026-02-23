@@ -38,18 +38,24 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
+        var competitionCompetitorId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionCompetitorScoreRefToCompetitionCompetitorRef);
+
+        if (competitionCompetitorId == null)
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionCompetitorId from ParentId or URI");
             throw new InvalidOperationException("Invalid ParentId for CompetitionCompetitorId");
         }
+
+        var competitionCompetitorIdValue = competitionCompetitorId.Value;
 
         // Fetch the competitor with navigation properties to get Contest and FranchiseSeason info
         var competitor = await _dataContext.CompetitionCompetitors
             .Include(x => x.Competition)
                 .ThenInclude(x => x.Contest)
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == competitionCompetitorId);
+            .FirstOrDefaultAsync(x => x.Id == competitionCompetitorIdValue);
 
         if (competitor is null)
         {
@@ -71,14 +77,14 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
         // Validate navigation properties are loaded
         if (competitor.Competition is null)
         {
-            _logger.LogError("Competition not loaded for CompetitionCompetitor. CompetitorId={CompetitorId}", competitionCompetitorId);
-            throw new InvalidOperationException($"Competition not loaded for CompetitionCompetitor {competitionCompetitorId}");
+            _logger.LogError("Competition not loaded for CompetitionCompetitor. CompetitorId={CompetitorId}", competitionCompetitorIdValue);
+            throw new InvalidOperationException($"Competition not loaded for CompetitionCompetitor {competitionCompetitorIdValue}");
         }
 
         if (competitor.Competition.Contest is null)
         {
             _logger.LogError("Contest not loaded for Competition. CompetitorId={CompetitorId}, CompetitionId={CompetitionId}", 
-                competitionCompetitorId,
+                competitionCompetitorIdValue,
                 competitor.Competition.Id);
             throw new InvalidOperationException($"Contest not loaded for Competition {competitor.Competition.Id}");
         }
@@ -92,7 +98,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
         if (score != null)
         {
             _logger.LogInformation("Existing CompetitorScore found. CompetitorId={CompetitorId}, ScoreId={ScoreId}", 
-                competitionCompetitorId, 
+                competitionCompetitorIdValue, 
                 scoreIdentity.CanonicalId);
 
             // Check if score actually changed before updating
@@ -101,13 +107,13 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             if (!scoreChanged)
             {
                 _logger.LogInformation("Score unchanged, skipping update. CompetitorId={CompetitorId}, Value={Value}",
-                    competitionCompetitorId,
+                    competitionCompetitorIdValue,
                     dto.Value);
                 return;
             }
 
             _logger.LogInformation("Score changed, updating. CompetitorId={CompetitorId}, OldValue={OldValue}, NewValue={NewValue}",
-                competitionCompetitorId,
+                competitionCompetitorIdValue,
                 score.Value,
                 dto.Value);
             
@@ -136,15 +142,15 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Score update persisted and event queued. CompetitorId={CompetitorId}, Value={Value}",
-                competitionCompetitorId,
+                competitionCompetitorIdValue,
                 dto.Value);
         }
         else
         {
-            _logger.LogInformation("Creating new CompetitorScore. CompetitorId={CompetitorId}", competitionCompetitorId);
+            _logger.LogInformation("Creating new CompetitorScore. CompetitorId={CompetitorId}", competitionCompetitorIdValue);
 
             var entity = dto.AsEntity(
-                competitionCompetitorId,
+                competitionCompetitorIdValue,
                 _externalRefIdentityGenerator,
                 command.SourceDataProvider,
                 command.CorrelationId);
@@ -171,12 +177,12 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("New score persisted and event queued. CompetitorId={CompetitorId}, Value={Value}", 
-                competitionCompetitorId, 
+                competitionCompetitorIdValue, 
                 dto.Value);
         }
 
         _logger.LogInformation("CompetitorScore processing completed. CompetitorId={CompetitorId}, Value={Value}", 
-            competitionCompetitorId, 
+            competitionCompetitorIdValue, 
             dto.Value);
     }
 }

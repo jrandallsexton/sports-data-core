@@ -10,6 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -29,19 +30,25 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : DocumentProce
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        if (!Guid.TryParse(command.ParentId, out var franchiseSeasonId))
+        var franchiseSeasonId = TryGetOrDeriveParentId(
+            command, 
+            EspnUriMapper.TeamSeasonProjectionRefToTeamSeasonRef);
+
+        if (franchiseSeasonId == null)
         {
-            _logger.LogError("Invalid ParentId: {ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine FranchiseSeasonId from ParentId or URI");
             return;
         }
 
+        var franchiseSeasonIdValue = franchiseSeasonId.Value;
+
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonId);
+            .FirstOrDefaultAsync(s => s.Id == franchiseSeasonIdValue);
 
         if (franchiseSeason is null)
         {
-            _logger.LogWarning("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogWarning("FranchiseSeason not found: {FranchiseSeasonId}", franchiseSeasonIdValue);
             return;
         }
 
@@ -61,7 +68,7 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : DocumentProce
 
         // Check if a projection already exists for this FranchiseSeason
         var existing = await _dataContext.FranchiseSeasonProjections
-            .FirstOrDefaultAsync(x => x.FranchiseSeasonId == franchiseSeasonId);
+            .FirstOrDefaultAsync(x => x.FranchiseSeasonId == franchiseSeasonIdValue);
 
         if (existing != null)
         {
@@ -72,18 +79,18 @@ public class TeamSeasonProjectionDocumentProcessor<TDataContext> : DocumentProce
             existing.ProjectedLosses = dto.ProjectedLosses;
             existing.ModifiedBy = command.CorrelationId;
             existing.ModifiedUtc = DateTime.UtcNow;
-            _logger.LogInformation("Updated existing FranchiseSeasonProjection for FranchiseSeason {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogInformation("Updated existing FranchiseSeasonProjection for FranchiseSeason {FranchiseSeasonId}", franchiseSeasonIdValue);
         }
         else
         {
             // Create new entity
             var projection = dto.AsEntity(
-                franchiseSeasonId,
+                franchiseSeasonIdValue,
                 franchiseSeason.FranchiseId,
                 franchiseSeason.SeasonYear,
                 command.CorrelationId);
             await _dataContext.FranchiseSeasonProjections.AddAsync(projection);
-            _logger.LogInformation("Created new FranchiseSeasonProjection for FranchiseSeason {FranchiseSeasonId}", franchiseSeasonId);
+            _logger.LogInformation("Created new FranchiseSeasonProjection for FranchiseSeason {FranchiseSeasonId}", franchiseSeasonIdValue);
         }
 
         await _dataContext.SaveChangesAsync();

@@ -8,12 +8,12 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 {
     public class EspnUriMapperTests
     {
-        // 1) Happy path: HTTP + querystring preserved
+        // 1) Happy path: HTTP with query string stripped
         [Theory]
         [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/2673?lang=en&region=us",
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673?lang=en&region=us")]
-        public void TeamSeasonToFranchiseRef_Should_Map_To_Franchise_And_Preserve_Query_Http(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673")]
+        public void TeamSeasonToFranchiseRef_Should_Map_To_Franchise_Without_Query_Http(
             string teamSeasonRef,
             string expectedFranchiseRef)
         {
@@ -22,12 +22,12 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             result.Should().Be(new Uri(expectedFranchiseRef));
         }
 
-        // 2) Same path but HTTPS: ensure scheme is preserved
+        // 2) Same path but HTTPS: ensure scheme is preserved but query is stripped
         [Theory]
         [InlineData(
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/2673?lang=en&region=us",
-            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673?lang=en&region=us")]
-        public void TeamSeasonToFranchiseRef_Should_Preserve_Scheme_Https(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673")]
+        public void TeamSeasonToFranchiseRef_Should_Strip_Query_But_Preserve_Scheme_Https(
             string teamSeasonRef,
             string expectedFranchiseRef)
         {
@@ -56,15 +56,15 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             act.Should().Throw<ArgumentNullException>();
         }
 
-        // 5) Happy path: AthleteSeason to Athlete with querystring and HTTPS preserved
+        // 5) Happy path: AthleteSeason to Athlete with query string stripped
         [Theory]
         [InlineData(
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4426333?lang=en&region=us",
-            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333?lang=en&region=us")]
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333")]
         [InlineData(
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/-6952?lang=en&region=us",
-            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/-6952?lang=en&region=us")]
-        public void AthleteSeasonToAthleteRef_Should_Map_To_Athlete_And_Preserve_Query_Https(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/-6952")]
+        public void AthleteSeasonToAthleteRef_Should_Map_To_Athlete_Without_Query(
             string athleteSeasonRef,
             string expectedAthleteRef)
         {
@@ -76,8 +76,8 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [Theory]
         [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/1?lang=en&region=us",
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2?lang=en&region=us")]
-        public void SeasonTypeWeekToSeasonType_Should_Map_To_SeasonType_And_Preserve_Query(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2")]
+        public void SeasonTypeWeekToSeasonType_Should_Map_To_SeasonType_Without_Query(
             string weekRef,
             string expectedSeasonTypeRef)
         {
@@ -89,8 +89,8 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [Theory]
         [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us",
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en&region=us")]
-        public void SeasonTypeToSeason_Should_Map_To_Season_And_Preserve_Query(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025")]
+        public void SeasonTypeToSeason_Should_Map_To_Season_Without_Query(
             string seasonTypeRef,
             string expectedSeasonRef)
         {
@@ -105,11 +105,11 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3")]
         [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/awards/3?lang=en&region=us",
-            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3?lang=en&region=us")]
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/3")]
         [InlineData(
             "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/awards/1?lang=en&region=us",
-            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/1?lang=en&region=us")]
-        public void SeasonAwardToAwardRef_Should_Map_To_Award_And_Preserve_Query(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/awards/1")]
+        public void SeasonAwardToAwardRef_Should_Map_To_Award_Without_Query(
             string seasonAwardRef,
             string expectedAwardRef)
         {
@@ -376,5 +376,392 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
             Action act = () => EspnUriMapper.CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef(null!);
             act.Should().Throw<ArgumentNullException>();
         }
+
+        #region TeamSeason Child Resource Mappers
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2640/statistics/1?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2640")]
+        public void TeamSeasonStatisticsRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string statisticsRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(statisticsRef);
+            var result = EspnUriMapper.TeamSeasonStatisticsRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/leaders",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2640/leaders?lang=en&region=us",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2640")]
+        public void TeamSeasonLeadersRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string leadersRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(leadersRef);
+            var result = EspnUriMapper.TeamSeasonLeadersRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/rank",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        public void TeamSeasonRankRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string rankRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(rankRef);
+            var result = EspnUriMapper.TeamSeasonRankRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/record",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        public void TeamSeasonRecordRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string recordRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(recordRef);
+            var result = EspnUriMapper.TeamSeasonRecordRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/ats",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        public void TeamSeasonRecordAtsRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string recordAtsRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(recordAtsRef);
+            var result = EspnUriMapper.TeamSeasonRecordAtsRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/projection",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        public void TeamSeasonProjectionRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string projectionRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(projectionRef);
+            var result = EspnUriMapper.TeamSeasonProjectionRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/awards/123",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
+        public void TeamSeasonAwardRefToTeamSeasonRef_Should_Map_To_TeamSeason_Without_Query(
+            string awardRef,
+            string expectedTeamSeasonRef)
+        {
+            var input = new Uri(awardRef);
+            var result = EspnUriMapper.TeamSeasonAwardRefToTeamSeasonRef(input);
+            result.Should().Be(new Uri(expectedTeamSeasonRef));
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/395/statistics/0")] // no seasons segment
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/123/statistics/0")] // wrong resource (athletes)
+        public void TeamSeasonStatisticsRefToTeamSeasonRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.TeamSeasonStatisticsRefToTeamSeasonRef(input);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void TeamSeasonStatisticsRefToTeamSeasonRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.TeamSeasonStatisticsRefToTeamSeasonRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        #endregion
+
+        #region Competition Child Resource Mappers
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/broadcasts/123",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/broadcasts?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172")]
+        public void CompetitionBroadcastRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string broadcastRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(broadcastRef);
+            var result = EspnUriMapper.CompetitionBroadcastRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/plays/4017526710011",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/plays?limit=25",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172")]
+        public void CompetitionPlayRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string playRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(playRef);
+            var result = EspnUriMapper.CompetitionPlayRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/prediction",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172/predictions?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401540172/competitions/401540172")]
+        public void CompetitionPredictionRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string predictionRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(predictionRef);
+            var result = EspnUriMapper.CompetitionPredictionRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/status",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        public void CompetitionStatusRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string statusRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(statusRef);
+            var result = EspnUriMapper.CompetitionStatusRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/situation",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        public void CompetitionSituationRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string situationRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(situationRef);
+            var result = EspnUriMapper.CompetitionSituationRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Fact]
+        public void CompetitionBroadcastRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionBroadcastRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void CompetitionPlayRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionPlayRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void CompetitionPredictionRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionPredictionRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void CompetitionStatusRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionStatusRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void CompetitionSituationRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionSituationRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/drives/4017526710012",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/drives",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        public void CompetitionDriveRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string driveRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(driveRef);
+            var result = EspnUriMapper.CompetitionDriveRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Fact]
+        public void CompetitionDriveRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionDriveRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/odds",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/odds/1001",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        public void CompetitionOddsRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string oddsRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(oddsRef);
+            var result = EspnUriMapper.CompetitionOddsRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Fact]
+        public void CompetitionOddsRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionOddsRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/powerindex",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671/power-index",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752671/competitions/401752671")]
+        public void CompetitionPowerIndexRefToCompetitionRef_Should_Map_To_Competition_Without_Query(
+            string powerIndexRef,
+            string expectedCompetitionRef)
+        {
+            var input = new Uri(powerIndexRef);
+            var result = EspnUriMapper.CompetitionPowerIndexRefToCompetitionRef(input);
+            result.Should().Be(new Uri(expectedCompetitionRef));
+        }
+
+        [Fact]
+        public void CompetitionPowerIndexRefToCompetitionRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CompetitionPowerIndexRefToCompetitionRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        #endregion
+
+        #region AthleteSeason Child Resource Mappers
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4426333/statistics/0",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4426333")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/-6952/statistics/1?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/-6952")]
+        public void AthleteSeasonStatisticsRefToAthleteSeasonRef_Should_Map_To_AthleteSeason_Without_Query(
+            string statisticsRef,
+            string expectedAthleteSeasonRef)
+        {
+            var input = new Uri(statisticsRef);
+            var result = EspnUriMapper.AthleteSeasonStatisticsRefToAthleteSeasonRef(input);
+            result.Should().Be(new Uri(expectedAthleteSeasonRef));
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333/statistics/0")] // missing seasons segment
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/statistics/0")] // wrong resource (teams)
+        public void AthleteSeasonStatisticsRefToAthleteSeasonRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.AthleteSeasonStatisticsRefToAthleteSeasonRef(input);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void AthleteSeasonStatisticsRefToAthleteSeasonRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.AthleteSeasonStatisticsRefToAthleteSeasonRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        #endregion
+
+        #region Coach Resource Mappers
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/123/record",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/123")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/coaches/456/record?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/coaches/456")]
+        public void CoachSeasonRecordRefToCoachSeasonRef_Should_Map_To_CoachSeason_Without_Query(
+            string recordRef,
+            string expectedCoachSeasonRef)
+        {
+            var input = new Uri(recordRef);
+            var result = EspnUriMapper.CoachSeasonRecordRefToCoachSeasonRef(input);
+            result.Should().Be(new Uri(expectedCoachSeasonRef));
+        }
+
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/123/record",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/123")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/456/record?lang=en",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/456")]
+        public void CoachRecordRefToCoachRef_Should_Map_To_Coach_Without_Query(
+            string recordRef,
+            string expectedCoachRef)
+        {
+            var input = new Uri(recordRef);
+            var result = EspnUriMapper.CoachRecordRefToCoachRef(input);
+            result.Should().Be(new Uri(expectedCoachRef));
+        }
+
+        [Fact]
+        public void CoachSeasonRecordRefToCoachSeasonRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CoachSeasonRecordRefToCoachSeasonRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void CoachRecordRefToCoachRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.CoachRecordRefToCoachRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        #endregion
     }
 }

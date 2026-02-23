@@ -42,20 +42,26 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
             dto.Value,
             dto.DisplayValue);
 
-        if (!Guid.TryParse(command.ParentId, out var competitionCompetitorId))
+        var competitionCompetitorId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionLineScoreRefToCompetitionCompetitorRef);
+
+        if (competitionCompetitorId == null)
         {
-            _logger.LogError("ParentId must be a valid Guid for CompetitionCompetitorId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionCompetitorId from ParentId or URI");
             return; // fatal. do not retry
         }
 
-        _logger.LogDebug("Parsed CompetitionCompetitorId from ParentId. CompetitorId={CompetitorId}", competitionCompetitorId);
+        var competitionCompetitorIdValue = competitionCompetitorId.Value;
+
+        _logger.LogDebug("Parsed CompetitionCompetitorId from ParentId. CompetitorId={CompetitorId}", competitionCompetitorIdValue);
 
         var exists = await _dataContext.CompetitionCompetitors
             .AsNoTracking()
-            .AnyAsync(x => x.Id == competitionCompetitorId);
+            .AnyAsync(x => x.Id == competitionCompetitorIdValue);
 
         _logger.LogDebug("CompetitionCompetitor existence check. CompetitorId={CompetitorId}, Exists={Exists}", 
-            competitionCompetitorId, 
+            competitionCompetitorIdValue, 
             exists);
 
         if (!exists)
@@ -72,7 +78,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
                 parentId: competitionIdentity.CanonicalId,
                 DocumentType.EventCompetitionCompetitor);
 
-            throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorId}. Requested. Will retry.");
+            throw new ExternalDocumentNotSourcedException($"No CompetitionCompetitor exists with ID: {competitionCompetitorIdValue}. Requested. Will retry.");
         }
 
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
@@ -94,7 +100,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
         {
             _logger.LogInformation("Updating existing CompetitorLineScore. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, OldValue={OldValue}, NewValue={NewValue}", 
                 entry.Id,
-                competitionCompetitorId, 
+                competitionCompetitorIdValue, 
                 dto.Period,
                 entry.Value,
                 dto.Value);
@@ -118,13 +124,13 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
         else
         {
             _logger.LogInformation("Creating new CompetitorLineScore. CompetitorId={CompetitorId}, Period={Period}, Value={Value}, CanonicalId={CanonicalId}", 
-                competitionCompetitorId, 
+                competitionCompetitorIdValue, 
                 dto.Period,
                 dto.Value,
                 identity.CanonicalId);
 
             var entity = dto.AsEntity(
-                competitionCompetitorId,
+                competitionCompetitorIdValue,
                 _externalRefIdentityGenerator,
                 command.SourceDataProvider,
                 command.CorrelationId);
@@ -150,7 +156,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessor<TDataContext> 
         
         _logger.LogInformation("Persisted CompetitorLineScore. Id={Id}, CompetitorId={CompetitorId}, Period={Period}, Value={Value}, DisplayValue={DisplayValue}, ChangeCount={ChangeCount}", 
             identity.CanonicalId,
-            competitionCompetitorId, 
+            competitionCompetitorIdValue, 
             dto.Period,
             dto.Value,
             dto.DisplayValue,

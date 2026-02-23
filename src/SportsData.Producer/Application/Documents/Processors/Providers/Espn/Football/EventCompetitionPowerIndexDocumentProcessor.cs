@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -44,20 +45,26 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
         }
 
         // Resolve Competition
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionPowerIndexRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("Invalid or missing Competition ID in ParentId. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             throw new InvalidOperationException("Missing or invalid parent ID");
         }
 
+        var competitionIdValue = competitionId.Value;
+
         var competition = await _dataContext.Competitions
             .Include(x => x.PowerIndexes)
-            .FirstOrDefaultAsync(x => x.Id == competitionId);
+            .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
         if (competition is null)
         {
-            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId);
-            throw new InvalidOperationException($"Competition with ID {competitionId} does not exist.");
+            _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
+            throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
         }
 
         // Resolve FranchiseSeasonId from Team ref
@@ -126,7 +133,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
                 _externalRefIdentityGenerator,
                 dto.Ref,
                 powerIndex.Id,
-                competitionId,
+                competitionIdValue,
                 franchiseSeasonId.Value,
                 command.CorrelationId);
 
@@ -139,12 +146,12 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
         {
             _logger.LogInformation("Discovered {Count} new PowerIndexes. CompetitionId={CompId}, NewIndexes={Indexes}", 
                 newIndexCount,
-                competitionId,
+                competitionIdValue,
                 string.Join(", ", discoveredIndexNames));
         }
 
         _logger.LogInformation("Persisted CompetitionPowerIndexes. CompetitionId={CompId}, FranchiseSeasonId={TeamId}, IndexCount={Count}", 
-            competitionId,
+            competitionIdValue,
             franchiseSeasonId.Value,
             dto.Stats.Count());
     }

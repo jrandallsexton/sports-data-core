@@ -11,6 +11,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
@@ -47,11 +48,17 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : Documen
             return;
         }
 
-        if (!Guid.TryParse(command.ParentId, out var competitionId))
+        var competitionId = TryGetOrDeriveParentId(
+            command,
+            EspnUriMapper.CompetitionPredictionRefToCompetitionRef);
+
+        if (competitionId == null)
         {
-            _logger.LogError("ParentId is missing or invalid for CompetitionPrediction. ParentId={ParentId}", command.ParentId);
+            _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
+
+        var competitionIdValue = competitionId.Value;
 
         var homeFranchiseSeasonId = await _dataContext.ResolveIdAsync<
             FranchiseSeason, FranchiseSeasonExternalId>(
@@ -120,7 +127,7 @@ public class EventCompetitionPredictionDocumentProcessor<TDataContext> : Documen
         // 🏗 STEP 5: Build new CompetitionPrediction + Values
         var predictions = dto.AsEntities(
             _externalRefIdentityGenerator,
-            competitionId,
+            competitionIdValue,
             homeFranchiseSeasonId.Value,
             awayFranchiseSeasonId.Value,
             command.CorrelationId,

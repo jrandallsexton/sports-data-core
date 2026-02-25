@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using MassTransit;
 using Microsoft.Extensions.Options;
 using SportsData.Core.Common;
@@ -13,6 +14,11 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
 {
     private readonly ILogger<HistoricalSeasonSourcingSaga> _logger;
     private readonly HistoricalSourcingConfig _config;
+    private static readonly Meter _meter = new("SportsData.Provider.Sagas");
+    private static readonly Counter<int> _sagaStartedCounter = _meter.CreateCounter<int>("saga.historical_sourcing.started", description: "Number of historical sourcing sagas started");
+    private static readonly Counter<int> _sagaCompletedCounter = _meter.CreateCounter<int>("saga.historical_sourcing.completed", description: "Number of historical sourcing sagas completed");
+    private static readonly Histogram<double> _sagaDurationHistogram = _meter.CreateHistogram<double>("saga.historical_sourcing.duration_seconds", unit: "s", description: "Duration of historical sourcing sagas");
+    private static readonly Counter<int> _tierCompletedCounter = _meter.CreateCounter<int>("saga.historical_sourcing.tier_completed", description: "Number of historical sourcing saga tiers completed");
 
     public State WaitingForSeasonCompletion { get; private set; } = null!;
     public State WaitingForVenueCompletion { get; private set; } = null!;
@@ -51,6 +57,11 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                     context.Saga.Provider = context.Message.Provider;
                     context.Saga.StartedUtc = DateTime.UtcNow;
                     
+                    _sagaStartedCounter.Add(1, 
+                        new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                        new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                        new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
+
                     _logger.LogInformation(
                         "🚀 SAGA_STARTED: Historical sourcing saga initiated. " +
                         "CorrelationId={CorrelationId}, Sport={Sport}, Season={Season}, Provider={Provider}",
@@ -99,6 +110,12 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         {
                             context.Saga.SeasonCompletedUtc = DateTime.UtcNow;
                             
+                            _tierCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
+                                new KeyValuePair<string, object?>("tier", "Season"));
+
                             _logger.LogInformation(
                                 "🎯 TIER1_COMPLETE: Season tier completed, triggering Venue tier. " +
                                 "CorrelationId={CorrelationId}, EventsReceived={EventsReceived}, Duration={Duration}s",
@@ -139,6 +156,12 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         {
                             context.Saga.VenueCompletedUtc = DateTime.UtcNow;
                             
+                            _tierCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
+                                new KeyValuePair<string, object?>("tier", "Venue"));
+
                             _logger.LogInformation(
                                 "🎯 TIER2_COMPLETE: Venue tier completed, triggering TeamSeason tier. " +
                                 "CorrelationId={CorrelationId}, EventsReceived={EventsReceived}, Duration={Duration}s",
@@ -179,6 +202,12 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         {
                             context.Saga.TeamSeasonCompletedUtc = DateTime.UtcNow;
                             
+                            _tierCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
+                                new KeyValuePair<string, object?>("tier", "TeamSeason"));
+
                             _logger.LogInformation(
                                 "🎯 TIER3_COMPLETE: TeamSeason tier completed, triggering AthleteSeason tier. " +
                                 "CorrelationId={CorrelationId}, EventsReceived={EventsReceived}, Duration={Duration}s",
@@ -221,6 +250,22 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                             
                             var totalDuration = (context.Saga.CompletedUtc.Value - context.Saga.StartedUtc).TotalSeconds;
                             
+                            _tierCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
+                                new KeyValuePair<string, object?>("tier", "AthleteSeason"));
+
+                            _sagaCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
+
+                            _sagaDurationHistogram.Record(totalDuration,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
+
                             _logger.LogInformation(
                                 "🏁 SAGA_COMPLETE: All tiers completed successfully! " +
                                 "CorrelationId={CorrelationId}, Sport={Sport}, Season={Season}, " +
@@ -238,8 +283,6 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         })
                         .Finalize())
         );
-
-        SetCompletedWhenFinalized();
     }
 }
 

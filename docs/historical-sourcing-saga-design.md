@@ -29,7 +29,7 @@ Instead of polling or publishing thousands of events, use a **selective flag** o
    - Waits in current tier state (e.g., "WaitingForSeasonCompletion")
    - Counts incoming `DocumentProcessingCompleted` events
    - When threshold reached (e.g., 3 events) → starts next tier
-   - Has timeout fallback if threshold not reached
+   - Saga remains in current state indefinitely if threshold is not reached (no timeout fallback)
 
 ## Architecture Components
 

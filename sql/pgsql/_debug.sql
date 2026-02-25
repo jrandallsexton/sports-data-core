@@ -65,6 +65,7 @@ HAVING COUNT(fsl."Id") > 2
 ORDER BY "LogoCount" DESC
 
 select * from public."GroupSeason" order by "Name"
+select * from public."GroupSeasonExternalId"
 select * from public."GroupSeason" where "Id" = '845eb718-b58a-bf9e-fa90-5de861c60325' -- SEC
 select * from public."GroupSeason" where "Id" = 'bc72c270-1636-6248-17a1-9443be531c07' -- FBS (I-A)
 select * from public."GroupSeason" where "Id" = '3437b85c-ba19-181e-af1e-c8b30a28dff6' -- NCAA Division I
@@ -77,7 +78,9 @@ select * from public."GroupSeason" where "SeasonYear" = 2024 order by "Name"
 select * from public."GroupSeason" where "Slug" = 'fbs-i-a' and "SeasonYear" = 2025
 
 select * from public."GroupSeason" where "ParentId" is null
-select * from public."FranchiseSeason" where "SeasonYear" = 2025 order by "Slug"
+select count(*) from public."FranchiseSeason" where "SeasonYear" = 2023
+select distinct "SeasonYear" from public."FranchiseSeason" 
+select * from public."FranchiseSeason" where "SeasonYear" = 2024 order by "Slug"
 select * from public."FranchiseSeasonRanking" order by "Date", "Name"
 select * from public."FranchiseSeasonRanking" where "SeasonWeekId" = '5b8eb135-4b85-aa16-0d8d-49760c6b617b' order by "Date"
 select * from public."FranchiseSeasonRanking" where "Type" = 'cfp' order by "Date"
@@ -99,8 +102,8 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 select * from public."AthleteSeason" where "Id" = 'e6fcd345-7aa6-bc54-4cfd-db0d66935e24'
 
 
-select * from public."Season"
-select * from public."SeasonPhase" order by "Year", "Slug"
+select * from public."Season" order by "Year" desc
+select * from public."SeasonPhase" order by "Year" desc, "Slug"
 select * from public."SeasonWeek" order by "StartDate"
 --update public."SeasonWeek" set "EndDate" = '2025-12-14 07:59:00+00' where "Id" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select sw.* from public."SeasonWeek" sw
@@ -140,9 +143,10 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
 
 select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '7f39067b-40bb-aa0b-225d-7670409d1003'
-update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
+--update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
 select count(*) from public."Contest" where "SeasonYear" = 2024
 select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
+select distinct "SeasonYear" from public."Contest"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."Competition" where "ContestId" = '51cc46b6-04ee-a1f6-86ef-fc4f194a856a'
 select * from public."CompetitionCompetitor" where "CompetitionId" = 'b2ca319f-e677-657b-d5c4-2b9eadbe2643'
@@ -243,6 +247,7 @@ FROM (
 select * from public."CompetitionBroadcast"
 select * from public."CompetitionProbability" where "CompetitionId" = '65c4132d-4ee5-8418-470e-cb96b63a7b8e' order by "SequenceNumber"
 
+select * from public."CompetitionCompetitor"
 select * from public."CompetitionCompetitorStatistics"
 where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'
 
@@ -283,6 +288,7 @@ select *
 from public."GroupSeason" gs
 inner join public."Season" s on s."Id" = gs."SeasonId"
 where gs."Slug" = 'sec' and gs."SeasonYear" = 2025
+select "Id", "SourceUrl" from public."GroupSeasonExternalId" order by "SourceUrl"
 
 select * from public."CompetitionPrediction"
 select * from public."CompetitionPredictionValue" where "CompetitionPredictionId" = '9e911c06-90b0-4080-a164-925ee89f8531'
@@ -295,6 +301,12 @@ inner join public."Franchise" f on f."Id" = fs."FranchiseId"
 where fsm."OppPointsPerDrive" > fsm."PointsPerDrive"
 order by "PointsPerDrive"
 
+SELECT count(*) FROM "OutboxMessage"
+SELECT * FROM "OutboxMessage" limit 10
+SELECT * FROM "OutboxState" limit 10
+
+delete from public."OutboxMessage"
+delete from public."OutboxState"
 SELECT * FROM "OutboxState" WHERE "OutboxId" = '01000000-9b73-d640-43f5-08de49723593'
 
 SELECT om.*

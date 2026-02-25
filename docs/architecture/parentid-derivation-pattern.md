@@ -89,17 +89,20 @@ Having requesting processors derive ParentId for downstream processors was rejec
 ## Implementation Plan
 
 ### Phase 1: Documentation & Analysis ✅
+
 - [x] Document architectural decision
 - [x] Identify all processors checking ParentId
 - [x] Categorize processors by parent relationship type
 
 ### Phase 2: EspnUriMapper Completeness ✅
+
 - [x] Verify all necessary URI mapping functions exist
 - [x] Add missing mapping functions for identified processors (18 new functions)
 - [x] Ensure all mappings return clean URLs (no query strings)
 - [x] Write comprehensive tests for all new functions
 
 ### Phase 3: Processor Refactoring (By Category) ✅
+
 - [x] FranchiseSeason-based processors (7 processors)
   - [x] TeamSeasonStatisticsDocumentProcessor
   - [x] TeamSeasonLeadersDocumentProcessor
@@ -129,16 +132,18 @@ Having requesting processors derive ParentId for downstream processors was rejec
   - [x] AthleteSeasonStatisticsDocumentProcessor
 - [x] SeasonWeek-based (already implemented, migrated to base helper)
   - [x] SeasonTypeWeekDocumentProcessor
-- [ ] SeasonPoll-based processors (1 processor)
-  - [ ] SeasonTypeWeekRankingsDocumentProcessor
+- [ ] SeasonPoll-based processors (1 processor) — deferred; out of scope for Phase 3
+  - [ ] SeasonTypeWeekRankingsDocumentProcessor (deferred — see Category 8 notes)
 
 ### Phase 4: Testing
+
 - [x] SeasonTypeWeekDocumentProcessor — ParentId derivation scenario
 - [ ] Add tests for ParentId derivation scenarios for remaining refactored processors
 - [ ] Verify dependency sourcing works without explicit ParentId
 - [ ] Integration tests for end-to-end sourcing flows
 
 ### Phase 5: Documentation
+
 - [x] Update processor guidelines with standard pattern
 - [ ] Add examples to developer documentation
 - [ ] Update architectural decision records (ADR)
@@ -146,6 +151,7 @@ Having requesting processors derive ParentId for downstream processors was rejec
 ## Affected Document Processors
 
 ### Category 1: FranchiseSeason-based (7 processors)
+
 **Parent Relationship:** FranchiseSeason (via TeamSeason URI)
 **URI Mapper Functions:** Explicit functions for each child type (see Functions section)
 
@@ -158,88 +164,102 @@ Having requesting processors derive ParentId for downstream processors was rejec
 7. ✅ **TeamSeasonAwardDocumentProcessor** - Uses `TeamSeasonAwardRefToTeamSeasonRef`
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../seasons/2025/teams/395/statistics/0
 Parent: http://.../seasons/2025/teams/395
 ```
 
 ### Category 2: Competition-based (9 processors)
+
 **Parent Relationship:** Competition (via EventCompetition URI)
 
-8.  ✅ **EventCompetitionBroadcastDocumentProcessor** - Uses `CompetitionBroadcastRefToCompetitionRef`
-9.  ✅ **EventCompetitionLeadersDocumentProcessor** - Uses `CompetitionLeadersRefToCompetitionRef`
-10. ✅ **EventCompetitionPlayDocumentProcessor** - Uses `CompetitionPlayRefToCompetitionRef`
-11. ✅ **EventCompetitionPredictionDocumentProcessor** - Uses `CompetitionPredictionRefToCompetitionRef`
-12. ✅ **EventCompetitionStatusDocumentProcessor** - Uses `CompetitionStatusRefToCompetitionRef`
-13. ✅ **EventCompetitionSituationDocumentProcessor** - Uses `CompetitionSituationRefToCompetitionRef`
-14. ✅ **EventCompetitionDriveDocumentProcessor** - Uses `CompetitionDriveRefToCompetitionRef`
-15. ✅ **EventCompetitionOddsDocumentProcessor** - Uses `CompetitionOddsRefToCompetitionRef`
-16. ✅ **EventCompetitionPowerIndexDocumentProcessor** - Uses `CompetitionPowerIndexRefToCompetitionRef`
+1. ✅ **EventCompetitionBroadcastDocumentProcessor** - Uses `CompetitionBroadcastRefToCompetitionRef`
+2. ✅ **EventCompetitionLeadersDocumentProcessor** - Uses `CompetitionLeadersRefToCompetitionRef`
+3. ✅ **EventCompetitionPlayDocumentProcessor** - Uses `CompetitionPlayRefToCompetitionRef`
+4. ✅ **EventCompetitionPredictionDocumentProcessor** - Uses `CompetitionPredictionRefToCompetitionRef`
+5. ✅ **EventCompetitionStatusDocumentProcessor** - Uses `CompetitionStatusRefToCompetitionRef`
+6. ✅ **EventCompetitionSituationDocumentProcessor** - Uses `CompetitionSituationRefToCompetitionRef`
+7. ✅ **EventCompetitionDriveDocumentProcessor** - Uses `CompetitionDriveRefToCompetitionRef`
+8. ✅ **EventCompetitionOddsDocumentProcessor** - Uses `CompetitionOddsRefToCompetitionRef`
+9. ✅ **EventCompetitionPowerIndexDocumentProcessor** - Uses `CompetitionPowerIndexRefToCompetitionRef`
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../events/401752671/competitions/401752671/leaders
 Parent: http://.../events/401752671/competitions/401752671
 ```
 
 ### Category 3: CompetitionCompetitor-based (3 processors)
+
 **Parent Relationship:** CompetitionCompetitor
 
-17. ✅ **EventCompetitionCompetitorLineScoreDocumentProcessor** - Uses `CompetitionLineScoreRefToCompetitionCompetitorRef`
-18. ✅ **EventCompetitionCompetitorScoreDocumentProcessor** - Uses `CompetitionCompetitorScoreRefToCompetitionCompetitorRef`
-19. ✅ **EventCompetitionCompetitorStatisticsDocumentProcessor** - Uses `CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef`
+1. ✅ **EventCompetitionCompetitorLineScoreDocumentProcessor** - Uses `CompetitionLineScoreRefToCompetitionCompetitorRef`
+2. ✅ **EventCompetitionCompetitorScoreDocumentProcessor** - Uses `CompetitionCompetitorScoreRefToCompetitionCompetitorRef`
+3. ✅ **EventCompetitionCompetitorStatisticsDocumentProcessor** - Uses `CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef`
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../competitions/401752671/competitors/2231/linescores/1
 Parent: http://.../competitions/401752671/competitors/2231
 ```
 
 ### Category 4: Contest-based (1 processor)
+
 **Parent Relationship:** Contest (Event)
 **URI Mapper Function:** `CompetitionRefToContestRef()` (exists)
 
-20. **EventCompetitionDocumentProcessor** - Requires ParentId, **not yet refactored**
+1. **EventCompetitionDocumentProcessor** - Requires ParentId, **not yet refactored**
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../events/401752671/competitions/401752671
 Parent: http://.../events/401752671
 ```
 
 ### Category 5: Coach-based (2 processors)
+
 **Parent Relationship:** Coach or CoachSeason
 
-21. ✅ **CoachRecordDocumentProcessor** - Uses `CoachRecordRefToCoachRef`
-22. ✅ **CoachSeasonRecordDocumentProcessor** - Uses `CoachSeasonRecordRefToCoachSeasonRef`
+1. ✅ **CoachRecordDocumentProcessor** - Uses `CoachRecordRefToCoachRef`
+2. ✅ **CoachSeasonRecordDocumentProcessor** - Uses `CoachSeasonRecordRefToCoachSeasonRef`
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../coaches/123/record             → http://.../coaches/123
 Input:  http://.../seasons/2025/coaches/123/record → http://.../seasons/2025/coaches/123
 ```
 
 ### Category 6: AthleteSeason-based (1 processor)
+
 **Parent Relationship:** AthleteSeason
 
-23. ✅ **AthleteSeasonStatisticsDocumentProcessor** - Uses `AthleteSeasonStatisticsRefToAthleteSeasonRef`
+1. ✅ **AthleteSeasonStatisticsDocumentProcessor** - Uses `AthleteSeasonStatisticsRefToAthleteSeasonRef`
 
 **Example URI Mapping:**
-```
+
+```text
 Input:  http://.../seasons/2025/athletes/4426333/statistics/0
 Parent: http://.../seasons/2025/athletes/4426333
 ```
 
 ### Category 7: SeasonWeek-based ✅
-24. ✅ **SeasonTypeWeekDocumentProcessor** - Uses `SeasonTypeWeekToSeasonType` via `TryGetOrDeriveParentId`
+
+1. ✅ **SeasonTypeWeekDocumentProcessor** - Uses `SeasonTypeWeekToSeasonType` via `TryGetOrDeriveParentId`
 
 ### Category 8: SeasonPoll-based (1 processor)
+
 **Parent Relationship:** SeasonPoll
 **URI Mapper Function:** `SeasonPollWeekRefToSeasonPollRef()` (exists)
 
-25. **SeasonTypeWeekRankingsDocumentProcessor** - Has warning log, attempts derivation — **not yet refactored to standard pattern**
+1. **SeasonTypeWeekRankingsDocumentProcessor** - Has warning log, attempts derivation — **not yet refactored to standard pattern**
 
 ### Excluded: Test Processors
+
 - `OutboxTestTeamSportDocumentProcessor` - Test infrastructure
 - `OutboxTestDocumentProcessor` - Test infrastructure
 
@@ -298,6 +318,7 @@ protected override async Task ProcessInternal(ProcessDocumentCommand command)
 ```
 
 This approach:
+
 1. Checks if ParentId can be parsed directly
 2. If not, uses the provided EspnUriMapper function to derive the parent URI from `command.SourceUri`
 3. Generates a canonical ID from the derived URI
@@ -306,6 +327,7 @@ This approach:
 ## EspnUriMapper Functions
 
 ### Pre-existing Functions (not added by this effort)
+
 - ✅ `CompetitionCompetitorScoreRefToCompetitionCompetitorRef()` - CompetitorScore → Competitor
 - ✅ `CompetitionCompetitorLineScoreRefToCompetitionCompetitorRef()` - LineScore → Competitor
 - ✅ `CompetitionCompetitorStatisticsRefToCompetitionCompetitorRef()` - CompetitorStatistics → Competitor
@@ -315,6 +337,7 @@ This approach:
 - ✅ `SeasonTypeWeekToSeasonType()` - SeasonTypeWeek → SeasonType
 
 ### Added by This Effort (18 functions, all return clean URLs without query strings)
+
 - [x] `TeamSeasonStatisticsRefToTeamSeasonRef()` - Statistics → TeamSeason
 - [x] `TeamSeasonLeadersRefToTeamSeasonRef()` - Leaders → TeamSeason
 - [x] `TeamSeasonRankRefToTeamSeasonRef()` - Rank → TeamSeason
@@ -393,6 +416,7 @@ public async Task WhenParentIdNotProvided_ShouldDeriveFromUri_AndProcess()
 ```
 
 ### Current Test Coverage
+
 - ✅ All 18 new `EspnUriMapper` functions have comprehensive unit tests (happy path, null input, invalid shape where applicable)
 - ✅ `SeasonTypeWeekDocumentProcessor` — ParentId derivation scenario covered
 - ⬜ Remaining refactored processors — derivation scenario tests pending (Phase 4)

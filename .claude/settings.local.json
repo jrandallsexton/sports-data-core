@@ -12,7 +12,11 @@
       "WebFetch(domain:github.com)",
       "Bash(gh api:*)",
       "Bash(python3:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git:*)",
+      "Bash(grep:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)"
     ]
   }
 }

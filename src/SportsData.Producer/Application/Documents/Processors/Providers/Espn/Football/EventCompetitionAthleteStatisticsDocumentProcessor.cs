@@ -190,17 +190,16 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
             await _dataContext.SaveChangesAsync();
         }
-        catch (DbUpdateException ex) when (
-            ex.InnerException?.Message?.Contains("duplicate key") == true ||
-            ex.InnerException?.Message?.Contains("PK_AthleteCompetitionStatistic") == true)
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
-            // Another pod already created this entity - they won the race
+            // Duplicate key - another pod already created this entity between our check and insert
+            // This can happen on either the first save (line 139) or retry save (line 191)
             _logger.LogWarning(
                 "Duplicate key on wholesale replacement. Another process already created it. " +
                 "Id={Id}, CorrelationId={CorrelationId}",
                 entity.Id,
                 command.CorrelationId);
-            return;
+            return; // Exit gracefully - the other process won the race
         }
 
         _logger.LogInformation(

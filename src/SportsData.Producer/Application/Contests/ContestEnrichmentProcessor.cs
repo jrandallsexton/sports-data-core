@@ -55,6 +55,7 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.Odds.Where(o => o.ProviderId == SportsBook.EspnBet.ToProviderId() || o.ProviderId == SportsBook.DraftKings100.ToProviderId()))
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
+                    .Include(c => c.Status)
                     .Where(c => c.ContestId == command.ContestId)
                     .AsSplitQuery()
                     .FirstOrDefaultAsync();
@@ -74,37 +75,33 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // Get the current status to ensure the game is actually over
-                var statusUri = EspnUriMapper
-                    .CompetitionRefToCompetitionStatusRef(new Uri(competitionExternalId.SourceUrl));
+                // TODO: Do we _actually_ need to fetch the status? If the StartTime is in the past, and we are running this job, isn't it safe to assume the game is over?
+                // Actually we have it on the competition.Status
 
-                var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
-                if (status == null)
+                var compStatus = competition.Status;
+
+                if (compStatus?.StatusTypeName != "STATUS_FINAL")
                 {
-                    _logger.LogError("Initial status fetch failed. {@Command}", command);
-                    return;
-                }
+                    // get from ESPN?
+                    // Get the current status to ensure the game is actually over
+                    var statusUri = EspnUriMapper
+                        .CompetitionRefToCompetitionStatusRef(new Uri(competitionExternalId.SourceUrl));
 
-                //await _bus.Publish(new DocumentRequested(
-                //    Id: HashProvider.GenerateHashFromUri(status.Ref),
-                //    ParentId: contest.Id.ToString(),
-                //    Uri: new Uri(competitionExternalId.SourceUrl),
-                //    Sport: Sport.FootballNcaa,
-                //    SeasonYear: competition.Contest.SeasonYear,
-                //    DocumentType: DocumentType.EventCompetition,
-                //    SourceDataProvider: SourceDataProvider.Espn,
-                //    CorrelationId: command.CorrelationId,
-                //    CausationId: CausationId.Producer.ContestEnrichmentProcessor
-                //));
-                //await _dataContext.SaveChangesAsync();
+                    var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
+                    if (status == null)
+                    {
+                        _logger.LogError("Initial status fetch failed. {@Command}", command);
+                        return;
+                    }
+
+                    if (status.Type.Name != "STATUS_FINAL")
+                    {
+                        _logger.LogWarning("Contest status is not yet final for {ContestName}. Found: {status}", competition.Contest.Name, status.Type.Name);
+                        return;
+                    }
+                }
 
                 var contest = competition.Contest;
-
-                if (status.Type.Name != "STATUS_FINAL")
-                {
-                    _logger.LogWarning("Contest status is not yet final for {ContestName}. Found: {status}", contest.Name, status.Type.Name);
-                    return;
-                }
 
                 // in order to calculate the final score and winners, we need to get all plays
                 // take the last scoring play and that is what we have

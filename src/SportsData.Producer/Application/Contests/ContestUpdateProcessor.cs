@@ -37,32 +37,22 @@ namespace SportsData.Producer.Application.Contests
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
                        ["CorrelationId"] = command.CorrelationId,
-                       ["ContestId"] = command.ContestId
+                       ["ContestId"] = command.ContestId,
+                       ["Provider"] = command.SourceDataProvider,
+                       ["Sport"] = command.Sport
                    }))
             {
-                _logger.LogInformation(
-                    "ContestUpdateProcessor started. ContestId={ContestId}, Provider={Provider}, Sport={Sport}, CorrelationId={CorrelationId}",
-                    command.ContestId,
-                    command.SourceDataProvider,
-                    command.Sport,
-                    command.CorrelationId);
+                _logger.LogInformation("ContestUpdateProcessor started");
 
                 try
                 {
                     await ProcessInternal(command);
                     
-                    _logger.LogInformation(
-                        "ContestUpdateProcessor completed. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                        command.ContestId,
-                        command.CorrelationId);
+                    _logger.LogInformation("ContestUpdateProcessor completed");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(
-                        ex,
-                        "ContestUpdateProcessor failed. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                        command.ContestId,
-                        command.CorrelationId);
+                    _logger.LogError(ex, "ContestUpdateProcessor failed");
                     throw;
                 }
             }
@@ -77,10 +67,7 @@ namespace SportsData.Producer.Application.Contests
             
             if (contest is null)
             {
-                _logger.LogError(
-                    "Contest not found. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                    command.ContestId,
-                    command.CorrelationId);
+                _logger.LogError("Contest not found");
                 return;
             }
 
@@ -89,21 +76,15 @@ namespace SportsData.Producer.Application.Contests
 
             if (contestExternalId is null)
             {
-                _logger.LogError(
-                    "Contest external ID not found. ContestId={ContestId}, Provider={Provider}, CorrelationId={CorrelationId}",
-                    command.ContestId,
-                    command.SourceDataProvider,
-                    command.CorrelationId);
+                _logger.LogError("Contest external ID not found");
                 return;
             }
 
             var contestIdentity = _externalIdentityGenerator.Generate(contestExternalId.SourceUrl);
 
             _logger.LogInformation(
-                "Publishing DocumentRequested for Event. ContestId={ContestId}, Uri={Uri}, CorrelationId={CorrelationId}",
-                command.ContestId,
-                contestIdentity.CleanUrl,
-                command.CorrelationId);
+                "Publishing DocumentRequested for Event. Uri={Uri}",
+                contestIdentity.CleanUrl);
 
             await _bus.Publish(new DocumentRequested(
                 Id: contestIdentity.UrlHash,

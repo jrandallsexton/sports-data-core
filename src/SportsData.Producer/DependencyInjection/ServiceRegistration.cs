@@ -11,6 +11,7 @@ using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDr
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
 using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Commands;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Documents.Processors;
@@ -172,10 +173,16 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetFranchiseSeasonMetricsByIdQueryHandler, GetFranchiseSeasonMetricsByIdQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonMetricsBySeasonYearQueryHandler, GetFranchiseSeasonMetricsBySeasonYearQueryHandler>();
 
+            // Contest Commands
+            services.AddScoped<IFinalizeContestsBySeasonYearHandler, FinalizeContestsBySeasonYearHandler>();
+
+            // Contest Command Validators
+            services.AddScoped<FluentValidation.IValidator<FinalizeContestsBySeasonYearCommand>, FinalizeContestsBySeasonYearCommandValidator>();
+
             // Contest Queries
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
             services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
-            
+
             // Contest Query Validators
             services.AddScoped<FluentValidation.IValidator<GetContestOverviewQuery>, GetContestOverviewQueryValidator>();
 

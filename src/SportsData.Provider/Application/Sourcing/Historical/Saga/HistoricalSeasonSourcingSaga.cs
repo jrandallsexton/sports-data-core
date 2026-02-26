@@ -290,11 +290,12 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
 /// Internal event to trigger sourcing of the next tier.
 /// Consumed by ResourceIndexJob to start processing the specified tier.
 /// </summary>
-public record TriggerTierSourcing(
-    Guid CorrelationId,
-    Sport Sport,
-    int SeasonYear,
-    SourceDataProvider Provider,
-    int Tier,
-    string TierName
-);
+public record TriggerTierSourcing
+{
+    public Guid CorrelationId { get; init; }
+    public Sport Sport { get; init; }
+    public int SeasonYear { get; init; }
+    public SourceDataProvider Provider { get; init; }
+    public int Tier { get; init; }
+    public string TierName { get; init; } = string.Empty;
+}

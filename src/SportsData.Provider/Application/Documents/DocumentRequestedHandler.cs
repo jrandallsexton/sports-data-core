@@ -180,7 +180,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             if (dto == null || dto.Items == null || dto.Items.Count == 0)
             {
-                _logger.LogWarning(
+                _logger.LogInformation(
                     "Empty ResourceIndex. Uri={Uri}, CorrelationId={CorrelationId}",
                     uri,
                     evt.CorrelationId);
@@ -282,7 +282,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogInformation(
                 "No resource index items enqueued. DocumentType={DocumentType}, CorrelationId={CorrelationId}",
                 evt.DocumentType,
                 evt.CorrelationId);

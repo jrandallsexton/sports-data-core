@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
+using SportsData.Producer.Application.Contests.Commands;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -72,19 +73,45 @@ namespace SportsData.Producer.Application.Contests
         public IActionResult EnrichContest([FromRoute] Guid contestId)
         {
             var correlationId = ActivityExtensions.GetCorrelationId();
-            
+
             _logger.LogInformation(
                 "EnrichContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 contestId,
                 correlationId);
-                
+
             var cmd = new EnrichContestCommand(
                 contestId,
                 correlationId);
-                
+
             _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
-            
+
             return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
+        }
+
+        [HttpPost]
+        [Route("finalize/{sport}/{seasonYear}")]
+        public IActionResult FinalizeContestsBySeasonYear(
+            [FromRoute] Sport sport,
+            [FromRoute] int seasonYear)
+        {
+            var correlationId = ActivityExtensions.GetCorrelationId();
+
+            _logger.LogInformation(
+                "FinalizeContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                sport,
+                seasonYear,
+                correlationId);
+
+            var cmd = new FinalizeContestsBySeasonYearCommand
+            {
+                Sport = sport,
+                SeasonYear = seasonYear,
+                CorrelationId = correlationId
+            };
+
+            _backgroundJobProvider.Enqueue<IFinalizeContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
+
+            return Accepted(new { CorrelationId = correlationId, Sport = sport, SeasonYear = seasonYear });
         }
 
         [HttpPost]

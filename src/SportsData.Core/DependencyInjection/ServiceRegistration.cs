@@ -311,7 +311,7 @@ namespace SportsData.Core.DependencyInjection
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
-                        "SportsData.Provider.Sagas");
+                        "SportsData.*");
 
                     // Prometheus scraping endpoint
                     builder.AddPrometheusExporter(options =>

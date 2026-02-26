@@ -7,6 +7,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
+using SportsData.Producer.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
@@ -23,9 +24,6 @@ namespace SportsData.Producer.Application.Contests
         private readonly IProvideEspnApiData _espnProvider;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
-
-        private const string ProviderIdEspnBet = "58";
-        private const string ProviderIdDraftKings = "100";
 
         public ContestEnrichmentProcessor(
             ILogger<ContestEnrichmentProcessor> logger,
@@ -54,7 +52,7 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
                     .ThenInclude(comp => comp.ExternalIds)
-                    .Include(c => c.Odds.Where(o => o.ProviderId == "58" || o.ProviderId == "100"))
+                    .Include(c => c.Odds.Where(o => o.ProviderId == SportsBook.EspnBet.ToProviderId() || o.ProviderId == SportsBook.DraftKings100.ToProviderId()))
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
                     .Where(c => c.ContestId == command.ContestId)
@@ -227,8 +225,8 @@ namespace SportsData.Producer.Application.Contests
                 contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
                 // were there odds on this game?
-                var odds = competition.Odds?.Where(x => x.ProviderId == ProviderIdEspnBet).FirstOrDefault() ??
-                           competition.Odds?.Where(x => x.ProviderId == ProviderIdDraftKings).FirstOrDefault();
+                var odds = competition.Odds?.Where(x => x.ProviderId == SportsBook.EspnBet.ToProviderId()).FirstOrDefault() ??
+                           competition.Odds?.Where(x => x.ProviderId == SportsBook.DraftKings100.ToProviderId()).FirstOrDefault();
 
                 // TODO: Later we might want to score each odd individually - or even see if they were updated
                 // they are indeed updated post-game.  Will verify.

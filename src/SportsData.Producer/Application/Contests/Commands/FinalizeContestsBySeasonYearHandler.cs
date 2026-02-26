@@ -97,12 +97,13 @@ namespace SportsData.Producer.Application.Contests.Commands
                     ex,
                     "Failed to finalize contests");
 
+                // Return failure with empty error list for system errors
+                // Validation errors are for validation failures, not runtime exceptions
+                // The exception details are captured in the logs
                 return new Failure<Guid>(
                     default!,
                     ResultStatus.Error,
-                    [new FluentValidation.Results.ValidationFailure(
-                        string.Empty,
-                        $"An error occurred while finalizing contests: {ex.Message}")]);
+                    []);
             }
         }
     }

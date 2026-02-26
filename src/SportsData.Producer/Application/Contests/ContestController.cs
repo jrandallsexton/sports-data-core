@@ -109,7 +109,7 @@ namespace SportsData.Producer.Application.Contests
                 CorrelationId = correlationId
             };
 
-            _backgroundJobProvider.Enqueue<IFinalizeContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd));
+            _backgroundJobProvider.Enqueue<IFinalizeContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
 
             return Accepted(new { CorrelationId = correlationId, Sport = sport, SeasonYear = seasonYear });
         }

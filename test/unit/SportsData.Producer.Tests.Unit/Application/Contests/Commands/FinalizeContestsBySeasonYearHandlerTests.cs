@@ -293,8 +293,13 @@ public class FinalizeContestsBySeasonYearHandlerTests :
                     var compiled = lambda.Compile();
                     return compiled() as EnrichContestCommand;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    // Log the exception for debugging test failures
+                    // Using Console.WriteLine so it appears in test output
+                    Console.WriteLine(
+                        $"Failed to extract EnrichContestCommand from expression: {expression.GetType().Name}. " +
+                        $"Error: {ex.Message}\nStack Trace: {ex.StackTrace}");
                     return null;
                 }
         }

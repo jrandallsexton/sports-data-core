@@ -194,6 +194,18 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             ex.InnerException?.Message?.Contains("duplicate key") == true ||
             ex.InnerException?.Message?.Contains("PK_AthleteCompetitionStatistic") == true)
         {
+            // Duplicate key on first save attempt - another pod already created this entity between our check and insert
+            _logger.LogWarning(
+                "Duplicate key on wholesale replacement (first attempt). Another process already created it. " +
+                "Id={Id}, CorrelationId={CorrelationId}",
+                entity.Id,
+                command.CorrelationId);
+            return; // Exit gracefully - the other process won the race
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException?.Message?.Contains("duplicate key") == true ||
+            ex.InnerException?.Message?.Contains("PK_AthleteCompetitionStatistic") == true)
+        {
             // Another pod already created this entity - they won the race
             _logger.LogWarning(
                 "Duplicate key on wholesale replacement. Another process already created it. " +

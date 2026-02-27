@@ -68,16 +68,16 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-            // ESPN replaces statistics wholesale, so remove existing if present
+            // ESPN replaces statistics wholesale, so remove existing if present.
+            // Load and remove to support both InMemory (tests) and real databases
             var existing = await _dataContext.AthleteSeasonStatistics
                 .Include(x => x.Categories)
                     .ThenInclude(c => c.Stats)
-                .AsSplitQuery()
                 .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
 
             if (existing is not null)
             {
-                _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", existing.Id);
+                _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", identity.CanonicalId);
                 _dataContext.AthleteSeasonStatistics.Remove(existing);
             }
 
@@ -87,8 +87,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 command.CorrelationId);
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
-
-            // Save both remove and add in a single transaction
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(

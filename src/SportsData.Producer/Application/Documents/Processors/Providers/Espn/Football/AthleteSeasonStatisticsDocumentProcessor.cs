@@ -68,17 +68,17 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-            // ESPN replaces statistics wholesale, so remove existing if present
-            var existing = await _dataContext.AthleteSeasonStatistics
-                .Include(x => x.Categories)
-                    .ThenInclude(c => c.Stats)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+            // ESPN replaces statistics wholesale, so remove existing if present.
+            // Use ExecuteDeleteAsync to bypass optimistic concurrency token checks —
+            // avoids DbUpdateConcurrencyException when concurrent messages race to
+            // delete the same row.
+            var deleted = await _dataContext.AthleteSeasonStatistics
+                .Where(r => r.Id == identity.CanonicalId)
+                .ExecuteDeleteAsync();
 
-            if (existing is not null)
+            if (deleted > 0)
             {
-                _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", existing.Id);
-                _dataContext.AthleteSeasonStatistics.Remove(existing);
+                _logger.LogInformation("Removed existing AthleteSeasonStatistic {Id} for replacement", identity.CanonicalId);
             }
 
             var entity = dto.AsEntity(
@@ -87,8 +87,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 command.CorrelationId);
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
-
-            // Save both remove and add in a single transaction
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(

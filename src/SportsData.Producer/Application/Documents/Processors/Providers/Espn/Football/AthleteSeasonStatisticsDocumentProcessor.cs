@@ -73,6 +73,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var existing = await _dataContext.AthleteSeasonStatistics
                 .Include(x => x.Categories)
                     .ThenInclude(c => c.Stats)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
 
             if (existing is not null)

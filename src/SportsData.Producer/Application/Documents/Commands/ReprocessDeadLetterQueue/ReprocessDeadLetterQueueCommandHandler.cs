@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Processing;
 
 namespace SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 
@@ -124,7 +125,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                     {
                         try
                         {
-                            var document = ExtractDocumentCreated(payload, command.ResetAttemptCount);
+                            var document = ExtractDocumentCreated(payload);
 
                             if (document is null)
                             {
@@ -147,9 +148,8 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                         }
                         catch (Exception ex)
                         {
-                            var error = $"Message {index}: {ex.Message}";
                             _logger.LogError(ex, "DLQ_REPROCESS: Failed to re-publish message {Index}.", index);
-                            errors.Add(error);
+                            errors.Add($"Message {index}: publish failed. See logs for details.");
                         }
                     }
                 }
@@ -233,15 +233,12 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
             .ToList() ?? [];
     }
 
-    // ---------------------------------------------------------------------------
-    // MassTransit envelope extraction
-    // ---------------------------------------------------------------------------
-
     /// <summary>
     /// Extracts the inner <see cref="DocumentCreated"/> message from a MassTransit
-    /// JSON envelope, optionally resetting <c>AttemptCount</c> to 0.
+    /// JSON envelope and sets <c>AttemptCount</c> to <c>MaxAttempts - 1</c>,
+    /// giving the message exactly one final attempt before hitting the DLQ threshold.
     /// </summary>
-    private static DocumentCreated? ExtractDocumentCreated(string envelopeJson, bool resetAttemptCount)
+    private static DocumentCreated? ExtractDocumentCreated(string envelopeJson)
     {
         using var doc = JsonDocument.Parse(envelopeJson);
         var root = doc.RootElement;
@@ -259,7 +256,8 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         if (document is null)
             return null;
 
-        return resetAttemptCount ? document with { AttemptCount = 0 } : document;
+        // Always set to (MaxAttempts - 1): gives exactly ONE final attempt before hitting the DLQ threshold again
+        return document with { AttemptCount = DocumentProcessingConstants.MaxAttempts - 1 };
     }
 
     // ---------------------------------------------------------------------------

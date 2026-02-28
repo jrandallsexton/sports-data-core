@@ -10,12 +10,6 @@ namespace SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetter
 /// <c>SportsData.Producer:DeadLetterQueue:QueueName</c> config, falling back to
 /// <c>document-dead-letter</c>.
 /// </param>
-/// <param name="ResetAttemptCount">
-/// When true (default), the <c>AttemptCount</c> on each re-published
-/// <c>DocumentCreated</c> message is reset to 0 so the normal retry ladder
-/// starts fresh.
-/// </param>
 public record ReprocessDeadLetterQueueCommand(
     int Count,
-    string? QueueName = null,
-    bool ResetAttemptCount = true);
+    string? QueueName = null);

@@ -175,7 +175,6 @@
 5. **Factory pattern for clients**: VenueClientFactory, FranchiseClientFactory, etc.
 6. **Mode differentiation via labels**: Config keys don't include mode, labels provide it
 7. **VSA over MediatR**: Explicit handler interfaces for F12 navigation
-8. **Season ends Jan 19, 2026**: This PR must merge after NCAA football season completes
 
 ## Multi-Sport Scaling
 - Current sports: FootballNcaa

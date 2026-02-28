@@ -103,15 +103,20 @@ namespace SportsData.Producer.Application.Documents
                         return;
                     }
 
-                    var backoffSeconds = message.AttemptCount switch
-                    {
-                        1 => 0,
-                        2 => 10,
-                        3 => 30,
-                        4 => 60,
-                        5 => 120,
-                        _ => 300
-                    };
+                    // DLQ-reprocessed messages skip the backoff schedule entirely — no
+                    // penalty for operator-triggered reprocessing. Natural retries still
+                    // observe the full exponential backoff.
+                    var backoffSeconds = retryReason == DocumentProcessingConstants.DlqReprocessRetryReason
+                        ? 0
+                        : message.AttemptCount switch
+                        {
+                            1 => 0,
+                            2 => 10,
+                            3 => 30,
+                            4 => 60,
+                            5 => 120,
+                            _ => 300
+                        };
 
                     using (_logger.BeginScope(new Dictionary<string, object> { ["BackoffSeconds"] = backoffSeconds }))
                     {

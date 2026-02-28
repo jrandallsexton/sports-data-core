@@ -117,6 +117,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
                 var errors = new List<string>();
                 var requeued = 0;
+                var dlqHeaders = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = DocumentProcessingConstants.DlqReprocessRetryReason
+                };
 
                 // Use direct publishing to bypass outbox (no DbContext required for DLQ reprocessing)
                 using (_deliveryScope.Use(DeliveryMode.Direct))
@@ -135,7 +139,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                                 continue;
                             }
 
-                            await _eventBus.Publish(document, cancellationToken);
+                            await _eventBus.Publish(document, dlqHeaders, cancellationToken);
                             requeued++;
 
                             _logger.LogInformation(
@@ -205,8 +209,17 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
         // POST /api/queues/%2F/{queue}/get
         // ackmode=ack_requeue_false: messages are removed from the DLQ on fetch.
-        // This is safe because DocumentCreatedHandler will re-dead-letter any message
-        // that fails processing again, so no permanent loss can occur.
+        //
+        // NOTE ON ACK SEMANTICS: The RabbitMQ Management HTTP API applies ackmode to the
+        // entire batch atomically at the time the HTTP response is returned — there is no
+        // delivery tag and no per-message BasicAck/BasicNack. Per-message acknowledgement
+        // is only possible via the AMQP consumer protocol, not this REST endpoint.
+        //
+        // ack_requeue_false is intentional: if _eventBus.Publish throws for a given message
+        // the catch block logs the failure and records it in the errors list. In the unlikely
+        // event the bus is unavailable the message would be lost, but DocumentCreatedHandler
+        // will re-dead-letter any message that fails downstream processing naturally, so the
+        // practical risk is limited to a hard publish failure during this call window.
         var body = JsonSerializer.Serialize(new
         {
             count,

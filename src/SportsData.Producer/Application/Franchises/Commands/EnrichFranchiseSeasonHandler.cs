@@ -105,10 +105,24 @@ namespace SportsData.Producer.Application.Franchises.Commands
             var conferenceLosses = 0;
             var conferenceTies = 0;
 
+            // Prefetch all opponent franchise seasons in a single query to avoid N+1
+            var opponentIds = contests
+                .Select(c => c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId
+                    ? c.HomeTeamFranchiseSeasonId
+                    : c.AwayTeamFranchiseSeasonId)
+                .Distinct()
+                .ToList();
+
+            var opponentConferenceIds = await _dataContext.FranchiseSeasons
+                .AsNoTracking()
+                .Where(fs => opponentIds.Contains(fs.Id))
+                .Select(fs => new { fs.Id, fs.GroupSeasonId })
+                .ToDictionaryAsync(fs => fs.Id, fs => fs.GroupSeasonId);
+
             foreach (var contest in contests)
             {
                 var isTie = contest.WinnerFranchiseId == null;
-                var wasWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
+                var wasWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.Id;
 
                 if (isTie)
                     ties++;
@@ -123,18 +137,11 @@ namespace SportsData.Producer.Application.Franchises.Commands
                     ? contest.HomeTeamFranchiseSeasonId
                     : contest.AwayTeamFranchiseSeasonId;
 
-                var oppFranchiseSeason = await _dataContext
-                    .FranchiseSeasons
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == opponentFranchiseSeasonId);
-
-                if (oppFranchiseSeason is null)
+                if (!opponentConferenceIds.TryGetValue(opponentFranchiseSeasonId, out var opponentConferenceId))
                 {
                     _logger.LogError("Opponent FranchiseSeason could not be loaded. {@Command}", command);
-                    return;
+                    continue;
                 }
-
-                var opponentConferenceId = oppFranchiseSeason.GroupSeasonId;
 
                 if (conferenceId == opponentConferenceId)
                 {
@@ -166,7 +173,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
             foreach (var contest in contests)
             {
                 var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
-                var isWinner = contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
+                var isTie = contest.WinnerFranchiseId == null;
+                var isWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.Id;
 
                 var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
                 var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;
@@ -178,7 +186,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
                 if (isWinner)
                     winMargins.Add(margin);
-                else
+                else if (!isTie)
                     lossMargins.Add(Math.Abs(margin));
             }
 

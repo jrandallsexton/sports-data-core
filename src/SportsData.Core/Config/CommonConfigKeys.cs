@@ -56,6 +56,9 @@ namespace SportsData.Core.Config
         public static string RabbitMqPassword =>
             $"{nameof(CommonConfig)}:Messaging:RabbitMq:Password";
 
+        public static string RabbitMqManagementApiBaseUrl =>
+            $"{nameof(CommonConfig)}:Messaging:RabbitMq:ManagementApiBaseUrl";
+
         public static string CacheServiceUri =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.RedisUri)}";
 

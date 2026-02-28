@@ -108,11 +108,20 @@ public class EnqueueFranchiseSeasonEnrichmentCommandHandlerTests :
             await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
         }
 
-        // Create franchise seasons for different season
+        // Create franchise seasons for different season (same sport)
         for (int i = 0; i < 3; i++)
         {
             var franchise = CreateFranchise(targetSport);
             var franchiseSeason = CreateFranchiseSeason(franchise.Id, 2025);
+            await FootballDataContext.Franchises.AddAsync(franchise);
+            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        }
+
+        // Create franchise seasons for different sport (same year) — exercises the Sport filter
+        for (int i = 0; i < 2; i++)
+        {
+            var franchise = CreateFranchise(Sport.BasketballNba);
+            var franchiseSeason = CreateFranchiseSeason(franchise.Id, targetSeasonYear);
             await FootballDataContext.Franchises.AddAsync(franchise);
             await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
         }

@@ -70,7 +70,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
             UpdateScoringMargins(franchiseSeason, contests);
 
             franchiseSeason.ModifiedUtc = DateTime.UtcNow;
-            franchiseSeason.ModifiedBy = Guid.NewGuid();
+            franchiseSeason.ModifiedBy = CausationId.Producer.FranchiseSeasonEnrichmentProcessor;
 
             await _dataContext.SaveChangesAsync();
 
@@ -81,8 +81,6 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 command.SeasonYear,
                 command.CorrelationId,
                 Guid.NewGuid()));
-
-            await RequestFranchiseSeasonSourcing(command, franchiseSeason, franchiseSeason.ExternalIds.First());
         }
 
         private async Task<List<Contest>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
@@ -109,7 +107,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
             foreach (var contest in contests)
             {
-                var wasWinner = contest.WinnerFranchiseId == command.FranchiseSeasonId;
+                var wasWinner = contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
 
                 if (wasWinner)
                     wins++;
@@ -163,7 +161,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
             foreach (var contest in contests)
             {
                 var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
-                var isWinner = contest.WinnerFranchiseId == franchiseSeason.Id;
+                var isWinner = contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
 
                 var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
                 var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;
@@ -202,27 +200,6 @@ namespace SportsData.Producer.Application.Franchises.Commands
             franchiseSeason.MarginLossAvg = lossMargins.Any()
                 ? Math.Round(Convert.ToDecimal(lossMargins.Average()), 2)
                 : null;
-        }
-
-        private async Task RequestFranchiseSeasonSourcing(
-            EnrichFranchiseSeasonCommand command,
-            FranchiseSeason franchiseSeason,
-            FranchiseSeasonExternalId externalId)
-        {
-            await _eventBus.Publish(new DocumentRequested(
-                Id: externalId.SourceUrlHash,
-                ParentId: franchiseSeason.FranchiseId.ToString(),
-                Uri: new Uri(externalId.SourceUrl),
-                Ref: null,
-                Sport: Sport.FootballNcaa,
-                SeasonYear: command.SeasonYear,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor
-            ));
-            
-            await _dataContext.SaveChangesAsync();
         }
     }
 }

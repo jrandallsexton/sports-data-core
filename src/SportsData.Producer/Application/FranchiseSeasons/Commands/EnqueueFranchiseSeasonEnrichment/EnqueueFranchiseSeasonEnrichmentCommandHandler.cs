@@ -71,6 +71,7 @@ public class EnqueueFranchiseSeasonEnrichmentCommandHandler : IEnqueueFranchiseS
 
             // Get all franchise season IDs for the specified sport/year
             var franchiseSeasonIds = await _dataContext.FranchiseSeasons
+                .AsNoTracking()
                 .Where(fs =>
                     fs.SeasonYear == command.SeasonYear &&
                     fs.Franchise.Sport == command.Sport)

@@ -186,9 +186,9 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
     /// <summary>
     /// Calls the RabbitMQ Management HTTP API to pull <paramref name="count"/>
-    /// messages from the given queue using <c>ack_requeue_true</c>, so fetched
-    /// messages are returned to the DLQ after being read. The caller is
-    /// responsible for manually purging the queue once re-publishing is confirmed.
+    /// messages from the given queue using <c>ack_requeue_false</c>, removing them
+    /// from the DLQ on fetch. Messages that fail reprocessing will be re-dead-lettered
+    /// naturally by <c>DocumentCreatedHandler</c>.
     /// </summary>
     private async Task<List<string>> FetchMessagesAsync(
         string managementApiBaseUrl,
@@ -204,12 +204,13 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
         // POST /api/queues/%2F/{queue}/get
-        // ackmode=ack_requeue_true: messages are peeked and returned to the DLQ after fetching.
-        // The operator should purge the DLQ manually once re-publishing is confirmed successful.
+        // ackmode=ack_requeue_false: messages are removed from the DLQ on fetch.
+        // This is safe because DocumentCreatedHandler will re-dead-letter any message
+        // that fails processing again, so no permanent loss can occur.
         var body = JsonSerializer.Serialize(new
         {
             count,
-            ackmode = "ack_requeue_true",
+            ackmode = "ack_requeue_false",
             encoding = "auto",
             truncate = 50000
         });

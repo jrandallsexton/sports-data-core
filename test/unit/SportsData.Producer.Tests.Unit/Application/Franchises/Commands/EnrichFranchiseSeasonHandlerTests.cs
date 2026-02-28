@@ -256,6 +256,11 @@ public class EnrichFranchiseSeasonHandlerTests :
         enriched.ConferenceWins.Should().Be(1, "there was 1 conference win");
         enriched.ConferenceLosses.Should().Be(0, "there were no conference losses");
         enriched.ConferenceTies.Should().Be(1, "there was 1 conference tie");
+
+        // Ties must not contribute to loss-margin statistics
+        enriched.MarginLossMin.Should().BeNull("ties should not populate loss margin fields");
+        enriched.MarginLossMax.Should().BeNull("ties should not populate loss margin fields");
+        enriched.MarginLossAvg.Should().BeNull("ties should not populate loss margin fields");
     }
 
     [Fact]

@@ -113,10 +113,11 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 .Distinct()
                 .ToList();
 
-            var opponentSeasons = await _dataContext.FranchiseSeasons
+            var opponentConferenceIds = await _dataContext.FranchiseSeasons
                 .AsNoTracking()
                 .Where(fs => opponentIds.Contains(fs.Id))
-                .ToDictionaryAsync(fs => fs.Id);
+                .Select(fs => new { fs.Id, fs.GroupSeasonId })
+                .ToDictionaryAsync(fs => fs.Id, fs => fs.GroupSeasonId);
 
             foreach (var contest in contests)
             {
@@ -136,13 +137,11 @@ namespace SportsData.Producer.Application.Franchises.Commands
                     ? contest.HomeTeamFranchiseSeasonId
                     : contest.AwayTeamFranchiseSeasonId;
 
-                if (!opponentSeasons.TryGetValue(opponentFranchiseSeasonId, out var oppFranchiseSeason))
+                if (!opponentConferenceIds.TryGetValue(opponentFranchiseSeasonId, out var opponentConferenceId))
                 {
                     _logger.LogError("Opponent FranchiseSeason could not be loaded. {@Command}", command);
-                    return;
+                    continue;
                 }
-
-                var opponentConferenceId = oppFranchiseSeason.GroupSeasonId;
 
                 if (conferenceId == opponentConferenceId)
                 {
@@ -174,7 +173,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
             foreach (var contest in contests)
             {
                 var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
-                var isWinner = contest.WinnerFranchiseId == franchiseSeason.Id;
+                var isTie = contest.WinnerFranchiseId == null;
+                var isWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.Id;
 
                 var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
                 var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;
@@ -186,7 +186,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
                 if (isWinner)
                     winMargins.Add(margin);
-                else
+                else if (!isTie)
                     lossMargins.Add(Math.Abs(margin));
             }
 

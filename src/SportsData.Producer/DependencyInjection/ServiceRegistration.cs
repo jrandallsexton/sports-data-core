@@ -1,6 +1,9 @@
 ﻿using Hangfire;
 
+using FluentValidation;
+
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
@@ -23,6 +26,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
+using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
@@ -67,6 +71,16 @@ namespace SportsData.Producer.DependencyInjection
                     EnableDependencyRequests = enableDependencyRequests
                 };
             });
+
+            services.AddHttpClient("RabbitMqManagement", (sp, client) =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var baseUrl = config[CommonConfigKeys.RabbitMqManagementApiBaseUrl];
+                if (!string.IsNullOrWhiteSpace(baseUrl))
+                    client.BaseAddress = new Uri(baseUrl);
+            });
+            services.AddScoped<IValidator<ReprocessDeadLetterQueueCommand>, ReprocessDeadLetterQueueCommandValidator>();
+            services.AddScoped<IReprocessDeadLetterQueueCommandHandler, ReprocessDeadLetterQueueCommandHandler>();
 
             services.AddScoped<IDataContextFactory, DataContextFactory>();
 

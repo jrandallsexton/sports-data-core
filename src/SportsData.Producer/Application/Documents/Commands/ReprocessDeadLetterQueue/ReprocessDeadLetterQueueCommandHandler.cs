@@ -117,6 +117,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
                 var errors = new List<string>();
                 var requeued = 0;
+                var dlqHeaders = new Dictionary<string, object>
+                {
+                    ["RetryReason"] = DocumentProcessingConstants.DlqReprocessRetryReason
+                };
 
                 // Use direct publishing to bypass outbox (no DbContext required for DLQ reprocessing)
                 using (_deliveryScope.Use(DeliveryMode.Direct))
@@ -135,10 +139,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                                 continue;
                             }
 
-                            await _eventBus.Publish(document, new Dictionary<string, object>
-                            {
-                                ["RetryReason"] = DocumentProcessingConstants.DlqReprocessRetryReason
-                            }, cancellationToken);
+                            await _eventBus.Publish(document, dlqHeaders, cancellationToken);
                             requeued++;
 
                             _logger.LogInformation(

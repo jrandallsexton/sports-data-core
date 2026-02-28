@@ -35,26 +35,19 @@ public class DeadLetterController : ControllerBase
     /// (or the value of <c>SportsData.Producer:DeadLetterQueue:QueueName</c>
     /// in Azure AppConfig).
     /// </param>
-    /// <param name="resetAttemptCount">
-    /// When <c>true</c> (default), sets <c>AttemptCount</c> to (MaxAttempts - 1) on each
-    /// re-published message, giving it ONE final retry before hitting the
-    /// maxAttempts threshold. When <c>false</c>, preserves the original
-    /// attempt count (message returns to DLQ immediately on failure).
-    /// </param>
     [HttpPost("reprocess")]
     public IActionResult Reprocess(
         [FromQuery] int count = 10,
-        [FromQuery] string? queueName = null,
-        [FromQuery] bool resetAttemptCount = true)
+        [FromQuery] string? queueName = null)
     {
-        var command = new ReprocessDeadLetterQueueCommand(count, queueName, resetAttemptCount);
+        var command = new ReprocessDeadLetterQueueCommand(count, queueName);
 
         var jobId = _backgroundJobProvider.Enqueue<IReprocessDeadLetterQueueCommandHandler>(
             h => h.ExecuteAsync(command, CancellationToken.None));
 
         _logger.LogInformation(
-            "DLQ reprocess job enqueued. JobId={JobId}, Count={Count}, QueueName={QueueName}, ResetAttemptCount={Reset}",
-            jobId, count, queueName ?? "(default)", resetAttemptCount);
+            "DLQ reprocess job enqueued. JobId={JobId}, Count={Count}, QueueName={QueueName}",
+            jobId, count, queueName ?? "(default)");
 
         return Accepted(new { JobId = jobId, Count = count, QueueName = queueName ?? "(resolved from config at execution time)" });
     }

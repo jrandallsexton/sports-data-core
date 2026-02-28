@@ -125,7 +125,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                     {
                         try
                         {
-                            var document = ExtractDocumentCreated(payload, command.ResetAttemptCount);
+                            var document = ExtractDocumentCreated(payload);
 
                             if (document is null)
                             {
@@ -148,9 +148,8 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                         }
                         catch (Exception ex)
                         {
-                            var error = $"Message {index}: {ex.Message}";
                             _logger.LogError(ex, "DLQ_REPROCESS: Failed to re-publish message {Index}.", index);
-                            errors.Add(error);
+                            errors.Add($"Message {index}: publish failed. See logs for details.");
                         }
                     }
                 }
@@ -236,15 +235,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
     /// <summary>
     /// Extracts the inner <see cref="DocumentCreated"/> message from a MassTransit
-    /// JSON envelope, optionally resetting <c>AttemptCount</c> to give one final retry
-    /// before returning to DLQ.
+    /// JSON envelope and sets <c>AttemptCount</c> to <c>MaxAttempts - 1</c>,
+    /// giving the message exactly one final attempt before hitting the DLQ threshold.
     /// </summary>
-    /// <param name="envelopeJson">The MassTransit envelope JSON</param>
-    /// <param name="resetAttemptCount">
-    /// When true, sets AttemptCount to (MaxAttempts - 1) giving one retry before DLQ threshold.
-    /// When false, preserves original AttemptCount (message goes immediately back to DLQ on failure).
-    /// </param>
-    private static DocumentCreated? ExtractDocumentCreated(string envelopeJson, bool resetAttemptCount)
+    private static DocumentCreated? ExtractDocumentCreated(string envelopeJson)
     {
         using var doc = JsonDocument.Parse(envelopeJson);
         var root = doc.RootElement;
@@ -262,10 +256,8 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         if (document is null)
             return null;
 
-        // Set to (MaxAttempts - 1): gives ONE final attempt before hitting maxAttempts threshold
-        return resetAttemptCount 
-            ? document with { AttemptCount = DocumentProcessingConstants.MaxAttempts - 1 } 
-            : document;
+        // Always set to (MaxAttempts - 1): gives exactly ONE final attempt before hitting the DLQ threshold again
+        return document with { AttemptCount = DocumentProcessingConstants.MaxAttempts - 1 };
     }
 
     // ---------------------------------------------------------------------------

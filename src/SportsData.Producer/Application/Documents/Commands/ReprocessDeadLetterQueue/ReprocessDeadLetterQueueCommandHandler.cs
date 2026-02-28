@@ -175,7 +175,9 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
     /// <summary>
     /// Calls the RabbitMQ Management HTTP API to pull <paramref name="count"/>
-    /// messages from the given queue and acknowledges them (removes from DLQ).
+    /// messages from the given queue using <c>ack_requeue_true</c>, so fetched
+    /// messages are returned to the DLQ after being read. The caller is
+    /// responsible for manually purging the queue once re-publishing is confirmed.
     /// </summary>
     private async Task<List<string>> FetchMessagesAsync(
         string managementApiBaseUrl,

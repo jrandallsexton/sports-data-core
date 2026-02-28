@@ -54,7 +54,7 @@ public class DeadLetterController : ControllerBase
             "DLQ reprocess job enqueued. JobId={JobId}, Count={Count}, QueueName={QueueName}, ResetAttemptCount={Reset}",
             jobId, count, queueName ?? "(default)", resetAttemptCount);
 
-        return Accepted(new { JobId = jobId, Count = count, QueueName = queueName ?? "document-dead-letter" });
+        return Accepted(new { JobId = jobId, Count = count, QueueName = queueName ?? "(resolved from config at execution time)" });
     }
 }
 

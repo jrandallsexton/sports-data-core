@@ -32,6 +32,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 {
     private readonly ILogger<ReprocessDeadLetterQueueCommandHandler> _logger;
     private readonly IEventBus _eventBus;
+    private readonly IMessageDeliveryScope _deliveryScope;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IValidator<ReprocessDeadLetterQueueCommand> _validator;
@@ -48,12 +49,14 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
     public ReprocessDeadLetterQueueCommandHandler(
         ILogger<ReprocessDeadLetterQueueCommandHandler> logger,
         IEventBus eventBus,
+        IMessageDeliveryScope deliveryScope,
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory,
         IValidator<ReprocessDeadLetterQueueCommand> validator)
     {
         _logger = logger;
         _eventBus = eventBus;
+        _deliveryScope = deliveryScope;
         _configuration = configuration;
         _httpClientFactory = httpClientFactory;
         _validator = validator;
@@ -114,32 +117,36 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                 var errors = new List<string>();
                 var requeued = 0;
 
-                foreach (var (payload, index) in payloads.Select((p, i) => (p, i)))
+                // Use direct publishing to bypass outbox (no DbContext required for DLQ reprocessing)
+                using (_deliveryScope.Use(DeliveryMode.Direct))
                 {
-                    try
+                    foreach (var (payload, index) in payloads.Select((p, i) => (p, i)))
                     {
-                        var document = ExtractDocumentCreated(payload, command.ResetAttemptCount);
-
-                        if (document is null)
+                        try
                         {
-                            var error = $"Message {index}: unable to deserialize DocumentCreated from payload.";
-                            _logger.LogWarning("DLQ_REPROCESS: {Error}", error);
-                            errors.Add(error);
-                            continue;
+                            var document = ExtractDocumentCreated(payload, command.ResetAttemptCount);
+
+                            if (document is null)
+                            {
+                                var error = $"Message {index}: unable to deserialize DocumentCreated from payload.";
+                                _logger.LogWarning("DLQ_REPROCESS: {Error}", error);
+                                errors.Add(error);
+                                continue;
+                            }
+
+                            await _eventBus.Publish(document, cancellationToken);
+                            requeued++;
+
+                            _logger.LogInformation(
+                                "DLQ_REPROCESS: Re-published message {Index}. DocumentId={DocumentId}, DocumentType={DocumentType}, AttemptCount={AttemptCount}",
+                                index, document.Id, document.DocumentType, document.AttemptCount);
                         }
-
-                        await _eventBus.Publish(document, cancellationToken);
-                        requeued++;
-
-                        _logger.LogInformation(
-                            "DLQ_REPROCESS: Re-published message {Index}. DocumentId={DocumentId}, DocumentType={DocumentType}, AttemptCount={AttemptCount}",
-                            index, document.Id, document.DocumentType, document.AttemptCount);
-                    }
-                    catch (Exception ex)
-                    {
-                        var error = $"Message {index}: {ex.Message}";
-                        _logger.LogError(ex, "DLQ_REPROCESS: Failed to re-publish message {Index}.", index);
-                        errors.Add(error);
+                        catch (Exception ex)
+                        {
+                            var error = $"Message {index}: {ex.Message}";
+                            _logger.LogError(ex, "DLQ_REPROCESS: Failed to re-publish message {Index}.", index);
+                            errors.Add(error);
+                        }
                     }
                 }
 

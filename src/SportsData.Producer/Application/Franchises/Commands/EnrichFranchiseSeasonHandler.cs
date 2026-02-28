@@ -105,6 +105,19 @@ namespace SportsData.Producer.Application.Franchises.Commands
             var conferenceLosses = 0;
             var conferenceTies = 0;
 
+            // Prefetch all opponent franchise seasons in a single query to avoid N+1
+            var opponentIds = contests
+                .Select(c => c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId
+                    ? c.HomeTeamFranchiseSeasonId
+                    : c.AwayTeamFranchiseSeasonId)
+                .Distinct()
+                .ToList();
+
+            var opponentSeasons = await _dataContext.FranchiseSeasons
+                .AsNoTracking()
+                .Where(fs => opponentIds.Contains(fs.Id))
+                .ToDictionaryAsync(fs => fs.Id);
+
             foreach (var contest in contests)
             {
                 var isTie = contest.WinnerFranchiseId == null;
@@ -123,12 +136,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
                     ? contest.HomeTeamFranchiseSeasonId
                     : contest.AwayTeamFranchiseSeasonId;
 
-                var oppFranchiseSeason = await _dataContext
-                    .FranchiseSeasons
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == opponentFranchiseSeasonId);
-
-                if (oppFranchiseSeason is null)
+                if (!opponentSeasons.TryGetValue(opponentFranchiseSeasonId, out var oppFranchiseSeason))
                 {
                     _logger.LogError("Opponent FranchiseSeason could not be loaded. {@Command}", command);
                     return;

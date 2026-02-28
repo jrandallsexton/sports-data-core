@@ -28,7 +28,6 @@ public class EnrichFranchiseSeasonHandlerTests :
     public async Task Process_CalculatesWinsAndLosses_Correctly()
     {
         // Arrange
-        var eventBus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2024;
@@ -92,7 +91,6 @@ public class EnrichFranchiseSeasonHandlerTests :
     public async Task Process_CalculatesTies_Correctly()
     {
         // Arrange
-        var eventBus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2024;
@@ -145,7 +143,6 @@ public class EnrichFranchiseSeasonHandlerTests :
     public async Task Process_CalculatesConferenceWinsAndLosses_Correctly()
     {
         // Arrange
-        var eventBus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2024;
@@ -210,10 +207,61 @@ public class EnrichFranchiseSeasonHandlerTests :
     }
 
     [Fact]
+    public async Task Process_CalculatesConferenceTies_Correctly()
+    {
+        // Arrange
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2024;
+        var conferenceId = Guid.NewGuid();
+
+        var franchise = CreateFranchise();
+        var franchiseSeason = CreateFranchiseSeason(franchise.Id, seasonYear, conferenceId);
+
+        await FootballDataContext.Franchises.AddAsync(franchise);
+        await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+
+        var confOpponentFranchise = CreateFranchise();
+        var confOpponentSeason = CreateFranchiseSeason(confOpponentFranchise.Id, seasonYear, conferenceId);
+        await FootballDataContext.Franchises.AddAsync(confOpponentFranchise);
+        await FootballDataContext.FranchiseSeasons.AddAsync(confOpponentSeason);
+
+        // Conference Win
+        await FootballDataContext.Contests.AddAsync(CreateContest(
+            franchiseSeason.Id, confOpponentSeason.Id, seasonYear,
+            homeScore: 35, awayScore: 14, winnerId: franchiseSeason.Id));
+
+        // Conference Tie (WinnerFranchiseId = null)
+        await FootballDataContext.Contests.AddAsync(CreateContest(
+            franchiseSeason.Id, confOpponentSeason.Id, seasonYear,
+            homeScore: 21, awayScore: 21, winnerId: null));
+
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichFranchiseSeasonCommand(
+            franchiseSeason.Id,
+            seasonYear,
+            Guid.NewGuid());
+
+        // Act
+        await sut.Process(command);
+
+        // Assert
+        var enriched = await FootballDataContext.FranchiseSeasons
+            .FirstAsync(fs => fs.Id == franchiseSeason.Id);
+
+        enriched.Wins.Should().Be(1, "there was 1 win");
+        enriched.Losses.Should().Be(0, "there were no losses");
+        enriched.Ties.Should().Be(1, "there was 1 tie");
+        enriched.ConferenceWins.Should().Be(1, "there was 1 conference win");
+        enriched.ConferenceLosses.Should().Be(0, "there were no conference losses");
+        enriched.ConferenceTies.Should().Be(1, "there was 1 conference tie");
+    }
+
+    [Fact]
     public async Task Process_CalculatesScoringMargins_Correctly()
     {
         // Arrange
-        var eventBus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2024;
@@ -317,7 +365,6 @@ public class EnrichFranchiseSeasonHandlerTests :
     public async Task Process_WhenNoContests_SetsRecordToZero()
     {
         // Arrange
-        var eventBus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2024;

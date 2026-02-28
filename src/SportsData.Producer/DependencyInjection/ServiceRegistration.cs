@@ -23,6 +23,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
+using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
@@ -67,6 +68,9 @@ namespace SportsData.Producer.DependencyInjection
                     EnableDependencyRequests = enableDependencyRequests
                 };
             });
+
+            services.AddHttpClient("RabbitMqManagement");
+            services.AddScoped<IReprocessDeadLetterQueueCommandHandler, ReprocessDeadLetterQueueCommandHandler>();
 
             services.AddScoped<IDataContextFactory, DataContextFactory>();
 

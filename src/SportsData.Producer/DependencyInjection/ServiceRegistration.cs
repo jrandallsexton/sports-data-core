@@ -16,12 +16,14 @@ using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
+using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
@@ -140,7 +142,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
             services.AddScoped<ContestEnrichmentJob>();
 
-            services.AddScoped<IEnrichFranchiseSeasons, FranchiseSeasonEnrichmentProcessor<TeamSportDataContext>>();
+            services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
             services.AddScoped<FranchiseSeasonEnrichmentJob>();
 
             services.AddScoped<IUpdateContests, ContestUpdateProcessor>();
@@ -160,7 +162,11 @@ namespace SportsData.Producer.DependencyInjection
 
             // FranchiseSeason Commands
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
+            services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
             services.AddScoped<ICalculateFranchiseSeasonMetricsCommandHandler, CalculateFranchiseSeasonMetricsCommandHandler>();
+
+            // FranchiseSeason Command Validators
+            services.AddScoped<FluentValidation.IValidator<EnqueueFranchiseSeasonEnrichmentCommand>, EnqueueFranchiseSeasonEnrichmentCommandValidator>();
 
             // Franchise Queries
             services.AddScoped<IGetAllFranchisesQueryHandler, GetAllFranchisesQueryHandler>();

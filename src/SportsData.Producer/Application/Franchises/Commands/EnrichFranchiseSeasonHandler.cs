@@ -7,22 +7,22 @@ using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Application.Franchises
+namespace SportsData.Producer.Application.Franchises.Commands
 {
     public interface IEnrichFranchiseSeasons
     {
         Task Process(EnrichFranchiseSeasonCommand command);
     }
 
-    public class FranchiseSeasonEnrichmentProcessor<TDataContext> :
+    public class EnrichFranchiseSeasonHandler<TDataContext> :
         IEnrichFranchiseSeasons where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<FranchiseSeasonEnrichmentProcessor<TDataContext>> _logger;
+        private readonly ILogger<EnrichFranchiseSeasonHandler<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _eventBus;
 
-        public FranchiseSeasonEnrichmentProcessor(
-            ILogger<FranchiseSeasonEnrichmentProcessor<TDataContext>> logger,
+        public EnrichFranchiseSeasonHandler(
+            ILogger<EnrichFranchiseSeasonHandler<TDataContext>> logger,
             TDataContext dataContext,
             IEventBus eventBus)
         {
@@ -88,6 +88,7 @@ namespace SportsData.Producer.Application.Franchises
         private async Task<List<Contest>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
         {
             return await _dataContext.Contests
+                .AsNoTracking()
                 .Where(c => c.FinalizedUtc != null &&
                             (c.AwayTeamFranchiseSeasonId == franchiseSeasonId ||
                              c.HomeTeamFranchiseSeasonId == franchiseSeasonId))

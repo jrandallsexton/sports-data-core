@@ -1,6 +1,9 @@
 ﻿using Hangfire;
 
+using FluentValidation;
+
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
@@ -69,7 +72,14 @@ namespace SportsData.Producer.DependencyInjection
                 };
             });
 
-            services.AddHttpClient("RabbitMqManagement");
+            services.AddHttpClient("RabbitMqManagement", (sp, client) =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var baseUrl = config[CommonConfigKeys.RabbitMqManagementApiBaseUrl];
+                if (!string.IsNullOrWhiteSpace(baseUrl))
+                    client.BaseAddress = new Uri(baseUrl);
+            });
+            services.AddScoped<IValidator<ReprocessDeadLetterQueueCommand>, ReprocessDeadLetterQueueCommandValidator>();
             services.AddScoped<IReprocessDeadLetterQueueCommandHandler, ReprocessDeadLetterQueueCommandHandler>();
 
             services.AddScoped<IDataContextFactory, DataContextFactory>();

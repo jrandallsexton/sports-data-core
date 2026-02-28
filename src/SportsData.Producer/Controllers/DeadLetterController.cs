@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Core.Extensions;
+using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 
 namespace SportsData.Producer.Controllers;
@@ -12,26 +12,26 @@ namespace SportsData.Producer.Controllers;
 [Route("api/dead-letter")]
 public class DeadLetterController : ControllerBase
 {
-    private readonly IReprocessDeadLetterQueueCommandHandler _handler;
     private readonly ILogger<DeadLetterController> _logger;
+    private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public DeadLetterController(
-        IReprocessDeadLetterQueueCommandHandler handler,
-        ILogger<DeadLetterController> logger)
+        ILogger<DeadLetterController> logger,
+        IProvideBackgroundJobs backgroundJobProvider)
     {
-        _handler = handler;
         _logger = logger;
+        _backgroundJobProvider = backgroundJobProvider;
     }
 
     /// <summary>
-    /// Pulls messages from the RabbitMQ dead-letter queue and re-publishes them
-    /// for normal processing.
+    /// Enqueues a background job that pulls messages from the RabbitMQ dead-letter queue
+    /// and re-publishes them for normal processing.
     /// </summary>
     /// <param name="count">
     /// Maximum number of messages to reprocess. Defaults to 10.
     /// </param>
     /// <param name="queueName">
-    /// Override the target DLQ name. Defaults to <c>document-created_error</c>
+    /// Override the target DLQ name. Defaults to <c>document-dead-letter</c>
     /// (or the value of <c>SportsData.Producer:DeadLetterQueue:QueueName</c>
     /// in Azure AppConfig).
     /// </param>
@@ -39,21 +39,22 @@ public class DeadLetterController : ControllerBase
     /// When <c>true</c> (default), resets <c>AttemptCount</c> to 0 on each
     /// re-published message so the retry ladder starts fresh.
     /// </param>
-    /// <param name="cancellationToken"></param>
     [HttpPost("reprocess")]
-    public async Task<ActionResult<ReprocessDeadLetterQueueResult>> Reprocess(
+    public IActionResult Reprocess(
         [FromQuery] int count = 10,
         [FromQuery] string? queueName = null,
-        [FromQuery] bool resetAttemptCount = true,
-        CancellationToken cancellationToken = default)
+        [FromQuery] bool resetAttemptCount = true)
     {
-        _logger.LogInformation(
-            "DLQ reprocess requested. Count={Count}, QueueName={QueueName}, ResetAttemptCount={Reset}",
-            count, queueName ?? "(default)", resetAttemptCount);
-
         var command = new ReprocessDeadLetterQueueCommand(count, queueName, resetAttemptCount);
-        var result = await _handler.ExecuteAsync(command, cancellationToken);
 
-        return result.ToActionResult();
+        var jobId = _backgroundJobProvider.Enqueue<IReprocessDeadLetterQueueCommandHandler>(
+            h => h.ExecuteAsync(command, CancellationToken.None));
+
+        _logger.LogInformation(
+            "DLQ reprocess job enqueued. JobId={JobId}, Count={Count}, QueueName={QueueName}, ResetAttemptCount={Reset}",
+            jobId, count, queueName ?? "(default)", resetAttemptCount);
+
+        return Accepted(new { JobId = jobId, Count = count, QueueName = queueName ?? "document-dead-letter" });
     }
 }
+

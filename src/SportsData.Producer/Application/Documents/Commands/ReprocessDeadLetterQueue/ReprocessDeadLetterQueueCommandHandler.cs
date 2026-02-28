@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using FluentValidation;
 using FluentValidation.Results;
 
 using SportsData.Core.Common;
@@ -33,6 +34,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
     private readonly IEventBus _eventBus;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IValidator<ReprocessDeadLetterQueueCommand> _validator;
 
     /// Default queue name used when no override is provided in config or the command.
     private const string DefaultQueueName = "document-dead-letter";
@@ -47,23 +49,26 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         ILogger<ReprocessDeadLetterQueueCommandHandler> logger,
         IEventBus eventBus,
         IConfiguration configuration,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IValidator<ReprocessDeadLetterQueueCommand> validator)
     {
         _logger = logger;
         _eventBus = eventBus;
         _configuration = configuration;
         _httpClientFactory = httpClientFactory;
+        _validator = validator;
     }
 
     public async Task<Result<ReprocessDeadLetterQueueResult>> ExecuteAsync(
         ReprocessDeadLetterQueueCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.Count <= 0)
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
             return new Failure<ReprocessDeadLetterQueueResult>(
                 new ReprocessDeadLetterQueueResult(command.Count, 0, []),
-                ResultStatus.BadRequest,
-                [new ValidationFailure("Count", "Count must be greater than zero.")]);
+                ResultStatus.Validation,
+                validation.Errors);
 
         var queueName = command.QueueName
             ?? _configuration["SportsData.Producer:DeadLetterQueue:QueueName"]
@@ -85,7 +90,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
             if (string.IsNullOrWhiteSpace(managementApiBaseUrl))
                 return new Failure<ReprocessDeadLetterQueueResult>(
                     new ReprocessDeadLetterQueueResult(command.Count, 0, []),
-                    ResultStatus.BadRequest,
+                    ResultStatus.Error,
                     [new ValidationFailure(
                         "ManagementApiBaseUrl",
                         $"'{CommonConfigKeys.RabbitMqManagementApiBaseUrl}' is not configured.")]);
@@ -93,7 +98,7 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 return new Failure<ReprocessDeadLetterQueueResult>(
                     new ReprocessDeadLetterQueueResult(command.Count, 0, []),
-                    ResultStatus.BadRequest,
+                    ResultStatus.Error,
                     [new ValidationFailure(
                         "ManagementApiCredentials",
                         $"'{CommonConfigKeys.RabbitMqUsername}' and '{CommonConfigKeys.RabbitMqPassword}' must be configured.")]);
@@ -149,17 +154,17 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
             {
                 _logger.LogError(ex, "DLQ_REPROCESS: RabbitMQ Management API request failed.");
                 return new Failure<ReprocessDeadLetterQueueResult>(
-                    new ReprocessDeadLetterQueueResult(command.Count, 0, [ex.Message]),
+                    new ReprocessDeadLetterQueueResult(command.Count, 0, []),
                     ResultStatus.Error,
-                    [new ValidationFailure("Exception", ex.Message)]);
+                    [new ValidationFailure("Exception", "DLQ reprocess failed. See logs for details.")]);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "DLQ_REPROCESS: Unexpected error.");
                 return new Failure<ReprocessDeadLetterQueueResult>(
-                    new ReprocessDeadLetterQueueResult(command.Count, 0, [ex.Message]),
+                    new ReprocessDeadLetterQueueResult(command.Count, 0, []),
                     ResultStatus.Error,
-                    [new ValidationFailure("Exception", ex.Message)]);
+                    [new ValidationFailure("Exception", "DLQ reprocess failed. See logs for details.")]);
             }
         }
     }
@@ -186,11 +191,12 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
         // POST /api/queues/%2F/{queue}/get
-        // ackmode=ack_requeue_false: messages are removed from the DLQ after being fetched
+        // ackmode=ack_requeue_true: messages are peeked and returned to the DLQ after fetching.
+        // The operator should purge the DLQ manually once re-publishing is confirmed successful.
         var body = JsonSerializer.Serialize(new
         {
             count,
-            ackmode = "ack_requeue_false",
+            ackmode = "ack_requeue_true",
             encoding = "auto",
             truncate = 50000
         });

@@ -8,7 +8,7 @@ namespace SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetter
 /// <param name="QueueName">
 /// Override the target queue name. When null, the value is read from
 /// <c>SportsData.Producer:DeadLetterQueue:QueueName</c> config, falling back to
-/// <c>document-created_error</c>.
+/// <c>document-dead-letter</c>.
 /// </param>
 /// <param name="ResetAttemptCount">
 /// When true (default), the <c>AttemptCount</c> on each re-published

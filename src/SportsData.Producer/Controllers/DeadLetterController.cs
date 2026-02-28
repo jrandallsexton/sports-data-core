@@ -36,8 +36,10 @@ public class DeadLetterController : ControllerBase
     /// in Azure AppConfig).
     /// </param>
     /// <param name="resetAttemptCount">
-    /// When <c>true</c> (default), resets <c>AttemptCount</c> to 0 on each
-    /// re-published message so the retry ladder starts fresh.
+    /// When <c>true</c> (default), sets <c>AttemptCount</c> to (MaxAttempts - 1) on each
+    /// re-published message, giving it ONE final retry before hitting the
+    /// maxAttempts threshold. When <c>false</c>, preserves the original
+    /// attempt count (message returns to DLQ immediately on failure).
     /// </param>
     [HttpPost("reprocess")]
     public IActionResult Reprocess(

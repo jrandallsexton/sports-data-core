@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Processing;
 
 namespace SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 
@@ -233,14 +234,16 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
             .ToList() ?? [];
     }
 
-    // ---------------------------------------------------------------------------
-    // MassTransit envelope extraction
-    // ---------------------------------------------------------------------------
-
     /// <summary>
     /// Extracts the inner <see cref="DocumentCreated"/> message from a MassTransit
-    /// JSON envelope, optionally resetting <c>AttemptCount</c> to 0.
+    /// JSON envelope, optionally resetting <c>AttemptCount</c> to give one final retry
+    /// before returning to DLQ.
     /// </summary>
+    /// <param name="envelopeJson">The MassTransit envelope JSON</param>
+    /// <param name="resetAttemptCount">
+    /// When true, sets AttemptCount to (MaxAttempts - 1) giving one retry before DLQ threshold.
+    /// When false, preserves original AttemptCount (message goes immediately back to DLQ on failure).
+    /// </param>
     private static DocumentCreated? ExtractDocumentCreated(string envelopeJson, bool resetAttemptCount)
     {
         using var doc = JsonDocument.Parse(envelopeJson);
@@ -259,7 +262,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
         if (document is null)
             return null;
 
-        return resetAttemptCount ? document with { AttemptCount = 0 } : document;
+        // Set to (MaxAttempts - 1): gives ONE final attempt before hitting maxAttempts threshold
+        return resetAttemptCount 
+            ? document with { AttemptCount = DocumentProcessingConstants.MaxAttempts - 1 } 
+            : document;
     }
 
     // ---------------------------------------------------------------------------

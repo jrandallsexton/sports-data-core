@@ -55,11 +55,9 @@ namespace SportsData.Producer.Application.Documents
             {
                 _logger.LogInformation("HANDLER_ENTRY: DocumentCreated event received.");
 
-                const int maxAttempts = 10;
-
-                if (message.AttemptCount >= maxAttempts)
+                if (message.AttemptCount >= DocumentProcessingConstants.MaxAttempts)
                 {
-                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Publishing dead-letter event.", maxAttempts);
+                    _logger.LogError("HANDLER_MAX_RETRIES: Maximum retry attempts ({MaxAttempts}) reached for document. Publishing dead-letter event.", DocumentProcessingConstants.MaxAttempts);
                     
                     // Publish dedicated dead-letter event for observability/monitoring
                     var deadLetterEvent = new DocumentDeadLetter(

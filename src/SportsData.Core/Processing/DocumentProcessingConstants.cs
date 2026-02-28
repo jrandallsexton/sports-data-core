@@ -10,4 +10,11 @@ public static class DocumentProcessingConstants
     /// Used by DocumentCreatedHandler and DLQ reprocessing logic.
     /// </summary>
     public const int MaxAttempts = 10;
+
+    /// <summary>
+    /// Value stamped on the <c>RetryReason</c> header of messages re-published from the DLQ.
+    /// Read by <c>DocumentCreatedHandler</c> to bypass the exponential backoff schedule and
+    /// schedule the message for immediate processing.
+    /// </summary>
+    public const string DlqReprocessRetryReason = "DlqReprocess";
 }

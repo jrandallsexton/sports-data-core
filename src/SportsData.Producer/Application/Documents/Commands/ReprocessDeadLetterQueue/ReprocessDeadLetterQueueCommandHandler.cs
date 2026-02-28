@@ -135,7 +135,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                                 continue;
                             }
 
-                            await _eventBus.Publish(document, cancellationToken);
+                            await _eventBus.Publish(document, new Dictionary<string, object>
+                            {
+                                ["RetryReason"] = DocumentProcessingConstants.DlqReprocessRetryReason
+                            }, cancellationToken);
                             requeued++;
 
                             _logger.LogInformation(

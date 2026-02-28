@@ -107,7 +107,7 @@ public class EnqueueFranchiseSeasonEnrichmentCommandHandler : IEnqueueFranchiseS
             return new Failure<Guid>(
                 default!,
                 ResultStatus.Error,
-                []);
+                [new FluentValidation.Results.ValidationFailure("Exception", ex.Message)]);
         }
     }
 }

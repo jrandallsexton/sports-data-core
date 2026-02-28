@@ -179,7 +179,7 @@ public class EnqueueFranchiseSeasonEnrichmentCommandHandlerTests :
             .With(x => x.DisplayName, "Test Franchise")
             .With(x => x.DisplayNameShort, "Test")
             .With(x => x.Location, "Test City")
-            .With(x => x.Slug, "test-franchise")
+            .With(x => x.Slug, $"test-franchise-{Guid.NewGuid()}")
             .With(x => x.ColorCodeHex, "#000000")
             .With(x => x.Sport, sport)
             .Create();
@@ -197,7 +197,7 @@ public class EnqueueFranchiseSeasonEnrichmentCommandHandlerTests :
             .With(x => x.DisplayNameShort, "Test")
             .With(x => x.Abbreviation, "TEST")
             .With(x => x.Location, "Test City")
-            .With(x => x.Slug, "test-franchise-season")
+            .With(x => x.Slug, $"test-franchise-season-{Guid.NewGuid()}")
             .With(x => x.ColorCodeHex, "#000000")
             .Create();
     }

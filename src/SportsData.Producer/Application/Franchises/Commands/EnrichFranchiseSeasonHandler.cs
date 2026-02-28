@@ -107,9 +107,12 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
             foreach (var contest in contests)
             {
-                var wasWinner = contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
+                var isTie = contest.WinnerFranchiseId == null;
+                var wasWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
 
-                if (wasWinner)
+                if (isTie)
+                    ties++;
+                else if (wasWinner)
                     wins++;
                 else
                     losses++;
@@ -135,7 +138,9 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
                 if (conferenceId == opponentConferenceId)
                 {
-                    if (wasWinner)
+                    if (isTie)
+                        conferenceTies++;
+                    else if (wasWinner)
                         conferenceWins++;
                     else
                         conferenceLosses++;

@@ -194,12 +194,14 @@ select count(*) from public."CompetitionDrive"
 -- FIX DEV - 07 OCT 2025
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
-select * from public."Contest" where "Id" = '6ac9be3d-a870-6398-22bc-0c8262eb3b1c'
-select * from public."Contest" where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f'
-select * from public."Competition" where "ContestId" = '2508b4ac-a021-c3fe-f157-ca0694943621'
+select * from public."Contest" where "Id" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
+select * from public."Contest" where "SeasonWeekId" = '25fee87e-e0ee-ec63-4dfa-7bd98b787c7e'
+select * from public."Competition" where "ContestId" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
 select * from public."CompetitionStatus" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
 select * from public."CompetitionCompetitor" where "CompetitionId" = '94298b10-80c6-b1e3-a899-6534715ba956'
-select * from public."CompetitionOdds" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'
+select * from public."CompetitionOdds" where "CompetitionId" = '6fe167b3-01a4-ce7a-4caa-2d8ea922f983'
+select * from public."CompetitionPlay" where "CompetitionId" = '6fe167b3-01a4-ce7a-4caa-2d8ea922f983' order by "Ordinal"
+select distinct "ProviderId", "ProviderName" from public."CompetitionOdds" order by "ProviderId"
 
 select * from public."CompetitionProbability" where "CompetitionId" = 'af18ebe5-033d-a056-84c5-8358f412685f' order by "SequenceNumber"::int
 
@@ -212,6 +214,7 @@ select * from public."CompetitionDrive" where "CompetitionId" = '8645e547-d083-6
 select * from public."CompetitionPlay" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346' and "Type" = 8 order by "SequenceNumber"::int
 select * from public."CompetitionMetric" where "CompetitionId" = '8645e547-d083-6370-7836-bb328f70c346'
 select count(*) from public."CompetitionMetric"
+select * from public."FranchiseSeason"
 select * from public."FranchiseSeasonMetric"
 select * from public."FranchiseSeasonRecord"
 select * from public."GroupSeason" order by "Name"

@@ -154,6 +154,7 @@
 - **Always Build Before Completion**: After making code changes, always run a build to verify compilation before reporting task completion
 - **Verify No Errors**: Use `get_errors` tool to check for compilation errors after edits
 - **Fix Issues Immediately**: If build errors occur, fix them before proceeding to the next task
+- **Git Commits — Never Use `git add -A`**: Always run `git status` first to review staged vs unstaged files. Only commit what is already staged, or explicitly add specific files by path. Never blindly stage everything with `git add -A` or `git add .` — unstaged files may contain secrets, debug artifacts, or unrelated work-in-progress.
 
 ## Performance Guidelines
 - **Slug Resolution**: Resolve slug → GUID once at API layer, use GUID for all downstream calls

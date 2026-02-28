@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
@@ -45,6 +47,22 @@ public class FranchiseSeasonController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new EnqueueFranchiseSeasonMetricsGenerationCommand(
+            seasonYear,
+            appMode.CurrentSport);
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpPost("seasonYear/{seasonYear}/enrich")]
+    public async Task<ActionResult<Guid>> EnrichFranchiseSeasonsBySeasonYear(
+        [FromRoute] int seasonYear,
+        [FromServices] IEnqueueFranchiseSeasonEnrichmentCommandHandler handler,
+        [FromServices] IAppMode appMode,
+        CancellationToken cancellationToken)
+    {
+        var command = new EnqueueFranchiseSeasonEnrichmentCommand(
             seasonYear,
             appMode.CurrentSport);
 

@@ -1,0 +1,81 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628435/competitions/401628435/plays/401628435104888601?lang=en&region=us",
+  "id": "401628435104888601",
+  "sequenceNumber": "104888601",
+  "type": {
+    "id": "8",
+    "text": "Penalty",
+    "abbreviation": "PEN"
+  },
+  "text": "(11:19) Shotgun Moore,Gaston pass incomplete short left to Nimrod,Chas thrown to UTEP00 QB hurried by Duhon,Kyran PENALTY TENN Ineligible Downfield on Pass offsetting UTEP Roughing The Passer offsetting. NO PLAY. The previous play is under automatic review - &quot;Targeting&quot;. PLAY STANDS.",
+  "shortText": "Tennessee penalty, Ineligible Downfield on Pass",
+  "alternativeText": "(11:19) Shotgun Moore,Gaston pass incomplete short left to Nimrod,Chas thrown to UTEP00 QB hurried by Duhon,Kyran PENALTY TENN Ineligible Downfield on Pass offsetting UTEP Roughing The Passer offsetting. NO PLAY. The previous play is under automatic review - &quot;Targeting&quot;. PLAY STANDS.",
+  "shortAlternativeText": "Tennessee penalty, Ineligible Downfield on Pass",
+  "awayScore": 0,
+  "homeScore": 49,
+  "period": {
+    "number": 4
+  },
+  "clock": {
+    "value": 673.0,
+    "displayValue": "11:13"
+  },
+  "scoringPlay": false,
+  "priority": false,
+  "scoreValue": 0,
+  "modified": "2024-11-23T23:37Z",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2633?lang=en&region=us"
+  },
+  "probability": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628435/competitions/401628435/probabilities/401628435104888601?lang=en&region=us"
+  },
+  "wallclock": "2024-11-23T21:06:18Z",
+  "teamParticipants": [
+    {
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2633?lang=en&region=us"
+      },
+      "id": "2633",
+      "order": 1,
+      "type": "offense"
+    },
+    {
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2638?lang=en&region=us"
+      },
+      "id": "2638",
+      "order": 2,
+      "type": "defense"
+    }
+  ],
+  "drive": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628435/competitions/401628435/drives/40162843526?lang=en&region=us"
+  },
+  "start": {
+    "down": 1,
+    "distance": 10,
+    "yardLine": 83,
+    "yardsToEndzone": 17,
+    "downDistanceText": "1st & 10 at UTEP 17",
+    "shortDownDistanceText": "1st & 10",
+    "possessionText": "UTEP 17",
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2633?lang=en&region=us"
+    }
+  },
+  "end": {
+    "down": 1,
+    "distance": 10,
+    "yardLine": 83,
+    "yardsToEndzone": 17,
+    "downDistanceText": "1st & 10 at UTEP 17",
+    "shortDownDistanceText": "1st & 10",
+    "possessionText": "UTEP 17",
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/2633?lang=en&region=us"
+    }
+  },
+  "statYardage": 0,
+  "isTurnover": false
+}

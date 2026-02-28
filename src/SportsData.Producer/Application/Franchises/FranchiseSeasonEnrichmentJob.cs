@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Franchises
@@ -40,7 +41,7 @@ namespace SportsData.Producer.Application.Franchises
                     Guid.NewGuid());
 
                 _backgroundJobProvider
-                    .Enqueue<FranchiseSeasonEnrichmentProcessor<TeamSportDataContext>>(p => p.Process(cmd));
+                    .Enqueue<EnrichFranchiseSeasonHandler<TeamSportDataContext>>(p => p.Process(cmd));
             }
 
             _logger.LogInformation("All franchise season enrichment requests sent.");

@@ -44,6 +44,20 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     }
 
     [Fact]
+    public async Task WhenJsonIsValid_CanDeserialize()
+    {
+        // arrange
+        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_Debug.json");
+        var play = json.FromJson<EspnEventCompetitionPlayDto>();
+
+        // act
+
+
+        // assert
+        play.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task WhenPlayCollectionIsProvided_ScoreCanBeCalculate()
     {
         // arrange

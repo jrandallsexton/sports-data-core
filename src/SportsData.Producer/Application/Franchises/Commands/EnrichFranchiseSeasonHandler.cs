@@ -7,22 +7,22 @@ using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Application.Franchises
+namespace SportsData.Producer.Application.Franchises.Commands
 {
     public interface IEnrichFranchiseSeasons
     {
         Task Process(EnrichFranchiseSeasonCommand command);
     }
 
-    public class FranchiseSeasonEnrichmentProcessor<TDataContext> :
+    public class EnrichFranchiseSeasonHandler<TDataContext> :
         IEnrichFranchiseSeasons where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<FranchiseSeasonEnrichmentProcessor<TDataContext>> _logger;
+        private readonly ILogger<EnrichFranchiseSeasonHandler<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _eventBus;
 
-        public FranchiseSeasonEnrichmentProcessor(
-            ILogger<FranchiseSeasonEnrichmentProcessor<TDataContext>> logger,
+        public EnrichFranchiseSeasonHandler(
+            ILogger<EnrichFranchiseSeasonHandler<TDataContext>> logger,
             TDataContext dataContext,
             IEventBus eventBus)
         {
@@ -70,7 +70,7 @@ namespace SportsData.Producer.Application.Franchises
             UpdateScoringMargins(franchiseSeason, contests);
 
             franchiseSeason.ModifiedUtc = DateTime.UtcNow;
-            franchiseSeason.ModifiedBy = Guid.NewGuid();
+            franchiseSeason.ModifiedBy = CausationId.Producer.FranchiseSeasonEnrichmentProcessor;
 
             await _dataContext.SaveChangesAsync();
 
@@ -81,13 +81,12 @@ namespace SportsData.Producer.Application.Franchises
                 command.SeasonYear,
                 command.CorrelationId,
                 Guid.NewGuid()));
-
-            await RequestFranchiseSeasonSourcing(command, franchiseSeason, franchiseSeason.ExternalIds.First());
         }
 
         private async Task<List<Contest>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
         {
             return await _dataContext.Contests
+                .AsNoTracking()
                 .Where(c => c.FinalizedUtc != null &&
                             (c.AwayTeamFranchiseSeasonId == franchiseSeasonId ||
                              c.HomeTeamFranchiseSeasonId == franchiseSeasonId))
@@ -108,9 +107,12 @@ namespace SportsData.Producer.Application.Franchises
 
             foreach (var contest in contests)
             {
-                var wasWinner = contest.WinnerFranchiseId == command.FranchiseSeasonId;
+                var isTie = contest.WinnerFranchiseId == null;
+                var wasWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
 
-                if (wasWinner)
+                if (isTie)
+                    ties++;
+                else if (wasWinner)
                     wins++;
                 else
                     losses++;
@@ -136,7 +138,9 @@ namespace SportsData.Producer.Application.Franchises
 
                 if (conferenceId == opponentConferenceId)
                 {
-                    if (wasWinner)
+                    if (isTie)
+                        conferenceTies++;
+                    else if (wasWinner)
                         conferenceWins++;
                     else
                         conferenceLosses++;
@@ -162,7 +166,7 @@ namespace SportsData.Producer.Application.Franchises
             foreach (var contest in contests)
             {
                 var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
-                var isWinner = contest.WinnerFranchiseId == franchiseSeason.Id;
+                var isWinner = contest.WinnerFranchiseId == franchiseSeason.FranchiseId;
 
                 var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
                 var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;
@@ -201,27 +205,6 @@ namespace SportsData.Producer.Application.Franchises
             franchiseSeason.MarginLossAvg = lossMargins.Any()
                 ? Math.Round(Convert.ToDecimal(lossMargins.Average()), 2)
                 : null;
-        }
-
-        private async Task RequestFranchiseSeasonSourcing(
-            EnrichFranchiseSeasonCommand command,
-            FranchiseSeason franchiseSeason,
-            FranchiseSeasonExternalId externalId)
-        {
-            await _eventBus.Publish(new DocumentRequested(
-                Id: externalId.SourceUrlHash,
-                ParentId: franchiseSeason.FranchiseId.ToString(),
-                Uri: new Uri(externalId.SourceUrl),
-                Ref: null,
-                Sport: Sport.FootballNcaa,
-                SeasonYear: command.SeasonYear,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.FranchiseSeasonEnrichmentProcessor
-            ));
-            
-            await _dataContext.SaveChangesAsync();
         }
     }
 }

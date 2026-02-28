@@ -1,4 +1,4 @@
-﻿namespace SportsData.Producer.Application.Franchises;
+﻿namespace SportsData.Producer.Application.Franchises.Commands;
 
 public record EnrichFranchiseSeasonCommand(
     Guid FranchiseSeasonId,

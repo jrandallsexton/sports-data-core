@@ -141,6 +141,10 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
                                 "DLQ_REPROCESS: Re-published message {Index}. DocumentId={DocumentId}, DocumentType={DocumentType}, AttemptCount={AttemptCount}",
                                 index, document.Id, document.DocumentType, document.AttemptCount);
                         }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
                         catch (Exception ex)
                         {
                             var error = $"Message {index}: {ex.Message}";

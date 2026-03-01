@@ -1,0 +1,50 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/athletes/-48520?lang=en&region=us",
+  "id": "-48520",
+  "uid": "s:20~l:23~a:-48520",
+  "guid": "00000000-0000-0000-0000-000000048520",
+  "type": "football",
+  "firstName": "Placeholder",
+  "lastName": "Athlete",
+  "fullName": "Placeholder Athlete",
+  "displayName": "Placeholder Athlete",
+  "shortName": "P. Athlete",
+  "weight": 200.0,
+  "displayWeight": "200 lbs",
+  "height": 72.0,
+  "displayHeight": "6' 0\"",
+  "links": [],
+  "slug": "placeholder-athlete",
+  "jersey": "0",
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en&region=us",
+    "id": "9",
+    "name": "Running Back",
+    "displayName": "Running Back",
+    "abbreviation": "RB",
+    "leaf": false,
+    "parent": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/70?lang=en&region=us"
+    }
+  },
+  "injuries": [],
+  "linked": false,
+  "statistics": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/types/3/athletes/-48520/statistics?lang=en&region=us"
+  },
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/athletes/-48520/notes?lang=en&region=us"
+  },
+  "experience": {
+    "years": 0,
+    "displayValue": "Freshman",
+    "abbreviation": "FR"
+  },
+  "active": false,
+  "status": {
+    "id": "2",
+    "name": "Inactive",
+    "type": "inactive",
+    "abbreviation": "Inactive"
+  }
+}

@@ -75,10 +75,11 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         }
 
         var franchiseSeasonId = await TryResolveFranchiseSeasonIdAsync(dto, command);
-        if (franchiseSeasonId == Guid.Empty)
+        if (franchiseSeasonId is null)
         {
-            _logger.LogError("Could not resolve FranchiseSeasonId for Team.Ref: {Ref}", dto.Team?.Ref?.ToString() ?? "null");
-            return;
+            // Placeholder athletes (e.g. ESPN negative IDs like -48520) have no Team.Ref.
+            // This is expected and valid — proceed without a FranchiseSeasonId.
+            _logger.LogDebug("No Team.Ref on AthleteSeason {Ref} — placeholder athlete, proceeding without FranchiseSeasonId", dto.Ref);
         }
 
         var positionId = await TryResolvePositionIdAsync(dto, command);
@@ -106,7 +107,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
     private async Task ProcessNew(
         ProcessDocumentCommand command,
         EspnAthleteSeasonDto dto,
-        Guid franchiseSeasonId,
+        Guid? franchiseSeasonId,
         Guid athleteId,
         Guid positionId)
     {
@@ -138,7 +139,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         AthleteSeason entity,
         EspnAthleteSeasonDto dto,
         Guid athleteId,
-        Guid franchiseSeasonId,
+        Guid? franchiseSeasonId,
         Guid positionId)
     {
         _logger.LogInformation("AthleteSeason already exists: {Id}. Processing updates.", entity.Id);
@@ -250,10 +251,10 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
 
     }
 
-    private async Task<Guid> TryResolveFranchiseSeasonIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
+    private async Task<Guid?> TryResolveFranchiseSeasonIdAsync(EspnAthleteSeasonDto dto, ProcessDocumentCommand command)
     {
         if (dto.Team?.Ref is null)
-            return Guid.Empty;
+            return null;
 
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(dto.Team.Ref);
 

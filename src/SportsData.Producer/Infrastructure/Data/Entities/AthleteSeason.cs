@@ -12,7 +12,7 @@ public class AthleteSeason : CanonicalEntityBase<Guid>, IHasExternalIds
     public Guid AthleteId { get; set; }
     public Athlete Athlete { get; set; } = default!;
 
-    public Guid FranchiseSeasonId { get; set; }
+    public Guid? FranchiseSeasonId { get; set; }
 
     public Guid PositionId { get; set; }
     public AthletePosition Position { get; set; } = default!;

@@ -244,10 +244,11 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
 
             // Publish dependency request - track only after successful publish to allow retries if publish fails
             // Pass precomputed identity to avoid redundant Generate call
-            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
+            var published = await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
 
-            // Track this dependency AFTER successful publish (exceptions in PublishDocumentRequestInternal return early)
-            command.RequestedDependencies.Add(dependencyKey);
+            // Only track when the publish actually occurred — early returns (URI/identity failure) must not mark as done
+            if (published)
+                command.RequestedDependencies.Add(dependencyKey);
         }
     }
 
@@ -287,7 +288,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// Internal helper to publish DocumentRequested events. Shared by both dependency and child request methods.
     /// </summary>
     /// <param name="precomputedIdentity">Optional precomputed identity to avoid redundant Generate call (used by PublishDependencyRequest)</param>
-    private async Task PublishDocumentRequestInternal<TParentId>(
+    private async Task<bool> PublishDocumentRequestInternal<TParentId>(
         ProcessDocumentCommand command,
         IHasRef hasRef,
         TParentId parentId,
@@ -309,14 +310,14 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             _logger.LogError(ex,
                 "❌ INVALID_URI: Failed to parse URI. InvalidUrl={InvalidUrl}",
                 hasRef.Ref?.ToString() ?? "null");
-            return;
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
                 "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity. Ref={Ref}",
                 hasRef.Ref?.ToString() ?? "null");
-            return;
+            return false;
         }
 
         await _publishEndpoint.Publish(new DocumentRequested(
@@ -336,6 +337,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={UrlHash}",
             requestType,
             identity.UrlHash);
+
+        return true;
     }
 
     /// <summary>

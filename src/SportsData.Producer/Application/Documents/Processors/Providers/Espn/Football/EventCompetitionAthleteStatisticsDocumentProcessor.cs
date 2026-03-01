@@ -112,75 +112,31 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
         // --- Wholesale Replacement (Remove + Create in single transaction) ---
-        var existing = await _dataContext.AthleteCompetitionStatistics
-            .Include(x => x.Categories)
-                .ThenInclude(c => c.Stats)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+        // Uses a retry loop because the xmin-based optimistic concurrency check on the DELETE
+        // can fail if another pod modifies the row between our load and our save. A single
+        // nested catch is not sufficient — the retry itself can also encounter contention.
+        // TODO: Consider externalizing maxConcurrencyRetries to Azure AppConfig so it can be
+        // tuned without redeployment (key: SportsData.Producer:Processing:MaxConcurrencyRetries).
+        const int maxConcurrencyRetries = 3;
+        AthleteCompetitionStatistic? entity = null;
 
-        if (existing is not null)
+        for (var attempt = 0; attempt < maxConcurrencyRetries; attempt++)
         {
-            _logger.LogInformation("Removing existing AthleteCompetitionStatistic {Id} for replacement", existing.Id);
-            _dataContext.AthleteCompetitionStatistics.Remove(existing);
-        }
-
-        // --- Create New Entity ---
-        var entity = dto.AsEntity(
-            athleteSeason.Id,
-            competition.Id,
-            _externalRefIdentityGenerator,
-            command.CorrelationId);
-
-        await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
-
-        // Save BOTH remove and add in a SINGLE transaction
-        try
-        {
-            await _dataContext.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException) when (existing != null)
-        {
-            // Concurrency conflict on the delete - another pod updated/deleted between our load and save
-            _logger.LogWarning(
-                "Concurrency conflict on wholesale replacement. Reloading and retrying. Id={Id}, CorrelationId={CorrelationId}",
-                existing.Id,
-                command.CorrelationId);
-
-            // Detach all tracked entities
-            var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
-                .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
-                .ToList();
-
-            foreach (var category in trackedCategories)
-            {
-                // Materialize collection before iteration to prevent "Collection was modified" exception
-                foreach (var stat in category.Entity.Stats.ToList())
-                {
-                    var statEntry = _dataContext.Entry(stat);
-                    if (statEntry.State != EntityState.Detached)
-                    {
-                        statEntry.State = EntityState.Detached;
-                    }
-                }
-                category.State = EntityState.Detached;
-            }
-
-            _dataContext.Entry(existing).State = EntityState.Detached;
-            _dataContext.Entry(entity).State = EntityState.Detached;
-
-            // Reload and retry
-            existing = await _dataContext.AthleteCompetitionStatistics
+            // Always reload from DB on every attempt so xmin is fresh
+            var existing = await _dataContext.AthleteCompetitionStatistics
                 .Include(x => x.Categories)
                     .ThenInclude(c => c.Stats)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
 
-            if (existing != null)
+            if (existing is not null)
             {
+                _logger.LogInformation(
+                    "Removing existing AthleteCompetitionStatistic {Id} for replacement (attempt {Attempt})",
+                    existing.Id, attempt + 1);
                 _dataContext.AthleteCompetitionStatistics.Remove(existing);
             }
 
-            // Recreate entity (entity object was detached)
             entity = dto.AsEntity(
                 athleteSeason.Id,
                 competition.Id,
@@ -188,23 +144,80 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
                 command.CorrelationId);
 
             await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
-            await _dataContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
-        {
-            // Duplicate key - another pod already created this entity between our check and insert
-            // This can happen on either the first save (line 139) or retry save (line 191)
-            _logger.LogWarning(
-                "Duplicate key on wholesale replacement. Another process already created it. " +
-                "Id={Id}, CorrelationId={CorrelationId}",
-                entity.Id,
-                command.CorrelationId);
-            return; // Exit gracefully - the other process won the race
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+                break; // success — exit the retry loop
+            }
+            catch (DbUpdateConcurrencyException) when (existing != null && attempt < maxConcurrencyRetries - 1)
+            {
+                // DELETE hit stale xmin — another pod modified the row between our load and save.
+                // Detach everything and loop to reload with a fresh xmin.
+                _logger.LogWarning(
+                    "Concurrency conflict on wholesale replacement (attempt {Attempt}/{Max}). " +
+                    "Reloading with fresh xmin. Id={Id}, CorrelationId={CorrelationId}",
+                    attempt + 1, maxConcurrencyRetries, existing.Id, command.CorrelationId);
+
+                var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
+                    .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
+                    .ToList();
+
+                foreach (var category in trackedCategories)
+                {
+                    foreach (var stat in category.Entity.Stats.ToList())
+                    {
+                        var statEntry = _dataContext.Entry(stat);
+                        if (statEntry.State != EntityState.Detached)
+                            statEntry.State = EntityState.Detached;
+                    }
+                    category.State = EntityState.Detached;
+                }
+
+                _dataContext.Entry(existing).State = EntityState.Detached;
+                _dataContext.Entry(entity).State = EntityState.Detached;
+                // continue loop — next iteration reloads with a fresh xmin
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // Another pod won the race and already inserted this entity.
+                _logger.LogWarning(
+                    "Duplicate key on wholesale replacement — another process already created it. " +
+                    "Id={Id}, CorrelationId={CorrelationId}",
+                    entity.Id, command.CorrelationId);
+
+                // Detach all dirty entries — EF still tracks entity (Added) and existing (Deleted)
+                // after the failed SaveChangesAsync. Leave the DbContext clean in case the scope
+                // is reused.
+                if (existing is not null)
+                {
+                    var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
+                        .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
+                        .ToList();
+                    foreach (var category in trackedCategories)
+                    {
+                        foreach (var stat in category.Entity.Stats.ToList())
+                            _dataContext.Entry(stat).State = EntityState.Detached;
+                        category.State = EntityState.Detached;
+                    }
+                    _dataContext.Entry(existing).State = EntityState.Detached;
+                }
+
+                foreach (var category in entity.Categories)
+                {
+                    foreach (var stat in category.Stats)
+                        _dataContext.Entry(stat).State = EntityState.Detached;
+                    _dataContext.Entry(category).State = EntityState.Detached;
+                }
+                _dataContext.Entry(entity).State = EntityState.Detached;
+
+                return;
+            }
         }
 
         _logger.LogInformation(
             "Successfully processed AthleteCompetitionStatistic {Id} for AthleteSeason {AthleteSeasonId}, Competition {CompetitionId} with {CategoryCount} categories and {StatCount} total stats",
-            entity.Id,
+            entity!.Id,
             athleteSeason.Id,
             competition.Id,
             entity.Categories.Count,

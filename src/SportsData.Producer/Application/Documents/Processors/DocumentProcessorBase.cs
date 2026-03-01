@@ -205,54 +205,51 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         TParentId parentId,
         DocumentType documentType)
     {
-        if (hasRef?.Ref is null)
+        using (_logger.BeginScope(new Dictionary<string, object?>
         {
-            _logger.LogInformation(
-                "⏭️ SKIP_DEPENDENCY: No reference found for dependency document. " +
-                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}",
-                parentId,
-                documentType);
-            return;
-        }
-
-        // Generate identity to get the UrlHash for tracking
-        ExternalRefIdentity identity;
-        try
+            ["DependencyDocumentType"] = documentType,
+            ["ParentId"] = parentId?.ToString()
+        }))
         {
-            identity = _externalRefIdentityGenerator.Generate(hasRef.Ref);
+            if (hasRef?.Ref is null)
+            {
+                _logger.LogInformation("⏭️ SKIP_DEPENDENCY: No reference found.");
+                return;
+            }
+
+            // Generate identity to get the UrlHash for tracking
+            ExternalRefIdentity identity;
+            try
+            {
+                identity = _externalRefIdentityGenerator.Generate(hasRef.Ref);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "❌ IDENTITY_GENERATION_FAILED: Cannot track dependency without UrlHash. Ref={Ref}",
+                    hasRef.Ref?.ToString() ?? "null");
+                return;
+            }
+
+            var dependencyKey = new RequestedDependency(documentType, identity.UrlHash);
+
+            // Check if we've already requested this specific dependency
+            if (command.RequestedDependencies.Contains(dependencyKey))
+            {
+                _logger.LogInformation(
+                    "⏭️ SKIP_DEPENDENCY: Already requested on previous attempt. AttemptCount={AttemptCount}",
+                    command.AttemptCount);
+                return;
+            }
+
+            // Publish dependency request - track only after successful publish to allow retries if publish fails
+            // Pass precomputed identity to avoid redundant Generate call
+            var published = await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
+
+            // Only track when the publish actually occurred — early returns (URI/identity failure) must not mark as done
+            if (published)
+                command.RequestedDependencies.Add(dependencyKey);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "❌ IDENTITY_GENERATION_FAILED: Cannot track dependency without UrlHash. " +
-                "ParentId={ParentId}, DocumentType={DocumentType}, Ref={Ref}",
-                parentId,
-                documentType,
-                hasRef.Ref?.ToString() ?? "null");
-            return;
-        }
-
-        var dependencyKey = new RequestedDependency(documentType, identity.UrlHash);
-
-        // Check if we've already requested this specific dependency
-        if (command.RequestedDependencies.Contains(dependencyKey))
-        {
-            _logger.LogInformation(
-                "⏭️ SKIP_DEPENDENCY: Dependency already requested on previous attempt. " +
-                "ParentId={ParentId}, DependencyDocumentType={DependencyDocumentType}, UrlHash={UrlHash}, AttemptCount={AttemptCount}",
-                parentId,
-                documentType,
-                identity.UrlHash,
-                command.AttemptCount);
-            return;
-        }
-
-        // Publish dependency request - track only after successful publish to allow retries if publish fails
-        // Pass precomputed identity to avoid redundant Generate call
-        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
-
-        // Track this dependency AFTER successful publish (exceptions in PublishDocumentRequestInternal return early)
-        command.RequestedDependencies.Add(dependencyKey);
     }
 
     /// <summary>
@@ -271,24 +268,27 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         TParentId parentId,
         DocumentType documentType)
     {
-        if (hasRef?.Ref is null)
+        using (_logger.BeginScope(new Dictionary<string, object?>
         {
-            _logger.LogDebug(
-                "⏭️ SKIP_CHILD_DOCUMENT: No reference found for child document. " +
-                "ParentId={ParentId}, ChildDocumentType={ChildDocumentType}",
-                parentId,
-                documentType);
-            return;
-        }
+            ["ChildDocumentType"] = documentType,
+            ["ParentId"] = parentId?.ToString()
+        }))
+        {
+            if (hasRef?.Ref is null)
+            {
+                _logger.LogDebug("⏭️ SKIP_CHILD_DOCUMENT: No reference found.");
+                return;
+            }
 
-        await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null);
+            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null);
+        }
     }
 
     /// <summary>
     /// Internal helper to publish DocumentRequested events. Shared by both dependency and child request methods.
     /// </summary>
     /// <param name="precomputedIdentity">Optional precomputed identity to avoid redundant Generate call (used by PublishDependencyRequest)</param>
-    private async Task PublishDocumentRequestInternal<TParentId>(
+    private async Task<bool> PublishDocumentRequestInternal<TParentId>(
         ProcessDocumentCommand command,
         IHasRef hasRef,
         TParentId parentId,
@@ -308,34 +308,17 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         catch (UriFormatException ex)
         {
             _logger.LogError(ex,
-                "❌ INVALID_URI: Failed to parse URI for {RequestType} document. " +
-                "ParentId={ParentId}, DocumentType={DocumentType}, InvalidUrl={InvalidUrl}",
-                requestType,
-                parentId,
-                documentType,
+                "❌ INVALID_URI: Failed to parse URI. InvalidUrl={InvalidUrl}",
                 hasRef.Ref?.ToString() ?? "null");
-            return;
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity for {RequestType} document. " +
-                "ParentId={ParentId}, DocumentType={DocumentType}, Ref={Ref}",
-                requestType,
-                parentId,
-                documentType,
+                "❌ IDENTITY_GENERATION_FAILED: Failed to generate identity. Ref={Ref}",
                 hasRef.Ref?.ToString() ?? "null");
-            return;
+            return false;
         }
-
-        _logger.LogInformation(
-            "📤 PUBLISH_{RequestType}_REQUEST: Publishing DocumentRequested. " +
-            "ParentId={ParentId}, DocumentType={DocumentType}, Url={Url}, UrlHash={UrlHash}",
-            requestType,
-            parentId,
-            documentType,
-            identity.CleanUrl,
-            identity.UrlHash);
 
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: identity.CanonicalId.ToString(),
@@ -351,11 +334,11 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         ));
 
         _logger.LogInformation(
-            "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published successfully. " +
-            "DocumentType={DocumentType}, UrlHash={UrlHash}",
+            "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={UrlHash}",
             requestType,
-            documentType,
             identity.UrlHash);
+
+        return true;
     }
 
     /// <summary>
@@ -364,27 +347,22 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// </summary>
     private async Task PublishCompletionNotification(ProcessDocumentCommand command)
     {
-        await _publishEndpoint.Publish(new DocumentProcessingCompleted(
-            command.CorrelationId,
-            command.DocumentType,
-            command.UrlHash,
-            DateTimeOffset.UtcNow,
-            command.Sport,
-            command.Season,
-            command.SourceDataProvider));
-        
-        _logger.LogInformation(
-            "📢 COMPLETION_NOTIFICATION: Enqueued DocumentProcessingCompleted event to outbox. " +
-            "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
-            command.DocumentType,
-            command.CorrelationId);
-        
-        await _dataContext.SaveChangesAsync(); // Flush outbox to send completion event
+        using (_logger.BeginScope(new Dictionary<string, object?> { ["Step"] = "CompletionNotification" }))
+        {
+            await _publishEndpoint.Publish(new DocumentProcessingCompleted(
+                command.CorrelationId,
+                command.DocumentType,
+                command.UrlHash,
+                DateTimeOffset.UtcNow,
+                command.Sport,
+                command.Season,
+                command.SourceDataProvider));
 
-        _logger.LogInformation(
-            "📢 COMPLETION_NOTIFICATION: Flushed outbox - DocumentProcessingCompleted event sent. " +
-            "DocumentType={DocumentType}, CorrelationId={CorrelationId}",
-            command.DocumentType,
-            command.CorrelationId);
+            _logger.LogInformation("📢 COMPLETION_NOTIFICATION: Enqueued to outbox.");
+
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation("📢 COMPLETION_NOTIFICATION: Outbox flushed.");
+        }
     }
 }

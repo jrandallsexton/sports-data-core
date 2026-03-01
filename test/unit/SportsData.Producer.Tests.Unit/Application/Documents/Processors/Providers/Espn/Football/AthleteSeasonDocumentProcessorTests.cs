@@ -799,6 +799,108 @@ public class AthleteSeasonDocumentProcessorTests :
                 e.Sport == Sport.FootballNcaa),
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    /// <summary>
+    /// Validates that when the AthleteSeason DTO has a null Team.Ref (placeholder/negative-ID athlete),
+    /// the processor creates the AthleteSeason with a null FranchiseSeasonId and does NOT publish
+    /// a dependency request for TeamSeason or throw ExternalDocumentNotSourcedException.
+    /// </summary>
+    [Fact]
+    public async Task ProcessAsync_CreatesAthleteSeason_WithNullFranchiseSeasonId_WhenTeamRefIsNull()
+    {
+        // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonNoTeam.json");
+        var dto = json.FromJson<EspnAthleteSeasonDto>();
+
+        var dtoIdentity = generator.Generate(dto!.Ref);
+        var positionIdentity = generator.Generate(dto.Position.Ref!);
+
+        // Placeholder athletes use a negative ID in the ESPN URL
+        var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
+        var athleteIdentity = generator.Generate(athleteRef);
+
+        var positionId = Guid.NewGuid();
+        var position = new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "RB",
+            Name = "Running Back",
+            DisplayName = "Running Back",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthletePositionExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = positionIdentity.CleanUrl,
+                    SourceUrlHash = positionIdentity.UrlHash,
+                    Value = positionIdentity.UrlHash
+                }
+            }
+        };
+
+        var athleteId = athleteIdentity.CanonicalId;
+        var athlete = new FootballAthlete
+        {
+            Id = athleteId,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            DisplayName = dto.DisplayName,
+            ShortName = dto.ShortName,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+
+        // Intentionally no FranchiseSeason seeded — placeholder athletes have no team
+        await FootballDataContext.AthletePositions.AddAsync(position);
+        await FootballDataContext.Athletes.AddAsync(athlete);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Season, 2023)
+            .With(x => x.DocumentType, DocumentType.AthleteSeason)
+            .With(x => x.Document, json)
+            .Without(x => x.ParentId)
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — entity created without a FranchiseSeasonId
+        var entity = await FootballDataContext.AthleteSeasons
+            .Include(x => x.ExternalIds)
+            .FirstOrDefaultAsync();
+
+        entity.Should().NotBeNull();
+        entity!.Id.Should().Be(dtoIdentity.CanonicalId);
+        entity.AthleteId.Should().Be(athlete.Id);
+        entity.FranchiseSeasonId.Should().BeNull("placeholder athletes have no team ref");
+        entity.PositionId.Should().Be(positionId);
+
+        // No TeamSeason dependency request should be raised for a null Team.Ref
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.TeamSeason),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        // No retry event should be published — processing should complete successfully
+        bus.Verify(x => x.Publish(
+            It.IsAny<DocumentCreated>(),
+            It.IsAny<IDictionary<string, object>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(1);
+    }
 }
 
 

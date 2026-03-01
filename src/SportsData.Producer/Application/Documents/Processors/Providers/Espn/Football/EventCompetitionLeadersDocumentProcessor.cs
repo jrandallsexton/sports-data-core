@@ -198,7 +198,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
                 DocumentType.AthleteSeason);
 
             throw new ExternalDocumentNotSourcedException(
-                $"Missing AthleteSeason for ref {athleteDto.Ref}");
+                $"Missing AthleteSeason for ref {athleteDto.Ref}. Will request.");
         }
 
         cache[key] = athleteSeason.Id;

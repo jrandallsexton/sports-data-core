@@ -114,7 +114,26 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
         // Note: Rankings are available here, but we skip processing them for now
 
         await _dataContext.SeasonWeeks.AddAsync(seasonWeek);
-        await _dataContext.SaveChangesAsync();
+
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // Another pod won the race and already inserted this SeasonWeek.
+            // Detach the tracked entity so the DbContext is left clean, then return —
+            // the row is already present so there is nothing more to do.
+            _logger.LogWarning(
+                "Duplicate key on SeasonWeek insert — another process already created it. " +
+                "Id={Id}, CorrelationId={CorrelationId}",
+                seasonWeek.Id, command.CorrelationId);
+
+            _dataContext.Entry(seasonWeek).State = EntityState.Detached;
+
+            foreach (var externalId in seasonWeek.ExternalIds)
+                _dataContext.Entry(externalId).State = EntityState.Detached;
+        }
     }
 
     private async Task ProcessExistingEntity()

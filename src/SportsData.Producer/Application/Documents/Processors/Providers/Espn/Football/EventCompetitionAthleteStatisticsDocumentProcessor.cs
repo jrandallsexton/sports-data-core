@@ -115,6 +115,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         // Uses a retry loop because the xmin-based optimistic concurrency check on the DELETE
         // can fail if another pod modifies the row between our load and our save. A single
         // nested catch is not sufficient — the retry itself can also encounter contention.
+        // TODO: Consider externalizing maxConcurrencyRetries to Azure AppConfig so it can be
+        // tuned without redeployment (key: SportsData.Producer:Processing:MaxConcurrencyRetries).
         const int maxConcurrencyRetries = 3;
         AthleteCompetitionStatistic? entity = null;
 
@@ -184,8 +186,23 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
                     "Id={Id}, CorrelationId={CorrelationId}",
                     entity.Id, command.CorrelationId);
 
-                // Detach entity and children — EF still tracks them as Added after the failed
-                // SaveChangesAsync. Leave the DbContext clean in case the scope is reused.
+                // Detach all dirty entries — EF still tracks entity (Added) and existing (Deleted)
+                // after the failed SaveChangesAsync. Leave the DbContext clean in case the scope
+                // is reused.
+                if (existing is not null)
+                {
+                    var trackedCategories = _dataContext.ChangeTracker.Entries<AthleteCompetitionStatisticCategory>()
+                        .Where(e => e.Entity.AthleteCompetitionStatisticId == existing.Id)
+                        .ToList();
+                    foreach (var category in trackedCategories)
+                    {
+                        foreach (var stat in category.Entity.Stats.ToList())
+                            _dataContext.Entry(stat).State = EntityState.Detached;
+                        category.State = EntityState.Detached;
+                    }
+                    _dataContext.Entry(existing).State = EntityState.Detached;
+                }
+
                 foreach (var category in entity.Categories)
                 {
                     foreach (var stat in category.Stats)

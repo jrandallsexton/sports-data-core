@@ -183,6 +183,17 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
                     "Duplicate key on wholesale replacement — another process already created it. " +
                     "Id={Id}, CorrelationId={CorrelationId}",
                     entity.Id, command.CorrelationId);
+
+                // Detach entity and children — EF still tracks them as Added after the failed
+                // SaveChangesAsync. Leave the DbContext clean in case the scope is reused.
+                foreach (var category in entity.Categories)
+                {
+                    foreach (var stat in category.Stats)
+                        _dataContext.Entry(stat).State = EntityState.Detached;
+                    _dataContext.Entry(category).State = EntityState.Detached;
+                }
+                _dataContext.Entry(entity).State = EntityState.Detached;
+
                 return;
             }
         }

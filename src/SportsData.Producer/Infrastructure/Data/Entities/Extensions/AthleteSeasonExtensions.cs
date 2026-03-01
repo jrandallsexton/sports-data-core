@@ -10,7 +10,7 @@ public static class AthleteSeasonExtensions
     public static FootballAthleteSeason AsEntity(
         this EspnAthleteSeasonDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        Guid franchiseSeasonId,
+        Guid? franchiseSeasonId,
         Guid positionId,
         Guid athleteId,
         Guid correlationId)

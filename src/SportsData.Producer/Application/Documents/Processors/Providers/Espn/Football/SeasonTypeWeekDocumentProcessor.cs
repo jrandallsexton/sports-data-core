@@ -114,7 +114,44 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
         // Note: Rankings are available here, but we skip processing them for now
 
         await _dataContext.SeasonWeeks.AddAsync(seasonWeek);
-        await _dataContext.SaveChangesAsync();
+
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // Before swallowing, confirm the conflicting row is the same SeasonWeek we
+            // tried to insert (i.e. another pod won the race on this exact entity).
+            // If the row isn't found by Id, the violation is on a different constraint
+            // (e.g. a composite unique index) and we must not hide it — rethrow.
+            var alreadyExists = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .AnyAsync(w => w.Id == seasonWeek.Id);
+
+            // Detach regardless — the SaveChangesAsync failure left the entity in Added
+            // state and the DbContext must be left clean either way.
+            _dataContext.Entry(seasonWeek).State = EntityState.Detached;
+
+            foreach (var externalId in seasonWeek.ExternalIds)
+                _dataContext.Entry(externalId).State = EntityState.Detached;
+
+            if (!alreadyExists)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unique constraint violation on SeasonWeek insert but no matching row found by Id — " +
+                    "unrelated data-integrity issue. Id={Id}, CorrelationId={CorrelationId}",
+                    seasonWeek.Id, command.CorrelationId);
+                throw;
+            }
+
+            // Another pod inserted the same entity first — safe to discard this duplicate.
+            _logger.LogWarning(
+                "Duplicate key on SeasonWeek insert — another process already created it. " +
+                "Id={Id}, CorrelationId={CorrelationId}",
+                seasonWeek.Id, command.CorrelationId);
+        }
     }
 
     private async Task ProcessExistingEntity()

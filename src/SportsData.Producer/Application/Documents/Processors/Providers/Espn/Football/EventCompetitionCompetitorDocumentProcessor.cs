@@ -43,7 +43,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
             return;

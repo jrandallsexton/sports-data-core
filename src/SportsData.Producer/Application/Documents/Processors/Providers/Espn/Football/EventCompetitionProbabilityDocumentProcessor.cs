@@ -119,7 +119,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             dto.SequenceNumber,
             null,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.CorrelationId,
             CausationId.Producer.EventCompetitionProbabilityDocumentProcessor
         ));

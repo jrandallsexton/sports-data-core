@@ -48,7 +48,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     {
         using (_logger.BeginScope(command.ToLogScope()))
         {
-            _logger.LogInformation("{ProcessorName} started.", GetType().Name);
+            _logger.LogInformation("Processing started.");
 
             try
             {
@@ -60,13 +60,13 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                     await PublishCompletionNotification(command);
                 }
                 
-                _logger.LogInformation("{ProcessorName} completed.", GetType().Name);
+                _logger.LogInformation("Processing completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
                 _logger.LogWarning(retryEx,
-                    "{ProcessorName} dependency not ready (attempt {Attempt}). Will retry later.",
-                    GetType().Name, command.AttemptCount + 1);
+                    "Dependency not ready (attempt {Attempt}). Will retry later.",
+                    command.AttemptCount + 1);
 
                 var docCreated = command.ToDocumentCreated(command.AttemptCount + 1);
 
@@ -80,7 +80,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ProcessorName} failed.", GetType().Name);
+                _logger.LogError(ex, "Processing failed.");
                 throw;
             }
         }
@@ -326,7 +326,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             Uri: uri,
             Ref: null,
             Sport: command.Sport,
-            SeasonYear: command.Season,
+            SeasonYear: command.SeasonYear,
             DocumentType: documentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
@@ -355,7 +355,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 command.UrlHash,
                 DateTimeOffset.UtcNow,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.SourceDataProvider));
 
             _logger.LogInformation("📢 COMPLETION_NOTIFICATION: Enqueued to outbox.");

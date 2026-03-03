@@ -239,7 +239,7 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             $"{athleteId}-{imgIdentity.CanonicalId}.png",
             null,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             DocumentType.AthleteImage,
             command.SourceDataProvider,
             0, 0,

@@ -96,33 +96,33 @@ namespace SportsData.Producer.Application.Documents.Processors
                 evt.DocumentType,
                 DocumentAction.Created);
 
-            using (_logger.BeginScope(new Dictionary<string, object> { ["ProcessorType"] = processor.GetType().Name }))
+            using (_logger.BeginScope(new Dictionary<string, object> { ["ProcessorName"] = processor.GetType().Name }))
             {
                 _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_FOUND: Document processor found.");
 
                 _logger.LogInformation("⚙️ DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.");
 
-            await processor.ProcessAsync(new ProcessDocumentCommand(
-                evt.SourceDataProvider,
-                evt.Sport,
-                evt.SeasonYear,
-                evt.DocumentType,
-                document!, // Already validated via IsInvalidDocument guard
-                evt.MessageId,
-                evt.CorrelationId,
-                evt.ParentId,
-                evt.SourceRef,
-                evt.SourceUrlHash,
-                evt.Ref,
-                evt.AttemptCount,
-                evt.IncludeLinkedDocumentTypes,
-                evt.NotifyOnCompletion)
-            {
-                // Propagate RequestedDependencies from previous attempt to preserve dependency tracking across retries
-                RequestedDependencies = evt.RequestedDependencies != null 
-                    ? new HashSet<RequestedDependency>(evt.RequestedDependencies) 
-                    : new HashSet<RequestedDependency>()
-            });
+                await processor.ProcessAsync(new ProcessDocumentCommand(
+                    evt.SourceDataProvider,
+                    evt.Sport,
+                    evt.SeasonYear,
+                    evt.DocumentType,
+                    document!, // Already validated via IsInvalidDocument guard
+                    evt.MessageId,
+                    evt.CorrelationId,
+                    evt.ParentId,
+                    evt.SourceRef,
+                    evt.SourceUrlHash,
+                    evt.Ref,
+                    evt.AttemptCount,
+                    evt.IncludeLinkedDocumentTypes,
+                    evt.NotifyOnCompletion)
+                {
+                    // Propagate RequestedDependencies from previous attempt to preserve dependency tracking across retries
+                    RequestedDependencies = evt.RequestedDependencies != null 
+                        ? new HashSet<RequestedDependency>(evt.RequestedDependencies) 
+                        : new HashSet<RequestedDependency>()
+                });
 
                 _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");
             }

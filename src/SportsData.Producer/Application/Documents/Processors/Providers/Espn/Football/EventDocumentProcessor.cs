@@ -46,7 +46,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
             throw new InvalidOperationException("SeasonYear must be defined in the command.");
@@ -62,7 +62,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         if (entity is null)
         {
             _logger.LogInformation("Processing new Contest entity. Ref={Ref}", externalDto.Ref);
-            await ProcessNewEntity(command, externalDto, command.Season.Value);
+            await ProcessNewEntity(command, externalDto, command.SeasonYear.Value);
         }
         else
         {
@@ -116,7 +116,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             contest.ToCanonicalModel(),
             null,
             command.Sport,
-            command.Season,
+            seasonYear,
             command.CorrelationId,
             command.MessageId));
 

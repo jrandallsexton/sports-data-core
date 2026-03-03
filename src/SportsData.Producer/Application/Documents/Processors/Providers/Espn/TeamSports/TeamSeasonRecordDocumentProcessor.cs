@@ -87,7 +87,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
             canonical,
             null,
             command.Sport,
-            command.Season,
+            franchiseSeason.SeasonYear,
             command.CorrelationId,
             command.MessageId));
 

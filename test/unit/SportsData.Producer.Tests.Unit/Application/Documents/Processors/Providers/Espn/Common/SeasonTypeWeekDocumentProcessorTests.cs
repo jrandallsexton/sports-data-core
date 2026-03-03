@@ -54,7 +54,7 @@ public class SeasonTypeWeekDocumentProcessorTests
         var command = new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
             sport: Sport.FootballNcaa,
-            season: 2025,
+            seasonYear: 2025,
             documentType: DocumentType.SeasonTypeWeek,
             document: json,
             messageId: Guid.NewGuid(),
@@ -131,7 +131,7 @@ public class SeasonTypeWeekDocumentProcessorTests
         var command = new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
             sport: Sport.FootballNcaa,
-            season: 2025,
+            seasonYear: 2025,
             documentType: DocumentType.SeasonTypeWeek,
             document: json,
             messageId: Guid.NewGuid(),

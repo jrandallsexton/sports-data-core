@@ -200,7 +200,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
                         Uri: new Uri(playIdentity.CleanUrl),
                         Ref: null,
                         Sport: command.Sport,
-                        SeasonYear: command.Season!.Value,
+                        SeasonYear: command.SeasonYear!.Value,
                         DocumentType: DocumentType.EventCompetitionPlay,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,

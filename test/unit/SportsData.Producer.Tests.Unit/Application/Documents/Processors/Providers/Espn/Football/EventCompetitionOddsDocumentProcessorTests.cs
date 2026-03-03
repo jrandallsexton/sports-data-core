@@ -223,7 +223,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var cmd = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, compId.ToString())
-                .With(x => x.Season, 2025)
+                .With(x => x.SeasonYear, 2025)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
@@ -301,7 +301,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var cmd = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, compId.ToString())
-                .With(x => x.Season, 2025)
+                .With(x => x.SeasonYear, 2025)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
@@ -356,7 +356,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // ---------- CREATE ----------
             var cmdCreate = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, compId.ToString())
-                .With(x => x.Season, 2025)
+                .With(x => x.SeasonYear, 2025)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
@@ -388,7 +388,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // ---------- UPDATE (hash changed) ----------
             var cmdUpdate = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, compId.ToString())
-                .With(x => x.Season, 2025)
+                .With(x => x.SeasonYear, 2025)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
@@ -535,7 +535,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var cmd = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, compId.ToString())
-                .With(x => x.Season, 2025)
+                .With(x => x.SeasonYear, 2025)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)

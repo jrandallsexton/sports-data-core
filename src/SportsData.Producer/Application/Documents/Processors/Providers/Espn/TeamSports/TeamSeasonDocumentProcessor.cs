@@ -44,7 +44,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             return;
         }
 
-        if (command.Season is null)
+        if (command.SeasonYear is null)
         {
             _logger.LogError("Season year must be provided.");
             return;
@@ -77,7 +77,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
         else
         {
-            await ProcessNewEntity(franchise, command.Season.Value, externalProviderDto, command);
+            await ProcessNewEntity(franchise, command.SeasonYear.Value, externalProviderDto, command);
         }
 
         await _dataContext.SaveChangesAsync();
@@ -110,7 +110,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         if (dto.Groups?.Ref is null)
         {
-            _logger.LogInformation("No group reference found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No group reference found in the DTO for TeamSeason {SeasonYear}", command.SeasonYear);
             return;
         }
 
@@ -158,7 +158,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             canonicalEntity.ToCanonicalModel(),
             null,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.CorrelationId,
             command.MessageId));
     }
@@ -298,7 +298,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     {
         if (dto.Logos is null || dto.Logos.Count == 0)
         {
-            _logger.LogInformation("No logos found in the DTO for TeamSeason {Season}", command.Season);
+            _logger.LogInformation("No logos found in the DTO for TeamSeason {SeasonYear}", command.SeasonYear);
             return;
         }
 
@@ -307,7 +307,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             dto.Logos,
             franchiseSeasonId,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             DocumentType.FranchiseSeasonLogo,
             command.SourceDataProvider,
             command.CorrelationId,
@@ -315,7 +315,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         if (imageEvents.Count > 0)
         {
-            _logger.LogInformation("Publishing {Count} image requests for TeamSeason {Season}", imageEvents.Count, command.Season);
+            _logger.LogInformation("Publishing {Count} image requests for TeamSeason {SeasonYear}", imageEvents.Count, command.SeasonYear);
             await _publishEndpoint.PublishBatch(imageEvents);
         }
     }

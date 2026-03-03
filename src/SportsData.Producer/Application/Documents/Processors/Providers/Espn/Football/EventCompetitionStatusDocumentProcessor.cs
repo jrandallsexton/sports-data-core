@@ -105,7 +105,7 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 entity.StatusTypeName,
                 _refGenerator.ForCompetition(competitionIdValue),
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));

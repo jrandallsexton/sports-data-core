@@ -67,7 +67,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.Document, json)
                 .With(x => x.DocumentType, DocumentType.Event)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.ParentId, competitionIdentity.CanonicalId.ToString())

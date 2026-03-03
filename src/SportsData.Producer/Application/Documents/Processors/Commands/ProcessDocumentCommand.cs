@@ -7,7 +7,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Commands;
 public class ProcessDocumentCommand(
     SourceDataProvider sourceDataProvider,
     Sport sport,
-    int? season,
+    int? seasonYear,
     DocumentType documentType,
     string document,
     Guid messageId,
@@ -32,7 +32,7 @@ public class ProcessDocumentCommand(
 
     public Guid CorrelationId { get; init; } = correlationId;
 
-    public int? Season { get; init; } = season;
+    public int? SeasonYear { get; init; } = seasonYear;
 
     public string? ParentId { get; set; } = parentId;
 
@@ -110,7 +110,7 @@ public class ProcessDocumentCommand(
             ["NotifyOnCompletion"] = NotifyOnCompletion,
             ["ParentId"] = ParentId ?? string.Empty,
             ["Ref"] = GetDocumentRef() ?? string.Empty,
-            ["Season"] = Season ?? 0,
+            ["SeasonYear"] = SeasonYear ?? -1,
             ["SourceDataProvider"] = SourceDataProvider,
             ["SourceUri"] = SourceUri.ToString(),
             ["Sport"] = Sport,

@@ -31,7 +31,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         return Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, jsonFile)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorScore)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.ParentId, parentId ?? Guid.NewGuid().ToString())

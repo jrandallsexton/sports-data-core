@@ -86,7 +86,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                 $"{entity.Id}-headshot.png",
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.DocumentType,
                 command.SourceDataProvider,
                 0, 0,
@@ -99,7 +99,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             entity.ToCanonicalModel(),
             null,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.CorrelationId,
             command.MessageId));
 
@@ -262,7 +262,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                     $"{entity.Id}-headshot.png",
                     null,
                     command.Sport,
-                    command.Season,
+                    command.SeasonYear,
                     DocumentType.AthleteImage,
                     command.SourceDataProvider,
                     0, 0,

@@ -78,7 +78,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             dto.Logos,
             franchise.Id,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.DocumentType,
             command.SourceDataProvider,
             command.CorrelationId,
@@ -86,10 +86,10 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (events.Count > 0)
         {
-            _logger.LogInformation("Requesting {Count} images for {DocumentType} {Season}", 
+            _logger.LogInformation("Requesting {Count} images for {DocumentType} {SeasonYear}", 
                 events.Count, 
                 command.DocumentType, 
-                command.Season);
+                command.SeasonYear);
             await _publishEndpoint.PublishBatch(events);
         }
     }
@@ -162,7 +162,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 newEntity.ToCanonicalModel(),
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 command.MessageId));
 
@@ -269,7 +269,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
                 franchise.ToCanonicalModel(),
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 command.MessageId);
 

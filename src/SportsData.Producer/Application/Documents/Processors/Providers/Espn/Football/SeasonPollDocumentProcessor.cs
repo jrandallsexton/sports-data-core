@@ -50,7 +50,7 @@ public class SeasonPollDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 Id = dtoIdentity.CanonicalId,
                 Name = dto.Name,
                 ShortName = dto.ShortName,
-                SeasonYear = command.Season ?? 0,
+                SeasonYear = command.SeasonYear ?? 0,
                 Slug = dto.Type,
                 CreatedBy = command.CorrelationId,
                 ExternalIds = new List<SeasonPollExternalId>()

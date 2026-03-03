@@ -56,7 +56,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
             return;
@@ -82,7 +82,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
         if (entity is null)
         {
             _logger.LogInformation("Processing new Competition entity. Ref={Ref}", externalDto.Ref);
-            await ProcessNewEntity(command, externalDto, command.Season.Value, contestId);
+            await ProcessNewEntity(command, externalDto, command.SeasonYear.Value, contestId);
         }
         else
         {
@@ -211,7 +211,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
                         competition.Date,
                         null,
                         command.Sport,
-                        command.Season,
+                        command.SeasonYear,
                         command.CorrelationId,
                         CausationId.Producer.EventCompetitionDocumentProcessor));
             }

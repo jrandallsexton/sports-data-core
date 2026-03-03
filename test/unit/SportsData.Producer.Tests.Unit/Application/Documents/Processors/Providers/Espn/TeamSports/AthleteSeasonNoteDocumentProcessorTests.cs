@@ -87,7 +87,7 @@ public class AthleteSeasonNoteDocumentProcessorTests : ProducerTestBase<AthleteS
             .With(x => x.DocumentType, DocumentType.AthleteSeasonNote)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.CorrelationId, Guid.NewGuid())
             .Create();
 
@@ -163,7 +163,7 @@ public class AthleteSeasonNoteDocumentProcessorTests : ProducerTestBase<AthleteS
             .With(x => x.DocumentType, DocumentType.AthleteSeasonNote)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.CorrelationId, Guid.NewGuid())
             .Create();
 
@@ -244,7 +244,7 @@ public class AthleteSeasonNoteDocumentProcessorTests : ProducerTestBase<AthleteS
             .With(x => x.DocumentType, DocumentType.AthleteSeasonNote)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.CorrelationId, Guid.NewGuid())
             .Create();
 

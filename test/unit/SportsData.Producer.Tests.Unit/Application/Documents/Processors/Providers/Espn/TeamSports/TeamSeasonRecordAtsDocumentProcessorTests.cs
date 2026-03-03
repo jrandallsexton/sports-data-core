@@ -43,7 +43,7 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.TeamSeasonRecordAts)
             .With(x => x.Document, json)
             .With(x => x.ParentId, franchiseSeason.Id.ToString())
@@ -73,7 +73,7 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.TeamSeasonRecordAts)
             .With(x => x.Document, json)
             .With(x => x.ParentId, Guid.NewGuid().ToString()) // Invalid/missing

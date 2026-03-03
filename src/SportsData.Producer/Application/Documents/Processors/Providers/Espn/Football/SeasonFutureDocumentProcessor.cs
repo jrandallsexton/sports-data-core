@@ -43,7 +43,7 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("SeasonYear is required for {DocumentType}", command.DocumentType);
             throw new InvalidOperationException($"SeasonYear was not provided. CorrelationId: {command.CorrelationId}");
@@ -51,11 +51,11 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
 
         // Get canonical Season
         var season = await _dataContext.Seasons
-            .FirstOrDefaultAsync(s => s.Year == command.Season.Value);
+            .FirstOrDefaultAsync(s => s.Year == command.SeasonYear.Value);
 
         if (season is null)
         {
-            _logger.LogError("Season not found for year {SeasonYear}", command.Season.Value);
+            _logger.LogError("Season not found for year {SeasonYear}", command.SeasonYear.Value);
             return;
         }
 

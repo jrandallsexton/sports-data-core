@@ -61,7 +61,7 @@ public class FootballAthleteDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2025)
+            .With(x => x.SeasonYear, 2025)
             .With(x => x.DocumentType, DocumentType.Athlete)
             .With(x => x.UrlHash, dtoIdentity.UrlHash)
             .With(x => x.Document, json)

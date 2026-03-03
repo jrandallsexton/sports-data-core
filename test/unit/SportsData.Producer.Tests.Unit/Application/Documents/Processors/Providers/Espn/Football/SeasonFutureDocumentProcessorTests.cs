@@ -45,7 +45,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.SeasonFuture)
             .With(x => x.Document, documentJson)
-            .With(x => x.Season, season.Year)
+            .With(x => x.SeasonYear, season.Year)
             .With(x => x.UrlHash, urlHash)
             .OmitAutoProperties()
             .Create();
@@ -135,7 +135,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.SeasonFuture)
             .With(x => x.Document, documentJson)
-            .With(x => x.Season, season.Year)
+            .With(x => x.SeasonYear, season.Year)
             .With(x => x.UrlHash, urlHash)
             .OmitAutoProperties()
             .Create();

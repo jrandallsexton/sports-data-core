@@ -57,7 +57,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.GroupSeason)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.Document, dto.ToJson())
             .OmitAutoProperties()
             .Create();
@@ -120,7 +120,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.GroupSeason)
-            .With(x => x.Season, 2023)   // parent season — intentionally different from URL year
+            .With(x => x.SeasonYear, 2023)   // parent season — intentionally different from URL year
             .With(x => x.Document, dto.ToJson())
             .OmitAutoProperties()
             .Create();
@@ -150,7 +150,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.GroupSeason)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.Document, json2024)
             .OmitAutoProperties()
             .Create();
@@ -159,7 +159,7 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.DocumentType, DocumentType.GroupSeason)
-            .With(x => x.Season, 2025)
+            .With(x => x.SeasonYear, 2025)
             .With(x => x.Document, json2025)
             .OmitAutoProperties()
             .Create();

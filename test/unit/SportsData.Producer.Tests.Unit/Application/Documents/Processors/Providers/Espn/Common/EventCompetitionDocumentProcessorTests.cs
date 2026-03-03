@@ -144,7 +144,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en".UrlHash())
@@ -280,7 +280,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
@@ -413,7 +413,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
@@ -453,7 +453,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, (string)null!) // Missing ParentId
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .Create();
@@ -484,7 +484,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, nonExistentContestId.ToString())
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .Create();
@@ -528,7 +528,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString())
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, (int?)null) // Missing Season
+                .With(x => x.SeasonYear, (int?)null) // Missing Season
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .Create();
@@ -649,7 +649,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)

@@ -267,7 +267,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         Assert.NotNull(capturedCommand);
         Assert.Equal(evt.SourceDataProvider, capturedCommand.SourceDataProvider);
         Assert.Equal(evt.Sport, capturedCommand.Sport);
-        Assert.Equal(evt.SeasonYear, capturedCommand.Season);
+        Assert.Equal(evt.SeasonYear, capturedCommand.SeasonYear);
         Assert.Equal(evt.DocumentType, capturedCommand.DocumentType);
         Assert.Equal(evt.DocumentJson, capturedCommand.Document);
         Assert.Equal(evt.CorrelationId, capturedCommand.CorrelationId);
@@ -526,7 +526,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
 
         // Assert
         _documentProcessorMock.Verify(p => p.ProcessAsync(It.Is<ProcessDocumentCommand>(
-            cmd => cmd.Season == null)), Times.Once);
+            cmd => cmd.SeasonYear == null)), Times.Once);
     }
 
     #endregion

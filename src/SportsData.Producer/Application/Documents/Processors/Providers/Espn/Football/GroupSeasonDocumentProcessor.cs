@@ -64,18 +64,18 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         int seasonYear;
         if (EspnUriMapper.TryExtractSeasonYear(dto.Ref, out var yearFromUrl))
         {
-            if (command.Season.HasValue && command.Season.Value != yearFromUrl)
+            if (command.SeasonYear.HasValue && command.SeasonYear.Value != yearFromUrl)
             {
                 _logger.LogWarning(
                     "GroupSeason SeasonYear mismatch: URL contains {UrlYear} but command.Season is {CommandSeason}. "
                     + "Using URL year. Ref={Ref}",
-                    yearFromUrl, command.Season.Value, dto.Ref);
+                    yearFromUrl, command.SeasonYear.Value, dto.Ref);
             }
             seasonYear = yearFromUrl;
         }
         else
         {
-            if (!command.Season.HasValue)
+            if (!command.SeasonYear.HasValue)
             {
                 _logger.LogError(
                     "Cannot determine SeasonYear: URL extraction failed and command.Season is null. Ref={Ref}",
@@ -84,8 +84,8 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
             }
             _logger.LogWarning(
                 "Could not extract season year from GroupSeason ref; falling back to command.Season={CommandSeason}. Ref={Ref}",
-                command.Season, dto.Ref);
-            seasonYear = command.Season.Value;
+                command.SeasonYear, dto.Ref);
+            seasonYear = command.SeasonYear.Value;
         }
 
         var groupSeasonEntity = dto.AsEntity(

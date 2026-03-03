@@ -303,7 +303,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.AttemptCount, 0)
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.Season, 2024)
+                .With(x => x.SeasonYear, 2024)
                 .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorStatistics)
                 .OmitAutoProperties()
                 .Create();

@@ -134,7 +134,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 Score: (int)dto.Value,
                 Ref: null,
                 Sport: command.Sport,
-                SeasonYear: command.Season,
+                SeasonYear: command.SeasonYear,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));
@@ -169,7 +169,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 Score: (int)dto.Value,
                 Ref: null,
                 Sport: command.Sport,
-                SeasonYear: command.Season,
+                SeasonYear: command.SeasonYear,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionCompetitorScoreDocumentProcessor
             ));

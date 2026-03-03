@@ -32,7 +32,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         return Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, jsonFile)
             .With(x => x.DocumentType, DocumentType.EventCompetitionDrive)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.ParentId, parentId ?? Guid.NewGuid().ToString())

@@ -31,7 +31,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         return Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, jsonFile)
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorLineScore)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.ParentId, parentId ?? Guid.NewGuid().ToString())
@@ -146,10 +146,10 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
 
-        // Act — reprocess same data
+        // Act ï¿½ reprocess same data
         await sut.ProcessAsync(command);
 
-        // Assert — verify update
+        // Assert ï¿½ verify update
         var updated = await FootballDataContext.CompetitionCompetitorLineScores
             .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
 

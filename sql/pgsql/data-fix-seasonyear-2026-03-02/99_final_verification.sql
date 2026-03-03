@@ -35,8 +35,10 @@ UNION ALL
 
 SELECT 'Contest vs FranchiseSeason mismatch', COUNT(*)
 FROM public."Contest" c
-INNER JOIN public."FranchiseSeason" fs ON fs."Id" = c."HomeTeamFranchiseSeasonId"
-WHERE c."SeasonYear" != fs."SeasonYear"
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+WHERE c."SeasonYear" != hfs."SeasonYear"
+   OR c."SeasonYear" != afs."SeasonYear"
 
 UNION ALL
 

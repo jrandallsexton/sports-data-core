@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-A bug in the application caused **massive data corruption** affecting **13,735+ records** across multiple tables spanning **years 1949-2026**. All affected records have `SeasonYear = 2023` when they should reflect their actual year.
+A bug in the application caused **massive data corruption** affecting **12,995+ records** across multiple tables spanning **years 1949-2026**. All affected records have `SeasonYear = 2023` when they should reflect their actual year.
 
 ---
 
@@ -114,7 +114,7 @@ BEGIN;
 
 -- Run Steps 1-8 one at a time
 -- Review results after each step
--- Run final verification (lines 450-485)
+-- Run final verification (see 'Final Verification' step in script)
 
 ROLLBACK; -- Undo to test again
 -- OR

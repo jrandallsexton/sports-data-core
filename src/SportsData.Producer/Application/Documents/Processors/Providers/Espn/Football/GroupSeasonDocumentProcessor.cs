@@ -75,10 +75,17 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         }
         else
         {
+            if (!command.Season.HasValue)
+            {
+                _logger.LogError(
+                    "Cannot determine SeasonYear: URL extraction failed and command.Season is null. Ref={Ref}",
+                    dto.Ref);
+                return;
+            }
             _logger.LogWarning(
                 "Could not extract season year from GroupSeason ref; falling back to command.Season={CommandSeason}. Ref={Ref}",
                 command.Season, dto.Ref);
-            seasonYear = command.Season!.Value;
+            seasonYear = command.Season.Value;
         }
 
         var groupSeasonEntity = dto.AsEntity(

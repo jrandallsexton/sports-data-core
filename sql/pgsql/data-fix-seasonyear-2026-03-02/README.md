@@ -23,9 +23,9 @@ Run these scripts **in sequence** using your PostgreSQL client connected to `sdP
 ### ✅ Step 3: Fix Child GroupSeason Records
 **File:** `03_fix_groupseason_children.sql`
 - Fixes ~1,242 child GroupSeason records
-- **⚠️ IMPORTANT:** Run the UPDATE statement **5 times** to handle deep hierarchy
-- Each run fixes one level deeper
-- **Expected:** Decreasing counts until "UPDATE 0"
+- **⚠️ IMPORTANT:** Run the UPDATE statement **repeatedly until it returns `UPDATE 0`** to ensure full convergence
+- Each run fixes one additional level of the hierarchy
+- **Expected:** Decreasing counts with each run, converging to `UPDATE 0`
 - **Action:** Verify hierarchy alignment (0 mismatches)
 
 ### ✅ Step 4: Fix FranchiseSeason Records

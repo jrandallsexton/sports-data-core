@@ -13,8 +13,10 @@
 
 SELECT COUNT(DISTINCT c."Id") as records_to_fix
 FROM public."Contest" c
-INNER JOIN public."FranchiseSeason" fs ON fs."Id" = c."HomeTeamFranchiseSeasonId"
-WHERE c."SeasonYear" != fs."SeasonYear";
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+WHERE c."SeasonYear" != hfs."SeasonYear"
+   OR c."SeasonYear" != afs."SeasonYear";
 
 -- Expected: ~6,161 (Actual: 2,347) (Actual #2: 2,423)
 
@@ -51,20 +53,20 @@ LIMIT 20;
 
 -- ============================================================================
 -- *** NEW: FIX CONTESTS BASED ON AWAY TEAM ***
--- ============================================================================
--- The first UPDATE only fixed contests where the HomeTeam had mismatched
--- SeasonYear. Some contests have mismatches from the AwayTeam side.
--- This second UPDATE catches those remaining cases.
--- ============================================================================
-
+-- Only updates when home and away FranchiseSeason years agree, to avoid
+-- overwriting with an arbitrary value when the two sides conflict.
+-- Conflicts (home/away from different seasons) are left for investigation.
 UPDATE public."Contest" c
 SET 
-    "SeasonYear" = fs."SeasonYear",
+    "SeasonYear" = afs."SeasonYear",
     "ModifiedUtc" = NOW(),
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
-FROM public."FranchiseSeason" fs
-WHERE fs."Id" = c."AwayTeamFranchiseSeasonId"
-  AND c."SeasonYear" != fs."SeasonYear";
+FROM public."FranchiseSeason" afs,
+     public."FranchiseSeason" hfs
+WHERE afs."Id" = c."AwayTeamFranchiseSeasonId"
+  AND hfs."Id" = c."HomeTeamFranchiseSeasonId"
+  AND c."SeasonYear" != afs."SeasonYear"
+  AND hfs."SeasonYear" = afs."SeasonYear";
 
 -- Expected: UPDATE ~65 (remaining from first UPDATE)
 -- Actual: UPDATE 65 (Actual #2: UPDATE 0)

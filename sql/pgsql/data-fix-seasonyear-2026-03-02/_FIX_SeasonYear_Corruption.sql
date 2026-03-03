@@ -281,20 +281,33 @@ SELECT '✓ STEP 6 COMPLETE: Fixed FranchiseSeasonRecord records' as status;
 -- ----------------------------------------------------------------------------
 
 -- Preview what will be updated
-SELECT COUNT(*) as records_to_fix
-FROM public."FranchiseSeasonProjection" fsp
-INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsp."FranchiseSeasonId"
-WHERE fsp."SeasonYear" != fs."SeasonYear";
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'FranchiseSeasonProjection'
+    ) THEN
+        RAISE NOTICE 'FranchiseSeasonProjection records to fix: %', (
+            SELECT COUNT(*)
+            FROM public."FranchiseSeasonProjection" fsp
+            INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsp."FranchiseSeasonId"
+            WHERE fsp."SeasonYear" != fs."SeasonYear"
+        );
 
--- Execute update
-UPDATE public."FranchiseSeasonProjection" fsp
-SET 
-    "SeasonYear" = fs."SeasonYear",
-    "ModifiedUtc" = NOW(),
-    "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
-FROM public."FranchiseSeason" fs
-WHERE fsp."FranchiseSeasonId" = fs."Id"
-  AND fsp."SeasonYear" != fs."SeasonYear";
+        UPDATE public."FranchiseSeasonProjection" fsp
+        SET 
+            "SeasonYear" = fs."SeasonYear",
+            "ModifiedUtc" = NOW(),
+            "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
+        FROM public."FranchiseSeason" fs
+        WHERE fsp."FranchiseSeasonId" = fs."Id"
+          AND fsp."SeasonYear" != fs."SeasonYear";
+    ELSE
+        RAISE NOTICE 'FranchiseSeasonProjection table not present - skipping Step 7';
+    END IF;
+END $$;
 
 SELECT '✓ STEP 7 COMPLETE: Fixed FranchiseSeasonProjection records' as status;
 

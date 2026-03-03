@@ -25,9 +25,16 @@ WHERE gs."SeasonYear" != s."Year";
 -- EXECUTE: Update children to match parent SeasonYear
 -- ----------------------------------------------------------------------------
 -- NOTE: Run this multiple times until it shows "UPDATE 0"
--- Each execution fixes one level of the hierarchy
--- Deep hierarchies (5+ levels) require multiple runs
-
+-- Scoped to the ncaa-football hierarchy to avoid touching unrelated sports/leagues
+WITH RECURSIVE target_tree AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+)
 UPDATE public."GroupSeason" child
 SET 
     "SeasonYear" = parent."SeasonYear",
@@ -35,6 +42,7 @@ SET
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."GroupSeason" parent
 WHERE child."ParentId" = parent."Id"
+  AND child."Id" IN (SELECT "Id" FROM target_tree)
   AND child."SeasonYear" != parent."SeasonYear";
 
 -- Expected: 
@@ -73,7 +81,16 @@ ORDER BY s."Year", gs."Slug";
 -- FIX: Direct update based on Season.Year (bypasses parent relationship)
 -- ----------------------------------------------------------------------------
 
--- This fixes records directly from their Season, regardless of parent state
+-- Scoped to the ncaa-football hierarchy to avoid touching unrelated sports/leagues
+WITH RECURSIVE target_tree AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+)
 UPDATE public."GroupSeason" gs
 SET 
     "SeasonYear" = s."Year",
@@ -81,6 +98,7 @@ SET
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."Season" s
 WHERE gs."SeasonId" = s."Id"
+  AND gs."Id" IN (SELECT "Id" FROM target_tree)
   AND gs."SeasonYear" != s."Year";
 
 -- Expected: UPDATE 11 (fixes remaining records directly)

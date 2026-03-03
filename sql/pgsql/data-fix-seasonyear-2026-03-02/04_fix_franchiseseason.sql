@@ -37,6 +37,16 @@ LIMIT 20;
 -- EXECUTE: Update FranchiseSeason records
 -- ----------------------------------------------------------------------------
 
+-- Scoped to the ncaa-football hierarchy to avoid touching unrelated sports/leagues
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 UPDATE public."FranchiseSeason" fs
 SET 
     "SeasonYear" = gs."SeasonYear",
@@ -44,6 +54,7 @@ SET
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."GroupSeason" gs
 WHERE fs."GroupSeasonId" = gs."Id"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
   AND fs."SeasonYear" != gs."SeasonYear";
 
 -- Expected: UPDATE ~1,335 (Actual: 727) (Actual #2: 757)

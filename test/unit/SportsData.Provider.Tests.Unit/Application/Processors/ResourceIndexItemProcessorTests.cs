@@ -96,6 +96,13 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
         // Act
         await sut.Process(BuildCommand(bypassCache: true));
 
+        // Assert — ESPN must have been called (BypassCache=true skips the Mongo read-cache path)
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Verify(
+                x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                Times.Once,
+                "BypassCache=true should fetch from ESPN before deciding whether to replace");
+
         // Assert — Mongo replace must NOT have been called
         Mocker.GetMock<IDocumentStore>()
             .Verify(
@@ -144,6 +151,13 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
 
         // Act
         await sut.Process(BuildCommand(bypassCache: true));
+
+        // Assert — ESPN must have been called (BypassCache=true skips the Mongo read-cache path)
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Verify(
+                x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                Times.Once,
+                "BypassCache=true should fetch from ESPN for changed-content evaluation");
 
         // Assert — Mongo replace must have been called once
         Mocker.GetMock<IDocumentStore>()

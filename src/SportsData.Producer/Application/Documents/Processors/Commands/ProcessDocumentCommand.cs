@@ -110,7 +110,7 @@ public class ProcessDocumentCommand(
             ["NotifyOnCompletion"] = NotifyOnCompletion,
             ["ParentId"] = ParentId ?? string.Empty,
             ["Ref"] = GetDocumentRef() ?? string.Empty,
-            ["SeasonYear"] = SeasonYear is null ? "unknown" : SeasonYear.Value,
+            ["SeasonYear"] = SeasonYear ?? -1,
             ["SourceDataProvider"] = SourceDataProvider,
             ["SourceUri"] = SourceUri.ToString(),
             ["Sport"] = Sport,

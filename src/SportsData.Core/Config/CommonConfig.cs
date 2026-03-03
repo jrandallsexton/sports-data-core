@@ -36,6 +36,14 @@ namespace SportsData.Core.Config
 
         public required string FirebaseConfigJson { get; set; }
 
+        /// <summary>
+        /// The current (active) season year. Documents with SeasonYear below this value are
+        /// treated as historical/immutable — BypassCache is set to false so ESPN is not called
+        /// and the cached Mongo document is served directly. Set to 0 to disable this optimisation
+        /// and always bypass the cache (safe fallback / legacy behaviour).
+        /// </summary>
+        public int CurrentSeason { get; set; } = 0;
+
         public LoggingConfig Logging { get; set; } = new();
 
 

@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -57,9 +58,32 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         EspnGroupSeasonDto dto,
         ProcessDocumentCommand command)
     {
+        // Derive the season year from the document's own $ref URL (e.g. .../seasons/2016/types/3/groups/151).
+        // DO NOT use command.Season here — the parent command carries the *parent's* year, which can differ
+        // when ESPN reuses older group structures as child refs (the source of duplicate SeasonYear bugs).
+        int seasonYear;
+        if (EspnUriMapper.TryExtractSeasonYear(dto.Ref, out var yearFromUrl))
+        {
+            if (command.Season.HasValue && command.Season.Value != yearFromUrl)
+            {
+                _logger.LogWarning(
+                    "GroupSeason SeasonYear mismatch: URL contains {UrlYear} but command.Season is {CommandSeason}. "
+                    + "Using URL year. Ref={Ref}",
+                    yearFromUrl, command.Season.Value, dto.Ref);
+            }
+            seasonYear = yearFromUrl;
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Could not extract season year from GroupSeason ref; falling back to command.Season={CommandSeason}. Ref={Ref}",
+                command.Season, dto.Ref);
+            seasonYear = command.Season!.Value;
+        }
+
         var groupSeasonEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
-            command.Season!.Value,
+            seasonYear,
             command.CorrelationId);
 
         // seasonRef

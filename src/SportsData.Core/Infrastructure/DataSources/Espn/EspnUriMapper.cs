@@ -689,4 +689,47 @@ public static class EspnUriMapper
 
         return new Uri(trimmed, UriKind.Absolute);
     }
+
+    /// <summary>
+    /// Extracts the season year from an ESPN API URL that contains a <c>/seasons/{year}/</c> segment.
+    /// </summary>
+    /// <remarks>
+    /// ESPN GroupSeason URLs embed the year directly in the path (e.g.
+    /// <c>.../seasons/2016/types/3/groups/151</c>).  When a parent document
+    /// for year N spawns a child request, the <c>command.Season</c> carries the
+    /// parent's year — which may differ from the year encoded in the child URL.
+    /// Use this method to derive the authoritative year from the URL itself
+    /// rather than blindly inheriting <c>command.Season</c>.
+    /// </remarks>
+    /// <param name="uri">The ESPN API URI to parse.</param>
+    /// <param name="year">
+    /// When this method returns <see langword="true"/>, contains the four-digit season year
+    /// extracted from the URL; otherwise, <c>0</c>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if a valid four-digit year was found after the
+    /// <c>seasons</c> path segment; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryExtractSeasonYear(Uri uri, out int year)
+    {
+        year = 0;
+
+        if (uri is null)
+            return false;
+
+        var parts = uri.GetLeftPart(UriPartial.Path).Split('/');
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+
+        if (seasonsIndex < 0 || seasonsIndex + 1 >= parts.Length)
+            return false;
+
+        var yearPart = parts[seasonsIndex + 1];
+
+        // Strip any query string that may have been left on this segment
+        var q = yearPart.IndexOf('?');
+        if (q >= 0)
+            yearPart = yearPart[..q];
+
+        return int.TryParse(yearPart, out year) && year > 1900 && year < 2200;
+    }
 }

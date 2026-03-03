@@ -906,5 +906,54 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         }
 
         #endregion
+
+        #region TryExtractSeasonYear
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2023/types/3/groups/151", 2023)]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2016/types/3/groups/80/children", 2016)]
+        [InlineData("https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/3/groups?groups=80&limit=100", 2024)]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/1999/types/1", 1999)]
+        public void TryExtractSeasonYear_Should_Return_True_And_Set_Year_From_Url(string url, int expectedYear)
+        {
+            var uri = new Uri(url);
+            var result = EspnUriMapper.TryExtractSeasonYear(uri, out var year);
+            result.Should().BeTrue();
+            year.Should().Be(expectedYear);
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4426333")]
+        public void TryExtractSeasonYear_Should_Return_False_When_No_Seasons_Segment(string url)
+        {
+            var uri = new Uri(url);
+            var result = EspnUriMapper.TryExtractSeasonYear(uri, out var year);
+            result.Should().BeFalse();
+            year.Should().Be(0);
+        }
+
+        [Fact]
+        public void TryExtractSeasonYear_Should_Return_False_For_Null()
+        {
+            var result = EspnUriMapper.TryExtractSeasonYear(null!, out var year);
+            result.Should().BeFalse();
+            year.Should().Be(0);
+        }
+
+        /// <summary>
+        /// This is the exact scenario that caused duplicate GroupSeason records with wrong SeasonYear:
+        /// a 2023 command spawned a child ref pointing to a 2016 URL. The fix extracts 2016 from the URL.
+        /// </summary>
+        [Fact]
+        public void TryExtractSeasonYear_Extracts_2016_From_Child_Ref_Even_When_Parent_Is_2023()
+        {
+            var childRef = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2016/types/3/groups/80");
+            var result = EspnUriMapper.TryExtractSeasonYear(childRef, out var year);
+            result.Should().BeTrue();
+            year.Should().Be(2016, "the child URL year must take precedence over the parent command's season");
+        }
+
+        #endregion
     }
 }

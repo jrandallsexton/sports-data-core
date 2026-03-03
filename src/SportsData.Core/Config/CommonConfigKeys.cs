@@ -98,5 +98,12 @@ namespace SportsData.Core.Config
 
         public static string GetVenueProviderUri() =>
             $"{nameof(CommonConfig)}:{nameof(VenueClientConfig)}:{nameof(VenueClientConfig.ApiUrl)}";
+
+        /// <summary>
+        /// The current (active) season year used to classify historical vs. live documents.
+        /// Azure AppConfig key: CommonConfig:CurrentSeason
+        /// </summary>
+        public static string CurrentSeason =>
+            $"{nameof(CommonConfig)}:{nameof(CommonConfig.CurrentSeason)}";
     }
 }

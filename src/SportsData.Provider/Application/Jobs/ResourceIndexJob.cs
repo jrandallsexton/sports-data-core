@@ -7,6 +7,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Config;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Application.Processors;
@@ -24,6 +25,7 @@ namespace SportsData.Provider.Application.Jobs
         private readonly IDecodeDocumentProvidersAndTypes _decoder;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly HistoricalSourcingConfig _config;
+        private readonly CommonConfig _commonConfig;
 
         private const int PageSize = 250;
 
@@ -33,7 +35,8 @@ namespace SportsData.Provider.Application.Jobs
             IProvideEspnApiData espnApi,
             IDecodeDocumentProvidersAndTypes decoder,
             IProvideBackgroundJobs backgroundJobProvider,
-            IOptions<HistoricalSourcingConfig> config)
+            IOptions<HistoricalSourcingConfig> config,
+            IOptions<CommonConfig> commonConfig)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -41,6 +44,7 @@ namespace SportsData.Provider.Application.Jobs
             _decoder = decoder;
             _backgroundJobProvider = backgroundJobProvider;
             _config = config.Value;
+            _commonConfig = commonConfig.Value;
         }
 
         public async Task ExecuteAsync(DocumentJobDefinition jobDefinition)
@@ -195,6 +199,24 @@ namespace SportsData.Provider.Application.Jobs
             return false; // Can proceed - all upstream tiers completed successfully
         }
 
+        /// <summary>
+        /// Determines whether the processor should bypass the Mongo cache and call ESPN.
+        /// This is an infrastructure/fetch policy — not business logic:
+        /// historical documents cannot have changed, so there is no value in hitting the wire.
+        /// 
+        /// Rules:
+        ///   currentSeason == 0  → feature disabled; always bypass (safe legacy fallback)
+        ///   seasonYear == null  → non-seasonal resource (Venue, Franchise, ...); always fetch
+        ///   seasonYear &lt; currentSeason → historical/immutable; serve from Mongo
+        ///   seasonYear &gt;= currentSeason → active/future season; bypass cache and fetch
+        /// </summary>
+        private bool ShouldBypassCache(int? seasonYear)
+        {
+            if (_commonConfig.CurrentSeason == 0) return true;   // feature disabled
+            if (!seasonYear.HasValue)             return true;   // non-seasonal resource
+            return seasonYear.Value >= _commonConfig.CurrentSeason;
+        }
+
         private async Task ProcessLeaf(
             DocumentJobDefinition jobDefinition,
             Guid id,
@@ -219,7 +241,7 @@ namespace SportsData.Provider.Application.Jobs
                     jobDefinition.DocumentType,
                     null,                                     // parentId
                     jobDefinition.SeasonYear,
-                    true,
+                    ShouldBypassCache(jobDefinition.SeasonYear),
                     jobDefinition.IncludeLinkedDocumentTypes
                 );
 
@@ -368,7 +390,7 @@ namespace SportsData.Provider.Application.Jobs
                             jobDefinition.DocumentType,
                             null,
                             jobDefinition.SeasonYear,
-                            true,
+                            ShouldBypassCache(jobDefinition.SeasonYear),
                             jobDefinition.IncludeLinkedDocumentTypes,
                             shouldNotify);  // NotifyOnCompletion flag
 

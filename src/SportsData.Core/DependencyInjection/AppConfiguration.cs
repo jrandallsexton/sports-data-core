@@ -49,17 +49,6 @@ namespace SportsData.Core.DependencyInjection
                 // All sinks should be configured explicitly below
                 // configuration.ReadFrom.Configuration(context.Configuration);
 
-                // Environment-aware file logging path
-                var logPath = GetLogFilePath(context.HostingEnvironment);
-                
-                // Hardcoded File Sink for Feedback Loop
-                configuration.WriteTo.File(
-                    path: logPath,
-                    rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 3,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}"
-                );
-
                 // Enrich
                 configuration
                     .Enrich.FromLogContext()
@@ -159,70 +148,6 @@ namespace SportsData.Core.DependencyInjection
         private static LogEventLevel ParseLevel(string? value, LogEventLevel fallback)
         {
             return Enum.TryParse<LogEventLevel>(value, ignoreCase: true, out var level) ? level : fallback;
-        }
-
-        /// <summary>
-        /// Determines the appropriate log file path based on the environment.
-        /// - Windows (Development): C:\Projects\sports-data\logs\{AppName}-{Date}.log
-        /// - Linux/Docker (Production): /app/logs/{AppName}-{Date}.log (requires volume mount)
-        /// - Environment variable override: LOG_PATH (highest priority)
-        /// </summary>
-        private static string GetLogFilePath(IHostEnvironment env)
-        {
-            var appName = env.ApplicationName;
-            
-            // 1. Check for environment variable override (highest priority)
-            var envLogPath = Environment.GetEnvironmentVariable("LOG_PATH");
-            if (!string.IsNullOrWhiteSpace(envLogPath))
-            {
-                var resolvedPath = envLogPath.Replace("{AppName}", appName);
-                var dir = Path.GetDirectoryName(resolvedPath);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                return resolvedPath;
-            }
-
-            // 2. Auto-detect based on OS and environment
-            if (OperatingSystem.IsWindows() && env.IsDevelopment())
-            {
-                // Windows Development: C:\Projects\sports-data\logs\
-                var logDir = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "logs");
-                var absoluteLogDir = Path.GetFullPath(logDir);
-                
-                if (!Directory.Exists(absoluteLogDir))
-                {
-                    Directory.CreateDirectory(absoluteLogDir);
-                }
-                
-                return Path.Combine(absoluteLogDir, $"{appName}-.log");
-            }
-            else
-            {
-                // Linux/Docker: /app/logs/ (must be mounted as volume in docker-compose/k8s)
-                var logDir = "/app/logs";
-                
-                // Try to create directory (will succeed if volume is mounted with write permissions)
-                try
-                {
-                    if (!Directory.Exists(logDir))
-                    {
-                        Directory.CreateDirectory(logDir);
-                    }
-                    return Path.Combine(logDir, $"{appName}-{Environment.MachineName}-.log");
-                }
-                catch
-                {
-                    // Fallback to /tmp if /app/logs is not writable
-                    var fallbackDir = "/tmp/logs";
-                    if (!Directory.Exists(fallbackDir))
-                    {
-                        Directory.CreateDirectory(fallbackDir);
-                    }
-                    return Path.Combine(fallbackDir, $"{appName}-{Environment.MachineName}-.log");
-                }
-            }
         }
     }
 }

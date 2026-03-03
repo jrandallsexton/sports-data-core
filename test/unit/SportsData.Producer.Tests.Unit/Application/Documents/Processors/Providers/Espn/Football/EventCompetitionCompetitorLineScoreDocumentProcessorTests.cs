@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using AutoFixture;
 
 using FluentAssertions;
@@ -146,10 +146,10 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
 
-        // Act � reprocess same data
+        // Act - reprocess same data
         await sut.ProcessAsync(command);
 
-        // Assert � verify update
+        // Assert - verify update
         var updated = await FootballDataContext.CompetitionCompetitorLineScores
             .FirstOrDefaultAsync(x => x.Id == identity.CanonicalId);
 

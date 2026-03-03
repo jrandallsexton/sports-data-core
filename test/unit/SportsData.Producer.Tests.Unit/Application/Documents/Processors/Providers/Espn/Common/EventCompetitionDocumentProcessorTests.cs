@@ -528,7 +528,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, contest.Id.ToString())
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
                 .With(x => x.Sport, Sport.FootballNcaa)
-                .With(x => x.SeasonYear, (int?)null) // Missing Season
+                .With(x => x.SeasonYear, (int?)null) // Missing SeasonYear
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .Create();

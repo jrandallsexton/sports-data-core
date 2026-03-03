@@ -110,7 +110,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         if (dto.Groups?.Ref is null)
         {
-            _logger.LogInformation("No group reference found in the DTO for TeamSeason {Season}", command.SeasonYear);
+            _logger.LogInformation("No group reference found in the DTO for TeamSeason {SeasonYear}", command.SeasonYear);
             return;
         }
 
@@ -298,7 +298,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     {
         if (dto.Logos is null || dto.Logos.Count == 0)
         {
-            _logger.LogInformation("No logos found in the DTO for TeamSeason {Season}", command.SeasonYear);
+            _logger.LogInformation("No logos found in the DTO for TeamSeason {SeasonYear}", command.SeasonYear);
             return;
         }
 
@@ -315,7 +315,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         if (imageEvents.Count > 0)
         {
-            _logger.LogInformation("Publishing {Count} image requests for TeamSeason {Season}", imageEvents.Count, command.SeasonYear);
+            _logger.LogInformation("Publishing {Count} image requests for TeamSeason {SeasonYear}", imageEvents.Count, command.SeasonYear);
             await _publishEndpoint.PublishBatch(imageEvents);
         }
     }

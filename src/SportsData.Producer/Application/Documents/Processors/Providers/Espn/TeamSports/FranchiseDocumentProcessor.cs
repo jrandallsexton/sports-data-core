@@ -86,7 +86,7 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
 
         if (events.Count > 0)
         {
-            _logger.LogInformation("Requesting {Count} images for {DocumentType} {Season}", 
+            _logger.LogInformation("Requesting {Count} images for {DocumentType} {SeasonYear}", 
                 events.Count, 
                 command.DocumentType, 
                 command.SeasonYear);

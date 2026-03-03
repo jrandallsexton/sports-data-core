@@ -116,7 +116,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             contest.ToCanonicalModel(),
             null,
             command.Sport,
-            command.SeasonYear,
+            seasonYear,
             command.CorrelationId,
             command.MessageId));
 

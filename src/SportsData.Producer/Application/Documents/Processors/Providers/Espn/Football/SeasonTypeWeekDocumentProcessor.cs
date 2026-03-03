@@ -33,7 +33,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
     {
         if (command.SeasonYear is null) 
         {
-            _logger.LogError("Command does not contain a valid Season. {@Command}", command);
+            _logger.LogError("Command does not contain a valid SeasonYear. {@Command}", command);
             return;
         }
 

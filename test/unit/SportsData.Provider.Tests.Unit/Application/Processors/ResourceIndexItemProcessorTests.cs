@@ -196,6 +196,13 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
                 Times.Never,
                 "cached document must be served without an ESPN call when BypassCache=false");
 
+        // Assert — cache-hit must not rewrite Mongo
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.ReplaceOneAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DocumentBase>()),
+                Times.Never,
+                "cache-hit path should not replace an unchanged existing document");
+
         // Assert — DocumentCreated published from cache
         Mocker.GetMock<IEventBus>()
             .Verify(

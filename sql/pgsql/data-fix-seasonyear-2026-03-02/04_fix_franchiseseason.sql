@@ -11,12 +11,21 @@
 -- PREVIEW: Count and sample records to be updated
 -- ----------------------------------------------------------------------------
 
+-- Preview scoped to ncaa-football hierarchy
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 SELECT COUNT(*) as records_to_fix
 FROM public."FranchiseSeason" fs
 INNER JOIN public."GroupSeason" gs ON gs."Id" = fs."GroupSeasonId"
-WHERE fs."SeasonYear" != gs."SeasonYear";
-
--- Expected: ~1,335 (Actual: 727) (Actual #2: 757)
+WHERE fs."SeasonYear" != gs."SeasonYear"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons);
 
 
 -- Sample records showing the mismatch
@@ -64,11 +73,21 @@ WHERE fs."GroupSeasonId" = gs."Id"
 -- VERIFY: Confirm fix was successful
 -- ----------------------------------------------------------------------------
 
--- Should return 0 rows
+-- Verify scoped to ncaa-football hierarchy (should return 0 rows)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 SELECT COUNT(*) as remaining_mismatches
 FROM public."FranchiseSeason" fs
 INNER JOIN public."GroupSeason" gs ON gs."Id" = fs."GroupSeasonId"
-WHERE fs."SeasonYear" != gs."SeasonYear";
+WHERE fs."SeasonYear" != gs."SeasonYear"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons);
 
 -- Expected: 0 (Actual: 0)
 

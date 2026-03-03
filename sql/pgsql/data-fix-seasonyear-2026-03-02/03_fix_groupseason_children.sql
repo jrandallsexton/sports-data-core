@@ -12,11 +12,21 @@
 -- PREVIEW: Count of children with wrong SeasonYear
 -- ----------------------------------------------------------------------------
 
--- Simple count of all GroupSeason records with wrong SeasonYear
+-- Simple count scoped to ncaa-football hierarchy
+WITH RECURSIVE target_tree AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+)
 SELECT COUNT(*) as records_to_fix
 FROM public."GroupSeason" gs
 INNER JOIN public."Season" s ON s."Id" = gs."SeasonId"
-WHERE gs."SeasonYear" != s."Year";
+WHERE gs."SeasonYear" != s."Year"
+  AND gs."Id" IN (SELECT "Id" FROM target_tree);
 
 -- Expected: ~1,242 initially (Actual: 1,216) (Actual #2: 1,199)
 
@@ -60,7 +70,16 @@ WHERE child."ParentId" = parent."Id"
 -- DIAGNOSTIC: Identify the 11 remaining corrupted records
 -- ----------------------------------------------------------------------------
 
--- Show the 11 remaining records
+-- Show remaining records (scoped to ncaa-football hierarchy)
+WITH RECURSIVE target_tree AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+)
 SELECT 
     gs."Id",
     gs."Slug",
@@ -72,6 +91,7 @@ FROM public."GroupSeason" gs
 INNER JOIN public."Season" s ON s."Id" = gs."SeasonId"
 LEFT JOIN public."GroupSeason" parent ON parent."Id" = gs."ParentId"
 WHERE gs."SeasonYear" != s."Year"
+  AND gs."Id" IN (SELECT "Id" FROM target_tree)
 ORDER BY s."Year", gs."Slug";
 
 -- This shows if the parent is also corrupted (parent_year != correct_year)
@@ -108,11 +128,21 @@ WHERE gs."SeasonId" = s."Id"
 -- VERIFY: Check for any remaining mismatches
 -- ----------------------------------------------------------------------------
 
--- Simple check: Any GroupSeason with wrong SeasonYear (should return 0)
+-- Simple check scoped to ncaa-football hierarchy (should return 0)
+WITH RECURSIVE target_tree AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+)
 SELECT COUNT(*) as remaining_corrupted
 FROM public."GroupSeason" gs
 INNER JOIN public."Season" s ON s."Id" = gs."SeasonId"
-WHERE gs."SeasonYear" != s."Year";
+WHERE gs."SeasonYear" != s."Year"
+  AND gs."Id" IN (SELECT "Id" FROM target_tree);
 
 -- Expected: 0 (if not 0, run UPDATE again)
 

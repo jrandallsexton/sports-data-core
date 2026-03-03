@@ -134,24 +134,37 @@ WITH RECURSIVE bad_descendants AS (
 )
 SELECT COUNT(*) as records_to_fix FROM bad_descendants;
 
--- Execute update - Loop through parent hierarchy 
--- (Run this multiple times until it returns 0 affected rows to handle deep hierarchies)
+-- Execute update - Iterates to convergence, scoped to ncaa-football hierarchy
 DO $$
 DECLARE
-    rows_affected INTEGER;
+    rows_affected INTEGER := 0;
+    total_rows    INTEGER := 0;
 BEGIN
-    -- Update children where parent has correct SeasonYear but child does not
-    UPDATE public."GroupSeason" child
-    SET 
-        "SeasonYear" = parent."SeasonYear",
-        "ModifiedUtc" = NOW(),
-        "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
-    FROM public."GroupSeason" parent
-    WHERE child."ParentId" = parent."Id"
-      AND child."SeasonYear" != parent."SeasonYear";
-    
-    GET DIAGNOSTICS rows_affected = ROW_COUNT;
-    RAISE NOTICE 'Updated % child GroupSeason records', rows_affected;
+    LOOP
+        WITH RECURSIVE target_tree AS (
+            SELECT "Id"
+            FROM public."GroupSeason"
+            WHERE "Slug" = 'ncaa-football'
+            UNION ALL
+            SELECT gs."Id"
+            FROM public."GroupSeason" gs
+            INNER JOIN target_tree tt ON gs."ParentId" = tt."Id"
+        )
+        UPDATE public."GroupSeason" child
+        SET 
+            "SeasonYear" = parent."SeasonYear",
+            "ModifiedUtc" = NOW(),
+            "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
+        FROM public."GroupSeason" parent
+        WHERE child."ParentId" = parent."Id"
+          AND child."Id" IN (SELECT "Id" FROM target_tree)
+          AND child."SeasonYear" != parent."SeasonYear";
+
+        GET DIAGNOSTICS rows_affected = ROW_COUNT;
+        total_rows := total_rows + rows_affected;
+        EXIT WHEN rows_affected = 0;
+    END LOOP;
+    RAISE NOTICE 'Updated % child GroupSeason records total', total_rows;
 END $$;
 
 -- Verify no more mismatches (should return 0 rows)
@@ -179,13 +192,32 @@ SELECT '✓ STEP 2 COMPLETE: Fixed descendant GroupSeason records' as status;
 -- STEP 3: Fix FranchiseSeason Records (~1,335 records)
 -- ----------------------------------------------------------------------------
 
--- Preview what will be updated
+-- Preview what will be updated (scoped to ncaa-football hierarchy)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 SELECT COUNT(*) as records_to_fix
 FROM public."FranchiseSeason" fs
 INNER JOIN public."GroupSeason" gs ON gs."Id" = fs."GroupSeasonId"
-WHERE fs."SeasonYear" != gs."SeasonYear";
+WHERE fs."SeasonYear" != gs."SeasonYear"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons);
 
--- Execute update
+-- Execute update (scoped to ncaa-football hierarchy)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 UPDATE public."FranchiseSeason" fs
 SET 
     "SeasonYear" = gs."SeasonYear",
@@ -193,6 +225,7 @@ SET
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."GroupSeason" gs
 WHERE fs."GroupSeasonId" = gs."Id"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
   AND fs."SeasonYear" != gs."SeasonYear";
 
 SELECT '✓ STEP 3 COMPLETE: Fixed FranchiseSeason records' as status;
@@ -203,21 +236,67 @@ SELECT '✓ STEP 3 COMPLETE: Fixed FranchiseSeason records' as status;
 -- ----------------------------------------------------------------------------
 -- Contest.SeasonYear should match the FranchiseSeason of home/away teams
 
--- Preview what will be updated
+-- Preview what will be updated (scoped to ncaa-football hierarchy, both sides)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 SELECT COUNT(DISTINCT c."Id") as records_to_fix
 FROM public."Contest" c
-INNER JOIN public."FranchiseSeason" fs ON (fs."Id" = c."HomeTeamFranchiseSeasonId")
-WHERE c."SeasonYear" != fs."SeasonYear";
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+INNER JOIN public."GroupSeason" gs ON gs."Id" = hfs."GroupSeasonId"
+WHERE (c."SeasonYear" != hfs."SeasonYear" OR c."SeasonYear" != afs."SeasonYear")
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons);
 
--- Execute update
+-- Execute update (home-side; scoped to ncaa-football hierarchy)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 UPDATE public."Contest" c
 SET 
-    "SeasonYear" = fs."SeasonYear",
+    "SeasonYear" = hfs."SeasonYear",
     "ModifiedUtc" = NOW(),
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
-FROM public."FranchiseSeason" fs
-WHERE fs."Id" = c."HomeTeamFranchiseSeasonId"
-  AND c."SeasonYear" != fs."SeasonYear";
+FROM public."FranchiseSeason" hfs
+INNER JOIN public."GroupSeason" gs ON gs."Id" = hfs."GroupSeasonId"
+WHERE hfs."Id" = c."HomeTeamFranchiseSeasonId"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
+  AND c."SeasonYear" != hfs."SeasonYear";
+
+-- Execute update (away-side; only when home and away years agree)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
+UPDATE public."Contest" c
+SET 
+    "SeasonYear" = afs."SeasonYear",
+    "ModifiedUtc" = NOW(),
+    "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
+FROM public."FranchiseSeason" afs
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."GroupSeason" gs ON gs."Id" = afs."GroupSeasonId"
+WHERE afs."Id" = c."AwayTeamFranchiseSeasonId"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
+  AND c."SeasonYear" != afs."SeasonYear"
+  AND hfs."SeasonYear" = afs."SeasonYear"; -- only update when both sides agree
 
 -- Verify (should return 0 rows)
 SELECT COUNT(*) as mismatched_contests
@@ -240,14 +319,25 @@ FROM public."FranchiseSeasonRanking" fsr
 INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsr."FranchiseSeasonId"
 WHERE fsr."SeasonYear" != fs."SeasonYear";
 
--- Execute update
+-- Execute update (scoped to ncaa-football hierarchy via FranchiseSeason)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 UPDATE public."FranchiseSeasonRanking" fsr
 SET 
     "SeasonYear" = fs."SeasonYear",
     "ModifiedUtc" = NOW(),
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."FranchiseSeason" fs
+INNER JOIN public."GroupSeason" gs ON gs."Id" = fs."GroupSeasonId"
 WHERE fsr."FranchiseSeasonId" = fs."Id"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
   AND fsr."SeasonYear" != fs."SeasonYear";
 
 SELECT '✓ STEP 5 COMPLETE: Fixed FranchiseSeasonRanking records' as status;
@@ -263,14 +353,25 @@ FROM public."FranchiseSeasonRecord" fsrec
 INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsrec."FranchiseSeasonId"
 WHERE fsrec."SeasonYear" != fs."SeasonYear";
 
--- Execute update
+-- Execute update (scoped to ncaa-football hierarchy via FranchiseSeason)
+WITH RECURSIVE target_group_seasons AS (
+    SELECT "Id"
+    FROM public."GroupSeason"
+    WHERE "Slug" = 'ncaa-football'
+    UNION ALL
+    SELECT gs."Id"
+    FROM public."GroupSeason" gs
+    INNER JOIN target_group_seasons tgs ON gs."ParentId" = tgs."Id"
+)
 UPDATE public."FranchiseSeasonRecord" fsrec
 SET 
     "SeasonYear" = fs."SeasonYear",
     "ModifiedUtc" = NOW(),
     "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
 FROM public."FranchiseSeason" fs
+INNER JOIN public."GroupSeason" gs ON gs."Id" = fs."GroupSeasonId"
 WHERE fsrec."FranchiseSeasonId" = fs."Id"
+  AND gs."Id" IN (SELECT "Id" FROM target_group_seasons)
   AND fsrec."SeasonYear" != fs."SeasonYear";
 
 SELECT '✓ STEP 6 COMPLETE: Fixed FranchiseSeasonRecord records' as status;
@@ -379,8 +480,10 @@ UNION ALL
 
 SELECT 'Contest vs FranchiseSeason mismatch', COUNT(*)
 FROM public."Contest" c
-INNER JOIN public."FranchiseSeason" fs ON fs."Id" = c."HomeTeamFranchiseSeasonId"
-WHERE c."SeasonYear" != fs."SeasonYear"
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+WHERE c."SeasonYear" != hfs."SeasonYear"
+   OR c."SeasonYear" != afs."SeasonYear"
 
 UNION ALL
 

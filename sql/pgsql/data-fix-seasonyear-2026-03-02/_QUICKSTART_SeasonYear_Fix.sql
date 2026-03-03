@@ -93,6 +93,20 @@ WHERE fs."Id" = c."HomeTeamFranchiseSeasonId"
   AND c."SeasonYear" != fs."SeasonYear";
 -- Expected: UPDATE ~6161
 
+-- Also fix away-side mismatches (only when home and away years agree to avoid cross-season conflicts)
+UPDATE public."Contest" c
+SET 
+    "SeasonYear" = afs."SeasonYear",
+    "ModifiedUtc" = NOW(),
+    "ModifiedBy" = 'e15add7f-557e-4a7e-b6a3-07e320f2a5ee'
+FROM public."FranchiseSeason" afs,
+     public."FranchiseSeason" hfs
+WHERE afs."Id" = c."AwayTeamFranchiseSeasonId"
+  AND hfs."Id" = c."HomeTeamFranchiseSeasonId"
+  AND c."SeasonYear" != afs."SeasonYear"
+  AND hfs."SeasonYear" = afs."SeasonYear"; -- guard: only update if both sides agree
+-- Expected: UPDATE ~small number (most already handled by home-side pass above)
+
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- STEP 6: FIX FRANCHISESEASONRANKING RECORDS
@@ -166,8 +180,10 @@ UNION ALL
 
 SELECT 'Contest vs FranchiseSeason mismatch', COUNT(*)
 FROM public."Contest" c
-INNER JOIN public."FranchiseSeason" fs ON fs."Id" = c."HomeTeamFranchiseSeasonId"
-WHERE c."SeasonYear" != fs."SeasonYear"
+INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+WHERE c."SeasonYear" != hfs."SeasonYear"
+   OR c."SeasonYear" != afs."SeasonYear"
 
 UNION ALL
 
@@ -181,7 +197,14 @@ UNION ALL
 SELECT 'FranchiseSeasonRecord vs FranchiseSeason mismatch', COUNT(*)
 FROM public."FranchiseSeasonRecord" fsrec
 INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsrec."FranchiseSeasonId"
-WHERE fsrec."SeasonYear" != fs."SeasonYear";
+WHERE fsrec."SeasonYear" != fs."SeasonYear"
+
+UNION ALL
+
+SELECT 'FranchiseSeasonProjection vs FranchiseSeason mismatch', COUNT(*)
+FROM public."FranchiseSeasonProjection" fsp
+INNER JOIN public."FranchiseSeason" fs ON fs."Id" = fsp."FranchiseSeasonId"
+WHERE fsp."SeasonYear" != fs."SeasonYear";
 
 -- ✅ All counts should be 0!
 

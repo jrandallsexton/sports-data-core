@@ -137,7 +137,32 @@ INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeason
 WHERE c."SeasonYear" != hfs."SeasonYear" 
    OR c."SeasonYear" != afs."SeasonYear";
 
--- Expected: 0 (Actual: 65)
+-- Expected: 0 (Actual: 65 — these are genuine cross-season matchups, e.g.
+-- Benedict College 2023 vs Livingstone 2016, and cannot be resolved programmatically)
+
+-- Fail-fast guard: raise an exception if mismatches exceed the 65 known legitimate exceptions.
+DO $$
+DECLARE
+    v_remaining bigint;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_remaining
+    FROM public."Contest" c
+    INNER JOIN public."FranchiseSeason" hfs ON hfs."Id" = c."HomeTeamFranchiseSeasonId"
+    INNER JOIN public."FranchiseSeason" afs ON afs."Id" = c."AwayTeamFranchiseSeasonId"
+    WHERE c."SeasonYear" != hfs."SeasonYear"
+       OR c."SeasonYear" != afs."SeasonYear";
+
+    IF v_remaining > 65 THEN
+        RAISE EXCEPTION
+            'STEP 05 incomplete: % mismatched contests remain (expected <= 65 known cross-season exceptions). '
+            'Re-run steps 03/04, then rerun step 05.', v_remaining;
+    ELSIF v_remaining > 0 THEN
+        RAISE NOTICE
+            '% mismatched contests remain — all are known cross-season matchups (home/away teams from different seasons). '
+            'These cannot be programmatically resolved and are intentionally left as-is.', v_remaining;
+    END IF;
+END $$;
 
 
 -- Sample corrected contests from 2016 season

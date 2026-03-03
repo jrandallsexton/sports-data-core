@@ -173,12 +173,15 @@ After data is remediated, **FIX THE APPLICATION BUG** to prevent recurrence:
 - Working on backup
 
 ### Validation
-Foreign key relationships provide validation:
-- `GroupSeason.SeasonId` → `Season.Id` (Year from here)
-- `FranchiseSeason.GroupSeasonId` → `GroupSeason.Id`
-- `Contest.HomeTeamFranchiseSeasonId` → `FranchiseSeason.Id`
+FK constraints protect referential integrity only — they do **not** validate `SeasonYear` consistency:
+- `GroupSeason.SeasonId` → `Season.Id` ✅ FK is correct
+- `FranchiseSeason.GroupSeasonId` → `GroupSeason.Id` ✅ FK is correct
+- `Contest.HomeTeamFranchiseSeasonId` → `FranchiseSeason.Id` ✅ FK is correct
 
-If our fix is wrong, FK integrity would catch it.
+The bug is in the **denormalized** `SeasonYear` column. FK constraints remain valid even when
+`SeasonYear` carries the wrong value — FK integrity **will not** catch a bad fix here.
+Validate by recomputing `SeasonYear` from `Season.Year` (via `GroupSeason.SeasonId`) and
+confirming all downstream tables agree.
 
 ---
 

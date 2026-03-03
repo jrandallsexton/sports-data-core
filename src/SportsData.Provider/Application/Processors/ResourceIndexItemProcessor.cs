@@ -233,9 +233,25 @@ namespace SportsData.Provider.Application.Processors
                 var newHash = _jsonHashCalculator.NormalizeAndHash(itemJson);
                 var currentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
 
-                if (newHash != currentHash || command.BypassCache)
+                if (newHash != currentHash)
                 {
+                    // Content has genuinely changed — persist the new version and notify downstream.
                     await HandleUpdatedDocumentAsync(command, urlHash, correlationId, collectionName, itemJson);
+                }
+                else
+                {
+                    // ESPN returned the same content already stored in MongoDB.
+                    // Skip the Mongo replace — there is nothing to update.
+                    // Still publish DocumentCreated so downstream processors continue normally.
+                    // NOTE: BypassCache=true means "always fetch fresh from ESPN (skip the read-cache
+                    // path)". It must NOT force a write when the content is identical — doing so causes
+                    // spurious "Mongo replaced document" log noise on every historical sourcing run.
+                    _logger.LogDebug(
+                        "ESPN fetch returned unchanged content, skipping Mongo replace. " +
+                        "UrlHash={UrlHash}, DocumentType={DocumentType}, BypassCache={BypassCache}",
+                        urlHash, command.DocumentType, command.BypassCache);
+
+                    await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion);
                 }
             }
         }

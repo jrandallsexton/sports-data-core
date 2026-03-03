@@ -141,7 +141,7 @@ public class TeamSeasonRankDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2019)
+            .With(x => x.SeasonYear, 2019)
             .With(x => x.DocumentType, DocumentType.TeamSeasonRank)
             .With(x => x.Document, json)
             .With(x => x.ParentId, franchiseSeason.Id.ToString())

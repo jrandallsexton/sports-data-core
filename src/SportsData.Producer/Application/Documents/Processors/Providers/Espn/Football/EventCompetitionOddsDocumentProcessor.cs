@@ -55,7 +55,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         var competitionIdValue = competitionId.Value;
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
             return;
@@ -138,7 +138,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 competition.Contest.Id,
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 command.MessageId));
         }
@@ -149,7 +149,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 "ContestOddsUpdated",
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 CausationId.Producer.EventDocumentProcessor));
         }

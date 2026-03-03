@@ -59,7 +59,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear. {@Command}", command);
             return;

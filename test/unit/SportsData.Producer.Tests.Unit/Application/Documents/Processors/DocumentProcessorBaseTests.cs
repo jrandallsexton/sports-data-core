@@ -39,7 +39,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
         return new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
             sport: Sport.FootballNcaa,
-            season: 2024,
+            seasonYear: 2024,
             documentType: documentType,
             document: "{}",
             messageId: Guid.NewGuid(),

@@ -140,7 +140,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .With(x => x.UrlHash, dtoIdentity.UrlHash)
@@ -297,7 +297,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
             sport: Sport.FootballNcaa,
-            season: 2024,
+            seasonYear: 2024,
             documentType: DocumentType.AthleteSeason,
             document: json,
             messageId: Guid.NewGuid(),
@@ -356,7 +356,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .With(x => x.AttemptCount, 0)
@@ -422,7 +422,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .With(x => x.AttemptCount, 0)
@@ -507,7 +507,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .With(x => x.AttemptCount, 0)
@@ -547,7 +547,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, "null")
             .Without(x => x.ParentId)
@@ -581,7 +581,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, invalidJson)
             .Without(x => x.ParentId)
@@ -679,7 +679,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .Without(x => x.ParentId)
@@ -782,7 +782,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .Without(x => x.ParentId)
@@ -868,7 +868,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
-            .With(x => x.Season, 2023)
+            .With(x => x.SeasonYear, 2023)
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .Without(x => x.ParentId)

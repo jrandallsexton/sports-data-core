@@ -46,7 +46,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             return;
         }
 
-        if (!command.Season.HasValue)
+        if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
             return;
@@ -167,7 +167,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
                 PlayDescription: play.Text,
                 Ref: null,
                 Sport: command.Sport,
-                SeasonYear: command.Season,
+                SeasonYear: command.SeasonYear,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
         }

@@ -29,7 +29,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        if (command.Season is null)
+        if (command.SeasonYear is null)
         {
             _logger.LogError("SeasonYear not on command");
             return;
@@ -54,7 +54,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
 
         var poll = await _dataContext.SeasonPolls
             .Include(x => x.ExternalIds)
-            .Where(x => x.SeasonYear == command.Season &&
+            .Where(x => x.SeasonYear == command.SeasonYear &&
                         x.ExternalIds.Any(z => z.Value == pollIdentity.CanonicalId.ToString()))
             .FirstOrDefaultAsync();
 
@@ -65,7 +65,7 @@ public class FootballSeasonRankingDocumentProcessor<TDataContext> : DocumentProc
                 Id = pollIdentity.CanonicalId,
                 CreatedBy = command.CorrelationId,
                 Name = dto.Name,
-                SeasonYear = command.Season.Value,
+                SeasonYear = command.SeasonYear.Value,
                 Slug = dto.Type,
                 ShortName = dto.ShortName,
                 ExternalIds = new List<SeasonPollExternalId>()

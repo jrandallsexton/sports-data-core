@@ -77,7 +77,7 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             dto.Images,
             newEntity.Id,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.DocumentType,
             command.SourceDataProvider,
             command.CorrelationId,
@@ -94,7 +94,7 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             newEntity.AsCanonical(),
             _refGenerator.ForVenue(newEntity.Id),
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.CorrelationId,
             command.MessageId);
 
@@ -166,7 +166,7 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 newImages,
                 venue.Id,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.DocumentType,
                 command.SourceDataProvider,
                 command.CorrelationId,
@@ -191,7 +191,7 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 venue.AsCanonical(),
                 null,
                 command.Sport,
-                command.Season,
+                command.SeasonYear,
                 command.CorrelationId,
                 command.MessageId);
 

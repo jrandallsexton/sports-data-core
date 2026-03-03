@@ -15,7 +15,7 @@ public static class ProcessDocumentCommandExtensions
             DocumentJson: command.Document,
             SourceUrlHash: command.UrlHash,
             Sport: command.Sport,
-            SeasonYear: command.Season,
+            SeasonYear: command.SeasonYear,
             DocumentType: command.DocumentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,

@@ -45,12 +45,18 @@ public class SeasonPollDocumentProcessor<TDataContext> : DocumentProcessorBase<T
 
         if (existingPoll is null)
         {
+            if (command.SeasonYear is null)
+            {
+                _logger.LogError("SeasonYear is required for SeasonPoll creation. {@Command}", command);
+                return;
+            }
+
             existingPoll = new SeasonPoll()
             {
                 Id = dtoIdentity.CanonicalId,
                 Name = dto.Name,
                 ShortName = dto.ShortName,
-                SeasonYear = command.Season ?? 0,
+                SeasonYear = command.SeasonYear.Value,
                 Slug = dto.Type,
                 CreatedBy = command.CorrelationId,
                 ExternalIds = new List<SeasonPollExternalId>()

@@ -31,9 +31,9 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        if (command.Season is null) 
+        if (command.SeasonYear is null) 
         {
-            _logger.LogError("Command does not contain a valid Season. {@Command}", command);
+            _logger.LogError("Command does not contain a valid SeasonYear. {@Command}", command);
             return;
         }
 

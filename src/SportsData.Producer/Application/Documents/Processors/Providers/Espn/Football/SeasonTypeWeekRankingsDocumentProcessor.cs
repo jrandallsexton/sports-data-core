@@ -39,7 +39,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
             return;
         }
 
-        if (command.Season is null)
+        if (command.SeasonYear is null)
         {
             _logger.LogError("Command does not contain a valid SeasonYear. {@Command}", command);
             return;
@@ -78,7 +78,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                 .Include(x => x.ExternalIds)
                 .Include(x => x.Rankings)
                 .ThenInclude(r => r.ExternalIds)
-                .Where(x => x.Season!.Year == command.Season!.Value && x.Number == dto.Season.Type.Week.Number + 1)
+                .Where(x => x.Season!.Year == command.SeasonYear!.Value && x.Number == dto.Season.Type.Week.Number + 1)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 

@@ -34,7 +34,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         return Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, jsonFile)
             .With(x => x.DocumentType, DocumentType.EventCompetitionPlay)
-            .With(x => x.Season, 2024)
+            .With(x => x.SeasonYear, 2024)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.ParentId, parentId ?? Guid.NewGuid().ToString())
@@ -388,7 +388,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         command = new ProcessDocumentCommand(
             command.SourceDataProvider,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.DocumentType,
             command.Document,
             command.MessageId,
@@ -412,7 +412,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         command = new ProcessDocumentCommand(
             command.SourceDataProvider,
             command.Sport,
-            command.Season,
+            command.SeasonYear,
             command.DocumentType,
             command.Document,
             command.MessageId,

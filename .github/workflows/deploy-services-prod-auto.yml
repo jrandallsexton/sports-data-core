@@ -98,6 +98,7 @@ jobs:
         if: ${{ inputs.deploy_jobs_dashboard }}
         id: jobs_dashboard_tag
         run: |
+          set -euo pipefail
           LATEST_TAG=$(az acr repository show-tags \
             --name sportdeets \
             --repository sportsdatajobsdashboard \
@@ -105,6 +106,10 @@ jobs:
             --output tsv \
             | grep -E '^[0-9]+$' \
             | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "::error::No numeric tags found for sportsdatajobsdashboard"
+            exit 1
+          fi
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest Jobs Dashboard tag: $LATEST_TAG"
 
@@ -191,7 +196,7 @@ jobs:
             [ "${{ inputs.deploy_producer }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Producer=${{ steps.producer_tag.outputs.tag }}"
             [ "${{ inputs.deploy_provider }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ steps.provider_tag.outputs.tag }}"
             [ "${{ inputs.deploy_ui }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG UI=${{ steps.ui_tag.outputs.tag }}"
-            [ "${{ inputs.deploy_jobs_dashboard }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ steps.jobs_dashboard_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_jobs_dashboard }}" == "true" ] && [ -n "${{ steps.jobs_dashboard_tag.outputs.tag }}" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ steps.jobs_dashboard_tag.outputs.tag }}"
             
             git commit -m "$COMMIT_MSG"
             git push

@@ -71,13 +71,18 @@ jobs:
         if: ${{ inputs.jobs_dashboard_tag != '' }}
         working-directory: sports-data-config
         run: |
+          TAG='${{ inputs.jobs_dashboard_tag }}'
+          if [[ ! "$TAG" =~ ^[0-9]+$ ]]; then
+            echo "::error::jobs_dashboard_tag must be a numeric build tag"
+            exit 1
+          fi
           # Update or add image to jobs-dashboard-patch.yaml
           if grep -q "image:" app/overlays/04_prod/jobs-dashboard-patch.yaml; then
-            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdatajobsdashboard:${{ inputs.jobs_dashboard_tag }}|g" app/overlays/04_prod/jobs-dashboard-patch.yaml
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdatajobsdashboard:${TAG}|g" app/overlays/04_prod/jobs-dashboard-patch.yaml
           else
-            sed -i '/- name: jobs-dashboard/a\        image: sportdeets.azurecr.io/sportsdatajobsdashboard:${{ inputs.jobs_dashboard_tag }}' app/overlays/04_prod/jobs-dashboard-patch.yaml
+            sed -i '/- name: jobs-dashboard/a\        image: sportdeets.azurecr.io/sportsdatajobsdashboard:'"$TAG" app/overlays/04_prod/jobs-dashboard-patch.yaml
           fi
-          echo "Updated Jobs Dashboard to tag: ${{ inputs.jobs_dashboard_tag }}"
+          echo "Updated Jobs Dashboard to tag: $TAG"
 
       - name: Commit and push changes
         working-directory: sports-data-config

@@ -4,6 +4,10 @@ WORKDIR /app
 EXPOSE 8080
 
 # Build stage
+# NOTE: The Azure Pipelines Docker@2 task sets the build context to the src/ directory
+# (the folder containing this Dockerfile). All '../' COPY paths are relative to that context
+# and correctly resolve to sibling project folders. The <DockerfileContext> setting in .csproj
+# is used only by Visual Studio Container Tools and does not affect CI/CD builds.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src

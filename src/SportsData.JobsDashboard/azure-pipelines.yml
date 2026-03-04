@@ -6,6 +6,8 @@ trigger:
     include:
       - 'src/SportsData.JobsDashboard/**'
       - 'src/SportsData.Core/**'
+      - 'src/DockerfileJobsDashboard'
+      - 'sports-data.sln'
 
 pr:
   branches:
@@ -15,6 +17,8 @@ pr:
     include:
       - 'src/SportsData.JobsDashboard/**'
       - 'src/SportsData.Core/**'
+      - 'src/DockerfileJobsDashboard'
+      - 'sports-data.sln'
 
 pool:
   name: Default
@@ -69,7 +73,7 @@ stages:
               clean: true
               platform: '$(buildPlatform)'
               configuration: '$(buildConfiguration)'
-              msbuildArguments: '/t:Restore'
+              msbuildArguments: '/t:Build'
 
   - stage: BuildImagePushACR
     displayName: 'Build Image & Push to ACR'

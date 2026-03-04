@@ -30,12 +30,18 @@ public class Program
             ?? throw new InvalidOperationException(
                 "CommonConfig:SqlBaseConnectionString is required. Ensure Azure AppConfig is configured.");
 
-        // Build one storage per service database, matching the naming convention in
-        // SportsData.Core.DependencyInjection.ServiceRegistration.AddHangfire:
-        //   sd{ApplicationName without "SportsData."}.{Mode}.Hangfire
-        var providerStorage = new PostgreSqlStorage($"{sqlBase};Database=sdProvider.FootballNcaa.Hangfire");
-        var producerStorage = new PostgreSqlStorage($"{sqlBase};Database=sdProducer.FootballNcaa.Hangfire");
-        var apiStorage     = new PostgreSqlStorage($"{sqlBase};Database=sdApi.All.Hangfire");
+        // Database names are read from Azure AppConfig — mode/sport differentiation is
+        // provided via AppConfig labels, not hard-coded here.
+        var providerDb = config["HangfireConfig:ProviderDatabaseName"]
+            ?? throw new InvalidOperationException("HangfireConfig:ProviderDatabaseName is required.");
+        var producerDb = config["HangfireConfig:ProducerDatabaseName"]
+            ?? throw new InvalidOperationException("HangfireConfig:ProducerDatabaseName is required.");
+        var apiDb = config["HangfireConfig:ApiDatabaseName"]
+            ?? throw new InvalidOperationException("HangfireConfig:ApiDatabaseName is required.");
+
+        var providerStorage = new PostgreSqlStorage($"{sqlBase};Database={providerDb}");
+        var producerStorage = new PostgreSqlStorage($"{sqlBase};Database={producerDb}");
+        var apiStorage     = new PostgreSqlStorage($"{sqlBase};Database={apiDb}");
 
         var dashboardOptions = new DashboardOptions
         {

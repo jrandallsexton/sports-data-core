@@ -9,15 +9,15 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Only copy the project files needed
-COPY src/SportsData.JobsDashboard/SportsData.JobsDashboard.csproj SportsData.JobsDashboard/
-COPY src/SportsData.Core/SportsData.Core.csproj SportsData.Core/
+COPY ../SportsData.JobsDashboard/SportsData.JobsDashboard.csproj SportsData.JobsDashboard/
+COPY ../SportsData.Core/SportsData.Core.csproj SportsData.Core/
 
 # Restore dependencies
 RUN dotnet restore "SportsData.JobsDashboard/SportsData.JobsDashboard.csproj"
 
 # Now copy the actual source code
-COPY src/SportsData.JobsDashboard/ SportsData.JobsDashboard/
-COPY src/SportsData.Core/ SportsData.Core/
+COPY ../SportsData.JobsDashboard/ SportsData.JobsDashboard/
+COPY ../SportsData.Core/ SportsData.Core/
 
 # Build the project
 WORKDIR /src/SportsData.JobsDashboard

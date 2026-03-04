@@ -2,8 +2,6 @@ using FirebaseAdmin;
 
 using Google.Apis.Auth.OAuth2;
 
-using Hangfire;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -280,11 +278,6 @@ namespace SportsData.Api
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckWriter.WriteResponse
-            });
-
-            app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            {
-                Authorization = [new DashboardAuthFilter()]
             });
 
             app.MapControllers();

@@ -1,0 +1,91 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/SportsData.JobsDashboard/**'
+      - 'src/SportsData.Core/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/SportsData.JobsDashboard/**'
+      - 'src/SportsData.Core/**'
+
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  - repo: self
+
+variables:
+  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+  imageRepository: 'sportsdatajobsdashboard'
+  containerRegistry: 'sportdeets.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/DockerfileJobsDashboard'
+  tag: '$(Build.BuildId)'
+
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  Major: '0'
+  Minor: '0'
+  Patch: '1'
+  PackageVersion: '0.0.1'
+
+stages:
+  - stage: Build
+    displayName: 'Build: JobsDashboard'
+    jobs:
+      - job: Build
+        displayName: 'Build: JobsDashboard'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use .NET 10 SDK'
+            inputs:
+              packageType: 'sdk'
+              version: '10.0.x'
+              includePreviewVersions: true
+
+          - task: NuGetCommand@2
+            displayName: 'NuGet Restore'
+            inputs:
+              command: 'restore'
+              restoreSolution: '**/sports-data.sln'
+              feedsToUse: 'select'
+              vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
+
+          - task: MSBuild@1
+            displayName: 'Build sports-data solution'
+            inputs:
+              solution: '**\sports-data.sln'
+              msbuildArchitecture: 'x64'
+              clean: true
+              platform: '$(buildPlatform)'
+              configuration: '$(buildConfiguration)'
+              msbuildArguments: '/t:Restore'
+
+  - stage: BuildImagePushACR
+    displayName: 'Build Image & Push to ACR'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildImage
+        displayName: 'Build and Push Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build & Push'
+            inputs:
+              command: buildAndPush
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest

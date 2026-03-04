@@ -91,7 +91,7 @@ namespace SportsData.Core.DependencyInjection
                     options.HeadContent = links.ToString();
                 });
             }
-            else
+            else if (app.Environment.ApplicationName != "SportsData.JobsDashboard")
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();

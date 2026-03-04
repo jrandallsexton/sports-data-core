@@ -1,5 +1,3 @@
-using Hangfire;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -70,11 +68,6 @@ namespace SportsData.Provider
                 
             // Apply migrations and seed data once using the real provider
             await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
-
-            app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            {
-                Authorization = [new DashboardAuthFilter()]
-            });
 
             app.UseAuthorization();
             app.UseCommonFeatures();

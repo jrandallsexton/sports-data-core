@@ -4,6 +4,10 @@ WORKDIR /app
 EXPOSE 8080
 
 # Build stage
+# NOTE: The Azure Pipelines Docker@2 task sets the build context to the src/ directory
+# (the folder containing this Dockerfile). All '../' COPY paths are relative to that context
+# and correctly resolve to sibling project folders. The <DockerfileContext> setting in .csproj
+# is used only by Visual Studio Container Tools and does not affect CI/CD builds.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
@@ -11,6 +15,9 @@ WORKDIR /src
 # Only copy the project files needed
 COPY ../SportsData.JobsDashboard/SportsData.JobsDashboard.csproj SportsData.JobsDashboard/
 COPY ../SportsData.Core/SportsData.Core.csproj SportsData.Core/
+COPY ../SportsData.Api/SportsData.Api.csproj SportsData.Api/
+COPY ../SportsData.Producer/SportsData.Producer.csproj SportsData.Producer/
+COPY ../SportsData.Provider/SportsData.Provider.csproj SportsData.Provider/
 
 # Restore dependencies
 RUN dotnet restore "SportsData.JobsDashboard/SportsData.JobsDashboard.csproj"
@@ -18,6 +25,9 @@ RUN dotnet restore "SportsData.JobsDashboard/SportsData.JobsDashboard.csproj"
 # Now copy the actual source code
 COPY ../SportsData.JobsDashboard/ SportsData.JobsDashboard/
 COPY ../SportsData.Core/ SportsData.Core/
+COPY ../SportsData.Api/ SportsData.Api/
+COPY ../SportsData.Producer/ SportsData.Producer/
+COPY ../SportsData.Provider/ SportsData.Provider/
 
 # Build the project
 WORKDIR /src/SportsData.JobsDashboard

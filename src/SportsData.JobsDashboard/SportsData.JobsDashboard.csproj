@@ -19,6 +19,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SportsData.Core\SportsData.Core.csproj" />
+    <!-- References to Api/Producer/Provider are required so the Hangfire dashboard can
+         deserialize and display job type details from all three worker services.
+         TODO: When multi-sport support is added, consider extracting job type definitions
+         into a thin SportsData.Jobs.Contracts assembly to avoid pulling in transitive
+         dependencies (EF, SignalR, messaging, etc.) from each worker project. -->
+    <ProjectReference Include="..\SportsData.Api\SportsData.Api.csproj" />
+    <ProjectReference Include="..\SportsData.Producer\SportsData.Producer.csproj" />
+    <ProjectReference Include="..\SportsData.Provider\SportsData.Provider.csproj" />
   </ItemGroup>
 
 </Project>

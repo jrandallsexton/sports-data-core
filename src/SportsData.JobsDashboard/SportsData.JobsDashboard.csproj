@@ -11,6 +11,9 @@
     <!-- PostgreSqlStorage(string) is obsolete pending 2.0; suppress until we migrate to IConnectionFactory -->
     <NoWarn>CS0618</NoWarn>
     <UserSecretsId>7c9dd4eb-11b9-47d0-a188-1443e1ea12ef</UserSecretsId>
+    <!-- Multiple referenced projects each have appsettings.json; suppress NETSDK1152 since
+         only JobsDashboard's own appsettings.json matters at runtime - worker configs are irrelevant. -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
   <ItemGroup>

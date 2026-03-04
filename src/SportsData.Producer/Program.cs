@@ -1,5 +1,3 @@
-using Hangfire;
-
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -151,11 +149,6 @@ public class Program
                     throw new ArgumentOutOfRangeException();
             }
         }
-
-        app.UseHangfireDashboard("/dashboard", new DashboardOptions
-        {
-            Authorization = [new DashboardAuthFilter()]
-        });
 
         app.UseAuthorization();
         app.UseCommonFeatures();

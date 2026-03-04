@@ -19,6 +19,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SportsData.Core\SportsData.Core.csproj" />
+    <ProjectReference Include="..\SportsData.Api\SportsData.Api.csproj" />
+    <ProjectReference Include="..\SportsData.Producer\SportsData.Producer.csproj" />
+    <ProjectReference Include="..\SportsData.Provider\SportsData.Provider.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,74 @@
+import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { Colors, getTheme } from '@/constants/Colors';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+function TabIcon({ name, color }: { name: IoniconsName; color: string }) {
+  return <Ionicons name={name} size={24} color={color} />;
+}
+
+export default function TabLayout() {
+  const scheme = useColorScheme();
+  const theme = getTheme(scheme);
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: theme.card,
+          borderTopColor: theme.border,
+          height: Platform.select({ ios: 90, android: 72 }),
+          paddingTop: 6,
+          paddingBottom: Platform.select({ ios: 30, android: 18, default: 8 }),
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        headerStyle: { backgroundColor: theme.card },
+        headerShadowVisible: false,
+        headerTintColor: theme.text,
+        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="home-outline" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="picks"
+        options={{
+          title: 'Games',
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="american-football-outline" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="standings"
+        options={{
+          title: 'Standings',
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="trophy-outline" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="person-circle-outline" color={color} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}

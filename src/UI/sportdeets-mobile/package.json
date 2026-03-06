@@ -15,6 +15,7 @@
     "axios": "^1.13.6",
     "expo": "~55.0.4",
     "expo-constants": "~55.0.7",
+    "expo-dev-client": "~55.0.11",
     "expo-font": "~55.0.4",
     "expo-linking": "~55.0.7",
     "expo-router": "~55.0.3",
@@ -23,7 +24,6 @@
     "expo-symbols": "~55.0.4",
     "expo-web-browser": "~55.0.9",
     "firebase": "^12.10.0",
-    "lightningcss-win32-x64-msvc": "^1.31.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.71.2",
@@ -39,6 +39,9 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~5.9.2"
+  },
+  "optionalDependencies": {
+    "lightningcss-win32-x64-msvc": "^1.31.1"
   },
   "private": true
 }

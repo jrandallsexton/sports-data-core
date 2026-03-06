@@ -2,7 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 import { getAuth } from 'firebase/auth';
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api-dev.sportdeets.com';
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.sportdeets.com';
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,

@@ -13,12 +13,18 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }

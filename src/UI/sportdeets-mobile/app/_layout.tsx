@@ -74,10 +74,6 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="game/[id]"
-            options={{ title: 'Game Details', presentation: 'card' }}
-          />
           <Stack.Screen name="+not-found" />
         </Stack>
         <AuthGuard />

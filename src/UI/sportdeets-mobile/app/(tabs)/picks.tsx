@@ -144,7 +144,7 @@ export default function PicksScreen() {
               pick={item.pick}
               onPress={() =>
                 router.push(
-                  { pathname: '/game/[id]', params: { id: item.matchup.contestId, leagueId: leagueId ?? '', week: String(selectedWeek ?? 1) } },
+                  { pathname: '/game/[id]', params: { id: item.matchup.contestId, leagueId: leagueId ?? '', week: String(selectedWeek ?? 1), backTitle: 'Games' } },
                 )
               }
               onPick={(m, _choice, franchiseSeasonId) => {

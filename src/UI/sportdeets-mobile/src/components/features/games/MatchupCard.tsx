@@ -7,6 +7,7 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
+import { GameStatus } from './GameStatus';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,10 +22,27 @@ function formatTime(iso: string): string {
   });
 }
 
-function spreadLabel(spread: number | null): string {
-  if (spread === null) return '';
-  if (spread === 0) return 'PK';
+function spreadLabel(spread: number | null | undefined): string {
+  if (spread == null || spread === 0) return 'PK';
   return spread > 0 ? `+${spread}` : `${spread}`;
+}
+
+/** Returns { symbol, color } for spread movement, or null if no movement. */
+function spreadArrow(current: number | null | undefined, open: number | null | undefined): { symbol: string; color: string } | null {
+  if (current == null || open == null || !isFinite(current) || !isFinite(open) || current === open) return null;
+  const absCurrent = Math.abs(current);
+  const absOpen = Math.abs(open);
+  if (absCurrent < absOpen) return { symbol: '▼', color: '#00c853' };
+  if (absCurrent > absOpen) return { symbol: '▲', color: '#ff1744' };
+  return null;
+}
+
+/** Returns { symbol, color } for O/U movement, or null if no movement. */
+function ouArrow(current: number | null | undefined, open: number | null | undefined): { symbol: string; color: string } | null {
+  if (current == null || open == null || !isFinite(current) || !isFinite(open) || current === open) return null;
+  if (current > open) return { symbol: '▲', color: '#ff1744' };
+  if (current < open) return { symbol: '▼', color: '#00c853' };
+  return null;
 }
 
 function formatRecord(wins?: number, losses?: number, confWins?: number, confLosses?: number): string {
@@ -146,79 +164,65 @@ function OddsRow({ matchup }: { matchup: Matchup }) {
   const theme = getTheme(scheme);
 
   const spread = matchup.spreadCurrent;
+  const spreadOpen = matchup.spreadOpen ?? null;
   const ou = matchup.overUnderCurrent;
-  if (spread == null && ou == null) return null;
+  const ouOpen = matchup.overUnderOpen ?? null;
+
+  const hasSpread = spread != null;
+  const hasOu = ou != null && ou !== 0;
+
+  if (!hasSpread && !hasOu) return null;
+
+  const sArrow = spreadArrow(spread, spreadOpen);
+  const oArrow = ouArrow(ou, ouOpen);
+  const spreadVal = hasSpread ? spreadLabel(spread) : 'Off';
+  const ouVal = hasOu ? `${ou}` : 'Off';
+  const showSpreadOpen = hasSpread && spreadOpen != null && spreadOpen !== spread;
+  const showOuOpen = hasOu && ouOpen != null && ouOpen !== ou;
 
   return (
     <View style={[styles.oddsRow, { borderColor: theme.separator }]}>
-      {spread != null && (
-        <View style={styles.oddsItem}>
-          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>Spread</Text>
-          <Text style={[styles.oddsValue, { color: theme.tint }]}>{spreadLabel(spread)}</Text>
+      {/* Spread */}
+      {hasSpread && (
+        <View style={styles.oddsInline}>
+          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>Spread </Text>
+          {sArrow && (
+            <Text style={[styles.oddsArrow, { color: sArrow.color }]}>{sArrow.symbol}</Text>
+          )}
+          <Text style={[styles.oddsValue, { color: theme.tint }]}>{spreadVal}</Text>
+          {showSpreadOpen && (
+            <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
+              {' '}({spreadOpen! > 0 ? `+${spreadOpen}` : spreadOpen})
+            </Text>
+          )}
         </View>
       )}
-      {spread != null && ou != null && (
-        <View style={[styles.oddsSep, { backgroundColor: theme.separator }]} />
+
+      {/* Separator */}
+      {hasSpread && hasOu && (
+        <Text style={[styles.oddsSep, { color: theme.textMuted }]}> | </Text>
       )}
-      {ou != null && (
-        <View style={styles.oddsItem}>
-          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>O/U</Text>
-          <Text style={[styles.oddsValue, { color: theme.tint }]}>{ou}</Text>
+
+      {/* O/U */}
+      {hasOu && (
+        <View style={styles.oddsInline}>
+          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>O/U </Text>
+          {oArrow && (
+            <Text style={[styles.oddsArrow, { color: oArrow.color }]}>{oArrow.symbol}</Text>
+          )}
+          <Text style={[styles.oddsValue, { color: theme.tint }]}>{ouVal}</Text>
+          {showOuOpen && (
+            <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
+              {' '}({ouOpen})
+            </Text>
+          )}
         </View>
       )}
     </View>
   );
 }
 
-// ─── Status section ───────────────────────────────────────────────────────────
-
-function StatusSection({ matchup }: { matchup: Matchup }) {
-  const scheme = useColorScheme();
-  const theme = getTheme(scheme);
-  const status = matchup.status.toLowerCase();
-
-  if (status === 'scheduled') {
-    return (
-      <View style={styles.statusSection}>
-        <Text style={[styles.statusTime, { color: theme.text }]}>{formatTime(matchup.startDateUtc)}</Text>
-        {matchup.broadcasts && (
-          <Text style={[styles.statusMeta, { color: theme.textMuted }]}>{matchup.broadcasts}</Text>
-        )}
-        {matchup.venue && (
-          <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>
-            {[matchup.venue, matchup.venueCity, matchup.venueState].filter(Boolean).join(', ')}
-          </Text>
-        )}
-      </View>
-    );
-  }
-
-  if (status === 'inprogress' || status === 'ongoing' || status === 'halftime') {
-    return (
-      <View style={styles.statusSection}>
-        <View style={styles.liveRow}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (status === 'final' || status === 'completed') {
-    return (
-      <View style={styles.statusSection}>
-        <Text style={[styles.statusLabel, { color: theme.textMuted }]}>Final</Text>
-      </View>
-    );
-  }
-
-  // postponed, cancelled, etc.
-  return (
-    <View style={styles.statusSection}>
-      <Text style={[styles.statusLabel, { color: theme.error }]}>{matchup.status}</Text>
-    </View>
-  );
-}
+// StatusSection extracted → see GameStatus.tsx
 
 // ─── PickButton (mirrors web PickButton component) ───────────────────────────
 //
@@ -487,9 +491,6 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
         isFinal={isFinal}
       />
 
-      {/* Status */}
-      <StatusSection matchup={matchup} />
-
       {/* Home team */}
       <TeamRow
         matchup={matchup}
@@ -502,6 +503,9 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
 
       {/* Spread & O/U */}
       <OddsRow matchup={matchup} />
+
+      {/* Game status — time/score/live, matches web layout order */}
+      <GameStatus matchup={matchup} />
 
       {/* Inline pick buttons */}
       {onPick && (
@@ -634,43 +638,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  // Status section
-  statusSection: {
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    gap: 2,
-  },
-  statusTime: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  statusMeta: {
-    fontSize: 11,
-  },
-  statusLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  liveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#DC2626',
-  },
-  liveText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#DC2626',
-    letterSpacing: 1,
-  },
+  // Status styles live in GameStatus.tsx
 
   // Odds row
   oddsRow: {
@@ -678,28 +646,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    gap: 16,
+    flexWrap: 'wrap',
   },
-  oddsItem: {
+  oddsInline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
   oddsLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
+  oddsArrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginRight: 2,
+  },
   oddsValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
+  oddsOpen: {
+    fontSize: 11,
+  },
   oddsSep: {
-    width: 1,
-    height: 16,
+    fontSize: 13,
+    paddingHorizontal: 4,
   },
 
   // Pick buttons

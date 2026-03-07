@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { picksApi } from '@/src/services/api/picksApi';
-import type { UserPick, PickWidgetResponse } from '@/src/types/models';
+import { contestOverviewApi } from '@/src/services/api/contestOverviewApi';
+import type { UserPick, PickWidgetResponse, ContestOverviewDto } from '@/src/types/models';
 import type { SubmitPickPayload } from '@/src/services/api/picksApi';
 
 // ─── Query key factory ────────────────────────────────────────────────────────
@@ -44,5 +45,27 @@ export function useSubmitPick() {
         queryKey: pickKeys.byLeagueWeek(payload.pickemGroupId, payload.week),
       });
     },
+  });
+}
+
+// ─── Contest overview ─────────────────────────────────────────────────────────
+
+export const contestKeys = {
+  overview: (contestId: string) => ['contest', 'overview', contestId] as const,
+};
+
+/** Fetches the full contest overview for a completed or in-progress game. */
+export function useContestOverview(contestId: string | null | undefined) {
+  return useQuery<ContestOverviewDto>({
+    queryKey: contestKeys.overview(contestId ?? ''),
+    queryFn: () =>
+      contestOverviewApi.getOverview(contestId!).then((r) => {
+        // API may wrap in { data: ContestOverviewDto } or return the DTO directly
+        const body = r.data as unknown;
+        const wrapped = body as { data?: ContestOverviewDto };
+        return wrapped.data ?? (body as ContestOverviewDto);
+      }),
+    enabled: !!contestId,
+    staleTime: 1000 * 60 * 2, // 2 min — box score data refreshes moderately
   });
 }

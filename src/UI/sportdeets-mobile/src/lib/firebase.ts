@@ -1,6 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeAuth, getAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Firebase config is loaded from EXPO_PUBLIC_ environment variables.
@@ -16,12 +15,10 @@ const firebaseConfig = {
 };
 
 // Guard against double-initialization in Expo's Fast Refresh.
-const existingApps = getApps();
-const app = existingApps.length === 0 ? initializeApp(firebaseConfig) : existingApps[0];
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// initializeAuth (with persistence) must only be called once per app instance.
-// On Fast Refresh the app already exists, so fall back to getAuth.
-export const auth = existingApps.length === 0
-  ? initializeAuth(app, { persistence: getReactNativePersistence(ReactNativeAsyncStorage) })
-  : getAuth(app);
+// TODO: wire up AsyncStorage persistence once Firebase's React Native build is
+// correctly resolved by Metro. Currently uses in-memory persistence (auth state
+// lost on full app restart — acceptable for development).
+export const auth = getAuth(app);
 export { app };

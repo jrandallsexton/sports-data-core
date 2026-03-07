@@ -53,6 +53,12 @@ export interface Matchup {
   status: string;               // "Scheduled" | "InProgress" | "Halftime" | "Final" | etc.
   isComplete?: boolean;
 
+  // Live game state (populated when status = InProgress / Halftime)
+  period?: string | null;
+  clock?: string | null;
+  possessionFranchiseSeasonId?: string | null;
+  isScoringPlay?: boolean | null;
+
   // Scores
   awayScore?: number | null;
   homeScore?: number | null;
@@ -208,4 +214,89 @@ export interface UserDto {
   leagues: League[];
   isAdmin?: boolean;
   isReadOnly?: boolean;
+}
+
+// ─── Contest Overview ─────────────────────────────────────────────────────────
+
+export interface ContestOverviewTeam {
+  displayName: string;
+  logoUrl?: string | null;
+  slug?: string | null;
+}
+
+export interface QuarterScore {
+  quarter: string;
+  awayScore: number;
+  homeScore: number;
+}
+
+export interface ContestOverviewLeader {
+  playerName: string;
+  playerHeadshotUrl?: string | null;
+  statLine?: string | null;
+}
+
+export interface ContestOverviewLeaderSide {
+  leaders: ContestOverviewLeader[];
+}
+
+export interface ContestOverviewLeaderCategory {
+  categoryId?: string | null;
+  categoryName: string;
+  away: ContestOverviewLeaderSide;
+  home: ContestOverviewLeaderSide;
+}
+
+export interface ContestOverviewInfo {
+  venue?: string | null;
+  venueCity?: string | null;
+  venueState?: string | null;
+  venueImageUrl?: string | null;
+  startDateUtc?: string | null;
+  attendance?: number | null;
+  broadcast?: string | null;
+}
+
+export interface ContestOverviewDto {
+  header: {
+    homeTeam: ContestOverviewTeam;
+    awayTeam: ContestOverviewTeam;
+    quarterScores: QuarterScore[];
+  };
+  leaders?: {
+    categories: ContestOverviewLeaderCategory[];
+  } | null;
+  info?: ContestOverviewInfo | null;
+  homeMetrics?: Record<string, unknown> | null;
+  awayMetrics?: Record<string, unknown> | null;
+}
+
+// ─── Team Card ────────────────────────────────────────────────────────────────
+
+export interface TeamCardScheduleGame {
+  date: string;
+  opponent: string;
+  opponentSlug?: string | null;
+  location?: string | null;
+  contestId?: string | null;
+  finalizedUtc?: string | null;
+  awayScore?: number | null;
+  homeScore?: number | null;
+  wasWinner?: boolean | null;
+}
+
+export interface TeamCardDto {
+  name: string;
+  logoUrl?: string | null;
+  colorPrimary?: string | null;
+  colorSecondary?: string | null;
+  conferenceName?: string | null;
+  conferenceShortName?: string | null;
+  overallRecord?: string | null;
+  conferenceRecord?: string | null;
+  stadiumName?: string | null;
+  stadiumCapacity?: number | null;
+  seasonYears?: number[] | null;
+  franchiseSeasonId?: string | null;
+  schedule?: TeamCardScheduleGame[] | null;
 }

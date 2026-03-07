@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { picksApi } from '@/src/services/api/picksApi';
 import { contestOverviewApi } from '@/src/services/api/contestOverviewApi';
+import { useAuthStore } from '@/src/stores/authStore';
 import type { UserPick, PickWidgetResponse, ContestOverviewDto } from '@/src/types/models';
 import type { SubmitPickPayload } from '@/src/services/api/picksApi';
 
@@ -18,20 +19,23 @@ export function usePicks(
   leagueId: string | null | undefined,
   week: number | null | undefined,
 ) {
+  const { user, isInitialized } = useAuthStore();
   return useQuery<UserPick[]>({
     queryKey: pickKeys.byLeagueWeek(leagueId ?? '', week ?? 0),
     queryFn: () =>
       picksApi.getByLeagueAndWeek(leagueId!, week!).then((r) => r.data),
-    enabled: !!leagueId && !!week,
+    enabled: isInitialized && !!user && !!leagueId && !!week,
   });
 }
 
 /** Fetches the season-to-date pick record widget for the current user. */
 export function usePickWidget(year = 2025) {
+  const { user, isInitialized } = useAuthStore();
   return useQuery<PickWidgetResponse>({
     queryKey: pickKeys.widget(year),
     queryFn: () => picksApi.getWidget(year).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
+    enabled: isInitialized && !!user,
   });
 }
 

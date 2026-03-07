@@ -69,6 +69,8 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Shared detail stack — game + team screens live here so back navigation is linear */}
+      <Tabs.Screen name="(details)" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 }

@@ -287,6 +287,7 @@ function PickSelector({
   awayFranchiseSeasonId: string;
   existingPickFranchiseId: string | null;
   isLocked: boolean;
+  submitPending: boolean;
   onPick: (choice: PickChoice, franchiseSeasonId: string) => void;
 }) {
   const scheme = useColorScheme();
@@ -295,7 +296,7 @@ function PickSelector({
   const pickedHome = existingPickFranchiseId === homeFranchiseSeasonId;
   const pickedAway = existingPickFranchiseId === awayFranchiseSeasonId;
   const hasPick = pickedHome || pickedAway;
-  const locked = isLocked || hasPick;
+  const locked = isLocked || submitPending;
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -376,12 +377,14 @@ export default function GameDetailScreen() {
   const existingPick = myPicks.find((p) => p.contestId === id) ?? null;
 
   const matchupStatus = matchup?.status.toLowerCase();
+  const kickoffMs = matchup ? new Date(matchup.startDateUtc).getTime() : NaN;
   const isLocked =
     matchupStatus === 'inprogress' ||
     matchupStatus === 'ongoing' ||
     matchupStatus === 'halftime' ||
     matchupStatus === 'final' ||
-    matchupStatus === 'completed';
+    matchupStatus === 'completed' ||
+    (!isNaN(kickoffMs) && Date.now() >= kickoffMs - 5 * 60 * 1000);
 
   const handlePick = async (choice: PickChoice, franchiseSeasonId: string) => {
     if (!matchup || !leagueId || !weekNumber) return;
@@ -458,6 +461,7 @@ export default function GameDetailScreen() {
             awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
             existingPickFranchiseId={existingPick?.franchiseId ?? null}
             isLocked={isLocked}
+            submitPending={submitPick.isPending}
             onPick={handlePick}
           />
         ) : null}

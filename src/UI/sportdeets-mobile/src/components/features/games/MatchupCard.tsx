@@ -34,6 +34,10 @@ function spreadArrow(current: number | null | undefined, open: number | null | u
   const absOpen = Math.abs(open);
   if (absCurrent < absOpen) return { symbol: '▼', color: '#00c853' };
   if (absCurrent > absOpen) return { symbol: '▲', color: '#ff1744' };
+  // Sign flipped (e.g. +1 → -1): favorite changed, abs values equal
+  if (Math.sign(current) !== Math.sign(open)) {
+    return current > open ? { symbol: '▲', color: '#ff1744' } : { symbol: '▼', color: '#00c853' };
+  }
   return null;
 }
 

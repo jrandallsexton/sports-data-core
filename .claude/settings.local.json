@@ -16,7 +16,8 @@
       "Bash(git:*)",
       "Bash(grep:*)",
       "Bash(tail:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

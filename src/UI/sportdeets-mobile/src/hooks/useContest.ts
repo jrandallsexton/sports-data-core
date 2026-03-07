@@ -71,5 +71,6 @@ export function useContestOverview(contestId: string | null | undefined) {
       }),
     enabled: !!contestId,
     staleTime: 1000 * 60 * 2, // 2 min — box score data refreshes moderately
+    refetchInterval: 30_000, // poll every 30 s while mounted for live contest updates
   });
 }

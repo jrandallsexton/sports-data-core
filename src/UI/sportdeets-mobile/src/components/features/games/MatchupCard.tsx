@@ -505,7 +505,7 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
       <OddsRow matchup={matchup} />
 
       {/* Game status — time/score/live, matches web layout order */}
-      <GameStatus matchup={matchup} />
+      <GameStatus matchup={matchup} onPressGameDetail={onPress} />
 
       {/* Inline pick buttons */}
       {onPick && (

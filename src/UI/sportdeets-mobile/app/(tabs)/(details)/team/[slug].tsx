@@ -72,7 +72,7 @@ function SeasonSelector({
 
 // ─── Schedule Row ─────────────────────────────────────────────────────────────
 
-function ScheduleRow({ game, teamName }: { game: TeamCardScheduleGame; teamName: string }) {
+function ScheduleRow({ game, teamName, season }: { game: TeamCardScheduleGame; teamName: string; season: number }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
@@ -96,7 +96,7 @@ function ScheduleRow({ game, teamName }: { game: TeamCardScheduleGame; teamName:
       <View style={styles.gameMiddle}>
         {game.opponentSlug ? (
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/team/[slug]', params: { slug: game.opponentSlug!, backTitle: teamName } } as never)}
+            onPress={() => router.push({ pathname: '/team/[slug]', params: { slug: game.opponentSlug!, season: String(season), backTitle: teamName } } as never)}
             activeOpacity={0.7}
           >
             <Text style={[styles.gameOpponent, { color: theme.tint }]} numberOfLines={1}>
@@ -227,7 +227,7 @@ export default function TeamCard() {
           </Text>
           {team.schedule?.length ? (
             team.schedule.map((game, idx) => (
-              <ScheduleRow key={game.contestId ?? idx} game={game} teamName={team.name} />
+              <ScheduleRow key={game.contestId ?? idx} game={game} teamName={team.name} season={selectedSeason} />
             ))
           ) : (
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>No games scheduled.</Text>

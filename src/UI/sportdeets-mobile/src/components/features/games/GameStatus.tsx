@@ -22,6 +22,8 @@ function formatTime(iso: string): string {
 
 interface GameStatusProps {
   matchup: Matchup;
+  /** If provided, called when the user taps on a FINAL/completed game row (preserves full nav context from caller). */
+  onPressGameDetail?: () => void;
 }
 
 /**
@@ -33,7 +35,7 @@ interface GameStatusProps {
  *   Final       – FINAL label + score (tappable → game detail)
  *   Other       – raw status string (postponed, cancelled, etc.)
  */
-export function GameStatus({ matchup }: GameStatusProps) {
+export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
@@ -110,7 +112,7 @@ export function GameStatus({ matchup }: GameStatusProps) {
     return (
       <TouchableOpacity
         style={styles.statusSection}
-        onPress={() => router.push(`/game/${matchup.contestId}` as never)}
+        onPress={onPressGameDetail ?? (() => router.push(`/game/${matchup.contestId}` as never))}
         activeOpacity={0.7}
       >
         <Text style={[styles.statusLabel, { color: theme.textMuted }]}>FINAL</Text>

@@ -416,22 +416,6 @@ export default function GameDetailScreen() {
     );
   }
 
-  if (overviewError || !overview) {
-    return (
-      <>
-        <Stack.Screen options={{ title: 'Game Detail' }} />
-        <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
-          <Text style={[styles.errorText, { color: theme.error }]}>Could not load game data.</Text>
-          <Text style={[styles.errorSub, { color: theme.textMuted }]}>
-            This game may not have overview data yet.
-          </Text>
-        </View>
-      </>
-    );
-  }
-
-  const { header, leaders, info } = overview;
-
   return (
     <>
       <Stack.Screen options={{ title: screenTitle }} />
@@ -440,19 +424,31 @@ export default function GameDetailScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <BoxScoreCard
-          homeTeam={header.homeTeam}
-          awayTeam={header.awayTeam}
-          quarterScores={header.quarterScores}
-          gameTitle={screenTitle}
-        />
-        {leaders?.categories?.length ? (
-          <LeadersCard
-            categories={leaders.categories}
-            awayName={header.awayTeam.displayName}
-            homeName={header.homeTeam.displayName}
-          />
-        ) : null}
+        {overviewError || !overview ? (
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, padding: 16, gap: 4 }]}>
+            <Text style={[styles.errorText, { color: theme.error }]}>Could not load game data.</Text>
+            <Text style={[styles.errorSub, { color: theme.textMuted }]}>
+              This game may not have overview data yet.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <BoxScoreCard
+              homeTeam={overview.header.homeTeam}
+              awayTeam={overview.header.awayTeam}
+              quarterScores={overview.header.quarterScores}
+              gameTitle={screenTitle}
+            />
+            {overview.leaders?.categories?.length ? (
+              <LeadersCard
+                categories={overview.leaders.categories}
+                awayName={overview.header.awayTeam.displayName}
+                homeName={overview.header.homeTeam.displayName}
+              />
+            ) : null}
+            <GameInfoCard info={overview.info} />
+          </>
+        )}
         {leagueId && matchup ? (
           <PickSelector
             homeTeamName={matchup.home}
@@ -465,7 +461,6 @@ export default function GameDetailScreen() {
             onPick={handlePick}
           />
         ) : null}
-        <GameInfoCard info={info} />
       </ScrollView>
     </>
   );

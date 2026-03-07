@@ -9,7 +9,7 @@
         "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5262"
+      "applicationUrl": "http://localhost:5262;http://0.0.0.0:5262"
     },
     "https": {
       "commandName": "Project",
@@ -50,7 +50,7 @@
         "APPCONFIG_LABEL": "Dev"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5262"
+      "applicationUrl": "http://localhost:5262;http://0.0.0.0:5262"
     },
     "https-dev": {
       "commandName": "Project",

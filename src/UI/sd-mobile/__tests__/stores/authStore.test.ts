@@ -3,11 +3,7 @@ import { useAuthStore } from '@/src/stores/authStore';
 describe('authStore', () => {
   beforeEach(() => {
     // Reset store to initial state between tests
-    useAuthStore.setState({
-      user: null,
-      isLoading: false,
-      isInitialized: false,
-    });
+    useAuthStore.setState(useAuthStore.getInitialState(), true);
   });
 
   it('has correct initial state', () => {

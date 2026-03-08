@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'src/UI/sd-mobile/**'
+      - '.github/workflows/ci-mobile.yml'
   push:
     branches:
       - main
     paths:
       - 'src/UI/sd-mobile/**'
+      - '.github/workflows/ci-mobile.yml'
 
 jobs:
   test:

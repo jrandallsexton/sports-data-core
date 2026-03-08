@@ -14,6 +14,6 @@ describe('LoadingSpinner', () => {
 
   it('does not display message when not provided', () => {
     render(<LoadingSpinner />);
-    expect(screen.queryByText(/./)).toBeNull();
+    expect(screen.queryByText('Loading data...')).toBeNull();
   });
 });

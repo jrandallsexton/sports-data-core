@@ -11,53 +11,52 @@ Implementing consistent correlation ID logging across all document processors us
 
 **Key Pattern:**
 - Extract `Activity.Current.TraceId` as correlation ID
-- Use `BeginScope` with CorrelationId + contextual fields
-- Log entire command objects with `{@Command}`
+- `DocumentProcessorBase.ProcessAsync()` calls `_logger.BeginScope(command.ToLogScope())` — individual processors no longer implement BeginScope
+- `ToLogScope()` returns 12 properties: `AttemptCount`, `CorrelationId`, `DocumentType`, `MessageId`, `NotifyOnCompletion`, `ParentId`, `Ref`, `SeasonYear`, `SourceDataProvider`, `SourceUri`, `Sport`, `UrlHash`
+- Log messages are generic: `"Processing started."`, `"Processing completed."`, `"Processing failed."` — no processor-specific names
 - No redundant values in individual log statements (rely on scope)
 
 ---
 
 ## Established Pattern
 
-### ProcessAsync Template
+### ProcessAsync Template (in DocumentProcessorBase)
 ```csharp
-public async Task ProcessAsync(ProcessDocumentCommand command)
+public virtual async Task ProcessAsync(ProcessDocumentCommand command)
 {
-    using (_logger.BeginScope(new Dictionary<string, object>
+    using (_logger.BeginScope(command.ToLogScope()))
     {
-        ["CorrelationId"] = command.CorrelationId,
-        ["DocumentType"] = command.DocumentType,
-        ["Season"] = command.Season ?? 0,
-        ["ParentId"] = command.ParentId ?? "Unknown"  // Context-specific
-    }))
-    {
-        _logger.LogInformation("ProcessorName started. {@Command}", command);
+        _logger.LogInformation("Processing started.");
 
         try
         {
             await ProcessInternal(command);
-            _logger.LogInformation("ProcessorName completed.");
+            _logger.LogInformation("Processing completed.");
         }
         catch (ExternalDocumentNotSourcedException retryEx)
         {
-            _logger.LogWarning(retryEx, "Dependency not ready, will retry later.");
-            // Retry logic
+            _logger.LogWarning(retryEx,
+                "Dependency not ready (attempt {Attempt}). Will retry later.",
+                command.AttemptCount + 1);
+            // Retry logic — republishes with incremented AttemptCount
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ProcessorName failed.");
+            _logger.LogError(ex, "Processing failed.");
             throw;
         }
     }
 }
 ```
+Concrete processors only implement `ProcessInternal()` — they do not need their own BeginScope or start/completion logging.
 
 ### Key Rules
-1. ? **BeginScope with context** - CorrelationId + DocumentType + Season + Parent ID
-2. ? **Log {@Command}** - Full structured object, queryable in Seq
-3. ? **Clear processor name** - "ProcessorName started/completed/failed"
+1. ? **BeginScope handled by base class** - `command.ToLogScope()` provides 12 standardized fields (SeasonYear, ParentId, CorrelationId, etc.)
+2. ? **No {@Command}** - replaced with safe `ToLogScope()` to avoid logging full JSON documents
+3. ? **Generic log messages** - `"Processing started."` / `"Processing completed."` / `"Processing failed."` — no processor-specific names
 4. ? **No redundant values** - Don't repeat scope fields in individual logs
 5. ? **Correct logger type** - `ILogger<ActualProcessorName<TDataContext>>`
+6. ? **Processors only implement ProcessInternal()** - base class handles scope, entry/exit/error logging
 
 ---
 
@@ -132,11 +131,11 @@ Event (Contest)                           ? #1
 ## Key Achievements
 
 ### 1. Consistency Across All 15 Processors ?
-Every processor in the EventCompetition family now follows the same pattern:
-- ? Enhanced BeginScope with CorrelationId + DocumentType + Season + Parent ID
-- ? Clear start/completion logging with processor name
-- ? Simplified error messages (no redundant {@Command})
-- ? Contextual logging specific to each processor's business logic
+Every processor in the EventCompetition family now inherits from `DocumentProcessorBase`:
+- ? BeginScope with `command.ToLogScope()` (12 fields including SeasonYear, ParentId, CorrelationId, etc.) handled by base class
+- ? Generic start/completion/error logging in base class: `"Processing started."`, `"Processing completed."`, `"Processing failed."`
+- ? No `{@Command}` — safe logging only
+- ? Contextual logging specific to each processor's business logic in `ProcessInternal()`
 - ? Correct logger types (`ILogger<ActualProcessorName<TDataContext>>`)
 
 ### 2. Complete Document Flow Coverage ?
@@ -176,28 +175,29 @@ Remaining processor families to standardize:
 
 ## Pattern Template (Reference)
 
-```csharp
-public async Task ProcessAsync(ProcessDocumentCommand command)
-{
-    using (_logger.BeginScope(new Dictionary<string, object>
-    {
-        ["CorrelationId"] = command.CorrelationId,
-        ["DocumentType"] = command.DocumentType,
-        ["Season"] = command.Season ?? 0,
-        ["ParentId"] = command.ParentId ?? "Unknown"  // Context-specific name
-    }))
-    {
-        _logger.LogInformation("ProcessorName started. {@Command}", command);
+The base class `DocumentProcessorBase<TDataContext>` handles all of this automatically.
+Concrete processors only implement `ProcessInternal(ProcessDocumentCommand command)`.
 
-        try
-        {
-            await ProcessInternal(command);
-            _logger.LogInformation("ProcessorName completed.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ProcessorName failed.");
-            throw;
-        }
+```csharp
+// In DocumentProcessorBase.ProcessAsync() — DO NOT duplicate in processors:
+using (_logger.BeginScope(command.ToLogScope()))
+{
+    _logger.LogInformation("Processing started.");
+    try
+    {
+        await ProcessInternal(command);
+        _logger.LogInformation("Processing completed.");
+    }
+    catch (ExternalDocumentNotSourcedException retryEx)
+    {
+        _logger.LogWarning(retryEx,
+            "Dependency not ready (attempt {Attempt}). Will retry later.",
+            command.AttemptCount + 1);
+        // Republish with incremented AttemptCount
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Processing failed.");
+        throw;
     }
 }

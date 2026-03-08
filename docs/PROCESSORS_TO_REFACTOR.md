@@ -28,8 +28,8 @@ All processors from the initial list have been successfully refactored:
 
 1. ✅ **TeamSeasonDocumentProcessor** - 13 child document requests
 2. ✅ **EventDocumentProcessor** - 7 instances (5 initial + 2 stragglers)
-3. ✅ **AthleteDocumentProcessor** - 1 instance
-4. ✅ **CoachBySeasonDocumentProcessor** - 2 instances
+3. ✅ **FootballAthleteDocumentProcessor** - 1 instance
+4. ✅ **CoachSeasonDocumentProcessor** - 2 instances
 5. ✅ **GroupSeasonDocumentProcessor** - 4 instances
 6. ✅ **SeasonDocumentProcessor** - 3 instances
 7. ✅ **AthleteSeasonDocumentProcessor** - 2 instances
@@ -102,15 +102,15 @@ These processors were already using `PublishChildDocumentRequest` before this re
 **Status:** Partially refactored (some PublishChildDocumentRequest calls already present at line ~365)
 **Estimated Lines Saved:** ~40 lines
 
-#### 3. AthleteDocumentProcessor ⭐⭐
-**File:** `src/SportsData.Producer/Application/Documents/Processors/Providers/Espn/Football/AthleteDocumentProcessor.cs`
+#### 3. FootballAthleteDocumentProcessor ⭐⭐
+**File:** `src/SportsData.Producer/Application/Documents/Processors/Providers/Espn/Football/FootballAthleteDocumentProcessor.cs`
 **Child Documents Published:** 1
 - Line ~283 - AthletePosition (dependency request)
 
 **Estimated Lines Saved:** ~10 lines
 
-#### 4. CoachBySeasonDocumentProcessor ⭐⭐
-**File:** `src/SportsData.Producer/Application/Documents/Processors/Providers/Espn/Football/CoachBySeasonDocumentProcessor.cs`
+#### 4. CoachSeasonDocumentProcessor ⭐⭐
+**File:** `src/SportsData.Producer/Application/Documents/Processors/Providers/Espn/TeamSports/CoachSeasonDocumentProcessor.cs`
 **Child Documents Published:** 2 (both dependency requests)
 - Line ~125 - Coach (dependency request)
 - Line ~168 - TeamSeason (dependency request)
@@ -223,7 +223,7 @@ These processors were already using `PublishChildDocumentRequest` before this re
 **Already Refactored (Prior Work):** 9 processors ✅
 **Partially Refactored (Completed):** 3 processors ✅
 
-**Total Processors Using Base Class Helper:** 27+ processors
+**Total Processors Using Base Class Helper:** ~47 processors (out of ~51 total processor files)
 
 ---
 
@@ -237,21 +237,21 @@ All 15 identified processors have been successfully refactored to use `PublishCh
 1. TeamSeasonDocumentProcessor - 13 child document requests refactored
 
 #### Medium Priority ✅
-2. EventDocumentProcessor - 4 child document requests refactored
-3. AthleteDocumentProcessor - 1 dependency request refactored
-4. CoachBySeasonDocumentProcessor - 2 dependency requests refactored
-5. GroupSeasonDocumentProcessor - 3 child document requests refactored
-6. SeasonDocumentProcessor - 2 child document requests refactored
-7. AthleteSeasonDocumentProcessor - 3 dependency requests refactored
+1. EventDocumentProcessor - 4 child document requests refactored
+2. FootballAthleteDocumentProcessor - 1 dependency request refactored
+3. CoachSeasonDocumentProcessor - 2 dependency requests refactored
+4. GroupSeasonDocumentProcessor - 3 child document requests refactored
+5. SeasonDocumentProcessor - 2 child document requests refactored
+6. AthleteSeasonDocumentProcessor - 3 dependency requests refactored
 
 #### Lower Priority ✅
-8. EventCompetitionCompetitorLineScoreDocumentProcessor - 1 dependency request refactored
-9. EventCompetitionCompetitorScoreDocumentProcessor - 1 dependency request refactored
-10. SeasonTypeWeekDocumentProcessor - 1 dependency request refactored
-11. EventCompetitionPowerIndexDocumentProcessor - 1 dependency request refactored
-12. EventCompetitionSituationDocumentProcessor - 1 dependency request refactored
-13. EventCompetitionDriveDocumentProcessor - 1 child document request refactored
-14. SeasonTypeWeekRankingsDocumentProcessor - 3 dependency requests refactored
+1. EventCompetitionCompetitorLineScoreDocumentProcessor - 1 dependency request refactored
+2. EventCompetitionCompetitorScoreDocumentProcessor - 1 dependency request refactored
+3. SeasonTypeWeekDocumentProcessor - 1 dependency request refactored
+4. EventCompetitionPowerIndexDocumentProcessor - 1 dependency request refactored
+5. EventCompetitionSituationDocumentProcessor - 1 dependency request refactored
+6. EventCompetitionDriveDocumentProcessor - 1 child document request refactored
+7. SeasonTypeWeekRankingsDocumentProcessor - 3 dependency requests refactored
 
 ---
 
@@ -273,11 +273,11 @@ private async Task ProcessRanks(Guid franchiseSeasonId, EspnTeamSeasonDto dto, P
         dto.Ranks.Ref.ToCleanUri(),
         null,
         command.Sport,
-        command.Season,
+        command.SeasonYear,
         DocumentType.TeamSeasonRank,
         command.SourceDataProvider,
         command.CorrelationId,
-        CausationId.Producer.TeamSeasonDocumentProcessor));
+        command.MessageId));
 }
 ```
 
@@ -289,8 +289,7 @@ private async Task ProcessRanks(Guid franchiseSeasonId, EspnTeamSeasonDto dto, P
         command,
         dto.Ranks,
         franchiseSeasonId,
-        DocumentType.TeamSeasonRank,
-        CausationId.Producer.TeamSeasonDocumentProcessor);
+        DocumentType.TeamSeasonRank);
 }
 ```
 
@@ -308,6 +307,7 @@ private async Task ProcessRanks(Guid franchiseSeasonId, EspnTeamSeasonDto dto, P
 - **Dependency Requests:** Some processors use manual publishing for dependency requests (missing parent entities). These follow the same pattern and can be refactored.
 - **Loop Publishing:** Some processors publish child documents in loops (e.g., EventCompetitionCompetitorLineScoreDocumentProcessor). Pattern still applies.
 - **Commented Code:** Some processors have commented-out publishing code (e.g., FranchiseDocumentProcessor, GroupSeasonDocumentProcessor) - can be left as-is or removed.
+- **Remaining old-pattern instance:** `EventCompetitionDriveDocumentProcessor.cs` (line ~197) still has an old-pattern `_publishEndpoint.Publish(new DocumentRequested(...))` call that was not migrated to the base class helper.
 
 ---
 

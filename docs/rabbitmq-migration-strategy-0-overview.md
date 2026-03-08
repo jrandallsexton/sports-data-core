@@ -18,7 +18,7 @@
 - [Rollback Plans & Success Criteria](rabbitmq-migration-strategy-7-rollback-success.md)
 - [Appendix: Questions, Costs, References](rabbitmq-migration-strategy-8-appendix.md)
 
-**Note on Phase 2:** Empirical testing (Jan 25, 2026) determined ESPN API has no meaningful rate limits. Successfully tested 139 req/sec with zero throttling. Redis-based distributed rate limiting is unnecessary. Simple Polly bulkhead policies are sufficient.
+**Note on Phase 2:** Empirical testing (Jan 25, 2026) initially suggested ESPN API had no meaningful rate limits. However, subsequent testing discovered ESPN DOES use IP-based rate limiting via 403 responses (not 429). The actual mitigation is `RequestDelayMs = 1000ms` in `EspnApiClientConfig`. Redis-based distributed rate limiting is unnecessary.
 
 ---
 
@@ -60,7 +60,7 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
   - 1 NUC: Dedicated PostgreSQL server
 - **Deployment:** Flux GitOps
 - **Storage:** SMB CSI driver
-- **No Redis currently deployed**
+- **Redis deployed** for caching (`AddStackExchangeRedisCache`)
 - **Assessment:** High-end homelab setup - modern CPUs, fast memory, NVMe storage across the board
 
 ### PostgreSQL Server
@@ -75,19 +75,21 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
 
 ### Application Configuration
 **Provider (SportsData.Provider)**
-- Hangfire workers: 50 per pod
+- Hangfire workers: 20 per pod (default)
 - Current replicas: 1 (manual)
 - Workload: I/O-bound (ESPN API calls)
 
 **Producer (SportsData.Producer)**
-- Hangfire workers: 50 per pod
+- Hangfire workers: 20 per pod (default)
 - Current replicas: 1 (manual)
 - Workload: CPU/DB-bound (data processing, PostgreSQL writes)
 
 **API (SportsData.Api)**
-- Hangfire workers: 30 per pod
+- Hangfire workers: 20 per pod (default)
 - Current replicas: 1 (manual)
 - Workload: HTTP request handling, HATEOAS response generation
+
+**Other Services:** Contest, Franchise, Notification, Player, Season, Venue, JobsDashboard
 
 ---
 
@@ -115,7 +117,8 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
 - **Premium tier:** $677/month (required for historical sourcing)
 - **Estimated cost for historical sourcing:** $677 (1 month minimum)
 
-### RabbitMQ + Redis (Proposed)
+### RabbitMQ + Redis (Current)
+
 - **Infrastructure cost:** $0 (existing NUC hardware)
 - **Operational cost:** Time investment in setup/monitoring
 - **Ongoing cost:** $0/month
@@ -136,7 +139,7 @@ See [Appendix](rabbitmq-migration-strategy-8-appendix.md#cost-analysis) for full
 1. ✅ Document strategy (this file)
 2. ⬜ Review and approve approach
 3. ⬜ Decide on RabbitMQ deployment method (Helm chart recommended)
-4. ⬜ Size Redis resource requirements
+4. ~~Size Redis resource requirements~~ (Redis already deployed for caching)
 5. ⬜ Prepare monitoring dashboards (Grafana)
 
 ### Week 1 Prep

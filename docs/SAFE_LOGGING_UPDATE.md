@@ -50,12 +50,22 @@ public string? GetDocumentRef()
 _logger.LogInformation("ProcessorName started. {@Command}", command);
 ```
 
-### After:
+### After (handled by DocumentProcessorBase):
 ```csharp
-_logger.LogInformation("ProcessorName started. Ref={Ref}, UrlHash={UrlHash}", 
-    command.GetDocumentRef(),
-    command.UrlHash);
+// DocumentProcessorBase.ProcessAsync() wraps every processor call:
+using (_logger.BeginScope(command.ToLogScope()))
+{
+    _logger.LogInformation("Processing started.");
+    await ProcessInternal(command);   // <-- concrete processor logic
+    _logger.LogInformation("Processing completed.");
+}
+// On failure:  _logger.LogError(ex, "Processing failed.");
+// On retry:    _logger.LogWarning(retryEx, "Dependency not ready (attempt {Attempt}). Will retry later.", ...);
 ```
+The `ToLogScope()` method on `ProcessDocumentCommand` returns 12 safe properties (no Document JSON):
+`AttemptCount`, `CorrelationId`, `DocumentType`, `MessageId`, `NotifyOnCompletion`, `ParentId`, `Ref` (extracted via `GetDocumentRef()`), `SeasonYear`, `SourceDataProvider`, `SourceUri`, `Sport`, `UrlHash`.
+
+Individual processors no longer need their own BeginScope or start/completion logging -- the base class emits "Processing started.", "Processing completed.", and "Processing failed." automatically.
 
 ---
 
@@ -111,25 +121,17 @@ UrlHash=abc123def
 
 ## Scope Context Still Available
 
-All critical fields remain in `BeginScope`:
+All critical fields are in `BeginScope` via `command.ToLogScope()` (in `DocumentProcessorBase`):
 ```csharp
-using (_logger.BeginScope(new Dictionary<string, object> {
-    ["CorrelationId"] = command.CorrelationId,
-    ["DocumentType"] = command.DocumentType,
-    ["Season"] = command.Season ?? 0,
-    ["CompetitionId"] = command.ParentId ?? "Unknown"
-}))
+using (_logger.BeginScope(command.ToLogScope()))
 ```
 
-So every log in the processor automatically has:
-- ? CorrelationId
-- ? DocumentType
-- ? Season
-- ? ParentId
+Every log in the processor automatically has all 12 scope properties:
+- ? AttemptCount, CorrelationId, DocumentType, MessageId
+- ? NotifyOnCompletion, ParentId, Ref (ESPN URI for Postman)
+- ? SeasonYear, SourceDataProvider, SourceUri, Sport, UrlHash
 
-Plus the start message adds:
-- ? Ref (ESPN URI for Postman)
-- ? UrlHash (unique document identifier)
+> **Note:** ~19 processors outside the EventCompetition family still use `{@Command}` and have not yet been migrated to `DocumentProcessorBase`.
 
 ---
 

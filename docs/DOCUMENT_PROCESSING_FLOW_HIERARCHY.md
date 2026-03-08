@@ -78,13 +78,22 @@ graph TD
     Competition -->|Missing Dependency| Venue2["`**VenueDocumentProcessor**
     _DocumentType.Venue_`"]
     
-    %% Competitor spawns Score and LineScore
+    %% Competitor spawns Score, LineScore, Statistics, Record, Roster
     Competitor -->|If Exists| CompScore["`**EventCompetitionCompetitorScoreDocumentProcessor**
     _DocumentType.EventCompetitionCompetitorScore_`"]
-    
+
     Competitor -->|If Exists| LineScore["`**EventCompetitionCompetitorLineScoreDocumentProcessor**
     _DocumentType.EventCompetitionCompetitorLineScore_`"]
-    
+
+    Competitor -->|If Exists| CompStats["`**EventCompetitionCompetitorStatisticsDocumentProcessor**
+    _DocumentType.EventCompetitionCompetitorStatistics_`"]
+
+    Competitor -->|If Exists| CompRecord["`**EventCompetitionCompetitorRecordDocumentProcessor**
+    _DocumentType.EventCompetitionCompetitorRecord_`"]
+
+    Competitor -->|If Exists| CompRoster["`**EventCompetitionCompetitorRosterDocumentProcessor**
+    _DocumentType.EventCompetitionCompetitorRoster_`"]
+
     Competitor -->|Missing Dependency| CompetitionDep["`**EventCompetitionDocumentProcessor**
     _DocumentType.EventCompetition_`"]
     
@@ -106,18 +115,25 @@ graph TD
     Situation -.->|No children| SituationLeaf[" "]
     Broadcast -.->|No children| BroadcastLeaf[" "]
     Play -.->|No children| PlayLeaf[" "]
-    Leaders -.->|No children| LeadersLeaf[" "]
+    Leaders -->|Publishes| LeadersChildren["`_AthleteStatistics,
+    AthleteSeason, FranchiseSeason_`"]
     Predictor -.->|No children| PredictorLeaf[" "]
     Probability -.->|No children| ProbabilityLeaf[" "]
     PowerIndex -.->|No children| PowerIndexLeaf[" "]
     DrivePlay -.->|No children| DrivePlayLeaf[" "]
     CompScore -.->|No children| CompScoreLeaf[" "]
     LineScore -.->|No children| LineScoreLeaf[" "]
+    CompStats -.->|No children| CompStatsLeaf[" "]
+    CompRecord -.->|No children| CompRecordLeaf[" "]
+    CompRoster -.->|No children| CompRosterLeaf[" "]
     Venue1 -.->|No children| Venue1Leaf[" "]
     Venue2 -.->|No children| Venue2Leaf[" "]
     SeasonType -.->|No children| SeasonTypeLeaf[" "]
     SeasonWeek -.->|No children| SeasonWeekLeaf[" "]
-    TeamSeason -.->|No children| TeamSeasonLeaf[" "]
+    TeamSeason -->|Spawns many| TeamSeasonChildren["`_Ranks, Projection, Events,
+    Coaches, Awards, RecordAts,
+    Injuries, Athletes, Leaders,
+    Statistics, Record, ..._`"]
     CompetitionDep -.->|Circular| CircularNote[" "]
     CompetitorDep -.->|Circular| CircularNote2[" "]
     CompetitorDep2 -.->|Circular| CircularNote3[" "]
@@ -127,18 +143,21 @@ graph TD
     style SituationLeaf fill:none,stroke:none
     style BroadcastLeaf fill:none,stroke:none
     style PlayLeaf fill:none,stroke:none
-    style LeadersLeaf fill:none,stroke:none
+    style LeadersChildren fill:#f9f,stroke:#333,stroke-width:1px
     style PredictorLeaf fill:none,stroke:none
     style ProbabilityLeaf fill:none,stroke:none
     style PowerIndexLeaf fill:none,stroke:none
     style DrivePlayLeaf fill:none,stroke:none
     style CompScoreLeaf fill:none,stroke:none
     style LineScoreLeaf fill:none,stroke:none
+    style CompStatsLeaf fill:none,stroke:none
+    style CompRecordLeaf fill:none,stroke:none
+    style CompRosterLeaf fill:none,stroke:none
     style Venue1Leaf fill:none,stroke:none
     style Venue2Leaf fill:none,stroke:none
     style SeasonTypeLeaf fill:none,stroke:none
     style SeasonWeekLeaf fill:none,stroke:none
-    style TeamSeasonLeaf fill:none,stroke:none
+    style TeamSeasonChildren fill:#f9f,stroke:#333,stroke-width:1px
     style CircularNote fill:none,stroke:none
     style CircularNote2 fill:none,stroke:none
     style CircularNote3 fill:none,stroke:none
@@ -186,11 +205,14 @@ graph TD
 ---
 
 ### Tier 3: Competitor
-**Processor:** `EventCompetitionCompetitorDocumentProcessor`  
-**Input:** `DocumentType.EventCompetitionCompetitor`  
+**Processor:** `EventCompetitionCompetitorDocumentProcessor`
+**Input:** `DocumentType.EventCompetitionCompetitor`
 **Conditionally Spawns (if $ref exists in DTO):**
 - `DocumentType.EventCompetitionCompetitorScore`
 - `DocumentType.EventCompetitionCompetitorLineScore`
+- `DocumentType.EventCompetitionCompetitorStatistics`
+- `DocumentType.EventCompetitionCompetitorRecord`
+- `DocumentType.EventCompetitionCompetitorRoster`
 
 **Conditionally Spawns (if dependency missing):**
 - `DocumentType.EventCompetition` (if parent Competition not found)
@@ -205,6 +227,23 @@ graph TD
 
 ---
 
+### Tier 3: TeamSeason (NOT a Leaf Node)
+**Processor:** `TeamSeasonDocumentProcessor`
+**Input:** `DocumentType.TeamSeason`
+**Spawns many child document types** including Ranks, Projection, Events, Coaches, Awards, RecordAts, Injuries, Athletes, Leaders, Statistics, Record, and more.
+
+**Publishes dependency requests for:**
+- `DocumentType.Franchise`
+- `DocumentType.GroupSeason`
+
+### Tier 3: Leaders
+**Processor:** `EventCompetitionLeadersDocumentProcessor`
+**Input:** `DocumentType.EventCompetitionLeaders`
+**Publishes child requests for:**
+- `DocumentType.EventCompetitionAthleteStatistics` (for each leader's statistics)
+- `DocumentType.AthleteSeason` (for leader athletes)
+- `DocumentType.FranchiseSeason` (for leader teams)
+
 ### Tier 4: Leaf Nodes (No Children)
 These processors do NOT publish any `DocumentRequested` events:
 - `EventCompetitionOddsDocumentProcessor`
@@ -212,7 +251,6 @@ These processors do NOT publish any `DocumentRequested` events:
 - `EventCompetitionSituationDocumentProcessor`
 - `EventCompetitionBroadcastDocumentProcessor`
 - `EventCompetitionPlayDocumentProcessor`
-- `EventCompetitionLeadersDocumentProcessor`
 - `EventCompetitionPredictionDocumentProcessor`
 - `EventCompetitionProbabilityDocumentProcessor`
 - `EventCompetitionPowerIndexDocumentProcessor`
@@ -221,7 +259,6 @@ These processors do NOT publish any `DocumentRequested` events:
 - `VenueDocumentProcessor`
 - `SeasonTypeDocumentProcessor`
 - `SeasonTypeWeekDocumentProcessor`
-- `TeamSeasonDocumentProcessor`
 
 ---
 

@@ -8,8 +8,10 @@
 | **Ollama in Azure Container Apps (CPU)**| - Cheaper than GPU App Services<br>- Flexible with quantized models | - Slower inference (unless using small models) |
 | **Azure AI Services (OpenAI)**          | - Fully managed<br>- Scales easily<br>- Tight Azure integration      | - Expensive per-token<br>- Limited fine-tuning unless paying extra |
 
-**Initial Recommendation**:  
+**Initial Recommendation**:
 Use **Ollama in Azure Container Apps (ACA)** with quantized 3B or 7B models (e.g., LLaMA2, Mistral). Scale later with GPU-backed services or swap to Azure OpenAI if needed.
+
+**Implemented Providers:** Both **Ollama** and **DeepSeek** are implemented as AI providers. The `IProvideAiCommunication` interface (with implementations `OllamaClient` and `DeepSeekClient`) supports switching between providers at runtime.
 
 ---
 

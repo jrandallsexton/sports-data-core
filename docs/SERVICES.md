@@ -4,7 +4,10 @@
 |----------------|-------------|
 | `core`         | Shared services, components, and middleware to be consumed by the various services that compose the entire application. |
 | `api`          | API Gateway that orchestrates access to underlying services and enforces authentication, authorization, and routing. |
-| `contest`      | Manages matchups, results, pick logic, and consensus calculations for contests (e.g., weekly pick’em games). |
+| `contest`      | Currently minimal (Program.cs + AppDataContext.cs). Pick logic, league management, and matchup functionality reside in the API project. |
+| `jobsdashboard`| Hangfire monitoring dashboard for job scheduling visibility. |
+| `processorgen` | Code generator for document processors. |
+| **Note**       | **Only ESPN is an active data provider. CBS, Yahoo, and SportsDataIO provider implementations are stubs.** |
 | `franchise`    | Stores metadata and branding information for teams/franchises across supported sports and leagues. |
 | `notification` | Responsible for sending notifications to users (e.g., email, in-app messages) triggered by key events. |
 | `player`       | Maintains canonical player information including stats, position, bio, and affiliations. |

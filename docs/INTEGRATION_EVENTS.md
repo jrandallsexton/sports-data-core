@@ -1,6 +1,6 @@
 # Integration Events
 
-This document outlines the integration events used within the SportsData system. The system follows an event-driven architecture where the **Producer** service publishes events to a message bus (MassTransit/RabbitMQ), and the **API** service consumes them. Some events are also forwarded to the frontend via **Azure SignalR**.
+This document outlines the integration events used within the SportsData system. The system follows an event-driven architecture where both the **Producer** and **API** services publish events to a message bus (MassTransit over RabbitMQ locally / Azure Service Bus in production). Some events are also forwarded to the frontend via **Azure SignalR**.
 
 ## Architecture Overview
 
@@ -31,7 +31,10 @@ This document outlines the integration events used within the SportsData system.
 *   [`ContestOddsCreated`](events/contests/ContestOddsCreated.md)
 *   [`ContestOddsUpdated`](events/contests/ContestOddsUpdated.md)
 *   [`ContestRecapArticlePublished`](events/contests/ContestRecapArticlePublished.md)
+*   [`ContestScoreChanged`](events/contests/ContestScoreChanged.md)
 *   [`ContestStartTimeUpdated`](events/contests/ContestStartTimeUpdated.md)
+*   [`ContestStatusChanged`](events/contests/ContestStatusChanged.md)
+*   [`CompetitorScoreUpdated`](events/contests/CompetitorScoreUpdated.md)
 
 ### Core
 *   [`Heartbeat`](events/core/Heartbeat.md)
@@ -41,7 +44,10 @@ This document outlines the integration events used within the SportsData system.
 *   [`DocumentCreated`](events/documents/DocumentCreated.md)
 *   [`DocumentRequested`](events/documents/DocumentRequested.md)
 *   [`DocumentSourcingStarted`](events/documents/DocumentSourcingStarted.md)
+*   [`DocumentDeadLetter`](events/documents/DocumentDeadLetter.md)
+*   [`DocumentProcessingCompleted`](events/documents/DocumentProcessingCompleted.md)
 *   [`DocumentUpdated`](events/documents/DocumentUpdated.md)
+*   [`RequestedDependency`](events/documents/RequestedDependency.md)
 
 ### Franchise
 *   [`FranchiseCreated`](events/franchise/FranchiseCreated.md)
@@ -56,6 +62,7 @@ This document outlines the integration events used within the SportsData system.
 
 ### PickemGroups
 *   [`PickemGroupCreated`](events/pickem-groups/PickemGroupCreated.md)
+*   [`PickemGroupMatchupAdded`](events/pickem-groups/PickemGroupMatchupAdded.md)
 *   [`PickemGroupWeekMatchupsGenerated`](events/pickem-groups/PickemGroupWeekMatchupsGenerated.md)
 
 ### Positions

@@ -34,7 +34,8 @@ var correlationId = ActivityExtensions.GetCorrelationId();
 
 ---
 
-### 2. CausationId (Guid)
+### 2. CausationId (Guid or string)
+
 **Purpose**: Identifies the parent message that caused this message to be published
 
 **Source**: The MessageId of the message being processed
@@ -53,7 +54,7 @@ DocumentCreated (MessageId: AAA, CausationId: null)
 **How to set it**:
 ```csharp
 // For the first message in a chain (no parent):
-var causationId = ActivityExtensions.GetSpanBasedCausationId();
+var causationId = ActivityExtensions.GetCausationId();
 
 // For child messages (has a parent):
 var causationId = parentMessage.MessageId;
@@ -70,9 +71,11 @@ var causationId = parentMessage.MessageId;
 
 **Usage**: Becomes the CausationId for any child messages this message triggers
 
-**How to generate**:
+**How it works**:
+`MessageId` is auto-initialized in `EventBase` — no need to generate or pass it explicitly:
 ```csharp
-var messageId = ActivityExtensions.GenerateMessageId(); // or Guid.NewGuid()
+// In EventBase:
+public Guid MessageId { get; init; } = Guid.NewGuid();
 ```
 
 ---
@@ -81,15 +84,13 @@ var messageId = ActivityExtensions.GenerateMessageId(); // or Guid.NewGuid()
 
 ### Publishing a Root Message (No Parent)
 ```csharp
-var messageId = Guid.NewGuid();
 var correlationId = ActivityExtensions.GetCorrelationId();
-var causationId = ActivityExtensions.GetSpanBasedCausationId(); // from OpenTelemetry span
+var causationId = ActivityExtensions.GetCausationId(); // from OpenTelemetry span
 
 var evt = new DocumentCreated(
     // ... other properties
     CorrelationId: correlationId,
-    CausationId: causationId,      // First message - use SpanId
-    MessageId: messageId
+    CausationId: causationId       // First message - use SpanId
 );
 
 await _eventBus.Publish(evt);
@@ -98,15 +99,13 @@ await _eventBus.Publish(evt);
 ### Publishing a Child Message (Has Parent)
 ```csharp
 // Inside a message handler - processing parentMessage
-var messageId = Guid.NewGuid();
 var correlationId = parentMessage.CorrelationId;  // Flow from parent
 var causationId = parentMessage.MessageId;        // Parent's MessageId
 
 var evt = new DocumentRequested(
     // ... other properties
     CorrelationId: correlationId,  // Same business operation
-    CausationId: causationId,      // Parent's MessageId
-    MessageId: messageId           // New unique ID
+    CausationId: causationId       // Parent's MessageId
 );
 
 await _eventBus.Publish(evt);
@@ -158,8 +157,7 @@ CausationId IN (messages where CausationId = "AAA").MessageId
 ## Migration Notes
 
 ### Breaking Changes
-- `EventBase` now requires `MessageId` parameter
-- All event constructors must provide MessageId
+- `EventBase` auto-initializes `MessageId` via `Guid.NewGuid()` — it is NOT a constructor parameter
 - CausationId semantics changed from "processor type" to "parent message"
 
 ### Backward Compatibility

@@ -27,7 +27,7 @@ We successfully updated integration events in a .NET sports data application to 
 
 ### Phase 3 (by Copilot) - Ref Generator Implementation ✅
 1. ✅ **Created IGenerateResourceRefs interface** (`src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs`)
-   - 15 methods for all resource types across microservices
+   - 16 methods for all resource types across microservices (includes `ForVenues` and `ForFranchises` collection endpoints)
    - Supports Producer, Contest, Venue, and Franchise resources
    - **No Sport parameter** - Sport configured at startup via IAppMode
 2. ✅ **Implemented ResourceRefGenerator** (`src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs`)
@@ -36,6 +36,7 @@ We successfully updated integration events in a .NET sports data application to 
    - **Sport-specific at construction** - Resolves sport-specific URLs once at startup
    - **Non-virtual methods** - Designed for inheritance; derived classes add new methods rather than override
    - Generates absolute URIs by appending resource path to configured base URL: `{configuredBaseUrl}/{resourceType}/{id}`
+   - **Note:** Contest, Venue, and Franchise base URLs are currently commented out -- only the Producer URL is active. All resource URIs resolve against `_producerBaseUrl`.
    - **Note:** The configured base URL from Azure AppConfig is used as-is; it must be a full base URL including the `/api` segment (e.g., `http://localhost:5262/api`)
 3. ✅ **Registered in DI container** (`ServiceRegistration.cs`)
    - Singleton lifetime (stateless and thread-safe)
@@ -97,7 +98,7 @@ We successfully updated integration events in a .NET sports data application to 
 
 ## What's Ready to Use
 
-The ref generator infrastructure is fully implemented and available in all document processors via `Refs`. You can now replace `null` refs with actual URIs:
+The ref generator infrastructure is fully implemented and available in all document processors via `_refGenerator`. You can now replace `null` refs with actual URIs:
 
 **Example:**
 ```csharp
@@ -116,7 +117,7 @@ await _publishEndpoint.Publish(new CompetitionStatusChanged(
 await _publishEndpoint.Publish(new CompetitionStatusChanged(
     competitionId,
     entity.StatusTypeName,
-    Refs.ForCompetition(competitionId),  // ← actual ref! No Sport param needed
+    _refGenerator.ForCompetition(competitionId),  // ← actual ref! No Sport param needed
     command.Sport,
     command.Season,
     command.CorrelationId,

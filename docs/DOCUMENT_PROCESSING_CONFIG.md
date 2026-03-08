@@ -1,5 +1,7 @@
 # Document Processing Configuration
 
+> **Note:** As of early 2026, dependency publishing is always performed. The `DocumentProcessorBase` uses `PublishDependencyRequest()` which unconditionally publishes dependency requests (with deduplication tracking via `RequestedDependencies`). The `EnableDependencyRequests` flag is dead configuration -- it exists in `DocumentProcessingConfig.cs` and is read from Azure App Configuration at startup, but no processor code checks it. **Operators no longer need to toggle or test this flag; it can be safely removed in a future cleanup.**
+
 ## Overview
 
 This document describes the `DocumentProcessingConfig` feature flag system that controls how document processors handle missing dependencies.
@@ -69,23 +71,20 @@ SportsData.Producer:DocumentProcessing:EnableDependencyRequests
 
 ### Updated Processors
 
-The following document processors have been updated with feature flag support:
+> **Note:** The processors listed below were originally updated with feature flag support, but the code has since been refactored. All processors now use `DocumentProcessorBase.PublishDependencyRequest()` for dependency requests, which always publishes (with deduplication tracking). The `EnableDependencyRequests` flag is no longer checked by any processor.
 
-1. **AthleteSeasonDocumentProcessor**
-   - Athlete dependency (line ~95)
-   - TeamSeason dependency (line ~290)
-   - Position dependency (line ~345)
+The original processors that had feature flag support:
 
-2. **TeamSeasonDocumentProcessor**
-   - Franchise dependency (line ~125)
-   - GroupSeason dependency (line ~200)
+1. **AthleteSeasonDocumentProcessor** - Now uses `PublishDependencyRequest()` for Athlete, TeamSeason, and Position dependencies
+2. **TeamSeasonDocumentProcessor** - Now uses `PublishDependencyRequest()` for Franchise and GroupSeason dependencies
+3. **EventCompetitionLeadersDocumentProcessor** - Now uses `PublishChildDocumentRequest()` for AthleteSeason and FranchiseSeason requests
 
-3. **EventCompetitionLeadersDocumentProcessor**
-   - AthleteSeason dependency (line ~195)
+### Historical Code Pattern (No Longer Used)
 
-### Code Pattern
+The following pattern has been replaced by `PublishDependencyRequest()` in the base class:
 
 ```csharp
+// OLD PATTERN (no longer in use):
 if (dependency is null)
 {
     if (!_config.EnableDependencyRequests)
@@ -103,11 +102,11 @@ if (dependency is null)
         _logger.LogWarning(
             "Dependency not found. Raising DocumentRequested (override mode). {Context}",
             context);
-        
+
         await _publishEndpoint.Publish(new DocumentRequested(...));
         await _dataContext.OutboxPings.AddAsync(new OutboxPing());
         await _dataContext.SaveChangesAsync();
-        
+
         throw new ExternalDocumentNotSourcedException(
             $"Dependency not found for {ref}");
     }

@@ -1,6 +1,6 @@
 # EventCompetitionCompetitorDocumentProcessor - Migration to DocumentProcessorBase
 
-## ? Migration Complete
+## Migration Complete - SUCCESS
 
 **Processor:** `EventCompetitionCompetitorDocumentProcessor<TDataContext>`  
 **Date:** December 28, 2025  
@@ -20,9 +20,9 @@
 ### After Migration
 
 **Lines of code:** ~250 lines  
-**Child document methods:** 1 unified method (`ProcessChildDocuments`)  
-**Boilerplate per method:** ~2 lines  
-**Total boilerplate:** ~4 lines
+**Child document methods:** 1 unified method (`ProcessChildDocuments`) spawning 5 types (Score, LineScore, Roster, Statistics, Record)
+**Boilerplate per method:** ~2 lines per child document method
+**Total boilerplate:** ~10 lines
 
 **Code reduction:** ~60 lines eliminated (19% reduction)
 
@@ -54,33 +54,28 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : IProces
 }
 ```
 
-**After:**
+**After (current):**
 ```csharp
-public class EventCompetitionCompetitorDocumentProcessor<TDataContext> 
+public class EventCompetitionCompetitorDocumentProcessor<TDataContext>
     : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly DocumentProcessingConfig _config;
-
     public EventCompetitionCompetitorDocumentProcessor(
         ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        DocumentProcessingConfig config)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
-    {
-        _config = config;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 }
 ```
 
 **Changes:**
-- ? Inherits from `DocumentProcessorBase<TDataContext>`
-- ? Removed 4 field declarations (now in base class)
-- ? Removed 4 field assignments (handled by base constructor)
-- ? Kept `_config` field (processor-specific)
-- ? Added `override` keyword to `ProcessAsync`
+- Inherits from `DocumentProcessorBase<TDataContext>`
+- Removed field declarations (now in base class)
+- Removed field assignments (handled by base constructor)
+- Replaced `DocumentProcessingConfig config` with `IGenerateResourceRefs refs`
+- Added `override` keyword to `ProcessAsync`
 
 ### 2. ProcessScores Method - ELIMINATED
 
@@ -188,29 +183,39 @@ await PublishChildDocumentRequest(
 
 ### 4. New Unified ProcessChildDocuments Method
 
-**After:**
+**After (current):**
 ```csharp
 /// <summary>
 /// Processes all child documents for a competitor.
-/// This method is called for both new entities and updates to ensure
-/// child documents are always spawned if their $ref exists in the DTO.
+/// For new entities (isNew=true), always spawns all child documents.
+/// For updates (isNew=false), respects ShouldSpawn filtering to prevent duplicate spawns.
 /// </summary>
 private async Task ProcessChildDocuments(
     ProcessDocumentCommand command,
     EspnEventCompetitionCompetitorDto dto,
-    Guid competitorId)
+    Guid competitorId,
+    bool isNew)
 {
-    _logger.LogInformation(
-        "?? PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor. CompetitorId={CompetitorId}",
-        competitorId);
+    // Spawns 5 child document types (Score, LineScore, Roster, Statistics, Record)
+    if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorScore, command))
+        await PublishChildDocumentRequest(command, dto.Score, competitorId,
+            DocumentType.EventCompetitionCompetitorScore);
 
-    // Use base class helper for all child document requests - one line each!
-    await PublishChildDocumentRequest(command, dto.Score, competitorId, DocumentType.EventCompetitionCompetitorScore, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-    await PublishChildDocumentRequest(command, dto.Linescores, competitorId, DocumentType.EventCompetitionCompetitorLineScore, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+    if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorLineScore, command))
+        await PublishChildDocumentRequest(command, dto.Linescores, competitorId,
+            DocumentType.EventCompetitionCompetitorLineScore);
 
-    _logger.LogInformation(
-        "? CHILD_DOCUMENTS_COMPLETED: Child document processing completed. CompetitorId={CompetitorId}",
-        competitorId);
+    if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorRoster, command))
+        await PublishChildDocumentRequest(command, dto.Roster, competitorId,
+            DocumentType.EventCompetitionCompetitorRoster);
+
+    if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorStatistics, command))
+        await PublishChildDocumentRequest(command, dto.Statistics, competitorId,
+            DocumentType.EventCompetitionCompetitorStatistics);
+
+    if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitorRecord, command))
+        await PublishChildDocumentRequest(command, dto.Record, competitorId,
+            DocumentType.EventCompetitionCompetitorRecord);
 }
 ```
 
@@ -247,14 +252,14 @@ private async Task ProcessNewEntity(...)
 {
     // ... create entity ...
     
-    await ProcessChildDocuments(command, dto, canonicalEntity.Id);
+    await ProcessChildDocuments(command, dto, canonicalEntity.Id, true);
 }
 
 private async Task ProcessUpdate(...)
 {
     // ... update logic ...
-    
-    await ProcessChildDocuments(command, dto, entity.Id);
+
+    await ProcessChildDocuments(command, dto, entity.Id, false);
 }
 ```
 
@@ -371,29 +376,15 @@ await PublishChildDocumentRequest(command, dto.Statistics, competitorId, Documen
 
 ---
 
-## Future TODOs
+## Former TODOs -- COMPLETED
 
-The processor has placeholders for additional child document types:
+The following child document types that were previously listed as TODOs have been implemented in `ProcessChildDocuments`:
 
-```csharp
-// TODO: ProcessRoster
-// TODO: ProcessStatistics
-// TODO: ProcessLeaders
-// TODO: ProcessRecord
-// TODO: ProcessRanks
-```
-
-**When implementing these, simply add lines to `ProcessChildDocuments`:**
-
-```csharp
-await PublishChildDocumentRequest(command, dto.Roster, competitorId, DocumentType.EventCompetitionCompetitorRoster, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-await PublishChildDocumentRequest(command, dto.Statistics, competitorId, DocumentType.EventCompetitionCompetitorStatistics, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-await PublishChildDocumentRequest(command, dto.Leaders, competitorId, DocumentType.EventCompetitionCompetitorLeaders, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-await PublishChildDocumentRequest(command, dto.Record, competitorId, DocumentType.EventCompetitionCompetitorRecord, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-await PublishChildDocumentRequest(command, dto.Ranks, competitorId, DocumentType.EventCompetitionCompetitorRanks, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-```
-
-**That's it!** No method creation, no duplicate logging, no boilerplate.
+- ~~TODO: ProcessRoster~~ -- COMPLETED (EventCompetitionCompetitorRoster)
+- ~~TODO: ProcessStatistics~~ -- COMPLETED (EventCompetitionCompetitorStatistics)
+- ~~TODO: ProcessRecord~~ -- COMPLETED (EventCompetitionCompetitorRecord)
+- TODO: ProcessLeaders -- not yet implemented
+- TODO: ProcessRanks -- not yet implemented
 
 ---
 

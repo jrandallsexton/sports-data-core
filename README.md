@@ -1,51 +1,48 @@
 [![Deploy About App to Azure Static Web App (Production)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-about.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-about.yml)
 
-[![Deploy React App to AzSWA (Dev)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-dev.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-dev.yml)
-
-[![Deploy React App to AzSWA (Production)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-prod.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-ui-prod.yml)
-
 [![Deploy Services to Production (Auto Latest)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-services-prod-auto.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/deploy-services-prod-auto.yml)
 
-[![Copilot code review](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/copilot-pull-request-reviewer/copilot-pull-request-reviewer)
+[![Mobile CI](https://github.com/jrandallsexton/sports-data-core/actions/workflows/ci-mobile.yml/badge.svg)](https://github.com/jrandallsexton/sports-data-core/actions/workflows/ci-mobile.yml)
 
 [![Build Status](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)](https://dev.azure.com/jrandallsexton/sport-deets/_apis/build/status%2Fsports-data-api?branchName=main)
 
 # Sports Data Platform
 
-A hybrid cloud sports analytics platform built on a modular monolith architecture, designed for independent service extraction when scaling demands justify the operational complexity.
+A hybrid cloud sports analytics platform built on a microservices architecture, deployed to a self-hosted Kubernetes cluster with Azure managed services.
 
 ## **Overview**
 
-Sports data aggregation and analysis platform that ingests data from multiple external sources (ESPN, CBS Sports, Yahoo!, sportsData.io), transforms it into canonical domain models, and exposes it through a unified API. Currently focused on NCAA Football with planned expansion to NFL, MLB, and PGA.
+Sports data aggregation and analysis platform that ingests data from multiple external sources (ESPN, CBS Sports, Yahoo!, sportsData.io), transforms it into canonical domain models, and exposes it through a unified API. Currently focused on NCAA Football with planned expansion to NFL, MLB, and PGA. ESPN is the active data provider; CBS, Yahoo!, and sportsData.io integrations are planned.
 
 ### Key Features
 
-- **Multi-source data aggregation** - Unified interface to ESPN, CBS, Yahoo!, and commercial sports data APIs
-- **Event-driven architecture** - Azure Service Bus messaging for decoupled domain communication
+- **Multi-source data aggregation** - Unified interface for ESPN (active), CBS, Yahoo!, and sportsData.io (planned) via a provider/producer pipeline
+- **Event-driven architecture** - RabbitMQ (local) / Azure Service Bus (production) messaging for decoupled domain communication
 - **Hybrid cloud deployment** - Self-hosted Kubernetes on bare metal, leveraging Azure managed services for specific workloads
-- **Domain-driven design** - Clear bounded contexts prepared for microservices extraction
-- **Modular monolith** - Logical service boundaries without distributed system complexity
+- **Domain-driven design** - Clear bounded contexts with dedicated HTTP clients per domain
+- **Microservices** - Independent services with per-service databases, Dockerfiles, and deployment manifests
 - **Cost-optimized architecture** - Pragmatic mix of on-premises compute and cloud-managed services
 
 ### Tech Stack
 
-**Backend:** .NET 10, ASP.NET Core, Entity Framework Core  
-**Infrastructure:** Kubernetes (on-prem), Docker, Azure (Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps, DevOps)  
-**Frontend:** React, TypeScript  
-**CI/CD:** Azure Pipelines, GitHub Actions, GitOps  
-**Monitoring:** OpenTelemetry, Prometheus  
-**Data:** PostgreSQL, Redis, Cosmos DB
+**Backend:** .NET 10, ASP.NET Core, Entity Framework Core
+**Infrastructure:** Kubernetes (on-prem), Docker, Azure (Service Bus, Cosmos DB, App Configuration, Key Vault, Static Web Apps, DevOps)
+**Frontend:** React (sd-ui), Expo/React Native (sd-mobile), TypeScript
+**Auth:** Firebase Authentication
+**CI/CD:** Azure Pipelines, GitHub Actions, GitOps
+**Monitoring:** OpenTelemetry, Seq, Prometheus
+**Data:** PostgreSQL, Redis, Cosmos DB, Azure Blob Storage
 
 ## Architecture
 
-### Modular Monolith Pattern
+### Microservices with Domain Client Abstraction
 
-The project follows a **modular monolith** architecture pattern. Domain boundaries are enforced through dedicated HTTP clients ([`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs), etc.) that communicate with their respective service modules.
+Each domain service runs independently with its own database and API. Cross-service communication uses dedicated HTTP clients ([`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs), [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs), [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs), etc.) defined in the shared Core library.
 
 **Design Principles:**
 - **Clear domain boundaries** - Each domain has its own client interface and can be developed independently
-- **Service extraction readiness** - Domains can be extracted as microservices with minimal refactoring
-- **Development velocity** - Reduced operational complexity while maintaining architectural discipline
+- **Configuration-driven routing** - Client base URLs are configurable per environment
+- **Development velocity** - Shared Core library reduces boilerplate while maintaining service independence
 - **Pragmatic evolution** - Services scale independently based on actual needs, not speculation
 
 #### Current Implementation
@@ -60,20 +57,18 @@ The project follows a **modular monolith** architecture pattern. Domain boundari
    - Update the configuration to point to the new service URL
    - **No code changes required** - the abstraction boundary already exists
 
-This approach maintains the architectural seams for future distribution without the operational overhead of managing multiple services prematurely.
-
 ### Data Flow
 
 ```
-External APIs → Provider Service → Data Lake (Azure Blob) 
-                                        ↓
-                                   Producer Service → Canonical Domain Models → PostgreSQL
-                                        ↓
-                              Azure Service Bus (Events)
-                                        ↓
-                         Domain Services (Contest, Franchise, Venue, etc.)
-                                        ↓
-                                   API Gateway → Clients (Web, Mobile)
+External APIs (ESPN*) → Provider Service → Azure Blob Storage (raw JSON)
+                                    ↓
+                               Producer Service → Canonical Domain Models → PostgreSQL
+                                    ↓
+                          Message Bus (RabbitMQ / Azure Service Bus)
+                                    ↓
+                     Domain Services (Contest, Franchise, Venue, etc.)
+                                    ↓
+                               API Gateway → Clients (Web, Mobile)
 ```
 
 ## Project Structure
@@ -81,15 +76,19 @@ External APIs → Provider Service → Data Lake (Azure Blob)
 | Project/Service              | Purpose |
 | ---------------------------- | ------- |
 | [core](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Core) | Shared services, components, and middleware consumed by all services |
-| [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway - unified entry point for all client applications |
-| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contest) | Domain boundary via [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs). Manages games, scores, statistics. Planned extraction. |
-| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Domain boundary via [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs). Teams, rosters, and metadata. Planned extraction. |
-| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | Domain boundary established. User notifications and alerts. Planned extraction. |
-| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Domain boundary established. Athlete profiles and statistics. Planned extraction. |
-| [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Transforms external JSON into canonical domain objects. Publishes integration events. |
-| [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Ingests data from external sources (ESPN, CBS, Yahoo!, sportsData.io). Stores raw JSON in data lake. |
-| [season](https://github.com/jrandallsexton/sports-data-season/tree/main/src/SportsData.Season) | Domain boundary established. Season schedules and calendars. Planned extraction. |
-| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Domain boundary via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). Stadium and location data. Planned extraction. |
+| [api](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Api) | API Gateway - unified entry point for all client applications. Firebase auth middleware. |
+| [contest](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Contest) | Games, scores, and statistics. Domain boundary via [`ContestClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Contest/ContestClient.cs). |
+| [franchise](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Franchise) | Teams, rosters, and metadata. Domain boundary via [`FranchiseClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Franchise/FranchiseClient.cs). |
+| [notification](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Notification) | User notifications and alerts. |
+| [player](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Player) | Athlete profiles and statistics. |
+| [producer](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Producer) | Transforms external JSON into canonical domain objects. Publishes integration events via MassTransit. |
+| [provider](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Provider) | Ingests data from external sources (ESPN active; CBS, Yahoo!, sportsData.io planned). Stores raw JSON in Azure Blob Storage. Schedules sourcing runs via Hangfire. |
+| [season](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Season) | Season schedules and calendars. |
+| [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Stadium and location data. Domain boundary via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). |
+| [jobs-dashboard](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.JobsDashboard) | Hangfire dashboard for monitoring background job processing. |
+| [processor-gen](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.ProcessorGen) | Source generator for DocumentProcessorBase implementations. |
+| [sd-ui](https://github.com/jrandallsexton/sports-data-core/tree/main/src/UI/sd-ui) | React web frontend (TypeScript). |
+| [sd-mobile](https://github.com/jrandallsexton/sports-data-core/tree/main/src/UI/sd-mobile) | Expo/React Native mobile app (TypeScript). |
 
 ### Related Repositories
 
@@ -105,28 +104,26 @@ External APIs → Provider Service → Data Lake (Azure Blob)
 ```mermaid
 flowchart TD
     PV[Provider]
-    DL[(data lake)]
-    PV --> DL
+    BLOB[(Blob Storage)]
+    PV --> BLOB
     PD[Producer]
-    PD <--> DL
-    MSG[SNS/SQS]
+    PD <--> BLOB
+    MSG[RabbitMQ / Azure Service Bus]
     N[Notification]
     C[Contest]
     S[Season]
     V[Venue]
     PL[Player]
     FR[Franchise]
-    ID[Identity]
     API[API Gateway]
-    API <--> ID
-    WCPOST[Postman]
-    WCWEB[Web]
-    WCMOB[Mobile]
+    AUTH[Firebase Auth]
+    API <--> AUTH
+    WCWEB[Web App]
+    WCMOB[Mobile App]
     PV <--> ESPN[ESPN]
-    PV <--> CBS[CBS]
-    PV <--> YAHOO[Yahoo!]
-    PV <--> SDIO[sportsData.io]
-    PV <--> FD[fantasyData.com]
+    PV -.-> CBS[CBS]
+    PV -.-> YAHOO[Yahoo!]
+    PV -.-> SDIO[sportsData.io]
     PV <--> MSG
     PD <--> MSG
     N <--> MSG
@@ -141,7 +138,6 @@ flowchart TD
     API --> PL
     API --> FR
     API --> N
-    WCPOST --> API
     WCWEB --> API
     WCMOB --> API
 ```
@@ -156,18 +152,18 @@ flowchart BT
         PVAPI[API]
         PV-->PVDB
         PVAPI-->PVDB
-    end    
-    DL[(data lake)]
-    PV --> DL
+    end
+    BLOB[(Blob Storage)]
+    PV --> BLOB
     subgraph Producer
         PD[svc]
         PDDB[(DB)]
         PDAPI[API]
         PD-->PDDB
         PDAPI-->PDDB
-    end    
-    PD <--> DL
-    M[SNS/SQS]
+    end
+    PD <--> BLOB
+    M[RabbitMQ / Azure Service Bus]
     subgraph Notification
         N[svc]
         NDB[(DB)]
@@ -198,20 +194,16 @@ flowchart BT
         FRDB[(DB)]
         FRAPI[API]
     end
-    subgraph Identity
-        ID[Identity]
-    end
     API[API Gateway]
-    API --> ID
-    WCPOST[Postman]
-    WCWEB[Web]
-    WCMOB[Mobile]
+    AUTH[Firebase Auth]
+    API --> AUTH
+    WCWEB[Web App]
+    WCMOB[Mobile App]
     WCAPP[Code]
     Provider --> ESPN[ESPN]
-    Provider --> CBS[CBS]
-    Provider --> YAHOO[Yahoo!]
-    Provider --> SDIO[sportsData.io]
-    Provider --> FD[fantasyData.com]
+    Provider -.-> CBS[CBS]
+    Provider -.-> YAHOO[Yahoo!]
+    Provider -.-> SDIO[sportsData.io]
     PV-->M
     PD-->M
     N-->M
@@ -227,7 +219,6 @@ flowchart BT
     API-->Player
     API-->Franchise
     API-->Notification
-    WCPOST-->API
     WCWEB-->API
     WCMOB-->API
     WCAPP-->API
@@ -245,7 +236,7 @@ flowchart BT
 - **Hybrid approach** - On-premises compute, Azure for managed services (born from Azure credit constraints, evolved into pragmatic architecture)
 
 **CI/CD Pipeline:**
-- GitHub Actions - PR validation, automated testing, code review
+- GitHub Actions - PR validation, automated testing (mobile CI, code review)
 - Azure Pipelines - Build, containerization, deployment
 - GitOps - Kubernetes manifests managed in [sports-data-config](https://github.com/jrandallsexton/sports-data-config)
 
@@ -256,7 +247,7 @@ flowchart BT
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). 
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE).
 
 Any derivative works must also be open source and distributed under the same GPL-3.0 license. This ensures the community benefits from improvements and contributions.
 

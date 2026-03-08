@@ -1,5 +1,7 @@
 # Contest API Design
 
+> **Status Note:** The Competition to Contest terminology migration is partially complete. Events like `ContestCreated`, `ContestScoreChanged`, and `ContestStatusChanged` use the new naming, but `CompetitionStatusChanged`, `CompetitionPlayCompleted`, and `CompetitionWinProbabilityChanged` still use the old naming.
+
 ## Problem Statement
 
 ESPN uses a `Contest/Competition[]` pattern, but empirically contests never have more than one competition across all observed sports. This creates unnecessary complexity and naming confusion.

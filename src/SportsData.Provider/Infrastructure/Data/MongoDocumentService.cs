@@ -168,7 +168,21 @@ namespace SportsData.Provider.Infrastructure.Data
 
             var collection = _database.GetCollection<T>(collectionName);
             _logger.LogInformation("Mongo inserting document with SourceUrlHash: {SourceUrlHash}", document.SourceUrlHash);
-            await collection.InsertOneAsync(document);
+
+            try
+            {
+                await collection.InsertOneAsync(document);
+            }
+            catch (MongoWriteException ex) when (ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+            {
+                // Safe to treat as success: _id is a full SHA-256 hash of the normalized URL
+                // (scheme + host + path, lowercased, no query string — see HashProvider.GenerateHashFromUri).
+                // Collections are scoped per sport database, so a duplicate _id within the same collection
+                // means another pod/worker inserted the identical document from the same source URL.
+                _logger.LogInformation(
+                    "Document already exists (concurrent insert by another process), skipping. SourceUrlHash={SourceUrlHash}",
+                    document.SourceUrlHash);
+            }
         }
 
         public async Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl
